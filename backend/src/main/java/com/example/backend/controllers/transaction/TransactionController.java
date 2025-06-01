@@ -1,12 +1,13 @@
 package com.example.backend.controllers.transaction;
 
-
+import com.example.backend.dto.transaction.*;
 import com.example.backend.models.PartyType;
 import com.example.backend.models.transaction.TransactionItem;
 import com.example.backend.models.transaction.TransactionStatus;
 import com.example.backend.models.warehouse.ItemType;
 import com.example.backend.repositories.transaction.TransactionRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
+import com.example.backend.services.transaction.TransactionMapperService;
 import com.example.backend.services.transaction.TransactionService;
 import com.example.backend.models.transaction.Transaction;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +20,14 @@ import java.util.*;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
-@RequestMapping("/api/v1/transactions") // Base URL for all transaction-related operations
+@RequestMapping("/api/v1/transactions")
 public class TransactionController {
 
     @Autowired
     private TransactionService transactionService;
+
+    @Autowired
+    private TransactionMapperService transactionMapperService;
 
     @Autowired
     private ItemTypeRepository itemTypeRepository;
@@ -31,15 +35,161 @@ public class TransactionController {
     @Autowired
     private TransactionRepository transactionRepository;
 
-//    @PostMapping()
-//    public ResponseEntity<Transaction> addTransaction(@RequestBody Map<String, Object> requestBody) {
-//        Transaction transaction = transactionService.addTransaction(requestBody);
-//        return ResponseEntity.ok(transaction);
-//
-//    }
-
     @PostMapping("/create")
-    public ResponseEntity<Transaction> createTransaction(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<TransactionDTO> createTransaction(@RequestBody TransactionCreateRequestDTO request) {
+        try {
+            // Convert DTO items to TransactionItem entities
+            List<TransactionItem> items = new ArrayList<>();
+            for (TransactionItemRequestDTO itemRequest : request.getItems()) {
+                ItemType itemType = itemTypeRepository.findById(itemRequest.getItemTypeId())
+                        .orElseThrow(() -> new IllegalArgumentException("Item type not found: " + itemRequest.getItemTypeId()));
+
+                TransactionItem item = TransactionItem.builder()
+                        .itemType(itemType)
+                        .quantity(itemRequest.getQuantity())
+                        .status(TransactionStatus.PENDING)
+                        .build();
+
+                items.add(item);
+            }
+
+            // Create the transaction using the service
+            Transaction transaction = transactionService.createTransaction(
+                    request.getSenderType(), request.getSenderId(),
+                    request.getReceiverType(), request.getReceiverId(),
+                    items,
+                    request.getTransactionDate(),
+                    request.getUsername(),
+                    request.getBatchNumber(),
+                    request.getSentFirst()
+            );
+
+            // Convert to DTO and return
+            TransactionDTO responseDTO = transactionMapperService.toDTO(transaction);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @PostMapping("/{transactionId}/accept")
+    public ResponseEntity<TransactionDTO> acceptTransaction(
+            @PathVariable UUID transactionId,
+            @RequestBody TransactionAcceptRequestDTO request
+    ) {
+        try {
+            // Convert received items from DTO to the format expected by service
+            Map<UUID, Integer> receivedQuantities = new HashMap<>();
+            for (var receivedItem : request.getReceivedItems()) {
+                UUID itemId = UUID.fromString(receivedItem.getTransactionItemId());
+                receivedQuantities.put(itemId, receivedItem.getReceivedQuantity());
+            }
+
+            Transaction transaction = transactionService.acceptTransaction(
+                    transactionId,
+                    receivedQuantities,
+                    request.getUsername(),
+                    request.getAcceptanceComment()
+            );
+
+            TransactionDTO responseDTO = transactionMapperService.toDTO(transaction);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/warehouse/{warehouseId}")
+    public ResponseEntity<List<TransactionDTO>> getTransactionsForWarehouse(@PathVariable UUID warehouseId) {
+        try {
+            List<Transaction> transactions = transactionService.getTransactionsForWarehouse(warehouseId);
+            List<TransactionDTO> responseDTOs = transactionMapperService.toDTOs(transactions);
+            return ResponseEntity.ok(responseDTOs);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/equipment/{equipmentId}")
+    public ResponseEntity<List<TransactionDTO>> getTransactionsForEquipment(@PathVariable UUID equipmentId) {
+        try {
+            List<Transaction> transactions = transactionService.getTransactionsForEquipment(equipmentId);
+            List<TransactionDTO> responseDTOs = transactionMapperService.toDTOs(transactions);
+            return ResponseEntity.ok(responseDTOs);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<TransactionDTO> updateTransaction(
+            @PathVariable UUID id,
+            @RequestBody TransactionCreateRequestDTO request) {
+        try {
+            // Convert DTO items to TransactionItem entities
+            List<TransactionItem> items = new ArrayList<>();
+            for (TransactionItemRequestDTO itemRequest : request.getItems()) {
+                ItemType itemType = itemTypeRepository.findById(itemRequest.getItemTypeId())
+                        .orElseThrow(() -> new IllegalArgumentException("Item type not found: " + itemRequest.getItemTypeId()));
+
+                TransactionItem item = new TransactionItem();
+                item.setItemType(itemType);
+                item.setQuantity(itemRequest.getQuantity());
+                item.setStatus(TransactionStatus.PENDING);
+
+                items.add(item);
+            }
+
+            Transaction updatedTransaction = transactionService.updateTransaction(
+                    id,
+                    request.getSenderType(), request.getSenderId(),
+                    request.getReceiverType(), request.getReceiverId(),
+                    items,
+                    request.getTransactionDate(),
+                    request.getUsername(),
+                    request.getBatchNumber()
+            );
+
+            TransactionDTO responseDTO = transactionMapperService.toDTO(updatedTransaction);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/batch/{batchNumber}")
+    public ResponseEntity<TransactionDTO> findByBatchNumber(@PathVariable int batchNumber) {
+        try {
+            Optional<Transaction> transaction = transactionRepository.findByBatchNumber(batchNumber);
+            if (transaction.isPresent()) {
+                TransactionDTO responseDTO = transactionMapperService.toDTO(transaction.get());
+                return ResponseEntity.ok(responseDTO);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    // ========================================
+    // LEGACY SUPPORT METHODS
+    // Keep existing Map-based endpoints for backward compatibility
+    // ========================================
+
+    @PostMapping("/create-legacy")
+    public ResponseEntity<Transaction> createTransactionLegacy(@RequestBody Map<String, Object> request) {
         // Extract the basic transaction information
         PartyType senderType = PartyType.valueOf((String) request.get("senderType"));
         UUID senderId = UUID.fromString((String) request.get("senderId"));
@@ -86,8 +236,8 @@ public class TransactionController {
         return ResponseEntity.ok(transaction);
     }
 
-    @PostMapping("/{transactionId}/accept")
-    public ResponseEntity<Transaction> acceptTransaction(
+    @PostMapping("/{transactionId}/accept-legacy")
+    public ResponseEntity<Transaction> acceptTransactionLegacy(
             @PathVariable UUID transactionId,
             @RequestBody Map<String, Object> request
     ) {
@@ -135,75 +285,4 @@ public class TransactionController {
                     .body(null);
         }
     }
-
-
-
-
-    @GetMapping("/warehouse/{warehouseId}")
-    public ResponseEntity<List<Transaction>> getTransactionsForWarehouse(@PathVariable UUID warehouseId) {
-        List<Transaction> transactions = transactionService.getTransactionsForWarehouse(warehouseId);
-        return ResponseEntity.ok(transactions);
-    }
-
-    @GetMapping("/equipment/{equipmentId}")
-    public ResponseEntity<List<Transaction>> getTransactionsForEquipment(@PathVariable UUID equipmentId) {
-        List<Transaction> transactions = transactionService.getTransactionsForEquipment(equipmentId);
-        return ResponseEntity.ok(transactions);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateTransaction(
-            @PathVariable UUID id,
-            @RequestBody Map<String, Object> payload) {
-
-        try {
-            PartyType senderType = PartyType.valueOf(payload.get("senderType").toString());
-            UUID senderId = UUID.fromString(payload.get("senderId").toString());
-
-            PartyType receiverType = PartyType.valueOf(payload.get("receiverType").toString());
-            UUID receiverId = UUID.fromString(payload.get("receiverId").toString());
-
-            String username = payload.get("username").toString();
-            int batchNumber = (int) payload.get("batchNumber");
-
-            LocalDateTime transactionDate = LocalDateTime.parse(payload.get("transactionDate").toString());
-
-            List<Map<String, Object>> itemsData = (List<Map<String, Object>>) payload.get("items");
-            List<TransactionItem> items = new ArrayList<>();
-
-            for (Map<String, Object> itemData : itemsData) {
-                UUID itemTypeId = UUID.fromString(itemData.get("itemTypeId").toString());
-                int quantity = (int) itemData.get("quantity");
-
-                TransactionItem item = new TransactionItem();
-                item.setItemType(ItemType.builder().id(itemTypeId).build());
-                item.setQuantity(quantity);
-                item.setStatus(TransactionStatus.PENDING);
-
-                items.add(item);
-            }
-
-            Transaction updatedTransaction = transactionService.updateTransaction(
-                    id, senderType, senderId, receiverType, receiverId,
-                    items, transactionDate, username, batchNumber
-            );
-
-            return ResponseEntity.ok(updatedTransaction);
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating transaction");
-        }
-    }
-
-    @GetMapping("/batch/{batchNumber}")
-    public ResponseEntity<Transaction> findByBatchNumber(@PathVariable int batchNumber) {
-        Optional<Transaction> transaction = transactionRepository.findByBatchNumber(batchNumber);
-        return transaction.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-
 }
