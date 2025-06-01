@@ -324,7 +324,7 @@ const EquipmentMain = () => {
 
                     {/* Action buttons */}
                     <div className="equipment-actions-buttons">
-                        <button className="equipment-add-button" onClick={handleAddEquipment}>
+                        <button className="btn-primary" onClick={handleAddEquipment}>
                             <FaPlus /> Add Equipment
                         </button>
                     </div>

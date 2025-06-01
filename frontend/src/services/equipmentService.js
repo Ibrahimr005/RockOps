@@ -192,36 +192,120 @@ export const equipmentService = {
         return apiClient.post(EQUIPMENT_ENDPOINTS.CREATE_DTO, equipmentData);
     },
 
-    // Equipment Transaction Management
-    receiveTransaction: (equipmentId, senderId, senderType, batchNumber, purpose, items, transactionDate) => {
+    // ========================================
+    // EQUIPMENT TRANSACTION MANAGEMENT
+    // Enhanced with DTO-based endpoints
+    // ========================================
+
+    // Get all transactions for equipment
+    getEquipmentTransactions: (equipmentId) => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.TRANSACTIONS(equipmentId));
+    },
+
+    // Get transactions initiated by equipment
+    getInitiatedTransactions: (equipmentId) => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.TRANSACTIONS_INITIATED(equipmentId));
+    },
+
+    // Create transaction with equipment as sender
+    sendTransaction: (equipmentId, requestData) => {
+        const params = new URLSearchParams({
+            receiverId: requestData.receiverId,
+            receiverType: requestData.receiverType,
+            batchNumber: requestData.batchNumber.toString(),
+            purpose: requestData.purpose || 'GENERAL'
+        });
+
+        if (requestData.transactionDate) {
+            params.append('transactionDate', requestData.transactionDate);
+        }
+
+        return apiClient.post(
+            `${EQUIPMENT_ENDPOINTS.SEND_TRANSACTION(equipmentId)}?${params.toString()}`,
+            requestData.items
+        );
+    },
+
+    // Create transaction with equipment as receiver
+    receiveTransaction: (equipmentId, requestData) => {
+        const params = new URLSearchParams({
+            senderId: requestData.senderId,
+            senderType: requestData.senderType,
+            batchNumber: requestData.batchNumber.toString(),
+            purpose: requestData.purpose || 'GENERAL'
+        });
+
+        if (requestData.transactionDate) {
+            params.append('transactionDate', requestData.transactionDate);
+        }
+
+        return apiClient.post(
+            `${EQUIPMENT_ENDPOINTS.RECEIVE_TRANSACTION(equipmentId)}?${params.toString()}`,
+            requestData.items
+        );
+    },
+
+    // Accept equipment transaction
+    acceptEquipmentTransaction: (equipmentId, transactionId, acceptanceData) => {
+        return apiClient.post(
+            EQUIPMENT_ENDPOINTS.ACCEPT_TRANSACTION(equipmentId, transactionId),
+            acceptanceData
+        );
+    },
+
+    // Reject equipment transaction
+    rejectEquipmentTransaction: (equipmentId, transactionId, rejectionData) => {
+        return apiClient.post(
+            EQUIPMENT_ENDPOINTS.REJECT_TRANSACTION(equipmentId, transactionId),
+            rejectionData
+        );
+    },
+
+    // Update equipment transaction
+    updateEquipmentTransaction: (equipmentId, transactionId, updateData) => {
+        const params = new URLSearchParams({
+            senderId: updateData.senderId,
+            senderType: updateData.senderType,
+            receiverId: updateData.receiverId,
+            receiverType: updateData.receiverType,
+            batchNumber: updateData.batchNumber.toString()
+        });
+
+        if (updateData.transactionDate) {
+            params.append('transactionDate', updateData.transactionDate);
+        }
+
+        if (updateData.purpose) {
+            params.append('purpose', updateData.purpose);
+        }
+
+        return apiClient.put(
+            `${EQUIPMENT_ENDPOINTS.UPDATE_TRANSACTION(equipmentId, transactionId)}?${params.toString()}`,
+            updateData.items
+        );
+    },
+
+    // ========================================
+    // LEGACY EQUIPMENT TRANSACTION METHODS
+    // Keep for backward compatibility
+    // ========================================
+
+    // Legacy receive transaction method
+    receiveTransactionLegacy: (equipmentId, senderId, senderType, batchNumber, purpose, items, transactionDate) => {
         const params = new URLSearchParams({
             senderId,
             senderType,
             batchNumber: batchNumber.toString(),
-            purpose
+            purpose: purpose || 'GENERAL'
         });
-        
-        if (transactionDate) {
-            const formattedDate = new Date(transactionDate).toISOString().split('.')[0];
-            params.append('transactionDate', formattedDate);
-        }
-        
-        return apiClient.post(`${EQUIPMENT_ENDPOINTS.RECEIVE_TRANSACTION(equipmentId)}?${params}`, items);
-    },
 
-    sendTransaction: (equipmentId, receiverId, receiverType, batchNumber, purpose, items, transactionDate) => {
-        const params = new URLSearchParams({
-            receiverId,
-            receiverType,
-            batchNumber: batchNumber.toString(),
-            purpose
-        });
-        
         if (transactionDate) {
-            const formattedDate = new Date(transactionDate).toISOString().split('.')[0];
-            params.append('transactionDate', formattedDate);
+            params.append('transactionDate', transactionDate);
         }
-        
-        return apiClient.post(`${EQUIPMENT_ENDPOINTS.SEND_TRANSACTION(equipmentId)}?${params}`, items);
+
+        return apiClient.post(
+            `${EQUIPMENT_ENDPOINTS.RECEIVE_TRANSACTION(equipmentId)}?${params.toString()}`,
+            items
+        );
     }
 };

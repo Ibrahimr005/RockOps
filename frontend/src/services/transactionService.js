@@ -25,5 +25,15 @@ export const transactionService = {
     // Update a transaction
     update: (transactionId, updateData) => {
         return apiClient.put(TRANSACTION_ENDPOINTS.UPDATE(transactionId), updateData);
+    },
+
+    // Get transactions for warehouse
+    getTransactionsForWarehouse: (warehouseId) => {
+        return apiClient.get(TRANSACTION_ENDPOINTS.BY_WAREHOUSE(warehouseId));
+    },
+
+    // Get transactions for equipment
+    getTransactionsForEquipment: (equipmentId) => {
+        return apiClient.get(TRANSACTION_ENDPOINTS.BY_EQUIPMENT(equipmentId));
     }
 }; 

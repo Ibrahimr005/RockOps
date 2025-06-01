@@ -30,8 +30,13 @@ export const EQUIPMENT_ENDPOINTS = {
     BRAND_BY_ID: (id) => `/api/equipment/brands/${id}`,
     SARKY_ANALYTICS: (equipmentId) => `/api/equipment/${equipmentId}/sarky-analytics`,
     // Transaction endpoints
+    TRANSACTIONS: (equipmentId) => `/api/equipment/${equipmentId}/transactions`,
+    TRANSACTIONS_INITIATED: (equipmentId) => `/api/equipment/${equipmentId}/transactions/initiated`,
     SEND_TRANSACTION: (equipmentId) => `/api/equipment/${equipmentId}/send-transaction`,
-    RECEIVE_TRANSACTION: (equipmentId) => `/api/equipment/${equipmentId}/receive-transaction`
+    RECEIVE_TRANSACTION: (equipmentId) => `/api/equipment/${equipmentId}/receive-transaction`,
+    ACCEPT_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept`,
+    REJECT_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/reject`,
+    UPDATE_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}`
 };
 
 // Equipment Types module endpoints
@@ -273,7 +278,9 @@ export const TRANSACTION_ENDPOINTS = {
     BY_BATCH: (batchNumber) => `/api/v1/transactions/batch/${batchNumber}`,
     ACCEPT: (transactionId) => `/api/v1/transactions/${transactionId}/accept`,
     REJECT: (transactionId) => `/api/v1/transactions/${transactionId}/reject`,
-    UPDATE: (transactionId) => `/api/v1/transactions/${transactionId}/update`
+    UPDATE: (transactionId) => `/api/v1/transactions/${transactionId}`,
+    BY_WAREHOUSE: (warehouseId) => `/api/v1/transactions/warehouse/${warehouseId}`,
+    BY_EQUIPMENT: (equipmentId) => `/api/v1/transactions/equipment/${equipmentId}`
 };
 
 // Item Type module endpoints

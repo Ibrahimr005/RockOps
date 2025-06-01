@@ -664,26 +664,26 @@ const   EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                 {/* Consumable Insights Section */}
                 {dashboardData.consumableAnalytics && (
                     <>
-                        {/* Low Stock Alert */}
-                        {dashboardData.consumableAnalytics.lowStockItems?.length > 0 && (
-                            <div className="chart-card alert-card">
-                                <h3>⚠️ Low Stock Alert</h3>
-                                <div className="alert-content">
-                                    <p className="alert-summary">
-                                        {dashboardData.consumableAnalytics.lowStockItems.length} items are running low (≤5 units)
-                                    </p>
-                                    <div className="low-stock-items">
-                                        {dashboardData.consumableAnalytics.lowStockItems.map((item, index) => (
-                                            <div key={index} className="low-stock-item">
-                                                <span className="item-name">{item.itemName}</span>
-                                                <span className="item-quantity">{item.currentQuantity} units</span>
-                                                <span className="item-category">{item.category}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        {/*/!* Low Stock Alert *!/*/}
+                        {/*{dashboardData.consumableAnalytics.lowStockItems?.length > 0 && (*/}
+                        {/*    <div className="chart-card alert-card">*/}
+                        {/*        <h3>⚠️ Low Stock Alert</h3>*/}
+                        {/*        <div className="alert-content">*/}
+                        {/*            <p className="alert-summary">*/}
+                        {/*                {dashboardData.consumableAnalytics.lowStockItems.length} items are running low (≤5 units)*/}
+                        {/*            </p>*/}
+                        {/*            <div className="low-stock-items">*/}
+                        {/*                {dashboardData.consumableAnalytics.lowStockItems.map((item, index) => (*/}
+                        {/*                    <div key={index} className="low-stock-item">*/}
+                        {/*                        <span className="item-name">{item.itemName}</span>*/}
+                        {/*                        <span className="item-quantity">{item.currentQuantity} units</span>*/}
+                        {/*                        <span className="item-category">{item.category}</span>*/}
+                        {/*                    </div>*/}
+                        {/*                ))}*/}
+                        {/*            </div>*/}
+                        {/*        </div>*/}
+                        {/*    </div>*/}
+                        {/*)}*/}
 
                         {/* Top Consumables Chart */}
                         {dashboardData.consumableAnalytics.topConsumables && 

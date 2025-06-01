@@ -1,6 +1,7 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import axios from 'axios';
-import { useSnackbar } from '../../../Contexts/SnackbarContext';
+import { useSnackbar } from '../../../contexts/SnackbarContext';
+import { equipmentService } from '../../../services/equipmentService';
+import { transactionService } from '../../../services/transactionService';
 import './UnifiedTransactionsView.scss';
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
 
@@ -24,11 +25,6 @@ const UnifiedTransactionsView = forwardRef(({
 
     const { showError, showSuccess } = useSnackbar();
 
-    const token = localStorage.getItem('token');
-    const axiosInstance = axios.create({
-        headers: { Authorization: `Bearer ${token}` }
-    });
-
     const handleQuantityChange = (itemId, value) => {
         // Convert value to number and ensure it's not negative
         const numericValue = Math.max(0, parseInt(value) || 0);
@@ -49,12 +45,13 @@ const UnifiedTransactionsView = forwardRef(({
             setLoading(true);
             setError(null);
 
-            // Use different endpoints based on entity type
-            const endpoint = entityType === 'EQUIPMENT'
-                ? `http://localhost:8080/api/equipment/${entityId}/transactions`
-                : `http://localhost:8080/api/v1/transactions/warehouse/${entityId}`;
-
-            const response = await axiosInstance.get(endpoint);
+            let response;
+            // Use service methods based on entity type
+            if (entityType === 'EQUIPMENT') {
+                response = await equipmentService.getEquipmentTransactions(entityId);
+            } else {
+                response = await transactionService.getTransactionsForWarehouse(entityId);
+            }
 
             if (!response.data || !Array.isArray(response.data)) {
                 setAllTransactions([]);
@@ -62,74 +59,41 @@ const UnifiedTransactionsView = forwardRef(({
                 return;
             }
 
-            const transformedData = await Promise.all(
-                response.data.map(async (transaction) => {
-                    try {
-                        const sender = await fetchEntityName(transaction.senderType, transaction.senderId);
-                        const receiver = await fetchEntityName(transaction.receiverType, transaction.receiverId);
+            // Transform data - now with enhanced DTO structure
+            const transformedData = response.data.map(transaction => ({
+                ...transaction,
+                id: transaction.id,
+                date: transaction.transactionDate,
+                completedAt: transaction.completedAt,
+                sender: transaction.senderName, // Now comes from DTO
+                receiver: transaction.receiverName, // Now comes from DTO
+                batchNumber: transaction.batchNumber,
+                createdAt: transaction.createdAt,
+                addedBy: transaction.addedBy,
+                approvedBy: transaction.approvedBy,
+                status: transaction.status,
+                rejectionReason: transaction.rejectionReason,
+                acceptanceComment: transaction.acceptanceComment,
+                purpose: transaction.purpose || 'GENERAL',
+                senderId: transaction.senderId,
+                receiverId: transaction.receiverId,
+                sentFirst: transaction.sentFirst,
+                items: (transaction.items || []).map(item => ({
+                    id: item.id,
+                    itemType: item.itemTypeName || 'Unknown Item',
+                    category: item.itemCategory || 'N/A',
+                    quantity: item.quantity,
+                    receivedQuantity: item.receivedQuantity
+                }))
+            }));
 
-                        return {
-                            ...transaction,
-                            id: transaction.id,
-                            date: transaction.transactionDate,
-                            completedAt: transaction.completedAt,
-                            sender: sender,
-                            receiver: receiver,
-                            batchNumber: transaction.batchNumber,
-                            createdAt: transaction.createdAt,
-                            addedBy: transaction.addedBy,
-                            approvedBy: transaction.approvedBy,
-                            status: transaction.status,
-                            rejectionReason: transaction.rejectionReason,
-                            acceptanceComment: transaction.acceptanceComment,
-                            purpose: transaction.purpose || 'GENERAL',
-                            senderId: transaction.senderId,
-                            receiverId: transaction.receiverId,
-                            sentFirst: transaction.sentFirst,
-                            items: (transaction.items || []).map(item => ({
-                                id: item.id,
-                                itemType: item.itemType?.name || 'Unknown Item',
-                                category: item.itemType?.itemCategory?.name || 'N/A',
-                                quantity: item.quantity,
-                                receivedQuantity: item.receivedQuantity
-                            }))
-                        };
-                    } catch (itemError) {
-                        console.error('Error transforming transaction:', transaction, itemError);
-                        return null;
-                    }
-                })
-            );
-
-            const validTransactions = transformedData.filter(tx => tx !== null);
-            setAllTransactions(validTransactions);
+            setAllTransactions(transformedData);
             setLoading(false);
+
         } catch (error) {
             console.error('Error fetching transactions:', error);
-            setError(`Failed to load transactions: ${error.message}`);
-            setAllTransactions([]);
+            setError(error.message || 'Failed to fetch transactions');
             setLoading(false);
-        }
-    };
-
-    const fetchEntityName = async (entityType, entityId) => {
-        if (!entityType || !entityId) return 'Unknown';
-
-        try {
-            let endpoint;
-            if (entityType === 'WAREHOUSE') {
-                endpoint = `http://localhost:8080/api/v1/warehouses/${entityId}`;
-            } else if (entityType === 'EQUIPMENT') {
-                endpoint = `http://localhost:8080/api/equipment/${entityId}`;
-            } else {
-                return entityType;
-            }
-
-            const response = await axiosInstance.get(endpoint);
-            return response.data.name || response.data.fullModelName || 'Unknown';
-        } catch (error) {
-            console.error(`Error fetching ${entityType} details:`, error);
-            return 'Unknown';
         }
     };
 
@@ -139,7 +103,16 @@ const UnifiedTransactionsView = forwardRef(({
         }
     }, [entityId, entityType]);
 
-    // Get transactions based on active tab
+    // Define filterable columns
+    const filterableColumns = [
+        { key: 'sender', label: 'Sender' },
+        { key: 'receiver', label: 'Receiver' },
+        { key: 'status', label: 'Status' },
+        { key: 'purpose', label: 'Purpose' },
+        { key: 'addedBy', label: 'Added By' }
+    ];
+
+    // Helper function definitions - moved up to avoid hoisting issues
     const getTransactionsForTab = (tabName) => {
         const entityIdStr = String(entityId);
 
@@ -172,7 +145,6 @@ const UnifiedTransactionsView = forwardRef(({
         }
     };
 
-    // Get tab counts
     const getTabCounts = () => {
         return {
             incoming: getTransactionsForTab('incoming').length,
@@ -181,6 +153,12 @@ const UnifiedTransactionsView = forwardRef(({
             all: getTransactionsForTab('all').length
         };
     };
+
+    // Get tab counts
+    const tabCounts = getTabCounts();
+
+    // Get current data for the active tab
+    const currentData = getTransactionsForTab(activeTab);
 
     // Define columns for DataTable
     const getColumns = () => {
@@ -239,37 +217,37 @@ const UnifiedTransactionsView = forwardRef(({
                 width: '140px'
             },
             {
-                header: 'Added By',
-                accessor: 'addedBy',
-                width: '120px'
+                header: 'Status',
+                accessor: 'status',
+                render: (row) => (
+                    <span className={`status-badge ${row.status?.toLowerCase() || 'unknown'}`}>
+                        {row.status || 'UNKNOWN'}
+                    </span>
+                ),
+                width: '100px'
             }
         ];
 
-        // Add status and processed date columns for validated and all tabs
-        if (activeTab === 'validated' || activeTab === 'all') {
-            baseColumns.push(
-                {
-                    header: 'Status',
-                    accessor: 'status',
-                    render: (row) => (
-                        <span className={`status-badge ${row.status?.toLowerCase() || 'pending'}`}>
-                            {row.status || 'PENDING'}
-                        </span>
-                    ),
-                    width: '100px'
-                },
-                {
-                    header: 'Processed Date',
-                    accessor: 'completedAt',
-                    render: (row) => row.completedAt ? new Date(row.completedAt).toLocaleDateString('en-GB') : 'N/A',
-                    width: '130px'
-                },
-                {
-                    header: 'Approved By',
-                    accessor: 'approvedBy',
-                    width: '120px'
-                }
-            );
+        // Add conditional columns based on tab
+        if (activeTab === 'validated') {
+            baseColumns.splice(-1, 0, {
+                header: 'Completed At',
+                accessor: 'completedAt',
+                render: (row) => row.completedAt ? new Date(row.completedAt).toLocaleString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : 'N/A',
+                width: '140px'
+            });
+
+            baseColumns.splice(-1, 0, {
+                header: 'Approved By',
+                accessor: 'approvedBy',
+                width: '120px'
+            });
         }
 
         return baseColumns;
@@ -314,49 +292,10 @@ const UnifiedTransactionsView = forwardRef(({
                 onClick: onUpdateTransaction || (() => alert('Update functionality not implemented')),
                 className: 'update-action'
             });
-        } else if (activeTab === 'validated') {
-            actions.push({
-                label: 'Info',
-                icon: (
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                ),
-                onClick: (row) => {
-                    if (row.status === 'REJECTED' && row.rejectionReason) {
-                        showError(`Rejection reason: ${row.rejectionReason}`);
-                    } else if (row.status === 'ACCEPTED' && row.acceptanceComment) {
-                        showSuccess(`Acceptance comment: ${row.acceptanceComment}`);
-                    } else {
-                        showError('No additional information available');
-                    }
-                },
-                className: 'info-action',
-                isDisabled: (row) => !((row.status === 'REJECTED' && row.rejectionReason) || (row.status === 'ACCEPTED' && row.acceptanceComment))
-            });
         }
 
         return actions;
     };
-
-    // Define filterable columns
-    const filterableColumns = [
-        { header: 'Sender', accessor: 'sender' },
-        { header: 'Receiver', accessor: 'receiver' },
-        { header: 'Batch #', accessor: 'batchNumber' },
-        { header: 'Purpose', accessor: 'purpose' },
-        { header: 'Added By', accessor: 'addedBy' }
-    ];
-
-    if (activeTab === 'validated' || activeTab === 'all') {
-        filterableColumns.push(
-            { header: 'Status', accessor: 'status' },
-            { header: 'Approved By', accessor: 'approvedBy' }
-        );
-    }
-
-    const tabCounts = getTabCounts();
-    const currentData = getTransactionsForTab(activeTab);
 
     const getTabTitle = () => {
         switch (activeTab) {
@@ -403,15 +342,24 @@ const UnifiedTransactionsView = forwardRef(({
                 }
             }
 
-            // Accept the transaction
-            await axiosInstance.post(
-                `http://localhost:8080/api/equipment/${entityId}/transactions/${selectedTransaction.id}/accept`,
-                {
+            // Use appropriate service based on entity type
+            if (entityType === 'EQUIPMENT') {
+                await equipmentService.acceptEquipmentTransaction(entityId, selectedTransaction.id, {
                     receivedQuantities,
                     comment: acceptComment,
                     purpose: purpose
-                }
-            );
+                });
+            } else {
+                // For warehouse transactions, use the general transaction service
+                await transactionService.accept(selectedTransaction.id, {
+                    username: 'current_user', // You might need to get this from auth context
+                    acceptanceComment: acceptComment,
+                    receivedItems: Object.entries(receivedQuantities).map(([itemId, quantity]) => ({
+                        transactionItemId: itemId,
+                        receivedQuantity: quantity
+                    }))
+                });
+            }
 
             // Refresh transactions
             await fetchAllTransactions();
@@ -569,69 +517,56 @@ const UnifiedTransactionsView = forwardRef(({
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="quantity-section">
-                                            <div className="quantity-label">
-                                                Received Quantity<span className="required-mark">*</span>
+                                        <div className="quantity-controls">
+                                            <div className="quantity-info">
+                                                <span className="sent-quantity">Sent: {item.quantity}</span>
                                             </div>
-                                            <div className="quantity-controls">
-                                                <button
-                                                    className="decrement-btn"
-                                                    onClick={() => handleQuantityChange(item.id, Math.max(0, (receivedQuantities[item.id] || 0) - 1))}
-                                                    disabled={processingAction}
-                                                >-</button>
+                                            <div className="received-input">
+                                                <label>Received:</label>
                                                 <input
                                                     type="number"
+                                                    min="0"
+                                                    max={item.quantity}
                                                     value={receivedQuantities[item.id] || 0}
                                                     onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                                                    min="0"
                                                     disabled={processingAction}
                                                 />
-                                                <button
-                                                    className="increment-btn"
-                                                    onClick={() => handleQuantityChange(item.id, (receivedQuantities[item.id] || 0) + 1)}
-                                                    disabled={processingAction}
-                                                >+</button>
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
-                            {/* Comments Section */}
-                            <div className="comments-section">
-                                <label className="comments-label">
-                                    Comments<span className="optional-text">(optional)</span>
-                                </label>
+                            {/* Comment Section */}
+                            <div className="comment-section">
+                                <label>Acceptance Comment:</label>
                                 <textarea
                                     value={acceptComment}
                                     onChange={(e) => setAcceptComment(e.target.value)}
-                                    placeholder="Add any comments about this transaction"
+                                    placeholder="Optional comment about the transaction acceptance..."
                                     disabled={processingAction}
                                 />
                             </div>
-                        </div>
 
-                        {/* Modal Footer */}
-                        <div className="modal-footer">
-                            <button
-                                type="button"
-                                className="accept-button"
-                                onClick={handleAcceptSubmit}
-                                disabled={processingAction || selectedTransaction.items?.some((item) =>
-                                    receivedQuantities[item.id] === undefined ||
-                                    receivedQuantities[item.id] === "" ||
-                                    parseInt(receivedQuantities[item.id]) < 0
-                                )}
-                            >
-                                {processingAction ? "Processing..." : (
-                                    <>
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        Accept Transaction
-                                    </>
-                                )}
-                            </button>
+                            {/* Action Buttons */}
+                            <div className="modal-actions">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAcceptModal(false)}
+                                    disabled={processingAction}
+                                    className="cancel-btn"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleAcceptSubmit}
+                                    disabled={processingAction}
+                                    className="accept-btn"
+                                >
+                                    {processingAction ? 'Processing...' : 'Accept Transaction'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

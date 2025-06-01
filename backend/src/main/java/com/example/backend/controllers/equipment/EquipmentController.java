@@ -16,6 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.LinkedHashMap;
 
 @RestController
 @RequestMapping("/api/equipment")
@@ -25,7 +29,7 @@ public class EquipmentController {
     private EquipmentService equipmentService;
 
     @Autowired
-    private ConsumablesService consumableService;
+    private ConsumablesService consumablesService;
 
 
 
@@ -48,7 +52,7 @@ public class EquipmentController {
 
     @GetMapping("/{equipmentId}/consumables")
     public ResponseEntity<List<ConsumableDetailDTO>> getEquipmentConsumables(@PathVariable UUID equipmentId) {
-        List<Consumable> consumables = consumableService.getConsumablesByEquipmentId(equipmentId);
+        List<Consumable> consumables = consumablesService.getConsumablesByEquipmentId(equipmentId);
         List<ConsumableDetailDTO> consumableDetails = consumables.stream()
                 .map(ConsumableDetailDTO::fromConsumable)
                 .collect(Collectors.toList());
@@ -181,19 +185,19 @@ public class EquipmentController {
         switch(category.toLowerCase()) {
             case "current":
                 // Regular inventory items (anything that's not STOLEN or OVERRECEIVED)
-                consumables = consumableService.getRegularConsumables(equipmentId);
+                consumables = consumablesService.getRegularConsumables(equipmentId);
                 break;
             case "shortage":
                 // Items marked as STOLEN (underage)
-                consumables = consumableService.getConsumablesByEquipmentIdAndStatus(equipmentId, ItemStatus.MISSING);
+                consumables = consumablesService.getConsumablesByEquipmentIdAndStatus(equipmentId, ItemStatus.MISSING);
                 break;
             case "surplus":
                 // Items marked as OVERRECEIVED (overage)
-                consumables = consumableService.getConsumablesByEquipmentIdAndStatus(equipmentId, ItemStatus.OVERRECEIVED);
+                consumables = consumablesService.getConsumablesByEquipmentIdAndStatus(equipmentId, ItemStatus.OVERRECEIVED);
                 break;
             default:
                 // All consumables regardless of status
-                consumables = consumableService.getConsumablesByEquipmentId(equipmentId);
+                consumables = consumablesService.getConsumablesByEquipmentId(equipmentId);
         }
 
         List<ConsumableDetailDTO> consumableDetails = consumables.stream()
@@ -201,6 +205,141 @@ public class EquipmentController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(consumableDetails);
+    }
+
+    @GetMapping("/{equipmentId}/consumables/analytics")
+    public ResponseEntity<Map<String, Object>> getConsumableAnalytics(@PathVariable UUID equipmentId) {
+        try {
+            List<Consumable> consumables = consumablesService.getConsumablesByEquipmentId(equipmentId);
+            
+            Map<String, Object> analytics = new HashMap<>();
+            
+            // Calculate basic metrics
+            int totalItems = consumables.size();
+            double totalValue = consumables.stream()
+                .mapToDouble(c -> c.getQuantity())
+                .sum();
+            
+            // Calculate category breakdown
+            Map<String, Object> categoryBreakdown = consumables.stream()
+                .filter(c -> c.getItemType() != null && c.getItemType().getItemCategory() != null)
+                .collect(Collectors.groupingBy(
+                    c -> c.getItemType().getItemCategory().getName(),
+                    Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> {
+                            Map<String, Object> categoryStats = new HashMap<>();
+                            categoryStats.put("totalItems", list.size());
+                            categoryStats.put("totalQuantity", list.stream().mapToInt(Consumable::getQuantity).sum());
+                            categoryStats.put("avgQuantity", list.stream().mapToInt(Consumable::getQuantity).average().orElse(0));
+                            return categoryStats;
+                        }
+                    )
+                ));
+            
+            // Calculate most used items
+            Map<String, Long> topConsumables = consumables.stream()
+                .filter(c -> c.getItemType() != null)
+                .collect(Collectors.groupingBy(
+                    c -> c.getItemType().getName(),
+                    Collectors.summingLong(Consumable::getQuantity)
+                ))
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(5)
+                .collect(Collectors.toMap(
+                    Map.Entry::getKey,
+                    Map.Entry::getValue,
+                    (e1, e2) -> e1,
+                    LinkedHashMap::new
+                ));
+            
+            // Calculate monthly consumption trends
+            Map<String, Object> monthlyTrends = consumables.stream()
+                .filter(c -> c.getTransaction() != null && c.getTransaction().getTransactionDate() != null)
+                .collect(Collectors.groupingBy(
+                    c -> {
+                        LocalDateTime date = c.getTransaction().getTransactionDate();
+                        return date.getYear() + "-" + String.format("%02d", date.getMonthValue());
+                    },
+                    Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> {
+                            Map<String, Object> monthStats = new HashMap<>();
+                            monthStats.put("totalItems", list.size());
+                            monthStats.put("totalQuantity", list.stream().mapToInt(Consumable::getQuantity).sum());
+                            monthStats.put("uniqueTypes", list.stream()
+                                .filter(c -> c.getItemType() != null)
+                                .map(c -> c.getItemType().getName())
+                                .collect(Collectors.toSet()).size());
+                            return monthStats;
+                        }
+                    )
+                ));
+            
+            // Calculate low stock alerts (items with quantity <= 5)
+            List<Map<String, Object>> lowStockItems = consumables.stream()
+                .filter(c -> c.getQuantity() <= 5 && c.getItemType() != null)
+                .map(c -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("itemName", c.getItemType().getName());
+                    item.put("currentQuantity", c.getQuantity());
+                    item.put("category", c.getItemType().getItemCategory() != null ? 
+                        c.getItemType().getItemCategory().getName() : "Uncategorized");
+                    return item;
+                })
+                .collect(Collectors.toList());
+            
+            // Calculate reorder frequency (transactions per month for each item)
+            Map<String, Object> reorderFrequency = consumables.stream()
+                .filter(c -> c.getItemType() != null && c.getTransaction() != null)
+                .collect(Collectors.groupingBy(
+                    c -> c.getItemType().getName(),
+                    Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> {
+                            Map<String, Object> stats = new HashMap<>();
+                            stats.put("totalTransactions", list.size());
+                            stats.put("totalQuantity", list.stream().mapToInt(Consumable::getQuantity).sum());
+                            stats.put("avgQuantityPerTransaction", 
+                                list.stream().mapToInt(Consumable::getQuantity).average().orElse(0));
+                            
+                            // Calculate months with transactions
+                            Set<String> monthsWithTransactions = list.stream()
+                                .filter(c -> c.getTransaction().getTransactionDate() != null)
+                                .map(c -> {
+                                    LocalDateTime date = c.getTransaction().getTransactionDate();
+                                    return date.getYear() + "-" + String.format("%02d", date.getMonthValue());
+                                })
+                                .collect(Collectors.toSet());
+                            
+                            stats.put("monthsActive", monthsWithTransactions.size());
+                            stats.put("avgTransactionsPerMonth", 
+                                monthsWithTransactions.size() > 0 ? (double) list.size() / monthsWithTransactions.size() : 0);
+                            
+                            return stats;
+                        }
+                    )
+                ));
+            
+            analytics.put("totalItems", totalItems);
+            analytics.put("totalQuantity", totalValue);
+            analytics.put("categoryBreakdown", categoryBreakdown);
+            analytics.put("topConsumables", topConsumables);
+            analytics.put("monthlyTrends", monthlyTrends);
+            analytics.put("lowStockItems", lowStockItems);
+            analytics.put("reorderFrequency", reorderFrequency);
+            analytics.put("lowStockCount", lowStockItems.size());
+            analytics.put("categoriesCount", categoryBreakdown.size());
+            analytics.put("topConsumablesCount", topConsumables.size());
+            
+            return ResponseEntity.ok(analytics);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to generate consumable analytics: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 
 }
