@@ -1,6 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import './EmployeeModals.scss';
 
+const calculateMonthlySalary = (jobPosition, baseSalaryOverride, salaryMultiplier) => {
+    const baseSalary = baseSalaryOverride ? parseFloat(baseSalaryOverride) : (jobPosition.baseSalary || 0);
+    const multiplier = salaryMultiplier ? parseFloat(salaryMultiplier) : 1.0;
+
+    switch (jobPosition.contractType) {
+        case 'HOURLY':
+            return baseSalary * multiplier * (jobPosition.workingDaysPerWeek * 4) * jobPosition.hoursPerShift;
+        case 'DAILY':
+            return baseSalary * multiplier * jobPosition.workingDaysPerMonth;
+        case 'MONTHLY':
+            return baseSalary * multiplier;
+        default:
+            return baseSalary * multiplier;
+    }
+};
+
 const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
     const [formData, setFormData] = useState({
         firstName: '',
@@ -8,7 +24,6 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
         middleName: '',
         email: '',
         phoneNumber: '',
-        mobilePhone: '',
         address: '',
         city: '',
         country: '',
@@ -372,15 +387,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                     {errors.phoneNumber && <span className="r4m-error-message">{errors.phoneNumber}</span>}
                                 </div>
 
-                                <div className="r4m-form-group">
-                                    <label>Mobile Phone</label>
-                                    <input
-                                        type="tel"
-                                        name="mobilePhone"
-                                        value={formData.mobilePhone}
-                                        onChange={handleChange}
-                                    />
-                                </div>
+
 
                                 <div className="r4m-form-group">
                                     <label>Address</label>
@@ -442,10 +449,27 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                     <div className="r4m-job-details">
                                         <h4>Position Details</h4>
                                         <p><strong>Position:</strong> {selectedJobPosition.positionName}</p>
-                                        <p><strong>Department:</strong> {selectedJobPosition.department}</p>
-                                        <p><strong>Type:</strong> {selectedJobPosition.type || 'FULL_TIME'}</p>
-                                        <p><strong>Work hours:</strong> {selectedJobPosition.workingHours || 'N/A'}</p>
-                                        <p><strong>Base Salary:</strong> ${selectedJobPosition.baseSalary?.toFixed(2) || 'N/A'}</p>
+                                        <p><strong>Department:</strong> {selectedJobPosition.department || 'N/A'}</p>
+                                        <p><strong>Contract Type:</strong> {selectedJobPosition.contractType?.replace('_', ' ') || 'N/A'}</p>
+                                        {selectedJobPosition.contractType === 'HOURLY' && (
+                                            <>
+                                                <p><strong>Working Days/Week:</strong> {selectedJobPosition.workingDaysPerWeek || 'N/A'}</p>
+                                                <p><strong>Hours/Shift:</strong> {selectedJobPosition.hoursPerShift || 'N/A'}</p>
+                                                <p><strong>Hourly Rate:</strong> ${selectedJobPosition.hourlyRate?.toFixed(2) || 'N/A'}</p>
+                                            </>
+                                        )}
+                                        {selectedJobPosition.contractType === 'DAILY' && (
+                                            <>
+                                                <p><strong>Working Days/Month:</strong> {selectedJobPosition.workingDaysPerMonth || 'N/A'}</p>
+                                                <p><strong>Daily Rate:</strong> ${selectedJobPosition.dailyRate?.toFixed(2) || 'N/A'}</p>
+                                            </>
+                                        )}
+                                        {selectedJobPosition.contractType === 'MONTHLY' && (
+                                            <>
+                                                <p><strong>Monthly Base Salary:</strong> ${selectedJobPosition.monthlyBaseSalary?.toFixed(2) || 'N/A'}</p>
+                                                <p><strong>Working Hours:</strong> {selectedJobPosition.workingHours || 'N/A'}</p>
+                                            </>
+                                        )}
                                     </div>
                                 )}
 
@@ -532,13 +556,12 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                             (selectedJobPosition.baseSalary || 0).toFixed(2)}
                                         </p>
                                         <p>
-                                            <strong>Adjusted Annual Salary: </strong>
-                                            ${(
-                                            (formData.baseSalaryOverride ?
-                                                parseFloat(formData.baseSalaryOverride) :
-                                                (selectedJobPosition.baseSalary || 0)) *
-                                            parseFloat(formData.salaryMultiplier)
-                                        ).toFixed(2)}
+                                            <strong>Monthly Salary: </strong>
+                                            ${calculateMonthlySalary(selectedJobPosition, formData.baseSalaryOverride, formData.salaryMultiplier).toFixed(2)}
+                                        </p>
+                                        <p>
+                                            <strong>Annual Salary: </strong>
+                                            ${(calculateMonthlySalary(selectedJobPosition, formData.baseSalaryOverride, formData.salaryMultiplier) * 12).toFixed(2)}
                                         </p>
                                     </div>
                                 )}

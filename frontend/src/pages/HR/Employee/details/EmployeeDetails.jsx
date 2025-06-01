@@ -39,11 +39,14 @@ const EmployeeDetails = () => {
                 }
             });
 
+            console.log('Employee details response:', response);
+
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
 
             const data = await response.json();
+            console.log('Employee details data:', data);
             setEmployee(data);
             setLoading(false);
         } catch (error) {
@@ -56,22 +59,62 @@ const EmployeeDetails = () => {
     // Format date for display - moved to a utility function to be used by all tabs
     const formatDate = (dateString) => {
         if (!dateString) return 'Not specified';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+        try {
+            // Handle both ISO string and LocalDate format from backend
+            let date;
+            if (typeof dateString === 'string') {
+                // Handle ISO string format (YYYY-MM-DD)
+                date = new Date(dateString);
+            } else if (dateString instanceof Date) {
+                date = dateString;
+            } else {
+                // Handle LocalDate object format
+                date = new Date(dateString + 'T00:00:00');
+            }
+
+            if (isNaN(date.getTime())) {
+                console.warn('Invalid date:', dateString);
+                return 'Not specified';
+            }
+
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch (error) {
+            console.error('Error formatting date:', error, 'Date string:', dateString);
+            return 'Not specified';
+        }
     };
 
     // Calculate days since hire
     const calculateDaysSinceHire = (hireDate) => {
         if (!hireDate) return 'N/A';
-        const today = new Date();
-        const hire = new Date(hireDate);
-        const diffTime = today - hire;
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        return `${diffDays} days`;
+        try {
+            const today = new Date();
+            let hire;
+            
+            if (typeof hireDate === 'string') {
+                hire = new Date(hireDate);
+            } else if (hireDate instanceof Date) {
+                hire = hireDate;
+            } else {
+                hire = new Date(hireDate + 'T00:00:00');
+            }
+
+            if (isNaN(hire.getTime())) {
+                console.warn('Invalid hire date:', hireDate);
+                return 'N/A';
+            }
+
+            const diffTime = today - hire;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            return `${diffDays} days`;
+        } catch (error) {
+            console.error('Error calculating days since hire:', error);
+            return 'N/A';
+        }
     };
 
     // Format currency for display - moved to a utility function to be used by all tabs
@@ -130,10 +173,17 @@ const EmployeeDetails = () => {
     };
 
     const getDepartment = () => {
-        if (employee.jobPosition && employee.jobPosition.department) {
-            return employee.jobPosition.department;
+        if (employee.jobPosition?.department) {
+            // If department is an object with a name property
+            if (typeof employee.jobPosition.department === 'object' && employee.jobPosition.department.name) {
+                return employee.jobPosition.department.name;
+            }
+            // If department is already a string
+            if (typeof employee.jobPosition.department === 'string') {
+                return employee.jobPosition.department;
+            }
         }
-        return employee.department || 'Department Not Assigned';
+        return 'Department Not Assigned';
     };
 
     const getSiteName = () => {

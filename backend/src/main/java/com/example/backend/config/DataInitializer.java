@@ -100,9 +100,9 @@ public class DataInitializer implements ApplicationRunner {
                         .head("Operations Manager")
                         .baseSalary(25000.0) // Example base salary
                         .probationPeriod(90) // 90 days probation
-                        .type("FULL_TIME")
+                        .contractType(JobPosition.ContractType.MONTHLY)
                         .experienceLevel("Entry Level")
-                        .workingDays(6) // 6 days a week
+                        .monthlyBaseSalary(25000.0)
                         .shifts("Day Shift")
                         .workingHours(8)
                         .vacations("21 days annual leave")
@@ -137,14 +137,16 @@ public class DataInitializer implements ApplicationRunner {
             Optional<Department> logisticsDept = departmentRepository.findByName("Logistics");
 
             if (logisticsDept.isPresent()) {
+                Double baseSalary = getDummyBaseSalary(equipmentType);
                 JobPosition equipmentDriverPosition = JobPosition.builder()
                         .positionName(requiredPositionName)
                         .department(logisticsDept.get())
-                        .baseSalary(getDummyBaseSalary(equipmentType))
+                        .head("Operations Manager")
+                        .baseSalary(baseSalary)
                         .probationPeriod(90) // 90 days probation
-                        .type("FULL_TIME")
+                        .contractType(JobPosition.ContractType.MONTHLY)
                         .experienceLevel(getDummyExperienceLevel(equipmentType))
-                        .workingDays(6) // 6 days a week
+                        .monthlyBaseSalary(baseSalary)
                         .shifts("Day Shift")
                         .workingHours(8)
                         .vacations("21 days annual leave")

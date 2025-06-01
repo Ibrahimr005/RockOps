@@ -1,6 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import './EmployeeModals.scss';
 
+const calculateMonthlySalary = (jobPosition, baseSalaryOverride, salaryMultiplier) => {
+    const baseSalary = baseSalaryOverride ? parseFloat(baseSalaryOverride) : (jobPosition.baseSalary || 0);
+    const multiplier = salaryMultiplier ? parseFloat(salaryMultiplier) : 1.0;
+
+    switch (jobPosition.contractType) {
+        case 'HOURLY':
+            return baseSalary * multiplier * (jobPosition.workingDaysPerWeek * 4) * jobPosition.hoursPerShift;
+        case 'DAILY':
+            return baseSalary * multiplier * jobPosition.workingDaysPerMonth;
+        case 'MONTHLY':
+            return baseSalary * multiplier;
+        default:
+            return baseSalary * multiplier;
+    }
+};
+
 const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) => {
     const [formData, setFormData] = useState({
         firstName: '',
@@ -25,7 +41,16 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
         militaryStatus: '',
         education: '',
         emergencyContactName: '',
-        emergencyContactPhone: ''
+        emergencyContactPhone: '',
+        baseSalaryOverride: '',
+        baseSalary: '',
+        workingDaysPerWeek: '',
+        hoursPerShift: '',
+        hourlyRate: '',
+        workingDaysPerMonth: '',
+        dailyRate: '',
+        monthlyBaseSalary: '',
+        workingHours: ''
     });
 
     const [photoFile, setPhotoFile] = useState(null);
@@ -67,7 +92,16 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                 militaryStatus: employee.militaryStatus || '',
                 education: employee.education || '',
                 emergencyContactName: employee.emergencyContactName || '',
-                emergencyContactPhone: employee.emergencyContactPhone || ''
+                emergencyContactPhone: employee.emergencyContactPhone || '',
+                baseSalaryOverride: employee.baseSalaryOverride || '',
+                baseSalary: employee.baseSalary || '',
+                workingDaysPerWeek: employee.workingDaysPerWeek || '',
+                hoursPerShift: employee.hoursPerShift || '',
+                hourlyRate: employee.hourlyRate || '',
+                workingDaysPerMonth: employee.workingDaysPerMonth || '',
+                dailyRate: employee.dailyRate || '',
+                monthlyBaseSalary: employee.monthlyBaseSalary || '',
+                workingHours: employee.workingHours || ''
             });
 
             // Set photo preview if available
@@ -444,14 +478,48 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                                 </div>
 
                                 {selectedJobPosition && (
+                                    <div className="r4m-job-details">
+                                        <h4>Position Details</h4>
+                                        <p><strong>Position:</strong> {selectedJobPosition.positionName}</p>
+                                        <p><strong>Department:</strong> {selectedJobPosition.department?.name || 'N/A'}</p>
+                                        <p><strong>Contract Type:</strong> {selectedJobPosition.contractType?.replace('_', ' ') || 'N/A'}</p>
+                                        {selectedJobPosition.contractType === 'HOURLY' && (
+                                            <>
+                                                <p><strong>Working Days/Week:</strong> {selectedJobPosition.workingDaysPerWeek || 'N/A'}</p>
+                                                <p><strong>Hours/Shift:</strong> {selectedJobPosition.hoursPerShift || 'N/A'}</p>
+                                                <p><strong>Hourly Rate:</strong> ${selectedJobPosition.hourlyRate?.toFixed(2) || 'N/A'}</p>
+                                            </>
+                                        )}
+                                        {selectedJobPosition.contractType === 'DAILY' && (
+                                            <>
+                                                <p><strong>Working Days/Month:</strong> {selectedJobPosition.workingDaysPerMonth || 'N/A'}</p>
+                                                <p><strong>Daily Rate:</strong> ${selectedJobPosition.dailyRate?.toFixed(2) || 'N/A'}</p>
+                                            </>
+                                        )}
+                                        {selectedJobPosition.contractType === 'MONTHLY' && (
+                                            <>
+                                                <p><strong>Monthly Base Salary:</strong> ${selectedJobPosition.monthlyBaseSalary?.toFixed(2) || 'N/A'}</p>
+                                                <p><strong>Working Hours:</strong> {selectedJobPosition.workingHours || 'N/A'}</p>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+
+                                {selectedJobPosition && (
                                     <div className="r4m-salary-info">
                                         <p>
+                                            <strong>Base Salary: </strong>
+                                            ${formData.baseSalaryOverride ?
+                                            parseFloat(formData.baseSalaryOverride).toFixed(2) :
+                                            (selectedJobPosition.baseSalary || 0).toFixed(2)}
+                                        </p>
+                                        <p>
                                             <strong>Monthly Salary: </strong>
-                                            ${((selectedJobPosition.baseSalary || 0) * formData.salaryMultiplier / 12).toFixed(2)}
+                                            ${calculateMonthlySalary(selectedJobPosition, formData.baseSalaryOverride, formData.salaryMultiplier).toFixed(2)}
                                         </p>
                                         <p>
                                             <strong>Annual Salary: </strong>
-                                            ${((selectedJobPosition.baseSalary || 0) * formData.salaryMultiplier).toFixed(2)}
+                                            ${(calculateMonthlySalary(selectedJobPosition, formData.baseSalaryOverride, formData.salaryMultiplier) * 12).toFixed(2)}
                                         </p>
                                     </div>
                                 )}

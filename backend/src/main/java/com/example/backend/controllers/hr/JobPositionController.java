@@ -26,32 +26,32 @@ public class JobPositionController {
     /**
      * Create a new job position using DTO
      */
-    @PostMapping("/dto")
-    public ResponseEntity<JobPositionDTO> createJobPositionDTO(@RequestBody JobPositionDTO jobPositionDTO) {
+    @PostMapping
+    public ResponseEntity<JobPositionDTO> createJobPosition(@RequestBody JobPositionDTO jobPositionDTO) {
         return ResponseEntity.ok(jobPositionService.createJobPosition(jobPositionDTO));
     }
 
     /**
      * Get all job positions as DTOs
      */
-    @GetMapping("")
-    public ResponseEntity<List<JobPositionDTO>> getAllJobPositionDTOs() {
+    @GetMapping
+    public ResponseEntity<List<JobPositionDTO>> getAllJobPositions() {
         return ResponseEntity.ok(jobPositionService.getAllJobPositionDTOs());
     }
 
     /**
      * Get a job position by ID as DTO
      */
-    @GetMapping("/dto/{id}")
-    public ResponseEntity<JobPositionDTO> getJobPositionDTOById(@PathVariable UUID id) {
+    @GetMapping("/{id}")
+    public ResponseEntity<JobPositionDTO> getJobPositionById(@PathVariable UUID id) {
         return ResponseEntity.ok(jobPositionService.getJobPositionDTOById(id));
     }
 
     /**
      * Update a job position using DTO
      */
-    @PutMapping("/dto/{id}")
-    public ResponseEntity<JobPositionDTO> updateJobPositionDTO(@PathVariable UUID id, @RequestBody JobPositionDTO jobPositionDTO) {
+    @PutMapping("/{id}")
+    public ResponseEntity<JobPositionDTO> updateJobPosition(@PathVariable UUID id, @RequestBody JobPositionDTO jobPositionDTO) {
         return ResponseEntity.ok(jobPositionService.updateJobPosition(id, jobPositionDTO));
     }
 
@@ -65,30 +65,10 @@ public class JobPositionController {
     }
 
     /**
-     * Original methods using Map/Entity for backward compatibility
+     * Get employees by job position ID
      */
-    @PostMapping("")
-    public ResponseEntity<JobPosition> createJobPosition(@RequestBody Map<String, Object> jobPositionMap) {
-        return ResponseEntity.ok(jobPositionService.createJobPosition(jobPositionMap));
-    }
-
-//    @GetMapping("")
-//    public ResponseEntity<List<JobPosition>> getAllJobPositions() {
-//        return ResponseEntity.ok(jobPositionRepository.findAll());
-//    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<JobPosition> getJobPositionById(@PathVariable UUID id) {
-        return ResponseEntity.ok(jobPositionService.getJobPositionById(id));
-    }
-
     @GetMapping("/{id}/employees")
     public ResponseEntity<List<Employee>> getEmployeesByJobPositionId(@PathVariable UUID id) {
         return ResponseEntity.ok(jobPositionService.getEmployeesByJobPositionId(id));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<JobPosition> updateJobPosition(@PathVariable UUID id, @RequestBody Map<String, Object> jobPositionMap) {
-        return ResponseEntity.ok(jobPositionService.updateJobPosition(id, jobPositionMap));
     }
 }

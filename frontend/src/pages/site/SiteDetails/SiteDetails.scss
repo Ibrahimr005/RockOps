@@ -2,7 +2,7 @@
 // Styling for site details page with tabs (similar to employee details)
 
 .site-details-container {
-  
+
   width: 100%;
   flex: 1;
   margin: 0 auto;
@@ -1523,7 +1523,7 @@
 
   /* Replace the existing employee modal styles in your SiteDetails.scss with this: */
 
-  /* BULLETPROOF Employee Modal - Copy this and replace the existing employee modal CSS in SiteDetails.scss */
+  /* FIXED Employee Modal Styles - Now uses theme variables for proper dark mode support */
 
   .assign-employee-modal-overlay {
     position: fixed;
@@ -1536,9 +1536,11 @@
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    backdrop-filter: blur(4px);
+    animation: assign-employee-fade-in 0.2s ease;
   }
 
-  @keyframes employee-modal-fade-in {
+  @keyframes assign-employee-fade-in {
     from {
       opacity: 0;
     }
@@ -1550,14 +1552,14 @@
   .assign-employee-modal-content {
     width: 90%;
     max-width: 800px;
-    background-color: white;
-    border-radius: 12px;
+    background-color: var(--main-background-color); /* Use theme variable */
+    border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-    animation: employee-modal-slide-in 0.3s ease-out;
+    animation: assign-employee-slide-in 0.3s ease-out;
   }
 
-  @keyframes employee-modal-slide-in {
+  @keyframes assign-employee-slide-in {
     from {
       transform: translateY(-20px);
       opacity: 0;
@@ -1569,32 +1571,32 @@
   }
 
   .assign-employee-modal-header {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    padding: 16px 24px !important;
-    background-color: #4066e0 !important;
-    color: white !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background-color: var(--color-primary); /* Use theme variable */
+    color: white;
 
     h2 {
-      margin: 0 !important;
-      font-size: 20px !important;
-      font-weight: 600 !important;
-      color: white !important;
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: white;
     }
   }
 
   .assign-employee-modal-close-button {
-    background: transparent !important;
-    border: none !important;
-    color: white !important;
-    font-size: 24px !important;
-    cursor: pointer !important;
-    width: 32px !important;
-    height: 32px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: transform 0.2s;
 
     &:hover {
@@ -1603,133 +1605,133 @@
   }
 
   .assign-employee-modal-body {
-    padding: 24px !important;
-    max-height: 70vh !important;
-    overflow-y: auto !important;
-    background-color: #ffffff !important;
+    padding: 24px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background-color: var(--main-background-color); /* Use theme variable */
   }
 
   .assign-employee-no-employees {
-    text-align: center !important;
-    color: #666666 !important;
-    font-size: 1rem !important;
-    padding: 3rem 2rem !important;
-    background-color: #f5f5f5 !important;
-    border-radius: 8px !important;
-    border: 1px dashed #ccc !important;
+    text-align: center;
+    color: var(--color-text-secondary); /* Use theme variable */
+    font-size: 1rem;
+    padding: 3rem 2rem;
+    background-color: var(--color-surface); /* Use theme variable */
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--border-color); /* Use theme variable */
 
     p {
-      margin: 0 !important;
-      color: #666666 !important;
+      margin: 0;
+      color: var(--color-text-secondary); /* Use theme variable */
     }
   }
 
   .assign-employee-table-container {
-    background-color: #ffffff !important;
-    border-radius: 8px !important;
-    border: 1px solid #e0e0e0 !important;
-    overflow: hidden !important;
+    background-color: var(--color-surface); /* Use theme variable */
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color); /* Use theme variable */
+    overflow: hidden;
   }
 
   .assign-employee-table {
-    width: 100% !important;
-    border-collapse: collapse !important;
+    width: 100%;
+    border-collapse: collapse;
 
     th, td {
-      padding: 12px 16px !important;
-      text-align: left !important;
-      border-bottom: 1px solid #e0e0e0 !important;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color); /* Use theme variable */
     }
 
     th {
-      background-color: #f5f5f5 !important;
-      font-weight: 600 !important;
-      color: #333333 !important;
-      font-size: 0.9rem !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.5px !important;
+      background-color: var(--color-surface-hover); /* Use theme variable */
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-primary); /* Use theme variable */
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     td {
-      color: #666666 !important;
-      font-size: 0.9rem !important;
+      color: var(--color-text-secondary); /* Use theme variable */
+      font-size: 0.9rem;
     }
 
     tbody tr {
-      transition: background-color 0.2s ease;
+      transition: background-color var(--transition-fast);
 
       &:hover {
-        background-color: #f9f9f9 !important;
+        background-color: var(--color-surface-hover); /* Use theme variable */
       }
 
       &:last-child td {
-        border-bottom: none !important;
+        border-bottom: none;
       }
     }
   }
 
   .assign-employee-name {
-    font-weight: 500 !important;
-    color: #4066e0 !important;
+    font-weight: 500;
+    color: var(--color-primary); /* Use theme variable */
   }
 
   .assign-employee-position {
-    font-weight: 500 !important;
-    color: #333333 !important;
+    font-weight: 500;
+    color: var(--color-text-primary); /* Use theme variable */
   }
 
   .assign-employee-department {
-    color: #666666 !important;
-    font-style: italic !important;
+    color: var(--color-text-secondary); /* Use theme variable */
+    font-style: italic;
   }
 
   .assign-employee-contract-type {
-    padding: 4px 8px !important;
-    border-radius: 4px !important;
-    font-size: 0.8rem !important;
-    font-weight: 500 !important;
-    text-transform: uppercase !important;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
 
     &.contract-full-time {
-      background-color: rgba(76, 175, 80, 0.1) !important;
-      color: #4CAF50 !important;
+      background-color: rgba(76, 175, 80, 0.1);
+      color: #4CAF50;
     }
 
     &.contract-part-time {
-      background-color: rgba(255, 152, 0, 0.1) !important;
-      color: #FF9800 !important;
+      background-color: rgba(255, 152, 0, 0.1);
+      color: #FF9800;
     }
 
     &.contract-temporary {
-      background-color: rgba(244, 67, 54, 0.1) !important;
-      color: #F44336 !important;
+      background-color: rgba(244, 67, 54, 0.1);
+      color: #F44336;
     }
 
     &.contract-contract {
-      background-color: rgba(103, 58, 183, 0.1) !important;
-      color: #673AB7 !important;
+      background-color: rgba(103, 58, 183, 0.1);
+      color: #673AB7;
     }
 
     &.contract-intern,
     &.contract-internship {
-      background-color: rgba(0, 188, 212, 0.1) !important;
-      color: #00BCD4 !important;
+      background-color: rgba(0, 188, 212, 0.1);
+      color: #00BCD4;
     }
   }
 
   .assign-employee-btn {
-    background-color: #4066e0 !important;
-    color: white !important;
-    border: none !important;
-    padding: 8px 16px !important;
-    cursor: pointer !important;
-    border-radius: 4px !important;
-    font-size: 0.85rem !important;
-    font-weight: 500 !important;
-    transition: all 0.2s ease;
+    background-color: var(--color-primary); /* Use theme variable */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all var(--transition-fast);
 
     &:hover {
-      background-color: #2d4bc7 !important;
+      background-color: var(--color-primary-dark); /* Use theme variable */
       transform: translateY(-1px);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
@@ -1739,110 +1741,77 @@
     }
 
     &:disabled {
-      background-color: #a0a0a0 !important;
-      cursor: not-allowed !important;
-      transform: none !important;
-      box-shadow: none !important;
-      opacity: 0.7 !important;
+      background-color: var(--color-text-tertiary); /* Use theme variable */
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+      opacity: 0.7;
     }
-  }
-
-  /* Dark theme support - only if body has dark theme class */
-  [data-theme="dark"] .assign-employee-modal-content {
-    background-color: #1a1a1a !important;
-  }
-
-  [data-theme="dark"] .assign-employee-modal-body {
-    background-color: #1a1a1a !important;
-  }
-
-  [data-theme="dark"] .assign-employee-table-container {
-    background-color: #2a2a2a !important;
-    border-color: #404040 !important;
-  }
-
-  [data-theme="dark"] .assign-employee-table th {
-    background-color: #333333 !important;
-    color: #ffffff !important;
-  }
-
-  [data-theme="dark"] .assign-employee-table td {
-    color: #cccccc !important;
-    border-color: #404040 !important;
-  }
-
-  [data-theme="dark"] .assign-employee-table tbody tr:hover {
-    background-color: #333333 !important;
-  }
-
-  [data-theme="dark"] .assign-employee-no-employees {
-    background-color: #2a2a2a !important;
-    color: #cccccc !important;
-    border-color: #404040 !important;
   }
 
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .assign-employee-modal-content {
-      width: 95% !important;
-      max-height: 90vh !important;
+      width: 95%;
+      max-height: 90vh;
     }
 
     .assign-employee-modal-body {
-      padding: 16px !important;
+      padding: 16px;
     }
 
     .assign-employee-table {
       th, td {
-        padding: 8px 12px !important;
-        font-size: 0.8rem !important;
+        padding: 8px 12px;
+        font-size: 0.8rem;
       }
     }
 
     .assign-employee-btn {
-      padding: 6px 12px !important;
-      font-size: 0.8rem !important;
+      padding: 6px 12px;
+      font-size: 0.8rem;
     }
 
     /* Stack table on mobile for better mobile experience */
     .assign-employee-table {
       thead {
-        display: none !important;
+        display: none;
       }
 
       tbody tr {
-        display: block !important;
-        margin-bottom: 16px !important;
-        padding: 16px !important;
-        background-color: #ffffff !important;
-        border-radius: 8px !important;
-        border: 1px solid #e0e0e0 !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        display: block;
+        margin-bottom: 16px;
+        padding: 16px;
+        background-color: var(--color-surface); /* Use theme variable */
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color); /* Use theme variable */
+        box-shadow: var(--shadow-sm);
       }
 
       tbody td {
-        display: block !important;
-        padding: 6px 0 !important;
-        border-bottom: none !important;
+        display: block;
+        padding: 6px 0;
+        border-bottom: none;
 
         &:before {
-          content: attr(data-label) ": " !important;
-          font-weight: bold !important;
-          color: #333333 !important;
-          display: inline-block !important;
-          width: 120px !important;
+          content: attr(data-label) ": ";
+          font-weight: bold;
+          color: var(--color-text-primary); /* Use theme variable */
+          display: inline-block;
+          width: 120px;
         }
 
         &:last-child {
-          margin-top: 12px !important;
-          text-align: center !important;
+          margin-top: 12px;
+          text-align: center;
 
           &:before {
-            display: none !important;
+            display: none;
           }
         }
       }
     }
+  }
 
     /* Dark theme mobile adjustments */
     [data-theme="dark"] .assign-employee-table tbody tr {
@@ -2029,4 +1998,3 @@
       background-color: rgba(255, 255, 255, 0.05) !important;
     }
   }
-}

@@ -80,8 +80,7 @@ public class Employee
 
     // Additional salary attributes
     private BigDecimal baseSalaryOverride;
-
-    private String contractType;
+    private BigDecimal salaryMultiplier;
 
     // Relationships
     @ManyToOne
@@ -125,7 +124,7 @@ public class Employee
         }
 
         // Otherwise use job position's salary if available
-        if (jobPosition != null && jobPosition.getBaseSalary() != null) {
+        if (jobPosition != null) {
             return BigDecimal.valueOf(jobPosition.getBaseSalary());
         }
 
@@ -134,11 +133,33 @@ public class Employee
     }
 
     /**
-     * Calculate the monthly salary
+     * Calculate the monthly salary based on contract type
      * @return Monthly salary amount
      */
     public BigDecimal getMonthlySalary() {
-        return getBaseSalary();
+        BigDecimal baseSalary = getBaseSalary();
+        BigDecimal multiplier = salaryMultiplier != null ? salaryMultiplier : BigDecimal.ONE;
+
+        if (jobPosition != null) {
+            switch (jobPosition.getContractType()) {
+                case HOURLY:
+                    // For hourly contracts, calculate based on standard working hours
+                    return baseSalary.multiply(multiplier)
+                            .multiply(BigDecimal.valueOf(jobPosition.getWorkingDaysPerWeek() * 4))
+                            .multiply(BigDecimal.valueOf(jobPosition.getHoursPerShift()));
+                case DAILY:
+                    // For daily contracts, calculate based on working days per month
+                    return baseSalary.multiply(multiplier)
+                            .multiply(BigDecimal.valueOf(jobPosition.getWorkingDaysPerMonth()));
+                case MONTHLY:
+                    // For monthly contracts, use the base salary directly
+                    return baseSalary.multiply(multiplier);
+                default:
+                    return baseSalary.multiply(multiplier);
+            }
+        }
+
+        return baseSalary.multiply(multiplier);
     }
 
     /**
@@ -146,7 +167,18 @@ public class Employee
      * @return Annual total
      */
     public BigDecimal getAnnualTotalCompensation() {
-        return getBaseSalary();
+        return getMonthlySalary().multiply(BigDecimal.valueOf(12));
+    }
+
+    /**
+     * Get the contract type from the job position
+     * @return Contract type as string
+     */
+    public String getContractType() {
+        if (jobPosition != null) {
+            return jobPosition.getContractType().name();
+        }
+        return null;
     }
 
     public boolean canDrive(String equipmentTypeName) {

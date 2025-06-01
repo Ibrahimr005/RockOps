@@ -116,7 +116,7 @@ const SiteDetails = () => {
                         </div>
                         <div className="site-title">
                             <h1>{site.name}</h1>
-                            <p className="site-location">{site.location || 'Location not specified'}</p>
+                            {/*<p className="site-location">{site.location || 'Location not specified'}</p>*/}
                         </div>
                     </div>
 
@@ -129,10 +129,10 @@ const SiteDetails = () => {
                             <span className="stat-label">Created</span>
                             <span className="stat-value">{formatDate(site.creationDate)}</span>
                         </div>
-                        <div className="stat-item">
-                            <span className="stat-label">Manager</span>
-                            <span className="stat-value">{site.managerName || 'Not assigned'}</span>
-                        </div>
+                        {/*<div className="stat-item">*/}
+                        {/*    <span className="stat-label">Manager</span>*/}
+                        {/*    <span className="stat-value">{site.managerName || 'Not assigned'}</span>*/}
+                        {/*</div>*/}
                     </div>
                 </div>
 

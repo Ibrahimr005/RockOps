@@ -3,6 +3,8 @@ import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import {useTranslation} from 'react-i18next';
 import {useAuth} from "../../../../contexts/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
+import Snackbar from "../../../../components/common/Snackbar/Snackbar";
+import { siteService } from "../../../../services/siteService";
 
 const SiteWarehousesTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -22,6 +24,11 @@ const SiteWarehousesTab = ({siteId}) => {
     const [previewImage, setPreviewImage] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formError, setFormError] = useState(null);
+    const [snackbar, setSnackbar] = useState({
+        show: false,
+        message: '',
+        type: 'success'
+    });
 
     const workersDropdownRef = useRef(null);
     const {currentUser} = useAuth();
@@ -86,22 +93,14 @@ const SiteWarehousesTab = ({siteId}) => {
         };
     }, []);
 
+    const handleCloseSnackbar = () => {
+        setSnackbar(prev => ({ ...prev, show: false }));
+    };
+
     const fetchWarehouses = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/site/${siteId}/warehouses`, {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error("No warehouses found for this site.");
-            }
-
-            const data = await response.json();
+            const response = await siteService.getSiteWarehouses(siteId);
+            const data = response.data;
 
             if (Array.isArray(data)) {
                 const transformedData = data.map((item, index) => ({
@@ -114,6 +113,11 @@ const SiteWarehousesTab = ({siteId}) => {
                 setWarehouseData(transformedData);
             } else {
                 setWarehouseData([]);
+                setSnackbar({
+                    show: true,
+                    message: 'No warehouses found for this site',
+                    type: 'info'
+                });
             }
 
             setLoading(false);
@@ -121,34 +125,41 @@ const SiteWarehousesTab = ({siteId}) => {
             setError(err.message);
             setWarehouseData([]);
             setLoading(false);
+            setSnackbar({
+                show: true,
+                message: err.message,
+                type: 'error'
+            });
         }
     };
 
-    // Function to fetch managers and workers when modal opens
     const fetchEmployees = async () => {
         try {
-            const token = localStorage.getItem("token");
-
             // Fetch managers
-            const managersResponse = await fetch("http://localhost:8080/api/v1/employees/warehouse-managers", {
-                headers: {"Authorization": `Bearer ${token}`},
-            });
-
-            if (!managersResponse.ok) throw new Error("Failed to fetch managers");
-            const managersData = await managersResponse.json();
+            const managersResponse = await siteService.getWarehouseManagers();
+            const managersData = managersResponse.data;
             setManagers(managersData);
 
             // Fetch workers
-                const workersResponse = await fetch("http://localhost:8080/api/v1/employees/warehouse-workers", {
-                headers: {"Authorization": `Bearer ${token}`},
-            });
-
-            if (!workersResponse.ok) throw new Error("Failed to fetch workers");
-            const workersData = await workersResponse.json();
+            const workersResponse = await siteService.getWarehouseWorkers();
+            const workersData = workersResponse.data;
             setWorkers(workersData);
+
+            if (managersData.length === 0 && workersData.length === 0) {
+                setSnackbar({
+                    show: true,
+                    message: 'No available managers or workers found',
+                    type: 'info'
+                });
+            }
         } catch (error) {
             console.error("Error fetching employees:", error);
             setFormError("Failed to load employee data. Please try again.");
+            setSnackbar({
+                show: true,
+                message: 'Failed to load employee data',
+                type: 'error'
+            });
         }
     };
 
@@ -234,7 +245,6 @@ const SiteWarehousesTab = ({siteId}) => {
         setFormError(null);
 
         const formElements = event.currentTarget.elements;
-        const token = localStorage.getItem("token");
         const formData = new FormData();
 
         const warehouseData = {
@@ -266,21 +276,22 @@ const SiteWarehousesTab = ({siteId}) => {
         }
 
         try {
-            const response = await fetch(`http://localhost:8080/siteadmin/${siteId}/add-warehouse`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                },
-                body: formData,
-            });
-
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
+            await siteService.addWarehouse(siteId, formData);
             setShowAddModal(false);
-            fetchWarehouses();
+            await fetchWarehouses();
+            setSnackbar({
+                show: true,
+                message: 'Warehouse successfully added',
+                type: 'success'
+            });
         } catch (err) {
             console.error("Failed to add warehouse:", err.message);
             setFormError(`Failed to add warehouse: ${err.message}`);
+            setSnackbar({
+                show: true,
+                message: `Failed to add warehouse: ${err.message}`,
+                type: 'error'
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -288,12 +299,24 @@ const SiteWarehousesTab = ({siteId}) => {
 
     const handleRowClick = (row) => {
         navigate(`/warehouses/warehouse-details/${row.warehouseID}`);
+        setSnackbar({
+            show: true,
+            message: `Navigating to warehouse details: ${row.conventionalId}`,
+            type: 'info'
+        });
     };
 
     if (loading) return <div className="loading-container">{t('site.loadingWarehouses')}</div>;
 
     return (
         <div className="site-warehouses-tab">
+            <Snackbar
+                show={snackbar.show}
+                message={snackbar.message}
+                type={snackbar.type}
+                onClose={handleCloseSnackbar}
+                duration={3000}
+            />
             <div className="departments-header">
                 <h3>{t('site.siteWarehousesReport')}</h3>
                 {isSiteAdmin && (

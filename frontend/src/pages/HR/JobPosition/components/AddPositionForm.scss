@@ -1,6 +1,6 @@
 // AddPositionForm.scss - Using Theme Variables
 
-.position-modal {
+.jp-modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -67,7 +67,7 @@
     }
 }
 
-.position-form {
+.jp-form {
     &-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -174,7 +174,7 @@
     }
 }
 
-.position {
+.jp {
     &-submit-button {
         background-color: var(--color-primary);
         color: var(--color-text-inverse);
@@ -259,7 +259,7 @@
     }
 }
 
-.position-select-wrapper {
+.jp-select-wrapper {
     position: relative;
 
     select {
@@ -279,7 +279,7 @@
 }
 
 // Dark theme adjustments for select arrow
-[data-theme="dark"] .position-select-wrapper select {
+[data-theme="dark"] .jp-select-wrapper select {
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23aaaaaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 
@@ -304,13 +304,13 @@
 
 // Vacation group special handling
 .vacation-group {
-    .position-form-group {
+    .jp-form-group {
         margin-bottom: 0;
     }
 }
 
 // Success states
-.position-form-success {
+.jp-form-success {
     color: var(--color-success);
     padding: 1rem;
     margin-bottom: 1rem;
@@ -322,7 +322,7 @@
 }
 
 // Warning states
-.position-form-warning {
+.jp-form-warning {
     color: var(--color-warning);
     padding: 1rem;
     margin-bottom: 1rem;
@@ -357,7 +357,7 @@
 
 // Responsive Design
 @media (max-width: 768px) {
-    .position-modal {
+    .jp-modal {
         &-content {
             width: 95%;
             padding: 1.5rem;
@@ -366,7 +366,7 @@
         }
     }
 
-    .position-form {
+    .jp-form {
         &-row {
             grid-template-columns: 1fr;
             gap: 1rem;
@@ -384,7 +384,7 @@
 }
 
 @media (max-width: 480px) {
-    .position-modal {
+    .jp-modal {
         &-content {
             width: 100%;
             height: 100%;
@@ -401,7 +401,7 @@
         }
     }
 
-    .position-form {
+    .jp-form {
         &-group {
             label {
                 font-size: 0.85rem;
@@ -416,9 +416,9 @@
 }
 
 // Focus states for accessibility
-.position-modal-close:focus,
-.position-submit-button:focus,
-.position-cancel-button:focus,
+.jp-modal-close:focus,
+.jp-submit-button:focus,
+.jp-cancel-button:focus,
 input:focus,
 select:focus {
     outline: 2px solid var(--color-primary);
@@ -427,7 +427,7 @@ select:focus {
 
 // Print styles
 @media print {
-    .position-modal {
+    .jp-modal {
         position: static;
         background: none;
 
@@ -439,13 +439,13 @@ select:focus {
         }
 
         &-close,
-        .position-form-actions {
+        .jp-form-actions {
             display: none;
         }
     }
 
     // Ensure text is readable in print
-    .position-form-group {
+    .jp-form-group {
         label,
         input,
         select {
@@ -457,36 +457,501 @@ select:focus {
 
 // High contrast mode support
 @media (prefers-contrast: high) {
-    .position-modal-content {
+    .jp-modal-content {
         border: 2px solid var(--color-text-primary);
     }
 
-    .position-form-group {
+    .jp-form-group {
         input, select {
             border: 2px solid var(--color-text-primary);
         }
     }
 
-    .position-submit-button,
-    .position-cancel-button {
+    .jp-submit-button,
+    .jp-cancel-button {
         border: 2px solid currentColor;
     }
 }
 
 // Reduced motion support
 @media (prefers-reduced-motion: reduce) {
-    .position-modal,
-    .position-modal-content,
-    .position-submit-button,
-    .position-cancel-button,
-    .position-form-group input,
-    .position-form-group select {
+    .jp-modal,
+    .jp-modal-content,
+    .jp-submit-button,
+    .jp-cancel-button,
+    .jp-form-group input,
+    .jp-form-group select {
         animation: none;
         transition: none;
     }
 
-    .position-submit-button:hover,
-    .position-cancel-button:hover {
+    .jp-submit-button:hover,
+    .jp-cancel-button:hover {
         transform: none;
+    }
+}
+
+// Contract Type Selector Styles
+.jp-contract-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+
+    .jp-contract-option {
+        background-color: var(--color-surface);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        padding: 1rem;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+
+        &:hover {
+            border-color: var(--color-primary-light);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        &.selected {
+            border-color: var(--color-primary);
+            background-color: rgba(72, 128, 255, 0.05);
+            box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
+        }
+
+        .jp-contract-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+
+            input[type="radio"] {
+                width: 18px;
+                height: 18px;
+                margin: 0;
+                accent-color: var(--color-primary);
+            }
+
+            .jp-contract-label {
+                font-weight: var(--bold-font-weight);
+                color: var(--color-text-primary);
+                font-size: 1rem;
+            }
+        }
+
+        .jp-contract-description {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+            line-height: 1.4;
+        }
+    }
+}
+
+// Form Section Styles
+.jp-section {
+    background-color: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+
+    h3 {
+        color: var(--head-title-color);
+        font-size: 1.2rem;
+        font-weight: var(--bold-font-weight);
+        margin: 0 0 1.5rem 0;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+// Contract Specific Section Styles
+.jp-contract-section {
+    background-color: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+
+    h4 {
+        color: var(--head-title-color);
+        font-size: 1.1rem;
+        font-weight: var(--bold-font-weight);
+        margin: 0 0 1.25rem 0;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+}
+
+// Salary Preview Styles
+.jp-salary-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    background-color: var(--color-surface-hover);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+
+    .jp-salary-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        .jp-salary-label {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .jp-salary-value {
+            color: var(--color-primary);
+            font-size: 1.25rem;
+            font-weight: var(--bold-font-weight);
+        }
+    }
+}
+
+// Checkbox Group Styles
+.jp-checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+
+    label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        user-select: none;
+        color: var(--color-text-primary);
+        font-weight: normal;
+    }
+
+    input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        accent-color: var(--color-primary);
+    }
+}
+
+// Required Field Indicator
+.jp-required {
+    color: var(--color-danger);
+    margin-left: 0.25rem;
+}
+
+// Enhanced Position Form Styles
+.enhanced-position-form {
+    .jp-form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .jp-form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        label {
+            font-weight: var(--bold-font-weight);
+            color: var(--label-color);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        input, select {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            transition: all var(--transition-fast);
+            background-color: var(--color-surface);
+            color: var(--color-text-primary);
+
+            &:hover {
+                border-color: var(--color-primary-light);
+            }
+
+            &:focus {
+                outline: none;
+                border-color: var(--color-primary);
+                box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+            }
+
+            &::placeholder {
+                color: var(--color-text-secondary);
+            }
+        }
+    }
+}
+
+// Dark Theme Adjustments
+[data-theme="dark"] {
+    .jp-contract-option {
+        &.selected {
+            background-color: rgba(72, 128, 255, 0.1);
+        }
+    }
+
+    .jp-salary-preview {
+        background-color: var(--color-surface);
+        border: 1px solid var(--border-color);
+    }
+}
+
+// Responsive Adjustments
+@media (max-width: 768px) {
+    .jp-contract-selector {
+        grid-template-columns: 1fr;
+    }
+
+    .enhanced-position-form {
+        .jp-form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .jp-salary-preview {
+        grid-template-columns: 1fr;
+    }
+}
+
+// Loading and Error States
+.jp-loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+
+    &::after {
+        content: "";
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--border-color);
+        border-top-color: var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+}
+
+.jp-error {
+    background-color: rgba(244, 67, 54, 0.1);
+    border: 1px solid var(--color-danger);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    color: var(--color-danger);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    &::before {
+        content: "!";
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        background-color: var(--color-danger);
+        color: white;
+        border-radius: 50%;
+        font-weight: bold;
+    }
+}
+
+// Contract Specific Fields Styles
+.jp-contract-fields {
+    .jp-form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .jp-form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        label {
+            font-weight: var(--bold-font-weight);
+            color: var(--label-color);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+
+            .jp-required {
+                color: var(--color-danger);
+                margin-left: 0.25rem;
+            }
+        }
+
+        input[type="number"],
+        input[type="text"] {
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            transition: all var(--transition-fast);
+            background-color: var(--color-surface);
+            color: var(--color-text-primary);
+
+            &:hover {
+                border-color: var(--color-primary-light);
+            }
+
+            &:focus {
+                outline: none;
+                border-color: var(--color-primary);
+                box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+            }
+
+            &::placeholder {
+                color: var(--color-text-secondary);
+            }
+
+            &[type="number"] {
+                -moz-appearance: textfield;
+                &::-webkit-outer-spin-button,
+                &::-webkit-inner-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
+            }
+        }
+
+        .jp-select-wrapper {
+            position: relative;
+
+            select {
+                width: 100%;
+                padding: 0.75rem;
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius-sm);
+                font-size: 0.95rem;
+                transition: all var(--transition-fast);
+                background-color: var(--color-surface);
+                color: var(--color-text-primary);
+                appearance: none;
+                background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236a6a6a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+                background-repeat: no-repeat;
+                background-position: right 0.75rem center;
+                background-size: 1em;
+                padding-right: 2.5rem;
+                cursor: pointer;
+
+                &:hover {
+                    border-color: var(--color-primary-light);
+                }
+
+                &:focus {
+                    outline: none;
+                    border-color: var(--color-primary);
+                    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+                }
+
+                &:disabled {
+                    background-color: var(--color-surface-hover);
+                    cursor: not-allowed;
+                    color: var(--color-text-secondary);
+                    opacity: 0.7;
+                }
+            }
+        }
+    }
+
+    .jp-checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0;
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+            color: var(--color-text-primary);
+            font-weight: normal;
+            font-size: 0.95rem;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: var(--color-primary);
+            cursor: pointer;
+        }
+    }
+}
+
+// Dark theme adjustments for contract fields
+[data-theme="dark"] {
+    .jp-contract-fields {
+        .jp-form-group {
+            input[type="number"],
+            input[type="text"],
+            select {
+                background-color: var(--color-surface);
+                color: var(--color-text-primary);
+                border-color: var(--border-color);
+
+                &:hover {
+                    border-color: var(--color-primary-light);
+                }
+
+                &:focus {
+                    border-color: var(--color-primary);
+                }
+            }
+
+            .jp-select-wrapper select {
+                background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23aaaaaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            }
+        }
+    }
+}
+
+// Responsive adjustments for contract fields
+@media (max-width: 768px) {
+    .jp-contract-fields {
+        .jp-form-row {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .jp-form-group {
+            input[type="number"],
+            input[type="text"],
+            select {
+                font-size: 0.9rem;
+                padding: 0.6rem;
+            }
+        }
     }
 }
