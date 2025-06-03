@@ -14,7 +14,6 @@ import PositionsList from "./pages/HR/JobPosition/PositionsList.jsx";
 import EmployeesList from "./pages/HR/Employee/EmployeesList.jsx";
 import HRLayout from "./pages/HR/HRLayout.jsx";
 import EmployeeDetails from "./pages/HR/Employee/details/EmployeeDetails.jsx";
-import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
 import VacancyDetails from "./pages/HR/Vacancy/details/VacancyDetails.jsx";
 import DepartmentsList from "./pages/HR/Departments/DepartmentsList.jsx";
 import AllSites from "./pages/site/AllSites/AllSites.jsx";
@@ -45,6 +44,7 @@ import ProcurementRequestOrders from "./pages/procurement/ProcurementRequestOrde
 import PurchaseOrders from "./pages/procurement/ProcurementPurchaseOrders/ProcurementPurchaseOrders/PurchaseOrders.jsx";
 import PurchaseOrderDetails
     from "./pages/procurement/ProcurementPurchaseOrders/PurchaseOrderDetails/PurchaseOrderDetails.jsx";
+import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
 
 
 

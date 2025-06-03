@@ -73,6 +73,7 @@ public class WarehouseService {
         Map<String, Object> response = new HashMap<>();
         response.put("id", warehouse.getId());
         response.put("name", warehouse.getName());
+        response.put("capacity", warehouse.getCapacity()); // ✅ Add this line
 
         // Manually add site details
         if (warehouse.getSite() != null) {
@@ -87,9 +88,8 @@ public class WarehouseService {
         for (Employee employee : warehouse.getEmployees()) {
             Map<String, Object> employeeData = new HashMap<>();
             employeeData.put("id", employee.getId());
-            employeeData.put("name", employee.getFullName()); // Use the full name method
+            employeeData.put("name", employee.getFullName());
 
-            // Add job position info
             if (employee.getJobPosition() != null) {
                 employeeData.put("position", employee.getJobPosition().getPositionName());
             }
@@ -100,6 +100,7 @@ public class WarehouseService {
 
         return response;
     }
+
 
 
     public List<Employee> getEmployeesByWarehouseId(UUID warehouseId) {

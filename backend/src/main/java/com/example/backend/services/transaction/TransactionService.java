@@ -137,6 +137,9 @@ public class TransactionService {
         // Create received quantities map from receiver transaction
         Map<UUID, Integer> receivedQuantities = createReceivedQuantitiesMap(senderTransaction, receiverTransaction);
 
+        // For batch matching, assume no items were marked as "not received" (create empty map)
+        Map<UUID, Boolean> itemsNotReceived = new HashMap<>(); // ADD THIS
+
         // Process the sender transaction as if it was accepted by the receiver
         String username = receiverTransaction.getAddedBy();
         String acceptanceComment = "Auto-matched with receiver transaction (Batch #" + senderTransaction.getBatchNumber() + ")";
@@ -149,7 +152,7 @@ public class TransactionService {
         transactionRepository.save(receiverTransaction);
 
         // Process the sender transaction using existing accept logic
-        acceptTransaction(senderTransaction.getId(), receivedQuantities, username, acceptanceComment);
+        acceptTransaction(senderTransaction.getId(), receivedQuantities, itemsNotReceived, username, acceptanceComment); // ADD itemsNotReceived
 
         System.out.println("🎉 Batch matching completed successfully for batch #" + senderTransaction.getBatchNumber());
         System.out.println("✅ Sender claimed: " + senderTransaction.getItems().stream().mapToInt(TransactionItem::getQuantity).sum() + " total items");
@@ -277,19 +280,22 @@ public class TransactionService {
     // ========================================
 
     public Transaction acceptTransaction(UUID transactionId, Map<UUID, Integer> receivedQuantities,
+                                         Map<UUID, Boolean> itemsNotReceived, // ADD THIS
                                          String username, String acceptanceComment) {
-        return acceptTransactionWithPurpose(transactionId, receivedQuantities, username, acceptanceComment, null);
+        return acceptTransactionWithPurpose(transactionId, receivedQuantities, itemsNotReceived, username, acceptanceComment, null);
     }
 
     public Transaction acceptEquipmentTransaction(UUID transactionId, Map<UUID, Integer> receivedQuantities,
+                                                  Map<UUID, Boolean> itemsNotReceived, // ADD THIS
                                                   String username, String acceptanceComment, TransactionPurpose purpose) {
-        return acceptTransactionWithPurpose(transactionId, receivedQuantities, username, acceptanceComment, purpose);
+        return acceptTransactionWithPurpose(transactionId, receivedQuantities, itemsNotReceived, username, acceptanceComment, purpose);
     }
 
     /**
      * 🚨 FIXED: Correctly interprets who claims what based on transaction flow
      */
     private Transaction acceptTransactionWithPurpose(UUID transactionId, Map<UUID, Integer> receivedQuantities,
+                                                     Map<UUID, Boolean> itemsNotReceived, // ADD THIS
                                                      String username, String acceptanceComment, TransactionPurpose purpose) {
         System.out.println("🌍 Processing REAL-WORLD inventory changes based on actual claims");
 
@@ -319,6 +325,19 @@ public class TransactionService {
 
             item.setReceivedQuantity(receivedQuantity);
 
+            // NEW: Check if item was marked as not received FIRST
+            Boolean itemNotReceived = itemsNotReceived != null ? itemsNotReceived.get(item.getId()) : false;
+            if (itemNotReceived != null && itemNotReceived) {
+                allItemsMatch = false;
+                item.setStatus(TransactionStatus.REJECTED);
+                item.setRejectionReason("Item was not sent/received");
+                System.out.println("📭 ITEM NOT SENT/RECEIVED: " + item.getItemType().getName());
+
+                // For items not sent/received, we still need to handle inventory but differently
+                processItemNotSentReceived(transaction, item);
+                continue; // Skip the rest of the logic for this item
+            }
+
             // 🚨 FIXED: Determine what each party actually claims based on who initiated
             int senderClaimedQuantity;
             int receiverClaimedQuantity;
@@ -340,7 +359,7 @@ public class TransactionService {
             // Check if quantities match
             if (senderClaimedQuantity != receiverClaimedQuantity) {
                 allItemsMatch = false;
-                String reason = String.format("Quantity mismatch: Sender claims %d, Receiver claims %d",
+                String reason = String.format("Quantity mismatch",
                         senderClaimedQuantity, receiverClaimedQuantity);
                 item.setStatus(TransactionStatus.REJECTED);
                 item.setRejectionReason(reason);
@@ -361,11 +380,28 @@ public class TransactionService {
             System.out.println("✅ Transaction ACCEPTED - Inventory reflects reality");
         } else {
             transaction.setStatus(TransactionStatus.REJECTED);
-            transaction.setRejectionReason("Quantity mismatches detected - inventory updated to reflect actual transfers");
+            transaction.setRejectionReason("Some items had issues - Check individual item statuses");
             System.out.println("❌ Transaction REJECTED - But inventory updated to reflect reality");
         }
 
         return transactionRepository.save(transaction);
+    }
+
+    // NEW: Method to handle items that were not sent/received
+    private void processItemNotSentReceived(Transaction transaction, TransactionItem item) {
+        System.out.println("📭 Processing item that was not sent/received: " + item.getItemType().getName());
+
+        // For items not sent/received, we need to handle inventory correctly
+        // If sender initiated and is warehouse, they already deducted - need to add back
+        if (transaction.getSentFirst().equals(transaction.getSenderId()) &&
+                transaction.getSenderType() == PartyType.WAREHOUSE) {
+
+            System.out.println("↩️ Adding back item to sender warehouse (item was not actually sent)");
+            addBackToWarehouseInventory(transaction.getSenderId(), item.getItemType(), item.getQuantity());
+        }
+
+        // No inventory changes for receiver since they never got the item
+        System.out.println("⚠️ No inventory added to receiver (item was not received)");
     }
 
     /**

@@ -1,11 +1,11 @@
 import React, {useState, useEffect} from "react";
 import "./WarehouseViewTransactions.scss";
-import PendingTransactionsTable from "./PendingTransactionsTable";
+import PendingTransactionsTable from "./PendingTransactions/PendingTransactionsTable.jsx";
 import ValidatedTransactionsTable from "./ValidatedTransactionsTable";
 import IncomingTransactionsTable from "./IncomingTransactionsTable";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2"; // Import the Snackbar component
 
-const WarehouseViewTransactionsTable = ({warehouseId}) => {
+const WarehouseViewTransactionsTable = ({ warehouseId, onAddButtonClick }) => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [allTransactions, setAllTransactions] = useState([]);
@@ -19,6 +19,9 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     name: "",
     id: "",
   });
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState("pending");
 
   // Snackbar states
   const [snackbar, setSnackbar] = useState({
@@ -47,6 +50,13 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
 
   const entityTypes = ["WAREHOUSE", "MERCHANT", "EQUIPMENT"];
   const [userRole, setUserRole] = useState("");
+
+  // Tab configuration
+  const tabs = [
+    { id: "pending", label: "Pending Transactions", component: PendingTransactionsTable },
+    { id: "incoming", label: "Incoming Transactions", component: IncomingTransactionsTable },
+    { id: "validated", label: "Validated Transactions", component: ValidatedTransactionsTable }
+  ];
 
   // Function to show snackbar
   const showSnackbar = (type, text) => {
@@ -118,6 +128,12 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
 
     updateSenderOptions();
   }, [newTransaction.senderType, selectedSenderSite, warehouseId, transactionRole]);
+
+  useEffect(() => {
+    if (onAddButtonClick) {
+      onAddButtonClick(() => setIsCreateModalOpen(true));
+    }
+  }, [onAddButtonClick]);
 
   // Update receiver options when receiver site and type changes
   useEffect(() => {
@@ -645,6 +661,15 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     return Object.values(aggregated);
   };
 
+  // Render the active tab content
+  const renderActiveTabContent = () => {
+    const activeTabConfig = tabs.find(tab => tab.id === activeTab);
+    if (!activeTabConfig) return null;
+
+    const TabComponent = activeTabConfig.component;
+    return <TabComponent warehouseId={warehouseId} />;
+  };
+
   return (
       <div className="warehouse-view3">
         {/* Snackbar Component */}
@@ -659,45 +684,35 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
         {/* Header with count and search */}
         <div className="header-container3">
           <div className="left-section3">
-            <h1 className="page-title3">Transactions</h1>
           </div>
           <div className="right-section3">
             {/* Global search removed as it seems it's not needed based on the design */}
           </div>
         </div>
 
-        {/* Container for all transaction tables */}
-        <div className="transaction-tables-container">
-          {/* Pending Transactions Table */}
-          <PendingTransactionsTable
-              warehouseId={warehouseId}
-          />
-          <IncomingTransactionsTable
-              warehouseId={warehouseId}
-          />
-          <ValidatedTransactionsTable
-              warehouseId={warehouseId}
-          />
-
-          {/* Add Transaction Button */}
-          {userRole === "WAREHOUSE_MANAGER" && (
-              <div className="add-button-container">
-                <button className="add-button3" onClick={() => setIsCreateModalOpen(true)}>
-                  <svg className="plus-icon3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 5v14M5 12h14"/>
-                  </svg>
+        {/* Tab Navigation */}
+        <div className="transaction-tabs-container">
+          <div className="transaction-tabs">
+            {tabs.map((tab) => (
+                <button
+                    key={tab.id}
+                    className={`transaction-tab ${activeTab === tab.id ? 'active' : ''}`}
+                    onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
                 </button>
-                <div className="transaction-row-warning">
-                  <svg className="warning-icon" viewBox="0 0 16 16" fill="#ffc107">
-                    <circle cx="8" cy="8" r="7.5" fill="#ffc107" stroke="none"/>
-                    <path d="M8 4.5c.41 0 .75.34.75.75v3.5a.75.75 0 01-1.5 0v-3.5c0-.41.34-.75.75-.75z" fill="#fff"/>
-                    <circle cx="8" cy="11" r="0.75" fill="#fff"/>
-                  </svg>
-                  Always check incoming transactions before adding a transaction.
-                </div>
-              </div>
-          )}
+            ))}
+          </div>
+
+          {/* Tab Content */}
+          <div className="transaction-tab-content">
+            {renderActiveTabContent()}
+          </div>
         </div>
+
+        {/* Add Transaction Button */}
+
+
 
         {/* Modal for Creating Transaction */}
         {isCreateModalOpen && (

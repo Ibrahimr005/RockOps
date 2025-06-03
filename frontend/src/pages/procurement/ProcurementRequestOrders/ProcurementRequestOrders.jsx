@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import "./ProcurementRequestOrder.scss";
-import procurementImage from "../../../Assets/imgs/pro_icon.png";
+import procurementImage from "../../../assets/imgs/pro_icon.png";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx"
 import IncomingRequestOrders from './IncomingRequests/IncomingRequestOrders';
 import ApprovedRequestOrders from './ApprovedRequests/ApprovedRequestOrders';
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
 
 const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
     const [requestOrders, setRequestOrders] = useState([]);
@@ -449,6 +450,7 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
         setShowAddModal(true);
     };
 
+
     return (
         <div className="procurement-requests-container">
             {/* Intro Card with centered title and search bar */}
@@ -484,7 +486,7 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
                 <div className="procurement-intro-right">
                     <button className="procurement-info-button">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10" />
+                            <circle cx="12" cy="12" r="10" />c
                             <line x1="12" y1="16" x2="12" y2="12" />
                             <line x1="12" y1="8" x2="12.01" y2="8" />
                         </svg>

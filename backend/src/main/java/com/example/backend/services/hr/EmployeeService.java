@@ -1,6 +1,7 @@
 package com.example.backend.services.hr;
 
 import com.example.backend.models.hr.Employee;
+import com.example.backend.models.hr.JobPosition;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.equipment.EquipmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,24 @@ public class EmployeeService {
         return employeeRepository.findAll();
     }
 
+    /**
+     * Get employees by contract type
+     * @param contractType The contract type (HOURLY, DAILY, MONTHLY)
+     * @return List of employees with the specified contract type
+     * @throws IllegalArgumentException if contractType is invalid
+     */
+    public List<Employee> getEmployeesByContractType(String contractType) {
+        try {
+            // Validate and convert contract type
+            JobPosition.ContractType contractTypeEnum = JobPosition.ContractType.valueOf(contractType.toUpperCase());
+
+            // Use repository method to find employees by contract type
+            return employeeRepository.findByJobPositionContractType(contractTypeEnum);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid contract type: " + contractType +
+                    ". Valid types are: HOURLY, DAILY, MONTHLY");
+        }
+    }
     // In your existing EmployeeService.java file, add these methods:
 
 //    public List<Employee> getDriversByEquipmentType(String equipmentType) {

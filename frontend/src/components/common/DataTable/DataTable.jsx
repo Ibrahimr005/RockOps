@@ -37,12 +37,11 @@ const DataTable = ({
     // Track which row's actions menu is open
     const [activeActionRow, setActiveActionRow] = useState(null);
 
-    // Refs for width calculation - matching your Table.jsx
-    const [isScrollable, setIsScrollable] = useState(false);
+    // Table refs for consistency
     const tableRef = useRef(null);
     const wrapperRef = useRef(null);
 
-    // Include action column if configured - matching your Table.jsx structure
+    // Include action column if configured
     const allColumns = actions.length > 0
         ? [...columns, {
             id: 'actions',
@@ -54,42 +53,6 @@ const DataTable = ({
             filterable: false
         }]
         : columns;
-
-    // Calculate total minimum width needed for all columns - from your Table.jsx
-    const calculateMinimumTableWidth = useCallback(() => {
-        return allColumns.reduce((total, column) => {
-            const width = column.width || column.minWidth || '150px';
-            const numericWidth = parseInt(width.replace('px', '')) || 150;
-            return total + numericWidth;
-        }, 0);
-    }, [allColumns]);
-
-    // Function to check if table is scrollable horizontally - from your Table.jsx
-    const checkScrollable = useCallback(() => {
-        if (wrapperRef.current) {
-            const containerWidth = wrapperRef.current.clientWidth;
-            const minimumTableWidth = calculateMinimumTableWidth();
-            const shouldBeScrollable = minimumTableWidth > containerWidth;
-            setIsScrollable(shouldBeScrollable);
-        }
-    }, [calculateMinimumTableWidth, allColumns.length]);
-
-    // Check scrollable state on mount, data change, and window resize - from your Table.jsx
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            checkScrollable();
-        }, 10);
-
-        const handleResize = () => {
-            setTimeout(checkScrollable, 10);
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => {
-            clearTimeout(timeoutId);
-            window.removeEventListener('resize', handleResize);
-        };
-    }, [checkScrollable, data, columns, actions]);
 
     // Reset current page when data, search term, or filters change
     useEffect(() => {
@@ -452,250 +415,205 @@ const DataTable = ({
                 </div>
             )}
 
-            {/* Table Wrapper - Adaptive width system from your Table.jsx */}
-            <div
-                ref={wrapperRef}
-                className={`rockops-table__wrapper ${isScrollable ? 'scrollable' : 'full-width'}`}
-            >
+            {/* Table Wrapper - Always full-width */}
+            <div ref={wrapperRef} className="rockops-table__wrapper full-width">
                 {loading ? (
                     <div className="rockops-table__loading">
                         <div className="rockops-table__spinner"></div>
                         <p>Loading data...</p>
                     </div>
                 ) : (
-                    <table
-                        ref={tableRef}
-                        className="rockops-table"
-                        style={isScrollable ? {
-                            minWidth: `${calculateMinimumTableWidth()}px`
-                        } : {}}
-                    >
-                        <thead className="rockops-table__header">
-                        <tr>
-                            {columns.map((column, index) => (
-                                <th
-                                    key={index}
-                                    className={`rockops-table__th ${
-                                        column.sortable !== false ? 'rockops-table__th--sortable' : ''
-                                    } ${
-                                        sortField === column.accessor ? `sorted-${sortDirection}` : ''
-                                    }`}
-                                    style={isScrollable ? {
-                                        width: column.width || '150px',
-                                        minWidth: column.width || '150px',
-                                        maxWidth: column.width || '150px',
-                                        textAlign: column.align || 'left',
-                                        whiteSpace: 'nowrap'
-                                    } : {
-                                        textAlign: column.align || 'left',
-                                        minWidth: column.minWidth || 'auto'
-                                    }}
-                                    data-flex-weight={column.flexWeight || 1}
-                                    onClick={() => column.sortable !== false ? handleSort(column.accessor) : null}
-                                >
-                                    <div className="rockops-table__th-content">
-                                        <span>{column.header}</span>
-                                        {column.sortable !== false && (
-                                            <span className="rockops-table__sort-icon">
-                                                {sortField === column.accessor ? (
-                                                    sortDirection === 'asc' ? <FaSortUp /> : <FaSortDown />
-                                                ) : (
-                                                    <FaSort />
-                                                )}
-                                            </span>
-                                        )}
-                                    </div>
-                                </th>
-                            ))}
-
-                            {/* Actions column if actions array is provided */}
-                            {actions.length > 0 && (
-                                <th
-                                    className="rockops-table__th rockops-table__th--actions"
-                                    style={isScrollable ? {
-                                        width: actionsColumnWidth,
-                                        minWidth: actionsColumnWidth,
-                                        maxWidth: actionsColumnWidth,
-                                        textAlign: 'left',
-                                        whiteSpace: 'nowrap'
-                                    } : {
-                                        textAlign: 'left',
-                                        minWidth: actionsColumnWidth
-                                    }}
-                                    data-flex-weight={1}
-                                >
-                                    <div className="rockops-table__th-content">
-                                        <span>Actions</span>
-                                    </div>
-                                </th>
-                            )}
-                        </tr>
-                        </thead>
-
-                        <tbody>
-                        {paginatedData.length === 0 ? (
+                    <div style={{ position: 'relative' }}>
+                        <table ref={tableRef} className="rockops-table">
+                            <thead className="rockops-table__header">
                             <tr>
-                                {/* Render empty cells for columns before center */}
-                                {columns.slice(0, Math.floor(allColumns.length / 2)).map((_, index) => (
-                                    <td key={`empty-before-${index}`} className="rockops-table__cell"></td>
+                                {columns.map((column, index) => (
+                                    <th
+                                        key={index}
+                                        className={`rockops-table__th ${
+                                            column.sortable !== false ? 'rockops-table__th--sortable' : ''
+                                        } ${
+                                            sortField === column.accessor ? `sorted-${sortDirection}` : ''
+                                        }`}
+                                        style={{
+                                            textAlign: column.align || 'left',
+                                            minWidth: column.minWidth || 'auto'
+                                        }}
+                                        data-flex-weight={column.flexWeight || 1}
+                                        onClick={() => column.sortable !== false ? handleSort(column.accessor) : null}
+                                    >
+                                        <div className="rockops-table__th-content">
+                                            <span>{column.header}</span>
+                                            {column.sortable !== false && (
+                                                <span className="rockops-table__sort-icon">
+                                                    {sortField === column.accessor ? (
+                                                        sortDirection === 'asc' ? <FaSortUp /> : <FaSortDown />
+                                                    ) : (
+                                                        <FaSort />
+                                                    )}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </th>
                                 ))}
 
-                                {/* Center column with empty message */}
-                                <td className="rockops-table__cell rockops-table__empty">
-                                    <p>{activeFiltersCount > 0 ? 'No results match your filters' : emptyMessage}</p>
-                                    {activeFiltersCount > 0 && (
-                                        <button className="rockops-table__btn rockops-table__btn--secondary" onClick={clearFilters}>
-                                            Clear Filters
-                                        </button>
-                                    )}
-                                </td>
-
-                                {/* Render empty cells for columns after center */}
-                                {columns.slice(Math.floor(allColumns.length / 2) + 1).map((_, index) => (
-                                    <td key={`empty-after-${index}`} className="rockops-table__cell"></td>
-                                ))}
-
-                                {/* Actions column if present */}
-                                {actions.length > 0 && Math.floor(allColumns.length / 2) >= columns.length && (
-                                    <td className="rockops-table__cell"></td>
+                                {/* Actions column if actions array is provided */}
+                                {actions.length > 0 && (
+                                    <th
+                                        className="rockops-table__th rockops-table__th--actions"
+                                        style={{
+                                            textAlign: 'left',
+                                            minWidth: actionsColumnWidth
+                                        }}
+                                        data-flex-weight={1}
+                                    >
+                                        <div className="rockops-table__th-content">
+                                            <span>Actions</span>
+                                        </div>
+                                    </th>
                                 )}
                             </tr>
-                        ) : (
-                            paginatedData.map((row, rowIndex) => (
-                                <tr
-                                    key={rowIndex}
-                                    className={`rockops-table__row ${onRowClick ? 'rockops-table__row--clickable' : ''}`}
-                                    onClick={() => onRowClick && onRowClick(row)}
-                                >
-                                    {columns.map((column, colIndex) => (
-                                        <td
-                                            key={colIndex}
-                                            className={`rockops-table__cell ${column.className || ''}`}
-                                            style={isScrollable ? {
-                                                width: column.width || '150px',
-                                                minWidth: column.width || '150px',
-                                                maxWidth: column.width || '150px',
-                                                textAlign: column.align || 'left',
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                ...(column.cellStyle ? column.cellStyle(row, getValue(row, column.accessor)) : {})
-                                            } : {
-                                                textAlign: column.align || 'left',
-                                                minWidth: column.minWidth || 'auto',
-                                                ...(column.cellStyle ? column.cellStyle(row, getValue(row, column.accessor)) : {})
-                                            }}
-                                            data-flex-weight={column.flexWeight || 1}
-                                        >
-                                            {column.render ? (
-                                                column.render(row, getValue(row, column.accessor))
-                                            ) : (
-                                                getValue(row, column.accessor)
+                            </thead>
+
+                            <tbody style={{ position: 'relative' }}>
+                            {paginatedData.length === 0 ? (
+                                <>
+                                    <tr style={{ height: '200px' }}>
+                                        {allColumns.map((_, index) => (
+                                            <td key={index} style={{ border: 'none', padding: 0 }}></td>
+                                        ))}
+                                    </tr>
+                                    {/* Empty State Overlay - Positioned absolutely over the tbody */}
+                                    <div className="rockops-table__empty-overlay">
+                                        <div className="rockops-table__empty">
+                                            <p>{activeFiltersCount > 0 ? 'No results match your filters' : emptyMessage}</p>
+                                            {activeFiltersCount > 0 && (
+                                                <button className="rockops-table__btn rockops-table__btn--secondary" onClick={clearFilters}>
+                                                    Clear Filters
+                                                </button>
                                             )}
-                                        </td>
-                                    ))}
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                paginatedData.map((row, rowIndex) => (
+                                    <tr
+                                        key={rowIndex}
+                                        className={`rockops-table__row ${onRowClick ? 'rockops-table__row--clickable' : ''}`}
+                                        onClick={() => onRowClick && onRowClick(row)}
+                                    >
+                                        {columns.map((column, colIndex) => (
+                                            <td
+                                                key={colIndex}
+                                                className={`rockops-table__cell ${column.className || ''}`}
+                                                style={{
+                                                    textAlign: column.align || 'left',
+                                                    minWidth: column.minWidth || 'auto',
+                                                    ...(column.cellStyle ? column.cellStyle(row, getValue(row, column.accessor)) : {})
+                                                }}
+                                                data-flex-weight={column.flexWeight || 1}
+                                            >
+                                                {column.render ? (
+                                                    column.render(row, getValue(row, column.accessor))
+                                                ) : (
+                                                    getValue(row, column.accessor)
+                                                )}
+                                            </td>
+                                        ))}
 
-                                    {/* Actions column */}
-                                    {actions.length > 0 && (
-                                        <td
-                                            className="rockops-table__cell rockops-table__cell--actions"
-                                            style={isScrollable ? {
-                                                width: actionsColumnWidth,
-                                                minWidth: actionsColumnWidth,
-                                                maxWidth: actionsColumnWidth,
-                                                textAlign: 'left',
-                                                whiteSpace: 'nowrap'
-                                            } : {
-                                                textAlign: 'left',
-                                                minWidth: actionsColumnWidth
-                                            }}
-                                            data-flex-weight={1}
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            {actions.length > 2 ? (
-                                                // Dropdown menu for 3+ actions
-                                                <div className="rockops-table__actions">
-                                                    <button
-                                                        className="rockops-table__action-toggle"
-                                                        onClick={(e) => toggleActionsMenu(e, rowIndex)}
-                                                        aria-label="Toggle actions menu"
-                                                    >
-                                                        <FaEllipsisV />
-                                                    </button>
-
-                                                    {activeActionRow === rowIndex && (
-                                                        <div className="rockops-table__actions-dropdown">
-                                                            {actions.map((action, idx) => (
-                                                                <button
-                                                                    key={idx}
-                                                                    className={`rockops-table__action-item ${action.className || ''}`}
-                                                                    onClick={(e) => handleActionClick(e, action, row)}
-                                                                    disabled={action.isDisabled ? action.isDisabled(row) : false}
-                                                                >
-                                                                    {action.icon && <span className="rockops-table__action-icon">{action.icon}</span>}
-                                                                    <span>{action.label}</span>
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                // Inline buttons for 1-2 actions
-                                                <div className="rockops-table__actions-inline">
-                                                    {actions.map((action, idx) => (
+                                        {/* Actions column */}
+                                        {actions.length > 0 && (
+                                            <td
+                                                className="rockops-table__cell rockops-table__cell--actions"
+                                                style={{
+                                                    textAlign: 'left',
+                                                    minWidth: actionsColumnWidth
+                                                }}
+                                                data-flex-weight={1}
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                {actions.length > 2 ? (
+                                                    // Dropdown menu for 3+ actions
+                                                    <div className="rockops-table__actions">
                                                         <button
-                                                            key={idx}
-                                                            className={`rockops-table__action-button ${action.className || ''}`}
-                                                            onClick={(e) => handleActionClick(e, action, row)}
-                                                            disabled={action.isDisabled ? action.isDisabled(row) : false}
-                                                            aria-label={action.label}
-                                                            title={action.label}
+                                                            className="rockops-table__action-toggle"
+                                                            onClick={(e) => toggleActionsMenu(e, rowIndex)}
+                                                            aria-label="Toggle actions menu"
                                                         >
-                                                            {action.icon}
+                                                            <FaEllipsisV />
                                                         </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </td>
-                                    )}
-                                </tr>
-                            ))
-                        )}
-                        </tbody>
-                    </table>
+
+                                                        {activeActionRow === rowIndex && (
+                                                            <div className="rockops-table__actions-dropdown">
+                                                                {actions.map((action, idx) => (
+                                                                    <button
+                                                                        key={idx}
+                                                                        className={`rockops-table__action-item ${action.className || ''}`}
+                                                                        onClick={(e) => handleActionClick(e, action, row)}
+                                                                        disabled={action.isDisabled ? action.isDisabled(row) : false}
+                                                                    >
+                                                                        {action.icon && <span className="rockops-table__action-icon">{action.icon}</span>}
+                                                                        <span>{action.label}</span>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    // Inline buttons for 1-2 actions
+                                                    <div className="rockops-table__actions-inline">
+                                                        {actions.map((action, idx) => (
+                                                            <button
+                                                                key={idx}
+                                                                className={`rockops-table__action-button ${action.className || ''}`}
+                                                                onClick={(e) => handleActionClick(e, action, row)}
+                                                                disabled={action.isDisabled ? action.isDisabled(row) : false}
+                                                                aria-label={action.label}
+                                                                title={action.label}
+                                                            >
+                                                                {action.icon}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))
+                            )}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
 
-            {/* Footer with pagination */}
+            {/* Footer with items per page and pagination */}
             <div className="rockops-table__footer">
-                <div className="rockops-table__items-per-page">
-                    <span>Items per page:</span>
-                    <select
-                        value={itemsPerPage}
-                        onChange={(e) => {
-                            setItemsPerPage(Number(e.target.value));
-                            setCurrentPage(1);
-                        }}
-                    >
-                        {itemsPerPageOptions.map(option => (
-                            <option key={option} value={option}>{option}</option>
-                        ))}
-                    </select>
+                <div className="rockops-table__footer-left">
+                    <div className="rockops-table__items-per-page">
+                        <span>Items per page:</span>
+                        <select
+                            value={itemsPerPage}
+                            onChange={(e) => {
+                                setItemsPerPage(Number(e.target.value));
+                                setCurrentPage(1);
+                            }}
+                        >
+                            {itemsPerPageOptions.map(option => (
+                                <option key={option} value={option}>{option}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
-                {/*<div className="rockops-table__showing">*/}
-                {/*    Showing {startIndex + 1} to {endIndex} of {sortedData.length} entries*/}
-                {/*    {sortedData.length !== data.length && ` (filtered from ${data.length} total entries)`}*/}
-                {/*</div>*/}
+                <div className="rockops-table__footer-right">
+                    {/*<div className="rockops-table__showing">*/}
+                    {/*    Showing {startIndex + 1} to {endIndex} of {sortedData.length} entries*/}
+                    {/*    {sortedData.length !== data.length && ` (filtered from ${data.length} total entries)`}*/}
+                    {/*</div>*/}
 
-                {/* Pagination */}
-                {sortedData.length > itemsPerPage && (
-                    <div className="rockops-table__pagination">
-                        <div className="rockops-table__pagination-info">
-                            Showing <span>{startIndex + 1}</span> to <span>{endIndex}</span> of <span>{sortedData.length}</span> entries
-                            {sortedData.length !== data.length && ` (filtered from ${data.length} total entries)`}
-                        </div>
-
+                    {/* Pagination */}
+                    {sortedData.length > itemsPerPage && (
                         <div className="rockops-table__pagination-controls">
                             <button
                                 className="rockops-table__pagination-btn"
@@ -729,8 +647,8 @@ const DataTable = ({
                                 Next
                             </button>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );

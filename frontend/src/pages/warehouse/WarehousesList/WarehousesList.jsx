@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./WarehousesList.scss";
 import warehouseImg from "../../../assets/imgs/warehouse1.jpg"; // Default warehouse image
 import { FaWarehouse, FaTimes } from 'react-icons/fa'; // Added FaTimes for remove icons
-import { useAuth } from "../../../Contexts/AuthContext";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const WarehousesList = () => {
     const [warehouses, setWarehouses] = useState([]);
@@ -504,15 +504,7 @@ const WarehousesList = () => {
 
                                     <div className="warehouse-list-card-actions">
 
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation(); // Prevents click event from bubbling to the card
-                                                    handleOpenEditModal(warehouse);
-                                                }}
-                                                className="warehouse-list-edit-button"
-                                            >
-                                                Edit Warehouse
-                                            </button>
+
 
 
                                         <button

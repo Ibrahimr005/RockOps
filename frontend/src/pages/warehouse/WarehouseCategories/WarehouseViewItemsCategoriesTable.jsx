@@ -3,7 +3,7 @@ import "./WarehouseViewItemCategories.scss";
 import ParentCategoriesTable from "./ParentCategoriesTable";
 import ChildCategoriesTable from "./ChildCategoriesTable";
 
-const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
+const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => {
   const [allCategories, setAllCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -21,13 +21,37 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
   const [validParentCategories, setValidParentCategories] = useState([]);
   const [userRole, setUserRole] = useState("");
 
+  const openCategoryModal = (category) => {
+    if (category) {
+      setCategoryAction('update');
+      setSelectedCategory(category);
+      setNewCategoryName(category.name);
+      setNewCategoryDescription(category.description);
+      setSelectedParentCategory(category.parentCategory ? category.parentCategory.id : null);
+    } else {
+      setCategoryAction('create');
+      setNewCategoryName('');
+      setNewCategoryDescription('');
+      setSelectedCategory(null);
+      setSelectedParentCategory(null);
+    }
+    setIsModalOpen(true);
+  };
+
+  // Register the add function with parent component
+  useEffect(() => {
+    if (onAddButtonClick) {
+      onAddButtonClick(openCategoryModal);
+    }
+  }, [onAddButtonClick]);
+
   // Define fetchAllCategories function at the component level
   const fetchAllCategories = async () => {
     try {
       setLoading(true);
       setError(null);
       const token = localStorage.getItem("token");
-      
+
       if (!token) {
         throw new Error("No authentication token found");
       }
@@ -224,23 +248,6 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
     }
   };
 
-  const openCategoryModal = (category) => {
-    if (category) {
-      setCategoryAction('update');
-      setSelectedCategory(category);
-      setNewCategoryName(category.name);
-      setNewCategoryDescription(category.description);
-      setSelectedParentCategory(category.parentCategory ? category.parentCategory.id : null);
-    } else {
-      setCategoryAction('create');
-      setNewCategoryName('');
-      setNewCategoryDescription('');
-      setSelectedCategory(null);
-      setSelectedParentCategory(null);
-    }
-    setIsModalOpen(true);
-  };
-
   const deleteItemCategory = async (id) => {
     try {
       // Added token to fetch request
@@ -282,40 +289,26 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
   // Show loading state
   if (loading) {
     return (
-      <div className="warehouse-view2">
-        <div className="page-header">
-          <h1 className="page-title2">Item Categories</h1>
-        </div>
         <div style={{ padding: '40px', textAlign: 'center' }}>
           <p>Loading categories...</p>
         </div>
-      </div>
     );
   }
 
   // If there's an error, show error message instead of crashing
   if (error) {
     return (
-      <div className="warehouse-view2">
-        <div className="page-header">
-          <h1 className="page-title2">Item Categories</h1>
-        </div>
         <div className="error-container">
           <p>Error loading categories: {error}</p>
           <button onClick={fetchAllCategories} className="retry-button">
             Retry
           </button>
         </div>
-      </div>
     );
   }
 
   return (
-      <div className="warehouse-view2">
-        <div className="page-header">
-          <h1 className="page-title2">Item Categories</h1>
-        </div>
-
+      <>
         {/* Parent Categories Table - Using its own API endpoint */}
         <ParentCategoriesTable
             onEdit={openCategoryModal}
@@ -330,15 +323,7 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
             key={`child-${tableUpdateTrigger}`}
         />
 
-        {/* Add button */}
-        {userRole === "WAREHOUSE_MANAGER" && (
-            <button className="add-button2" onClick={() => openCategoryModal()}>
-              <svg className="plus-icon2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-            </button>
-        )}
-
+        {/* Modal for adding/editing categories */}
         {isModalOpen && (
             <div className="modal-backdrop2">
               <div className="modal2" ref={modalRef}>
@@ -427,6 +412,7 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
             </div>
         )}
 
+        {/* Delete notification */}
         {showNotification2 && (
             <div className="notification2 delete-notification2">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -436,7 +422,7 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
               <span>Category successfully deleted</span>
             </div>
         )}
-      </div>
+      </>
   );
 };
 

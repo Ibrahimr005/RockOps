@@ -1,0 +1,12 @@
+.git/
+.gitignore
+README.md
+Dockerfile
+.dockerignore
+*.log
+.DS_Store
+src/
+pom.xml
+mvnw
+mvnw.cmd
+.mvn/

@@ -1,15 +1,20 @@
 package com.example.backend.config;
 
+import com.example.backend.authentication.AuthenticationService;
+import com.example.backend.authentication.RegisterRequest;
+import com.example.backend.models.user.Role;
 import com.example.backend.models.hr.Department;
 import com.example.backend.models.hr.JobPosition;
 import com.example.backend.models.equipment.EquipmentType;
 import com.example.backend.repositories.hr.DepartmentRepository;
 import com.example.backend.repositories.hr.JobPositionRepository;
 import com.example.backend.repositories.equipment.EquipmentTypeRepository;
+import com.example.backend.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,11 +25,13 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class DataInitializer implements ApplicationRunner {
+public class DataInitializer implements ApplicationRunner, CommandLineRunner {
 
     private final DepartmentRepository departmentRepository;
     private final JobPositionRepository jobPositionRepository;
     private final EquipmentTypeRepository equipmentTypeRepository;
+    private final UserRepository userRepository;
+    private final AuthenticationService authenticationService;
 
     @Override
     @Transactional
@@ -36,6 +43,24 @@ public class DataInitializer implements ApplicationRunner {
         createJobPositionsForExistingEquipmentTypes(); // Re-enable this for existing equipment types
 
         log.info("Application data initialization completed successfully.");
+    }
+
+    @Override
+    public void run(String... args) {
+        // Check if admin user exists
+        if (!userRepository.existsByUsername("admin")) {
+            // Create admin user
+            RegisterRequest adminRequest = RegisterRequest.builder()
+                    .firstName("Admin")
+                    .lastName("User")
+                    .username("admin")
+                    .password("admin123") // You should change this password after first login
+                    .role(Role.ADMIN)
+                    .build();
+
+            authenticationService.register(adminRequest);
+            System.out.println("Admin user created successfully");
+        }
     }
 
     /**

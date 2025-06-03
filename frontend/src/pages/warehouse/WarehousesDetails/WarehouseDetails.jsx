@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useState, useCallback } from "react";
 import { FaInfoCircle } from "react-icons/fa";
 import { useParams, useNavigate } from "react-router-dom";
 import warehouseimg1 from "../../../assets/imgs/warehouse1.jpg";
@@ -6,7 +6,6 @@ import WarehouseViewItemsTable from "../../warehouse/WarehouseItems/WarehouseVie
 import WarehouseViewItemTypesTable from "../../warehouse/WarehouseItemTypes/WarehouseViewItemTypesTable";
 import WarehouseViewItemsCategoriesTable from "../../warehouse/WarehouseCategories/WarehouseViewItemsCategoriesTable";
 import WarehouseViewTransactionsTable from "../../warehouse/WarehouseViewTransactions/WarehouseViewTransactionsTable";
-// Add import for the new Request Orders table component
 import WarehouseRequestOrders from "../../warehouse/WarehouseRequestOrders/WarehouseRequestOrders";
 import "./WarehouseDetails.scss";
 
@@ -28,23 +27,23 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '20px', textAlign: 'center' }}>
-          <h3>Something went wrong loading this section.</h3>
-          <p>Error: {this.state.error?.message}</p>
-          <button 
-            onClick={() => this.setState({ hasError: false, error: null })}
-            style={{ 
-              padding: '10px 20px', 
-              backgroundColor: '#007bff', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            Try Again
-          </button>
-        </div>
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            <h3>Something went wrong loading this section.</h3>
+            <p>Error: {this.state.error?.message}</p>
+            <button
+                onClick={() => this.setState({ hasError: false, error: null })}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+            >
+              Try Again
+            </button>
+          </div>
       );
     }
 
@@ -58,6 +57,9 @@ const WarehouseDetails = () => {
   const [warehouseData, setWarehouseData] = useState(null);
   const [activeTab, setActiveTab] = useState("items");
   const [userRole, setUserRole] = useState('');
+
+  // Store functions from child components
+  const [addFunctions, setAddFunctions] = useState({});
 
   useEffect(() => {
     const fetchWarehouseDetails = async () => {
@@ -90,56 +92,150 @@ const WarehouseDetails = () => {
     fetchWarehouseDetails();
   }, [id]);
 
+  // FIXED: Simplified registration function
+  const registerAddFunction = useCallback((tabName, func) => {
+    setAddFunctions(prev => ({
+      ...prev,
+      [tabName]: func
+    }));
+  }, []);
+
+  // Create individual callback functions for each tab - FIXED dependencies
+  const handleItemsAddButtonClick = useCallback((func) => {
+    registerAddFunction('items', func);
+  }, []); // Remove registerAddFunction dependency to break circular reference
+
+  const handleCategoriesAddButtonClick = useCallback((func) => {
+    registerAddFunction('categories', func);
+  }, []);
+
+  const handleTypesAddButtonClick = useCallback((func) => {
+    registerAddFunction('types', func);
+  }, []);
+
+  const handleTransactionsAddButtonClick = useCallback((func) => {
+    registerAddFunction('transactions', func);
+  }, []);
+
+  const handleRequestOrdersAddButtonClick = useCallback((func) => {
+    registerAddFunction('requestOrders', func);
+  }, []);
+
   if (!warehouseData) {
     return <div>Loading...</div>;
   }
+
+  const getTabHeader = () => {
+    switch (activeTab) {
+      case "items":
+        return "Inventory Management";
+      case "categories":
+        return "Item Categories";
+      case "types":
+        return "Item Types";
+      case "transactions":
+        return "Transactions";
+      case "requestOrders":
+        return "Request Orders";
+      default:
+        return "Inventory Management";
+    }
+  };
+
+  const getAddButtonText = () => {
+    switch (activeTab) {
+      case "items":
+        return "Add Item";
+      case "categories":
+        return "Add Category";
+      case "types":
+        return "Add Item Type";
+      case "transactions":
+        return "Add Transaction";
+      case "requestOrders":
+        return "Add Request Order";
+      default:
+        return "Add Item";
+    }
+  };
+
+  const handleAddButtonClick = () => {
+    // Call the appropriate add function based on active tab
+    if (addFunctions[activeTab]) {
+      addFunctions[activeTab]();
+    } else {
+      console.log(`Add functionality not yet connected for ${activeTab}`);
+    }
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
       case "items":
         return (
-          <ErrorBoundary>
-            <WarehouseViewItemsTable warehouseId={id} />
-          </ErrorBoundary>
+            <ErrorBoundary>
+              <WarehouseViewItemsTable
+                  warehouseId={id}
+                  onAddButtonClick={handleItemsAddButtonClick}
+              />
+            </ErrorBoundary>
         );
       case "categories":
         return (
-          <ErrorBoundary>
-            <WarehouseViewItemsCategoriesTable warehouseId={id} />
-          </ErrorBoundary>
+            <ErrorBoundary>
+              <WarehouseViewItemsCategoriesTable
+                  warehouseId={id}
+                  onAddButtonClick={handleCategoriesAddButtonClick}
+              />
+            </ErrorBoundary>
         );
       case "types":
         return (
-          <ErrorBoundary>
-            <WarehouseViewItemTypesTable warehouseId={id} />
-          </ErrorBoundary>
+            <ErrorBoundary>
+              <WarehouseViewItemTypesTable
+                  warehouseId={id}
+                  onAddButtonClick={handleTypesAddButtonClick}
+              />
+            </ErrorBoundary>
         );
       case "transactions":
         return (
-          <ErrorBoundary>
-            <WarehouseViewTransactionsTable warehouseId={id} />
-          </ErrorBoundary>
+            <ErrorBoundary>
+              <WarehouseViewTransactionsTable
+                  warehouseId={id}
+                  onAddButtonClick={handleTransactionsAddButtonClick}
+              />
+            </ErrorBoundary>
         );
       case "requestOrders":
         return (
-          <ErrorBoundary>
-            <WarehouseRequestOrders warehouseId={id} />
-          </ErrorBoundary>
+            <ErrorBoundary>
+              <WarehouseRequestOrders
+                  warehouseId={id}
+                  onAddButtonClick={handleRequestOrdersAddButtonClick}
+              />
+            </ErrorBoundary>
         );
       default:
         return (
-          <ErrorBoundary>
-            <WarehouseViewItemsTable warehouseId={id} />
-          </ErrorBoundary>
+            <ErrorBoundary>
+              <WarehouseViewItemsTable
+                  warehouseId={id}
+                  onAddButtonClick={handleItemsAddButtonClick}
+              />
+            </ErrorBoundary>
         );
     }
+  };
+
+  // FIXED: Simplified navigation handler
+  const handleInfoClick = (e) => {
+    e.stopPropagation();
+    navigate(`/warehouses/warehouse-details/${id}`);
   };
 
   return (
       <Fragment>
         <div className="WarehouseDetailsContainer">
-          <h1 className="SectionHeaderLabel">Warehouse Details</h1>
-
           <div className="warehouse-card">
             <div className="left-side">
               <img src={warehouseimg1} alt="Warehouse" className="warehouse-image" />
@@ -149,7 +245,7 @@ const WarehouseDetails = () => {
               <div className="value">{warehouseData.name}</div>
             </div>
             <div className="right-side">
-              <button className="info-button" onClick={() => navigate(`/warehouses/warehouse-details/${id}`)}>
+              <button className="info-button" onClick={handleInfoClick}>
                 <FaInfoCircle />
               </button>
             </div>
@@ -184,7 +280,6 @@ const WarehouseDetails = () => {
                 Request Orders
               </button>
 
-
               {userRole === 'WAREHOUSE_MANAGER' && (
                   <button
                       className={`new-tab-button ${activeTab === "transactions" ? "active" : ""}`}
@@ -195,8 +290,27 @@ const WarehouseDetails = () => {
               )}
             </div>
 
-            <div className="tab-content">
-              {renderTabContent()}
+            {/* Unified container for all tab content */}
+            <div className="unified-tab-content-container">
+              {/* Dynamic Header */}
+              <div className="tab-content-header">
+                <h2 className="tab-title">{getTabHeader()}</h2>
+                <div className="tab-header-line"></div>
+              </div>
+
+              {/* Tab Content */}
+              <div className="tab-content-body">
+                {renderTabContent()}
+              </div>
+
+              {/* Footer with Add Button */}
+              <div className="tab-content-footer">
+                <button className="add-entity-button" onClick={handleAddButtonClick} title={getAddButtonText()}>
+                  <svg className="add-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>

@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
 import "./WarehouseViewTransactions.scss";
-import DataTable from "../../../components/common/DataTable/DataTable.jsx"; // Updated import
+import TransactionViewModal from "./PendingTransactions/TransactionViewModal.jsx"; // Add this import
+import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx";
 
 const ValidatedTransactionsTable = ({ warehouseId }) => {
     const [loading, setLoading] = useState(false);
     const [validatedTransactions, setValidatedTransactions] = useState([]);
     const [modalInfo, setModalInfo] = useState(null);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false); // Add this state
+    const [viewTransaction, setViewTransaction] = useState(null); // Add this state
 
     // Snackbar state for potential future use
     const [snackbar, setSnackbar] = useState({
@@ -57,7 +60,16 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
                         .map(async (tx) => {
                             const sender = await fetchEntityDetails(tx.senderType, tx.senderId);
                             const receiver = await fetchEntityDetails(tx.receiverType, tx.receiverId);
-                            return { ...tx, sender, receiver };
+
+                            // Process entity data for consistent display
+                            const processedSender = processEntityData(tx.senderType, sender);
+                            const processedReceiver = processEntityData(tx.receiverType, receiver);
+
+                            return {
+                                ...tx,
+                                sender: processedSender,
+                                receiver: processedReceiver
+                            };
                         })
                 );
                 setValidatedTransactions(validatedData);
@@ -72,6 +84,39 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
         }
     };
 
+    // Helper function to process entity data for consistent display
+    const processEntityData = (entityType, entityData) => {
+        if (!entityData) return null;
+
+        switch (entityType) {
+            case "EQUIPMENT":
+                return {
+                    id: entityData.equipment?.id || entityData.id,
+                    name: entityData.name || entityData.equipment?.fullModelName ||
+                        `${entityData.equipment?.brand || ''} ${entityData.equipment?.type || ''} ${entityData.equipment?.serialNumber || ''}`.trim(),
+                    type: "EQUIPMENT"
+                };
+            case "WAREHOUSE":
+                return {
+                    id: entityData.id,
+                    name: entityData.name,
+                    type: "WAREHOUSE"
+                };
+            case "SITE":
+                return {
+                    id: entityData.id,
+                    name: entityData.name,
+                    type: "SITE"
+                };
+            default:
+                return {
+                    id: entityData.id,
+                    name: entityData.name || "Unknown",
+                    type: entityType
+                };
+        }
+    };
+
     const fetchEntityDetails = async (entityType, entityId) => {
         if (!entityType || !entityId) return null;
         try {
@@ -81,6 +126,8 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
                 endpoint = `http://localhost:8080/api/v1/warehouses/${entityId}`;
             } else if (entityType === "SITE") {
                 endpoint = `http://localhost:8080/api/v1/sites/${entityId}`;
+            } else if (entityType === "EQUIPMENT") {
+                endpoint = `http://localhost:8080/api/equipment/${entityId}`;
             } else {
                 endpoint = `http://localhost:8080/api/${entityType.toLowerCase()}/${entityId}`;
             }
@@ -112,6 +159,18 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
                 transaction: transaction
             });
         }
+    };
+
+    // Function to handle opening the view modal
+    const handleOpenViewModal = (transaction) => {
+        setViewTransaction(transaction);
+        setIsViewModalOpen(true);
+    };
+
+    // Function to close the view modal
+    const handleCloseViewModal = () => {
+        setIsViewModalOpen(false);
+        setViewTransaction(null);
     };
 
     const closeModal = () => {
@@ -151,14 +210,7 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
 
     // Define table columns for DataTable
     const columns = [
-        {
-            header: 'ITEMS',
-            accessor: 'items',
-            sortable: true,
-            width: '200px',
-            minWidth: '120px',
-            render: (row) => row.items?.length || 0
-        },
+
         {
             header: 'SENDER',
             accessor: 'sender',
@@ -191,30 +243,7 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
             minWidth: '150px',
             render: (row) => formatDate(row.transactionDate)
         },
-        {
-            header: 'CREATED AT',
-            accessor: 'createdAt',
-            sortable: true,
-            width: '200px',
-            minWidth: '150px',
-            render: (row) => formatDateTime(row.createdAt)
-        },
-        {
-            header: 'ADDED BY',
-            accessor: 'addedBy',
-            sortable: true,
-            width: '200px',
-            minWidth: '120px',
-            render: (row) => row.addedBy || "N/A"
-        },
-        {
-            header: 'APPROVED BY',
-            accessor: 'approvedBy',
-            sortable: true,
-            width: '200px',
-            minWidth: '120px',
-            render: (row) => row.approvedBy || "N/A"
-        },
+
         {
             header: 'STATUS',
             accessor: 'status',
@@ -227,20 +256,7 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
                         {row.status}
                     </span>
 
-                    {((row.status === "REJECTED" && row.rejectionReason) ||
-                        (row.status === "ACCEPTED" && row.acceptanceComment)) && (
-                        <button
-                            className="info-button"
-                            onClick={(e) => handleInfoClick(e, row)}
-                            aria-label={row.status === "REJECTED" ? "View rejection reason" : "View acceptance comment"}
-                        >
-                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" strokeWidth="2">
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="16" x2="12" y2="12" />
-                                <circle cx="12" cy="8" r="0.5" fill="currentColor" stroke="none" />
-                            </svg>
-                        </button>
-                    )}
+
                 </div>
             )
         }
@@ -248,11 +264,7 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
 
     // Filterable columns for DataTable
     const filterableColumns = [
-        {
-            header: 'ITEMS',
-            accessor: 'items',
-            filterType: 'number'
-        },
+
         {
             header: 'SENDER',
             accessor: 'sender',
@@ -273,25 +285,26 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
             accessor: 'transactionDate',
             filterType: 'text'
         },
-        {
-            header: 'CREATED AT',
-            accessor: 'createdAt',
-            filterType: 'text'
-        },
-        {
-            header: 'ADDED BY',
-            accessor: 'addedBy',
-            filterType: 'text'
-        },
-        {
-            header: 'APPROVED BY',
-            accessor: 'approvedBy',
-            filterType: 'text'
-        },
+
         {
             header: 'STATUS',
             accessor: 'status',
             filterType: 'select'
+        }
+    ];
+
+    // Actions array for DataTable - Add View button
+    const actions = [
+        {
+            label: 'View',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+            ),
+            className: 'view',
+            onClick: (row) => handleOpenViewModal(row)
         }
     ];
 
@@ -314,13 +327,25 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
                 columns={columns}
                 loading={loading}
                 emptyMessage="There are no accepted or rejected transactions for this warehouse"
+                actions={actions}
                 className="validated-transactions-table"
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}
                 itemsPerPageOptions={[5, 10, 15, 20]}
                 defaultItemsPerPage={10}
+                actionsColumnWidth="150px"
             />
+
+            {/* View Transaction Modal */}
+            {isViewModalOpen && viewTransaction && (
+                <TransactionViewModal
+                    transaction={viewTransaction}
+                    isOpen={isViewModalOpen}
+                    onClose={handleCloseViewModal}
+                    hideItemQuantities={true}
+                />
+            )}
 
             {/* Modal for comments/reasons */}
             {modalInfo && (

@@ -49,7 +49,7 @@ const Snackbar = ({
 
             return () => clearTimeout(timer);
         }
-    }, [isVisible, duration, onClose]);
+    }, [isVisible, duration]); // ← FIXED: Removed onClose from dependencies
 
     // Don't render anything if not visible
     if (!visible) return null;

@@ -1,21 +1,4 @@
-.warehouse-view {
-  position: relative;
-  padding: 20px;
-  background-color: var(--color-surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  font-family: var(--font-family);
-  color: var(--color-text-primary);
-  margin-bottom: 20px;
-  min-height: 200px; /* Ensures the container has some minimum height */
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start; /* Ensure content starts at the top */
-  overflow: hidden;
-  position: relative; /* For positioning the Add button */
-  padding-bottom: 90px; /* Add some space at the bottom for the button */
-  margin-top:3rem;
-}
+
 
 /* Header Styles */
 .header-container {
@@ -191,13 +174,12 @@
 .category-tag {
   display: inline-block;
   padding: 6px 12px;
-  background-color: var(--color-info);
+  background-color: #81d4fa; /* Nice light blue */
   color: var(--color-text-inverse);
   border-radius: 20px;
   font-size: 12px;
   font-weight: 500;
-  margin-left:-0.5rem;
-
+  margin-left: -0.5rem;
 }
 
 .status-tag {
@@ -248,7 +230,7 @@
 /* Add Button Styles */
 .add-button {
   position: absolute;
-  bottom: 20px; /* Distance from the bottom */
+  bottom: 0px; /* Distance from the bottom */
   right: 20px; /* Distance from the right */
   width: 60px;
   height: 60px;

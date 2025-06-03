@@ -46,6 +46,7 @@ const Navbar = () => {
 
     return (
         <nav className="admin-navbar" style={{ direction: 'ltr' }}>
+
             <div className="navbar-content">
                 <div className="navbar-left">
                     {/* Logo container is empty */}

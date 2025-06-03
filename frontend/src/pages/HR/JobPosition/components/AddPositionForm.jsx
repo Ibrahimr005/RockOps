@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import './AddPositionForm.scss';
 
 const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
+    const { showError, showWarning } = useSnackbar();
     const [formData, setFormData] = useState({
         positionName: '',
         department: '',
@@ -166,6 +168,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
             setEmployees(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching employees:', err);
+            showError('Failed to load employees. Please try again.');
             setError(prev => prev || 'Failed to load employees');
         } finally {
             setLoadingEmployees(false);
@@ -191,6 +194,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
             setDepartments(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching departments:', err);
+            showError('Failed to load departments. Please try again.');
             setError(prev => prev || 'Failed to load departments');
         } finally {
             setLoadingDepartments(false);
@@ -260,7 +264,9 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
             // Validate form
             const validationErrors = validateForm();
             if (validationErrors.length > 0) {
-                throw new Error(validationErrors.join(', '));
+                const errorMessage = validationErrors.join('\n');
+                showError(errorMessage);
+                throw new Error(errorMessage);
             }
 
             // Prepare data for submission
@@ -298,25 +304,50 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
 
                 // Calculated fields
                 calculatedDailySalary: calculatedSalary.daily,
-                calculatedMonthlySalary: calculatedSalary.monthly,
-
-                // Legacy compatibility - map new fields to old structure
-                baseSalary: calculatedSalary.monthly,
-                type: formData.contractType,
-                workingDays: formData.contractType === 'HOURLY' ? formData.workingDaysPerWeek :
-                    formData.contractType === 'DAILY' ? formData.workingDaysPerMonth :
-                        Math.floor(formData.workingHours * 5) // Approximate for monthly
+                calculatedMonthlySalary: calculatedSalary.monthly
             };
 
             await onSubmit(submitData);
 
         } catch (err) {
             console.error('Error submitting form:', err);
+            showError(err.message || 'Failed to add position');
             setError(err.message || 'Failed to add position');
         } finally {
             setLoading(false);
         }
     };
+
+    // Add warning for low salary values
+    useEffect(() => {
+        const checkSalaryWarning = () => {
+            let warningMessage = '';
+            
+            switch (formData.contractType) {
+                case 'HOURLY':
+                    if (formData.hourlyRate < 7.25) { // Federal minimum wage
+                        warningMessage = 'Hourly rate is below federal minimum wage ($7.25)';
+                    }
+                    break;
+                case 'DAILY':
+                    if (formData.dailyRate < 58) { // 8 hours * $7.25
+                        warningMessage = 'Daily rate is below minimum wage equivalent ($58)';
+                    }
+                    break;
+                case 'MONTHLY':
+                    if (formData.monthlyBaseSalary < 1256) { // 22 days * 8 hours * $7.25
+                        warningMessage = 'Monthly salary is below minimum wage equivalent ($1,256)';
+                    }
+                    break;
+            }
+
+            if (warningMessage) {
+                showWarning(warningMessage);
+            }
+        };
+
+        checkSalaryWarning();
+    }, [formData.contractType, formData.hourlyRate, formData.dailyRate, formData.monthlyBaseSalary, showWarning]);
 
     const renderContractSpecificFields = () => {
         switch (formData.contractType) {

@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from "react";
-import "./WarehouseViewTransactions.scss";
-import UpdatePendingTransactionModal from "./UpdatePendingTransactionModal.jsx";
-import DataTable from "../../../components/common/DataTable/DataTable.jsx"; // Updated import
-import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx"; // Import your existing snackbar
+import "../WarehouseViewTransactions.scss";
+import UpdatePendingTransactionModal from "../UpdatePendingTransactionModal.jsx";
+import TransactionViewModal from "./TransactionViewModal.jsx";
+import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
+import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx";
 
 const PendingTransactionsTable = ({ warehouseId }) => {
     const [loading, setLoading] = useState(false);
     const [pendingTransactions, setPendingTransactions] = useState([]);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
+    const [viewTransaction, setViewTransaction] = useState(null);
 
-    // Replace old notification states with snackbar state
+    // Snackbar state
     const [snackbar, setSnackbar] = useState({
         isOpen: false,
         message: "",
@@ -77,9 +80,11 @@ const PendingTransactionsTable = ({ warehouseId }) => {
                 setPendingTransactions(pendingData);
             } else {
                 console.error("Failed to fetch transactions, status:", response.status);
+                showSnackbar("Failed to fetch pending transactions", "error");
             }
         } catch (error) {
             console.error("Failed to fetch transactions:", error);
+            showSnackbar("Error fetching pending transactions", "error");
         } finally {
             setLoading(false);
         }
@@ -99,7 +104,7 @@ const PendingTransactionsTable = ({ warehouseId }) => {
             } else if (entityType === "SITE") {
                 endpoint = `http://localhost:8080/api/v1/sites/${entityId}`;
             } else if (entityType === "EQUIPMENT") {
-                endpoint = `http://localhost:8080/equipment/${entityId}`;
+                endpoint = `http://localhost:8080/api/equipment/${entityId}`;
             } else {
                 // Fallback for other entity types using lowercase pluralization
                 endpoint = `http://localhost:8080/api/v1/${entityType.toLowerCase()}s/${entityId}`;
@@ -126,6 +131,12 @@ const PendingTransactionsTable = ({ warehouseId }) => {
     const handleOpenUpdateModal = (transaction) => {
         setSelectedTransaction(transaction);
         setIsUpdateModalOpen(true);
+    };
+
+    // Function to handle opening the view modal
+    const handleOpenViewModal = (transaction) => {
+        setViewTransaction(transaction);
+        setIsViewModalOpen(true);
     };
 
     // Function to handle update transaction
@@ -180,6 +191,12 @@ const PendingTransactionsTable = ({ warehouseId }) => {
         setSelectedTransaction(null);
     };
 
+    // Function to close the view modal
+    const handleCloseViewModal = () => {
+        setIsViewModalOpen(false);
+        setViewTransaction(null);
+    };
+
     // Format date helper function
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
@@ -200,14 +217,6 @@ const PendingTransactionsTable = ({ warehouseId }) => {
 
     // Define table columns for DataTable
     const columns = [
-        {
-            header: 'ITEMS',
-            accessor: 'items',
-            sortable: true,
-            width: '200px',
-            minWidth: '120px',
-            render: (row) => row.items?.length || 0
-        },
         {
             header: 'SENDER',
             accessor: 'sender',
@@ -245,34 +254,6 @@ const PendingTransactionsTable = ({ warehouseId }) => {
             width: '200px',
             minWidth: '150px',
             render: (row) => formatDate(row.transactionDate)
-        },
-        {
-            header: 'CREATED AT',
-            accessor: 'createdAt',
-            sortable: true,
-            width: '200px',
-            minWidth: '150px',
-            render: (row) => formatDateTime(row.createdAt)
-        },
-        {
-            header: 'CREATED BY',
-            accessor: 'addedBy',
-            sortable: true,
-            width: '200px',
-            minWidth: '120px',
-            render: (row) => row.addedBy || "N/A"
-        },
-        {
-            header: 'STATUS',
-            accessor: 'status',
-            sortable: true,
-            width: '200px',
-            minWidth: '100px',
-            render: (row) => (
-                <span className={`status-badge3 ${row.status?.toLowerCase()}`}>
-                    {row.status}
-                </span>
-            )
         }
     ];
 
@@ -315,8 +296,19 @@ const PendingTransactionsTable = ({ warehouseId }) => {
         }
     ];
 
-    // Actions array for DataTable
+    // Actions array for DataTable - Using the DataTable's action button system
     const actions = [
+        {
+            label: 'View',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+            ),
+            className: 'view',
+            onClick: (row) => handleOpenViewModal(row)
+        },
         {
             label: 'Edit',
             icon: (
@@ -325,7 +317,7 @@ const PendingTransactionsTable = ({ warehouseId }) => {
                     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
             ),
-            className: 'edit-button3',
+            className: 'edit',
             onClick: (row) => handleOpenUpdateModal(row)
         }
     ];
@@ -356,8 +348,18 @@ const PendingTransactionsTable = ({ warehouseId }) => {
                 filterableColumns={filterableColumns}
                 itemsPerPageOptions={[5, 10, 15, 20]}
                 defaultItemsPerPage={10}
-                actionsColumnWidth="200px"
+                actionsColumnWidth="150px"
             />
+
+            {/* View Transaction Modal - Show quantities for pending transactions since they can be edited */}
+            {isViewModalOpen && viewTransaction && (
+                <TransactionViewModal
+                    transaction={viewTransaction}
+                    isOpen={isViewModalOpen}
+                    onClose={handleCloseViewModal}
+                    hideItemQuantities={false}
+                />
+            )}
 
             {/* Update Transaction Modal */}
             {isUpdateModalOpen && selectedTransaction && (
@@ -370,7 +372,7 @@ const PendingTransactionsTable = ({ warehouseId }) => {
                 />
             )}
 
-            {/* Snackbar Component - Replace old notifications */}
+            {/* Snackbar Component */}
             <Snackbar
                 isOpen={snackbar.isOpen}
                 message={snackbar.message}

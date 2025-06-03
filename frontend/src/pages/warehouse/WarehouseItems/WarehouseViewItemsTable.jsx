@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 
-const WarehouseViewItemsTable = ({ warehouseId }) => {
+const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
   const [tableData, setTableData] = useState([]);
   const [resolutionHistory, setResolutionHistory] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -61,6 +61,23 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
   const closeSnackbar = () => {
     setShowNotification(false);
   };
+
+  // Helper function to check if item is low stock
+  const isLowStock = (item) => {
+    if (!item.itemType?.minQuantity) return false;
+    return item.quantity < item.itemType.minQuantity;
+  };
+
+  // Helper function to get low stock items count
+  const getLowStockCount = (items) => {
+    return items.filter(item => isLowStock(item)).length;
+  };
+
+  useEffect(() => {
+    if (onAddButtonClick) {
+      onAddButtonClick(handleOpenAddItemModal);
+    }
+  }, [onAddButtonClick]);
 
   // Helper function to aggregate items by type for "In Warehouse" tab
   const aggregateItemsByType = (items) => {
@@ -571,14 +588,21 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
       render: (row) => {
         // Show aggregated quantity for "In Warehouse" tab
         if (activeTab === 'inWarehouse' && row.isAggregated) {
+          const lowStock = isLowStock(row);
           return (
-              <div>
-                <span className="total-quantity">{row.quantity}</span>
+              <div className="quantity-cell">
+                <div className="quantity-main">
+                  <span className={`total-quantity ${lowStock ? 'low-stock' : ''}`}>
+                    {row.quantity}
+                  </span>
+
+                </div>
                 {row.individualItems && row.individualItems.length > 1 && (
                     <span className="quantity-breakdown" title={`From ${row.individualItems.length} transactions`}>
                       {` (${row.individualItems.length} entries)`}
                     </span>
                 )}
+
               </div>
           );
         }
@@ -690,20 +714,9 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
             {formatDate(row.resolvedAt)}
           </span>
       )
-    },
-    {
-      accessor: 'notes',
-      header: 'NOTES',
-      width: '210px',
-      render: (row) => (
-          <div className="notes-preview" title={row.notes}>
-            {row.notes?.length > 50 ? `${row.notes.substring(0, 50)}...` : row.notes}
-          </div>
-      )
     }
   ];
 
-  // Define actions for different tabs
   // Define actions for different tabs
   const getActions = () => {
     if (activeTab === 'resolvedHistory') {
@@ -723,7 +736,7 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
             </svg>
         ),
         onClick: (row) => handleOpenTransactionDetailsModal(row),
-        className: 'view', // ✅ Change from 'action-view' to 'view'
+        className: 'view',
         isDisabled: (row) => !row.isAggregated
       });
 
@@ -738,8 +751,8 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
             </svg>
         ),
         onClick: (row) => handleDeleteItem(row.id),
-        className: 'delete', // ✅ Change from 'action-delete' to 'delete'
-        isDisabled: (row) => row.isAggregated
+        className: 'delete',
+        // isDisabled: (row) => row.isAggregated
       });
     } else {
       // For discrepancy items
@@ -752,7 +765,7 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
               </svg>
           ),
           onClick: (row) => handleOpenResolutionModal(row),
-          className: 'resolve' // ✅ Change from 'action-resolve' to 'resolve'
+          className: 'resolve'
         });
       }
 
@@ -766,7 +779,7 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
             </svg>
         ),
         onClick: (row) => handleDeleteItem(row.id),
-        className: 'delete' // ✅ Change from 'action-delete' to 'delete'
+        className: 'delete'
       });
     }
 
@@ -775,12 +788,14 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
 
   const filteredData = getFilteredData();
 
+  // Get low stock items for "In Warehouse" tab
+  const lowStockItems = activeTab === 'inWarehouse' ? filteredData.filter(item => isLowStock(item)) : [];
+
   return (
       <div className="warehouse-view4">
         {/* Header with count and search */}
         <div className="header-container4">
           <div className="left-section4">
-            <h1 className="page-title4">Inventory</h1>
             <div className="item-count4">
               {activeTab === 'resolvedHistory'
                   ? `${resolutionHistory.length} resolutions`
@@ -791,6 +806,9 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
           </div>
         </div>
 
+        {/* Low Stock Warning Banner - Only show for "In Warehouse" tab */}
+
+
         {/* Tab navigation */}
         <div className="inventory-tabs">
           <button
@@ -798,6 +816,7 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
               onClick={() => setActiveTab('inWarehouse')}
           >
             In Warehouse
+
           </button>
           <button
               className={`inventory-tab ${activeTab === 'missingItems' ? 'active' : ''}`}
@@ -828,6 +847,45 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
             Resolution History
           </button>
         </div>
+
+        {activeTab === 'inWarehouse' && lowStockItems.length > 0 && (
+            <div className="low-stock-warning-banner">
+              <div className="warning-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              </div>
+              <div className="warning-content">
+                <h3 className="warning-title">Low Stock Alert</h3>
+                <p className="warning-message">
+                  {lowStockItems.length} item{lowStockItems.length > 1 ? 's are' : ' is'} below minimum quantity threshold:
+                </p>
+                <div className="low-stock-items-list">
+                  {lowStockItems.slice(0, 3).map((item, index) => (
+                      <span key={index} className="low-stock-item">
+                        {item.itemType?.name} ({item.quantity}/{item.itemType?.minQuantity})
+                      </span>
+                  ))}
+                  {lowStockItems.length > 3 && (
+                      <span className="low-stock-more">
+                        +{lowStockItems.length - 3} more
+                      </span>
+                  )}
+                </div>
+              </div>
+              <div className="warning-actions">
+                <button
+                    className="restock-button"
+                    onClick={handleOpenAddItemModal}
+                    title="Add items to restock"
+                >
+                  Restock Items
+                </button>
+              </div>
+            </div>
+        )}
 
         {/* Resolution info cards */}
         {(activeTab === 'missingItems' || activeTab === 'excessItems') && (
@@ -873,8 +931,8 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
                 columns={historyColumns}
                 loading={historyLoading}
                 tableTitle=""
-                defaultItemsPerPage={25}
-                itemsPerPageOptions={[10, 25, 50, 100]}
+                defaultItemsPerPage={10}
+                itemsPerPageOptions={[5, 10, 15, 20]}
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={[
@@ -892,8 +950,8 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
                 columns={itemColumns}
                 loading={loading}
                 tableTitle=""
-                defaultItemsPerPage={25}
-                itemsPerPageOptions={[10, 25, 50, 100]}
+                defaultItemsPerPage={10}
+                itemsPerPageOptions={[5, 10, 15, 20]}
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={[
@@ -910,8 +968,8 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
                 columns={discrepancyItemColumns}
                 loading={loading}
                 tableTitle=""
-                defaultItemsPerPage={25}
-                itemsPerPageOptions={[10, 25, 50, 100]}
+                defaultItemsPerPage={10}
+                itemsPerPageOptions={[5, 10, 15, 20]}
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={[
@@ -1328,16 +1386,7 @@ const WarehouseViewItemsTable = ({ warehouseId }) => {
             </div>
         )}
 
-        {/* Blue Circular Add Button */}
-        <button
-            className="add-button2"
-            onClick={handleOpenAddItemModal}
-            title="Add New Item"
-        >
-          <svg className="plus-icon2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </button>
+
 
         {/* Snackbar Component */}
         <Snackbar

@@ -194,6 +194,12 @@ const Sidebar = () => {
                     roles: ['USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
                 },
                 {
+                    title: 'Employees',
+                    icon: <FaIdCard/>,
+                    path: '/hr/employees',
+                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
+                },
+                {
                     title: 'Vacancies',
                     icon: <FaBriefcase/>,
                     path: '/hr/vacancies',
@@ -205,16 +211,11 @@ const Sidebar = () => {
                     path: '/hr/positions',
                     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
                 },
+
                 {
                     title: 'Attendance',
                     icon: <FaTasks/>,
                     path: '/hr/attendance',
-                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
-                },
-                {
-                    title: 'Employees',
-                    icon: <FaIdCard/>,
-                    path: '/hr/employees',
                     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
                 },
             ]

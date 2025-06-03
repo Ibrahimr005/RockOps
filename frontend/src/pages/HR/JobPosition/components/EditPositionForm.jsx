@@ -1,27 +1,61 @@
 import React, { useState, useEffect } from 'react';
+import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import './AddPositionForm.scss';
 
 const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
+    const { showError, showWarning } = useSnackbar();
     const [formData, setFormData] = useState({
         positionName: '',
         department: '',
         head: '',
-        baseSalary: '',
-        probationPeriod: '',
-        type: '',
-        workingDays: '',
-        experienceLevel: '',
-        shifts: '',
-        workingHours: '',
-        vacations: '',
-        customVacationDays: ''
+        contractType: 'MONTHLY',
+        experienceLevel: 'ENTRY_LEVEL',
+        probationPeriod: 90,
+        active: true,
+
+        // HOURLY fields
+        workingDaysPerWeek: 5,
+        hoursPerShift: 8,
+        hourlyRate: 0,
+        overtimeMultiplier: 1.5,
+        trackBreaks: false,
+        breakDurationMinutes: 30,
+
+        // DAILY fields
+        dailyRate: 0,
+        workingDaysPerMonth: 22,
+        includesWeekends: false,
+
+        // MONTHLY fields
+        monthlyBaseSalary: 0,
+        shifts: 'Day Shift',
+        workingHours: 8,
+        vacations: '21 days annual leave'
     });
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [employees, setEmployees] = useState([]);
     const [departments, setDepartments] = useState([]);
     const [loadingEmployees, setLoadingEmployees] = useState(false);
     const [loadingDepartments, setLoadingDepartments] = useState(false);
+    const [calculatedSalary, setCalculatedSalary] = useState({
+        daily: 0,
+        monthly: 0
+    });
+
+    const contractTypes = [
+        { value: 'HOURLY', label: 'Hourly Contract', description: 'Pay per hour worked with time tracking' },
+        { value: 'DAILY', label: 'Daily Contract', description: 'Fixed daily rate for attendance' },
+        { value: 'MONTHLY', label: 'Monthly Contract', description: 'Fixed monthly salary' }
+    ];
+
+    const experienceLevels = [
+        { value: 'ENTRY_LEVEL', label: 'Entry Level' },
+        { value: 'MID_LEVEL', label: 'Mid Level' },
+        { value: 'SENIOR_LEVEL', label: 'Senior Level' },
+        { value: 'EXPERT_LEVEL', label: 'Expert Level' }
+    ];
 
     // Fetch employees and departments when modal opens
     useEffect(() => {
@@ -34,32 +68,73 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
     // Update form data when position prop changes
     useEffect(() => {
         if (position && isOpen) {
-            let vacationValue = position.vacations || '';
-            let customVacationDays = '';
-
-            // Handle custom vacation parsing
-            if (position.vacations && position.vacations.startsWith('Custom:')) {
-                vacationValue = 'Custom';
-                customVacationDays = position.vacations.split(':')[1]?.trim() || '';
-            }
-
-            setFormData({
+            // Map legacy data to new structure
+            const contractType = position.type || 'MONTHLY';
+            const mappedData = {
                 positionName: position.positionName || '',
                 department: position.department || '',
                 head: position.head || '',
-                baseSalary: position.baseSalary?.toString() || '',
-                probationPeriod: position.probationPeriod?.toString() || '',
-                type: position.type || '',
-                workingDays: position.workingDays?.toString() || '',
-                experienceLevel: position.experienceLevel || '',
-                shifts: position.shifts || '',
-                workingHours: position.workingHours?.toString() || '',
-                vacations: vacationValue,
-                customVacationDays: customVacationDays
-            });
+                contractType: contractType,
+                experienceLevel: position.experienceLevel || 'ENTRY_LEVEL',
+                probationPeriod: position.probationPeriod || 90,
+                active: position.active !== undefined ? position.active : true,
+
+                // HOURLY fields
+                workingDaysPerWeek: position.workingDaysPerWeek || 5,
+                hoursPerShift: position.hoursPerShift || 8,
+                hourlyRate: position.hourlyRate || 0,
+                overtimeMultiplier: position.overtimeMultiplier || 1.5,
+                trackBreaks: position.trackBreaks || false,
+                breakDurationMinutes: position.breakDurationMinutes || 30,
+
+                // DAILY fields
+                dailyRate: position.dailyRate || 0,
+                workingDaysPerMonth: position.workingDaysPerMonth || 22,
+                includesWeekends: position.includesWeekends || false,
+
+                // MONTHLY fields
+                monthlyBaseSalary: position.monthlyBaseSalary || position.baseSalary || 0,
+                shifts: position.shifts || 'Day Shift',
+                workingHours: position.workingHours || 8,
+                vacations: position.vacations || '21 days annual leave'
+            };
+
+            setFormData(mappedData);
             setError(null);
         }
     }, [position, isOpen]);
+
+    useEffect(() => {
+        calculateSalaries();
+    }, [formData]);
+
+    const calculateSalaries = () => {
+        let daily = 0;
+        let monthly = 0;
+
+        switch (formData.contractType) {
+            case 'HOURLY':
+                daily = (formData.hourlyRate || 0) * (formData.hoursPerShift || 0);
+                monthly = daily * (formData.workingDaysPerWeek || 0) * 4;
+                break;
+            case 'DAILY':
+                daily = formData.dailyRate || 0;
+                monthly = daily * (formData.workingDaysPerMonth || 0);
+                break;
+            case 'MONTHLY':
+                monthly = formData.monthlyBaseSalary || 0;
+                daily = monthly / 22; // Assuming 22 working days per month
+                break;
+            default:
+                daily = 0;
+                monthly = 0;
+        }
+
+        setCalculatedSalary({
+            daily: Math.round(daily * 100) / 100,
+            monthly: Math.round(monthly * 100) / 100
+        });
+    };
 
     const fetchEmployees = async () => {
         setLoadingEmployees(true);
@@ -80,6 +155,7 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
             setEmployees(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching employees:', err);
+            showError('Failed to load employees. Please try again.');
             setError(prev => prev || 'Failed to load employees');
         } finally {
             setLoadingEmployees(false);
@@ -105,6 +181,7 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
             setDepartments(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching departments:', err);
+            showError('Failed to load departments. Please try again.');
             setError(prev => prev || 'Failed to load departments');
         } finally {
             setLoadingDepartments(false);
@@ -112,11 +189,57 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
     };
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: type === 'checkbox' ? checked :
+                type === 'number' ? (value === '' ? '' : Number(value)) : value
         }));
+    };
+
+    const validateForm = () => {
+        const errors = [];
+
+        // Basic validation
+        if (!formData.positionName.trim()) {
+            errors.push('Position name is required');
+        }
+
+        if (!formData.department) {
+            errors.push('Department is required');
+        }
+
+        // Contract-specific validation
+        switch (formData.contractType) {
+            case 'HOURLY':
+                if (!formData.hourlyRate || formData.hourlyRate <= 0) {
+                    errors.push('Hourly rate must be greater than 0');
+                }
+                if (!formData.hoursPerShift || formData.hoursPerShift <= 0) {
+                    errors.push('Hours per shift must be greater than 0');
+                }
+                if (!formData.workingDaysPerWeek || formData.workingDaysPerWeek <= 0 || formData.workingDaysPerWeek > 7) {
+                    errors.push('Working days per week must be between 1 and 7');
+                }
+                break;
+
+            case 'DAILY':
+                if (!formData.dailyRate || formData.dailyRate <= 0) {
+                    errors.push('Daily rate must be greater than 0');
+                }
+                if (!formData.workingDaysPerMonth || formData.workingDaysPerMonth <= 0 || formData.workingDaysPerMonth > 31) {
+                    errors.push('Working days per month must be between 1 and 31');
+                }
+                break;
+
+            case 'MONTHLY':
+                if (!formData.monthlyBaseSalary || formData.monthlyBaseSalary <= 0) {
+                    errors.push('Monthly salary must be greater than 0');
+                }
+                break;
+        }
+
+        return errors;
     };
 
     const handleSubmit = async (e) => {
@@ -125,296 +248,466 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
         setError(null);
 
         try {
-            // Validate required fields
-            const requiredFields = ['positionName', 'department', 'baseSalary', 'type', 'workingDays', 'experienceLevel', 'shifts', 'workingHours', 'vacations'];
-            const missingFields = requiredFields.filter(field => !formData[field]);
-
-            if (missingFields.length > 0) {
-                throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
+            // Validate form
+            const validationErrors = validateForm();
+            if (validationErrors.length > 0) {
+                const errorMessage = validationErrors.join('\n');
+                showError(errorMessage);
+                throw new Error(errorMessage);
             }
 
-            // Prepare vacation data
-            let vacationValue = formData.vacations;
-            if (formData.vacations === 'Custom' && formData.customVacationDays) {
-                vacationValue = `Custom: ${formData.customVacationDays}`;
-            } else if (formData.vacations === 'Custom' && !formData.customVacationDays) {
-                throw new Error('Please specify custom vacation days');
-            }
-
-            // Create a clean copy of the formData to submit
+            // Prepare data for submission
             const submitData = {
-                ...formData,
-                vacations: vacationValue,
-                baseSalary: parseFloat(formData.baseSalary),
-                probationPeriod: formData.probationPeriod ? parseInt(formData.probationPeriod) : null,
-                workingDays: parseInt(formData.workingDays),
-                workingHours: parseInt(formData.workingHours)
-            };
+                positionName: formData.positionName.trim(),
+                department: formData.department,
+                head: formData.head || null,
+                contractType: formData.contractType,
+                experienceLevel: formData.experienceLevel,
+                probationPeriod: formData.probationPeriod,
+                active: formData.active,
 
-            // Remove customVacationDays as it's not part of the API model
-            delete submitData.customVacationDays;
+                // Contract-specific fields
+                ...(formData.contractType === 'HOURLY' && {
+                    workingDaysPerWeek: formData.workingDaysPerWeek,
+                    hoursPerShift: formData.hoursPerShift,
+                    hourlyRate: formData.hourlyRate,
+                    overtimeMultiplier: formData.overtimeMultiplier,
+                    trackBreaks: formData.trackBreaks,
+                    breakDurationMinutes: formData.trackBreaks ? formData.breakDurationMinutes : null
+                }),
+
+                ...(formData.contractType === 'DAILY' && {
+                    dailyRate: formData.dailyRate,
+                    workingDaysPerMonth: formData.workingDaysPerMonth,
+                    includesWeekends: formData.includesWeekends
+                }),
+
+                ...(formData.contractType === 'MONTHLY' && {
+                    monthlyBaseSalary: formData.monthlyBaseSalary,
+                    shifts: formData.shifts,
+                    workingHours: formData.workingHours,
+                    vacations: formData.vacations
+                }),
+
+                // Calculated fields
+                calculatedDailySalary: calculatedSalary.daily,
+                calculatedMonthlySalary: calculatedSalary.monthly
+            };
 
             await onSubmit(submitData);
 
         } catch (err) {
             console.error('Error submitting form:', err);
+            showError(err.message || 'Failed to update position');
             setError(err.message || 'Failed to update position');
         } finally {
             setLoading(false);
         }
     };
 
-    if (!isOpen) return null;
-
-    const typeOptions = [
-        'FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP', 'TEMPORARY', 'DAILY', 'HOURLY'
-    ];
-
-    const experienceLevelOptions = [
-        '0-2 years', '3-5 years', '6-10 years', '10+ years'
-    ];
-
-    return (
-        <div className="position-modal">
-            <div className="position-modal-content">
-                <div className="position-modal-header">
-                    <h2>Edit Position</h2>
-                    <button className="position-modal-close" onClick={onClose}>×</button>
-                </div>
-
-                {error && (
-                    <div className="position-error">
-                        {error}
-                    </div>
-                )}
-
-                {(loadingDepartments || loadingEmployees) ? (
-                    <div className="position-loading">Loading form data...</div>
-                ) : (
-                    <form onSubmit={handleSubmit}>
-                        <div className="position-form-row">
-                            <div className="position-form-group">
-                                <label htmlFor="positionName">Position Name *</label>
-                                <input
-                                    type="text"
-                                    id="positionName"
-                                    name="positionName"
-                                    value={formData.positionName}
-                                    onChange={handleChange}
-                                    required
-                                    placeholder="e.g. Software Engineer"
-                                />
-                            </div>
-
-                            <div className="position-form-group">
-                                <label htmlFor="department">Department *</label>
-                                <div className="position-select-wrapper">
-                                    <select
-                                        id="department"
-                                        name="department"
-                                        value={formData.department}
-                                        onChange={handleChange}
-                                        required
-                                    >
-                                        <option value="" disabled>Select Department</option>
-                                        {departments.map(department => (
-                                            <option key={department.id} value={department.name}>
-                                                {department.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="position-form-row">
-                            <div className="position-form-group">
-                                <label htmlFor="head">Reporting To</label>
-                                <div className="position-select-wrapper">
-                                    <select
-                                        id="head"
-                                        name="head"
-                                        value={formData.head}
-                                        onChange={handleChange}
-                                    >
-                                        <option value="">Select Manager (Optional)</option>
-                                        {employees.map(employee => (
-                                            <option
-                                                key={employee.id}
-                                                value={employee.fullName || `${employee.firstName} ${employee.lastName}`}
-                                            >
-                                                {employee.fullName || `${employee.firstName} ${employee.lastName}`}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="position-form-group">
-                                <label htmlFor="baseSalary">Base Salary *</label>
+    const renderContractSpecificFields = () => {
+        switch (formData.contractType) {
+            case 'HOURLY':
+                return (
+                    <div className="jp-section">
+                        <h4>Hourly Contract Configuration</h4>
+                        <div className="jp-form-row">
+                            <div className="jp-form-group">
+                                <label htmlFor="hourlyRate">
+                                    Hourly Rate ($) <span className="jp-required">*</span>
+                                </label>
                                 <input
                                     type="number"
-                                    id="baseSalary"
-                                    name="baseSalary"
-                                    value={formData.baseSalary}
+                                    id="hourlyRate"
+                                    name="hourlyRate"
+                                    value={formData.hourlyRate}
                                     onChange={handleChange}
-                                    required
                                     min="0"
                                     step="0.01"
-                                    placeholder="Annual salary in USD"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="position-form-row">
-                            <div className="position-form-group">
-                                <label htmlFor="probationPeriod">Probation Period (months)</label>
-                                <input
-                                    type="number"
-                                    id="probationPeriod"
-                                    name="probationPeriod"
-                                    value={formData.probationPeriod}
-                                    onChange={handleChange}
-                                    min="0"
-                                    placeholder="Number of months"
-                                />
-                            </div>
-
-                            <div className="position-form-group">
-                                <label htmlFor="type">Employment Type *</label>
-                                <div className="position-select-wrapper">
-                                    <select
-                                        id="type"
-                                        name="type"
-                                        value={formData.type}
-                                        onChange={handleChange}
-                                        required
-                                    >
-                                        <option value="" disabled>Select Type</option>
-                                        {typeOptions.map(option => (
-                                            <option key={option} value={option}>
-                                                {option.replace('_', ' ')}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="position-form-row">
-                            <div className="position-form-group">
-                                <label htmlFor="workingDays">Working Days per Week *</label>
-                                <input
-                                    type="number"
-                                    id="workingDays"
-                                    name="workingDays"
-                                    value={formData.workingDays}
-                                    onChange={handleChange}
                                     required
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div className="jp-form-group">
+                                <label htmlFor="hoursPerShift">
+                                    Hours per Shift <span className="jp-required">*</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    id="hoursPerShift"
+                                    name="hoursPerShift"
+                                    value={formData.hoursPerShift}
+                                    onChange={handleChange}
+                                    min="1"
+                                    max="24"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="jp-form-row">
+                            <div className="jp-form-group">
+                                <label htmlFor="workingDaysPerWeek">
+                                    Working Days per Week <span className="jp-required">*</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    id="workingDaysPerWeek"
+                                    name="workingDaysPerWeek"
+                                    value={formData.workingDaysPerWeek}
+                                    onChange={handleChange}
                                     min="1"
                                     max="7"
+                                    required
                                 />
                             </div>
-
-                            <div className="position-form-group">
-                                <label htmlFor="experienceLevel">Experience Level *</label>
-                                <div className="position-select-wrapper">
-                                    <select
-                                        id="experienceLevel"
-                                        name="experienceLevel"
-                                        value={formData.experienceLevel}
-                                        onChange={handleChange}
-                                        required
-                                    >
-                                        <option value="" disabled>Select Level</option>
-                                        {experienceLevelOptions.map(option => (
-                                            <option key={option} value={option}>
-                                                {option}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                            <div className="jp-form-group">
+                                <label htmlFor="overtimeMultiplier">Overtime Multiplier</label>
+                                <input
+                                    type="number"
+                                    id="overtimeMultiplier"
+                                    name="overtimeMultiplier"
+                                    value={formData.overtimeMultiplier}
+                                    onChange={handleChange}
+                                    min="1"
+                                    max="3"
+                                    step="0.1"
+                                />
                             </div>
                         </div>
-
-                        <div className="position-form-row">
-                            <div className="position-form-group">
-                                <label htmlFor="shifts">Shifts *</label>
-                                <div className="position-select-wrapper">
-                                    <select
-                                        id="shifts"
-                                        name="shifts"
-                                        value={formData.shifts}
+                        <div className="jp-form-row">
+                            <div className="jp-form-group jp-checkbox-group">
+                                <label>
+                                    <input
+                                        type="checkbox"
+                                        name="trackBreaks"
+                                        checked={formData.trackBreaks}
                                         onChange={handleChange}
-                                        required
-                                    >
-                                        <option value="" disabled>Select Shift</option>
-                                        <option value="Morning">Morning</option>
-                                        <option value="Evening">Evening</option>
-                                        <option value="Night">Night</option>
-                                        <option value="Rotating">Rotating</option>
-                                        <option value="Flexible">Flexible</option>
-                                    </select>
-                                </div>
+                                    />
+                                    Track Break Time
+                                </label>
                             </div>
+                            {formData.trackBreaks && (
+                                <div className="jp-form-group">
+                                    <label htmlFor="breakDurationMinutes">Break Duration (minutes)</label>
+                                    <input
+                                        type="number"
+                                        id="breakDurationMinutes"
+                                        name="breakDurationMinutes"
+                                        value={formData.breakDurationMinutes}
+                                        onChange={handleChange}
+                                        min="0"
+                                        max="120"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
 
-                            <div className="position-form-group">
-                                <label htmlFor="workingHours">Working Hours per Day *</label>
+            case 'DAILY':
+                return (
+                    <div className="jp-section">
+                        <h4>Daily Contract Configuration</h4>
+                        <div className="jp-form-row">
+                            <div className="jp-form-group">
+                                <label htmlFor="dailyRate">
+                                    Daily Rate ($) <span className="jp-required">*</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    id="dailyRate"
+                                    name="dailyRate"
+                                    value={formData.dailyRate}
+                                    onChange={handleChange}
+                                    min="0"
+                                    step="0.01"
+                                    required
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div className="jp-form-group">
+                                <label htmlFor="workingDaysPerMonth">
+                                    Working Days per Month <span className="jp-required">*</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    id="workingDaysPerMonth"
+                                    name="workingDaysPerMonth"
+                                    value={formData.workingDaysPerMonth}
+                                    onChange={handleChange}
+                                    min="1"
+                                    max="31"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="jp-form-row">
+                            <div className="jp-form-group jp-checkbox-group">
+                                <label>
+                                    <input
+                                        type="checkbox"
+                                        name="includesWeekends"
+                                        checked={formData.includesWeekends}
+                                        onChange={handleChange}
+                                    />
+                                    Includes Weekend Work
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case 'MONTHLY':
+                return (
+                    <div className="jp-section">
+                        <h4>Monthly Contract Configuration</h4>
+                        <div className="jp-form-row">
+                            <div className="jp-form-group">
+                                <label htmlFor="monthlyBaseSalary">
+                                    Monthly Base Salary ($) <span className="jp-required">*</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    id="monthlyBaseSalary"
+                                    name="monthlyBaseSalary"
+                                    value={formData.monthlyBaseSalary}
+                                    onChange={handleChange}
+                                    min="0"
+                                    step="0.01"
+                                    required
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div className="jp-form-group">
+                                <label htmlFor="workingHours">Standard Working Hours per Day</label>
                                 <input
                                     type="number"
                                     id="workingHours"
                                     name="workingHours"
                                     value={formData.workingHours}
                                     onChange={handleChange}
-                                    required
                                     min="1"
                                     max="24"
                                 />
                             </div>
                         </div>
-
-                        <div className="position-form-row">
-                            <div className="position-form-group">
-                                <label htmlFor="vacations">Vacation Policy *</label>
-                                <div className="position-select-wrapper">
+                        <div className="jp-form-row">
+                            <div className="jp-form-group">
+                                <label htmlFor="shifts">Shifts</label>
+                                <div className="jp-select-wrapper">
                                     <select
-                                        id="vacations"
-                                        name="vacations"
-                                        value={formData.vacations}
+                                        id="shifts"
+                                        name="shifts"
+                                        value={formData.shifts}
                                         onChange={handleChange}
-                                        required
                                     >
-                                        <option value="" disabled>Select Vacation Policy</option>
-                                        <option value="10 days">10 days</option>
-                                        <option value="15 days">15 days</option>
-                                        <option value="21 days">21 days</option>
-                                        <option value="28 days">28 days</option>
-                                        <option value="Custom">Custom</option>
+                                        <option value="Day Shift">Day Shift</option>
+                                        <option value="Night Shift">Night Shift</option>
+                                        <option value="Rotating Shifts">Rotating Shifts</option>
+                                        <option value="Flexible">Flexible</option>
                                     </select>
                                 </div>
                             </div>
+                            <div className="jp-form-group">
+                                <label htmlFor="vacations">Vacation Policy</label>
+                                <input
+                                    type="text"
+                                    id="vacations"
+                                    name="vacations"
+                                    value={formData.vacations}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 21 days annual leave"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                );
 
-                            {formData.vacations === 'Custom' && (
-                                <div className="position-form-group">
-                                    <label htmlFor="customVacationDays">Custom Vacation Days *</label>
+            default:
+                return null;
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="jp-modal">
+            <div className="jp-modal-content">
+                <div className="jp-modal-header">
+                    <h2>Edit Position</h2>
+                    <button className="jp-modal-close" onClick={onClose}>×</button>
+                </div>
+
+                {error && (
+                    <div className="jp-error">
+                        {error}
+                    </div>
+                )}
+
+                {(loadingDepartments || loadingEmployees) ? (
+                    <div className="jp-loading">Loading form data...</div>
+                ) : (
+                    <form onSubmit={handleSubmit}>
+                        {/* Basic Information */}
+                        <div className="jp-section">
+                            <h3>Basic Information</h3>
+                            <div className="jp-form-row">
+                                <div className="jp-form-group">
+                                    <label htmlFor="positionName">
+                                        Position Name <span className="jp-required">*</span>
+                                    </label>
                                     <input
-                                        type="number"
-                                        id="customVacationDays"
-                                        name="customVacationDays"
-                                        value={formData.customVacationDays}
+                                        type="text"
+                                        id="positionName"
+                                        name="positionName"
+                                        value={formData.positionName}
                                         onChange={handleChange}
                                         required
-                                        min="1"
-                                        placeholder="Number of days"
+                                        placeholder="e.g. Software Engineer"
                                     />
                                 </div>
-                            )}
+
+                                <div className="jp-form-group">
+                                    <label htmlFor="department">
+                                        Department <span className="jp-required">*</span>
+                                    </label>
+                                    <div className="jp-select-wrapper">
+                                        <select
+                                            id="department"
+                                            name="department"
+                                            value={formData.department}
+                                            onChange={handleChange}
+                                            required
+                                        >
+                                            <option value="" disabled>Select Department</option>
+                                            {departments.map(department => (
+                                                <option key={department.id} value={department.name}>
+                                                    {department.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="jp-form-row">
+                                <div className="jp-form-group">
+                                    <label htmlFor="head">Reporting To</label>
+                                    <div className="jp-select-wrapper">
+                                        <select
+                                            id="head"
+                                            name="head"
+                                            value={formData.head}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="">Select Manager (Optional)</option>
+                                            {employees.map(employee => (
+                                                <option
+                                                    key={employee.id}
+                                                    value={employee.fullName || `${employee.firstName} ${employee.lastName}`}
+                                                >
+                                                    {employee.fullName || `${employee.firstName} ${employee.lastName}`}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="jp-form-group">
+                                    <label htmlFor="experienceLevel">Experience Level</label>
+                                    <div className="jp-select-wrapper">
+                                        <select
+                                            id="experienceLevel"
+                                            name="experienceLevel"
+                                            value={formData.experienceLevel}
+                                            onChange={handleChange}
+                                        >
+                                            {experienceLevels.map(level => (
+                                                <option key={level.value} value={level.value}>
+                                                    {level.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="jp-form-row">
+                                <div className="jp-form-group">
+                                    <label htmlFor="probationPeriod">Probation Period (days)</label>
+                                    <input
+                                        type="number"
+                                        id="probationPeriod"
+                                        name="probationPeriod"
+                                        value={formData.probationPeriod}
+                                        onChange={handleChange}
+                                        min="0"
+                                        max="365"
+                                        placeholder="90"
+                                    />
+                                </div>
+                                <div className="jp-checkbox-group">
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            name="active"
+                                            checked={formData.active}
+                                            onChange={handleChange}
+                                        />
+                                        Active Position
+                                    </label>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="position-form-actions">
+                        {/* Contract Type Selection */}
+                        <div className="jp-section">
+                            <h3>Contract Type</h3>
+                            <div className="jp-contract-selector">
+                                {contractTypes.map(type => (
+                                    <div
+                                        key={type.value}
+                                        className={`jp-contract-option ${formData.contractType === type.value ? 'selected' : ''}`}
+                                        onClick={() => setFormData(prev => ({ ...prev, contractType: type.value }))}
+                                    >
+                                        <div className="jp-contract-header">
+                                            <input
+                                                type="radio"
+                                                name="contractType"
+                                                value={type.value}
+                                                checked={formData.contractType === type.value}
+                                                onChange={handleChange}
+                                            />
+                                            <span className="jp-contract-label">{type.label}</span>
+                                        </div>
+                                        <p className="jp-contract-description">{type.description}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Contract-Specific Fields */}
+                        {renderContractSpecificFields()}
+
+                        {/* Salary Calculation Preview */}
+                        <div className="jp-section">
+                            <h3>Salary Calculation Preview</h3>
+                            <div className="jp-salary-preview">
+                                <div className="jp-salary-item">
+                                    <span className="jp-salary-label">Calculated Daily Rate:</span>
+                                    <span className="jp-salary-value">${calculatedSalary.daily.toFixed(2)}</span>
+                                </div>
+                                <div className="jp-salary-item">
+                                    <span className="jp-salary-label">Calculated Monthly Salary:</span>
+                                    <span className="jp-salary-value">${calculatedSalary.monthly.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="jp-form-actions">
                             <button
                                 type="button"
-                                className="position-cancel-button"
+                                className="jp-cancel-button"
                                 onClick={onClose}
                                 disabled={loading}
                             >
@@ -422,7 +715,7 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                             </button>
                             <button
                                 type="submit"
-                                className="position-submit-button"
+                                className="jp-submit-button"
                                 disabled={loading}
                             >
                                 {loading ? 'Updating...' : 'Update Position'}
