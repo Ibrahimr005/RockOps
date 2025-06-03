@@ -19,6 +19,7 @@ const UnifiedTransactionsView = forwardRef(({
     const [showAcceptModal, setShowAcceptModal] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [receivedQuantities, setReceivedQuantities] = useState({});
+    const [itemsNotReceived, setItemsNotReceived] = useState({});
     const [acceptComment, setAcceptComment] = useState('');
     const [purpose, setPurpose] = useState('CONSUMABLE');
     const [processingAction, setProcessingAction] = useState(false);
@@ -32,6 +33,22 @@ const UnifiedTransactionsView = forwardRef(({
             ...prev,
             [itemId]: numericValue
         }));
+    };
+
+    // NEW: Handle not received checkbox changes
+    const handleItemNotReceivedChange = (itemId, notReceived) => {
+        setItemsNotReceived(prev => ({
+            ...prev,
+            [itemId]: notReceived
+        }));
+        
+        // If marking as not received, set quantity to 0
+        if (notReceived) {
+            setReceivedQuantities(prev => ({
+                ...prev,
+                [itemId]: 0
+            }));
+        }
     };
 
     // Expose refresh methods to parent
@@ -325,20 +342,24 @@ const UnifiedTransactionsView = forwardRef(({
 
         // Initialize received quantities with empty values
         const initialQuantities = {};
+        const initialNotReceived = {};
         transaction.items.forEach(item => {
             initialQuantities[item.id] = 0;
+            initialNotReceived[item.id] = false;
         });
         setReceivedQuantities(initialQuantities);
+        setItemsNotReceived(initialNotReceived);
         setShowAcceptModal(true);
     };
 
     const handleAcceptSubmit = async () => {
         setProcessingAction(true);
         try {
-            // Validate all quantities are provided
+            // Validate all quantities are provided (unless item is marked as not received)
             for (const itemId in receivedQuantities) {
-                if (receivedQuantities[itemId] === undefined || receivedQuantities[itemId] < 0) {
-                    throw new Error("Please specify valid received quantities for all items");
+                const isNotReceived = itemsNotReceived[itemId];
+                if (!isNotReceived && (receivedQuantities[itemId] === undefined || receivedQuantities[itemId] < 0)) {
+                    throw new Error("Please specify valid received quantities for all items or mark them as not received");
                 }
             }
 
@@ -347,7 +368,8 @@ const UnifiedTransactionsView = forwardRef(({
                 await equipmentService.acceptEquipmentTransaction(entityId, selectedTransaction.id, {
                     receivedQuantities,
                     comment: acceptComment,
-                    purpose: purpose
+                    purpose: purpose,
+                    itemsNotReceived: itemsNotReceived
                 });
             } else {
                 // For warehouse transactions, use the general transaction service
@@ -529,8 +551,19 @@ const UnifiedTransactionsView = forwardRef(({
                                                     max={item.quantity}
                                                     value={receivedQuantities[item.id] || 0}
                                                     onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                                                    disabled={processingAction}
+                                                    disabled={processingAction || itemsNotReceived[item.id]}
                                                 />
+                                            </div>
+                                            <div className="not-received-checkbox">
+                                                <label>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={itemsNotReceived[item.id] || false}
+                                                        onChange={(e) => handleItemNotReceivedChange(item.id, e.target.checked)}
+                                                        disabled={processingAction}
+                                                    />
+                                                    Not received/sent
+                                                </label>
                                             </div>
                                         </div>
                                     </div>

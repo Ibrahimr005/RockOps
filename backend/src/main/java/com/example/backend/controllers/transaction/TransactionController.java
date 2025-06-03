@@ -82,14 +82,22 @@ public class TransactionController {
         try {
             // Convert received items from DTO to the format expected by service
             Map<UUID, Integer> receivedQuantities = new HashMap<>();
+            Map<UUID, Boolean> itemsNotReceived = new HashMap<>();
+            
             for (var receivedItem : request.getReceivedItems()) {
                 UUID itemId = UUID.fromString(receivedItem.getTransactionItemId());
                 receivedQuantities.put(itemId, receivedItem.getReceivedQuantity());
+                
+                // Extract itemNotReceived flag if present
+                if (receivedItem.getItemNotReceived() != null) {
+                    itemsNotReceived.put(itemId, receivedItem.getItemNotReceived());
+                }
             }
 
             Transaction transaction = transactionService.acceptTransaction(
                     transactionId,
                     receivedQuantities,
+                    itemsNotReceived,
                     request.getUsername(),
                     request.getAcceptanceComment()
             );
@@ -251,6 +259,7 @@ public class TransactionController {
             }
 
             Map<UUID, Integer> receivedQuantities = new HashMap<>();
+            Map<UUID, Boolean> itemsNotReceived = new HashMap<>();
 
             for (Object itemObj : receivedItemsList) {
                 if (!(itemObj instanceof Map<?, ?> itemMap)) {
@@ -268,11 +277,19 @@ public class TransactionController {
                 int receivedQuantity = Integer.parseInt(quantityObj.toString());
 
                 receivedQuantities.put(itemId, receivedQuantity);
+                
+                // Extract itemNotReceived flag if present
+                Object itemNotReceivedObj = itemMap.get("itemNotReceived");
+                if (itemNotReceivedObj != null) {
+                    boolean itemNotReceived = Boolean.parseBoolean(itemNotReceivedObj.toString());
+                    itemsNotReceived.put(itemId, itemNotReceived);
+                }
             }
 
             Transaction transaction = transactionService.acceptTransaction(
                     transactionId,
                     receivedQuantities,
+                    itemsNotReceived,
                     username,
                     acceptanceComment
             );

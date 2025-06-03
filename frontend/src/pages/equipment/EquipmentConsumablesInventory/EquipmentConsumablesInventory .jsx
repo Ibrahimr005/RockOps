@@ -4,6 +4,8 @@ import { equipmentService } from '../../../services/equipmentService';
 import { transactionService } from '../../../services/transactionService';
 import './EquipmentConsumablesInventory.scss';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useEquipmentPermissions } from '../../../utils/rbac';
 
 const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref) => {
 
@@ -18,6 +20,10 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
     const [itemsPerPage, setItemsPerPage] = useState(5);
 
     const { showInfo } = useSnackbar();
+
+    // Get authentication context and permissions
+    const auth = useAuth();
+    const permissions = useEquipmentPermissions(auth);
 
     // Function to fetch transaction details and show in snackbar
     const showTransactionDetails = async (transactionId, batchNumber) => {
@@ -170,7 +176,7 @@ Click the ✕ button to close`;
             accessor: 'lastUpdated',
             render: (row, value) => value ? new Date(value).toLocaleDateString() : "N/A"
         },
-        ...(activeTab === 'overReceived' ? [{
+        ...(activeTab === 'overReceived' && permissions.canEdit ? [{
             header: 'Actions',
             accessor: 'actions',
             render: (row) => (
@@ -319,11 +325,13 @@ Click the ✕ button to close`;
                     </div>
                 </div>
             )}
-            <button className="add-button2" onClick={onAddClick}>
-                <svg className="plus-icon2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 5v14M5 12h14"/>
-                </svg>
-            </button>
+            {permissions.canCreate && (
+                <button className="add-button2" onClick={onAddClick}>
+                    <svg className="plus-icon2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                </button>
+            )}
         </div>
     );
 });

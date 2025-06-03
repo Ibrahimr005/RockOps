@@ -16,4 +16,5 @@ public class EquipmentTransactionAcceptRequestDTO {
     private Map<String, Integer> receivedQuantities;
     private String comment;
     private TransactionPurpose purpose;
+    private Map<String, Boolean> itemsNotReceived;
 } 

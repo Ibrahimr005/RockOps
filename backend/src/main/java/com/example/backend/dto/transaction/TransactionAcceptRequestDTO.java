@@ -23,5 +23,6 @@ public class TransactionAcceptRequestDTO {
     public static class ReceivedItemDTO {
         private String transactionItemId;
         private Integer receivedQuantity;
+        private Boolean itemNotReceived;
     }
 } 

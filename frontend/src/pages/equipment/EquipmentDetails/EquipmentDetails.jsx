@@ -14,6 +14,8 @@ import MaintenanceAddModal from '../MaintenanceAddModal/MaintenanceAddModal';
 import AddConsumablesModal from '../EquipmentConsumablesInventory/AddConsumablesModal/AddConsumablesModal';
 import { equipmentService } from "../../../services/equipmentService";
 import { useSnackbar } from "../../../contexts/SnackbarContext";
+import { useAuth } from "../../../contexts/AuthContext";
+import { useEquipmentPermissions } from "../../../utils/rbac";
 import UnifiedTransactionsView from "../UnifiedTransactionsView/UnifiedTransactionsView";
 import {sarkyService} from "../../../services/sarkyService";
 
@@ -24,6 +26,11 @@ const EquipmentDetails = () => {
     const params = useParams();
     const navigate = useNavigate();
     const { showSuccess, showError } = useSnackbar();
+
+    // Get authentication context and permissions
+    const auth = useAuth();
+    const permissions = useEquipmentPermissions(auth);
+
     const [activeTab, setActiveTab] = useState("dashboard");
     const [equipmentData, setEquipmentData] = useState({
         fullModelName: "",
@@ -212,9 +219,11 @@ const EquipmentDetails = () => {
                     <button className="info-button-eq" onClick={handleViewFullDetails}>
                         <FaInfoCircle />
                     </button>
-                    <button className="delete-button-eq" title="Delete Equipment">
-                        <RiDeleteBin6Line />
-                    </button>
+                    {permissions.canDelete && (
+                        <button className="delete-button-eq" title="Delete Equipment">
+                            <RiDeleteBin6Line />
+                        </button>
+                    )}
                 </div>
             </div>
             {/* Tab Navigation */}
@@ -246,12 +255,14 @@ const EquipmentDetails = () => {
                     >
                         <FaWrench /> In-Site Maintenance
                     </button>
-                    <button
-                        className={`new-tab-button ${activeTab === "transactions" ? "active" : ""}`}
-                        onClick={() => setActiveTab("transactions")}
-                    >
-                        <FaTools /> All Transactions
-                    </button>
+                    {permissions.canEdit && (
+                        <button
+                            className={`new-tab-button ${activeTab === "transactions" ? "active" : ""}`}
+                            onClick={() => setActiveTab("transactions")}
+                        >
+                            <FaTools /> All Transactions
+                        </button>
+                    )}
                 </div>
                 {/* Tab Content */}
                 <div className="tab-content">
@@ -278,7 +289,7 @@ const EquipmentDetails = () => {
                                 <EquipmentConsumablesInventory
                                     ref={consumablesInventoryRef}
                                     equipmentId={params.EquipmentID}
-                                    onAddClick={() => setIsAddConsumableModalOpen(true)}
+                                    onAddClick={() => permissions.canCreate && setIsAddConsumableModalOpen(true)}
                                 />
                             </div>
                         </div>
@@ -421,15 +432,17 @@ const EquipmentDetails = () => {
                                     showAddButton={false} // Hide floating add button since we have one in header
                                 />
                             </div>
-                            <button className="add-button-warehouse" onClick={handleAddInSiteMaintenance}>
-                                <svg className="plus-icon-warehouse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M12 5v14M5 12h14"/>
-                                </svg>
-                            </button>
+                            {permissions.canCreate && (
+                                <button className="add-button-warehouse" onClick={handleAddInSiteMaintenance}>
+                                    <svg className="plus-icon-warehouse" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M12 5v14M5 12h14"/>
+                                    </svg>
+                                </button>
+                            )}
                         </div>
                     )}
 
-                    {activeTab === "transactions" && (
+                    {activeTab === "transactions" && permissions.canEdit && (
                         <div className="tab-panel">
                             <div className="panel-header">
                                 <h2 className="panel-title">Equipment Transactions</h2>
@@ -451,16 +464,18 @@ const EquipmentDetails = () => {
             </div>
 
             {/* Add Consumable Modal */}
-            <AddConsumablesModal
-                isOpen={isAddConsumableModalOpen}
-                onClose={() => setIsAddConsumableModalOpen(false)}
-                equipmentId={params.EquipmentID}
-                equipmentData={equipmentData}
-                onTransactionAdded={refreshAllTabs}
-            />
+            {permissions.canCreate && (
+                <AddConsumablesModal
+                    isOpen={isAddConsumableModalOpen}
+                    onClose={() => setIsAddConsumableModalOpen(false)}
+                    equipmentId={params.EquipmentID}
+                    equipmentData={equipmentData}
+                    onTransactionAdded={refreshAllTabs}
+                />
+            )}
 
             {/* Modals */}
-            {isAddMaintenanceModalOpen && (
+            {isAddMaintenanceModalOpen && permissions.canCreate && (
                 <MaintenanceAddModal
                     isOpen={isAddMaintenanceModalOpen}
                     onClose={() => setIsAddMaintenanceModalOpen(false)}
@@ -469,7 +484,7 @@ const EquipmentDetails = () => {
                 />
             )}
 
-            {isMaintenanceTransactionModalOpen && (
+            {isMaintenanceTransactionModalOpen && permissions.canCreate && (
                 <MaintenanceTransactionModal
                     isOpen={isMaintenanceTransactionModalOpen}
                     onClose={() => setIsMaintenanceTransactionModalOpen(false)}

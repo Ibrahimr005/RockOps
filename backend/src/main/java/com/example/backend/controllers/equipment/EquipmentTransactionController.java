@@ -294,10 +294,19 @@ public class EquipmentTransactionController {
                 receivedQuantities.put(UUID.fromString(key), value);
             });
 
+            // Convert itemsNotReceived from String keys to UUID keys
+            Map<UUID, Boolean> itemsNotReceived = new HashMap<>();
+            if (requestBody.getItemsNotReceived() != null) {
+                requestBody.getItemsNotReceived().forEach((key, value) -> {
+                    itemsNotReceived.put(UUID.fromString(key), value);
+                });
+            }
+
             // Accept the transaction
             Transaction updatedTransaction = transactionService.acceptEquipmentTransaction(
                     transactionId,
                     receivedQuantities,
+                    itemsNotReceived, // Use extracted data instead of empty HashMap
                     userDetails.getUsername(),
                     requestBody.getComment(),
                     requestBody.getPurpose()
@@ -441,10 +450,23 @@ public class EquipmentTransactionController {
             receivedQuantities.put(UUID.fromString(key), value);
         });
 
+        // Extract itemsNotReceived if present
+        Map<UUID, Boolean> itemsNotReceived = new HashMap<>();
+        if (requestBody.containsKey("itemsNotReceived")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Boolean> itemsNotReceivedMap = (Map<String, Boolean>) requestBody.get("itemsNotReceived");
+            if (itemsNotReceivedMap != null) {
+                itemsNotReceivedMap.forEach((key, value) -> {
+                    itemsNotReceived.put(UUID.fromString(key), value);
+                });
+            }
+        }
+
         // Accept the transaction
         Transaction updatedTransaction = transactionService.acceptEquipmentTransaction(
                 transactionId,
                 receivedQuantities,
+                itemsNotReceived, // Use extracted data instead of empty HashMap
                 userDetails.getUsername(),
                 comment,
                 purpose

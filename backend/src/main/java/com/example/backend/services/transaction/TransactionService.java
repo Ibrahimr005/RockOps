@@ -326,8 +326,8 @@ public class TransactionService {
             item.setReceivedQuantity(receivedQuantity);
 
             // NEW: Check if item was marked as not received FIRST
-            Boolean itemNotReceived = itemsNotReceived != null ? itemsNotReceived.get(item.getId()) : false;
-            if (itemNotReceived != null && itemNotReceived) {
+            Boolean itemNotReceived = itemsNotReceived != null ? itemsNotReceived.get(item.getId()) : null;
+            if (itemNotReceived != null && itemNotReceived.booleanValue()) {
                 allItemsMatch = false;
                 item.setStatus(TransactionStatus.REJECTED);
                 item.setRejectionReason("Item was not sent/received");
