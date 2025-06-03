@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
-import { Package, Users, Warehouse, AlertTriangle, TrendingUp, Search, RefreshCw, Activity, MapPin, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { Package, Users, Warehouse, AlertTriangle, TrendingUp, Search, RefreshCw, Activity, MapPin, CheckCircle, ArrowUp, ArrowDown, Eye, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
 import './WarehouseDashboard.scss';
 
 const WarehouseManagerDashboard = () => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [timeframe, setTimeframe] = useState('week');
+    const [selectedWarehouse, setSelectedWarehouse] = useState('all');
 
     // State for all data
     const [warehouses, setWarehouses] = useState([]);
@@ -21,24 +23,14 @@ const WarehouseManagerDashboard = () => {
     const fetchWarehouses = async () => {
         try {
             const token = localStorage.getItem("token");
-
-            if (!token) {
-                throw new Error("No authentication token found");
-            }
-
+            if (!token) throw new Error("No authentication token found");
             const response = await fetch(`${API_BASE_URL}/warehouses`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                }
+                headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
             });
-
             if (response.ok) {
                 const data = await response.json();
                 setWarehouses(data);
                 return data;
-            } else {
-                console.error('Failed to fetch warehouses:', response.status, response.statusText);
             }
         } catch (error) {
             console.error('Error fetching warehouses:', error);
@@ -49,24 +41,14 @@ const WarehouseManagerDashboard = () => {
     const fetchItemTypes = async () => {
         try {
             const token = localStorage.getItem("token");
-
-            if (!token) {
-                throw new Error("No authentication token found");
-            }
-
+            if (!token) throw new Error("No authentication token found");
             const response = await fetch(`${API_BASE_URL}/itemTypes`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                }
+                headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
             });
-
             if (response.ok) {
                 const data = await response.json();
                 setItemTypes(data);
                 return data;
-            } else {
-                console.error('Failed to fetch item types:', response.status, response.statusText);
             }
         } catch (error) {
             console.error('Error fetching item types:', error);
@@ -77,24 +59,14 @@ const WarehouseManagerDashboard = () => {
     const fetchItemCategories = async () => {
         try {
             const token = localStorage.getItem("token");
-
-            if (!token) {
-                throw new Error("No authentication token found");
-            }
-
+            if (!token) throw new Error("No authentication token found");
             const response = await fetch(`${API_BASE_URL}/itemCategories`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                }
+                headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
             });
-
             if (response.ok) {
                 const data = await response.json();
                 setItemCategories(data);
                 return data;
-            } else {
-                console.error('Failed to fetch item categories:', response.status, response.statusText);
             }
         } catch (error) {
             console.error('Error fetching item categories:', error);
@@ -105,23 +77,11 @@ const WarehouseManagerDashboard = () => {
     const fetchWarehouseItems = async (warehouseId) => {
         try {
             const token = localStorage.getItem("token");
-
-            if (!token) {
-                throw new Error("No authentication token found");
-            }
-
+            if (!token) throw new Error("No authentication token found");
             const response = await fetch(`${API_BASE_URL}/items/warehouse/${warehouseId}`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                }
+                headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
             });
-
-            if (response.ok) {
-                return await response.json();
-            } else {
-                console.error(`Failed to fetch items for warehouse ${warehouseId}:`, response.status, response.statusText);
-            }
+            if (response.ok) return await response.json();
         } catch (error) {
             console.error(`Error fetching items for warehouse ${warehouseId}:`, error);
         }
@@ -131,23 +91,11 @@ const WarehouseManagerDashboard = () => {
     const fetchWarehouseSummary = async (warehouseId) => {
         try {
             const token = localStorage.getItem("token");
-
-            if (!token) {
-                throw new Error("No authentication token found");
-            }
-
+            if (!token) throw new Error("No authentication token found");
             const response = await fetch(`${API_BASE_URL}/items/warehouse/${warehouseId}/summary`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                }
+                headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
             });
-
-            if (response.ok) {
-                return await response.json();
-            } else {
-                console.error(`Failed to fetch summary for warehouse ${warehouseId}:`, response.status, response.statusText);
-            }
+            if (response.ok) return await response.json();
         } catch (error) {
             console.error(`Error fetching summary for warehouse ${warehouseId}:`, error);
         }
@@ -157,30 +105,17 @@ const WarehouseManagerDashboard = () => {
     const fetchWarehouseItemCounts = async (warehouseId) => {
         try {
             const token = localStorage.getItem("token");
-
-            if (!token) {
-                throw new Error("No authentication token found");
-            }
-
+            if (!token) throw new Error("No authentication token found");
             const response = await fetch(`${API_BASE_URL}/items/warehouse/${warehouseId}/counts`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                }
+                headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
             });
-
-            if (response.ok) {
-                return await response.json();
-            } else {
-                console.error(`Failed to fetch counts for warehouse ${warehouseId}:`, response.status, response.statusText);
-            }
+            if (response.ok) return await response.json();
         } catch (error) {
             console.error(`Error fetching counts for warehouse ${warehouseId}:`, error);
         }
         return {};
     };
 
-    // Load all data
     const loadAllData = async () => {
         setLoading(true);
         try {
@@ -215,39 +150,13 @@ const WarehouseManagerDashboard = () => {
         loadAllData();
     }, []);
 
-    // Utility functions
-    const getItemStatusLabel = (status) => {
-        const statusMap = {
-            'IN_WAREHOUSE': 'In Stock',
-            'MISSING': 'Missing',
-            'OVERRECEIVED': 'Over Received',
-            'DELIVERING': 'Delivering',
-            'PENDING': 'Pending'
-        };
-        return statusMap[status] || status;
-    };
-
-    const getItemStatusClass = (status) => {
-        const statusClasses = {
-            'IN_WAREHOUSE': 'status-in-stock',
-            'MISSING': 'status-missing',
-            'OVERRECEIVED': 'status-over-received',
-            'DELIVERING': 'status-delivering',
-            'PENDING': 'status-pending'
-        };
-        return statusClasses[status] || 'status-default';
-    };
-
     // Calculate summary statistics
     const totalWarehouses = warehouses.length;
     const totalItems = items.length;
     const totalEmployees = warehouses.reduce((sum, w) => sum + (w.employees?.length || 0), 0);
     const totalAlerts = Object.values(itemCounts).reduce((sum, counts) =>
         sum + (counts.stolen || 0) + (counts.overReceived || 0), 0);
-    const totalResolved = Object.values(itemCounts).reduce((sum, counts) =>
-        sum + (counts.resolved || 0), 0);
 
-    // Prepare chart data
     const warehouseData = warehouses.map(warehouse => {
         const summary = warehouseSummaries[warehouse.id] || {};
         const counts = itemCounts[warehouse.id] || {};
@@ -256,57 +165,10 @@ const WarehouseManagerDashboard = () => {
             totalItems: summary.totalItems || 0,
             activeIssues: summary.activeDiscrepancies || 0,
             inStock: counts.inWarehouse || 0,
-            employees: warehouse.employees?.length || 0
+            employees: warehouse.employees?.length || 0,
+            capacity: 1000,
+            utilization: Math.round(((summary.totalItems || 0) / 1000) * 100)
         };
-    });
-
-    // Separate parent and child categories
-    const parentCategories = itemCategories.filter(category => !category.parentCategory);
-    const childCategories = itemCategories.filter(category => category.parentCategory);
-
-    // Parent categories data
-    const parentCategoryData = parentCategories.map(category => {
-        const count = items.filter(item => {
-            const itemCategory = item.itemType?.itemCategory;
-            // Count items that belong directly to this parent category or to its children
-            return itemCategory?.name === category.name ||
-                (itemCategory?.parentCategory?.name === category.name);
-        }).length;
-        return {
-            name: category.name,
-            count: count,
-            value: count,
-            children: childCategories.filter(child => child.parentCategory?.name === category.name)
-        };
-    }).filter(item => item.count > 0);
-
-    // Child categories data
-    const childCategoryData = childCategories.map(category => {
-        const count = items.filter(item => item.itemType?.itemCategory?.name === category.name).length;
-        return {
-            name: category.name,
-            count: count,
-            value: count,
-            parent: category.parentCategory?.name || 'No Parent'
-        };
-    }).filter(item => item.count > 0);
-
-    // Item Types grouped by category
-    const itemTypesByCategory = {};
-    itemCategories.forEach(category => {
-        const typesInCategory = itemTypes.filter(type => type.itemCategory?.name === category.name);
-        if (typesInCategory.length > 0) {
-            itemTypesByCategory[category.name] = typesInCategory.map(type => {
-                const count = items.filter(item => item.itemType?.name === type.name).length;
-                return {
-                    name: type.name,
-                    count: count,
-                    category: category.name,
-                    isParentCategory: !category.parentCategory,
-                    parentCategory: category.parentCategory?.name || null
-                };
-            }).filter(type => type.count > 0);
-        }
     });
 
     const statusData = [
@@ -317,217 +179,333 @@ const WarehouseManagerDashboard = () => {
         { name: 'Pending', value: items.filter(item => item.itemStatus === 'PENDING').length, color: '#8b5cf6' }
     ].filter(item => item.value > 0);
 
-    const COLORS = ['#87ceeb', '#60a5fa', '#93c5fd', '#dbeafe', '#a2d2ff'];
+    const categoryData = itemCategories.filter(cat => !cat.parentCategory).map(category => {
+        const count = items.filter(item => {
+            const itemCategory = item.itemType?.itemCategory;
+            return itemCategory?.name === category.name || (itemCategory?.parentCategory?.name === category.name);
+        }).length;
+        return { name: category.name, value: count };
+    }).filter(item => item.value > 0).slice(0, 5);
 
-    // Filter items for search
-    const filteredItems = items.filter(item =>
-        item.itemType?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.warehouseName?.toLowerCase().includes(searchTerm.toLowerCase())
-    ).slice(0, 10); // Show only top 10 for dashboard
+    const trendData = [
+        { name: 'Mon', items: 2400, issues: 24 },
+        { name: 'Tue', items: 1398, issues: 13 },
+        { name: 'Wed', items: 9800, issues: 98 },
+        { name: 'Thu', items: 3908, issues: 39 },
+        { name: 'Fri', items: 4800, issues: 48 },
+        { name: 'Sat', items: 3800, issues: 38 },
+        { name: 'Sun', items: 4300, issues: 43 }
+    ];
 
     return (
-        <div className="modern-dashboard">
-            {/* Header */}
-            <div className="dashboard-header">
-                <div className="header-content">
-                    <div className="header-main">
-                        <h1>Warehouse Management Dashboard</h1>
+        <div className="wh-dashboard">
+            {/* Header Section */}
+            <header className="wh-header">
+                <div className="wh-header-container">
+                    <div className="wh-header-content">
+                        <div className="wh-title-section">
+                            <h1>Warehouse Operations</h1>
+                            <p>Real-time insights and analytics dashboard</p>
+                        </div>
+                        <div className="wh-header-controls">
+                            <select value={timeframe} onChange={(e) => setTimeframe(e.target.value)} className="wh-time-filter">
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="quarter">This Quarter</option>
+                            </select>
+                            <select value={selectedWarehouse} onChange={(e) => setSelectedWarehouse(e.target.value)} className="wh-warehouse-filter">
+                                <option value="all">All Warehouses</option>
+                                {warehouses.map(w => (
+                                    <option key={w.id} value={w.id}>{w.name}</option>
+                                ))}
+                            </select>
+                            <button onClick={loadAllData} disabled={loading} className="wh-refresh-btn">
+                                <RefreshCw className={loading ? "wh-spinning" : ""} />
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div className="wh-content">
+                {/* KPI Section */}
+                <section className="wh-kpi-section">
+                    <div className="wh-section-header">
+                        <h2>Key Performance Indicators</h2>
                         <p>Real-time overview of your warehouse operations</p>
                     </div>
-                    <div className="header-actions">
-                    </div>
-                </div>
-            </div>
-
-            {/* Key Metrics */}
-            <div className="metrics-section">
-                <div className="metric-card primary">
-                    <div className="metric-icon">
-                        <Warehouse />
-                    </div>
-                    <div className="metric-content">
-                        <h3>{totalWarehouses}</h3>
-                        <p>Active Warehouses</p>
-                        <span className="metric-trend">+2 this month</span>
-                    </div>
-                </div>
-
-                <div className="metric-card success">
-                    <div className="metric-icon">
-                        <Package />
-                    </div>
-                    <div className="metric-content">
-                        <h3>{totalItems.toLocaleString()}</h3>
-                        <p>Total Items</p>
-                        <span className="metric-trend">{itemTypes.length} item types</span>
-                    </div>
-                </div>
-
-                <div className="metric-card info">
-                    <div className="metric-icon">
-                        <Users />
-                    </div>
-                    <div className="metric-content">
-                        <h3>{totalEmployees}</h3>
-                        <p>Total Employees</p>
-                        <span className="metric-trend">Across all locations</span>
-                    </div>
-                </div>
-
-                <div className="metric-card warning">
-                    <div className="metric-icon">
-                        <AlertTriangle />
-                    </div>
-                    <div className="metric-content">
-                        <h3>{totalAlerts}</h3>
-                        <p>Active Alerts</p>
-                        <span className="metric-trend">{totalResolved} resolved this week</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content Grid */}
-            <div className="content-grid">
-                {/* Warehouse Overview */}
-                <div className="card large">
-                    <div className="card-header">
-                        <h3>Warehouse Performance</h3>
-                        <p>Items, issues, and capacity across locations</p>
-                    </div>
-                    <div className="chart-container">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={warehouseData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                                <YAxis tick={{ fontSize: 12 }} />
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: 'white',
-                                        border: '1px solid #e5e7eb',
-                                        borderRadius: '8px',
-                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                    }}
-                                />
-                                <Bar dataKey="totalItems" fill="#87ceeb" name="Total Items" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="activeIssues" fill="#ef4444" name="Active Issues" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Parent Categories */}
-                <div className="card medium">
-                    <div className="card-header">
-                        <h3>Parent Categories</h3>
-                        <p>Main category distribution</p>
-                    </div>
-                    <div className="chart-container">
-                        <ResponsiveContainer width="100%" height={250}>
-                            <PieChart>
-                                <Pie
-                                    data={parentCategoryData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={40}
-                                    outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="count"
-                                >
-                                    {parentCategoryData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                    <div className="legend">
-                        {parentCategoryData.map((entry, index) => (
-                            <div key={entry.name} className="legend-item">
-                                <div
-                                    className="legend-color"
-                                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                                ></div>
-                                <span>{entry.name} ({entry.count} items)</span>
+                    <div className="wh-kpi-grid">
+                        <div className="wh-kpi-card wh-primary">
+                            <div className="wh-kpi-icon">
+                                <Package />
                             </div>
-                        ))}
+                            <div className="wh-kpi-content">
+                                <div className="wh-kpi-value">{totalItems.toLocaleString()}</div>
+                                <div className="wh-kpi-label">Total Inventory</div>
+                                <div className="wh-kpi-trend wh-positive">
+                                    <ArrowUp size={14} />
+                                    +12% from last month
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="wh-kpi-card wh-success">
+                            <div className="wh-kpi-icon">
+                                <CheckCircle />
+                            </div>
+                            <div className="wh-kpi-content">
+                                <div className="wh-kpi-value">{Math.round((statusData.find(s => s.name === 'In Stock')?.value || 0) / totalItems * 100) || 0}%</div>
+                                <div className="wh-kpi-label">Stock Availability</div>
+                                <div className="wh-kpi-trend wh-positive">
+                                    <ArrowUp size={14} />
+                                    +8% from last week
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="wh-kpi-card wh-warning">
+                            <div className="wh-kpi-icon">
+                                <AlertTriangle />
+                            </div>
+                            <div className="wh-kpi-content">
+                                <div className="wh-kpi-value">{totalAlerts}</div>
+                                <div className="wh-kpi-label">Active Issues</div>
+                                <div className="wh-kpi-trend wh-negative">
+                                    <ArrowDown size={14} />
+                                    -3% from last week
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="wh-kpi-card wh-info">
+                            <div className="wh-kpi-icon">
+                                <Users />
+                            </div>
+                            <div className="wh-kpi-content">
+                                <div className="wh-kpi-value">{totalEmployees}</div>
+                                <div className="wh-kpi-label">Team Members</div>
+                                <div className="wh-kpi-trend wh-neutral">
+                                    <Activity size={14} />
+                                    Across {totalWarehouses} locations
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </section>
 
-                {/* Child Categories */}
-                <div className="card medium">
-                    <div className="card-header">
-                        <h3>Child Categories</h3>
-                        <p>Subcategory breakdown</p>
+                {/* Analytics Section */}
+                <section className="wh-analytics-section">
+                    <div className="wh-section-header">
+                        <h2>Performance Analytics</h2>
+                        <p>Deep insights into warehouse operations and trends</p>
                     </div>
-                    <div className="chart-container">
-                        <ResponsiveContainer width="100%" height={250}>
-                            <BarChart data={childCategoryData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={80} />
-                                <YAxis tick={{ fontSize: 12 }} />
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: 'white',
-                                        border: '1px solid #e5e7eb',
-                                        borderRadius: '8px',
-                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                    }}
-                                    formatter={(value, name, props) => [
-                                        `${value} items`,
-                                        `Parent: ${props.payload.parent}`
-                                    ]}
-                                />
-                                <Bar dataKey="count" fill="#60a5fa" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-
-
-                {/* Warehouse Cards */}
-
-
-                {/* Item Types by Category */}
-                <div className="card large">
-                    <div className="card-header">
-                        <h3>Item Types by Category</h3>
-                        <p>Detailed breakdown of item types within each category</p>
-                    </div>
-                    <div className="category-breakdown">
-                        {Object.entries(itemTypesByCategory).map(([categoryName, types]) => {
-                            const category = itemCategories.find(cat => cat.name === categoryName);
-                            const isParent = !category?.parentCategory;
-
-                            return (
-                                <div key={categoryName} className="category-section">
-                                    <div className="category-header">
-                                        <h4 className={isParent ? 'parent-category' : 'child-category'}>
-                                            {isParent ? '📁' : '📂'} {categoryName}
-                                            {!isParent && (
-                                                <span className="parent-ref">
-                                                    → Parent: {category?.parentCategory?.name}
-                                                </span>
-                                            )}
-                                        </h4>
-                                        <span className="category-total">
-                                            {types.reduce((sum, type) => sum + type.count, 0)} total items
-                                        </span>
-                                    </div>
-                                    <div className="item-types-grid">
-                                        {types.map(type => (
-                                            <div key={type.name} className="item-type-card">
-                                                <div className="item-type-name">{type.name}</div>
-                                                <div className="item-type-count">{type.count} items</div>
-                                            </div>
-                                        ))}
+                    <div className="wh-analytics-grid">
+                        {/* Main Chart */}
+                        <div className="wh-chart-card wh-main-chart">
+                            <div className="wh-chart-header">
+                                <div className="wh-chart-title">
+                                    <BarChart3 className="wh-chart-icon" />
+                                    <div>
+                                        <h3>Warehouse Performance</h3>
+                                        <p>Inventory levels and capacity utilization</p>
                                     </div>
                                 </div>
-                            );
-                        })}
+                                <button className="wh-view-details-btn">
+                                    <Eye size={16} />
+                                    View Details
+                                </button>
+                            </div>
+                            <div className="wh-chart-container">
+                                <ResponsiveContainer width="100%" height={320}>
+                                    <BarChart data={warehouseData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                                        <XAxis dataKey="name" tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }} />
+                                        <YAxis tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }} />
+                                        <Tooltip contentStyle={{
+                                            backgroundColor: 'var(--color-surface)',
+                                            border: '1px solid var(--border-color)',
+                                            borderRadius: '8px',
+                                            color: 'var(--color-text-primary)'
+                                        }} />
+                                        <Bar dataKey="totalItems" fill="#3b82f6" name="Total Items" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="activeIssues" fill="#ef4444" name="Active Issues" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+
+                        {/* Status Chart */}
+                        <div className="wh-chart-card">
+                            <div className="wh-chart-header">
+                                <div className="wh-chart-title">
+                                    <PieChartIcon className="wh-chart-icon" />
+                                    <div>
+                                        <h3>Inventory Status</h3>
+                                        <p>Current distribution</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="wh-chart-container">
+                                <ResponsiveContainer width="100%" height={220}>
+                                    <PieChart>
+                                        <Pie data={statusData} cx="50%" cy="50%" innerRadius={40} outerRadius={80} paddingAngle={2} dataKey="value">
+                                            {statusData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="wh-chart-legend">
+                                {statusData.map((item, index) => (
+                                    <div key={item.name} className="wh-legend-item">
+                                        <div className="wh-legend-color" style={{ backgroundColor: item.color }} />
+                                        <span className="wh-legend-label">{item.name}</span>
+                                        <span className="wh-legend-value">{item.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Trends Chart */}
+                        <div className="wh-chart-card">
+                            <div className="wh-chart-header">
+                                <div className="wh-chart-title">
+                                    <TrendingUp className="wh-chart-icon" />
+                                    <div>
+                                        <h3>Weekly Trends</h3>
+                                        <p>Items vs issues</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="wh-chart-container">
+                                <ResponsiveContainer width="100%" height={220}>
+                                    <AreaChart data={trendData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                                        <XAxis dataKey="name" tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }} />
+                                        <YAxis tick={{ fontSize: 12, fill: 'var(--color-text-secondary)' }} />
+                                        <Tooltip />
+                                        <Area type="monotone" dataKey="items" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.1} />
+                                        <Area type="monotone" dataKey="issues" stroke="#ef4444" fill="#ef4444" fillOpacity={0.1} />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </section>
+
+                {/* Warehouse Management Section */}
+                <section className="wh-warehouse-section">
+                    <div className="wh-section-header">
+                        <h2>Warehouse Management</h2>
+                        <p>Monitor and manage individual warehouse locations</p>
+                    </div>
+                    <div className="wh-warehouse-content">
+                        <div className="wh-warehouse-overview">
+                            <div className="wh-overview-header">
+                                <div className="wh-overview-title">
+                                    <Warehouse className="wh-overview-icon" />
+                                    <div>
+                                        <h3>Active Locations</h3>
+                                        <p>Real-time status and metrics</p>
+                                    </div>
+                                </div>
+                                <div className="wh-search-container">
+                                    <Search className="wh-search-icon" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search warehouses..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="wh-search-input"
+                                    />
+                                </div>
+                            </div>
+                            <div className="wh-warehouse-grid">
+                                {warehouseData.filter(w =>
+                                    w.name.toLowerCase().includes(searchTerm.toLowerCase())
+                                ).map((warehouse, index) => (
+                                    <div key={warehouse.name} className="wh-warehouse-card">
+                                        <div className="wh-warehouse-header">
+                                            <div className="wh-warehouse-info">
+                                                <h4>{warehouse.name}</h4>
+                                                <div className="wh-warehouse-meta">
+                                                    <span><MapPin size={12} /> Location {index + 1}</span>
+                                                    <span><Users size={12} /> {warehouse.employees} staff</span>
+                                                </div>
+                                            </div>
+                                            <div className={`wh-status-badge ${warehouse.activeIssues === 0 ? 'wh-success' : 'wh-warning'}`}>
+                                                {warehouse.activeIssues === 0 ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
+                                            </div>
+                                        </div>
+                                        <div className="wh-warehouse-stats">
+                                            <div className="wh-stat">
+                                                <span className="wh-stat-value">{warehouse.totalItems.toLocaleString()}</span>
+                                                <span className="wh-stat-label">Items</span>
+                                            </div>
+                                            <div className="wh-stat">
+                                                <span className="wh-stat-value">{warehouse.utilization}%</span>
+                                                <span className="wh-stat-label">Capacity</span>
+                                            </div>
+                                            <div className="wh-stat">
+                                                <span className={`wh-stat-value ${warehouse.activeIssues > 0 ? 'wh-warning' : 'wh-success'}`}>
+                                                    {warehouse.activeIssues}
+                                                </span>
+                                                <span className="wh-stat-label">Issues</span>
+                                            </div>
+                                        </div>
+                                        <div className="wh-capacity-indicator">
+                                            <div className="wh-capacity-bar">
+                                                <div
+                                                    className="wh-capacity-fill"
+                                                    style={{
+                                                        width: `${warehouse.utilization}%`,
+                                                        backgroundColor: warehouse.utilization > 80 ? '#ef4444' :
+                                                            warehouse.utilization > 60 ? '#f59e0b' : '#10b981'
+                                                    }}
+                                                />
+                                            </div>
+                                            <span className="wh-capacity-text">{warehouse.utilization}% utilized</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="wh-category-overview">
+                            <div className="wh-category-header">
+                                <div className="wh-category-title">
+                                    <Package className="wh-category-icon" />
+                                    <div>
+                                        <h3>Category Distribution</h3>
+                                        <p>Items by main categories</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="wh-category-list">
+                                {categoryData.map((category, index) => (
+                                    <div key={category.name} className="wh-category-item">
+                                        <div className="wh-category-info">
+                                            <span className="wh-category-name">{category.name}</span>
+                                            <span className="wh-category-count">{category.value} items</span>
+                                        </div>
+                                        <div className="wh-category-bar">
+                                            <div
+                                                className="wh-category-fill"
+                                                style={{
+                                                    width: `${(category.value / Math.max(...categoryData.map(c => c.value))) * 100}%`,
+                                                    backgroundColor: `hsl(${200 + index * 40}, 70%, 50%)`
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
     );

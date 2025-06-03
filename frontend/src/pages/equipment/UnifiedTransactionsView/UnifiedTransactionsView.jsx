@@ -1,6 +1,6 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import axios from 'axios';
-import { useSnackbar } from '../../../Contexts/SnackbarContext';
+import { useSnackbar } from '../../../contexts/SnackbarContext';
 import './UnifiedTransactionsView.scss';
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
 

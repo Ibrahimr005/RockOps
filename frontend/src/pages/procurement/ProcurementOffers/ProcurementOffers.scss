@@ -465,7 +465,7 @@ $gray-900: #111827;
       .procurement-intro-title {
         font-size: 32px;
         font-weight: 600;
-        color: $gray-900;
+        color: var(--color-text-dark);
         margin: 0;
       }
     }

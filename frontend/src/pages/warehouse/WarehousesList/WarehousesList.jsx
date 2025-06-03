@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./WarehousesList.scss";
 import warehouseImg from "../../../assets/imgs/warehouse1.jpg"; // Default warehouse image
 import { FaWarehouse, FaTimes } from 'react-icons/fa'; // Added FaTimes for remove icons
-import { useAuth } from "../../../Contexts/AuthContext";
+import { useAuth } from "../../../contexts/AuthContext";
 
 const WarehousesList = () => {
     const [warehouses, setWarehouses] = useState([]);

@@ -1,5 +1,5 @@
 import React, {useState, useEffect } from 'react';
-import {useAuth} from '../../Contexts/AuthContext';
+import {useAuth} from '../../contexts/AuthContext';
 import Navbar from '../../components/common/Navbar/Navbar';
 import Sidebar from '../../components/common/Sidebar/Sidebar';
 import UserDashboard from './UserDashboard.jsx';

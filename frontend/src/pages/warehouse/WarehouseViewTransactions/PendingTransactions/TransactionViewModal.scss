@@ -31,7 +31,6 @@
   left: 0;
   right: 0;
   bottom: 0;
-
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2091,7 +2090,7 @@
 
       .item-rejection-header {
         display: flex;
-        justify-content: between;
+        justify-content: space-between;
         align-items: center;
         margin-bottom: 8px;
 
@@ -2420,22 +2419,22 @@
 }
 
 /* High contrast mode support */
-@media (prefers-contrast: high) {
-  .warehouse-transaction-view-modal,
-  .transaction-view-modal {
-    border: 2px solid;
-  }
-
-  .warehouse-transaction-view-overview-item,
-  .overview-item,
-  .warehouse-transaction-view-party-card,
-  .party-card,
-  .warehouse-transaction-view-item-card,
-  .item-card,
-  .warehouse-transaction-view-timeline-item {
-    border: 2px solid;
-  }
-}
+//@media (prefers-contrast: high) {
+//  .warehouse-transaction-view-modal,
+//  .transaction-view-modal {
+//    border: 2px solid;
+//  }
+//
+//  .warehouse-transaction-view-overview-item,
+//  .overview-item,
+//  .warehouse-transaction-view-party-card,
+//  .party-card,
+//  .warehouse-transaction-view-item-card,
+//  .item-card,
+//  .warehouse-transaction-view-timeline-item {
+//    border: 2px solid;
+//  }
+//}
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
