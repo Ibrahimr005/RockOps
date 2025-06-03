@@ -3,6 +3,8 @@ import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import { maintenanceTypeService } from '../../../services/maintenanceTypeService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { createErrorHandlers } from '../../../utils/errorHandler';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useEquipmentPermissions } from '../../../utils/rbac';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import './EquipmentTypeManagement.scss';
 
@@ -21,6 +23,10 @@ const MaintenanceTypeManagement = () => {
 
     // Use the snackbar context
     const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar } = useSnackbar();
+
+    // Get authentication context and permissions
+    const auth = useAuth();
+    const permissions = useEquipmentPermissions(auth);
 
     // Create error handlers for this component
     const errorHandlers = createErrorHandlers(showError, 'maintenance type');
@@ -186,20 +192,20 @@ const MaintenanceTypeManagement = () => {
         }
     ];
 
-    const actions = [
-        {
+    const actions = permissions.canEdit || permissions.canDelete ? [
+        ...(permissions.canEdit ? [{
             label: 'Edit',
             icon: <FaEdit />,
             onClick: (row) => handleOpenModal(row),
             className: 'primary'
-        },
-        {
+        }] : []),
+        ...(permissions.canDelete ? [{
             label: 'Delete',
             icon: <FaTrash />,
             onClick: (row) => confirmDelete(row.id, row.name),
             className: 'danger'
-        }
-    ];
+        }] : [])
+    ] : [];
 
     const filterableColumns = [
         { header: 'Name', accessor: 'name' },
@@ -217,12 +223,14 @@ const MaintenanceTypeManagement = () => {
                     <h1>Maintenance Types</h1>
                     <p className="header-subtitle">Manage maintenance types that can be performed on equipment</p>
                 </div>
-                <button 
-                    className="equipment-types-add-button" 
-                    onClick={() => handleOpenModal()}
-                >
-                    <FaPlus /> Add Maintenance Type
-                </button>
+                {permissions.canCreate && (
+                    <button 
+                        className="equipment-types-add-button" 
+                        onClick={() => handleOpenModal()}
+                    >
+                        <FaPlus /> Add Maintenance Type
+                    </button>
+                )}
             </div>
 
             <DataTable

@@ -4,10 +4,12 @@ import com.example.backend.dto.transaction.TransactionDTO;
 import com.example.backend.dto.transaction.TransactionItemDTO;
 import com.example.backend.models.PartyType;
 import com.example.backend.models.equipment.Equipment;
+import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.transaction.Transaction;
 import com.example.backend.models.transaction.TransactionItem;
 import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.repositories.equipment.EquipmentRepository;
+import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,9 @@ public class TransactionMapperService {
 
     @Autowired
     private EquipmentRepository equipmentRepository;
+
+    @Autowired
+    private MerchantRepository merchantRepository;
 
     /**
      * Converts a Transaction entity to TransactionDTO with enhanced sender and receiver names
@@ -102,6 +107,7 @@ public class TransactionMapperService {
 
     /**
      * Gets the entity name based on type and ID
+     * Enhanced to support all party types: WAREHOUSE, EQUIPMENT, MERCHANT, PROCUREMENT
      */
     private String getEntityName(PartyType type, UUID entityId) {
         if (type == null || entityId == null) {
@@ -118,11 +124,20 @@ public class TransactionMapperService {
                     return equipmentRepository.findById(entityId)
                             .map(Equipment::getName)
                             .orElse("Unknown Equipment");
+                case MERCHANT:
+                    return merchantRepository.findById(entityId)
+                            .map(Merchant::getName)
+                            .orElse("Unknown Merchant");
+                case PROCUREMENT:
+                    // For procurement, we might want to return a generic name or handle differently
+                    return "Procurement Team";
                 default:
                     return "Unknown Entity";
             }
         } catch (Exception e) {
-            return "Unknown";
+            // Log the error but don't fail the transaction mapping
+            System.err.println("Error resolving entity name for type " + type + " and ID " + entityId + ": " + e.getMessage());
+            return "Unknown " + type.toString().toLowerCase();
         }
     }
 } 

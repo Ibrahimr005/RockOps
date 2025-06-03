@@ -3,6 +3,8 @@ import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import { equipmentService } from '../../../services/equipmentService';
 import { workTypeService } from '../../../services/workTypeService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useEquipmentPermissions } from '../../../utils/rbac';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import './EquipmentTypeManagement.scss';
 
@@ -23,6 +25,10 @@ const EquipmentTypeManagement = () => {
 
     // Use the snackbar context
     const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar } = useSnackbar();
+
+    // Get authentication context and permissions
+    const auth = useAuth();
+    const permissions = useEquipmentPermissions(auth);
 
     // Fetch all equipment types
     const fetchTypes = async () => {
@@ -222,20 +228,21 @@ const EquipmentTypeManagement = () => {
         }
     ];
 
-    const actions = [
-        {
+    // Only show edit/delete actions if user has permissions
+    const actions = permissions.canEdit || permissions.canDelete ? [
+        ...(permissions.canEdit ? [{
             label: 'Edit',
             icon: <FaEdit />,
             onClick: (row) => handleOpenModal(row),
             className: 'primary'
-        },
-        {
+        }] : []),
+        ...(permissions.canDelete ? [{
             label: 'Delete',
             icon: <FaTrash />,
             onClick: (row) => confirmDelete(row.id, row.name),
             className: 'danger'
-        }
-    ];
+        }] : [])
+    ] : [];
 
     if (error) {
         return <div className="equipment-types-error">{error}</div>;
@@ -245,12 +252,14 @@ const EquipmentTypeManagement = () => {
         <div className="equipment-types-container">
             <div className="equipment-types-header">
                 <h1>Equipment Types</h1>
-                <button
-                    className="equipment-types-add-button"
-                    onClick={() => handleOpenModal()}
-                >
-                    <FaPlus /> Add Equipment Type
-                </button>
+                {permissions.canCreate && (
+                    <button
+                        className="equipment-types-add-button"
+                        onClick={() => handleOpenModal()}
+                    >
+                        <FaPlus /> Add Equipment Type
+                    </button>
+                )}
             </div>
 
             <DataTable

@@ -50,7 +50,7 @@ public class EquipmentTransactionController {
     @GetMapping("/{equipmentId}/transactions")
     public ResponseEntity<List<TransactionDTO>> getEquipmentTransactions(@PathVariable UUID equipmentId) {
         try {
-            List<Transaction> transactions = transactionService.getTransactionsForEquipment(equipmentId);
+        List<Transaction> transactions = transactionService.getTransactionsForEquipment(equipmentId);
             List<TransactionDTO> responseDTOs = transactionMapperService.toDTOs(transactions);
             return ResponseEntity.ok(responseDTOs);
         } catch (Exception e) {
@@ -65,7 +65,7 @@ public class EquipmentTransactionController {
     @GetMapping("/{equipmentId}/transactions/initiated")
     public ResponseEntity<List<TransactionDTO>> getInitiatedTransactions(@PathVariable UUID equipmentId) {
         try {
-            List<Transaction> transactions = transactionService.getPendingTransactionsInitiatedByEquipment(equipmentId);
+        List<Transaction> transactions = transactionService.getPendingTransactionsInitiatedByEquipment(equipmentId);
             List<TransactionDTO> responseDTOs = transactionMapperService.toDTOs(transactions);
             return ResponseEntity.ok(responseDTOs);
         } catch (Exception e) {
@@ -89,41 +89,41 @@ public class EquipmentTransactionController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            // Validate the equipment exists
-            Equipment equipment = equipmentRepository.findById(equipmentId)
-                    .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
+        // Validate the equipment exists
+        Equipment equipment = equipmentRepository.findById(equipmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
 
-            // Convert the items list to TransactionItem objects
-            List<TransactionItem> transactionItems = items.stream()
-                    .map(itemMap -> {
-                        UUID itemTypeId = UUID.fromString(itemMap.get("itemTypeId").toString());
-                        int quantity = Integer.parseInt(itemMap.get("quantity").toString());
+        // Convert the items list to TransactionItem objects
+        List<TransactionItem> transactionItems = items.stream()
+                .map(itemMap -> {
+                    UUID itemTypeId = UUID.fromString(itemMap.get("itemTypeId").toString());
+                    int quantity = Integer.parseInt(itemMap.get("quantity").toString());
 
-                        ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                                .orElseThrow(() -> new IllegalArgumentException("Item type not found"));
+                    ItemType itemType = itemTypeRepository.findById(itemTypeId)
+                            .orElseThrow(() -> new IllegalArgumentException("Item type not found"));
 
-                        return TransactionItem.builder()
-                                .itemType(itemType)
-                                .quantity(quantity)
-                                .status(TransactionStatus.PENDING)
-                                .build();
-                    })
-                    .collect(Collectors.toList());
+                    return TransactionItem.builder()
+                            .itemType(itemType)
+                            .quantity(quantity)
+                            .status(TransactionStatus.PENDING)
+                            .build();
+                })
+                .collect(Collectors.toList());
 
-            // Use the provided transaction date or default to current time
-            LocalDateTime effectiveTransactionDate = transactionDate != null ? transactionDate : LocalDateTime.now();
+        // Use the provided transaction date or default to current time
+        LocalDateTime effectiveTransactionDate = transactionDate != null ? transactionDate : LocalDateTime.now();
 
-            // Create the transaction
-            Transaction transaction = transactionService.createEquipmentTransaction(
-                    PartyType.EQUIPMENT, equipmentId,
-                    receiverType, receiverId,
-                    transactionItems,
-                    effectiveTransactionDate,
-                    userDetails.getUsername(),
-                    batchNumber,
-                    equipmentId, // Equipment is the sender initiating the transaction
-                    purpose
-            );
+        // Create the transaction
+        Transaction transaction = transactionService.createEquipmentTransaction(
+                PartyType.EQUIPMENT, equipmentId,
+                receiverType, receiverId,
+                transactionItems,
+                effectiveTransactionDate,
+                userDetails.getUsername(),
+                batchNumber,
+                equipmentId, // Equipment is the sender initiating the transaction
+                purpose
+        );
 
             TransactionDTO responseDTO = transactionMapperService.toDTO(transaction);
             return ResponseEntity.ok(responseDTO);
@@ -151,41 +151,41 @@ public class EquipmentTransactionController {
         try {
             System.out.println("Received Transaction" + equipmentId);
 
-            // Validate the equipment exists
-            Equipment equipment = equipmentRepository.findById(equipmentId)
-                    .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
+        // Validate the equipment exists
+        Equipment equipment = equipmentRepository.findById(equipmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
 
-            // Convert the items list to TransactionItem objects
-            List<TransactionItem> transactionItems = items.stream()
-                    .map(itemMap -> {
-                        UUID itemTypeId = UUID.fromString(itemMap.get("itemTypeId").toString());
-                        int quantity = Integer.parseInt(itemMap.get("quantity").toString());
+        // Convert the items list to TransactionItem objects
+        List<TransactionItem> transactionItems = items.stream()
+                .map(itemMap -> {
+                    UUID itemTypeId = UUID.fromString(itemMap.get("itemTypeId").toString());
+                    int quantity = Integer.parseInt(itemMap.get("quantity").toString());
 
-                        ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                                .orElseThrow(() -> new IllegalArgumentException("Item type not found"));
+                    ItemType itemType = itemTypeRepository.findById(itemTypeId)
+                            .orElseThrow(() -> new IllegalArgumentException("Item type not found"));
 
-                        return TransactionItem.builder()
-                                .itemType(itemType)
-                                .quantity(quantity)
-                                .status(TransactionStatus.PENDING)
-                                .build();
-                    })
-                    .collect(Collectors.toList());
+                    return TransactionItem.builder()
+                            .itemType(itemType)
+                            .quantity(quantity)
+                            .status(TransactionStatus.PENDING)
+                            .build();
+                })
+                .collect(Collectors.toList());
 
-            // Use the provided transaction date or default to current time
-            LocalDateTime effectiveTransactionDate = transactionDate != null ? transactionDate : LocalDateTime.now();
+        // Use the provided transaction date or default to current time
+        LocalDateTime effectiveTransactionDate = transactionDate != null ? transactionDate : LocalDateTime.now();
 
-            // Create the transaction
-            Transaction transaction = transactionService.createEquipmentTransaction(
-                    senderType, senderId,
-                    PartyType.EQUIPMENT, equipmentId,
-                    transactionItems,
-                    effectiveTransactionDate,
-                    userDetails.getUsername(),
-                    batchNumber,
-                    equipmentId, // Equipment is the receiver initiating the transaction
-                    purpose
-            );
+        // Create the transaction
+        Transaction transaction = transactionService.createEquipmentTransaction(
+                senderType, senderId,
+                PartyType.EQUIPMENT, equipmentId,
+                transactionItems,
+                effectiveTransactionDate,
+                userDetails.getUsername(),
+                batchNumber,
+                equipmentId, // Equipment is the receiver initiating the transaction
+                purpose
+        );
 
             TransactionDTO responseDTO = transactionMapperService.toDTO(transaction);
             return ResponseEntity.ok(responseDTO);
@@ -214,48 +214,48 @@ public class EquipmentTransactionController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            // Verify the transaction involves this equipment
-            Transaction transaction = transactionService.getTransactionById(transactionId);
-            boolean isInvolved = (transaction.getSenderType() == PartyType.EQUIPMENT &&
-                    transaction.getSenderId().equals(equipmentId)) ||
-                    (transaction.getReceiverType() == PartyType.EQUIPMENT &&
-                            transaction.getReceiverId().equals(equipmentId));
+        // Verify the transaction involves this equipment
+        Transaction transaction = transactionService.getTransactionById(transactionId);
+        boolean isInvolved = (transaction.getSenderType() == PartyType.EQUIPMENT &&
+                transaction.getSenderId().equals(equipmentId)) ||
+                (transaction.getReceiverType() == PartyType.EQUIPMENT &&
+                        transaction.getReceiverId().equals(equipmentId));
 
-            if (!isInvolved) {
-                return ResponseEntity.badRequest().build();
-            }
+        if (!isInvolved) {
+            return ResponseEntity.badRequest().build();
+        }
 
-            // Convert the items list to TransactionItem objects
-            List<TransactionItem> transactionItems = items.stream()
-                    .map(itemMap -> {
-                        UUID itemTypeId = UUID.fromString(itemMap.get("itemTypeId").toString());
-                        int quantity = Integer.parseInt(itemMap.get("quantity").toString());
+        // Convert the items list to TransactionItem objects
+        List<TransactionItem> transactionItems = items.stream()
+                .map(itemMap -> {
+                    UUID itemTypeId = UUID.fromString(itemMap.get("itemTypeId").toString());
+                    int quantity = Integer.parseInt(itemMap.get("quantity").toString());
 
-                        ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                                .orElseThrow(() -> new IllegalArgumentException("Item type not found"));
+                    ItemType itemType = itemTypeRepository.findById(itemTypeId)
+                            .orElseThrow(() -> new IllegalArgumentException("Item type not found"));
 
-                        return TransactionItem.builder()
-                                .itemType(itemType)
-                                .quantity(quantity)
-                                .status(TransactionStatus.PENDING)
-                                .build();
-                    })
-                    .collect(Collectors.toList());
+                    return TransactionItem.builder()
+                            .itemType(itemType)
+                            .quantity(quantity)
+                            .status(TransactionStatus.PENDING)
+                            .build();
+                })
+                .collect(Collectors.toList());
 
-            // Use the provided transaction date or default to current time
-            LocalDateTime effectiveTransactionDate = transactionDate != null ? transactionDate : LocalDateTime.now();
+        // Use the provided transaction date or default to current time
+        LocalDateTime effectiveTransactionDate = transactionDate != null ? transactionDate : LocalDateTime.now();
 
-            // Update the transaction
-            Transaction updatedTransaction = transactionService.updateEquipmentTransaction(
-                    transactionId,
-                    senderType, senderId,
-                    receiverType, receiverId,
-                    transactionItems,
-                    effectiveTransactionDate,
-                    userDetails.getUsername(),
-                    batchNumber,
-                    purpose
-            );
+        // Update the transaction
+        Transaction updatedTransaction = transactionService.updateEquipmentTransaction(
+                transactionId,
+                senderType, senderId,
+                receiverType, receiverId,
+                transactionItems,
+                effectiveTransactionDate,
+                userDetails.getUsername(),
+                batchNumber,
+                purpose
+        );
 
             TransactionDTO responseDTO = transactionMapperService.toDTO(updatedTransaction);
             return ResponseEntity.ok(responseDTO);

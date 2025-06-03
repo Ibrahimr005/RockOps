@@ -227,21 +227,21 @@ export const equipmentService = {
     },
 
     // Create transaction with equipment as receiver
-    receiveTransaction: (equipmentId, requestData) => {
+    receiveTransaction: (equipmentId, senderId, senderType, batchNumber, purpose, items, transactionDate) => {
         const params = new URLSearchParams({
-            senderId: requestData.senderId,
-            senderType: requestData.senderType,
-            batchNumber: requestData.batchNumber.toString(),
-            purpose: requestData.purpose || 'GENERAL'
+            senderId: senderId,
+            senderType: senderType,
+            batchNumber: batchNumber.toString(),
+            purpose: purpose || 'GENERAL'
         });
 
-        if (requestData.transactionDate) {
-            params.append('transactionDate', requestData.transactionDate);
+        if (transactionDate) {
+            params.append('transactionDate', transactionDate);
         }
 
         return apiClient.post(
             `${EQUIPMENT_ENDPOINTS.RECEIVE_TRANSACTION(equipmentId)}?${params.toString()}`,
-            requestData.items
+            items
         );
     },
 

@@ -30,8 +30,9 @@ public class EquipmentDTO {
     private String equipmentComplaints;
     private String countryOfOrigin;
     private String serialNumber;
-    private String shipping;
-    private String customs;
+    private double shipping;
+    private double customs;
+    private double taxes;
     private String modelNumber;
     private EquipmentStatus status;
     private String relatedDocuments;
@@ -80,6 +81,7 @@ public class EquipmentDTO {
         dto.setSerialNumber(equipment.getSerialNumber());
         dto.setShipping(equipment.getShipping());
         dto.setCustoms(equipment.getCustoms());
+        dto.setTaxes(equipment.getTaxes());
         dto.setModelNumber(equipment.getModelNumber());
         dto.setStatus(equipment.getStatus());
         dto.setRelatedDocuments(equipment.getRelatedDocuments());

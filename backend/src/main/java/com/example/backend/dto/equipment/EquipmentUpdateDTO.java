@@ -26,8 +26,9 @@ public class EquipmentUpdateDTO {
     private String equipmentComplaints;
     private String countryOfOrigin;
     private String serialNumber;
-    private String shipping;
-    private String customs;
+    private Double shipping;
+    private Double customs;
+    private Double taxes;
     private String modelNumber;
     private EquipmentStatus status;
     private String relatedDocuments;

@@ -3,6 +3,8 @@ import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import { equipmentBrandService } from '../../../services/equipmentBrandService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { createErrorHandlers } from '../../../utils/errorHandler';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useEquipmentPermissions } from '../../../utils/rbac';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import './EquipmentTypeManagement.scss';
 
@@ -14,12 +16,17 @@ const EquipmentBrandManagement = () => {
     const [editingBrand, setEditingBrand] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
+        country: '',
         description: ''
     });
     const [deletingBrand, setDeletingBrand] = useState(null);
 
     // Use the snackbar context
     const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar } = useSnackbar();
+
+    // Get authentication context and permissions
+    const auth = useAuth();
+    const permissions = useEquipmentPermissions(auth);
 
     // Create error handlers for this component
     const errorHandlers = createErrorHandlers(showError, 'equipment brand');
@@ -53,12 +60,14 @@ const EquipmentBrandManagement = () => {
             setEditingBrand(brand);
             setFormData({
                 name: brand.name,
+                country: brand.country || '',
                 description: brand.description || ''
             });
         } else {
             setEditingBrand(null);
             setFormData({
                 name: '',
+                country: '',
                 description: ''
             });
         }
@@ -158,26 +167,32 @@ const EquipmentBrandManagement = () => {
             sortable: true
         },
         {
+            header: 'Country',
+            accessor: 'country',
+            sortable: true
+        },
+        {
             header: 'Description',
             accessor: 'description',
             sortable: true
         }
     ];
 
-    const actions = [
-        {
+    // Only show edit/delete actions if user has permissions
+    const actions = permissions.canEdit || permissions.canDelete ? [
+        ...(permissions.canEdit ? [{
             label: 'Edit',
             icon: <FaEdit />,
             onClick: (row) => handleOpenModal(row),
             className: 'primary'
-        },
-        {
+        }] : []),
+        ...(permissions.canDelete ? [{
             label: 'Delete',
             icon: <FaTrash />,
             onClick: (row) => confirmDelete(row.id, row.name),
             className: 'danger'
-        }
-    ];
+        }] : [])
+    ] : [];
 
     if (error) {
         return <div className="equipment-types-error">{error}</div>;
@@ -187,12 +202,14 @@ const EquipmentBrandManagement = () => {
         <div className="equipment-types-container">
             <div className="equipment-types-header">
                 <h1>Equipment Brands</h1>
-                <button
-                    className="equipment-types-add-button"
-                    onClick={() => handleOpenModal()}
-                >
-                    <FaPlus /> Add Equipment Brand
-                </button>
+                {permissions.canCreate && (
+                    <button
+                        className="equipment-types-add-button"
+                        onClick={() => handleOpenModal()}
+                    >
+                        <FaPlus /> Add Equipment Brand
+                    </button>
+                )}
             </div>
 
             <DataTable
@@ -229,6 +246,16 @@ const EquipmentBrandManagement = () => {
                                 />
                             </div>
                             <div className="form-group">
+                                <label htmlFor="country">Country</label>
+                                <input
+                                    type="text"
+                                    id="country"
+                                    name="country"
+                                    value={formData.country}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <div className="form-group">
                                 <label htmlFor="description">Description</label>
                                 <textarea
                                     id="description"
@@ -246,9 +273,11 @@ const EquipmentBrandManagement = () => {
                                 >
                                     Cancel
                                 </button>
-                                <button type="submit" className="submit-button">
-                                    {editingBrand ? 'Update' : 'Add'} Brand
-                                </button>
+                                {(permissions.canCreate || permissions.canEdit) && (
+                                    <button type="submit" className="submit-button">
+                                        {editingBrand ? 'Update' : 'Add'} Brand
+                                    </button>
+                                )}
                             </div>
                         </form>
                     </div>

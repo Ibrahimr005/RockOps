@@ -3,6 +3,8 @@ import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'rea
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import { inSiteMaintenanceService } from '../../../services/inSiteMaintenanceService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useEquipmentPermissions } from '../../../utils/rbac';
 import './InSiteMaintenanceLog.scss';
 import MaintenanceTransactionModal from '../MaintenanceTransactionModal/MaintenanceTransactionModal';
 import MaintenanceAddModal from '../MaintenanceAddModal/MaintenanceAddModal';
@@ -20,6 +22,10 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
     const [editingMaintenance, setEditingMaintenance] = useState(null);
 
     const { showSuccess, showError, showInfo, showWarning, hideSnackbar } = useSnackbar();
+
+    // Get authentication context and permissions
+    const auth = useAuth();
+    const permissions = useEquipmentPermissions(auth);
 
     const fetchMaintenanceRecords = async () => {
         try {
@@ -206,20 +212,20 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
     ];
 
     // Define actions using DataTable's actions prop with proper styling
-    const actions = [
-        {
+    const actions = permissions.canEdit || permissions.canDelete ? [
+        ...(permissions.canEdit ? [{
             label: 'Edit',
             icon: <FaEdit />,
             onClick: (row) => handleEditMaintenance(row),
             className: 'primary'
-        },
-        {
+        }] : []),
+        ...(permissions.canDelete ? [{
             label: 'Delete',
             icon: <FaTrash />,
             onClick: (row) => handleDeleteMaintenance(row),
             className: 'danger'
-        }
-    ];
+        }] : [])
+    ] : [];
 
     // Define filterable columns - these should match the column objects
     const filterableColumns = [
@@ -230,28 +236,7 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
 
     return (
         <div className="r4m-maintenance-log-container">
-            {showHeader && (
-                <div className="r4m-maintenance-header">
-                    <div className="r4m-left-section">
-                        <h2 className="r4m-maintenance-section-title">Maintenance Records</h2>
-                        <div className="r4m-item-count">{maintenanceRecords.length} records</div>
-                    </div>
 
-                    <div className="r4m-search-container">
-                        <input
-                            type="text"
-                            placeholder="Search maintenance records..."
-                            className="r4m-search-input"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <svg className="r4m-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="11" cy="11" r="8" />
-                            <path d="M21 21l-4.35-4.35" />
-                        </svg>
-                    </div>
-                </div>
-            )}
 
             <div className="r4m-maintenance-content">
                 {loading ? (
@@ -279,7 +264,7 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                 ) }
             </div>
 
-            {showAddButton && (
+            {showAddButton && permissions.canCreate && (
                 <button className="r4m-add-maintenance-button" onClick={onAddMaintenanceClick}>
                     <svg className="r4m-plus-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M12 5v14M5 12h14" />

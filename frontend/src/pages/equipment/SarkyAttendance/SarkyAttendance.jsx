@@ -3,12 +3,18 @@ import { equipmentService } from '../../../services/equipmentService';
 import { sarkyService } from '../../../services/sarkyService';
 import { workTypeService } from '../../../services/workTypeService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useEquipmentPermissions } from '../../../utils/rbac';
 import { FaCalendarPlus, FaTools, FaClock, FaUser, FaEdit, FaTrash, FaSave } from 'react-icons/fa';
 import { BsCalendarPlus } from 'react-icons/bs';
 import './SarkyAttendance.scss';
 
 const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
     const { showSuccess, showError } = useSnackbar();
+
+    // Get authentication context and permissions
+    const auth = useAuth();
+    const permissions = useEquipmentPermissions(auth);
 
     // State management
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -137,8 +143,8 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                             driverId: sarky.driverId,
                             driverName: sarky.driverName,
                             type: 'single',
-                            canEdit: true,
-                            canDelete: true
+                            canEdit: permissions.canEdit,
+                            canDelete: permissions.canDelete
                         });
                     }
                 });
@@ -214,8 +220,8 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                         driverId: equipmentData?.mainDriverId || '',
                         driverName: equipmentData?.mainDriverName || '',
                         type: 'draft',
-                        canEdit: true,
-                        canDelete: true,
+                        canEdit: permissions.canEdit,
+                        canDelete: permissions.canDelete,
                         isNew: true
                     });
                 }
@@ -475,8 +481,8 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
             driverId: equipmentData?.mainDriverId || '',
             driverName: equipmentData?.mainDriverName || '',
             type: 'draft',
-            canEdit: true,
-            canDelete: true,
+            canEdit: permissions.canEdit,
+            canDelete: permissions.canDelete,
             isNew: true
         };
 
@@ -638,32 +644,38 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                     </select>
                 </div>
 
-                <button
-                    className="generate-btn"
-                    onClick={generateMonthlySarky}
-                    disabled={generatingSarky}
-                >
-                    <BsCalendarPlus /> Generate Monthly Sarky
-                </button>
+                {permissions.canCreate && (
+                    <button
+                        className="generate-btn"
+                        onClick={generateMonthlySarky}
+                        disabled={generatingSarky}
+                    >
+                        <BsCalendarPlus /> Generate Monthly Sarky
+                    </button>
+                )}
 
-                <button
-                    className="save-all-btn"
-                    onClick={saveAllEntries}
-                    disabled={savingAll || saveableCount === 0}
-                >
-                    <FaSave /> {savingAll ? 'Saving All...' : `Save All (${saveableCount})`}
-                </button>
+                {permissions.canEdit && (
+                    <button
+                        className="save-all-btn"
+                        onClick={saveAllEntries}
+                        disabled={savingAll || saveableCount === 0}
+                    >
+                        <FaSave /> {savingAll ? 'Saving All...' : `Save All (${saveableCount})`}
+                    </button>
+                )}
 
-                <button
-                    className="quick-entry-btn"
-                    onClick={() => {
-                        const today = new Date().toISOString().split('T')[0];
-                        addEntryForDate(today);
-                    }}
-                    title="Add entry for today"
-                >
-                    <FaCalendarPlus /> Quick Entry (Today)
-                </button>
+                {permissions.canCreate && (
+                    <button
+                        className="quick-entry-btn"
+                        onClick={() => {
+                            const today = new Date().toISOString().split('T')[0];
+                            addEntryForDate(today);
+                        }}
+                        title="Add entry for today"
+                    >
+                        <FaCalendarPlus /> Quick Entry (Today)
+                    </button>
+                )}
             </div>
 
             <div className="sarky-header">
@@ -716,15 +728,6 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                             </span>
                         </div>
                         
-                        {validationInfo.nextAllowedDate && (
-                            <div className="info-item">
-                                <span className="label">Next Working Day:</span>
-                                <span className="value">
-                                    {new Date(validationInfo.nextAllowedDate).toLocaleDateString()}
-                                </span>
-                            </div>
-                        )}
-                        
                         <div className="info-item">
                             <span className="label">Dates with Existing Entries:</span>
                             <span className="value">
@@ -733,16 +736,12 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                         </div>
                         
                         <div className="guidelines">
-                            <p><strong>You can add entries to:</strong></p>
+                            <p><strong>Entry Rules:</strong></p>
                             <ul>
-                                <li>✅ Any date that already has work entries</li>
-                                {validationInfo.latestDate && (
-                                    <li>✅ The latest working date ({new Date(validationInfo.latestDate).toLocaleDateString()})</li>
-                                )}
-                                {validationInfo.nextAllowedDate && (
-                                    <li>✅ The next working day ({new Date(validationInfo.nextAllowedDate).toLocaleDateString()})</li>
-                                )}
-                                <li>❌ New dates that would create gaps in the work timeline</li>
+                                <li>✅ You can add entries for ANY date</li>
+                                <li>✅ Multiple entries per day are allowed</li>
+                                <li>✅ Historical entries and date corrections are permitted</li>
+                                <li>📝 Date constraints have been removed for maximum flexibility</li>
                             </ul>
                         </div>
                     </div>
@@ -857,14 +856,8 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                                                             <FaSave /> Save
                                                         </button>
                                                     )}
-                                                    {entry.canDelete && (
-                                                        <button
-                                                            className="delete-btn"
-                                                            onClick={() => deleteSarkyEntry(entry)}
-                                                        >
-                                                            <FaTrash /> Delete
-                                                        </button>
-                                                    )}
+                                                    {/* REMOVED DELETE BUTTON - Per requirement to remove delete functionality from UI */}
+                                                    {/* Backend deletion logic remains intact for data integrity */}
                                                 </div>
                                             </td>
                                         </tr>

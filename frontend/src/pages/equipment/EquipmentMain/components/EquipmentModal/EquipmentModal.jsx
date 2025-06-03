@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaTimes, FaUpload, FaExclamationCircle, FaInfoCircle, FaCheck, FaArrowRight, FaTrash } from "react-icons/fa";
 import { equipmentService } from "../../../../../services/equipmentService.js";
+import { equipmentTypeService } from "../../../../../services/equipmentTypeService.js";
+import { equipmentBrandService } from "../../../../../services/equipmentBrandService.js";
+import { siteService } from "../../../../../services/siteService.js";
+import { merchantService } from "../../../../../services/merchantService.js";
 import { useSnackbar } from "../../../../../contexts/SnackbarContext.jsx";
+import MonetaryFieldDocuments from '../../../../../components/equipment/MonetaryFieldDocuments';
 import "./EquipmentModal.scss";
 
 const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => {
@@ -78,6 +83,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         countryOfOrigin: "",
         shipping: "",
         customs: "",
+        taxes: "",
         relatedDocuments: "",
         workedHours: 0
     };
@@ -120,12 +126,12 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         {
             id: 1,
             name: "Purchase Details",
-            requiredFields: ['purchasedDate', 'deliveredDate', 'egpPrice', 'countryOfOrigin', 'shipping', 'customs', 'purchasedFrom']
+            requiredFields: ['purchasedDate', 'deliveredDate', 'egpPrice', 'countryOfOrigin', 'shipping', 'customs', 'taxes', 'purchasedFrom']
         },
         {
             id: 2,
             name: "Additional Info",
-            requiredFields: ['examinedBy']
+            requiredFields: []
         }
     ];
 
@@ -270,20 +276,20 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         setLoading(true);
         try {
             // Fetch equipment types
-            const typesResponse = await equipmentService.getAllEquipmentTypes();
+            const typesResponse = await equipmentTypeService.getAllEquipmentTypes();
             setEquipmentTypes(typesResponse.data);
 
             // Fetch equipment brands
-            const brandsResponse = await equipmentService.getAllEquipmentBrands();
+            const brandsResponse = await equipmentBrandService.getAllEquipmentBrands();
             setEquipmentBrands(brandsResponse.data);
 
             // Fetch sites
-            const sitesResponse = await equipmentService.getAllSites();
+            const sitesResponse = await siteService.getAllSites();
             setSites(sitesResponse.data);
 
             // Fetch merchants
             try {
-                const merchantsResponse = await equipmentService.getAllMerchants();
+                const merchantsResponse = await merchantService.getAllMerchants();
                 setMerchants(merchantsResponse.data);
             } catch (error) {
                 console.error("Error fetching merchants:", error);
@@ -366,6 +372,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             countryOfOrigin: equipmentToEdit.countryOfOrigin || "",
             shipping: equipmentToEdit.shipping || "",
             customs: equipmentToEdit.customs || "",
+            taxes: equipmentToEdit.taxes || "",
             relatedDocuments: equipmentToEdit.relatedDocuments || "",
             workedHours: equipmentToEdit.workedHours || 0
         };
@@ -570,7 +577,6 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         return message;
     };
 
-// Fixed handleSubmit method in EquipmentModal.jsx
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) {
@@ -604,6 +610,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             formDataToSend.append('countryOfOrigin', formData.countryOfOrigin);
             formDataToSend.append('shipping', formData.shipping);
             formDataToSend.append('customs', formData.customs);
+            formDataToSend.append('taxes', formData.taxes);
             formDataToSend.append('examinedBy', formData.examinedBy);
 
             if (formData.purchasedFrom) {
@@ -1053,32 +1060,73 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
 
                             <div className="equipment-modal-form-row">
                                 <div className="equipment-modal-form-group">
-                                    <label htmlFor="shipping" className="required-field">Shipping Information</label>
+                                    <label htmlFor="shipping" className="required-field">Shipping Cost (EGP)</label>
                                     <input
-                                        type="text"
+                                        type="number"
+                                        step="0.01"
                                         id="shipping"
                                         name="shipping"
                                         value={formData.shipping}
                                         onChange={handleInputChange}
-                                        placeholder="Enter shipping information"
+                                        placeholder="Enter shipping cost"
                                         className={!formData.shipping && showValidationHint ? "invalid-field" : ""}
                                         required
                                     />
                                 </div>
                                 <div className="equipment-modal-form-group">
-                                    <label htmlFor="customs" className="required-field">Customs Information</label>
+                                    <label htmlFor="customs" className="required-field">Customs Cost (EGP)</label>
                                     <input
-                                        type="text"
+                                        type="number"
+                                        step="0.01"
                                         id="customs"
                                         name="customs"
                                         value={formData.customs}
                                         onChange={handleInputChange}
-                                        placeholder="Enter customs information"
+                                        placeholder="Enter customs cost"
                                         className={!formData.customs && showValidationHint ? "invalid-field" : ""}
                                         required
                                     />
                                 </div>
                             </div>
+
+                            <div className="equipment-modal-form-row">
+                                <div className="equipment-modal-form-group">
+                                    <label htmlFor="taxes" className="required-field">Taxes Cost (EGP)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        id="taxes"
+                                        name="taxes"
+                                        value={formData.taxes}
+                                        onChange={handleInputChange}
+                                        placeholder="Enter taxes cost"
+                                        className={!formData.taxes && showValidationHint ? "invalid-field" : ""}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Document Attachments for Monetary Fields */}
+                            {equipmentToEdit && equipmentToEdit.id && (
+                                <div className="monetary-documents-section">
+                                    <h3>Document Attachments</h3>
+                                    <MonetaryFieldDocuments 
+                                        equipmentId={equipmentToEdit.id} 
+                                        fieldType="SHIPPING" 
+                                        fieldLabel="Shipping" 
+                                    />
+                                    <MonetaryFieldDocuments 
+                                        equipmentId={equipmentToEdit.id} 
+                                        fieldType="CUSTOMS" 
+                                        fieldLabel="Customs" 
+                                    />
+                                    <MonetaryFieldDocuments 
+                                        equipmentId={equipmentToEdit.id} 
+                                        fieldType="TAXES" 
+                                        fieldLabel="Taxes" 
+                                    />
+                                </div>
+                            )}
 
                             <div className="tab-navigation">
                                 <button type="button" className="next-tab-button" onClick={handleNextTab}>
@@ -1180,7 +1228,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                     />
                                 </div>
                                 <div className="equipment-modal-form-group">
-                                    <label htmlFor="examinedBy" className="required-field">Examined By</label>
+                                    <label htmlFor="examinedBy">Examined By</label>
                                     <input
                                         type="text"
                                         id="examinedBy"
@@ -1188,8 +1236,6 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         value={formData.examinedBy}
                                         onChange={handleInputChange}
                                         placeholder="Enter examiner name"
-                                        className={!formData.examinedBy && showValidationHint ? "invalid-field" : ""}
-                                        required
                                     />
                                 </div>
                             </div>

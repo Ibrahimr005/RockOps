@@ -174,6 +174,7 @@ public class EquipmentService {
         equipment.setSerialNumber(createDTO.getSerialNumber());
         equipment.setShipping(createDTO.getShipping());
         equipment.setCustoms(createDTO.getCustoms());
+        equipment.setTaxes(createDTO.getTaxes());
         equipment.setModelNumber(createDTO.getModelNumber());
         equipment.setStatus(createDTO.getStatus() != null ? createDTO.getStatus() : equipment.getStatus());
         equipment.setRelatedDocuments(createDTO.getRelatedDocuments());
@@ -300,9 +301,11 @@ public class EquipmentService {
         if (requestBody.get("serialNumber") != null)
             createDTO.setSerialNumber(requestBody.get("serialNumber").toString());
         if (requestBody.get("shipping") != null)
-            createDTO.setShipping(requestBody.get("shipping").toString());
+            createDTO.setShipping(Double.parseDouble(requestBody.get("shipping").toString()));
         if (requestBody.get("customs") != null)
-            createDTO.setCustoms(requestBody.get("customs").toString());
+            createDTO.setCustoms(Double.parseDouble(requestBody.get("customs").toString()));
+        if (requestBody.get("taxes") != null)
+            createDTO.setTaxes(Double.parseDouble(requestBody.get("taxes").toString()));
         if (requestBody.get("modelNumber") != null)
             createDTO.setModelNumber(requestBody.get("modelNumber").toString());
         if (requestBody.get("status") != null) {
@@ -389,6 +392,7 @@ public class EquipmentService {
         if (updateDTO.getSerialNumber() != null) equipment.setSerialNumber(updateDTO.getSerialNumber());
         if (updateDTO.getShipping() != null) equipment.setShipping(updateDTO.getShipping());
         if (updateDTO.getCustoms() != null) equipment.setCustoms(updateDTO.getCustoms());
+        if (updateDTO.getTaxes() != null) equipment.setTaxes(updateDTO.getTaxes());
         if (updateDTO.getModelNumber() != null) equipment.setModelNumber(updateDTO.getModelNumber());
         if (updateDTO.getStatus() != null) equipment.setStatus(updateDTO.getStatus());
         if (updateDTO.getRelatedDocuments() != null) equipment.setRelatedDocuments(updateDTO.getRelatedDocuments());
@@ -531,9 +535,11 @@ public class EquipmentService {
         if (requestBody.get("serialNumber") != null && !requestBody.get("serialNumber").toString().isEmpty())
             updateDTO.setSerialNumber(requestBody.get("serialNumber").toString());
         if (requestBody.get("shipping") != null && !requestBody.get("shipping").toString().isEmpty())
-            updateDTO.setShipping(requestBody.get("shipping").toString());
+            updateDTO.setShipping(Double.parseDouble(requestBody.get("shipping").toString()));
         if (requestBody.get("customs") != null && !requestBody.get("customs").toString().isEmpty())
-            updateDTO.setCustoms(requestBody.get("customs").toString());
+            updateDTO.setCustoms(Double.parseDouble(requestBody.get("customs").toString()));
+        if (requestBody.get("taxes") != null && !requestBody.get("taxes").toString().isEmpty())
+            updateDTO.setTaxes(Double.parseDouble(requestBody.get("taxes").toString()));
         if (requestBody.get("modelNumber") != null && !requestBody.get("modelNumber").toString().isEmpty())
             updateDTO.setModelNumber(requestBody.get("modelNumber").toString());
         if (requestBody.get("status") != null && !requestBody.get("status").toString().isEmpty()) {

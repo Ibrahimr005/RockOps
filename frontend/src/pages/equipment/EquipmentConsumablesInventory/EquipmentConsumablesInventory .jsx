@@ -201,24 +201,6 @@ Click the ✕ button to close`;
 
     return (
         <div className="consumables-inventory">
-            <div className="inventory-header">
-                <div className="search-container">
-                    <input
-                        type="text"
-                        placeholder="Search consumables..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="search-input"
-                    />
-                    <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="11" cy="11" r="8"/>
-                        <path d="M21 21l-4.35-4.35"/>
-                    </svg>
-                </div>
-                <div className="inventory-count">
-                    {filteredConsumables.length} items in inventory
-                </div>
-            </div>
 
             {/* Inventory Tabs - Removed under-received tab */}
             <div className="inventory-tabs">

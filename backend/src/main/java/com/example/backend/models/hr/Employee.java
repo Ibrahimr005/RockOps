@@ -258,4 +258,13 @@ public class Employee
         return (positionLower.contains(typeLower) &&
                 (positionLower.contains("driver") || positionLower.contains("operator")));
     }
+
+    /**
+     * Check if employee can drive the specified equipment type
+     * @param equipmentType The equipment type to check
+     * @return true if employee can drive this equipment type
+     */
+    public boolean canDriveEquipmentType(EquipmentType equipmentType) {
+        return canDrive(equipmentType);
+    }
 }

@@ -347,17 +347,17 @@ const   EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
         <div className="equipment-dashboard">
             {/* Summary Stats */}
             <div className="dashboard-stats">
-                <div className="stat-card">
-                    <div className="stat-icon work-hours">
+                <div className="eq-dashboard-stat-card">
+                    <div className="eq-dashboard-stat-icon eq-dashboard-work-hours">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <circle cx="12" cy="12" r="10"/>
                             <polyline points="12,6 12,12 16,14"/>
                         </svg>
                     </div>
-                    <div className="stat-content">
+                    <div className="eq-dashboard-stat-content">
                         <h3>Total Work Hours</h3>
-                        <p className="stat-value">{dashboardData.summaryStats.totalWorkHours}</p>
-                        <span className="stat-label">
+                        <p className="eq-dashboard-stat-value">{dashboardData.summaryStats.totalWorkHours}</p>
+                        <span className="eq-dashboard-stat-label">
                             {dashboardData.summaryStats.totalWorkDays > 0 && (
                                 `${dashboardData.summaryStats.totalWorkDays} work days`
                             )}
@@ -365,107 +365,107 @@ const   EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                     </div>
                 </div>
 
-                <div className="stat-card">
-                    <div className="stat-icon average-hours">
+                <div className="eq-dashboard-stat-card">
+                    <div className="eq-dashboard-stat-icon eq-dashboard-average-hours">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M9 11H1v3h8v3l5-4-5-4v2z"/>
                             <path d="M22 12h-6"/>
                         </svg>
                     </div>
-                    <div className="stat-content">
+                    <div className="eq-dashboard-stat-content">
                         <h3>Average Hours/Day</h3>
-                        <p className="stat-value">{dashboardData.summaryStats.averageWorkHours}</p>
-                        <span className="stat-label">Per work day</span>
+                        <p className="eq-dashboard-stat-value">{dashboardData.summaryStats.averageWorkHours}</p>
+                        <span className="eq-dashboard-stat-label">Per work day</span>
                     </div>
                 </div>
 
-                <div className="stat-card">
-                    <div className="stat-icon work-types">
+                <div className="eq-dashboard-stat-card">
+                    <div className="eq-dashboard-stat-icon eq-dashboard-work-types">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7z"/>
                             <path d="M17 17H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
                         </svg>
                     </div>
-                    <div className="stat-content">
+                    <div className="eq-dashboard-stat-content">
                         <h3>Work Types Used</h3>
-                        <p className="stat-value">{dashboardData.summaryStats.workTypesUsed}</p>
-                        <span className="stat-label">Different types</span>
+                        <p className="eq-dashboard-stat-value">{dashboardData.summaryStats.workTypesUsed}</p>
+                        <span className="eq-dashboard-stat-label">Different types</span>
                     </div>
                 </div>
 
-                <div className="stat-card">
-                    <div className="stat-icon drivers">
+                <div className="eq-dashboard-stat-card">
+                    <div className="eq-dashboard-stat-icon eq-dashboard-drivers">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                             <circle cx="12" cy="7" r="4"/>
                         </svg>
                     </div>
-                    <div className="stat-content">
+                    <div className="eq-dashboard-stat-content">
                         <h3>Unique Drivers</h3>
-                        <p className="stat-value">{dashboardData.summaryStats.uniqueDrivers}</p>
-                        <span className="stat-label">Total operators</span>
+                        <p className="eq-dashboard-stat-value">{dashboardData.summaryStats.uniqueDrivers}</p>
+                        <span className="eq-dashboard-stat-label">Total operators</span>
                     </div>
                 </div>
 
-                <div className="stat-card">
-                    <div className="stat-icon consumables">
+                <div className="eq-dashboard-stat-card">
+                    <div className="eq-dashboard-stat-icon eq-dashboard-consumables">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
                         </svg>
                     </div>
-                    <div className="stat-content">
+                    <div className="eq-dashboard-stat-content">
                         <h3>Consumables Used</h3>
-                        <p className="stat-value">{dashboardData.summaryStats.totalConsumables}</p>
-                        <span className="stat-label">Total quantity</span>
+                        <p className="eq-dashboard-stat-value">{dashboardData.summaryStats.totalConsumables}</p>
+                        <span className="eq-dashboard-stat-label">Total quantity</span>
                     </div>
                 </div>
 
-                <div className="stat-card">
-                    <div className="stat-icon maintenance">
+                <div className="eq-dashboard-stat-card">
+                    <div className="eq-dashboard-stat-icon eq-dashboard-maintenance">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
                         </svg>
                     </div>
-                    <div className="stat-content">
+                    <div className="eq-dashboard-stat-content">
                         <h3>Maintenance Events</h3>
-                        <p className="stat-value">{dashboardData.summaryStats.maintenanceEvents}</p>
-                        <span className="stat-label">Total recorded</span>
+                        <p className="eq-dashboard-stat-value">{dashboardData.summaryStats.maintenanceEvents}</p>
+                        <span className="eq-dashboard-stat-label">Total recorded</span>
                     </div>
                 </div>
 
-                <div className="stat-card">
-                    <div className="stat-icon completion-rate">
+                <div className="eq-dashboard-stat-card">
+                    <div className="eq-dashboard-stat-icon eq-dashboard-completion-rate">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
                             <path d="M22 4L12 14.01l-3-3"/>
                         </svg>
                     </div>
-                    <div className="stat-content">
+                    <div className="eq-dashboard-stat-content">
                         <h3>Completion Rate</h3>
-                        <p className="stat-value">{dashboardData.summaryStats.maintenanceCompletionRate}%</p>
-                        <span className="stat-label">Maintenance completed</span>
+                        <p className="eq-dashboard-stat-value">{dashboardData.summaryStats.maintenanceCompletionRate}%</p>
+                        <span className="eq-dashboard-stat-label">Maintenance completed</span>
                     </div>
                 </div>
 
-                <div className="stat-card">
-                    <div className="stat-icon overdue">
+                <div className="eq-dashboard-stat-card">
+                    <div className="eq-dashboard-stat-icon eq-dashboard-overdue">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <circle cx="12" cy="12" r="10"/>
                             <polyline points="12,6 12,12 16,14"/>
                             <path d="M17 3h4v4M21 7l-4-4M7 17l-4 4M3 21h4v-4"/>
                         </svg>
                     </div>
-                    <div className="stat-content">
+                    <div className="eq-dashboard-stat-content">
                         <h3>Overdue Maintenance</h3>
-                        <p className="stat-value" style={{color: dashboardData.summaryStats.overdueMaintenanceEvents > 0 ? '#f44336' : '#10b981'}}>
+                        <p className="eq-dashboard-stat-value" style={{color: dashboardData.summaryStats.overdueMaintenanceEvents > 0 ? '#f44336' : '#10b981'}}>
                             {dashboardData.summaryStats.overdueMaintenanceEvents}
                         </p>
-                        <span className="stat-label">Scheduled past due</span>
+                        <span className="eq-dashboard-stat-label">Scheduled past due</span>
                     </div>
                 </div>
 
-                <div className="stat-card">
-                    <div className="stat-icon frequency">
+                <div className="eq-dashboard-stat-card">
+                    <div className="eq-dashboard-stat-icon eq-dashboard-frequency">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                             <line x1="16" y1="2" x2="16" y2="6"/>
@@ -473,10 +473,10 @@ const   EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                             <line x1="3" y1="10" x2="21" y2="10"/>
                         </svg>
                     </div>
-                    <div className="stat-content">
+                    <div className="eq-dashboard-stat-content">
                         <h3>Avg. Time Between</h3>
-                        <p className="stat-value">{dashboardData.summaryStats.meanTimeBetweenMaintenance}</p>
-                        <span className="stat-label">Days between maintenance</span>
+                        <p className="eq-dashboard-stat-value">{dashboardData.summaryStats.meanTimeBetweenMaintenance}</p>
+                        <span className="eq-dashboard-stat-label">Days between maintenance</span>
                     </div>
                 </div>
             </div>

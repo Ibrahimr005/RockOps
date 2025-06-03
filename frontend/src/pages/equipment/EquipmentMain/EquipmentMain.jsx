@@ -5,6 +5,8 @@ import "./EquipmentMain.scss";
 import equipmentImage from "../../../assets/imgs/equipment_icon.png";
 import { equipmentService } from "../../../services/equipmentService";
 import EquipmentCard from "./components/card/EquipmentCard.jsx";
+import { useAuth } from "../../../contexts/AuthContext";
+import { useEquipmentPermissions } from "../../../utils/rbac";
 
 const EquipmentMain = () => {
     const [equipmentData, setEquipmentData] = useState([]);
@@ -30,6 +32,10 @@ const EquipmentMain = () => {
 
     const equipmentCardsRefs = useRef([]);
     const actionsSetFlags = useRef({});
+
+    // Get authentication context and permissions
+    const auth = useAuth();
+    const permissions = useEquipmentPermissions(auth);
 
     // Fetch equipment data
     const fetchEquipmentData = async () => {
@@ -194,14 +200,19 @@ const EquipmentMain = () => {
 
             if (!actionsSetFlags.current[cardKey] && card.setActions) {
                 actionsSetFlags.current[cardKey] = true;
-                card.setActions([
-                    {
+                
+                // Only add edit actions if user has edit permissions
+                const actions = [];
+                if (permissions.canEdit) {
+                    actions.push({
                         icon: <FaPlus />,
                         label: "Edit",
                         className: "btn-edit",
                         action: () => handleEditEquipment(equipmentId)
-                    }
-                ]);
+                    });
+                }
+                
+                card.setActions(actions);
             }
         }
     };
@@ -324,9 +335,11 @@ const EquipmentMain = () => {
 
                     {/* Action buttons */}
                     <div className="equipment-actions-buttons">
-                        <button className="btn-primary" onClick={handleAddEquipment}>
-                            <FaPlus /> Add Equipment
-                        </button>
+                        {permissions.canCreate && (
+                            <button className="btn-primary" onClick={handleAddEquipment}>
+                                <FaPlus /> Add Equipment
+                            </button>
+                        )}
                     </div>
                 </div>
             </section>

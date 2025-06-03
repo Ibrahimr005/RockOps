@@ -8,6 +8,10 @@ export const siteService = {
         return apiClient.get(SITE_ENDPOINTS.BASE);
     },
 
+    getAllSites: () => {
+        return apiClient.get(SITE_ENDPOINTS.BASE);
+    },
+
     getById: (id) => {
         return apiClient.get(SITE_ENDPOINTS.BY_ID(id));
     },

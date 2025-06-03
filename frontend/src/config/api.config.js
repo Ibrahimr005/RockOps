@@ -41,14 +41,14 @@ export const EQUIPMENT_ENDPOINTS = {
 
 // Equipment Types module endpoints
 export const EQUIPMENT_TYPE_ENDPOINTS = {
-    BASE: '/api/v1/equipment-types',
-    BY_ID: (id) => `/api/v1/equipment-types/${id}`,
-    CREATE: '/api/v1/equipment-types',
-    UPDATE: (id) => `/api/v1/equipment-types/${id}`,
-    DELETE: (id) => `/api/v1/equipment-types/${id}`,
-    SEARCH: '/api/v1/equipment-types/search',
-    SUPPORTED_WORK_TYPES: (id) => `/api/v1/equipment-types/${id}/supported-work-types`,
-    SET_SUPPORTED_WORK_TYPES: (id) => `/api/v1/equipment-types/${id}/set-supported-work-types`,
+    BASE: '/api/equipment-types',
+    BY_ID: (id) => `/api/equipment-types/${id}`,
+    CREATE: '/api/equipment-types',
+    UPDATE: (id) => `/api/equipment-types/${id}`,
+    DELETE: (id) => `/api/equipment-types/${id}`,
+    SEARCH: '/api/equipment-types/search',
+    SUPPORTED_WORK_TYPES: (id) => `/api/equipment-types/${id}/supported-work-types`,
+    SET_SUPPORTED_WORK_TYPES: (id) => `/api/equipment-types/${id}/supported-work-types`,
 };
 
 // Sarky module endpoints

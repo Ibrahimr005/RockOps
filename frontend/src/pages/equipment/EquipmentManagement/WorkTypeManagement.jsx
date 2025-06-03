@@ -4,6 +4,8 @@ import { workTypeService } from '../../../services/workTypeService';
 import { equipmentService } from '../../../services/equipmentService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { createErrorHandlers } from '../../../utils/errorHandler';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useEquipmentPermissions } from '../../../utils/rbac';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import './EquipmentTypeManagement.scss';
 
@@ -24,6 +26,10 @@ const WorkTypeManagement = () => {
 
     // Use the snackbar context
     const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar } = useSnackbar();
+
+    // Get authentication context and permissions
+    const auth = useAuth();
+    const permissions = useEquipmentPermissions(auth);
 
     // Create error handlers for this component
     const errorHandlers = createErrorHandlers(showError, 'work type');
@@ -280,20 +286,20 @@ const WorkTypeManagement = () => {
         }
     ];
 
-    const actions = [
-        {
+    const actions = permissions.canEdit || permissions.canDelete ? [
+        ...(permissions.canEdit ? [{
             label: 'Edit',
             icon: <FaEdit />,
             onClick: (row) => handleOpenModal(row),
             className: 'primary'
-        },
-        {
+        }] : []),
+        ...(permissions.canDelete ? [{
             label: 'Delete',
             icon: <FaTrash />,
             onClick: (row) => confirmDelete(row.id, row.name),
             className: 'danger'
-        }
-    ];
+        }] : [])
+    ] : [];
 
     if (error) {
         return <div className="equipment-types-error">{error}</div>;
@@ -303,12 +309,14 @@ const WorkTypeManagement = () => {
         <div className="equipment-types-container">
             <div className="equipment-types-header">
                 <h1>Work Types</h1>
-                <button
-                    className="equipment-types-add-button"
-                    onClick={() => handleOpenModal()}
-                >
-                    <FaPlus /> Add Work Type
-                </button>
+                {permissions.canCreate && (
+                    <button
+                        className="equipment-types-add-button"
+                        onClick={() => handleOpenModal()}
+                    >
+                        <FaPlus /> Add Work Type
+                    </button>
+                )}
             </div>
 
             <DataTable
