@@ -7,7 +7,7 @@ import SiteAdminDashboard from './SiteAdminDashboard.jsx';
 import ProcurementDashboard from './ProcurementDashboard';
 import WarehouseDashboard from '../../pages/warehouse/WarehouseDashboard/WarehouseDashboard.jsx';
 import SecretaryDashboard from './SecretaryDashboard.jsx';
-import EquipmentManagerDashboard from './EquipmentManagerDashboard.jsx';
+import EquipmentManagerDashboard from '../equipment/EquipmentManagerDashboard/EquipmentManagerDashboard.jsx';
 import HRManagerDashboard from './HRManagerDashboard.jsx';
 import HREmployeeDashboard from './HR/HREmployeeDashboard.jsx';
 import './Dashboard.css';

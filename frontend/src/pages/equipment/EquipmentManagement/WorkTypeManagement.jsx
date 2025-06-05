@@ -25,7 +25,7 @@ const WorkTypeManagement = () => {
     const [deletingWorkType, setDeletingWorkType] = useState(null);
 
     // Use the snackbar context
-    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar } = useSnackbar();
+    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar ,showConfirmation } = useSnackbar();
 
     // Get authentication context and permissions
     const auth = useAuth();
@@ -204,46 +204,11 @@ const WorkTypeManagement = () => {
     };
 
     const confirmDelete = (workTypeId, workTypeName) => {
-        // Store the work type to be deleted
-        setDeletingWorkType({ id: workTypeId, name: workTypeName });
-
-        // Custom message with buttons
-        const message = `Are you sure you want to delete "${workTypeName}"?`;
-
-        // Show persistent confirmation warning that won't auto-hide
-        showWarning(message, 0, true);
-
-        // Create action buttons in the DOM
-        setTimeout(() => {
-            const snackbar = document.querySelector('.global-notification');
-            if (snackbar) {
-                // Create and append action buttons container
-                const actionContainer = document.createElement('div');
-                actionContainer.className = 'snackbar-actions';
-
-                // Yes button
-                const yesButton = document.createElement('button');
-                yesButton.innerText = 'YES';
-                yesButton.className = 'snackbar-action-button confirm';
-                yesButton.onclick = () => {
-                    performDelete(workTypeId, workTypeName);
-                    hideSnackbar();
-                };
-
-                // No button
-                const noButton = document.createElement('button');
-                noButton.innerText = 'NO';
-                noButton.className = 'snackbar-action-button cancel';
-                noButton.onclick = () => {
-                    setDeletingWorkType(null);
-                    hideSnackbar();
-                };
-
-                actionContainer.appendChild(yesButton);
-                actionContainer.appendChild(noButton);
-                snackbar.appendChild(actionContainer);
-            }
-        }, 100);
+        showConfirmation(
+            `Are you sure you want to delete "${workTypeName}"?`,
+            () => performDelete(workTypeId, workTypeName),
+            () => setDeletingWorkType(null)
+        );
     };
 
     const performDelete = async (workTypeId, workTypeName) => {
@@ -252,7 +217,8 @@ const WorkTypeManagement = () => {
             showSuccess(`Work type "${workTypeName}" has been deleted successfully`);
             fetchWorkTypes(); // Refresh the list
         } catch (err) {
-            errorHandlers.handleDeleteError(err);
+            console.error('Error deleting work type:', err);
+            showError(`Failed to delete work type: ${err.response?.data?.message || err.message}`);
         } finally {
             setDeletingWorkType(null);
         }
