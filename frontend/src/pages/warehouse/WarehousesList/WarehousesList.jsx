@@ -128,7 +128,7 @@ const WarehousesList = () => {
             const items = await response.json();
 
             // Filter items with status 'IN_WAREHOUSE'
-            const inWarehouseItems = items.filter(item => item.itemStatus === 'IN_WAREHOUSE' || item.status === 'OVERRECEIVED');
+            const inWarehouseItems = items.filter(item => item.itemStatus === 'IN_WAREHOUSE');
 
             // Calculate total items based on the quantity field
             const total = inWarehouseItems.reduce((sum, item) => sum + item.quantity, 0);

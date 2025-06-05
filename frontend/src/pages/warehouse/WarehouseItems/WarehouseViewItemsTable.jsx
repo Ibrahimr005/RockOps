@@ -437,7 +437,14 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
             })
         );
 
-        setTransactionDetails(detailsWithWarehouseNames);
+        // Sort by createdAt in ascending order (oldest first)
+        const sortedDetails = detailsWithWarehouseNames.sort((a, b) => {
+          const dateA = new Date(a.createdAt || 0);
+          const dateB = new Date(b.createdAt || 0);
+          return dateA - dateB;
+        });
+
+        setTransactionDetails(sortedDetails);
       } else {
         console.error("Failed to fetch transaction details:", response.status);
         showSnackbar("Failed to load transaction details", "error");
@@ -1153,10 +1160,7 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
                                               </span>
                                             </div>
                                             <div className="transaction-date">
-                                              {item.transactionItem.transaction.completedAt ?
-                                                  formatDate(item.transactionItem.transaction.completedAt) :
-                                                  item.transactionItem.transaction.transactionDate ?
-                                                      formatDate(item.transactionItem.transaction.transactionDate) : 'N/A'}
+                                              {item.createdAt ? formatDate(item.createdAt) : 'N/A'}
                                             </div>
                                           </div>
 

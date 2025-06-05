@@ -37,14 +37,33 @@ public class ItemService {
 
     // Your existing methods...
 
+    // Add this logging to your ItemService.getItemsByWarehouse method:
+
     public List<Item> getItemsByWarehouse(UUID warehouseId) {
-        Warehouse warehouse = warehouseRepository.findById(warehouseId)
-                .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
+        System.out.println("🔍 ItemService: Getting items for warehouse: " + warehouseId);
 
-        // Option A: Use warehouse object
-        return itemRepository.findByWarehouseWithTransactionItems(warehouse);
+        try {
+            // Check if warehouse exists first
+            System.out.println("📋 Checking if warehouse exists...");
+            Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                    .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
 
+            System.out.println("✅ Warehouse found: " + warehouse.getName());
 
+            // Try to fetch items
+            System.out.println("📦 Fetching items from repository...");
+            List<Item> items = itemRepository.findByWarehouseWithTransactionItems(warehouse);
+
+            System.out.println("✅ Items fetched successfully. Count: " + items.size());
+
+            return items;
+
+        } catch (Exception e) {
+            System.err.println("💥 Error in ItemService.getItemsByWarehouse:");
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace();
+            throw e; // Re-throw to see the full stack trace
+        }
     }
     public Item createItem(UUID itemTypeId, UUID warehouseId, int initialQuantity, String username) {
         ItemType itemType = itemTypeRepository.findById(itemTypeId)
@@ -61,6 +80,7 @@ public class ItemService {
         newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
         newItem.setCreatedAt(LocalDateTime.now()); // set createdAt here
         newItem.setCreatedBy(username);
+        System.out.println("createdddatttt:" + newItem.getCreatedAt());
 
         return itemRepository.save(newItem);
     }

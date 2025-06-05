@@ -39,11 +39,42 @@ public class ItemController {
     // Existing endpoints
     @GetMapping("/warehouse/{warehouseId}")
     public ResponseEntity<List<Item>> getItemsByWarehouse(@PathVariable UUID warehouseId) {
+        System.out.println("🔍 === DEBUGGING WAREHOUSE ITEMS REQUEST ===");
+        System.out.println("Received request for warehouse ID: " + warehouseId);
+
         try {
+            // Check if warehouse ID is valid
+            if (warehouseId == null) {
+                System.err.println("❌ Warehouse ID is null");
+                return ResponseEntity.badRequest().build();
+            }
+
+            System.out.println("📞 Calling itemService.getItemsByWarehouse...");
             List<Item> items = itemService.getItemsByWarehouse(warehouseId);
+
+            System.out.println("✅ Successfully fetched items from service");
+            System.out.println("📊 Number of items: " + (items != null ? items.size() : "null"));
+
+            if (items != null && items.size() > 0) {
+                System.out.println("📋 Sample item: " + items.get(0).getId());
+                System.out.println("📋 Sample item status: " + items.get(0).getItemStatus());
+            }
+
             return ResponseEntity.ok(items);
+
         } catch (IllegalArgumentException e) {
+            System.err.println("❌ IllegalArgumentException: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().build();
+
+        } catch (Exception e) {
+            System.err.println("💥 Unexpected error occurred");
+            System.err.println("Error class: " + e.getClass().getSimpleName());
+            System.err.println("Error message: " + e.getMessage());
+            System.err.println("Stack trace:");
+            e.printStackTrace();
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

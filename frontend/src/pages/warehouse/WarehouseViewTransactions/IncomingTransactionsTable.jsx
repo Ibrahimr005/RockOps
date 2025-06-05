@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./WarehouseViewTransactions.scss";
 import "./AcceptRejectModal.scss";
-import TransactionViewModal from "./PendingTransactions/TransactionViewModal.jsx"; // Add this import
+import TransactionViewModal from "./PendingTransactions/TransactionViewModal.jsx";
 import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 
@@ -10,11 +10,11 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
     const [pendingTransactions, setPendingTransactions] = useState([]);
     const [isAcceptModalOpen, setIsAcceptModalOpen] = useState(false);
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-    const [isViewModalOpen, setIsViewModalOpen] = useState(false); // Add this state
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
-    const [viewTransaction, setViewTransaction] = useState(null); // Add this state
+    const [viewTransaction, setViewTransaction] = useState(null);
     const [receivedQuantities, setReceivedQuantities] = useState({});
-    const [itemsNotReceived, setItemsNotReceived] = useState({}); // NEW: Track items not received
+    const [itemsNotReceived, setItemsNotReceived] = useState({});
     const [rejectionReason, setRejectionReason] = useState("");
     const [comments, setComments] = useState("");
     const [acceptError, setAcceptError] = useState("");
@@ -38,6 +38,25 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
         setShowNotification(false);
     };
 
+    // Helper function to get item display name - Fixed for your data structure
+    const getItemDisplayName = (item) => {
+        // Your items have itemTypeName directly, not nested in itemType object
+        return item?.itemTypeName || item?.name || item?.itemName || `Item ${item?.id || 'Unknown'}`;
+    };
+
+    // Helper function to get measuring unit
+    const getItemMeasuringUnit = (item) => {
+        // You might need to add measuringUnit to your backend response
+        // For now, return null since it's not in your current data structure
+        return item?.measuringUnit || item?.itemType?.measuringUnit || null;
+    };
+
+    // Helper function to get item category
+    const getItemCategory = (item) => {
+        // Your items have itemCategory directly as a string
+        return item?.itemCategory || item?.category || item?.itemType?.itemCategory?.name || "";
+    };
+
     // Fetch transactions when component mounts or warehouseId changes
     useEffect(() => {
         fetchPendingTransactions();
@@ -51,9 +70,7 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
         }
         setLoading(true);
         try {
-            // Fetch all transactions for this warehouse
             const token = localStorage.getItem('token');
-
             const response = await fetch(`http://localhost:8080/api/v1/transactions/warehouse/${warehouseId}`, {
                 method: 'GET',
                 headers: {
@@ -64,6 +81,7 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
 
             if (response.ok) {
                 const data = await response.json();
+
                 // Filter for only pending transactions where:
                 // 1. Status is PENDING
                 // 2. Current warehouse is involved (as sender or receiver)
@@ -73,7 +91,7 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
                         .filter(transaction =>
                             transaction.status === "PENDING" &&
                             (transaction.receiverId === warehouseId || transaction.senderId === warehouseId) &&
-                            transaction.sentFirst !== warehouseId // Filter transactions where warehouse is not the initiator
+                            transaction.sentFirst !== warehouseId
                         )
                         .map(async (transaction) => {
                             const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
@@ -107,7 +125,6 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
 
         switch (entityType) {
             case "EQUIPMENT":
-                // Handle equipment data structure
                 return {
                     id: entityData.equipment?.id || entityData.id,
                     name: entityData.name || entityData.equipment?.fullModelName ||
@@ -115,21 +132,18 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
                     type: "EQUIPMENT"
                 };
             case "WAREHOUSE":
-                // Handle warehouse data structure
                 return {
                     id: entityData.id,
                     name: entityData.name,
                     type: "WAREHOUSE"
                 };
             case "SITE":
-                // Handle site data structure
                 return {
                     id: entityData.id,
                     name: entityData.name,
                     type: "SITE"
                 };
             default:
-                // Default handling
                 return {
                     id: entityData.id,
                     name: entityData.name || "Unknown",
@@ -187,8 +201,8 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
             const initialQuantities = {};
             const initialNotReceived = {};
             transaction.items.forEach((item, index) => {
-                initialQuantities[index] = ""; // Start with empty values
-                initialNotReceived[index] = false; // Start with all items as received
+                initialQuantities[index] = "";
+                initialNotReceived[index] = false;
             });
             setReceivedQuantities(initialQuantities);
             setItemsNotReceived(initialNotReceived);
@@ -225,14 +239,13 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
         }));
     };
 
-    // NEW: Handle item not received checkbox change
+    // Handle item not received checkbox change
     const handleItemNotReceivedChange = (index, notReceived) => {
         setItemsNotReceived(prev => ({
             ...prev,
             [index]: notReceived
         }));
 
-        // If item is marked as not received, clear the quantity
         if (notReceived) {
             setReceivedQuantities(prev => ({
                 ...prev,
@@ -247,16 +260,15 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
         setProcessingAction(true);
         setAcceptError("");
 
-        // Validate inputs: either quantity is valid or item is marked as not received
+        // Validate inputs
         const hasInvalidInputs = selectedTransaction.items.some((item, index) => {
             const quantity = receivedQuantities[index];
             const notReceived = itemsNotReceived[index];
 
-            // If not marked as "not received", must have a valid quantity
             if (!notReceived) {
                 return isNaN(quantity) || quantity === "" || parseInt(quantity) < 0;
             }
-            return false; // If marked as not received, it's valid
+            return false;
         });
 
         if (hasInvalidInputs) {
@@ -268,7 +280,7 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
         try {
             const token = localStorage.getItem('token');
 
-            let username = "system"; // Default fallback
+            let username = "system";
             const userInfoString = localStorage.getItem('userInfo');
 
             if (userInfoString) {
@@ -282,11 +294,10 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
                 }
             }
 
-            // Format the received quantities for the API
             const receivedItems = selectedTransaction.items.map((item, index) => ({
                 transactionItemId: item.id,
-                receivedQuantity: itemsNotReceived[index] ? 0 : parseInt(receivedQuantities[index]), // 0 if not received
-                itemNotReceived: itemsNotReceived[index] || false // NEW: Include not received flag
+                receivedQuantity: itemsNotReceived[index] ? 0 : parseInt(receivedQuantities[index]),
+                itemNotReceived: itemsNotReceived[index] || false
             }));
 
             const response = await fetch(`http://localhost:8080/api/v1/transactions/${selectedTransaction.id}/accept`, {
@@ -303,12 +314,10 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
             });
 
             if (response.ok) {
-                // Successfully accepted transaction
-                fetchPendingTransactions(); // Refresh data
+                fetchPendingTransactions();
                 setIsAcceptModalOpen(false);
                 showSnackbar("Transaction Accepted Successfully", "success");
             } else {
-                // Try to get error details from the response
                 let errorMessage = "Failed to accept transaction";
                 try {
                     const errorData = await response.text();
@@ -413,7 +422,7 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
         }
     ];
 
-    // Actions array for DataTable - Updated with View button
+    // Actions array for DataTable
     const actions = [
         {
             label: 'View',
@@ -559,12 +568,14 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
                                                     <span className="item-number">{index + 1}.</span>
                                                     <div className="item-name-wrapper">
                                                         <div className="item-name">
-                                                            {item.itemType?.name || "Unknown Item"}
-                                                            {item.itemType?.measuringUnit && (
-                                                                <span className="item-unit"> ({item.itemType.measuringUnit})</span>
+                                                            {getItemDisplayName(item)}
+                                                            {getItemMeasuringUnit(item) && (
+                                                                <span className="item-unit"> ({getItemMeasuringUnit(item)})</span>
                                                             )}
                                                         </div>
-                                                        <div className="item-category">{item.itemType?.itemCategory?.name || ""}</div>
+                                                        <div className="item-category">
+                                                            {getItemCategory(item)}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -573,8 +584,8 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
                                             <div className="quantity-section">
                                                 <div className="quantity-label">
                                                     Sent/Received Quantity {!itemsNotReceived[index] && <span className="required-mark">*</span>}
-                                                    {item.itemType?.measuringUnit && (
-                                                        <span className="quantity-unit"> ({item.itemType.measuringUnit})</span>
+                                                    {getItemMeasuringUnit(item) && (
+                                                        <span className="quantity-unit"> ({getItemMeasuringUnit(item)})</span>
                                                     )}
                                                 </div>
 
@@ -664,9 +675,7 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
                                 className="accept-button"
                                 onClick={handleAcceptTransaction}
                                 disabled={processingAction || selectedTransaction.items?.some((_, index) => {
-                                    // If item is marked as not received, it's valid
                                     if (itemsNotReceived[index]) return false;
-                                    // If not marked as not received, must have valid quantity
                                     return receivedQuantities[index] === undefined ||
                                         receivedQuantities[index] === "" ||
                                         parseInt(receivedQuantities[index]) < 0;
@@ -686,7 +695,7 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
                 </div>
             )}
 
-            {/* Snackbar Component - Replace old notifications */}
+            {/* Snackbar Component */}
             <Snackbar
                 type={notificationType}
                 text={notificationMessage}
