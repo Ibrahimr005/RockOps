@@ -45,8 +45,18 @@ export const inSiteMaintenanceService = {
         );
     },
 
-    // Check if transaction exists
+    // Check if transaction exists by batch number
     checkTransactionExists: (equipmentId, batchNumber) => {
         return apiClient.get(INSITE_MAINTENANCE_ENDPOINTS.CHECK_TRANSACTION(equipmentId, batchNumber));
+    },
+
+    // Get all maintenance records across all equipment (for dashboard)
+    getAllMaintenanceRecords: () => {
+        return apiClient.get('/api/maintenance/all');
+    },
+
+    // Get maintenance summary statistics
+    getMaintenanceSummary: () => {
+        return apiClient.get('/api/maintenance/summary');
     }
 }; 
