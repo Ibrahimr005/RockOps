@@ -5,7 +5,7 @@ import TransactionViewModal from "./TransactionViewModal.jsx";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx";
 
-const PendingTransactionsTable = ({ warehouseId }) => {
+const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
     const [loading, setLoading] = useState(false);
     const [pendingTransactions, setPendingTransactions] = useState([]);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -40,7 +40,7 @@ const PendingTransactionsTable = ({ warehouseId }) => {
     // Fetch transactions when component mounts or warehouseId changes
     useEffect(() => {
         fetchPendingTransactions();
-    }, [warehouseId]);
+    }, [warehouseId, refreshTrigger]);
 
     // Function to fetch pending transactions directly from backend
     const fetchPendingTransactions = async () => {

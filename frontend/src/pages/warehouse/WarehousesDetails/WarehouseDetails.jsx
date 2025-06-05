@@ -233,6 +233,8 @@ const WarehouseDetails = () => {
     navigate(`/warehouses/warehouse-details/${id}`);
   };
 
+
+
   return (
       <Fragment>
         <div className="WarehouseDetailsContainer">
@@ -273,12 +275,7 @@ const WarehouseDetails = () => {
                 Item Types
               </button>
 
-              <button
-                  className={`new-tab-button ${activeTab === "requestOrders" ? "active" : ""}`}
-                  onClick={() => setActiveTab("requestOrders")}
-              >
-                Request Orders
-              </button>
+
 
               {userRole === 'WAREHOUSE_MANAGER' && (
                   <button
@@ -286,6 +283,15 @@ const WarehouseDetails = () => {
                       onClick={() => setActiveTab("transactions")}
                   >
                     Transactions
+                  </button>
+              )}
+
+              {userRole === 'WAREHOUSE_MANAGER' && (
+                  <button
+                      className={`new-tab-button ${activeTab === "requestOrders" ? "active" : ""}`}
+                      onClick={() => setActiveTab("requestOrders")}
+                  >
+                    Request Orders
                   </button>
               )}
             </div>
@@ -304,13 +310,20 @@ const WarehouseDetails = () => {
               </div>
 
               {/* Footer with Add Button */}
-              <div className="tab-content-footer">
-                <button className="add-entity-button" onClick={handleAddButtonClick} title={getAddButtonText()}>
-                  <svg className="add-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 5v14M5 12h14"/>
-                  </svg>
-                </button>
-              </div>
+              {userRole === "WAREHOUSE_MANAGER" && (
+                  <div className="tab-content-footer">
+                    <button
+                        className="add-entity-button"
+                        onClick={handleAddButtonClick}
+                        title={getAddButtonText()}
+                    >
+                      <svg className="add-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                    </button>
+                  </div>
+              )}
+
             </div>
           </div>
         </div>

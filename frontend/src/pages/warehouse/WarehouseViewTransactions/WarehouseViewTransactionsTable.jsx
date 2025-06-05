@@ -22,6 +22,7 @@ const WarehouseViewTransactionsTable = ({ warehouseId, onAddButtonClick }) => {
 
   // Tab state
   const [activeTab, setActiveTab] = useState("pending");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Snackbar states
   const [snackbar, setSnackbar] = useState({
@@ -48,7 +49,7 @@ const WarehouseViewTransactionsTable = ({ warehouseId, onAddButtonClick }) => {
     batchNumber: "",
   });
 
-  const entityTypes = ["WAREHOUSE", "MERCHANT", "EQUIPMENT"];
+  const entityTypes = ["WAREHOUSE", "EQUIPMENT"];
   const [userRole, setUserRole] = useState("");
 
   // Tab configuration
@@ -73,6 +74,10 @@ const WarehouseViewTransactionsTable = ({ warehouseId, onAddButtonClick }) => {
       ...prev,
       isVisible: false
     }));
+  };
+
+  const triggerRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -624,9 +629,10 @@ const WarehouseViewTransactionsTable = ({ warehouseId, onAddButtonClick }) => {
 
       if (response.ok) {
         fetchTransactions();
+        triggerRefresh(); // Add this line
         setIsCreateModalOpen(false);
         showSnackbar('success', 'Transaction created successfully!');
-      } else {
+      }else {
         const errorText = await response.text();
         console.error("Failed to create transaction:", response.status, errorText);
         showSnackbar('error', 'Failed to create transaction. Please try again.');
@@ -667,7 +673,7 @@ const WarehouseViewTransactionsTable = ({ warehouseId, onAddButtonClick }) => {
     if (!activeTabConfig) return null;
 
     const TabComponent = activeTabConfig.component;
-    return <TabComponent warehouseId={warehouseId} />;
+    return <TabComponent warehouseId={warehouseId} refreshTrigger={refreshTrigger} />;
   };
 
   return (
