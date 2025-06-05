@@ -13,16 +13,18 @@ export const SnackbarProvider = ({ children }) => {
         message: '',
         type: 'success',
         duration: 3000,
-        persistent: false
+        persistent: false,
+        actions: null
     });
 
-    const showSnackbar = useCallback((message, type = 'success', duration = 3000, persistent = false) => {
+    const showSnackbar = useCallback((message, type = 'success', duration = 3000, persistent = false, actions = null) => {
         setSnackbar({
             show: true,
             message,
             type,
             duration,
-            persistent
+            persistent,
+            actions
         });
     }, []);
 
@@ -46,6 +48,36 @@ export const SnackbarProvider = ({ children }) => {
     const showWarning = useCallback((message, duration, persistent = false) =>
         showSnackbar(message, 'warning', duration, persistent), [showSnackbar]);
 
+    // New method for showing confirmation dialogs
+    const showConfirmation = useCallback((message, onConfirm, onCancel) => {
+        showSnackbar(
+            message,
+            'warning',
+            0, // No auto-hide
+            true, // Persistent
+            {
+                buttons: [
+                    {
+                        label: 'YES',
+                        type: 'confirm',
+                        onClick: () => {
+                            if (onConfirm) onConfirm();
+                            hideSnackbar();
+                        }
+                    },
+                    {
+                        label: 'NO',
+                        type: 'cancel',
+                        onClick: () => {
+                            if (onCancel) onCancel();
+                            hideSnackbar();
+                        }
+                    }
+                ]
+            }
+        );
+    }, [showSnackbar, hideSnackbar]);
+
     return (
         <SnackbarContext.Provider
             value={{
@@ -54,7 +86,8 @@ export const SnackbarProvider = ({ children }) => {
                 showSuccess,
                 showError,
                 showInfo,
-                showWarning
+                showWarning,
+                showConfirmation
             }}
         >
             {children}
@@ -64,6 +97,7 @@ export const SnackbarProvider = ({ children }) => {
                 type={snackbarState.type}
                 duration={snackbarState.duration}
                 persistent={snackbarState.persistent}
+                actions={snackbarState.actions}
                 onClose={hideSnackbar}
             />
         </SnackbarContext.Provider>

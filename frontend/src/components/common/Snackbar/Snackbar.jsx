@@ -10,8 +10,21 @@ import './Snackbar.scss';
  * @param {function} props.onClose - Function to call when Snackbar should close
  * @param {number} props.duration - Duration to show Snackbar in ms (default: 3000)
  * @param {boolean} props.persistent - Whether the snackbar should stay open until manually closed
+ * @param {Object} props.actions - Optional action buttons configuration
+ * @param {Array} props.actions.buttons - Array of button configurations
+ * @param {string} props.actions.buttons[].label - Button label
+ * @param {string} props.actions.buttons[].type - Button type ('confirm' or 'cancel')
+ * @param {function} props.actions.buttons[].onClick - Button click handler
  */
-const Snackbar = ({ type = 'success', message, show, onClose, duration = 3000, persistent = false }) => {
+const Snackbar = ({ 
+    type = 'success', 
+    message, 
+    show, 
+    onClose, 
+    duration = 3000, 
+    persistent = false,
+    actions = null 
+}) => {
     const [visible, setVisible] = useState(false);
     const [animationState, setAnimationState] = useState('hidden');
 
@@ -29,8 +42,8 @@ const Snackbar = ({ type = 'success', message, show, onClose, duration = 3000, p
                 setAnimationState('slide-in');
             }, slideInDuration);
 
-            // Start hiding after 'duration' ms (only if not persistent)
-            if (!persistent) {
+            // Start hiding after 'duration' ms (only if not persistent and no actions)
+            if (!persistent && !actions) {
                 const hideTimer = setTimeout(() => {
                     // Trigger slide-out animation
                     setAnimationState('slide-out');
@@ -42,7 +55,7 @@ const Snackbar = ({ type = 'success', message, show, onClose, duration = 3000, p
                     }, animationDuration);
 
                     return () => clearTimeout(removeTimer);
-                }, duration); // This is the time the snackbar stays visible before hiding
+                }, duration);
 
                 return () => clearTimeout(hideTimer);
             }
@@ -56,7 +69,7 @@ const Snackbar = ({ type = 'success', message, show, onClose, duration = 3000, p
 
             return () => clearTimeout(timer);
         }
-    }, [show, duration, onClose, persistent]);
+    }, [show, duration, onClose, persistent, actions]);
 
     // Manual close handler for persistent snackbars
     const handleManualClose = () => {
@@ -123,8 +136,24 @@ const Snackbar = ({ type = 'success', message, show, onClose, duration = 3000, p
                 ) : (
                     <span className="snackbar-message">{message}</span>
                 )}
+                {actions && actions.buttons && (
+                    <div className="snackbar-actions">
+                        {actions.buttons.map((button, index) => (
+                            <button
+                                key={index}
+                                className={`snackbar-action-button ${button.type || 'default'}`}
+                                onClick={() => {
+                                    if (button.onClick) button.onClick();
+                                    if (!button.preventClose) handleManualClose();
+                                }}
+                            >
+                                {button.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
-            {persistent && (
+            {persistent && !actions && (
                 <button 
                     className="snackbar-close-button" 
                     onClick={handleManualClose}

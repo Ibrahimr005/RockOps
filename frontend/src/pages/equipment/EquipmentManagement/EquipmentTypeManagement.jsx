@@ -24,7 +24,7 @@ const EquipmentTypeManagement = () => {
     const [deletingType, setDeletingType] = useState(null);
 
     // Use the snackbar context
-    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar } = useSnackbar();
+    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar, showConfirmation } = useSnackbar();
 
     // Get authentication context and permissions
     const auth = useAuth();
@@ -135,46 +135,11 @@ const EquipmentTypeManagement = () => {
     };
 
     const confirmDelete = (typeId, typeName) => {
-        // Store the type to be deleted
-        setDeletingType({ id: typeId, name: typeName });
-
-        // Custom message with buttons
-        const message = `Are you sure you want to delete "${typeName}"?`;
-
-        // Show persistent confirmation warning that won't auto-hide
-        showWarning(message, 0, true);
-
-        // Create action buttons in the DOM
-        setTimeout(() => {
-            const snackbar = document.querySelector('.global-notification');
-            if (snackbar) {
-                // Create and append action buttons container
-                const actionContainer = document.createElement('div');
-                actionContainer.className = 'snackbar-actions';
-
-                // Yes button
-                const yesButton = document.createElement('button');
-                yesButton.innerText = 'YES';
-                yesButton.className = 'snackbar-action-button confirm';
-                yesButton.onclick = () => {
-                    performDelete(typeId, typeName);
-                    hideSnackbar();
-                };
-
-                // No button
-                const noButton = document.createElement('button');
-                noButton.innerText = 'NO';
-                noButton.className = 'snackbar-action-button cancel';
-                noButton.onclick = () => {
-                    setDeletingType(null);
-                    hideSnackbar();
-                };
-
-                actionContainer.appendChild(yesButton);
-                actionContainer.appendChild(noButton);
-                snackbar.appendChild(actionContainer);
-            }
-        }, 100);
+        showConfirmation(
+            `Are you sure you want to delete "${typeName}"?`,
+            () => performDelete(typeId, typeName),
+            () => setDeletingType(null)
+        );
     };
 
     const performDelete = async (typeId, typeName) => {

@@ -22,7 +22,7 @@ const MaintenanceTypeManagement = () => {
     });
 
     // Use the snackbar context
-    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar } = useSnackbar();
+    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar, showConfirmation } = useSnackbar();
 
     // Get authentication context and permissions
     const auth = useAuth();
@@ -114,46 +114,11 @@ const MaintenanceTypeManagement = () => {
     };
 
     const confirmDelete = (maintenanceTypeId, maintenanceTypeName) => {
-        // Store the maintenance type to be deleted
-        setDeletingMaintenanceType({ id: maintenanceTypeId, name: maintenanceTypeName });
-
-        // Custom message with buttons
-        const message = `Are you sure you want to delete "${maintenanceTypeName}"?`;
-
-        // Show persistent confirmation warning that won't auto-hide
-        showWarning(message, 0, true);
-
-        // Create action buttons in the DOM
-        setTimeout(() => {
-            const snackbar = document.querySelector('.global-notification');
-            if (snackbar) {
-                // Create and append action buttons container
-                const actionContainer = document.createElement('div');
-                actionContainer.className = 'snackbar-actions';
-
-                // Yes button
-                const yesButton = document.createElement('button');
-                yesButton.innerText = 'YES';
-                yesButton.className = 'snackbar-action-button confirm';
-                yesButton.onclick = () => {
-                    performDelete(maintenanceTypeId, maintenanceTypeName);
-                    hideSnackbar();
-                };
-
-                // No button
-                const noButton = document.createElement('button');
-                noButton.innerText = 'NO';
-                noButton.className = 'snackbar-action-button cancel';
-                noButton.onclick = () => {
-                    setDeletingMaintenanceType(null);
-                    hideSnackbar();
-                };
-
-                actionContainer.appendChild(yesButton);
-                actionContainer.appendChild(noButton);
-                snackbar.appendChild(actionContainer);
-            }
-        }, 100);
+        showConfirmation(
+            `Are you sure you want to delete "${maintenanceTypeName}"?`,
+            () => performDelete(maintenanceTypeId, maintenanceTypeName),
+            () => setDeletingMaintenanceType(null)
+        );
     };
 
     const performDelete = async (maintenanceTypeId, maintenanceTypeName) => {
@@ -162,7 +127,8 @@ const MaintenanceTypeManagement = () => {
             showSuccess(`Maintenance type "${maintenanceTypeName}" has been deleted successfully`);
             fetchMaintenanceTypes(); // Refresh the list
         } catch (err) {
-            errorHandlers.handleDeleteError(err);
+            console.error('Error deleting maintenance type:', err);
+            showError(`Failed to delete maintenance type: ${err.response?.data?.message || err.message}`);
         } finally {
             setDeletingMaintenanceType(null);
         }

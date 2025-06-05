@@ -22,7 +22,7 @@ const EquipmentBrandManagement = () => {
     const [deletingBrand, setDeletingBrand] = useState(null);
 
     // Use the snackbar context
-    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar } = useSnackbar();
+    const { showSuccess, showError, showInfo, showWarning, showSnackbar, hideSnackbar, showConfirmation } = useSnackbar();
 
     // Get authentication context and permissions
     const auth = useAuth();
@@ -37,6 +37,7 @@ const EquipmentBrandManagement = () => {
             setLoading(true);
             const response = await equipmentBrandService.getAllEquipmentBrands();
             if (response.data) {
+                console.log(response.data)
                 setBrands(response.data);
             } else {
                 // Initialize with empty array if no data
@@ -106,46 +107,11 @@ const EquipmentBrandManagement = () => {
     };
 
     const confirmDelete = (brandId, brandName) => {
-        // Store the brand to be deleted
-        setDeletingBrand({ id: brandId, name: brandName });
-
-        // Custom message with buttons
-        const message = `Are you sure you want to delete "${brandName}"?`;
-
-        // Show persistent confirmation warning that won't auto-hide
-        showWarning(message, 0, true);
-
-        // Create action buttons in the DOM
-        setTimeout(() => {
-            const snackbar = document.querySelector('.global-notification');
-            if (snackbar) {
-                // Create and append action buttons container
-                const actionContainer = document.createElement('div');
-                actionContainer.className = 'snackbar-actions';
-
-                // Yes button
-                const yesButton = document.createElement('button');
-                yesButton.innerText = 'YES';
-                yesButton.className = 'snackbar-action-button confirm';
-                yesButton.onclick = () => {
-                    performDelete(brandId, brandName);
-                    hideSnackbar();
-                };
-
-                // No button
-                const noButton = document.createElement('button');
-                noButton.innerText = 'NO';
-                noButton.className = 'snackbar-action-button cancel';
-                noButton.onclick = () => {
-                    setDeletingBrand(null);
-                    hideSnackbar();
-                };
-
-                actionContainer.appendChild(yesButton);
-                actionContainer.appendChild(noButton);
-                snackbar.appendChild(actionContainer);
-            }
-        }, 100);
+        showConfirmation(
+            `Are you sure you want to delete "${brandName}"?`,
+            () => performDelete(brandId, brandName),
+            () => setDeletingBrand(null)
+        );
     };
 
     const performDelete = async (brandId, brandName) => {
@@ -154,7 +120,8 @@ const EquipmentBrandManagement = () => {
             showSuccess(`Equipment brand "${brandName}" has been deleted successfully`);
             fetchBrands(); // Refresh the list
         } catch (err) {
-            errorHandlers.handleDeleteError(err);
+            console.error('Error deleting equipment brand:', err);
+            showError(`Failed to delete equipment brand: ${err.response?.data?.message || err.message}`);
         } finally {
             setDeletingBrand(null);
         }
