@@ -221,7 +221,7 @@ const EquipmentTypeManagement = () => {
                 <h1>Equipment Types</h1>
                 {permissions.canCreate && (
                     <button
-                        className="equipment-types-add-button"
+                        className="btn btn-primary"
                         onClick={() => handleOpenModal()}
                     >
                         <FaPlus /> Add Equipment Type
