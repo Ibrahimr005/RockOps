@@ -93,27 +93,18 @@ function App() {
                                 <Route path="/" element={<AuthRedirect/>}/>
 
                                 <Route element={<MainLayout/>}>
-                                    <Route path="/admin"
-                                           element={<RoleRoute allowedRoles={['ADMIN']}><AdminPage/></RoleRoute>}/>
+                                    <Route path="/admin" element={<RoleRoute allowedRoles={['ADMIN']}><AdminPage/></RoleRoute>}/>
 
-                                    <Route path="/dashboard"
-                                           element={<RoleRoute allowedRoles={allRoles}><DashboardPage/>
-                                           </RoleRoute>}/>
+                                    <Route path="/dashboard" element={<RoleRoute allowedRoles={allRoles}><DashboardPage/></RoleRoute>}/>
 
-                                    <Route path="/partners" element={<RoleRoute
-                                        allowedRoles={["ADMIN", "SITE_ADMIN"]}><Partners/></RoleRoute>}/>
+                                    <Route path="/partners" element={<RoleRoute allowedRoles={["ADMIN", "SITE_ADMIN"]}><Partners/></RoleRoute>}/>
 
                                     {/* Site Management Routes */}
-                                    <Route path="/sites"
-                                           element={<RoleRoute allowedRoles={allRoles}><SitesLayout/></RoleRoute>}>
-                                        <Route index
-                                               element={<RoleRoute allowedRoles={allRoles}><AllSites/></RoleRoute>}/>
-                                        <Route path="details/:siteId"
-                                               element={<RoleRoute allowedRoles={allRoles}><SiteDetails/></RoleRoute>}/>
-                                        <Route path="employee-details/:id" element={<RoleRoute
-                                            allowedRoles={allRoles}><EmployeeDetails/></RoleRoute>}/>
+                                    <Route path="/sites" element={<RoleRoute allowedRoles={allRoles}><SitesLayout/></RoleRoute>}>
+                                        <Route index element={<RoleRoute allowedRoles={allRoles}><AllSites/></RoleRoute>}/>
+                                        <Route path="details/:siteId" element={<RoleRoute allowedRoles={allRoles}><SiteDetails/></RoleRoute>}/>
+                                        <Route path="employee-details/:id" element={<RoleRoute allowedRoles={allRoles}><EmployeeDetails/></RoleRoute>}/>
                                     </Route>
-
 
                                     {/* Warehouse Management Routes */}
                                     <Route path="/warehouses" element={<RoleRoute allowedRoles={allRoles}><SitesLayout/></RoleRoute>}>
@@ -121,33 +112,19 @@ function App() {
                                         <Route path=":id" element={<WarehouseDetails/>}/>
                                         <Route path="warehouse-details/:id" element={<WarehouseInformation/>}/>
                                     </Route>
-                                    <Route path="/warehouses" element={<RoleRoute allowedRoles={allRoles}><WarehousesList/></RoleRoute>}/>
-                                    <Route path="/warehouses/:id" element={<WarehouseDetails/>}/>
-                                    <Route path="/warehouses/warehouse-details/:id" element={<WarehouseInformation/>}/>
 
-                                    {/* Merchant & Procurement Routes */}
+                                    {/* Merchant Routes */}
                                     <Route path="/merchants" element={<RoleRoute allowedRoles={["ADMIN", "PROCUREMENT", "SITE_ADMIN", "WAREHOUSE_MANAGER"]}><ProcurementMerchants/></RoleRoute>}/>
-                                    <Route path="/merchants/:id" element={<RoleRoute
-                                        allowedRoles={["ADMIN", "PROCUREMENT", "SITE_ADMIN"]}><MerchantDetails/></RoleRoute>}/>
-                                    <Route path="/procurement/request-orders" element={<RoleRoute
-                                        allowedRoles={["ADMIN", "PROCUREMENT", "SITE_ADMIN"]}><ProcurementRequestOrders/></RoleRoute>}/>
-                                    <Route path="/procurement/request-orders/:id" element={<RoleRoute
-                                        allowedRoles={["ADMIN", "PROCUREMENT", "SITE_ADMIN"]}><ProcurementRequestOrderDetails/></RoleRoute>}/>
-                                    <Route path="/procurement/offers" element={<RoleRoute
-                                        allowedRoles={["ADMIN", "PROCUREMENT", "SITE_ADMIN"]}><ProcurementOffers/></RoleRoute>}/>
+                                    <Route path="/merchants/:id" element={<RoleRoute allowedRoles={["ADMIN", "PROCUREMENT", "SITE_ADMIN"]}><MerchantDetails/></RoleRoute>}/>
 
-                                    <Route path="/procurement/purchase-orders" element={
-                                        <RoleRoute allowedRoles={["ADMIN", "PROCUREMENT", "SITE_ADMIN"]}>
-                                            <PurchaseOrders/>
-                                        </RoleRoute>
-                                    }/>
-
-                                    <Route path="/procurement/purchase-orders/:id" element={
-                                        <RoleRoute allowedRoles={["ADMIN", "PROCUREMENT"]}>
-                                            <PurchaseOrderDetails/>
-                                        </RoleRoute>
-                                    }/>
-
+                                    {/* Procurement Routes */}
+                                    <Route path="/procurement" element={<RoleRoute allowedRoles={["PROCUREMENT", "SITE_ADMIN", "ADMIN"]}><SitesLayout/></RoleRoute>}>
+                                        <Route path="request-orders" element={<ProcurementRequestOrders/>}/>
+                                        <Route path="request-orders/:id" element={<ProcurementRequestOrderDetails/>}/>
+                                        <Route path="offers" element={<ProcurementOffers/>}/>
+                                        <Route path="purchase-orders" element={<PurchaseOrders/>}/>
+                                        <Route path="purchase-orders/:id" element={<PurchaseOrderDetails/>}/>
+                                    </Route>
 
                                     {/* HR Management Routes */}
                                     <Route path="/hr" element={<RoleRoute allowedRoles={["HR_MANAGER", "HR_EMPLOYEE", "ADMIN"]}><HRLayout/></RoleRoute>}>

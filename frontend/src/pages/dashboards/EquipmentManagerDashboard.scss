@@ -37,7 +37,7 @@
 
 // Header Section
 .eq-header {
-  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  background: var(--color-primary);
   color: white;
   padding: 2rem 0;
   margin-bottom: 2rem;
@@ -91,14 +91,14 @@
         backdrop-filter: blur(10px);
 
         option {
-          background: #1e40af;
+          background: var(--color-primary);
           color: white;
         }
 
         &:focus {
           outline: none;
           border-color: rgba(255, 255, 255, 0.4);
-          background: rgba(255, 255, 255, 0.15);
+          background: var(--color-primary-hover);
         }
       }
 
@@ -107,7 +107,7 @@
         align-items: center;
         gap: 0.5rem;
         padding: 0.5rem 1rem;
-        background: rgba(255, 255, 255, 0.1);
+        background: var(--color-primary);
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 8px;
         color: white;
@@ -118,7 +118,7 @@
 
         &:hover:not(:disabled) {
           background: rgba(255, 255, 255, 0.2);
-          border-color: rgba(255, 255, 255, 0.3);
+          background: var(--color-primary-hover);
         }
 
         &:disabled {
