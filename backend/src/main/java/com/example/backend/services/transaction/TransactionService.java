@@ -488,8 +488,11 @@ public class TransactionService {
         if (transaction.getReceiverType() == PartyType.WAREHOUSE) {
             // Add what receiver actually claims they received
             addToWarehouseInventory(transaction, item, receiverClaimedQuantity);
+        } else if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
+            // Add consumables to equipment
+            System.out.println("⚙️ Adding consumables to equipment: " + receiverClaimedQuantity + " units");
+            addToEquipmentConsumables(transaction.getReceiverId(), item.getItemType(), receiverClaimedQuantity, transaction);
         }
-        // Equipment receiver handling unchanged (preserve equipment logic)
 
         // Handle sender adjustments if quantities don't match what was originally claimed
         if (transaction.getSenderType() == PartyType.WAREHOUSE) {
@@ -516,25 +519,20 @@ public class TransactionService {
                                                          int senderClaimedQuantity, int receiverClaimedQuantity) {
         System.out.println("📥 Handling receiver-initiated inventory changes");
 
-        // Receiver already added during creation, now handle sender side
+        // Handle sender side first
         if (transaction.getSenderType() == PartyType.WAREHOUSE) {
             // Deduct what sender actually claims they sent
             deductFromWarehouseInventory(transaction.getSenderId(), item.getItemType(), senderClaimedQuantity);
         }
-        // Equipment sender handling unchanged (preserve equipment logic)
 
-        // Handle receiver adjustments if quantities don't match what was originally claimed
+        // Handle receiver side
         if (transaction.getReceiverType() == PartyType.WAREHOUSE) {
-            int originalQuantity = item.getQuantity();
-            int difference = originalQuantity - receiverClaimedQuantity;
-
-            if (difference > 0) {
-                // Receiver originally claimed more than they actually received, remove difference
-                deductFromWarehouseInventory(transaction.getReceiverId(), item.getItemType(), difference);
-            } else if (difference < 0) {
-                // Receiver actually received more than originally claimed, add additional
-                addBackToWarehouseInventory(transaction.getReceiverId(), item.getItemType(), Math.abs(difference));
-            }
+            // Add what receiver claims they received
+            addToWarehouseInventory(transaction, item, receiverClaimedQuantity);
+        } else if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
+            // Add consumables to equipment
+            System.out.println("⚙️ Adding consumables to equipment: " + receiverClaimedQuantity + " units");
+            addToEquipmentConsumables(transaction.getReceiverId(), item.getItemType(), receiverClaimedQuantity, transaction);
         }
 
         // Handle discrepancies

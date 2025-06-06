@@ -540,9 +540,7 @@ const UnifiedTransactionsView = forwardRef(({
                                             </div>
                                         </div>
                                         <div className="quantity-controls">
-                                            <div className="quantity-info">
-                                                <span className="sent-quantity">Sent: {item.quantity}</span>
-                                            </div>
+
                                             <div className="received-input">
                                                 <label>Received:</label>
                                                 <input

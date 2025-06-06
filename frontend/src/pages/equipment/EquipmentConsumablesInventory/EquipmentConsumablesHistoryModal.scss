@@ -1,0 +1,248 @@
+.consumables-history-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.consumables-history-modal {
+    background-color: var(--color-surface);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-lg);
+}
+
+.consumables-history-modal-header {
+    padding: 24px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.item-info {
+    h2 {
+        margin: 0;
+        font-size: 24px;
+        color: var(--color-text-primary);
+    }
+
+    .item-category {
+        display: inline-block;
+        padding: 4px 12px;
+        background-color: var(--color-surface-hover);
+        border-radius: 16px;
+        font-size: 14px;
+        color: var(--color-text-secondary);
+        margin-top: 8px;
+    }
+}
+
+.summary-stats {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .stat-value {
+        font-size: 20px;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: var(--color-text-secondary);
+    }
+}
+
+.stat-divider {
+    width: 1px;
+    height: 24px;
+    background-color: var(--border-color);
+}
+
+.close-modal-button {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    transition: color var(--transition-fast);
+
+    &:hover {
+        color: var(--color-text-primary);
+    }
+
+    svg {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+.consumables-history-modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.history-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.history-entry {
+    background-color: var(--color-surface-hover);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.history-entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.type-badge {
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+
+    &.received {
+        background-color: rgba(var(--color-success-rgb), 0.1);
+        color: var(--color-success);
+    }
+
+    &.sent {
+        background-color: rgba(var(--color-primary-rgb), 0.1);
+        color: var(--color-primary);
+    }
+
+    &.adjusted {
+        background-color: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
+    }
+}
+
+.entry-date {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+}
+
+.history-entry-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.quantity-info {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+
+    .quantity-value {
+        font-size: 18px;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+    }
+
+    .quantity-unit {
+        font-size: 14px;
+        color: var(--color-text-secondary);
+    }
+}
+
+.transaction-flow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background-color: var(--color-surface);
+    border-radius: 6px;
+}
+
+.flow-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .flow-label {
+        font-size: 12px;
+        color: var(--color-text-secondary);
+    }
+
+    .flow-value {
+        font-size: 14px;
+        color: var(--color-text-primary);
+    }
+}
+
+.flow-arrow {
+    color: var(--color-text-secondary);
+    font-size: 18px;
+}
+
+.batch-info, .entry-comment {
+    display: flex;
+    gap: 8px;
+    font-size: 14px;
+
+    .batch-label, .comment-label {
+        color: var(--color-text-secondary);
+    }
+
+    .batch-value, .comment-value {
+        color: var(--color-text-primary);
+    }
+}
+
+.no-history {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+
+    .empty-icon {
+        width: 48px;
+        height: 48px;
+        color: var(--color-text-secondary);
+        margin-bottom: 16px;
+    }
+
+    h3 {
+        margin: 0 0 8px 0;
+        color: var(--color-text-primary);
+    }
+
+    p {
+        margin: 0;
+        color: var(--color-text-secondary);
+    }
+} 

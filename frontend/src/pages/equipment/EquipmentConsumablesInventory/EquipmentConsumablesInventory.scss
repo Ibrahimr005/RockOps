@@ -481,3 +481,127 @@
   width: 24px;
   height: 24px;
 }
+
+.equipment-consumables-inventory {
+    padding: 24px;
+    background-color: var(--color-surface);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+}
+
+.inventory-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+
+    h2 {
+        margin: 0;
+        font-size: 24px;
+        color: var(--color-text-primary);
+    }
+}
+
+.inventory-stats {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .stat-value {
+        font-size: 20px;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: var(--color-text-secondary);
+    }
+}
+
+.stat-divider {
+    width: 1px;
+    height: 24px;
+    background-color: var(--border-color);
+}
+
+.quantity-value {
+    font-weight: var(--bold-font-weight);
+
+    &.low-stock {
+        color: var(--color-warning);
+    }
+
+    &.over-received {
+        color: var(--color-success);
+    }
+}
+
+.history-button {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    transition: color var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        color: var(--color-primary);
+    }
+
+    svg {
+        width: 20px;
+        height: 20px;
+    }
+}
+
+.resolve-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background-color: var(--color-success);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color var(--transition-fast);
+
+    &:hover {
+        background-color: var(--color-success-dark);
+    }
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+// DataTable custom styles
+.consumables-table {
+    .data-table-header {
+        background-color: var(--color-surface-hover);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .data-table-row {
+        &:hover {
+            background-color: var(--color-surface-hover);
+        }
+    }
+
+    .data-table-cell {
+        padding: 16px;
+        font-size: 14px;
+    }
+}

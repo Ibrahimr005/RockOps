@@ -1,6 +1,6 @@
 // src/services/equipmentService.js
-import apiClient from '../utils/apiClient';
 import { EQUIPMENT_ENDPOINTS, SITE_ENDPOINTS, MERCHANT_ENDPOINTS, EMPLOYEE_ENDPOINTS } from '../config/api.config';
+import apiClient from "../utils/apiClient.js";
 
 
 

@@ -6,6 +6,8 @@ import './EquipmentConsumablesInventory.scss';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
+import EquipmentConsumablesHistoryModal from "./EquipmentConsumablesHistoryModal.jsx";
+import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 
 const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref) => {
 
@@ -14,6 +16,9 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('current');
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [selectedConsumable, setSelectedConsumable] = useState(null);
+    const [consumableHistory, setConsumableHistory] = useState([]);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -24,6 +29,23 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
     // Get authentication context and permissions
     const auth = useAuth();
     const permissions = useEquipmentPermissions(auth);
+
+    // Snackbar states
+    const [showNotification, setShowNotification] = useState(false);
+    const [notificationMessage, setNotificationMessage] = useState('');
+    const [notificationType, setNotificationType] = useState('success');
+
+    // Helper function to show snackbar
+    const showSnackbar = (message, type = "success") => {
+        setNotificationMessage(message);
+        setNotificationType(type);
+        setShowNotification(true);
+    };
+
+    // Helper function to close snackbar
+    const closeSnackbar = () => {
+        setShowNotification(false);
+    };
 
     // Function to fetch transaction details and show in snackbar
     const showTransactionDetails = async (transactionId, batchNumber) => {
@@ -83,6 +105,33 @@ Click the ✕ button to close`;
             setError(err.message);
             setLoading(false);
         }
+    };
+
+    const fetchConsumableHistory = async (consumableId) => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`http://localhost:8080/api/v1/equipment/consumables/${consumableId}/history`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setConsumableHistory(data);
+            } else {
+                console.error("Failed to fetch consumable history, status:", response.status);
+                showSnackbar("Failed to fetch consumable history", "error");
+            }
+        } catch (error) {
+            console.error("Failed to fetch consumable history:", error);
+            showSnackbar("Failed to fetch consumable history", "error");
+        }
+    };
+
+    const showConsumableHistory = async (consumable) => {
+        setSelectedConsumable(consumable);
+        await fetchConsumableHistory(consumable.id);
+        setIsHistoryModalOpen(true);
     };
 
     // Expose fetchConsumables to parent component
@@ -159,15 +208,17 @@ Click the ✕ button to close`;
         },
         {header: 'Unit', accessor: 'unit'},
         {
-            header: 'Batch Number',
-            accessor: 'batchNumber',
-            render: (row, value) => (
+            header: 'History',
+            accessor: 'history',
+            render: (row) => (
                 <button
-                    className="info-button"
-                    title="Show Transaction Details"
-                    onClick={() => showTransactionDetails(row.transactionId, value)}
+                    className="history-button"
+                    title="View History"
+                    onClick={() => showConsumableHistory(row)}
                 >
-                    {value || 'N/A'}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                 </button>
             )
         },
@@ -332,6 +383,22 @@ Click the ✕ button to close`;
                     </svg>
                 </button>
             )}
+
+            {/* History Modal */}
+            <EquipmentConsumablesHistoryModal
+                isOpen={isHistoryModalOpen}
+                onClose={() => setIsHistoryModalOpen(false)}
+                consumableHistory={consumableHistory}
+                itemDetails={selectedConsumable}
+            />
+
+            {/* Snackbar */}
+            <Snackbar
+                isVisible={showNotification}
+                message={notificationMessage}
+                type={notificationType}
+                onClose={closeSnackbar}
+            />
         </div>
     );
 });
