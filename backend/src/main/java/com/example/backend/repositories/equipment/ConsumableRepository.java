@@ -14,6 +14,8 @@ public interface ConsumableRepository extends JpaRepository<Consumable, UUID> {
 
 
     Consumable findByEquipmentIdAndItemTypeId(UUID equipmentId, UUID itemTypeId);
+    
+    Consumable findByEquipmentIdAndItemTypeIdAndStatus(UUID equipmentId, UUID itemTypeId, ItemStatus status);
 
     List<Consumable> findByEquipmentId(UUID equipmentId);
 

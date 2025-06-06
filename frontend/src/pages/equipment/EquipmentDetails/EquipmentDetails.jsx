@@ -158,7 +158,7 @@ const EquipmentDetails = () => {
     };
 
     const handleViewFullDetails = () => {
-        navigate(`../ViewEquipment/${params.EquipmentID}`);
+        navigate(`../info/${params.EquipmentID}`);
     };
 
     if (loading) return <div className="loading-spinner">Loading...</div>;

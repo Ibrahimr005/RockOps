@@ -28,6 +28,7 @@ import WorkTypeManagement from "./pages/equipment/EquipmentManagement/WorkTypeMa
 import MaintenanceTypeManagement from "./pages/equipment/EquipmentManagement/MaintenanceTypeManagement.jsx";
 import ViewEquipmentData from "./pages/equipment/EquipmentInfo/ViewEquipmentData.jsx";
 import EquipmentDetails from "./pages/equipment/EquipmentDetails/EquipmentDetails.jsx";
+import RelatedDocuments from "./pages/RelatedDocuments/RelatedDocuments.jsx";
 
 // ===================== Warehouse Imports =====================
 import WarehousesList from "./pages/warehouse/WarehousesList/WarehousesList.jsx";
@@ -170,6 +171,9 @@ function App() {
                                         <Route path="info/:EquipmentID" element={<RoleRoute allowedRoles={allRoles}><ViewEquipmentData/></RoleRoute>}/>
                                         <Route path=":EquipmentID" element={<RoleRoute allowedRoles={allRoles}><EquipmentDetails/></RoleRoute>}/>
                                     </Route>
+
+                                    {/* Generic Related Documents Route */}
+                                    <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
                                 </Route>
 
 

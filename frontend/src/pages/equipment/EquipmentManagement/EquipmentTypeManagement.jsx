@@ -164,7 +164,8 @@ const EquipmentTypeManagement = () => {
         {
             header: 'Description',
             accessor: 'description',
-            sortable: true
+            sortable: true,
+            render: (row) => row.description || 'N/A'
         },
         {
             header: 'Drivable',
@@ -172,7 +173,7 @@ const EquipmentTypeManagement = () => {
             sortable: true,
             render: (row) => (
                 <span className={`status-badge ${row.drivable ? 'drivable' : 'non-drivable'}`}>
-                    {row.drivable ? '🚗 Yes' : '🔧 No'}
+                    {row.drivable ? ' Yes' : 'No'}
                 </span>
             )
         },
@@ -181,9 +182,10 @@ const EquipmentTypeManagement = () => {
             accessor: 'supportedWorkTypes',
             sortable: false,
             render: (row) => {
-                const workTypeNames = row.supportedWorkTypes ? 
-                    row.supportedWorkTypes.map(wt => wt.name).join(', ') : 
-                    'None';
+                if (!row.supportedWorkTypes || row.supportedWorkTypes.length === 0) {
+                    return 'None';
+                }
+                const workTypeNames = row.supportedWorkTypes.map(wt => wt.name).join(', ');
                 return (
                     <span className="work-types-list">
                         {workTypeNames.length > 50 ? workTypeNames.substring(0, 50) + '...' : workTypeNames}

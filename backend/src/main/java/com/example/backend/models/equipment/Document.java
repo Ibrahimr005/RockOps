@@ -1,6 +1,6 @@
 package com.example.backend.models.equipment;
 
-import com.example.backend.models.hr.Employee;
+import com.example.backend.models.user.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -46,8 +46,8 @@ public class Document {
     private String fileUrl;
 
     @ManyToOne
-    @JoinColumn(name = "uploaded_by")
-    private Employee uploadedBy;
+    @JoinColumn(name = "uploaded_by_user_id", referencedColumnName = "id")
+    private User uploadedBy;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

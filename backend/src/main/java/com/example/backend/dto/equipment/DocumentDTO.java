@@ -20,6 +20,7 @@ public class DocumentDTO {
     private String type;
     private LocalDate dateUploaded;
     private String size;
+    private Long fileSize; // Raw file size in bytes
     private String url;
     private String uploadedBy;
 }

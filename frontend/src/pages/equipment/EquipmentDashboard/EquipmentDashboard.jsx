@@ -1,5 +1,6 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { Clock, Package, Wrench, TrendingUp, Activity, AlertTriangle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import './EquipmentDashboard.scss';
 
@@ -28,7 +29,7 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
 
         try {
             setLoading(true);
-            
+
             // Fetch multiple data sources in parallel
             const [
                 consumablesResponse,
@@ -84,12 +85,12 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
 
         // Group consumables by month and sum quantities
         const monthlyData = {};
-        
+
         data.forEach(item => {
             if (item.transactionDate) {
                 const date = new Date(item.transactionDate);
                 const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                
+
                 if (!monthlyData[monthKey]) {
                     monthlyData[monthKey] = {
                         month: monthKey,
@@ -97,7 +98,7 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                         itemCount: 0
                     };
                 }
-                
+
                 monthlyData[monthKey].totalQuantity += item.quantity || 0;
                 monthlyData[monthKey].itemCount += 1;
             }
@@ -113,12 +114,12 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
 
         // Group work hours by month
         const monthlyData = {};
-        
+
         data.forEach(sarky => {
             if (sarky.workDate) {
                 const date = new Date(sarky.workDate);
                 const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                
+
                 if (!monthlyData[monthKey]) {
                     monthlyData[monthKey] = {
                         month: monthKey,
@@ -126,7 +127,7 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                         workDays: 0
                     };
                 }
-                
+
                 monthlyData[monthKey].totalHours += sarky.workedHours || 0;
                 monthlyData[monthKey].workDays += 1;
             }
@@ -142,23 +143,23 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
 
         // Group maintenance events by month
         const monthlyData = {};
-        
+
         data.forEach(maintenance => {
             if (maintenance.scheduledDate || maintenance.createdAt) {
                 const date = new Date(maintenance.scheduledDate || maintenance.createdAt);
                 const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                
+
                 if (!monthlyData[monthKey]) {
                     monthlyData[monthKey] = {
                         month: monthKey,
-                        maintenanceCount: 0,
-                        completedCount: 0
+                        totalEvents: 0,
+                        completedEvents: 0
                     };
                 }
-                
-                monthlyData[monthKey].maintenanceCount += 1;
+
+                monthlyData[monthKey].totalEvents += 1;
                 if (maintenance.status === 'COMPLETED') {
-                    monthlyData[monthKey].completedCount += 1;
+                    monthlyData[monthKey].completedEvents += 1;
                 }
             }
         });
@@ -171,7 +172,7 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
     const calculateSummaryStats = (consumables, workHours, maintenance) => {
         const totalWorkHours = workHours.reduce((sum, item) => sum + item.totalHours, 0);
         const totalConsumables = consumables.reduce((sum, item) => sum + item.totalQuantity, 0);
-        const maintenanceEvents = maintenance.reduce((sum, item) => sum + item.maintenanceCount, 0);
+        const maintenanceEvents = maintenance.reduce((sum, item) => sum + item.totalEvents, 0);
         const workingMonths = workHours.filter(item => item.totalHours > 0).length;
         const averageWorkHours = workingMonths > 0 ? totalWorkHours / workingMonths : 0;
 
@@ -189,6 +190,24 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
         return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
     };
 
+    // Custom tooltip for better data presentation
+    const CustomTooltip = ({ active, payload, label, labelFormatter, formatter }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="rockops-dashboard-tooltip">
+                    <p className="tooltip-label">{labelFormatter ? labelFormatter(label) : label}</p>
+                    {payload.map((entry, index) => (
+                        <p key={index} className="tooltip-entry" style={{ color: entry.color }}>
+                            <span className="tooltip-dot" style={{ backgroundColor: entry.color }}></span>
+                            {formatter ? formatter(entry.value, entry.name)[0] : `${entry.name}: ${entry.value}`}
+                        </p>
+                    ))}
+                </div>
+            );
+        }
+        return null;
+    };
+
     // Expose refresh method to parent
     useImperativeHandle(ref, () => ({
         refreshDashboard: fetchDashboardData
@@ -200,8 +219,8 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
 
     if (loading) {
         return (
-            <div className="equipment-dashboard-loading">
-                <div className="loading-spinner"></div>
+            <div className="rockops-dashboard-loading">
+                <div className="rockops-dashboard-loading-spinner"></div>
                 <p>Loading dashboard data...</p>
             </div>
         );
@@ -209,80 +228,118 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
 
     if (error) {
         return (
-            <div className="equipment-dashboard-error">
-                <p>Error: {error}</p>
-                <button onClick={fetchDashboardData}>Retry</button>
+            <div className="rockops-dashboard-error">
+                <AlertTriangle size={48} className="error-icon" />
+                <h3>Unable to Load Dashboard</h3>
+                <p>{error}</p>
+                <button onClick={fetchDashboardData} className="rockops-btn rockops-btn--primary">
+                    <Activity size={16} />
+                    Retry
+                </button>
             </div>
         );
     }
 
     return (
-        <div className="equipment-dashboard">
+        <div className="rockops-equipment-dashboard">
+            {/* Header */}
+            <div className="rockops-dashboard-header">
+                <div className="rockops-dashboard-title">
+                    <TrendingUp size={24} />
+                    <h2>Equipment Performance Dashboard</h2>
+                </div>
+                <div className="rockops-dashboard-subtitle">
+                    <p>Comprehensive overview of equipment metrics and maintenance history</p>
+                </div>
+            </div>
+
             {/* Summary Stats */}
-            <div className="dashboard-stats">
-                <div className="stat-card">
-                    <div className="stat-icon work-hours">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <polyline points="12,6 12,12 16,14"/>
-                        </svg>
+            <div className="rockops-dashboard-stats">
+                <div className="rockops-stat-card primary">
+                    <div className="rockops-stat-icon">
+                        <Clock size={24} />
                     </div>
-                    <div className="stat-content">
-                        <h3>Work Hours</h3>
-                        <p className="stat-value">{dashboardData.summaryStats.totalWorkHours}</p>
-                        <span className="stat-label">Total hours</span>
+                    <div className="rockops-stat-content">
+                        <div className="rockops-stat-value">{dashboardData.summaryStats.totalWorkHours}</div>
+                        <div className="rockops-stat-label">Total Work Hours</div>
+                        <div className="rockops-stat-sublabel">Last 12 months</div>
                     </div>
                 </div>
 
-                <div className="stat-card">
-                    <div className="stat-icon consumables">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                        </svg>
+                <div className="rockops-stat-card success">
+                    <div className="rockops-stat-icon">
+                        <Package size={24} />
                     </div>
-                    <div className="stat-content">
-                        <h3>Consumables Used</h3>
-                        <p className="stat-value">{dashboardData.summaryStats.totalConsumables}</p>
-                        <span className="stat-label">Total quantity</span>
+                    <div className="rockops-stat-content">
+                        <div className="rockops-stat-value">{dashboardData.summaryStats.totalConsumables}</div>
+                        <div className="rockops-stat-label">Consumables Used</div>
+                        <div className="rockops-stat-sublabel">Total quantity</div>
                     </div>
                 </div>
 
-                <div className="stat-card">
-                    <div className="stat-icon maintenance">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-                        </svg>
+                <div className="rockops-stat-card warning">
+                    <div className="rockops-stat-icon">
+                        <Wrench size={24} />
                     </div>
-                    <div className="stat-content">
-                        <h3>Maintenance Events</h3>
-                        <p className="stat-value">{dashboardData.summaryStats.maintenanceEvents}</p>
-                        <span className="stat-label">Last 12 months</span>
+                    <div className="rockops-stat-content">
+                        <div className="rockops-stat-value">{dashboardData.summaryStats.maintenanceEvents}</div>
+                        <div className="rockops-stat-label">Maintenance Events</div>
+                        <div className="rockops-stat-sublabel">Last 12 months</div>
+                    </div>
+                </div>
+
+                <div className="rockops-stat-card info">
+                    <div className="rockops-stat-icon">
+                        <Activity size={24} />
+                    </div>
+                    <div className="rockops-stat-content">
+                        <div className="rockops-stat-value">{dashboardData.summaryStats.averageWorkHours}</div>
+                        <div className="rockops-stat-label">Average Hours/Month</div>
+                        <div className="rockops-stat-sublabel">Monthly average</div>
                     </div>
                 </div>
             </div>
 
             {/* Charts Section */}
-            <div className="dashboard-charts">
+            <div className="rockops-dashboard-charts">
                 {/* Work Hours Chart */}
-                <div className="chart-card">
-                    <h3>Work Hours Over Time</h3>
-                    <div className="chart-container">
+                <div className="rockops-chart-card">
+                    <div className="rockops-chart-header">
+                        <div className="rockops-chart-title">
+                            <Clock size={20} />
+                            <h3>Work Hours Over Time</h3>
+                        </div>
+                        <div className="rockops-chart-subtitle">
+                            Monthly work hours trend
+                        </div>
+                    </div>
+                    <div className="rockops-chart-container">
                         <ResponsiveContainer width="100%" height={300}>
                             <LineChart data={dashboardData.workHoursOverTime}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                    dataKey="month" 
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                                <XAxis
+                                    dataKey="month"
                                     tickFormatter={formatMonth}
+                                    stroke="var(--color-text-secondary)"
+                                    fontSize={12}
                                 />
-                                <YAxis />
-                                <Tooltip 
-                                    labelFormatter={formatMonth}
-                                    formatter={(value) => [`${value} hours`, 'Work Hours']}
+                                <YAxis
+                                    stroke="var(--color-text-secondary)"
+                                    fontSize={12}
                                 />
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="totalHours" 
-                                    stroke="#4880ff" 
+                                <Tooltip
+                                    content={<CustomTooltip
+                                        labelFormatter={formatMonth}
+                                        formatter={(value) => [`${value} hours`, 'Work Hours']}
+                                    />}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="totalHours"
+                                    stroke="var(--color-primary)"
+                                    strokeWidth={3}
+                                    dot={{ fill: "var(--color-primary)", strokeWidth: 2, r: 4 }}
+                                    activeDot={{ r: 6, stroke: "var(--color-primary)", strokeWidth: 2 }}
                                     name="Work Hours"
                                 />
                             </LineChart>
@@ -291,51 +348,150 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                 </div>
 
                 {/* Consumables Usage Chart */}
-                <div className="chart-card">
-                    <h3>Consumables Usage Over Time</h3>
-                    <div className="chart-container">
+                <div className="rockops-chart-card">
+                    <div className="rockops-chart-header">
+                        <div className="rockops-chart-title">
+                            <Package size={20} />
+                            <h3>Consumables Usage Over Time</h3>
+                        </div>
+                        <div className="rockops-chart-subtitle">
+                            Monthly consumables consumption
+                        </div>
+                    </div>
+                    <div className="rockops-chart-container">
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={dashboardData.consumablesOverTime}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                    dataKey="month" 
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                                <XAxis
+                                    dataKey="month"
                                     tickFormatter={formatMonth}
+                                    stroke="var(--color-text-secondary)"
+                                    fontSize={12}
                                 />
-                                <YAxis />
-                                <Tooltip 
-                                    labelFormatter={formatMonth}
-                                    formatter={(value) => [`${value} items`, 'Total Consumables']}
+                                <YAxis
+                                    stroke="var(--color-text-secondary)"
+                                    fontSize={12}
                                 />
-                                <Bar dataKey="totalQuantity" fill="#10b981" name="Total Consumables" />
+                                <Tooltip
+                                    content={<CustomTooltip
+                                        labelFormatter={formatMonth}
+                                        formatter={(value) => [`${value} items`, 'Total Consumables']}
+                                    />}
+                                />
+                                <Bar
+                                    dataKey="totalQuantity"
+                                    fill="var(--color-success)"
+                                    name="Total Consumables"
+                                    radius={[4, 4, 0, 0]}
+                                />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
                 {/* Maintenance History Chart */}
-                <div className="chart-card">
-                    <h3>Maintenance History</h3>
-                    <div className="chart-container">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={dashboardData.maintenanceHistory}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                    dataKey="month" 
-                                    tickFormatter={formatMonth}
-                                />
-                                <YAxis />
-                                <Tooltip 
-                                    labelFormatter={formatMonth}
-                                    formatter={(value, name) => {
-                                        if (name === 'maintenanceCount') return [`${value} events`, 'Total Events'];
-                                        if (name === 'completedCount') return [`${value} events`, 'Completed Events'];
-                                        return [`${value} events`, name];
-                                    }}
-                                />
-                                <Bar dataKey="maintenanceCount" fill="#f59e0b" name="Total Events" />
-                                <Bar dataKey="completedCount" fill="#10b981" name="Completed Events" />
-                            </BarChart>
-                        </ResponsiveContainer>
+                <div className="rockops-chart-card full-width">
+                    <div className="rockops-chart-header">
+                        <div className="rockops-chart-title">
+                            <Wrench size={20} />
+                            <h3>Maintenance History & Status</h3>
+                        </div>
+                        <div className="rockops-chart-subtitle">
+                            Monthly maintenance events and completion status
+                        </div>
+                    </div>
+                    <div className="rockops-chart-container">
+                        <div className="chart-wrapper">
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={dashboardData.maintenanceHistory} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                                    <XAxis
+                                        dataKey="month"
+                                        tickFormatter={formatMonth}
+                                        stroke="var(--color-text-secondary)"
+                                        fontSize={12}
+                                    />
+                                    <YAxis
+                                        stroke="var(--color-text-secondary)"
+                                        fontSize={12}
+                                    />
+                                    <Tooltip
+                                        content={<CustomTooltip
+                                            labelFormatter={formatMonth}
+                                            formatter={(value, name) => {
+                                                if (name === 'totalEvents') return [`${value} events`, 'Total Events'];
+                                                if (name === 'completedEvents') return [`${value} events`, 'Completed Events'];
+                                                return [`${value} events`, name];
+                                            }}
+                                        />}
+                                    />
+                                    <Bar
+                                        dataKey="totalEvents"
+                                        fill="var(--color-warning)"
+                                        name="Total Events"
+                                        radius={[4, 4, 0, 0]}
+                                    />
+                                    <Bar
+                                        dataKey="completedEvents"
+                                        fill="var(--color-success)"
+                                        name="Completed Events"
+                                        radius={[4, 4, 0, 0]}
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div className="rockops-dashboard-legend">
+                            <div className="legend-item">
+                                <span className="legend-icon" style={{ backgroundColor: 'var(--color-warning)' }}></span>
+                                <span className="legend-text">Total Events</span>
+                            </div>
+                            <div className="legend-item">
+                                <span className="legend-icon" style={{ backgroundColor: 'var(--color-success)' }}></span>
+                                <span className="legend-text">Completed Events</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Performance Insights */}
+            <div className="rockops-dashboard-insights">
+                <div className="rockops-insights-card">
+                    <div className="rockops-insights-header">
+                        <h3>
+                            <CheckCircle size={20} />
+                            Performance Insights
+                        </h3>
+                    </div>
+                    <div className="rockops-insights-content">
+                        <div className="insight-item">
+                            <div className="insight-metric">
+                                {dashboardData.summaryStats.averageWorkHours > 0 ?
+                                    `${Math.round((dashboardData.summaryStats.totalWorkHours / dashboardData.summaryStats.averageWorkHours) * 100)}%` :
+                                    '0%'
+                                }
+                            </div>
+                            <div className="insight-label">Equipment Utilization</div>
+                        </div>
+                        <div className="insight-item">
+                            <div className="insight-metric">
+                                {dashboardData.maintenanceHistory.length > 0 ?
+                                    `${Math.round((dashboardData.maintenanceHistory.reduce((sum, item) => sum + item.completedEvents, 0) /
+                                        dashboardData.maintenanceHistory.reduce((sum, item) => sum + item.totalEvents, 0)) * 100) || 0}%` :
+                                    '0%'
+                                }
+                            </div>
+                            <div className="insight-label">Maintenance Completion Rate</div>
+                        </div>
+                        <div className="insight-item">
+                            <div className="insight-metric">
+                                {dashboardData.workHoursOverTime.length > 0 ?
+                                    `${dashboardData.workHoursOverTime.filter(item => item.totalHours > 0).length}` :
+                                    '0'
+                                }
+                            </div>
+                            <div className="insight-label">Active Months</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -343,4 +499,4 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
     );
 });
 
-export default EquipmentDashboard; 
+export default EquipmentDashboard;

@@ -5,8 +5,9 @@ import { equipmentTypeService } from "../../../../../services/equipmentTypeServi
 import { equipmentBrandService } from "../../../../../services/equipmentBrandService.js";
 import { siteService } from "../../../../../services/siteService.js";
 import { merchantService } from "../../../../../services/merchantService.js";
+import { documentService } from "../../../../../services/documentService.js";
 import { useSnackbar } from "../../../../../contexts/SnackbarContext.jsx";
-import MonetaryFieldDocuments from '../../../../../components/equipment/MonetaryFieldDocuments';
+import DocumentUpload from '../../../../../components/equipment/DocumentUpload';
 import "./EquipmentModal.scss";
 
 const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => {
@@ -138,6 +139,13 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
     const [eligibleDrivers, setEligibleDrivers] = useState([]);
     const [driverError, setDriverError] = useState(null);
     const [typeChangeWarning, setTypeChangeWarning] = useState(false);
+    
+    // Document states
+    const [documentsByFieldType, setDocumentsByFieldType] = useState({
+        SHIPPING: [],
+        CUSTOMS: [],
+        TAXES: []
+    });
 
     // Scroll to top whenever tab changes
     useEffect(() => {
@@ -210,7 +218,21 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         setTypeChangeWarning(false);
         setTabIndex(0); // Return to first tab
         setFormTouched(false);
+        setDocumentsByFieldType({
+            SHIPPING: [],
+            CUSTOMS: [],
+            TAXES: []
+        });
         showInfo("Form has been cleared");
+    };
+
+    // Handle document changes
+    const handleDocumentsChange = (fieldType, documents) => {
+        setDocumentsByFieldType(prev => ({
+            ...prev,
+            [fieldType]: documents
+        }));
+        setFormTouched(true);
     };
 
     // Fetch necessary data when modal opens
@@ -233,6 +255,11 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                 setPreviewImage(null);
                 setFormTouched(false);
                 setTabIndex(0); // Always start at the first tab
+                setDocumentsByFieldType({
+                    SHIPPING: [],
+                    CUSTOMS: [],
+                    TAXES: []
+                });
             }
 
             // Reset validation states
@@ -319,17 +346,18 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                 const mainDriverStillEligible = response.data.some(driver => driver.id === formData.mainDriverId);
                 const subDriverStillEligible = response.data.some(driver => driver.id === formData.subDriverId);
 
-                // Clear drivers if they're no longer eligible and show a warning
-                if (formData.mainDriverId && !mainDriverStillEligible) {
-                    setFormData(prev => ({ ...prev, mainDriverId: "" }));
-                    setTypeChangeWarning(true);
-                    showWarning("The selected main driver is not qualified for this equipment type and has been cleared.");
-                }
-
+                // Only clear and show warning for sub driver if not eligible
                 if (formData.subDriverId && !subDriverStillEligible) {
                     setFormData(prev => ({ ...prev, subDriverId: "" }));
                     setTypeChangeWarning(true);
                     showWarning("The selected sub driver is not qualified for this equipment type and has been cleared.");
+                }
+
+                // For main driver, only clear if not eligible and not already assigned
+                if (formData.mainDriverId && !mainDriverStillEligible && !equipmentToEdit?.mainDriverId) {
+                    setFormData(prev => ({ ...prev, mainDriverId: "" }));
+                    setTypeChangeWarning(true);
+                    showWarning("The selected main driver is not qualified for this equipment type and has been cleared.");
                 }
             }
 
@@ -396,6 +424,69 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         // Since we're editing an existing item, mark form as touched
         setFormTouched(true);
         setShowValidationHint(false); // Don't show validation hints initially when editing
+        
+        // Load existing documents
+        loadExistingDocuments(equipmentToEdit.id);
+    };
+
+    // Load existing documents when editing equipment
+    const loadExistingDocuments = async (equipmentId) => {
+        try {
+            const response = await documentService.getByEntity('equipment', equipmentId);
+            const allDocuments = response.data;
+            
+            // Group documents by field type based on document type
+            const documentsData = {
+                SHIPPING: [],
+                CUSTOMS: [],
+                TAXES: []
+            };
+            
+            allDocuments.forEach(doc => {
+                const docType = doc.type.toUpperCase();
+                if (docType.includes('SHIPPING')) {
+                    documentsData.SHIPPING.push({
+                        id: doc.id,
+                        documentName: doc.name,
+                        documentType: doc.type,
+                        fieldType: 'SHIPPING',
+                        fileType: 'application/octet-stream', // Default since not stored in Document entity
+                        fileSize: doc.fileSize || 0,
+                        fileUrl: doc.url,
+                        isNew: false,
+                        existingDocument: true
+                    });
+                } else if (docType.includes('CUSTOMS')) {
+                    documentsData.CUSTOMS.push({
+                        id: doc.id,
+                        documentName: doc.name,
+                        documentType: doc.type,
+                        fieldType: 'CUSTOMS',
+                        fileType: 'application/octet-stream',
+                        fileSize: doc.fileSize || 0,
+                        fileUrl: doc.url,
+                        isNew: false,
+                        existingDocument: true
+                    });
+                } else if (docType.includes('TAX')) {
+                    documentsData.TAXES.push({
+                        id: doc.id,
+                        documentName: doc.name,
+                        documentType: doc.type,
+                        fieldType: 'TAXES',
+                        fileType: 'application/octet-stream',
+                        fileSize: doc.fileSize || 0,
+                        fileUrl: doc.url,
+                        isNew: false,
+                        existingDocument: true
+                    });
+                }
+            });
+            
+            setDocumentsByFieldType(documentsData);
+        } catch (error) {
+            console.error('Error loading existing documents:', error);
+        }
     };
 
     const handleInputChange = (e) => {
@@ -667,11 +758,19 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             if (equipmentToEdit) {
                 // Update existing equipment
                 result = await equipmentService.updateEquipment(equipmentToEdit.id, formDataToSend);
-                showSuccess(`Equipment "${formData.name}" has been updated successfully`);
             } else {
                 console.log(formDataToSend);
                 // Create new equipment
                 result = await equipmentService.addEquipment(formDataToSend);
+            }
+
+            // Upload documents after equipment is created/updated
+            const equipmentId = equipmentToEdit ? equipmentToEdit.id : result.data.id;
+            await uploadDocuments(equipmentId);
+
+            if (equipmentToEdit) {
+                showSuccess(`Equipment "${formData.name}" has been updated successfully`);
+            } else {
                 showSuccess(`Equipment "${formData.name}" has been added successfully`);
             }
 
@@ -684,6 +783,38 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             setError(userFriendlyErrorMessage);
             showError(`Error: ${userFriendlyErrorMessage}`);
             setLoading(false);
+        }
+    };
+
+    // Upload documents for all field types
+    const uploadDocuments = async (equipmentId) => {
+        try {
+            const fieldTypes = ['SHIPPING', 'CUSTOMS', 'TAXES'];
+            
+            for (const fieldType of fieldTypes) {
+                const documents = documentsByFieldType[fieldType] || [];
+                
+                for (const document of documents) {
+                    // Only upload new documents (those with file property)
+                    if (document.isNew && document.file) {
+                        try {
+                            const documentData = {
+                                name: document.documentName,
+                                type: document.documentType,
+                                file: document.file
+                            };
+
+                            await documentService.create('equipment', equipmentId, documentData);
+                        } catch (error) {
+                            console.error(`Error uploading ${fieldType} document:`, error);
+                            // Continue with other documents even if one fails
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error uploading documents:', error);
+            // Don't throw error as this is not critical to equipment creation
         }
     };
 
@@ -1107,26 +1238,29 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                             </div>
 
                             {/* Document Attachments for Monetary Fields */}
-                            {equipmentToEdit && equipmentToEdit.id && (
-                                <div className="monetary-documents-section">
-                                    <h3>Document Attachments</h3>
-                                    <MonetaryFieldDocuments 
-                                        equipmentId={equipmentToEdit.id} 
+                            <div className="monetary-documents-section">
+                                <h3>Document Attachments</h3>
+                                <div className="document-preview-grid">
+                                    <DocumentUpload 
                                         fieldType="SHIPPING" 
-                                        fieldLabel="Shipping" 
+                                        fieldLabel="Shipping Documents" 
+                                        onDocumentsChange={handleDocumentsChange}
+                                        initialDocuments={documentsByFieldType.SHIPPING}
                                     />
-                                    <MonetaryFieldDocuments 
-                                        equipmentId={equipmentToEdit.id} 
+                                    <DocumentUpload 
                                         fieldType="CUSTOMS" 
-                                        fieldLabel="Customs" 
+                                        fieldLabel="Customs Documents" 
+                                        onDocumentsChange={handleDocumentsChange}
+                                        initialDocuments={documentsByFieldType.CUSTOMS}
                                     />
-                                    <MonetaryFieldDocuments 
-                                        equipmentId={equipmentToEdit.id} 
+                                    <DocumentUpload 
                                         fieldType="TAXES" 
-                                        fieldLabel="Taxes" 
+                                        fieldLabel="Tax Documents" 
+                                        onDocumentsChange={handleDocumentsChange}
+                                        initialDocuments={documentsByFieldType.TAXES}
                                     />
                                 </div>
-                            )}
+                            </div>
 
                             <div className="tab-navigation">
                                 <button type="button" className="next-tab-button" onClick={handleNextTab}>

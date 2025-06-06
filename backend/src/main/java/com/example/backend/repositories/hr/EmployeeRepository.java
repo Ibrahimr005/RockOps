@@ -10,10 +10,14 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
+
+    // Find by email
+    Optional<Employee> findByEmail(String email);
 
     // Find by department
     @Query("SELECT e FROM Employee e JOIN e.jobPosition jp WHERE jp.department.name = :departmentName")

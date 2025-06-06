@@ -233,16 +233,19 @@ const WorkTypeManagement = () => {
         {
             header: 'Description',
             accessor: 'description',
-            sortable: true
+            sortable: true,
+            render: (row) => row.description || 'N/A'
+
         },
         {
             header: 'Supporting Equipment Types',
             accessor: 'supportingEquipmentTypes',
             sortable: false,
             render: (row) => {
-                const equipmentTypeNames = row.supportingEquipmentTypes ? 
-                    row.supportingEquipmentTypes.map(et => et.name).join(', ') : 
-                    'None';
+                if (!row.supportingEquipmentTypes || row.supportingEquipmentTypes.length === 0) {
+                    return 'None';
+                }
+                const equipmentTypeNames = row.supportingEquipmentTypes.map(et => et.name).join(', ');
                 return (
                     <span className="equipment-types-list">
                         {equipmentTypeNames.length > 60 ? equipmentTypeNames.substring(0, 60) + '...' : equipmentTypeNames}

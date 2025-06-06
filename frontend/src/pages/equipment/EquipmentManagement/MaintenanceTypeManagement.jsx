@@ -143,19 +143,10 @@ const MaintenanceTypeManagement = () => {
         {
             header: 'Description',
             accessor: 'description',
-            body: (rowData) => rowData.description || 'No description',
-            sortable: true
-        },
-        {
-            header: 'Status',
-            accessor: 'active',
-            body: (rowData) => (
-                <span className={`status-badge ${rowData.active ? 'active' : 'inactive'}`}>
-                    {rowData.active ? 'Active' : 'Inactive'}
-                </span>
-            ),
-            sortable: true
+            sortable: true,
+            render: (row) => row.description || 'N/A'
         }
+
     ];
 
     const actions = permissions.canEdit || permissions.canDelete ? [

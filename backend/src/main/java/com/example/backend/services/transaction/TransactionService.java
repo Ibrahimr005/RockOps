@@ -489,8 +489,11 @@ public class TransactionService {
             // 🚨 FIXED: Add only what sender claims they sent, NOT what receiver claims they got
             System.out.println("🏭 Adding to warehouse what SENDER claims they sent: " + senderClaimedQuantity);
             addToWarehouseInventory(transaction, item, senderClaimedQuantity);
+        } else if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
+            // 🚨 FIXED: Add what receiver actually received to equipment consumables  
+            System.out.println("⚙️ Adding to equipment what RECEIVER claims they received: " + receiverClaimedQuantity);
+            addActualReceivedQuantityToReceiver(transaction, item, receiverClaimedQuantity);
         }
-        // Equipment receiver handling unchanged (preserve equipment logic)
 
         // Handle sender adjustments if quantities don't match what was originally claimed
         if (transaction.getSenderType() == PartyType.WAREHOUSE) {
@@ -863,26 +866,41 @@ public class TransactionService {
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
 
-        // Get the original quantity from the transaction item
-        TransactionItem transactionItem = transaction.getItems().stream()
-                .filter(item -> item.getItemType().getId().equals(itemType.getId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Transaction item not found"));
-
-        // Add the original quantity as CONSUMED
-        Consumable consumedConsumable = new Consumable();
-        consumedConsumable.setEquipment(equipment);
-        consumedConsumable.setItemType(itemType);
-        if (transactionItem.getQuantity() < quantity) {
-            consumedConsumable.setQuantity(quantity-(quantity-transactionItem.getQuantity()));
-        }
-        else {
+        // Check if this is a consumables transaction
+        if (transaction.getPurpose() == TransactionPurpose.CONSUMABLE) {
+            // For consumables transactions, add to available inventory
+            // Check if there's already a consumable entry for this item type with IN_WAREHOUSE status
+            Consumable existingConsumable = consumableRepository.findByEquipmentIdAndItemTypeIdAndStatus(
+                equipmentId, itemType.getId(), ItemStatus.IN_WAREHOUSE);
+            
+            if (existingConsumable != null) {
+                // Update existing consumable quantity
+                existingConsumable.setQuantity(existingConsumable.getQuantity() + quantity);
+                consumableRepository.save(existingConsumable);
+                System.out.println("✅ Updated existing consumable inventory: +" + quantity + " " + itemType.getName() + 
+                    " (New total: " + existingConsumable.getQuantity() + ")");
+            } else {
+                // Create new consumable entry for available inventory
+                Consumable availableConsumable = new Consumable();
+                availableConsumable.setEquipment(equipment);
+                availableConsumable.setItemType(itemType);
+                availableConsumable.setQuantity(quantity);
+                availableConsumable.setStatus(ItemStatus.IN_WAREHOUSE); // Use IN_WAREHOUSE for available consumables
+                availableConsumable.setTransaction(transaction);
+                consumableRepository.save(availableConsumable);
+                System.out.println("✅ Added new consumable to equipment inventory: " + quantity + " " + itemType.getName());
+            }
+        } else {
+            // For maintenance or other transactions, create consumed entry
+            Consumable consumedConsumable = new Consumable();
+            consumedConsumable.setEquipment(equipment);
+            consumedConsumable.setItemType(itemType);
             consumedConsumable.setQuantity(quantity);
+            consumedConsumable.setStatus(ItemStatus.CONSUMED);
+            consumedConsumable.setTransaction(transaction);
+            consumableRepository.save(consumedConsumable);
+            System.out.println("✅ Created CONSUMED entry for maintenance/other transaction: " + quantity + " " + itemType.getName());
         }
-        // Use original quantity
-        consumedConsumable.setStatus(ItemStatus.CONSUMED);
-        consumedConsumable.setTransaction(transaction);
-        consumableRepository.save(consumedConsumable);
     }
 
     // ========================================

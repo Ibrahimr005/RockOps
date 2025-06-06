@@ -187,7 +187,8 @@ export const JOB_POSITION_ENDPOINTS = {
 export const DOCUMENT_ENDPOINTS = {
     BY_ID: (id) => `/api/v1/documents/${id}`,
     BY_ENTITY: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents`,
-    CREATE: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents`
+    CREATE: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents`,
+    DELETE: (id) => `/api/v1/documents/${id}`
 };
 
 // Partner module endpoints

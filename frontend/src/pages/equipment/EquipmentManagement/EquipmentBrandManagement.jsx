@@ -16,7 +16,6 @@ const EquipmentBrandManagement = () => {
     const [editingBrand, setEditingBrand] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
-        country: '',
         description: ''
     });
     const [deletingBrand, setDeletingBrand] = useState(null);
@@ -37,7 +36,6 @@ const EquipmentBrandManagement = () => {
             setLoading(true);
             const response = await equipmentBrandService.getAllEquipmentBrands();
             if (response.data) {
-                console.log(response.data)
                 setBrands(response.data);
             } else {
                 // Initialize with empty array if no data
@@ -61,14 +59,12 @@ const EquipmentBrandManagement = () => {
             setEditingBrand(brand);
             setFormData({
                 name: brand.name,
-                country: brand.country || '',
                 description: brand.description || ''
             });
         } else {
             setEditingBrand(null);
             setFormData({
                 name: '',
-                country: '',
                 description: ''
             });
         }
@@ -133,15 +129,12 @@ const EquipmentBrandManagement = () => {
             accessor: 'name',
             sortable: true
         },
-        {
-            header: 'Country',
-            accessor: 'country',
-            sortable: true
-        },
+
         {
             header: 'Description',
             accessor: 'description',
-            sortable: true
+            sortable: true,
+            render: (row) => row.description || 'N/A'
         }
     ];
 
@@ -212,16 +205,7 @@ const EquipmentBrandManagement = () => {
                                     required
                                 />
                             </div>
-                            <div className="form-group">
-                                <label htmlFor="country">Country</label>
-                                <input
-                                    type="text"
-                                    id="country"
-                                    name="country"
-                                    value={formData.country}
-                                    onChange={handleChange}
-                                />
-                            </div>
+
                             <div className="form-group">
                                 <label htmlFor="description">Description</label>
                                 <textarea
