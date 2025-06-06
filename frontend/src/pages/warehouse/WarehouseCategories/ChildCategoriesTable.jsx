@@ -128,7 +128,6 @@ const ChildCategoriesTable = ({
             <div className="category-table-container">
                 <div className="table-header-container">
                     <div className="left-section2">
-                        <h2 className="table-section-title">Child Categories</h2>
                         <div className="item-count2">0 categories</div>
                     </div>
                     <div className="section-description">
