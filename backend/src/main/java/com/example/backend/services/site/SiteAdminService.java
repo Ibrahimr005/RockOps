@@ -15,6 +15,7 @@ import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
 import jakarta.annotation.PostConstruct;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,9 @@ public class SiteAdminService
     private EquipmentRepository equipmentRepository;
     private EmployeeRepository employeeRepository;
     private WarehouseRepository warehouseRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Autowired
     public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetRepository fixedAssetRepository) {
@@ -64,8 +68,11 @@ public class SiteAdminService
         Site savedSite = siteRepository.save(site);
 
         // Find default Rock4Mining partner
+        System.out.println("11111");
         Partner defaultPartner = partnerRepository.findByFirstName("Rock4Mining")
                 .orElseThrow(() -> new RuntimeException("Default partner Rock4Mining not found"));
+
+        System.out.println("22222");
 
         // Create default partner assignment with 100%
         SitePartnerId id = new SitePartnerId(savedSite.getId(), defaultPartner.getId());
@@ -75,10 +82,18 @@ public class SiteAdminService
         sitePartner.setPartner(defaultPartner);
         sitePartner.setPercentage(100.0);
 
+        System.out.println("33333");
+
+// Save the SitePartner by persisting it through EntityManager
+        entityManager.persist(sitePartner);
+        entityManager.flush();
+        System.out.println("44444");
+
+// Add to the list AFTER persisting
         savedSite.getSitePartners().add(sitePartner);
 
-        // Save again with the default partner
-        return siteRepository.save(savedSite);
+// Return the site without saving again
+        return savedSite;
     }
 
 

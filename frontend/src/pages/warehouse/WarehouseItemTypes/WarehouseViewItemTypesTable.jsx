@@ -455,7 +455,25 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit}>
+                        {/* Category Info Card in Modal */}
+                        <div className="category-info-card-modal">
+                            <div className="category-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                            </div>
+                            <div className="category-info-content">
+                                <h3>Categories Available</h3>
+                                <p>
+                                    Only child categories are shown in the dropdown below.
+                                    If you need to create a new category, please go to the Categories section first and ensure you create a child category.
+                                </p>
+                            </div>
+                        </div>
+
+                        <form  className="form2" onSubmit={handleSubmit}>
                             <div className="form-row">
                                 <div className="form-group">
                                     <label htmlFor="name">Item Name</label>

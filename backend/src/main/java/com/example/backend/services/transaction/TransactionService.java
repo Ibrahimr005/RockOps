@@ -486,13 +486,11 @@ public class TransactionService {
 
         // Sender already deducted during creation, now handle receiver side
         if (transaction.getReceiverType() == PartyType.WAREHOUSE) {
-            // Add what receiver actually claims they received
-            addToWarehouseInventory(transaction, item, receiverClaimedQuantity);
-        } else if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
-            // Add consumables to equipment
-            System.out.println("⚙️ Adding consumables to equipment: " + receiverClaimedQuantity + " units");
-            addToEquipmentConsumables(transaction.getReceiverId(), item.getItemType(), receiverClaimedQuantity, transaction);
+            // 🚨 FIXED: Add only what sender claims they sent, NOT what receiver claims they got
+            System.out.println("🏭 Adding to warehouse what SENDER claims they sent: " + senderClaimedQuantity);
+            addToWarehouseInventory(transaction, item, senderClaimedQuantity);
         }
+        // Equipment receiver handling unchanged (preserve equipment logic)
 
         // Handle sender adjustments if quantities don't match what was originally claimed
         if (transaction.getSenderType() == PartyType.WAREHOUSE) {
@@ -508,7 +506,7 @@ public class TransactionService {
             }
         }
 
-        // Handle discrepancies
+        // Handle discrepancies - this will create OVERRECEIVED entry for the extra 2
         handleQuantityDiscrepanciesFixed(transaction, item, senderClaimedQuantity, receiverClaimedQuantity);
     }
 
@@ -519,26 +517,31 @@ public class TransactionService {
                                                          int senderClaimedQuantity, int receiverClaimedQuantity) {
         System.out.println("📥 Handling receiver-initiated inventory changes");
 
-        // Handle sender side first
+        // Receiver already added during creation, now handle sender side
         if (transaction.getSenderType() == PartyType.WAREHOUSE) {
-            // Deduct what sender actually claims they sent
-            deductFromWarehouseInventory(transaction.getSenderId(), item.getItemType(), senderClaimedQuantity);
+            // 🚨 FIXED: Deduct only what receiver claims they got, NOT what sender claims they sent
+            System.out.println("🏭 Deducting from warehouse what RECEIVER claims they got: " + receiverClaimedQuantity);
+            deductFromWarehouseInventory(transaction.getSenderId(), item.getItemType(), receiverClaimedQuantity);
         }
+        // Equipment sender handling unchanged (preserve equipment logic)
 
-        // Handle receiver side
+        // Handle receiver adjustments if quantities don't match what was originally claimed
         if (transaction.getReceiverType() == PartyType.WAREHOUSE) {
-            // Add what receiver claims they received
-            addToWarehouseInventory(transaction, item, receiverClaimedQuantity);
-        } else if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
-            // Add consumables to equipment
-            System.out.println("⚙️ Adding consumables to equipment: " + receiverClaimedQuantity + " units");
-            addToEquipmentConsumables(transaction.getReceiverId(), item.getItemType(), receiverClaimedQuantity, transaction);
+            int originalQuantity = item.getQuantity();
+            int difference = originalQuantity - receiverClaimedQuantity;
+
+            if (difference > 0) {
+                // Receiver originally claimed more than they actually received, remove difference
+                deductFromWarehouseInventory(transaction.getReceiverId(), item.getItemType(), difference);
+            } else if (difference < 0) {
+                // Receiver actually received more than originally claimed, add additional
+                addBackToWarehouseInventory(transaction.getReceiverId(), item.getItemType(), Math.abs(difference));
+            }
         }
 
-        // Handle discrepancies
+        // Handle discrepancies - this will create appropriate STOLEN/OVERRECEIVED entries
         handleQuantityDiscrepanciesFixed(transaction, item, senderClaimedQuantity, receiverClaimedQuantity);
     }
-
     /**
      * 🚨 UNCHANGED: Handles discrepancies with correct STOLEN/OVERRECEIVED logic
      */

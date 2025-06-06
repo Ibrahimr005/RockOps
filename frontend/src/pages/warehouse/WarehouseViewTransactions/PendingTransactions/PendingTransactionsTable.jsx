@@ -48,6 +48,7 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
             console.error("Warehouse ID is not available");
             return;
         }
+
         setLoading(true);
         try {
             const token = localStorage.getItem("token");
