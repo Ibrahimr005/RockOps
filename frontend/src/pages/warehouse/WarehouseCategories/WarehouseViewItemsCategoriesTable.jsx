@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import "./WarehouseViewItemCategories.scss";
 import ParentCategoriesTable from "./ParentCategoriesTable";
 import ChildCategoriesTable from "./ChildCategoriesTable";
+import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx"; // Import the Snackbar component
 
 const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => {
   const [allCategories, setAllCategories] = useState([]);
@@ -9,9 +10,10 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const modalRef = useRef(null);
-  const [showNotification, setShowNotification] = useState(false);
-  const [showNotification2, setShowNotification2] = useState(false);
   const [tableUpdateTrigger, setTableUpdateTrigger] = useState(0);
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState('parent');
 
   const [categoryAction, setCategoryAction] = useState('create'); // Default to 'create'
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -20,6 +22,23 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
   const [selectedParentCategory, setSelectedParentCategory] = useState(null);
   const [validParentCategories, setValidParentCategories] = useState([]);
   const [userRole, setUserRole] = useState("");
+
+  // Snackbar states - replace old notification states
+  const [showSnackbar, setShowSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarType, setSnackbarType] = useState('success');
+
+  // Helper function to show snackbar
+  const displaySnackbar = (message, type = 'success') => {
+    setSnackbarMessage(message);
+    setSnackbarType(type);
+    setShowSnackbar(true);
+  };
+
+  // Helper function to close snackbar
+  const closeSnackbar = () => {
+    setShowSnackbar(false);
+  };
 
   const openCategoryModal = (category) => {
     if (category) {
@@ -157,7 +176,7 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
     e.preventDefault();
 
     if (!newCategoryName || !newCategoryDescription) {
-      alert("Please provide both name and description.");
+      displaySnackbar("Please provide both name and description.", "error");
       return;
     }
 
@@ -202,7 +221,7 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
             }
         );
       } else {
-        alert("Invalid action or missing category selection.");
+        displaySnackbar("Invalid action or missing category selection.", "error");
         return;
       }
 
@@ -236,15 +255,17 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
       // Trigger a refresh of the tables
       setTableUpdateTrigger(prev => prev + 1);
 
-      // Show success notification
-      setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 3000);
+      // Show success notification with Snackbar
+      displaySnackbar(
+          `Category successfully ${categoryAction === 'update' ? 'updated' : 'added'}!`,
+          "success"
+      );
 
       // Fetch all categories again to ensure everything is up to date
       fetchAllCategories();
     } catch (error) {
       console.error("Error saving category:", error);
-      alert("Failed to save category. Error: " + error.message);
+      displaySnackbar(`Failed to save category: ${error.message}`, "error");
     }
   };
 
@@ -272,17 +293,14 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
       // Trigger a refresh of the tables
       setTableUpdateTrigger(prev => prev + 1);
 
-      // Show delete success notification
-      setShowNotification2(true);
-      setTimeout(() => {
-        setShowNotification2(false);
-      }, 3000);
+      // Show delete success notification with Snackbar
+      displaySnackbar("Category successfully deleted!", "success");
 
       // Fetch all categories again to ensure everything is in sync
       fetchAllCategories();
     } catch (error) {
       console.error("Error deleting item category:", error);
-      alert("Failed to delete item category. Error: " + error.message);
+      displaySnackbar(`Failed to delete category: ${error.message}`, "error");
     }
   };
 
@@ -309,19 +327,77 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
 
   return (
       <>
-        {/* Parent Categories Table - Using its own API endpoint */}
-        <ParentCategoriesTable
-            onEdit={openCategoryModal}
-            onDelete={deleteItemCategory}
-            key={`parent-${tableUpdateTrigger}`}
-        />
+        {/* Tabs Container */}
+        <div className="categories-tabs-container">
+          <div className="categories-tabs">
+            <button
+                className={`categories-tab ${activeTab === 'parent' ? 'active' : ''}`}
+                onClick={() => setActiveTab('parent')}
+            >
+              Parent Categories
+            </button>
+            <button
+                className={`categories-tab ${activeTab === 'child' ? 'active' : ''}`}
+                onClick={() => setActiveTab('child')}
+            >
+              Child Categories
+            </button>
+          </div>
+        </div>
 
-        {/* Child Categories Table - Using its own API endpoint */}
-        <ChildCategoriesTable
-            onEdit={openCategoryModal}
-            onDelete={deleteItemCategory}
-            key={`child-${tableUpdateTrigger}`}
-        />
+        {/* Category Info Cards */}
+        {activeTab === 'parent' && (
+            <div className="category-info-card">
+              <div className="category-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+              </div>
+              <div className="category-info-content">
+                <h3>Item Types Can Only Be Assigned to Child Categories</h3>
+                <p>
+                  <strong>Important:</strong> To create or assign item types, you must use child categories only.
+                  Child categories require a parent category to be created first. This two-level hierarchy ensures proper organization:
+                  Parent → Child → Item Types.
+                </p>
+              </div>
+            </div>
+        )}
+
+        {activeTab === 'child' && (
+            <div className="category-info-card">
+              <div className="category-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="category-info-content">
+                <h3>Item Types Can Only Be Assigned to Child Categories</h3>
+                <p>
+                  <strong>Important:</strong> To create or assign item types, you must use child categories only.
+                  Child categories require a parent category to be created first. This two-level hierarchy ensures proper organization:
+                  Parent → Child → Item Types.
+                </p>
+              </div>
+            </div>
+        )}
+
+        {/* Tab Content */}
+        {activeTab === 'parent' && (
+            <ParentCategoriesTable
+                onEdit={openCategoryModal}
+                onDelete={deleteItemCategory}
+                key={`parent-${tableUpdateTrigger}`}
+            />
+        )}
+
+        {activeTab === 'child' && (
+            <ChildCategoriesTable
+                onEdit={openCategoryModal}
+                onDelete={deleteItemCategory}
+                key={`child-${tableUpdateTrigger}`}
+            />
+        )}
 
         {/* Modal for adding/editing categories */}
         {isModalOpen && (
@@ -384,7 +460,7 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
                         </select>
 
                         <small className="form-text text-muted">
-                          Only categories that are already parents or don't have assigned item types are available as parent categories.
+                          Only categories that are already parents or don't have assigned parent categories are available as parent categories.
                         </small>
                       </div>
                     </div>
@@ -401,27 +477,14 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
             </div>
         )}
 
-        {/* Success notification */}
-        {showNotification && (
-            <div className="notification2 success-notification2">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                <path d="M22 4L12 14.01l-3-3"/>
-              </svg>
-              <span>Category successfully {categoryAction === 'update' ? 'updated' : 'added'}</span>
-            </div>
-        )}
-
-        {/* Delete notification */}
-        {showNotification2 && (
-            <div className="notification2 delete-notification2">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                <path d="M22 4L12 14.01l-3-3"/>
-              </svg>
-              <span>Category successfully deleted</span>
-            </div>
-        )}
+        {/* Snackbar Component - replaces old notification system */}
+        <Snackbar
+            type={snackbarType}
+            text={snackbarMessage}
+            isVisible={showSnackbar}
+            onClose={closeSnackbar}
+            duration={3000}
+        />
       </>
   );
 };

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext.jsx';
 import { useLanguage } from '../../../contexts/LanguageContext.jsx';
 import { useTheme } from '../../../contexts/ThemeContext.jsx'; // Import the theme context
 import { useTranslation } from 'react-i18next';
-import { FaSignOutAlt, FaBars, FaTimes, FaMoon, FaSun } from 'react-icons/fa'; // Added moon and sun icons
+import { FaSignOutAlt, FaBars, FaTimes, FaMoon, FaSun, FaArrowLeft } from 'react-icons/fa'; // Added FaArrowLeft
 import './Navbar.css';
 
 const Navbar = () => {
@@ -13,9 +13,23 @@ const Navbar = () => {
     const { theme, toggleTheme } = useTheme(); // Use the theme context
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [navigationHistory, setNavigationHistory] = useState([]);
+
+    // Always show the back button
+    const showBackButton = true;
+
+    // Track navigation history to avoid going back to login
+    useEffect(() => {
+        setNavigationHistory(prev => {
+            const newHistory = [...prev, location.pathname];
+            // Keep only last 10 entries to prevent memory issues
+            return newHistory.slice(-10);
+        });
+    }, [location.pathname]);
 
     const toggleLanguageDropdown = () => {
         setShowLanguageDropdown(!showLanguageDropdown);
@@ -44,11 +58,42 @@ const Navbar = () => {
         toggleTheme();
     };
 
+    const handleBackClick = () => {
+        // Simple but effective: if we're not on a deep navigation path,
+        // or if this might be the first page after login, go to dashboard
+        const currentPath = location.pathname;
+
+        // Always redirect to dashboard if we suspect this might go back to login
+        if (window.history.length <= 2 ||
+            currentPath === '/dashboard' ||
+            currentPath === '/' ||
+            navigationHistory.length <= 1) {
+            console.log('Redirecting to dashboard to avoid login page');
+            navigate('/dashboard');
+            return;
+        }
+
+        // For deeper navigation, allow normal back behavior
+        console.log('Normal back navigation');
+        navigate(-1);
+    };
+
     return (
         <nav className="admin-navbar" style={{ direction: 'ltr' }}>
 
             <div className="navbar-content">
                 <div className="navbar-left">
+                    {/* Back Button - Always visible */}
+                    {showBackButton && (
+                        <button
+                            className="back-button"
+                            onClick={handleBackClick}
+                            title={t('common.back') || 'Go back'}
+                        >
+                            <FaArrowLeft  />
+                        </button>
+                    )}
+
                     {/* Logo container is empty */}
                     <div className="logo-container">
                     </div>

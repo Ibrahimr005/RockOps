@@ -35,6 +35,7 @@ import {
 } from 'react-icons/fa';
 
 import logoImage from '../../../assets/logos/Logo.png';
+import logoDarkImage from '../../../assets/logos/Logo-dark.png'; // Import dark logo
 import './Sidebar.css';
 import {BsFillPersonVcardFill} from "react-icons/bs";
 
@@ -50,6 +51,9 @@ const Sidebar = () => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     const userRole = currentUser?.role || 'USER';
+
+    // Get the appropriate logo based on theme
+    const currentLogo = theme === 'dark' ? logoDarkImage : logoImage;
 
     // Check if screen is mobile
     useEffect(() => {
@@ -71,7 +75,7 @@ const Sidebar = () => {
     useEffect(() => {
         const currentPath = location.pathname;
         const newExpandedMenus = {...expandedMenus};
-        
+
         menuItems.forEach(item => {
             if (item.hasSubmenu && item.submenuItems) {
                 const isOnSubmenuPage = item.submenuItems.some(sub => currentPath === sub.path);
@@ -80,7 +84,7 @@ const Sidebar = () => {
                 }
             }
         });
-        
+
         setExpandedMenus(newExpandedMenus);
     }, [location.pathname]);
 
@@ -301,7 +305,12 @@ const Sidebar = () => {
             <div className={`sidebar ${isExpanded ? 'expanded' : ''}`}>
                 <div className="sidebar-header">
                     <div className="logo">
-                        <img src={logoImage} alt="Logo" className="logo-image" />
+                        <img
+                            src={currentLogo}
+                            alt="Logo"
+                            className="logo-image"
+                            key={theme} // Force re-render when theme changes
+                        />
                     </div>
                 </div>
 
