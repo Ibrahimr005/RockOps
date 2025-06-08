@@ -46,19 +46,20 @@ import PurchaseOrders from "./pages/procurement/ProcurementPurchaseOrders/Procur
 import PurchaseOrderDetails
     from "./pages/procurement/ProcurementPurchaseOrders/PurchaseOrderDetails/PurchaseOrderDetails.jsx";
 import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
+import LoadingPage from "./components/common/LoadingPage/LoadingPage.jsx";
 
 
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
-    if (loading) return <LoadingSpinner/>;
+    if (loading) return <LoadingPage/>;
     if (!isAuthenticated) return <Navigate to="/login" replace/>;
     return <Navigate to={currentUser?.role === 'ADMIN' ? '/admin' : '/dashboard'} replace/>;
 };
 
 const RoleRoute = ({allowedRoles, children, redirectPath = '/dashboard'}) => {
     const {currentUser, isAuthenticated, loading} = useAuth();
-    if (loading) return <LoadingSpinner/>;
+    if (loading) return <LoadingPage/>;
     if (!isAuthenticated) return <Navigate to="/login" replace/>;
     if (!allowedRoles.includes(currentUser?.role)) return <Navigate to={redirectPath} replace/>;
     return children;
@@ -169,8 +170,6 @@ function App() {
         </Router>)
 }
 
-function LoadingSpinner() {
-    return <div>Loading...</div>;
-}
+
 
 export default App
