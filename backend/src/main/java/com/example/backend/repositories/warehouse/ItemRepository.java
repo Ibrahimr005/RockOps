@@ -71,4 +71,18 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
             @Param("itemTypeId") UUID itemTypeId,
             @Param("warehouseId") UUID warehouseId,
             @Param("itemStatus") ItemStatus itemStatus);
+
+    List<Item> findAllByItemTypeIdAndWarehouseIdAndItemStatusAndTransactionItemId(
+            UUID itemTypeId,
+            UUID warehouseId,
+            ItemStatus itemStatus,
+            UUID transactionItemId
+    );
+
+
+    // Add this method to your ItemRepository interface
+
+    @Query("SELECT i FROM Item i WHERE i.transactionItem.transaction.id = :transactionId " +
+            "AND i.itemStatus IN ('MISSING', 'OVERRECEIVED')")
+    List<Item> findDiscrepancyItemsByTransaction(@Param("transactionId") UUID transactionId);
 }

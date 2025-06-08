@@ -10,6 +10,7 @@ import {
     FaChartLine,
     FaChevronDown,
     FaChevronRight,
+    FaChevronLeft,
     FaClipboard,
     FaCog,
     FaFileContract,
@@ -35,7 +36,7 @@ import {
 } from 'react-icons/fa';
 
 import logoImage from '../../../assets/logos/Logo.png';
-import logoDarkImage from '../../../assets/logos/Logo-dark.png'; // Import dark logo
+import logoDarkImage from '../../../assets/logos/Logo-dark.png';
 import './Sidebar.css';
 import {BsFillPersonVcardFill} from "react-icons/bs";
 
@@ -48,17 +49,24 @@ const Sidebar = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [expandedMenus, setExpandedMenus] = useState({});
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true); // Start expanded on desktop
 
     const userRole = currentUser?.role || 'USER';
 
     // Get the appropriate logo based on theme
     const currentLogo = theme === 'dark' ? logoDarkImage : logoImage;
 
-    // Check if screen is mobile
+    // Check if screen is mobile and set initial state
     useEffect(() => {
         const checkIfMobile = () => {
-            setIsMobile(window.innerWidth < 768);
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            // On mobile, start collapsed. On desktop, start expanded
+            if (mobile) {
+                setIsExpanded(false);
+            } else {
+                setIsExpanded(true);
+            }
         };
 
         // Initial check
@@ -101,7 +109,7 @@ const Sidebar = () => {
         return currentPath.startsWith(parentPath);
     };
 
-    // Menu items with role-based access control - with updated role names
+    // Menu items with role-based access control
     const menuItems = [
         {
             title: 'Admin',
@@ -178,12 +186,6 @@ const Sidebar = () => {
             path: '/merchants',
             roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT']
         },
-        // {
-        //     title: 'Assets',
-        //     icon: <FaBoxes/>,
-        //     path: '/assets',
-        //     roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'EQUIPMENT_MANAGER', 'WAREHOUSE_MANAGER']
-        // },
         {
             title: 'HR',
             icon: <FaUsers/>,
@@ -215,7 +217,6 @@ const Sidebar = () => {
                     path: '/hr/positions',
                     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
                 },
-
                 {
                     title: 'Attendance',
                     icon: <FaTasks/>,
@@ -302,14 +303,38 @@ const Sidebar = () => {
 
     return (
         <>
-            <div className={`sidebar ${isExpanded ? 'expanded' : ''}`}>
+            {/* Mobile toggle button */}
+            {isMobile && (
+                <button
+                    className="mobile-sidebar-toggle"
+                    onClick={toggleSidebar}
+                    aria-label="Toggle sidebar"
+                >
+                    {isExpanded ? <FaTimes /> : <FaBars />}
+                </button>
+            )}
+
+            <div className={`sidebar ${isExpanded ? 'expanded' : 'collapsed'}`}>
+                {/* Integrated toggle button for desktop */}
+                {!isMobile && (
+                    <button
+                        className="sidebar-toggle-btn"
+                        onClick={toggleSidebar}
+                        aria-label="Toggle sidebar"
+                    >
+        <span className="chevron-icon">
+            {isExpanded ? <FaChevronLeft /> : <FaChevronRight />}
+        </span>
+                    </button>
+                )}
+
                 <div className="sidebar-header">
                     <div className="logo">
                         <img
                             src={currentLogo}
                             alt="Logo"
                             className="logo-image"
-                            key={theme} // Force re-render when theme changes
+                            key={theme}
                         />
                     </div>
                 </div>
@@ -324,27 +349,23 @@ const Sidebar = () => {
                                     to={item.hasSubmenu ? '#' : item.path}
                                     className={() => {
                                         if (item.hasSubmenu) {
-                                            // For submenu parents, only show active if we're exactly on the parent path
-                                            // or if we're on a submenu item (but the submenu item itself will handle its own active state)
                                             const isOnParentPath = location.pathname === item.path;
-                                            const isOnSubmenuPath = item.submenuItems.some(sub => location.pathname === sub.path);
                                             return `menu-item ${isOnParentPath ? 'active' : ''}`;
                                         } else {
-                                            // For regular menu items, only exact match
                                             const isDirectActive = location.pathname === item.path;
                                             return `menu-item ${isDirectActive ? 'active' : ''}`;
                                         }
                                     }}
+                                    data-tooltip={t(item.title)}
                                     onClick={(e) => {
                                         if (item.hasSubmenu) {
                                             e.preventDefault();
-                                            toggleSubmenu(item.title); // Toggle open/close
+                                            toggleSubmenu(item.title);
                                         } else if (isMobile) {
                                             setIsExpanded(false);
                                         }
                                     }}
                                 >
-
                                     <span className="menu-icon">{item.icon}</span>
                                     <span className="menu-title">{t(item.title)}</span>
                                     {item.hasSubmenu && (
@@ -359,9 +380,8 @@ const Sidebar = () => {
                                 </NavLink>
 
                                 {item.hasSubmenu && expandedMenus[item.title] && (
-                                    <div className="submenu">
+                                    <div className={`submenu ${expandedMenus[item.title] ? 'expanded' : ''}`}>
                                         {item.submenuItems.map((subItem) => {
-                                            const isActive = location.pathname === subItem.path;
                                             return (
                                                 <NavLink
                                                     key={subItem.title}
@@ -394,7 +414,10 @@ const Sidebar = () => {
 
                 <div className="sidebar-footer">
                     <div className="theme-toggle-container">
-                        <div className="theme-toggle-item">
+                        <div
+                            className="theme-toggle-item"
+                            onClick={toggleTheme}
+                        >
                             <div className="menu-icon">
                                 {theme === 'dark' ? <FaMoon/> : <FaSun/>}
                             </div>
@@ -418,6 +441,8 @@ const Sidebar = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Enhanced backdrop with blur effect */}
             {isMobile && isExpanded && (
                 <div
                     className="sidebar-backdrop active"

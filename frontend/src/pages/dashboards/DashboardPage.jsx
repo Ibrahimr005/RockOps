@@ -86,7 +86,7 @@ const DashboardPage = () => {
 
     return (
         <div className="dashboard-layout">
-            <Sidebar/>
+
 
 
             <div className="dashboard-content">

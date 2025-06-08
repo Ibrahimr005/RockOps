@@ -83,6 +83,10 @@ public class JobPosition {
 
     // Helper methods for contract-specific calculations
     public Double calculateDailySalary() {
+        if (contractType == null) {
+            return 0.0;
+        }
+
         switch (contractType) {
             case HOURLY:
                 return (hourlyRate != null && hoursPerShift != null)
@@ -98,6 +102,10 @@ public class JobPosition {
     }
 
     public Double calculateMonthlySalary() {
+        if (contractType == null) {
+            return 0.0;
+        }
+
         switch (contractType) {
             case HOURLY:
                 Double dailySalary = calculateDailySalary();

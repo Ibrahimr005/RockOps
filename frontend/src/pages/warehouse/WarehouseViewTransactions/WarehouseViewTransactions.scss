@@ -883,10 +883,10 @@ label {
   font-size: 13px;
   font-weight: 500;
   text-transform: uppercase;
-  display: inline-block; /* Ensure consistent display */
-  white-space: nowrap; /* Prevent wrapping */
-  text-align: center; /* Center text */
-  min-width: 80px; /* Set minimum width to ensure consistent size */
+  display: inline-block;
+  white-space: nowrap;
+  text-align: center;
+  min-width: 80px;
 
   &.accepted {
     background-color: #d4edda;
@@ -905,6 +905,40 @@ label {
     [data-theme="dark"] & {
       background-color: rgba(255, 82, 82, 0.2);
       color: var(--color-danger);
+    }
+  }
+
+  &.pending {
+    background-color: #fff3cd;
+    color: #856404;
+
+    [data-theme="dark"] & {
+      background-color: rgba(255, 193, 7, 0.2);
+      color: var(--color-warning);
+    }
+  }
+
+  &.resolving {
+    /* Light mode: Soft orange/amber for "in progress" */
+    background-color: #fef3e2;
+    color: #b45309;
+
+    [data-theme="dark"] & {
+      /* Dark mode: Warm orange with good contrast */
+      background-color: rgba(251, 146, 60, 0.15);
+      color: #fbbf24;
+    }
+  }
+
+  &.resolved {
+    /* Light mode: Soft teal/cyan for "completed" */
+    background-color: #ecfeff;
+    color: #0e7490;
+
+    [data-theme="dark"] & {
+      /* Dark mode: Bright cyan with good contrast */
+      background-color: rgba(34, 211, 238, 0.15);
+      color: #22d3ee;
     }
   }
 }
