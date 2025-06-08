@@ -2,11 +2,13 @@ import React, {forwardRef, useEffect, useImperativeHandle, useState} from 'react
 import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
 import { equipmentService } from '../../../services/equipmentService';
 import { transactionService } from '../../../services/transactionService';
+import { consumableService } from '../../../services/consumableService';
 import './EquipmentConsumablesInventory.scss';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
 import EquipmentConsumablesHistoryModal from "./EquipmentConsumablesHistoryModal.jsx";
+import TransactionViewModal from "../../warehouse/WarehouseViewTransactions/PendingTransactions/TransactionViewModal.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 
 const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref) => {
@@ -19,10 +21,16 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [selectedConsumable, setSelectedConsumable] = useState(null);
     const [consumableHistory, setConsumableHistory] = useState([]);
-
-    // Pagination state
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(5);
+    const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState(null);
+    const [resolutionHistory, setResolutionHistory] = useState([]);
+    const [isResolutionModalOpen, setIsResolutionModalOpen] = useState(false);
+    const [resolutionData, setResolutionData] = useState({
+        resolutionType: "",
+        notes: "",
+        transactionId: "",
+        correctedQuantity: ""
+    });
 
     const { showInfo } = useSnackbar();
 
@@ -47,57 +55,102 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
         setShowNotification(false);
     };
 
-    // Function to fetch transaction details and show in snackbar
-    const showTransactionDetails = async (transactionId, batchNumber) => {
-        if (!batchNumber) {
-            showInfo(`Batch #N/A - No batch number available`, 4000);
+    // Function to fetch transaction details and show in TransactionViewModal
+    const showTransactionDetails = async (consumable) => {
+        if (!consumable.transactionId) {
+            showSnackbar("No transaction associated with this item", "warning");
             return;
         }
 
         try {
-            const response = await transactionService.getByBatchNumber(batchNumber);
-            const transaction = response.data;
-            console.log(transaction);
-
-            // Format transaction details in a more readable, structured way
-            const details = `TRANSACTION DETAILS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📦 Batch Number: ${batchNumber}
-
-📊 Status: ${transaction.status || 'N/A'}
-
-📅 Date: ${transaction.transactionDate ? new Date(transaction.transactionDate).toLocaleDateString() : 'N/A'}
-
-📤 From: ${transaction.senderName || 'N/A'}
-
-📥 To: ${transaction.receiverName || 'N/A'}
-
-📋 Items: ${transaction.items?.length || 0} item(s)
-
-👤 Added by: ${transaction.addedBy || 'N/A'}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Click the ✕ button to close`;
-
-            // Use persistent snackbar so it stays until manually closed
-            showInfo(details, 0, true);
+            const response = await transactionService.getById(consumable.transactionId);
+            setSelectedTransaction(response.data);
+            setIsTransactionModalOpen(true);
         } catch (error) {
-            console.error('Error fetching transaction details:', error);
-            showInfo(`Batch #${batchNumber} - Unable to fetch transaction details`, 4000);
+            console.error("Failed to fetch transaction details:", error);
+            showSnackbar("Failed to fetch transaction details", "error");
+        }
+    };
+
+    // Function to fetch resolution history
+    const fetchResolutionHistory = async () => {
+        if (!equipmentId) return;
+        
+        try {
+            const response = await consumableService.getResolutionHistory(equipmentId);
+            setResolutionHistory(response.data);
+        } catch (error) {
+            console.error("Failed to fetch resolution history:", error);
+        }
+    };
+
+    // Function to open resolution modal
+    const openResolutionModal = (consumable) => {
+        setSelectedConsumable(consumable);
+        setResolutionData({
+            resolutionType: "",
+            notes: "",
+            transactionId: consumable.transactionId || "",
+            correctedQuantity: ""
+        });
+        setIsResolutionModalOpen(true);
+    };
+
+    // Function to handle resolution form input changes
+    const handleResolutionInputChange = (e) => {
+        const { name, value } = e.target;
+        setResolutionData({
+            ...resolutionData,
+            [name]: value,
+        });
+    };
+
+    // Function to submit resolution
+    const handleResolutionSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!selectedConsumable) return;
+
+        try {
+            const userInfo = localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')) : null;
+            const resolution = {
+                consumableId: selectedConsumable.id,
+                resolutionType: resolutionData.resolutionType,
+                notes: resolutionData.notes,
+                transactionId: resolutionData.transactionId,
+                resolvedBy: userInfo?.username || "system",
+                ...(resolutionData.resolutionType === 'COUNTING_ERROR' && resolutionData.correctedQuantity && {
+                    correctedQuantity: parseInt(resolutionData.correctedQuantity)
+                })
+            };
+
+            await consumableService.resolveDiscrepancy(resolution);
+            fetchConsumables();
+            fetchResolutionHistory(); // Also refresh resolution history
+            fetchOverReceivedCount(); // Refresh count for badge
+            setIsResolutionModalOpen(false);
+            showSnackbar("Discrepancy resolved successfully", "success");
+        } catch (error) {
+            console.error("Failed to resolve consumable:", error);
+            showSnackbar("Failed to resolve discrepancy", "error");
         }
     };
 
     const fetchConsumables = async () => {
         try {
             setLoading(true);
-            const response = await equipmentService.getEquipmentConsumables(equipmentId);
+            // Fetch data based on active tab for better performance and real-time updates
+            let response;
+            if (activeTab === 'resolutionHistory') {
+                response = await equipmentService.getEquipmentConsumablesByCategory(equipmentId, 'resolved');
+            } else if (activeTab === 'overReceived') {
+                response = await equipmentService.getEquipmentConsumablesByCategory(equipmentId, 'surplus');
+            } else {
+                response = await equipmentService.getEquipmentConsumablesByCategory(equipmentId, 'current');
+            }
+            
             setConsumables(response.data);
-            console.log("Consumables data:", response.data);
-
-            // Log unique statuses for debugging
-            const uniqueStatuses = [...new Set(response.data.map(c => c.status))];
-            console.log("Available statuses:", uniqueStatuses);
+            console.log(`Consumables data for ${activeTab}:`, response.data);
 
             setLoading(false);
         } catch (err) {
@@ -109,6 +162,7 @@ Click the ✕ button to close`;
 
     const fetchConsumableHistory = async (consumableId) => {
         try {
+            console.log("🔍 Fetching consumable history for ID:", consumableId);
             const token = localStorage.getItem("token");
             const response = await fetch(`http://localhost:8080/api/v1/equipment/consumables/${consumableId}/history`, {
                 headers: {
@@ -117,6 +171,7 @@ Click the ✕ button to close`;
             });
             if (response.ok) {
                 const data = await response.json();
+                console.log("✅ Fetched consumable history:", data);
                 setConsumableHistory(data);
             } else {
                 console.error("Failed to fetch consumable history, status:", response.status);
@@ -143,54 +198,65 @@ Click the ✕ button to close`;
     useEffect(() => {
         if (equipmentId) {
             fetchConsumables();
+            fetchOverReceivedCount(); // Always fetch count for badge
+            if (activeTab === 'resolutionHistory') {
+                fetchResolutionHistory();
+            }
         }
     }, [equipmentId, activeTab]);
 
-    // Filter consumables based on search term and active tab
+    // Filter consumables based on search term only (tab filtering is now done server-side)
     const filteredConsumables = consumables.filter(item => {
-        // First apply search filter
+        // Apply search filter
         const matchesSearch = !searchTerm ||
             (item.itemTypeName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
             (item.itemTypeCategory?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
-        if (!matchesSearch) return false;
-
-        // Then apply tab filter
-        switch (activeTab) {
-            case 'current':
-                return !item.status || item.status === 'REGULAR' || item.status === 'IN_WAREHOUSE' || item.status === 'CONSUMED';
-            case 'overReceived':
-                return item.status === 'OVERRECEIVED';
-            default:
-                return true;
-        }
+        return matchesSearch;
     });
-
-    // Calculate pagination
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filteredConsumables.slice(indexOfFirstItem, indexOfLastItem);
-    const totalPages = Math.ceil(filteredConsumables.length / itemsPerPage);
-
-    // Page change handler
-    const handlePageChange = (pageNumber) => {
-        setCurrentPage(pageNumber);
-    };
-
-    // Items per page change handler
-    const handleItemsPerPageChange = (e) => {
-        setItemsPerPage(parseInt(e.target.value));
-        setCurrentPage(1); // Reset to first page when changing items per page
-    };
 
     // Handle tab change
     const handleTabChange = (tab) => {
         setActiveTab(tab);
-        setCurrentPage(1); // Reset to first page when changing tabs
     };
 
-    // Get count for overReceived badge indicator
-    const overReceivedCount = consumables.filter(item => item.status === 'OVERRECEIVED').length;
+    // Get count for overReceived badge indicator from current data
+    const [overReceivedCount, setOverReceivedCount] = useState(0);
+
+    const fetchOverReceivedCount = async () => {
+        try {
+            const response = await equipmentService.getEquipmentConsumablesByCategory(equipmentId, 'surplus');
+            setOverReceivedCount(response.data.length);
+        } catch (error) {
+            console.error('Error fetching overreceived count:', error);
+        }
+    };
+
+    // Helper functions for resolution history
+    const getResolutionTypeLabel = (resolutionType) => {
+        switch (resolutionType) {
+            case 'ACKNOWLEDGE_LOSS':
+                return 'Acknowledge Loss';
+            case 'FOUND_ITEMS':
+                return 'Items Found';
+            case 'REPORT_THEFT':
+                return 'Report Theft';
+            case 'ACCEPT_SURPLUS':
+                return 'Accept Surplus';
+            case 'COUNTING_ERROR':
+                return 'Counting Error';
+            case 'RETURN_TO_SENDER':
+                return 'Return to Sender';
+            default:
+                return resolutionType;
+        }
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return "N/A";
+        const date = new Date(dateString);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
 
     // Define columns for the data table
     const columns = [
@@ -206,8 +272,17 @@ Click the ✕ button to close`;
                 </span>
             )
         },
-        {header: 'Unit', accessor: 'unit'},
         {
+            header: 'Unit',
+            accessor: 'unit'},
+
+        {
+            header: 'Last Updated',
+            accessor: 'lastUpdated',
+            render: (row, value) => value ? new Date(value).toLocaleDateString() : "N/A"
+        },
+        // Show History column only for current inventory tab
+        ...(activeTab === 'current' ? [{
             header: 'History',
             accessor: 'history',
             render: (row) => (
@@ -221,29 +296,114 @@ Click the ✕ button to close`;
                     </svg>
                 </button>
             )
-        },
-        {
-            header: 'Last Updated',
-            accessor: 'lastUpdated',
-            render: (row, value) => value ? new Date(value).toLocaleDateString() : "N/A"
-        },
+        }] : []),
+        // Show Transaction column only for surplus items tab
+        ...(activeTab === 'overReceived' ? [{
+            header: 'Transaction',
+            accessor: 'transaction',
+            render: (row) => (
+                <button
+                    className="transaction-view-button"
+                    title="View Transaction"
+                    onClick={() => showTransactionDetails(row)}
+                >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                </button>
+            )
+        }] : []),
+        // Show Actions column only for surplus items tab with edit permissions
         ...(activeTab === 'overReceived' && permissions.canEdit ? [{
             header: 'Actions',
             accessor: 'actions',
             render: (row) => (
                 <button
                     className="resolve-button"
-                    title="Add to Inventory"
-                    onClick={() => {/* Add logic to move to regular inventory */
-                    }}
+                    title="Resolve Surplus"
+                    onClick={() => openResolutionModal(row)}
                 >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
                     </svg>
-                    Add to Inventory
+                    Resolve
                 </button>
             )
         }] : [])
+    ];
+
+    // Define columns for resolution history table
+    const historyColumns = [
+        {
+            accessor: 'consumable.itemType.itemCategory.name',
+            header: 'CATEGORY',
+            width: '210px',
+            render: (row) => (
+                <span className="category-tag">
+                    {row.consumable?.itemType?.itemCategory?.name || "No Category"}
+                </span>
+            )
+        },
+        {
+            accessor: 'consumable.itemType.name',
+            header: 'ITEM',
+            width: '210px',
+            render: (row) => row.consumable?.itemType?.name || "N/A"
+        },
+        {
+            accessor: 'originalQuantity',
+            header: 'QUANTITY',
+            width: '210px'
+        },
+        {
+            accessor: 'consumable.transaction.batchNumber',
+            header: 'BATCH #',
+            width: '210px',
+            render: (row) => (
+                <span className="batch-number">
+                    {row.consumable?.transaction?.batchNumber || 'N/A'}
+                </span>
+            )
+        },
+        {
+            accessor: 'resolutionType',
+            header: 'RESOLUTION',
+            width: '180px',
+            render: (row) => (
+                <div className="resolution-type-cell">
+                    <span className={`resolution-badge ${row.resolutionType?.toLowerCase().replace('_', '-')}`}>
+                        {getResolutionTypeLabel(row.resolutionType)}
+                    </span>
+                    {row.resolutionType === 'COUNTING_ERROR' && row.correctedQuantity && (
+                        <div className="corrected-quantity-info">
+                            Corrected: {row.correctedQuantity}
+                        </div>
+                    )}
+                    {!row.fullyResolved && (
+                        <div className="unresolved-indicator">
+                            Still Unresolved
+                        </div>
+                    )}
+                </div>
+            )
+        },
+        {
+            accessor: 'resolvedBy',
+            header: 'RESOLVED BY',
+            width: '210px',
+            render: (row) => row.resolvedBy || "System"
+        },
+        {
+            accessor: 'resolvedAt',
+            header: 'RESOLVED AT',
+            width: '250px',
+            render: (row) => (
+                <span className="date-cell">
+                    {formatDate(row.resolvedAt)}
+                </span>
+            )
+        }
     ];
 
     // Define filterable columns - these should match the column objects
@@ -259,14 +419,14 @@ Click the ✕ button to close`;
     return (
         <div className="consumables-inventory">
 
-            {/* Inventory Tabs - Removed under-received tab */}
+            {/* Inventory Tabs */}
             <div className="inventory-tabs">
                 <button
                     className={`inventory-tab ${activeTab === 'current' ? 'active' : ''}`}
                     onClick={() => handleTabChange('current')}
                 >
                     Current Inventory
-                    <span className="inventory-tab-count">{consumables.length}</span>
+                    <span className="inventory-tab-count">{consumables.filter(c => (!c.status || c.status === 'REGULAR' || c.status === 'IN_WAREHOUSE' || c.status === 'CONSUMED') && !c.resolved).length}</span>
                 </button>
                 <button
                     className={`inventory-tab ${activeTab === 'overReceived' ? 'active' : ''}`}
@@ -279,9 +439,16 @@ Click the ✕ button to close`;
                         </span>
                     )}
                 </button>
+                <button
+                    className={`inventory-tab ${activeTab === 'resolutionHistory' ? 'active' : ''}`}
+                    onClick={() => handleTabChange('resolutionHistory')}
+                >
+                    Resolution History
+                    <span className="inventory-tab-count">{consumables.filter(c => c.resolved).length}</span>
+                </button>
             </div>
 
-            {/* Resolution info card - only show for overReceived tab */}
+            {/* Info cards for different tabs */}
             {activeTab === 'overReceived' && (
                 <div className="resolution-info-card">
                     <div className="resolution-icon">
@@ -301,6 +468,22 @@ Click the ✕ button to close`;
                 </div>
             )}
 
+            {activeTab === 'resolutionHistory' && (
+                <div className="resolution-info-card">
+                    <div className="resolution-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div className="resolution-info-content">
+                        <h3>Resolution History</h3>
+                        <p>
+                            This section shows the complete history of all resolved consumable discrepancies. Each entry includes details about the original issue, the resolution action taken, and who resolved it.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="inventory-content">
                 {loading ? (
                     <div className="loading-state">
@@ -312,70 +495,42 @@ Click the ✕ button to close`;
                         <p>Error loading consumables: {error}</p>
                     </div>
                 ) : (
-                    <DataTable
-                        data={currentItems}
-                        columns={columns}
-                        loading={loading}
-                        tableTitle={`${activeTab === 'current' ? 'Current Inventory' : 'Surplus Items'}`}
-                        showSearch={true}
-                        showFilters={true}
-                        filterableColumns={filterableColumns}
-                    />
+                    activeTab === 'resolutionHistory' ? (
+                        <DataTable
+                            data={resolutionHistory}
+                            columns={historyColumns}
+                            loading={loading}
+                            tableTitle="Resolution History"
+                            showSearch={true}
+                            showFilters={true}
+                            filterableColumns={[
+                                { accessor: 'consumable.itemType.name', header: 'Item' },
+                                { accessor: 'consumable.itemType.itemCategory.name', header: 'Category' },
+                                { accessor: 'resolutionType', header: 'Resolution Type' },
+                                { accessor: 'resolvedBy', header: 'Resolved By' }
+                            ]}
+                            itemsPerPageOptions={[5, 10, 15, 20]}
+                            defaultItemsPerPage={10}
+                            emptyMessage="No resolution history found"
+                            className="resolution-history-table"
+                        />
+                    ) : (
+                        <DataTable
+                            data={filteredConsumables}
+                            columns={columns}
+                            loading={loading}
+                            tableTitle={`${activeTab === 'current' ? 'Current Inventory' : 'Surplus Items'}`}
+                            showSearch={true}
+                            showFilters={true}
+                            filterableColumns={filterableColumns}
+                            itemsPerPageOptions={[5, 10, 15, 20]}
+                            defaultItemsPerPage={5}
+                            emptyMessage="No consumables found"
+                        />
+                    )
                 )}
             </div>
 
-            {filteredConsumables.length > 0 && (
-                <div className="pagination-controls">
-                    <div className="items-per-page">
-                        <label>Items per page:</label>
-                        <select
-                            value={itemsPerPage}
-                            onChange={handleItemsPerPageChange}
-                        >
-                            <option value={5}>5</option>
-                            <option value={10}>10</option>
-                            <option value={20}>20</option>
-                            <option value={50}>50</option>
-                        </select>
-                    </div>
-
-                    <div className="pagination">
-                        <button
-                            className="page-button"
-                            onClick={() => handlePageChange(1)}
-                            disabled={currentPage === 1}
-                        >
-                            ⟪
-                        </button>
-                        <button
-                            className="page-button"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                        >
-                            ⟨
-                        </button>
-
-                        <div className="page-info">
-                            Page {currentPage} of {totalPages}
-                        </div>
-
-                        <button
-                            className="page-button"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                        >
-                            ⟩
-                        </button>
-                        <button
-                            className="page-button"
-                            onClick={() => handlePageChange(totalPages)}
-                            disabled={currentPage === totalPages}
-                        >
-                            ⟫
-                        </button>
-                    </div>
-                </div>
-            )}
             {permissions.canCreate && (
                 <button className="add-button2" onClick={onAddClick}>
                     <svg className="plus-icon2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -391,6 +546,151 @@ Click the ✕ button to close`;
                 consumableHistory={consumableHistory}
                 itemDetails={selectedConsumable}
             />
+
+            {/* Transaction Modal */}
+            <TransactionViewModal
+                isOpen={isTransactionModalOpen}
+                onClose={() => setIsTransactionModalOpen(false)}
+                transaction={selectedTransaction}
+            />
+
+            {/* Resolution Modal */}
+            {isResolutionModalOpen && selectedConsumable && (
+                <div className="resolution-modal-backdrop">
+                    <div className="resolution-modal">
+                        <div className="resolution-modal-header">
+                            <h2>Resolve Consumable Discrepancy</h2>
+                            <button
+                                className="close-modal-button"
+                                onClick={() => setIsResolutionModalOpen(false)}
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M18 6L6 18M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="resolution-modal-body">
+                            <div className="resolution-item-details">
+                                <div className="resolution-detail">
+                                    <span className="resolution-label">Item:</span>
+                                    <span className="resolution-value">{selectedConsumable.itemTypeName}</span>
+                                </div>
+
+                                <div className="resolution-detail">
+                                    <span className="resolution-label">Quantity:</span>
+                                    <span className="resolution-value">{selectedConsumable.quantity} {selectedConsumable.unit || ''}</span>
+                                </div>
+
+                                <div className="resolution-detail">
+                                    <span className="resolution-label">Status:</span>
+                                    <span className="resolution-value">{selectedConsumable.status === 'OVERRECEIVED' ? 'Surplus' : selectedConsumable.status}</span>
+                                </div>
+
+                                <div className="resolution-detail">
+                                    <span className="resolution-label">Batch Number:</span>
+                                    <span className="resolution-value">{selectedConsumable.batchNumber || 'N/A'}</span>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleResolutionSubmit} className="resolution-form">
+                                <div className="resolution-form-group">
+                                    <label htmlFor="resolutionType">Resolution Type</label>
+                                    <select
+                                        id="resolutionType"
+                                        name="resolutionType"
+                                        value={resolutionData.resolutionType}
+                                        onChange={handleResolutionInputChange}
+                                        required
+                                    >
+                                        <option value="">Select Resolution Type</option>
+                                        {selectedConsumable.status === 'MISSING' ? (
+                                            <>
+                                                <option value="ACKNOWLEDGE_LOSS">Acknowledge Loss</option>
+                                                <option value="FOUND_ITEMS">Items Found</option>
+                                                <option value="REPORT_THEFT">Report Theft</option>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <option value="ACCEPT_SURPLUS">Accept Surplus</option>
+                                                <option value="COUNTING_ERROR">Counting Error</option>
+                                            </>
+                                        )}
+                                    </select>
+                                </div>
+
+                                <div className="resolution-form-group">
+                                    <label htmlFor="notes">Resolution Notes</label>
+                                    <textarea
+                                        id="notes"
+                                        name="notes"
+                                        value={resolutionData.notes}
+                                        onChange={handleResolutionInputChange}
+                                        placeholder="Provide details about this resolution"
+                                        rows={4}
+                                        required
+                                    />
+                                </div>
+
+                                {resolutionData.resolutionType === 'COUNTING_ERROR' && (
+                                    <div className="resolution-form-group">
+                                        <label htmlFor="correctedQuantity">Corrected Quantity*</label>
+                                        <input
+                                            type="number"
+                                            id="correctedQuantity"
+                                            name="correctedQuantity"
+                                            value={resolutionData.correctedQuantity}
+                                            onChange={handleResolutionInputChange}
+                                            placeholder="Enter the actual quantity received"
+                                            min="0"
+                                            required
+                                        />
+                                        <small className="help-text">
+                                            Enter the actual quantity you received for this item
+                                        </small>
+                                    </div>
+                                )}
+
+                                <div className="resolution-confirmation">
+                                    <p className="resolution-confirmation-text">
+                                        {resolutionData.resolutionType === 'ACKNOWLEDGE_LOSS' &&
+                                            "You are confirming that these items are lost and will be removed from inventory."}
+                                        {resolutionData.resolutionType === 'FOUND_ITEMS' &&
+                                            "You are confirming items were found and will be returned to regular inventory."}
+                                        {resolutionData.resolutionType === 'REPORT_THEFT' &&
+                                            "You are reporting theft. This will be logged and items will be written off."}
+                                        {resolutionData.resolutionType === 'ACCEPT_SURPLUS' &&
+                                            "You are accepting the surplus items. They will be marked as resolved."}
+                                        {resolutionData.resolutionType === 'COUNTING_ERROR' &&
+                                            "You are correcting the received quantity. The system will validate against the original transaction."}
+                                    </p>
+                                </div>
+
+                                <div className="resolution-modal-footer">
+                                    <button
+                                        type="button"
+                                        className="cancel-button"
+                                        onClick={() => setIsResolutionModalOpen(false)}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="resolve-submit-button"
+                                        disabled={
+                                            !resolutionData.resolutionType || 
+                                            !resolutionData.notes ||
+                                            (resolutionData.resolutionType === 'COUNTING_ERROR' && !resolutionData.correctedQuantity)
+                                        }
+                                    >
+                                        Resolve Discrepancy
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Snackbar */}
             <Snackbar

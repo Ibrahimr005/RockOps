@@ -99,9 +99,11 @@ public class TransactionMapperService {
                 .itemTypeName(item.getItemType() != null ? item.getItemType().getName() : null)
                 .itemCategory(item.getItemType() != null && item.getItemType().getItemCategory() != null 
                         ? item.getItemType().getItemCategory().getName() : null)
+                .itemUnit(item.getItemType() != null ? item.getItemType().getMeasuringUnit() : null)
                 .quantity(item.getQuantity())
                 .receivedQuantity(item.getReceivedQuantity())
                 .status(item.getStatus())
+                .rejectionReason(item.getRejectionReason())
                 .build();
     }
 

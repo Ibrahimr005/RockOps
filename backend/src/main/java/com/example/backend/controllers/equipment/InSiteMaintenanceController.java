@@ -5,6 +5,7 @@ import com.example.backend.models.equipment.InSiteMaintenance;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.transaction.Transaction;
 import com.example.backend.models.transaction.TransactionItem;
+
 import com.example.backend.models.transaction.TransactionPurpose;
 import com.example.backend.models.transaction.TransactionStatus;
 import com.example.backend.models.warehouse.ItemType;
@@ -58,17 +59,20 @@ public class InSiteMaintenanceController {
             @RequestBody Map<String, Object> maintenanceData,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        UUID technicianId = UUID.fromString((String) maintenanceData.get("technicianId"));
-        LocalDateTime maintenanceDate = LocalDateTime.parse((String) maintenanceData.get("maintenanceDate"));
-        String description = (String) maintenanceData.get("description");
-        String status = (String) maintenanceData.get("status");
-
-        Object batchNumberObj = maintenanceData.get("batchNumber");
-        Integer batchNumber = (batchNumberObj != null && !batchNumberObj.toString().isBlank()) ?
-                Integer.parseInt(batchNumberObj.toString()) : null;
         Map<String, Object> response = new HashMap<>();
 
         try {
+            // Parse and validate input data
+            System.out.println("Received maintenance data: " + maintenanceData);
+            
+            UUID technicianId = UUID.fromString((String) maintenanceData.get("technicianId"));
+            LocalDateTime maintenanceDate = LocalDateTime.parse((String) maintenanceData.get("maintenanceDate"));
+            String description = (String) maintenanceData.get("description");
+            String status = (String) maintenanceData.get("status");
+
+            Object batchNumberObj = maintenanceData.get("batchNumber");
+            Integer batchNumber = (batchNumberObj != null && !batchNumberObj.toString().isBlank()) ?
+                    Integer.parseInt(batchNumberObj.toString()) : null;
             InSiteMaintenance maintenance;
             
             // Check if maintenanceTypeId is provided (new format) or maintenanceType (legacy format)
@@ -89,8 +93,69 @@ public class InSiteMaintenanceController {
                 throw new IllegalArgumentException("Either maintenanceTypeId or maintenanceType must be provided");
             }
 
-            // If batch number is provided, check if transaction exists
-            if (batchNumber != null) {
+            // Check if transaction validation data is provided
+            @SuppressWarnings("unchecked")
+            Map<String, Object> transactionValidation = (Map<String, Object>) maintenanceData.get("transactionValidation");
+            
+            if (transactionValidation != null) {
+                // Handle inline transaction validation
+                UUID transactionId = UUID.fromString(transactionValidation.get("transactionId").toString());
+                String action = (String) transactionValidation.get("action");
+                String comments = (String) transactionValidation.get("comments");
+                String rejectionReason = (String) transactionValidation.get("rejectionReason");
+                
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> receivedItems = (List<Map<String, Object>>) transactionValidation.get("receivedItems");
+                
+                try {
+                    Transaction validatedTransaction;
+                    
+                    if ("reject".equals(action)) {
+                        // Reject the transaction
+                        validatedTransaction = transactionService.rejectEquipmentTransaction(
+                            transactionId, rejectionReason, userDetails.getUsername());
+                        
+                    } else if ("accept".equals(action)) {
+                        // Prepare received quantities for acceptance
+                        Map<UUID, Integer> receivedQuantities = new HashMap<>();
+                        Map<UUID, Boolean> itemsNotReceived = new HashMap<>();
+                        
+                        for (Map<String, Object> item : receivedItems) {
+                            UUID itemId = UUID.fromString(item.get("transactionItemId").toString());
+                            Integer receivedQty = item.get("receivedQuantity") != null ? 
+                                Integer.parseInt(item.get("receivedQuantity").toString()) : 0;
+                            Boolean notReceived = Boolean.parseBoolean(item.get("itemNotReceived").toString());
+                            
+                            receivedQuantities.put(itemId, receivedQty);
+                            itemsNotReceived.put(itemId, notReceived);
+                        }
+                        
+                        // Accept the transaction with MAINTENANCE purpose
+                        validatedTransaction = transactionService.acceptEquipmentTransaction(
+                            transactionId, receivedQuantities, itemsNotReceived, 
+                            userDetails.getUsername(), comments, TransactionPurpose.MAINTENANCE);
+                    } else {
+                        throw new IllegalArgumentException("Invalid action. Must be 'accept' or 'reject'");
+                    }
+                    
+                    // Link the validated transaction to the maintenance record
+                    maintenance = maintenanceService.linkTransactionToMaintenance(
+                            maintenance.getId(), transactionId);
+                    
+                    response.put("maintenance", maintenance);
+                    response.put("transaction", validatedTransaction);
+                    response.put("status", action + "ed_and_linked");
+                    response.put("message", "Maintenance record created and transaction " + action + "ed successfully");
+                    
+                    return ResponseEntity.ok(response);
+                    
+                } catch (Exception e) {
+                    response.put("error", "Failed to validate transaction: " + e.getMessage());
+                    return ResponseEntity.badRequest().body(response);
+                }
+                
+            } else if (batchNumber != null) {
+                // Legacy handling for batch number without validation
                 Optional<Transaction> existingTransaction = maintenanceService.findTransactionByBatchNumber(batchNumber);
 
                 if (existingTransaction.isPresent()) {
@@ -131,7 +196,7 @@ public class InSiteMaintenanceController {
                     return ResponseEntity.ok(response);
                 }
             } else {
-                // No batch number provided, just return the maintenance record
+                // No batch number or validation provided, just return the maintenance record
                 response.put("maintenance", maintenance);
                 response.put("status", "created");
 
@@ -263,28 +328,53 @@ public class InSiteMaintenanceController {
         }
     }
 
-    // Add this endpoint to InSiteMaintenanceController.java
+    // Enhanced endpoint to check transaction status and return detailed information for maintenance linking
     @GetMapping("/check-transaction/{batchNumber}")
     public ResponseEntity<?> checkTransactionExists(@PathVariable UUID equipmentId, @PathVariable int batchNumber) {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            Optional<Transaction> transaction = maintenanceService.findTransactionByBatchNumber(batchNumber);
+            System.out.println("Checking transaction for batch number: " + batchNumber + " on equipment: " + equipmentId);
+            Optional<Transaction> transactionOpt = maintenanceService.findTransactionByBatchNumber(batchNumber);
 
-            if (transaction.isPresent()) {
-                Transaction trans = transaction.get();
-                response.put("found", true);
-                response.put("transaction", Map.of(
-                        "id", trans.getId(),
-                        "batchNumber", trans.getBatchNumber(),
-                        "status", trans.getStatus(),
-                        "purpose", trans.getPurpose(),
-                        "items", trans.getItems().size()
-                ));
-                response.put("message", "Transaction found with " + trans.getItems().size() + " items");
+            if (transactionOpt.isPresent()) {
+                Transaction transaction = transactionOpt.get();
+                
+                // Determine scenario based on transaction status
+                if (transaction.getStatus() == TransactionStatus.ACCEPTED || 
+                    transaction.getStatus() == TransactionStatus.REJECTED) {
+                    // Scenario 1: Already accepted or rejected
+                    response.put("scenario", "already_handled");
+                    response.put("found", true);
+                    response.put("message", String.format(
+                        "Transaction with batch number %d has already been %s. You can view it for details but cannot link it to this maintenance record.",
+                        batchNumber, transaction.getStatus().toString().toLowerCase()
+                    ));
+                    response.put("transaction", createTransactionSummary(transaction));
+                    
+                } else if (transaction.getStatus() == TransactionStatus.PENDING) {
+                    // Scenario 2: Pending transaction (can be linked and validated)
+                    response.put("scenario", "pending_validation");
+                    response.put("found", true);
+                    response.put("message", "Pending transaction found! You can link it to this maintenance record and validate it inline.");
+                    response.put("transaction", createDetailedTransactionInfo(transaction));
+                    
+                } else {
+                    // Other statuses (e.g., DELIVERING, PARTIALLY_ACCEPTED)
+                    response.put("scenario", "other_status");
+                    response.put("found", true);
+                    response.put("message", String.format(
+                        "Transaction found but it's currently %s. Only pending transactions can be linked to maintenance records.",
+                        transaction.getStatus().toString().toLowerCase()
+                    ));
+                    response.put("transaction", createTransactionSummary(transaction));
+                }
             } else {
+                // Scenario 3: No transaction exists
+                response.put("scenario", "not_found");
                 response.put("found", false);
-                response.put("message", "No transaction found with batch number " + batchNumber);
+                response.put("message", "No transaction found with batch number " + batchNumber + ". You can create a new transaction.");
+                response.put("allowCreateNew", true);
             }
 
             return ResponseEntity.ok(response);
@@ -292,6 +382,64 @@ public class InSiteMaintenanceController {
             response.put("error", e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
+    }
+
+    // Helper method to create transaction summary for non-linkable transactions
+    private Map<String, Object> createTransactionSummary(Transaction transaction) {
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("id", transaction.getId());
+        summary.put("batchNumber", transaction.getBatchNumber());
+        summary.put("status", transaction.getStatus());
+        summary.put("purpose", transaction.getPurpose());
+        summary.put("itemCount", transaction.getItems() != null ? transaction.getItems().size() : 0);
+        summary.put("transactionDate", transaction.getTransactionDate());
+        summary.put("completedAt", transaction.getCompletedAt());
+        
+        if (transaction.getStatus() == TransactionStatus.REJECTED && transaction.getRejectionReason() != null) {
+            summary.put("rejectionReason", transaction.getRejectionReason());
+        }
+        if (transaction.getStatus() == TransactionStatus.ACCEPTED && transaction.getAcceptanceComment() != null) {
+            summary.put("acceptanceComment", transaction.getAcceptanceComment());
+        }
+        
+        return summary;
+    }
+
+    // Helper method to create detailed transaction info for pending transactions
+    private Map<String, Object> createDetailedTransactionInfo(Transaction transaction) {
+        Map<String, Object> detailed = createTransactionSummary(transaction);
+        
+        // Add items detail for validation
+        if (transaction.getItems() != null) {
+            List<Map<String, Object>> items = transaction.getItems().stream()
+                .map(item -> {
+                    Map<String, Object> itemMap = new HashMap<>();
+                    itemMap.put("id", item.getId());
+                    itemMap.put("itemTypeId", item.getItemType().getId());
+                    itemMap.put("itemTypeName", item.getItemType().getName());
+                    itemMap.put("quantity", item.getQuantity());
+                    itemMap.put("measuringUnit", item.getItemType().getMeasuringUnit());
+                    // Fix the category issue - get the name instead of the object
+                    if (item.getItemType().getItemCategory() != null) {
+                        itemMap.put("category", item.getItemType().getItemCategory().getName());
+                    } else {
+                        itemMap.put("category", "Uncategorized");
+                    }
+                    itemMap.put("status", item.getStatus());
+                    return itemMap;
+                })
+                .collect(Collectors.toList());
+            detailed.put("items", items);
+        }
+        
+        // Add sender/receiver information
+        detailed.put("senderType", transaction.getSenderType());
+        detailed.put("senderId", transaction.getSenderId());
+        detailed.put("receiverType", transaction.getReceiverType());
+        detailed.put("receiverId", transaction.getReceiverId());
+        detailed.put("addedBy", transaction.getAddedBy());
+        
+        return detailed;
     }
 
     // Get maintenance analytics for equipment dashboard

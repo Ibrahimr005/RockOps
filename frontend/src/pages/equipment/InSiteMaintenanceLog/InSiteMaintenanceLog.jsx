@@ -1,6 +1,6 @@
 // InSiteMaintenanceLog.jsx
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { FaEdit, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye } from 'react-icons/fa';
 import { inSiteMaintenanceService } from '../../../services/inSiteMaintenanceService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -9,6 +9,7 @@ import './InSiteMaintenanceLog.scss';
 import MaintenanceTransactionModal from '../MaintenanceTransactionModal/MaintenanceTransactionModal';
 import MaintenanceAddModal from '../MaintenanceAddModal/MaintenanceAddModal';
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
+import TransactionViewModal from '../../warehouse/WarehouseViewTransactions/PendingTransactions/TransactionViewModal';
 
 const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, onAddTransactionClick, showAddButton = true, showHeader = true }, ref) => {
     const [maintenanceRecords, setMaintenanceRecords] = useState([]);
@@ -20,6 +21,8 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
     const [selectedMaintenanceId, setSelectedMaintenanceId] = useState(null);
     const [selectedBatchNumber, setSelectedBatchNumber] = useState(null);
     const [editingMaintenance, setEditingMaintenance] = useState(null);
+    const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState(null);
 
     const { showSuccess, showError, showInfo, showWarning, hideSnackbar } = useSnackbar();
 
@@ -30,6 +33,7 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
     const fetchMaintenanceRecords = async () => {
         try {
             setLoading(true);
+            showInfo("Loading maintenance records...");
             const response = await inSiteMaintenanceService.getByEquipmentId(equipmentId);
 
             // Transform data for display
@@ -59,10 +63,12 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
 
             setMaintenanceRecords(transformedData);
             setLoading(false);
+            showSuccess(`Successfully loaded ${transformedData.length} maintenance record${transformedData.length !== 1 ? 's' : ''}`);
         } catch (err) {
             console.error('Error fetching maintenance records:', err);
             setError(err.message);
             setLoading(false);
+            showError('Failed to load maintenance records. Please try again.');
         }
     };
 
@@ -73,9 +79,29 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
 
     useEffect(() => {
         if (equipmentId) {
+            showInfo("Initializing maintenance log...");
             fetchMaintenanceRecords();
         }
     }, [equipmentId]);
+
+    // Handle search functionality with feedback
+    const handleSearch = (term) => {
+        setSearchTerm(term);
+        if (term.trim()) {
+            const filteredCount = maintenanceRecords.filter(record =>
+                (record.technicianName?.toLowerCase() || '').includes(term.toLowerCase()) ||
+                (record.maintenanceType?.toLowerCase() || '').includes(term.toLowerCase()) ||
+                (record.description?.toLowerCase() || '').includes(term.toLowerCase()) ||
+                (record.status?.toLowerCase() || '').includes(term.toLowerCase())
+            ).length;
+            
+            if (filteredCount === 0) {
+                showWarning(`No maintenance records found matching "${term}"`);
+            } else {
+                showInfo(`Found ${filteredCount} maintenance record${filteredCount !== 1 ? 's' : ''} matching "${term}"`);
+            }
+        }
+    };
 
     // Filter maintenance records based on search term
     const filteredRecords = searchTerm
@@ -117,37 +143,52 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
 
     // Handle adding transaction to maintenance
     const handleAddTransactionToMaintenance = (record) => {
-        setSelectedMaintenanceId(record.id);
-        setSelectedBatchNumber(record.batchNumber || null);
-        setIsMaintenanceTransactionModalOpen(true);
+        try {
+            setSelectedMaintenanceId(record.id);
+            setSelectedBatchNumber(record.batchNumber || null);
+            setIsMaintenanceTransactionModalOpen(true);
+            showInfo("Opening transaction creation modal...");
+        } catch (error) {
+            showError("Failed to open transaction creation modal");
+            console.error("Error opening transaction modal:", error);
+        }
     };
 
     // Close maintenance transaction modal
-    const handleCloseTransactionModal = () => {
+    const handleCloseMaintenanceTransactionModal = () => {
         setIsMaintenanceTransactionModalOpen(false);
         setSelectedMaintenanceId(null);
         setSelectedBatchNumber(null);
+        showInfo("Transaction creation modal closed");
     };
 
     // Refresh after transaction added
     const handleTransactionAdded = () => {
+        showSuccess("Transaction added successfully! Refreshing maintenance records...");
         fetchMaintenanceRecords();
-        handleCloseTransactionModal();
+        handleCloseMaintenanceTransactionModal();
     };
 
     const handleRowClick = (row) => {
         // Handle row click logic here
         console.log('Row clicked:', row);
+        showInfo(`Selected maintenance record: ${row.maintenanceType} by ${row.technicianName}`);
     };
 
     const handleEditMaintenance = (row) => {
-        setEditingMaintenance(row);
-        setIsEditModalOpen(true);
+        try {
+            setEditingMaintenance(row);
+            setIsEditModalOpen(true);
+            showInfo(`Opening edit modal for maintenance: ${row.maintenanceType}`);
+        } catch (error) {
+            showError("Failed to open edit maintenance modal");
+            console.error("Error opening edit modal:", error);
+        }
     };
 
     const handleDeleteMaintenance = async (row) => {
         // Custom message with buttons
-        const message = `Are you sure you want to delete this maintenance record?`;
+        const message = `Are you sure you want to delete the maintenance record "${row.maintenanceType}" performed by ${row.technicianName}? This action cannot be undone.`;
 
         // Show persistent confirmation warning that won't auto-hide
         showWarning(message, 0, true);
@@ -166,12 +207,13 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                 yesButton.className = 'snackbar-action-button confirm';
                 yesButton.onclick = async () => {
                     try {
+                        showInfo('Deleting maintenance record...');
                         await inSiteMaintenanceService.delete(equipmentId, row.id);
                         fetchMaintenanceRecords(); // Refresh the list
-                        showSuccess('Maintenance record deleted successfully!');
+                        showSuccess(`Maintenance record "${row.maintenanceType}" deleted successfully!`);
                     } catch (error) {
                         console.error('Error deleting maintenance record:', error);
-                        showError('Failed to delete maintenance record. Please try again.');
+                        showError(`Failed to delete maintenance record "${row.maintenanceType}". Please try again.`);
                     }
                     hideSnackbar();
                 };
@@ -194,21 +236,103 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
     const handleCloseEditModal = () => {
         setIsEditModalOpen(false);
         setEditingMaintenance(null);
+        showInfo("Edit modal closed");
     };
 
     const handleMaintenanceUpdated = () => {
+        showSuccess("Maintenance record updated successfully! Refreshing list...");
         fetchMaintenanceRecords();
         handleCloseEditModal();
+    };
+
+    // View individual transaction details
+    const handleViewTransaction = (transaction) => {
+        try {
+            // Enrich transaction data for better display
+            const enrichedTransaction = {
+                ...transaction,
+                // Add computed sender/receiver names if not present
+                senderName: transaction.senderName || getEntityDisplayName(transaction.senderType, transaction.senderId),
+                receiverName: transaction.receiverName || getEntityDisplayName(transaction.receiverType, transaction.receiverId),
+                // Enrich items with proper item type names
+                items: transaction.items?.map(item => ({
+                    ...item,
+                    itemTypeName: item.itemTypeName || item.itemType?.name || "Unknown Item",
+                    itemCategory: item.itemCategory || item.itemType?.category || "Unknown Category"
+                })) || []
+            };
+            
+            setSelectedTransaction(enrichedTransaction);
+            setIsTransactionModalOpen(true);
+            showInfo(`Opening transaction details for batch #${transaction.batchNumber || 'N/A'}`);
+        } catch (error) {
+            showError("Failed to open transaction details");
+            console.error("Error opening transaction modal:", error);
+        }
+    };
+
+    // Helper function to get entity display name
+    const getEntityDisplayName = (entityType, entityId) => {
+        // For now, return a simplified display name
+        // In a full implementation, you might want to fetch entity details
+        switch (entityType) {
+            case 'WAREHOUSE':
+                return 'Warehouse';
+            case 'EQUIPMENT':
+                return 'Equipment';
+            case 'EMPLOYEE':
+                return 'Employee';
+            default:
+                return 'Unknown Entity';
+        }
+    };
+
+    // Close transaction view modal
+    const handleCloseTransactionModal = () => {
+        setIsTransactionModalOpen(false);
+        setSelectedTransaction(null);
+        showInfo("Transaction details closed");
     };
 
     // Define columns without the manual Actions column
     const columns = [
         { header: 'Technician', accessor: 'technicianName' },
-        { header: 'Date', accessor: 'maintenanceDate', body: (rowData) => formatDate(rowData.maintenanceDate) },
+        { header: 'Date', accessor: 'maintenanceDate', render: (rowData) => formatDate(rowData.maintenanceDate) },
         { header: 'Type', accessor: 'maintenanceType' },
-        { header: 'Description', accessor: 'description', body: (rowData) => rowData.description?.length > 50 ? `${rowData.description.substring(0, 50)}...` : rowData.description },
-        { header: 'Status', accessor: 'status', body: (rowData) => <span className={`r4m-status-badge r4m-${rowData.status.toLowerCase()}`}>{rowData.status}</span> },
-        { header: 'Related Transactions', accessor: 'transactionCount', body: (rowData) => rowData.transactionCount > 0 ? <button className="r4m-view-transactions-button" onClick={() => handleViewTransactions(rowData)}>{rowData.transactionCount} transaction{rowData.transactionCount !== 1 ? 's' : ''}</button> : <span className="r4m-no-transactions">None</span> }
+        { header: 'Description', accessor: 'description', render: (rowData) => rowData.description?.length > 50 ? `${rowData.description.substring(0, 50)}...` : rowData.description },
+        { header: 'Status', accessor: 'status', render: (rowData) => <span className={`r4m-status-badge r4m-${rowData.status.toLowerCase()}`}>{rowData.status}</span> },
+        { 
+            header: 'Transaction', 
+            accessor: 'transaction', 
+            render: (rowData) => {
+                if (!rowData.relatedTransactions || rowData.relatedTransactions.length === 0) {
+                    return (
+                        <span 
+                            className="r4m-no-transactions"
+                            title="No transactions linked to this maintenance record"
+                        >
+                            None
+                        </span>
+                    );
+                }
+                
+                // Show buttons for each transaction
+                return (
+                    <div className="r4m-transaction-buttons">
+                        {rowData.relatedTransactions.map((transaction, index) => (
+                            <button
+                                key={transaction.id || index}
+                                className="r4m-transaction-eye-button"
+                                title={`View Transaction ${transaction.batchNumber || 'Details'} - Status: ${transaction.status || 'Unknown'}`}
+                                onClick={() => handleViewTransaction(transaction)}
+                            >
+                                <FaEye />
+                            </button>
+                        ))}
+                    </div>
+                );
+            }
+        }
     ];
 
     // Define actions using DataTable's actions prop with proper styling
@@ -259,13 +383,24 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                         showSearch={true}
                         showFilters={true}
                         filterableColumns={filterableColumns}
-                        emptyStateMessage="No maintenance records found."
+                        emptyStateMessage={
+                            searchTerm 
+                                ? `No maintenance records found matching "${searchTerm}". Try different search terms or clear the search to see all records.`
+                                : "No maintenance records found. Create your first maintenance record using the Add button."
+                        }
                     />
                 ) }
             </div>
 
             {showAddButton && permissions.canCreate && (
-                <button className="r4m-add-maintenance-button" onClick={onAddMaintenanceClick}>
+                <button 
+                    className="r4m-add-maintenance-button" 
+                    onClick={() => {
+                        showInfo("Opening maintenance creation form...");
+                        onAddMaintenanceClick();
+                    }}
+                    title="Add new maintenance record"
+                >
                     <svg className="r4m-plus-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M12 5v14M5 12h14" />
                     </svg>
@@ -274,15 +409,22 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
 
             {/* Maintenance Transaction Modal */}
             {isMaintenanceTransactionModalOpen && (
-                <MaintenanceTransactionModal
-                    isOpen={isMaintenanceTransactionModalOpen}
-                    onClose={handleCloseTransactionModal}
-                    equipmentId={equipmentId}
-                    maintenanceId={selectedMaintenanceId}
-                    initialBatchNumber={selectedBatchNumber}
-                    onTransactionAdded={handleTransactionAdded}
-                />
+                            <MaintenanceTransactionModal
+                isOpen={isMaintenanceTransactionModalOpen}
+                onClose={handleCloseMaintenanceTransactionModal}
+                equipmentId={equipmentId}
+                maintenanceId={selectedMaintenanceId}
+                initialBatchNumber={selectedBatchNumber}
+                onTransactionAdded={handleTransactionAdded}
+            />
             )}
+
+            {/* Transaction View Modal */}
+            <TransactionViewModal
+                isOpen={isTransactionModalOpen}
+                onClose={handleCloseTransactionModal}
+                transaction={selectedTransaction}
+            />
 
             {/* Edit Maintenance Modal */}
             {isEditModalOpen && editingMaintenance && (

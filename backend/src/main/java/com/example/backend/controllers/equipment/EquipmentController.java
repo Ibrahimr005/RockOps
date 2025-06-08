@@ -184,16 +184,22 @@ public class EquipmentController {
 
         switch(category.toLowerCase()) {
             case "current":
-                // Regular inventory items (anything that's not STOLEN or OVERRECEIVED)
+                // Regular inventory items (anything that's not STOLEN or OVERRECEIVED and not resolved)
                 consumables = consumablesService.getRegularConsumables(equipmentId);
                 break;
             case "shortage":
-                // Items marked as STOLEN (underage)
-                consumables = consumablesService.getConsumablesByEquipmentIdAndStatus(equipmentId, ItemStatus.MISSING);
+                // Items marked as STOLEN (underage) and not resolved
+                consumables = consumablesService.getConsumablesByEquipmentIdAndStatus(equipmentId, ItemStatus.MISSING)
+                        .stream().filter(c -> !c.isResolved()).collect(Collectors.toList());
                 break;
             case "surplus":
-                // Items marked as OVERRECEIVED (overage)
-                consumables = consumablesService.getConsumablesByEquipmentIdAndStatus(equipmentId, ItemStatus.OVERRECEIVED);
+                // Items marked as OVERRECEIVED (overage) and not resolved
+                consumables = consumablesService.getConsumablesByEquipmentIdAndStatus(equipmentId, ItemStatus.OVERRECEIVED)
+                        .stream().filter(c -> !c.isResolved()).collect(Collectors.toList());
+                break;
+            case "resolved":
+                // Resolved items for history tab
+                consumables = consumablesService.getResolvedConsumables(equipmentId);
                 break;
             default:
                 // All consumables regardless of status

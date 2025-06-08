@@ -113,6 +113,11 @@ export const equipmentService = {
         return apiClient.get(EQUIPMENT_ENDPOINTS.CONSUMABLES(equipmentId));
     },
 
+    // Get equipment consumables by category (current, surplus, resolved)
+    getEquipmentConsumablesByCategory: (equipmentId, category) => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.CONSUMABLES_BY_CATEGORY(equipmentId, category));
+    },
+
     // Get equipment consumable analytics
     getConsumableAnalytics: (equipmentId) => {
         return apiClient.get(EQUIPMENT_ENDPOINTS.CONSUMABLES_ANALYTICS(equipmentId));

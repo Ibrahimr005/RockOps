@@ -6,6 +6,7 @@ import { siteService } from '../../../services/siteService';
 import { itemTypeService } from '../../../services/itemTypeService';
 import { warehouseService } from '../../../services/warehouseService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
+import InlineTransactionValidation from './InlineTransactionValidation';
 import './MaintenanceAddModal.scss';
 
 const MaintenanceAddModal = ({
@@ -41,7 +42,11 @@ const MaintenanceAddModal = ({
     const [batchVerificationResult, setBatchVerificationResult] = useState(null);
     const [isVerifyingBatch, setIsVerifyingBatch] = useState(false);
     const [showTransactionForm, setShowTransactionForm] = useState(false);
+    const [showInlineValidation, setShowInlineValidation] = useState(false);
+    const [pendingTransaction, setPendingTransaction] = useState(null);
+    const [isValidatingTransaction, setIsValidatingTransaction] = useState(false);
     const [inventoryByWarehouse, setInventoryByWarehouse] = useState({});
+    const [validationData, setValidationData] = useState(null);
 
     const { showSuccess, showWarning } = useSnackbar();
 
@@ -160,10 +165,15 @@ const MaintenanceAddModal = ({
             [name]: value
         }));
 
-        // Clear batch verification when batch number changes
+        // Automatically verify batch number when it changes
         if (name === 'batchNumber') {
             setBatchVerificationResult(null);
             setShowTransactionForm(false);
+            setShowInlineValidation(false);
+            setPendingTransaction(null);
+            if (value) {
+                verifyBatchNumberAutomatically(value);
+            }
         }
     };
 
@@ -236,6 +246,72 @@ const MaintenanceAddModal = ({
         }
     };
 
+    // Automatically verify batch number (without manual trigger)
+    const verifyBatchNumberAutomatically = async (batchNumber) => {
+        if (!batchNumber) {
+            return;
+        }
+
+        setIsVerifyingBatch(true);
+        try {
+            const response = await inSiteMaintenanceService.checkTransactionExists(equipmentId, batchNumber);
+            const data = response.data;
+
+            setBatchVerificationResult(data);
+
+            // Handle different scenarios based on the enhanced backend response
+            switch (data.scenario) {
+                case 'already_handled':
+                    // Scenario 1: Already accepted or rejected
+                    setShowTransactionForm(false);
+                    setShowInlineValidation(false);
+                    setPendingTransaction(null);
+                    break;
+
+                case 'pending_validation':
+                    // Scenario 2: Pending transaction - show inline validation
+                    setShowTransactionForm(false);
+                    setShowInlineValidation(true);
+                    setPendingTransaction(data.transaction);
+                    break;
+
+                case 'other_status':
+                    // Other status (e.g., DELIVERING, PARTIALLY_ACCEPTED)
+                    setShowTransactionForm(false);
+                    setShowInlineValidation(false);
+                    setPendingTransaction(null);
+                    break;
+
+                case 'not_found':
+                    // Scenario 3: No transaction found - show create form
+                    setShowTransactionForm(true);
+                    setShowInlineValidation(false);
+                    setPendingTransaction(null);
+                    break;
+
+                default:
+                    // Fallback
+                    setShowTransactionForm(false);
+                    setShowInlineValidation(false);
+                    setPendingTransaction(null);
+                    break;
+            }
+        } catch (error) {
+            console.error('Error verifying batch number:', error);
+            setBatchVerificationResult({
+                scenario: 'error',
+                found: false,
+                error: true,
+                message: "Error checking batch number. You can still create a new transaction below."
+            });
+            setShowTransactionForm(true);
+            setShowInlineValidation(false);
+            setPendingTransaction(null);
+        } finally {
+            setIsVerifyingBatch(false);
+        }
+    };
+
     const handleSiteChange = (e) => {
         const siteId = e.target.value;
         setSelectedSite(siteId);
@@ -289,9 +365,26 @@ const MaintenanceAddModal = ({
         return itemTypes.filter(itemType => !selectedItemTypeIds.includes(itemType.id));
     };
 
+
+
+    // Handle canceling inline validation
+    const handleCancelInlineValidation = () => {
+        setShowInlineValidation(false);
+        setPendingTransaction(null);
+        setBatchVerificationResult(null);
+        setFormData(prev => ({ ...prev, batchNumber: '' }));
+    };
+
     // Create or update maintenance record and transaction if needed
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Check if we have a pending transaction that needs validation
+        if (showInlineValidation && (!validationData || !validationData.isValid)) {
+            setError('Please complete the transaction validation form above.');
+            return;
+        }
+        
         setIsLoading(true);
         setError(null);
 
@@ -306,8 +399,15 @@ const MaintenanceAddModal = ({
                     formData
                 );
             } else {
-                // Create new maintenance record
-                maintenanceResponse = await inSiteMaintenanceService.create(equipmentId, formData);
+                // Create new maintenance record (include validation data if available)
+                const maintenancePayload = { ...formData };
+                if (validationData && pendingTransaction) {
+                    maintenancePayload.transactionValidation = {
+                        transactionId: pendingTransaction.id,
+                        ...validationData
+                    };
+                }
+                maintenanceResponse = await inSiteMaintenanceService.create(equipmentId, maintenancePayload);
             }
 
             console.log("Maintenance response:", maintenanceResponse.data);
@@ -479,37 +579,67 @@ const MaintenanceAddModal = ({
                             <div className="batch-checker">
                                 <div className="form-group">
                                     <label>Batch Number (optional)</label>
-                                    <div className="batch-input-group">
-                                        <input
-                                            type="number"
-                                            name="batchNumber"
-                                            value={formData.batchNumber}
-                                            onChange={handleInputChange}
-                                            placeholder="Enter batch number (optional)"
-                                        />
-                                        <button
-                                            type="button"
-                                            className="verify-button"
-                                            onClick={verifyBatchNumber}
-                                            disabled={isVerifyingBatch || !formData.batchNumber}
-                                        >
-                                            {isVerifyingBatch ? "Checking..." : "Verify"}
-                                        </button>
-                                    </div>
+                                    <input
+                                        type="number"
+                                        name="batchNumber"
+                                        value={formData.batchNumber}
+                                        onChange={handleInputChange}
+                                        onWheel={(e) => e.target.blur()}
+                                        placeholder="Enter batch number (optional)"
+                                    />
+                                    {isVerifyingBatch && (
+                                        <div className="batch-checking-indicator">
+                                            <span>Checking...</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {batchVerificationResult && (
-                                    <div className={`batch-result ${batchVerificationResult.error ? 'error' : batchVerificationResult.found ? 'success' : 'warning'}`}>
+                                    <div className={`batch-result ${
+                                        batchVerificationResult.scenario === 'already_handled' ? 'error' : 
+                                        batchVerificationResult.scenario === 'pending_validation' ? 'success' : 
+                                        batchVerificationResult.scenario === 'other_status' ? 'error' :
+                                        batchVerificationResult.scenario === 'not_found' ? 'warning' : 'error'
+                                    }`}>
                                         <p>{batchVerificationResult.message}</p>
-                                        {batchVerificationResult.found && batchVerificationResult.transaction && (
+                                        
+                                        {/* Show transaction details for already handled transactions */}
+                                        {batchVerificationResult.scenario === 'already_handled' && batchVerificationResult.transaction && (
                                             <div className="transaction-details">
                                                 <p><strong>Transaction Details:</strong></p>
                                                 <p>ID: {batchVerificationResult.transaction.id}</p>
                                                 <p>Status: {batchVerificationResult.transaction.status}</p>
-                                                <p>Items: {batchVerificationResult.transaction.items?.length || 0}</p>
+                                                <p>Items: {batchVerificationResult.transaction.itemCount || 0}</p>
+                                                {batchVerificationResult.viewUrl && (
+                                                    <p>
+                                                        <a href={batchVerificationResult.viewUrl} target="_blank" rel="noopener noreferrer">
+                                                            View Transaction Details
+                                                        </a>
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Show transaction details for other status transactions */}
+                                        {batchVerificationResult.scenario === 'other_status' && batchVerificationResult.transaction && (
+                                            <div className="transaction-details">
+                                                <p><strong>Transaction Details:</strong></p>
+                                                <p>ID: {batchVerificationResult.transaction.id}</p>
+                                                <p>Status: {batchVerificationResult.transaction.status}</p>
+                                                <p>Items: {batchVerificationResult.transaction.itemCount || 0}</p>
                                             </div>
                                         )}
                                     </div>
+                                )}
+
+                                {/* Show inline validation component for pending transactions */}
+                                {showInlineValidation && pendingTransaction && (
+                                    <InlineTransactionValidation
+                                        transaction={pendingTransaction}
+                                        onValidationDataChange={setValidationData}
+                                        onCancel={handleCancelInlineValidation}
+                                        isLoading={isValidatingTransaction}
+                                    />
                                 )}
                             </div>
 
@@ -576,6 +706,7 @@ const MaintenanceAddModal = ({
                                                         min="1"
                                                         value={item.quantity}
                                                         onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                                                        onWheel={(e) => e.target.blur()}
                                                         required
                                                     />
                                                 </div>
@@ -604,8 +735,20 @@ const MaintenanceAddModal = ({
                         <button type="button" className="cancel-button" onClick={onClose}>
                             Cancel
                         </button>
-                        <button type="submit" className="submit-button" disabled={isLoading}>
-                            {isLoading ? 'Saving...' : (isEditing ? 'Update Maintenance' : 'Create Maintenance')}
+                        <button 
+                            type="submit" 
+                            className="submit-button" 
+                            disabled={isLoading || isValidatingTransaction || (showInlineValidation && (!validationData || !validationData.isValid))}
+                        >
+                            {isLoading ? 'Saving...' : 
+                             isValidatingTransaction ? 'Processing...' :
+                             showInlineValidation && validationData && validationData.isValid 
+                                ? (validationData.action === 'accept' 
+                                    ? 'Create Maintenance & Accept Transaction' 
+                                    : 'Create Maintenance & Reject Transaction')
+                                : showInlineValidation 
+                                    ? 'Complete validation form above'
+                                    : (isEditing ? 'Update Maintenance' : 'Create Maintenance')}
                         </button>
                     </div>
                 </form>

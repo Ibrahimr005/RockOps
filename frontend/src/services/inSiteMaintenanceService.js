@@ -58,5 +58,13 @@ export const inSiteMaintenanceService = {
     // Get maintenance summary statistics
     getMaintenanceSummary: () => {
         return apiClient.get('/api/maintenance/summary');
+    },
+
+    // Validate transaction inline during maintenance creation
+    validateTransactionInline: (equipmentId, maintenanceId, transactionId, validationData) => {
+        return apiClient.post(
+            INSITE_MAINTENANCE_ENDPOINTS.VALIDATE_TRANSACTION(equipmentId, maintenanceId, transactionId), 
+            validationData
+        );
     }
 }; 

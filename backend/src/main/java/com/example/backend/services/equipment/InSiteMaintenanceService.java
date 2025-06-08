@@ -40,9 +40,9 @@ public class InSiteMaintenanceService {
     @Autowired
     private MaintenanceTypeService maintenanceTypeService;
 
-    // Get all maintenance records for equipment
+    // Get all maintenance records for equipment with related transactions
     public List<InSiteMaintenance> getMaintenanceByEquipmentId(UUID equipmentId) {
-        return inSiteMaintenanceRepository.findByEquipmentId(equipmentId);
+        return inSiteMaintenanceRepository.findByEquipmentIdWithTransactions(equipmentId);
     }
 
     // Create a new maintenance record
@@ -125,9 +125,13 @@ public class InSiteMaintenanceService {
         // Set the transaction purpose to MAINTENANCE if it's not already
         if (transaction.getPurpose() != TransactionPurpose.MAINTENANCE) {
             transaction.setPurpose(TransactionPurpose.MAINTENANCE);
-            transactionRepository.save(transaction);
         }
 
+        // Set the maintenance relationship on the transaction (bidirectional relationship)
+        transaction.setMaintenance(maintenance);
+        transactionRepository.save(transaction);
+
+        // Add transaction to maintenance if not already present
         if (!maintenance.getRelatedTransactions().contains(transaction)) {
             maintenance.getRelatedTransactions().add(transaction);
         }

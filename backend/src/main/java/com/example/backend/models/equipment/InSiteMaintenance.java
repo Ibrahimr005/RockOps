@@ -45,8 +45,7 @@ public class InSiteMaintenance {
     private String status; // e.g., "COMPLETED", "IN_PROGRESS"
 
     // Link to related transaction(s)
-    @OneToMany
-    @JoinColumn(name = "maintenance_id")
+    @OneToMany(mappedBy = "maintenance", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<Transaction> relatedTransactions = new ArrayList<>();
 }

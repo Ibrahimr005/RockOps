@@ -2,6 +2,11 @@ import apiClient from '../utils/apiClient';
 import { TRANSACTION_ENDPOINTS } from '../config/api.config';
 
 export const transactionService = {
+    // Get transaction by ID
+    getById: (transactionId) => {
+        return apiClient.get(TRANSACTION_ENDPOINTS.BY_ID(transactionId));
+    },
+
     // Get transaction by batch number
     getByBatchNumber: (batchNumber) => {
         return apiClient.get(TRANSACTION_ENDPOINTS.BY_BATCH(batchNumber));

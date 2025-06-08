@@ -144,38 +144,37 @@
   }
 }
 
-.batch-input-group {
+.batch-checking-indicator {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: var(--color-surface-hover);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
   display: flex;
+  align-items: center;
   gap: 8px;
 
-  input {
-    flex: 1;
-  }
-
-  .verify-button {
-    background-color: var(--color-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    padding: 0 16px;
+  span {
     color: var(--color-primary);
-    cursor: pointer;
-    transition: all var(--transition-normal);
-    white-space: nowrap;
     font-weight: var(--bold-font-weight);
-
-    &:hover {
-      color: var(--color-primary-dark);
-      border-color: var(--color-primary);
-      background-color: var(--color-surface-hover);
-    }
-
-    &:disabled {
-      color: var(--color-text-secondary);
-      border-color: var(--border-color);
-      cursor: not-allowed;
-      background-color: var(--color-surface-hover);
-    }
   }
+
+  &::before {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--color-primary);
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .batch-verification-result, .batch-result {

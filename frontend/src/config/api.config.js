@@ -13,6 +13,7 @@ export const EQUIPMENT_ENDPOINTS = {
     STATUS_DTO: (id) => `/api/equipment/status/dto/${id}`,
     BY_TYPE: (typeId) => `/api/equipment/type/${typeId}`,
     CONSUMABLES: (equipmentId) => `/api/equipment/${equipmentId}/consumables`,
+    CONSUMABLES_BY_CATEGORY: (equipmentId, category) => `/api/equipment/${equipmentId}/consumables/by-category/${category}`,
     CONSUMABLES_ANALYTICS: (equipmentId) => `/api/equipment/${equipmentId}/consumables/analytics`,
     MAINTENANCE: (equipmentId) => `/api/equipment/${equipmentId}/maintenance`,
     MAINTENANCE_TECHNICIANS: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/technicians`,
@@ -37,6 +38,14 @@ export const EQUIPMENT_ENDPOINTS = {
     ACCEPT_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept`,
     REJECT_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/reject`,
     UPDATE_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}`
+};
+
+// Consumable Resolution endpoints
+export const CONSUMABLE_ENDPOINTS = {
+    RESOLVE_DISCREPANCY: '/api/v1/consumables/resolve-discrepancy',
+    RESOLUTION_HISTORY: (equipmentId) => `/api/v1/consumables/resolution-history/equipment/${equipmentId}`,
+    DISCREPANCIES: (equipmentId) => `/api/v1/consumables/equipment/${equipmentId}/discrepancies`,
+    RESOLVED: (equipmentId) => `/api/v1/consumables/equipment/${equipmentId}/resolved`
 };
 
 // Equipment Types module endpoints
@@ -276,6 +285,7 @@ export const ATTENDANCE_ENDPOINTS = {
 export const TRANSACTION_ENDPOINTS = {
     BASE: '/api/v1/transactions',
     CREATE: '/api/v1/transactions/create',
+    BY_ID: (transactionId) => `/api/v1/transactions/${transactionId}`,
     BY_BATCH: (batchNumber) => `/api/v1/transactions/batch/${batchNumber}`,
     ACCEPT: (transactionId) => `/api/v1/transactions/${transactionId}/accept`,
     REJECT: (transactionId) => `/api/v1/transactions/${transactionId}/reject`,
@@ -323,7 +333,8 @@ export const INSITE_MAINTENANCE_ENDPOINTS = {
     DELETE: (equipmentId, maintenanceId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}`,
     TECHNICIANS: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/technicians`,
     LINK_TRANSACTION: (equipmentId, maintenanceId, transactionId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}/link-transaction/${transactionId}`,
-    CREATE_TRANSACTION: (equipmentId, maintenanceId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}/transaction`,
+    CREATE_TRANSACTION: (equipmentId, maintenanceId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}/transactions`,
     CHECK_TRANSACTION: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`,
+    VALIDATE_TRANSACTION: (equipmentId, maintenanceId, transactionId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}/validate-transaction/${transactionId}`,
     ANALYTICS: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/analytics`
 };

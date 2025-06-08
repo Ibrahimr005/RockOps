@@ -17,7 +17,9 @@ public class TransactionItemDTO {
     private UUID itemTypeId;
     private String itemTypeName;
     private String itemCategory;
+    private String itemUnit;
     private Integer quantity;
     private Integer receivedQuantity;
     private TransactionStatus status;
+    private String rejectionReason;
 } 

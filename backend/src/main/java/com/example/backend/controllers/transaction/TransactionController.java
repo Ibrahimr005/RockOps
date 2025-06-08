@@ -175,6 +175,22 @@ public class TransactionController {
         }
     }
 
+    @GetMapping("/{transactionId}")
+    public ResponseEntity<TransactionDTO> getTransactionById(@PathVariable UUID transactionId) {
+        try {
+            Optional<Transaction> transaction = transactionRepository.findById(transactionId);
+            if (transaction.isPresent()) {
+                TransactionDTO responseDTO = transactionMapperService.toDTO(transaction.get());
+                return ResponseEntity.ok(responseDTO);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
     @GetMapping("/batch/{batchNumber}")
     public ResponseEntity<TransactionDTO> findByBatchNumber(@PathVariable int batchNumber) {
         try {
