@@ -29,7 +29,14 @@ import {
     FaTruck,
     FaUser,
     FaUsers,
+<<<<<<< Updated upstream
     FaWarehouse
+=======
+    FaWarehouse,
+    FaTags,
+    FaListAlt,
+    FaBook
+>>>>>>> Stashed changes
 } from 'react-icons/fa';
 
 import logoImage from '../../../assets/logos/Logo.png';
@@ -171,9 +178,16 @@ const Sidebar = () => {
             title: 'Finance',
             icon: <FaFileInvoiceDollar/>,
             path: '/finance',
-            roles: ['ADMIN', 'USER', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
+            roles: ['ADMIN', 'USER', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE', 'SITE_ADMIN'],
             hasSubmenu: true,
-            submenuItems: []
+            submenuItems: [
+                {
+                title: 'General Ledger',
+                icon: <FaBook/>,
+                path: '/finance/general-ledger',
+                roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
+                },
+            ]
         },
         {
             title: 'Procurement',
