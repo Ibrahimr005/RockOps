@@ -12,6 +12,16 @@
     transition: background-color var(--transition-normal);
 }
 
+/*.navbar-content {*/
+/*    display: flex;*/
+/*    justify-content: space-between;*/
+/*    align-items: center;*/
+/*    padding: 0 20px;*/
+/*    height: 100%;*/
+/*    max-width: 1600px;*/
+/*    margin: 0 auto;*/
+/*}*/
+
 .navbar-content {
     display: flex;
     justify-content: space-between;
@@ -20,16 +30,16 @@
     height: 100%;
     max-width: 1600px;
     margin: 0 auto;
+    /* Remove position: relative */
 }
 
 .navbar-left {
     display: flex;
     align-items: center;
     gap: 15px;
+    padding-left: 140px; /* Move the spacing here */
 }
 
-/* Back button - COOL PRIMARY COLOR DESIGN */
-/* Back button - ENHANCED WITH THEME VARIABLES */
 .back-button {
     background: var(--color-primary);
     border: none;
@@ -45,10 +55,26 @@
     min-width: 64px;
     height: 44px;
     font-weight: var(--bold-font-weight);
-    margin-left: 140px;
+    /* Remove position: absolute and left: 160px */
     box-shadow: var(--shadow-sm), 0 1px 4px rgba(72, 128, 255, 0.15);
     position: relative;
     overflow: hidden;
+}
+
+/* Update mobile styles */
+@media (max-width: 768px) {
+    .navbar-left {
+        padding-left: 70px; /* Adjust for mobile */
+    }
+
+    .back-button {
+        min-width: 40px;
+        height: 40px;
+        font-size: 14px;
+        padding: 10px;
+        /* Remove margin-left: 180px; */
+        border-radius: var(--radius-sm);
+    }
 }
 
 .back-button svg {

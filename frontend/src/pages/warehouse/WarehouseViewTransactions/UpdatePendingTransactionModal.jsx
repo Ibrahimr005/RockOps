@@ -41,16 +41,45 @@ const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate,
     };
 
     // Initialize the form when the modal opens
+    // Initialize the form when the modal opens
     useEffect(() => {
         if (transaction && isOpen) {
-            // Set up basic transaction data
+            // 🔍 FULL TRANSACTION OBJECT LOG
+            console.log("🔍 FULL TRANSACTION OBJECT:", JSON.stringify(transaction, null, 2));
+
+            // 🔍 DEBUG: Log the incoming transaction data
+            console.log("🔍 DEBUG - Incoming transaction:", transaction);
+            console.log("🔍 DEBUG - Transaction items:", transaction.items);
+
+            // Check the structure of each item
+            if (transaction.items && transaction.items.length > 0) {
+                transaction.items.forEach((item, index) => {
+                    console.log(`🔍 DEBUG - Item ${index}:`, item);
+                    console.log(`  - Item Type ID:`, item.itemTypeId);
+                    console.log(`  - Item Type Name:`, item.itemTypeName);
+                    console.log(`  - Quantity:`, item.quantity);
+                });
+            }
+
+            // ✅ FIXED: Format items correctly based on actual API structure
+            const formattedItems = (transaction.items || []).map(item => ({
+                itemType: {
+                    id: item.itemTypeId || "",
+                    name: item.itemTypeName || "",
+                    measuringUnit: "" // Will be filled from warehouse items
+                },
+                quantity: item.quantity || 1
+            }));
+
+            console.log("🔍 DEBUG - Formatted items for form:", formattedItems);
+
             setUpdatedTransaction({
                 ...transaction,
                 senderType: transaction.senderType || "",
                 senderId: transaction.senderId || "",
                 receiverType: transaction.receiverType || "",
                 receiverId: transaction.receiverId || "",
-                items: transaction.items || [{ itemType: { id: "" }, quantity: 1 }],
+                items: formattedItems,
                 transactionDate: formatDateTimeForInput(transaction.transactionDate),
                 batchNumber: transaction.batchNumber || ""
             });
@@ -58,27 +87,33 @@ const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate,
             // Determine transaction role based on warehouseId
             if (transaction.senderId === warehouseId) {
                 setTransactionRole("sender");
-                if (transaction.receiverId) {
-                    fetchEntitySite(transaction.receiverType, transaction.receiverId).then(siteId => {
-                        if (siteId) {
-                            setSelectedReceiverSite(siteId);
-                        }
+
+                // ✅ NEW: Pre-populate receiver site and type from existing transaction data
+                if (transaction.receiver && transaction.receiver.site) {
+                    setSelectedReceiverSite(transaction.receiver.site.id);
+
+                    // Fetch receiver options for this site and type
+                    fetchEntitiesBySiteAndType(transaction.receiver.site.id, transaction.receiverType).then(entities => {
+                        setReceiverOptions(entities);
                     });
                 }
+
             } else if (transaction.receiverId === warehouseId) {
                 setTransactionRole("receiver");
-                if (transaction.senderId) {
-                    fetchEntitySite(transaction.senderType, transaction.senderId).then(siteId => {
-                        if (siteId) {
-                            setSelectedSenderSite(siteId);
-                        }
+
+                // ✅ NEW: Pre-populate sender site and type from existing transaction data
+                if (transaction.sender && transaction.sender.site) {
+                    setSelectedSenderSite(transaction.sender.site.id);
+
+                    // Fetch sender options for this site and type
+                    fetchEntitiesBySiteAndType(transaction.sender.site.id, transaction.senderType).then(entities => {
+                        setSenderOptions(entities);
                     });
                 }
             }
 
             // Fetch dependent data
             fetchWarehouseData();
-            fetchAvailableItems();
             fetchAllSites();
         }
     }, [transaction, isOpen, warehouseId]);
@@ -101,6 +136,52 @@ const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate,
                 });
         }
     }, [selectedReceiverSite, updatedTransaction.receiverType, transactionRole]);
+
+    // Fetch available items when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            fetchAvailableItems();
+        }
+    }, [isOpen, warehouseId]);
+
+    // Enrich items with details once warehouse items are loaded
+    useEffect(() => {
+        if (items.length > 0 && updatedTransaction.items && updatedTransaction.items.length > 0) {
+            console.log("🔍 DEBUG - Enriching items with warehouse data");
+            console.log("Available warehouse items:", items);
+
+            const enrichedItems = updatedTransaction.items.map(transactionItem => {
+                const itemTypeId = transactionItem.itemType?.id;
+
+                if (!itemTypeId) return transactionItem;
+
+                // Find matching warehouse item to get full details
+                const matchingWarehouseItem = items.find(warehouseItem =>
+                    warehouseItem.itemType?.id === itemTypeId
+                );
+
+                if (matchingWarehouseItem) {
+                    return {
+                        ...transactionItem,
+                        itemType: {
+                            id: itemTypeId,
+                            name: matchingWarehouseItem.itemType.name,
+                            measuringUnit: matchingWarehouseItem.itemType.measuringUnit || ""
+                        }
+                    };
+                }
+
+                return transactionItem;
+            });
+
+            console.log("🔍 DEBUG - Enriched items:", enrichedItems);
+
+            setUpdatedTransaction(prev => ({
+                ...prev,
+                items: enrichedItems
+            }));
+        }
+    }, [items]);
 
     // Format date-time for input fields
     const formatDateTimeForInput = (dateTimeString) => {
@@ -434,11 +515,25 @@ const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate,
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to update transaction");
+                let errorMessage = `Server error: ${response.status}`;
+                try {
+                    const errorData = await response.text();
+                    console.log("Server error response:", errorData);
+                    errorMessage = errorData || errorMessage;
+                } catch (e) {
+                    console.log("Could not parse error response");
+                }
+                throw new Error(errorMessage);
             }
 
-            return await response.json();
+            const responseText = await response.text();
+            console.log("Server response:", responseText);
+
+            if (!responseText) {
+                throw new Error("Empty response from server");
+            }
+
+            return JSON.parse(responseText);
         } catch (error) {
             console.error("API Error:", error);
             throw error;
@@ -523,18 +618,13 @@ const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate,
             // Call the API
             const updatedTransactionResponse = await updateTransactionAPI(transactionData);
 
-            // Show success message
-            showSnackbar('success', 'Transaction updated successfully!');
 
-            // Notify parent component of successful update
             if (onUpdate) {
-                onUpdate(updatedTransactionResponse);
+                console.log("🔄 Calling parent refresh");
+                onUpdate();
             }
+            onClose();
 
-            // Close modal after a short delay to show the success message
-            setTimeout(() => {
-                onClose();
-            }, 1500);
         } catch (error) {
             showSnackbar('error', error.message || 'Failed to update transaction. Please try again.');
             setError(error.message || "Failed to update transaction");
@@ -725,6 +815,12 @@ const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate,
                                             required
                                         >
                                             <option value="" disabled>Select Item Type</option>
+                                            {/* Show current item type even if not in available list */}
+                                            {item.itemType?.id && item.itemType?.name && !getAvailableItemTypes(index).find(availableItem => availableItem.itemType.id === item.itemType.id) && (
+                                                <option value={item.itemType.id}>
+                                                    {item.itemType.name} (current)
+                                                </option>
+                                            )}
                                             {renderItemOptions(index)}
                                         </select>
                                     </div>

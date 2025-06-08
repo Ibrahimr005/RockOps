@@ -110,11 +110,6 @@
   position: relative;
   overflow: hidden;
 
-  [data-theme="light"] & {
-    background: linear-gradient(135deg, var(--light-modal-bg) 0%, var(--light-surface) 100%);
-    border-bottom: 1px solid var(--light-border-light);
-  }
-
   /* Decorative background elements */
   &::before {
     position: absolute;
@@ -177,58 +172,51 @@
     }
   }
 
-  .warehouse-transaction-view-close-button,
-  .close-button {
-    background: var(--color-surface);
-    border: 1px solid var(--border-color);
-    padding: 12px;
+  .warehouse-transaction-view-close-button2,
+  .close-button2 {
+    background: transparent;
+    border: none;
+    padding: 8px;
     cursor: pointer;
-    border-radius: 14px;
+    border-radius: 50%;
     color: var(--color-text-secondary);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease;
     position: relative;
     z-index: 1;
-    overflow: hidden;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     [data-theme="light"] & {
-      background: var(--light-surface);
-      border: 1px solid var(--light-border);
       color: var(--light-text-secondary);
 
       &:hover {
-        background: var(--light-surface-hover);
+        background: rgba(0, 0, 0, 0.1);
         color: var(--light-text-primary);
-        box-shadow: var(--light-shadow-md);
       }
-    }
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      background: var(--color-danger);
-      border-radius: 50%;
-      transition: all 0.3s ease;
-      transform: translate(-50%, -50%);
-      z-index: -1;
     }
 
     &:hover {
-      background-color: #6b7280;
-      color: white;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--color-text-primary);
+      transform: scale(1.1);
+    }
 
-      svg {
-        color: white;
-      }
+    &:active {
+      transform: scale(0.95);
     }
 
     svg {
-      width: 24px;
-      height: 24px;
-      transition: all 0.3s ease;
+      width: 20px;
+      height: 20px;
+      transition: all 0.2s ease;
+      stroke-width: 2.5;
+    }
+
+    &:hover svg {
+      stroke-width: 3;
     }
   }
 }

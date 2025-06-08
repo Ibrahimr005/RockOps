@@ -15,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -86,9 +88,22 @@ public class ItemController {
             int initialQuantity = (int) request.get("initialQuantity");
             String username = request.get("username").toString();
 
-            Item newItem = itemService.createItem(itemTypeId, warehouseId, initialQuantity,username);
+            // Convert date string to LocalDateTime
+            String dateString = (String) request.get("createdAt");
+            LocalDateTime createdAt;
+            if (dateString != null && !dateString.isEmpty()) {
+                // Parse YYYY-MM-DD and set time to start of day
+                LocalDate date = LocalDate.parse(dateString);
+                createdAt = date.atStartOfDay();
+            } else {
+                createdAt = LocalDateTime.now();
+            }
+
+            Item newItem = itemService.createItem(itemTypeId, warehouseId, initialQuantity, username, createdAt);
             return ResponseEntity.ok(newItem);
         } catch (Exception e) {
+            System.err.println("Error creating item: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(null);
         }
     }

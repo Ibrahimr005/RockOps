@@ -54,7 +54,7 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
                 const validatedData = await Promise.all(
                     data
                         .filter(tx =>
-                            (tx.status === "ACCEPTED" || tx.status === "REJECTED") &&
+                            (tx.status === "ACCEPTED" || tx.status === "REJECTED" || tx.status === "RESOLVING" || tx.status === "RESOLVED") &&
                             (tx.senderId === warehouseId || tx.receiverId === warehouseId)
                         )
                         .map(async (tx) => {

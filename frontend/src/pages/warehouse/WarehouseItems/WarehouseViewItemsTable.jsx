@@ -19,7 +19,8 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
   const [addItemData, setAddItemData] = useState({
     itemCategoryId: "",
     itemTypeId: "",
-    initialQuantity: ""
+    initialQuantity: "",
+    createdAt: new Date().toISOString().split('T')[0] // Default to today's date
   });
 
   const [addItemLoading, setAddItemLoading] = useState(false);
@@ -295,7 +296,8 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
     setAddItemData({
       itemCategoryId: "",
       itemTypeId: "",
-      initialQuantity: ""
+      initialQuantity: "",
+      createdAt: new Date().toISOString().split('T')[0] // Default to today's date
     });
     setIsAddItemModalOpen(true);
   };
@@ -331,7 +333,7 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
   const handleAddItemSubmit = async (e) => {
     e.preventDefault();
 
-    if (!addItemData.itemTypeId || !addItemData.initialQuantity) {
+    if (!addItemData.itemTypeId || !addItemData.initialQuantity || !addItemData.createdAt) {
       showSnackbar("Please fill in all fields", "error");
       return;
     }
@@ -369,7 +371,8 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
           itemTypeId: addItemData.itemTypeId,
           warehouseId: warehouseId,
           initialQuantity: parseInt(addItemData.initialQuantity),
-          username: username
+          username: username,
+          createdAt: addItemData.createdAt
         }),
       });
 
@@ -550,17 +553,21 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
   };
 
   const getResolutionTypeLabel = (resolutionType) => {
+
     switch (resolutionType) {
       case 'ACKNOWLEDGE_LOSS':
         return 'Acknowledge Loss';
+
+
       case 'FOUND_ITEMS':
         return 'Items Found';
-      case 'REPORT_THEFT':
-        return 'Report Theft';
+
       case 'ACCEPT_SURPLUS':
         return 'Accept Surplus';
-      case 'RETURN_TO_SENDER':
-        return 'Return to Sender';
+
+      case 'COUNTING_ERROR':
+        return 'Counting Error';
+
       default:
         return resolutionType;
     }
@@ -1043,7 +1050,6 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
                             <>
                               <option value="ACKNOWLEDGE_LOSS">Acknowledge Loss</option>
                               <option value="FOUND_ITEMS">Items Found</option>
-                              <option value="REPORT_THEFT">Report Theft</option>
                             </>
                         ) : (
                             <>
@@ -1070,16 +1076,15 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
                     <div className="resolution-confirmation">
                       <p className="resolution-confirmation-text">
                         {resolutionData.resolutionType === 'ACKNOWLEDGE_LOSS' &&
-                            "You are confirming that these items are lost and will be removed from inventory."}
+                            "You are confirming that these items are lost and will be not be added to the inventory."}
 
                         {resolutionData.resolutionType === 'FOUND_ITEMS' &&
                             "You are confirming items were found and will be returned to regular inventory."}
-                        {resolutionData.resolutionType === 'REPORT_THEFT' &&
-                            "You are reporting theft. This will be logged and items will be written off."}
                         {resolutionData.resolutionType === 'ACCEPT_SURPLUS' &&
-                            "You are accepting the surplus items into regular inventory."}
-                        {resolutionData.resolutionType === 'RETURN_TO_SENDER' &&
-                            "You are initiating a return of these items to the sender."}
+                            "You are accepting the surplus items that are already in your regular inventory."}
+                        {resolutionData.resolutionType === 'COUNTING_ERROR' &&
+                            "You are confirming this was a counting error. The excess quantity will be deducted from the original transaction inventory."}
+
                       </p>
                     </div>
 
@@ -1330,7 +1335,7 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
                     </div>
 
                     <div className="add-item-form-group">
-                      <label htmlFor="initialQuantity">Initial Quantity</label>
+                      <label htmlFor="initialQuantity">Quantity</label>
                       <input
                           type="number"
                           id="initialQuantity"
@@ -1339,6 +1344,19 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
                           onChange={handleAddItemInputChange}
                           placeholder="Enter quantity"
                           min="1"
+                          required
+                      />
+                    </div>
+
+                    {/* NEW DATE INPUT FIELD */}
+                    <div className="add-item-form-group">
+                      <label htmlFor="createdAt">Date</label>
+                      <input
+                          type="date"
+                          id="createdAt"
+                          name="createdAt"
+                          value={addItemData.createdAt}
+                          onChange={handleAddItemInputChange}
                           required
                       />
                     </div>
@@ -1372,7 +1390,7 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
                       <button
                           type="submit"
                           className="add-item-submit-button"
-                          disabled={!addItemData.itemTypeId || !addItemData.initialQuantity || addItemLoading}
+                          disabled={!addItemData.itemTypeId || !addItemData.initialQuantity || !addItemData.createdAt || addItemLoading}
                       >
                         {addItemLoading ? (
                             <>

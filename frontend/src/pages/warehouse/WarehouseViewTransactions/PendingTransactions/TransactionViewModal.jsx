@@ -33,6 +33,11 @@ const TransactionViewModal = ({ transaction, isOpen, onClose, hideItemQuantities
         return `warehouse-transaction-view-status-badge ${status?.toLowerCase() || 'unknown'}`;
     };
 
+    // Get item name from the correct property
+    const getItemName = (item) => {
+        return item.itemTypeName || "Unknown Item";
+    };
+
     // Check if there are any item rejection reasons
     const hasItemRejections = transaction.items?.some(item => item.rejectionReason);
 
@@ -42,7 +47,7 @@ const TransactionViewModal = ({ transaction, isOpen, onClose, hideItemQuantities
                 {/* Modal Header */}
                 <div className="warehouse-transaction-view-modal-header">
                     <h2>Transaction Details</h2>
-                    <button className="warehouse-transaction-view-close-button" onClick={onClose}>
+                    <button className="warehouse-transaction-view-close-button2" onClick={onClose}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
                             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -115,22 +120,32 @@ const TransactionViewModal = ({ transaction, isOpen, onClose, hideItemQuantities
                                 {transaction.items.map((item, index) => (
                                     <div key={index} className="warehouse-transaction-view-item-card">
                                         <div className="warehouse-transaction-view-item-header">
-                                            <h4>{item.itemType?.name || "Unknown Item"}</h4>
-                                            {!hideItemQuantities && (
-                                                <span className="warehouse-transaction-view-item-quantity">Qty: {item.quantity}</span>
-                                            )}
+                                            <h4>{getItemName(item)}</h4>
                                         </div>
                                         <div className="warehouse-transaction-view-item-details">
-                                            {item.itemType?.description && (
+                                            {item.itemCategory && (
                                                 <div className="warehouse-transaction-view-item-detail">
-                                                    <label>Description</label>
-                                                    <span>{item.itemType.description}</span>
+                                                    <label>Category</label>
+                                                    <span>{item.itemCategory}</span>
+                                                </div>
+                                            )}
+
+                                            {item.status && (
+                                                <div className="warehouse-transaction-view-item-detail">
+                                                    <label>Status</label>
+                                                    <span className={`item-status ${item.status.toLowerCase()}`}>
+                                                        {item.status}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {item.rejectionReason && (
+                                                <div className="warehouse-transaction-view-item-detail">
+                                                    <label>Rejection Reason</label>
+                                                    <span>{item.rejectionReason}</span>
                                                 </div>
                                             )}
                                         </div>
-
-
-
                                     </div>
                                 ))}
                             </div>
@@ -205,46 +220,16 @@ const TransactionViewModal = ({ transaction, isOpen, onClose, hideItemQuantities
                         </div>
                     </div>
 
-                    {/* Comments & Rejection Reasons */}
-                    {(transaction.acceptanceComment || hasItemRejections) && (
+                    {/* Comments & Rejection Reasons - Keep only transaction-level comments */}
+                    {transaction.acceptanceComment && (
                         <div className="warehouse-transaction-view-comments">
                             <h3>Comments & Notes</h3>
 
                             {/* Transaction-level acceptance comment only */}
-                            {transaction.acceptanceComment && (
-                                <div className="warehouse-transaction-view-comment-item warehouse-transaction-view-acceptance">
-                                    <label>Acceptance Comment</label>
-                                    <p>{transaction.acceptanceComment}</p>
-                                </div>
-                            )}
-
-                            {/* Item-level rejection reasons */}
-                            {hasItemRejections && (
-                                <div className="warehouse-transaction-view-item-rejections">
-                                    <div className="warehouse-transaction-view-item-rejection-header">
-                                        Item Rejection Details
-                                    </div>
-                                    {transaction.items
-                                        .filter(item => item.rejectionReason)
-                                        .map((item, index) => (
-                                            <div key={index} className="warehouse-transaction-view-item-rejection-item">
-                                                <div className="item-rejection-header">
-                                                    <span className="item-name">
-                                                        {item.itemType?.name || "Unknown Item"}
-                                                    </span>
-                                                    {!hideItemQuantities && (
-                                                        <span className="item-quantity">
-                                                            Qty: {item.quantity}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <p className="item-rejection-reason">
-                                                    {item.rejectionReason}
-                                                </p>
-                                            </div>
-                                        ))}
-                                </div>
-                            )}
+                            <div className="warehouse-transaction-view-comment-item warehouse-transaction-view-acceptance">
+                                <label>Acceptance Comment</label>
+                                <p>{transaction.acceptanceComment}</p>
+                            </div>
                         </div>
                     )}
 

@@ -276,11 +276,7 @@ public class TransactionService {
                 System.out.println("⚙️ Receiver is equipment - no immediate changes (equipment logic preserved)");
             }
 
-            // Still validate sender has inventory for validation purposes only
-            if (senderType == PartyType.WAREHOUSE || senderType == PartyType.EQUIPMENT) {
-                validateSenderHasAvailableInventory(senderType, senderId, items);
-                System.out.println("✅ Validated sender has sufficient inventory (validation only)");
-            }
+
         }
 
         Transaction transaction = buildTransaction(
@@ -412,7 +408,7 @@ public class TransactionService {
             // Check if quantities match
             if (senderClaimedQuantity != receiverClaimedQuantity) {
                 allItemsMatch = false;
-                String reason = String.format("Quantity mismatch: Sender claimed %d, Receiver claimed %d",
+                String reason = String.format("Quantity mismatch between quantity sent and quantity received",
                         senderClaimedQuantity, receiverClaimedQuantity);
                 item.setStatus(TransactionStatus.REJECTED);
                 item.setRejectionReason(reason);
@@ -480,15 +476,21 @@ public class TransactionService {
     /**
      * 🆕 NEW METHOD: Handles inventory for sender-initiated transactions
      */
+    /**
+     * 🚨 FIXED METHOD: Handles inventory for sender-initiated transactions
+     */
+    /**
+     * 🚨 FIXED METHOD: Handles inventory for sender-initiated transactions
+     */
     private void handleSenderInitiatedInventoryChanges(Transaction transaction, TransactionItem item,
                                                        int senderClaimedQuantity, int receiverClaimedQuantity) {
         System.out.println("📤 Handling sender-initiated inventory changes");
 
         // Sender already deducted during creation, now handle receiver side
         if (transaction.getReceiverType() == PartyType.WAREHOUSE) {
-            // 🚨 FIXED: Add only what sender claims they sent, NOT what receiver claims they got
-            System.out.println("🏭 Adding to warehouse what SENDER claims they sent: " + senderClaimedQuantity);
-            addToWarehouseInventory(transaction, item, senderClaimedQuantity);
+            // 🚨 FIXED: Add only what RECEIVER claims they got, NOT what sender claims they sent
+            System.out.println("🏭 Adding to warehouse what RECEIVER claims they got: " + receiverClaimedQuantity);
+            addToWarehouseInventory(transaction, item, receiverClaimedQuantity);
         }
         // Equipment receiver handling unchanged (preserve equipment logic)
 
@@ -509,7 +511,6 @@ public class TransactionService {
         // Handle discrepancies - this will create OVERRECEIVED entry for the extra 2
         handleQuantityDiscrepanciesFixed(transaction, item, senderClaimedQuantity, receiverClaimedQuantity);
     }
-
     /**
      * 🆕 NEW METHOD: Handles inventory for receiver-initiated transactions
      */
@@ -521,7 +522,7 @@ public class TransactionService {
         if (transaction.getSenderType() == PartyType.WAREHOUSE) {
             // 🚨 FIXED: Deduct only what receiver claims they got, NOT what sender claims they sent
             System.out.println("🏭 Deducting from warehouse what RECEIVER claims they got: " + receiverClaimedQuantity);
-            deductFromWarehouseInventory(transaction.getSenderId(), item.getItemType(), receiverClaimedQuantity);
+            deductFromWarehouseInventory(transaction.getSenderId(), item.getItemType(), senderClaimedQuantity);
         }
         // Equipment sender handling unchanged (preserve equipment logic)
 
@@ -981,7 +982,7 @@ public class TransactionService {
             PartyType receiverType, UUID receiverId, List<TransactionItem> updatedItems,
             LocalDateTime transactionDate, String username, int batchNumber, TransactionPurpose purpose) {
 
-        System.out.println("🔄 Updating transaction with immediate inventory handling");
+        System.out.println("🔄 Updating transaction with foreign key safe handling");
 
         Transaction transaction = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
@@ -993,30 +994,14 @@ public class TransactionService {
         validateEntityExists(senderType, senderId);
         validateEntityExists(receiverType, receiverId);
 
-        // Track if roles are changing
-        boolean senderRoleChanged = !transaction.getSenderId().equals(senderId) || transaction.getSenderType() != senderType;
-        boolean receiverRoleChanged = !transaction.getReceiverId().equals(receiverId) || transaction.getReceiverType() != receiverType;
-        boolean initiatorChanged = !transaction.getSentFirst().equals(senderId) && !transaction.getSentFirst().equals(receiverId);
+        System.out.println("📊 Safe update - preserving foreign key relationships");
 
-        System.out.println("🔍 Role change analysis:");
-        System.out.println("  - Sender changed: " + senderRoleChanged);
-        System.out.println("  - Receiver changed: " + receiverRoleChanged);
-        System.out.println("  - Initiator changed: " + initiatorChanged);
-
-        // Handle inventory adjustments for role changes
-        if (senderRoleChanged || receiverRoleChanged || initiatorChanged) {
-            handleTransactionRoleChangeInventoryAdjustmentsWithImmediateUpdates(transaction, senderType, senderId, receiverType, receiverId, updatedItems);
-        } else {
-            // Only quantities are changing, handle accordingly
-            handleQuantityOnlyUpdatesWithImmediateInventory(transaction, senderType, senderId, receiverType, receiverId, updatedItems);
-        }
-
-        // Validate new sender/receiver has inventory if needed
+        // Validate new sender has inventory if they are warehouse and initiator
         if (transaction.getSentFirst().equals(senderId) && senderType == PartyType.WAREHOUSE) {
             validateSenderHasAvailableInventory(senderType, senderId, updatedItems);
         }
 
-        // Update transaction details
+        // Update transaction details (not items yet)
         transaction.setSenderType(senderType);
         transaction.setSenderId(senderId);
         transaction.setReceiverType(receiverType);
@@ -1029,14 +1014,31 @@ public class TransactionService {
             transaction.setPurpose(purpose);
         }
 
-        // Update items
-        transaction.getItems().clear();
-        for (TransactionItem item : updatedItems) {
-            item.setTransaction(transaction);
-            item.setStatus(TransactionStatus.PENDING);
-            transaction.getItems().add(item);
+        // 🚨 SAFE ITEM UPDATE: Update existing items instead of clearing
+        List<TransactionItem> existingItems = transaction.getItems();
+
+        // If number of items changed, we need special handling
+        if (existingItems.size() != updatedItems.size()) {
+            System.out.println("⚠️ Number of items changed - this update is not fully supported yet");
+            throw new IllegalArgumentException("Cannot change number of items in transaction update - please create a new transaction");
         }
 
+        // Update existing items with new values
+        for (int i = 0; i < existingItems.size(); i++) {
+            TransactionItem existingItem = existingItems.get(i);
+            TransactionItem updatedItem = updatedItems.get(i);
+
+            // Update the existing item's properties
+            existingItem.setItemType(updatedItem.getItemType());
+            existingItem.setQuantity(updatedItem.getQuantity());
+            existingItem.setStatus(TransactionStatus.PENDING);
+
+            System.out.println("✅ Updated item " + i + ": " + updatedItem.getItemType().getName() + " -> " + updatedItem.getQuantity());
+            System.out.println("   - Old values: " + existingItem.getItemType().getName() + " = " + existingItem.getQuantity());
+            System.out.println("   - New values: " + updatedItem.getItemType().getName() + " = " + updatedItem.getQuantity());
+        }
+
+        System.out.println("✅ Transaction update completed successfully");
         return transactionRepository.save(transaction);
     }
 

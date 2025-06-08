@@ -17,7 +17,7 @@ const Navbar = () => {
 
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [navigationHistory, setNavigationHistory] = useState([]);
+    const [navigationHistory, setNavigationHistory] = useState(['/login']);
 
     // Always show the back button
     const showBackButton = true;
@@ -25,9 +25,14 @@ const Navbar = () => {
     // Track navigation history to avoid going back to login
     useEffect(() => {
         setNavigationHistory(prev => {
-            const newHistory = [...prev, location.pathname];
-            // Keep only last 10 entries to prevent memory issues
-            return newHistory.slice(-10);
+            // Only add if it's different from the last page
+            const lastPage = prev[prev.length - 1];
+            if (lastPage !== location.pathname) {
+                const newHistory = [...prev, location.pathname];
+                // Keep only last 10 entries to prevent memory issues
+                return newHistory.slice(-10);
+            }
+            return prev;
         });
     }, [location.pathname]);
 
@@ -59,21 +64,18 @@ const Navbar = () => {
     };
 
     const handleBackClick = () => {
-        // Simple but effective: if we're not on a deep navigation path,
-        // or if this might be the first page after login, go to dashboard
-        const currentPath = location.pathname;
+        console.log('=== BACK BUTTON CLICKED ===');
+        console.log('Navigation history:', navigationHistory);
 
-        // Always redirect to dashboard if we suspect this might go back to login
-        if (window.history.length <= 2 ||
-            currentPath === '/dashboard' ||
-            currentPath === '/' ||
-            navigationHistory.length <= 1) {
+        const previousPage = navigationHistory.length > 1 ? navigationHistory[navigationHistory.length - 2] : null;
+        console.log('Previous page:', previousPage);
+
+        if (window.history.length <= 2 || previousPage === '/login') {
             console.log('Redirecting to dashboard to avoid login page');
             navigate('/dashboard');
             return;
         }
 
-        // For deeper navigation, allow normal back behavior
         console.log('Normal back navigation');
         navigate(-1);
     };

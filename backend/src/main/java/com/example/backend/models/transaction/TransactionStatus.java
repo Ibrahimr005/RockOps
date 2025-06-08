@@ -5,5 +5,7 @@ public enum TransactionStatus {
     DELIVERING,
     ACCEPTED,
     REJECTED,
-    PARTIALLY_ACCEPTED
+    PARTIALLY_ACCEPTED,
+    RESOLVING,
+    RESOLVED
 }

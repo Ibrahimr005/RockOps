@@ -141,49 +141,13 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
     };
 
     // Function to handle update transaction
-    const handleUpdateTransaction = async (updatedData) => {
-        try {
-            const token = localStorage.getItem("token");
-
-            // Create a proper request body
-            const requestBody = {
-                ...updatedData,
-                // Ensure we send the IDs, not entire object references
-                items: updatedData.items.map(item => ({
-                    id: item.id, // Include ID if it exists
-                    itemType: {
-                        id: item.itemType.id
-                    },
-                    quantity: parseInt(item.quantity)
-                }))
-            };
-
-            const response = await fetch(`http://localhost:8080/api/v1/transactions/${updatedData.id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (response.ok) {
-                // Refresh the transactions list
-                await fetchPendingTransactions();
-
-                // Show success snackbar
-                showSnackbar("Transaction successfully updated", "success");
-                return true;
-            } else {
-                const errorData = await response.json();
-                showSnackbar("Failed to update transaction", "error");
-                throw new Error(errorData.message || "Failed to update transaction");
-            }
-        } catch (error) {
-            console.error("Error updating transaction:", error);
-            showSnackbar("Error updating transaction", "error");
-            throw error;
-        }
+    // Function to handle update transaction
+// Function to handle update transaction
+// Function to handle update transaction
+    const handleUpdateTransaction = async () => {
+        console.log("🔄 Refreshing transactions after update");
+        await fetchPendingTransactions();
+        showSnackbar("Transaction successfully updated", "success");
     };
 
     // Function to close the update modal
@@ -373,9 +337,9 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                 />
             )}
 
-            {/* Snackbar Component */}
+
             <Snackbar
-                isOpen={snackbar.isOpen}
+                show={snackbar.isOpen}
                 message={snackbar.message}
                 type={snackbar.type}
                 onClose={closeSnackbar}

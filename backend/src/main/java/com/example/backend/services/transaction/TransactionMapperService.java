@@ -64,6 +64,7 @@ public class TransactionMapperService {
     /**
      * Converts a list of Transaction entities to TransactionDTOs
      */
+
     public List<TransactionDTO> toDTOs(List<Transaction> transactions) {
         if (transactions == null) {
             return null;
@@ -97,11 +98,12 @@ public class TransactionMapperService {
                 .id(item.getId())
                 .itemTypeId(item.getItemType() != null ? item.getItemType().getId() : null)
                 .itemTypeName(item.getItemType() != null ? item.getItemType().getName() : null)
-                .itemCategory(item.getItemType() != null && item.getItemType().getItemCategory() != null 
+                .itemCategory(item.getItemType() != null && item.getItemType().getItemCategory() != null
                         ? item.getItemType().getItemCategory().getName() : null)
                 .quantity(item.getQuantity())
                 .receivedQuantity(item.getReceivedQuantity())
                 .status(item.getStatus())
+                .rejectionReason(item.getRejectionReason())
                 .build();
     }
 
@@ -140,4 +142,4 @@ public class TransactionMapperService {
             return "Unknown " + type.toString().toLowerCase();
         }
     }
-} 
+}

@@ -20,4 +20,5 @@ public class TransactionItemDTO {
     private Integer quantity;
     private Integer receivedQuantity;
     private TransactionStatus status;
+    private String rejectionReason;
 } 
