@@ -1,12 +1,13 @@
-import React, {useEffect, useState} from 'react';
-import {NavLink, useLocation} from 'react-router-dom';
+import React, {useEffect, useState, createContext, useContext} from 'react';
+import {NavLink, useLocation, useNavigate} from 'react-router-dom';
 import {useAuth} from '../../../contexts/AuthContext.jsx';
 import {useTheme} from '../../../contexts/ThemeContext.jsx';
 import {useTranslation} from 'react-i18next';
 import {
     FaBars,
     FaBoxes,
-    FaBriefcase, FaBuilding,
+    FaBriefcase,
+    FaBuilding,
     FaChartLine,
     FaChevronDown,
     FaChevronRight,
@@ -32,29 +33,29 @@ import {
     FaUsers,
     FaWarehouse,
     FaTags,
-    FaListAlt
+    FaListAlt,
+    FaArrowLeft
 } from 'react-icons/fa';
 
-import logoImage from '../../../assets/logos/Logo.png';
-import logoDarkImage from '../../../assets/logos/Logo-dark.png';
 import './Sidebar.css';
-import {BsFillPersonVcardFill} from "react-icons/bs";
+import logoDarkImage from "../../../assets/logos/Logo-dark.png";
+import logoImage from "../../../assets/logos/Logo.png";
 
+// Create Sidebar Context
+const SidebarContext = createContext();
 
-const Sidebar = () => {
-    const {currentUser, logout} = useAuth();
-    const {theme, toggleTheme} = useTheme();
-    const {t} = useTranslation();
-    const location = useLocation();
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+export const useSidebar = () => {
+    const context = useContext(SidebarContext);
+    if (!context) {
+        throw new Error('useSidebar must be used within a SidebarProvider');
+    }
+    return context;
+};
+
+export const SidebarProvider = ({ children }) => {
+    const { theme } = useTheme(); // Fix: Get theme from context
+    const [isExpanded, setIsExpanded] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
-    const [expandedMenus, setExpandedMenus] = useState({});
-    const [isExpanded, setIsExpanded] = useState(true); // Start expanded on desktop
-
-    const userRole = currentUser?.role || 'USER';
-
-    // Get the appropriate logo based on theme
-    const currentLogo = theme === 'dark' ? logoDarkImage : logoImage;
 
     // Check if screen is mobile and set initial state
     useEffect(() => {
@@ -79,6 +80,79 @@ const Sidebar = () => {
         return () => window.removeEventListener('resize', checkIfMobile);
     }, []);
 
+    const toggleSidebar = () => {
+        setIsExpanded(!isExpanded);
+    };
+
+    // Add class to body to handle main content margin and navbar positioning
+    useEffect(() => {
+        if (isExpanded && !isMobile) {
+            document.body.classList.remove('sidebar-collapsed');
+        } else {
+            document.body.classList.add('sidebar-collapsed');
+        }
+
+        return () => {
+            document.body.classList.remove('sidebar-collapsed');
+        };
+    }, [isExpanded, isMobile]);
+
+    return (
+        <SidebarContext.Provider value={{
+            isExpanded,
+            setIsExpanded,
+            isMobile,
+            toggleSidebar
+        }}>
+            {children}
+        </SidebarContext.Provider>
+    );
+};
+
+const Sidebar = () => {
+    const {currentUser, logout} = useAuth();
+    const {theme, toggleTheme} = useTheme();
+    const {t} = useTranslation();
+    const location = useLocation();
+    const navigate = useNavigate();
+    const {isExpanded, isMobile, toggleSidebar} = useSidebar();
+    const [expandedMenus, setExpandedMenus] = useState({});
+    const [navigationHistory, setNavigationHistory] = useState(['/login']);
+
+    const userRole = currentUser?.role || 'USER';
+
+    // Get the appropriate logo based on theme
+    const currentLogo = theme === 'dark' ? logoDarkImage : logoImage;
+
+    // Track navigation history to avoid going back to login
+    useEffect(() => {
+        setNavigationHistory(prev => {
+            const lastPage = prev[prev.length - 1];
+            if (lastPage !== location.pathname) {
+                const newHistory = [...prev, location.pathname];
+                return newHistory.slice(-10);
+            }
+            return prev;
+        });
+    }, [location.pathname]);
+
+    const handleBackClick = () => {
+        const previousPage = navigationHistory.length > 1 ? navigationHistory[navigationHistory.length - 2] : null;
+
+        if (window.history.length <= 2 || previousPage === '/login') {
+            navigate('/dashboard');
+            return;
+        }
+
+        navigate(-1);
+    };
+
+    // Fixed theme toggle handler
+    const handleThemeToggle = (e) => {
+        e.stopPropagation();
+        toggleTheme();
+    };
+
     // Auto-expand submenus when on submenu pages
     useEffect(() => {
         const currentPath = location.pathname;
@@ -102,11 +176,6 @@ const Sidebar = () => {
             ...prev,
             [title]: !prev[title]
         }));
-    };
-
-    // Check if current path is in a submenu to determine if parent should be highlighted
-    const isInSubmenu = (parentPath, currentPath) => {
-        return currentPath.startsWith(parentPath);
     };
 
     // Menu items with role-based access control
@@ -272,12 +341,12 @@ const Sidebar = () => {
             path: '/secretary',
             roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'SECRETARY']
         },
-        {
-            title: 'Equipment MT ',
-            icon: <FaTruck/>,
-            path: '/equipment-team',
-            roles: ['ADMIN', 'USER', 'EQUIPMENT_MANAGER']
-        },
+        // {
+        //     title: 'Equipment MT',
+        //     icon: <FaTruck/>,
+        //     path: '/equipment-team',
+        //     roles: ['ADMIN', 'USER', 'EQUIPMENT_MANAGER']
+        // },
         {
             title: 'Settings',
             icon: <FaCog/>,
@@ -286,19 +355,8 @@ const Sidebar = () => {
         }
     ];
 
-    // Filter menu items based on user role
-    const filteredMenuItems = menuItems.filter(item => item.roles.includes(userRole));
-
-    const toggleMobileMenu = () => {
-        setMobileMenuOpen(!mobileMenuOpen);
-    };
-
     const handleLogout = () => {
         logout();
-    };
-
-    const toggleSidebar = () => {
-        setIsExpanded(!isExpanded);
     };
 
     return (
@@ -314,28 +372,31 @@ const Sidebar = () => {
                 </button>
             )}
 
-            <div className={`sidebar ${isExpanded ? 'expanded' : 'collapsed'}`}>
-                {/* Integrated toggle button for desktop */}
+            <div
+                className={`sidebar ${isExpanded ? 'expanded' : 'collapsed'}`}
+                data-expanded={isExpanded}
+            >
+                {/* Toggle button - Uses icon swap instead of rotation */}
                 {!isMobile && (
                     <button
                         className="sidebar-toggle-btn"
                         onClick={toggleSidebar}
                         aria-label="Toggle sidebar"
                     >
-        <span className="chevron-icon">
-            {isExpanded ? <FaChevronLeft /> : <FaChevronRight />}
-        </span>
+                        <span className={`chevron-icon ${isExpanded ? 'expanded' : 'collapsed'}`}>
+                            {isExpanded ? <FaChevronLeft /> : <FaChevronRight />}
+                        </span>
                     </button>
                 )}
 
                 <div className="sidebar-header">
-                    <div className="logo">
-                        <img
-                            src={currentLogo}
-                            alt="Logo"
-                            className="logo-image"
-                            key={theme}
-                        />
+                    <div className="logo-container">
+                            <img
+                                src={currentLogo}
+                                alt="Logo"
+                                className="logo-image"
+                                key={theme}
+                            />
                     </div>
                 </div>
 
@@ -362,7 +423,7 @@ const Sidebar = () => {
                                             e.preventDefault();
                                             toggleSubmenu(item.title);
                                         } else if (isMobile) {
-                                            setIsExpanded(false);
+                                            toggleSidebar();
                                         }
                                     }}
                                 >
@@ -392,7 +453,7 @@ const Sidebar = () => {
                                                     }}
                                                     onClick={() => {
                                                         if (isMobile) {
-                                                            setIsExpanded(false);
+                                                            toggleSidebar();
                                                         }
                                                     }}
                                                 >
@@ -413,20 +474,30 @@ const Sidebar = () => {
                 </div>
 
                 <div className="sidebar-footer">
+                    {/* Back Button with text when expanded */}
+                    <button
+                        className="back-button"
+                        onClick={handleBackClick}
+                        title={t('common.back') || 'Go back'}
+                    >
+                        <FaArrowLeft />
+                        {isExpanded && <span className="back-text">Back</span>}
+                    </button>
+
                     <div className="theme-toggle-container">
                         <div
                             className="theme-toggle-item"
-                            onClick={toggleTheme}
+                            onClick={handleThemeToggle}
                         >
                             <div className="menu-icon">
                                 {theme === 'dark' ? <FaMoon/> : <FaSun/>}
                             </div>
-                            <div className="menu-title"> {theme === 'dark' ? 'Dark' : 'Light'} Mode</div>
-                            <label className="toggle-switch">
+                            <div className="menu-title">{theme === 'dark' ? 'Dark' : 'Light'} Mode</div>
+                            <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
                                 <input
                                     type="checkbox"
                                     checked={theme === 'dark'}
-                                    onChange={toggleTheme}
+                                    onChange={handleThemeToggle}
                                 />
                                 <span className="toggle-slider"></span>
                             </label>
@@ -446,7 +517,7 @@ const Sidebar = () => {
             {isMobile && isExpanded && (
                 <div
                     className="sidebar-backdrop active"
-                    onClick={() => setIsExpanded(false)}
+                    onClick={() => toggleSidebar()}
                 />
             )}
         </>

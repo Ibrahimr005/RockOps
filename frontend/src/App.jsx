@@ -5,7 +5,7 @@ import {LanguageProvider} from "./contexts/LanguageContext.jsx";
 import {ThemeProvider} from "./contexts/ThemeContext.jsx";
 import {AuthProvider, useAuth} from "./contexts/AuthContext.jsx";
 import Login from "./pages/login/Login.jsx";
-import Sidebar from "./components/common/Sidebar/Sidebar.jsx";
+import Sidebar, {SidebarProvider} from "./components/common/Sidebar/Sidebar.jsx";
 import AdminPage from "./pages/admin/AdminPage.jsx";
 import Navbar from "./components/common/Navbar/Navbar.jsx";
 import DashboardPage from "./pages/dashboards/DashboardPage.jsx";
@@ -70,15 +70,20 @@ const mostRoles = ["ADMIN", "USER", "SITE_ADMIN", "PROCUREMENT", "WAREHOUSE_MANA
 
 
 // ===================== Layout Components =====================
-const MainLayout = () => (<div className="app-container">
-    <Navbar/>
-    <div className="main-content-wrapper">
-        <Sidebar/>
-        <main className="main-content">
-            <Outlet/>
-        </main>
-    </div>
-</div>);
+// Updated MainLayout to match Claude.ai structure
+const MainLayout = () => (
+    <SidebarProvider>
+        <div className="app-container">
+            <Sidebar />
+            <div className="main-content-wrapper">
+                <Navbar />
+                <main className="main-content">
+                    <Outlet />
+                </main>
+            </div>
+        </div>
+    </SidebarProvider>
+);
 
 function App() {
     const [count, setCount] = useState(0)

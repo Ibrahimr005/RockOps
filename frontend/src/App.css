@@ -13,7 +13,6 @@ body {
   margin: 0;
   padding: 0;
   transition: background-color var(--transition-normal), color var(--transition-normal);
- 
   overflow-x: hidden;
 }
 
@@ -25,29 +24,30 @@ body {
   box-sizing: border-box;
 }
 
-/* App Container */
+/* App Container - Updated for Claude.ai layout */
 .app-container {
   display: flex;
-  flex-direction: column;
   min-height: 100vh;
   position: relative;
 }
 
+/* Main content wrapper - Now sits beside sidebar */
 .main-content-wrapper {
   display: flex;
+  flex-direction: column;
   flex: 1;
-  min-height: calc(100vh - 70px); /* Adjust based on navbar height */
-  margin-top: 70px; /* Should match navbar height */
-  position: relative;
-  overflow-x: hidden;
+  min-height: 100vh;
+  margin-left: 250px; /* Default sidebar width */
+  transition: margin-left var(--transition-normal);
+  position: relative; /* Add relative positioning for navbar */
 }
 
+/* Main content */
 .main-content {
   flex: 1;
-
-  padding: 2rem;
-  max-width: calc(100% - 250px);
-  transition: margin-left var(--transition-normal), max-width var(--transition-normal);
+  padding: 2rem 3rem;
+  margin-top: 70px; /* Navbar height */
+  transition: all var(--transition-normal);
 }
 
 /* Responsive layout adjustments */
@@ -58,10 +58,23 @@ body {
 }
 
 @media (max-width: 768px) {
+  .main-content-wrapper {
+    margin-left: 0; /* No margin on mobile */
+  }
+
   .main-content {
-    margin-left: 0;
-    max-width: 100%;
     padding: 1rem;
+  }
+}
+
+/* Sidebar collapsed state adjustments */
+body.sidebar-collapsed .main-content-wrapper {
+  margin-left: 70px; /* Collapsed sidebar width */
+}
+
+@media (max-width: 768px) {
+  body.sidebar-collapsed .main-content-wrapper {
+    margin-left: 0; /* No margin on mobile even when collapsed */
   }
 }
 

@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext.jsx';
 import { useLanguage } from '../../../contexts/LanguageContext.jsx';
-import { useTheme } from '../../../contexts/ThemeContext.jsx'; // Import the theme context
+import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import { useTranslation } from 'react-i18next';
-import { FaSignOutAlt, FaBars, FaTimes, FaMoon, FaSun, FaArrowLeft } from 'react-icons/fa'; // Added FaArrowLeft
+import { FaSignOutAlt, FaBars, FaTimes, FaMoon, FaSun, FaArrowLeft } from 'react-icons/fa';
+import logoImage from '../../../assets/logos/Logo.png';
+import logoDarkImage from '../../../assets/logos/Logo-dark.png';
 import './Navbar.css';
 
 const Navbar = () => {
     const { currentUser, logout } = useAuth();
     const { language, switchLanguage } = useLanguage();
-    const { theme, toggleTheme } = useTheme(); // Use the theme context
+    const { theme, toggleTheme } = useTheme();
     const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
@@ -18,6 +20,8 @@ const Navbar = () => {
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [navigationHistory, setNavigationHistory] = useState(['/login']);
+
+    // Get the appropriate logo based on theme
 
     // Always show the back button
     const showBackButton = true;
@@ -81,24 +85,11 @@ const Navbar = () => {
     };
 
     return (
-        <nav className="admin-navbar" style={{ direction: 'ltr' }}>
-
+        <nav className="admin-navbar">
             <div className="navbar-content">
                 <div className="navbar-left">
-                    {/* Back Button - Always visible */}
-                    {showBackButton && (
-                        <button
-                            className="back-button"
-                            onClick={handleBackClick}
-                            title={t('common.back') || 'Go back'}
-                        >
-                            <FaArrowLeft  />
-                        </button>
-                    )}
+                    {/* Logo container - moved from sidebar */}
 
-                    {/* Logo container is empty */}
-                    <div className="logo-container">
-                    </div>
                 </div>
 
                 {/* Mobile menu button */}
@@ -108,10 +99,6 @@ const Navbar = () => {
 
                 {/* Navbar right content - will be hidden on mobile and shown in mobile menu */}
                 <div className={`navbar-right ${mobileMenuOpen ? 'mobile-menu-open' : ''}`}>
-                    {/* Theme toggle button */}
-
-
-
                     <div className="language-selector">
                         <div className="language-dropdown-container">
                             <div className="language-flag" onClick={toggleLanguageDropdown}>
