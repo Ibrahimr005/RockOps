@@ -74,6 +74,7 @@ public class WarehouseService {
         response.put("id", warehouse.getId());
         response.put("name", warehouse.getName());
         response.put("capacity", warehouse.getCapacity()); // ✅ Add this line
+        response.put("photoUrl", warehouse.getPhotoUrl());
 
         // Manually add site details
         if (warehouse.getSite() != null) {
