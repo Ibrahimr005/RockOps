@@ -24,33 +24,25 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
         middleName: '',
         email: '',
         phoneNumber: '',
-        mobilePhone: '',
-        contractType: 'FULL_TIME',
-        gender: '',
-        birthDate: '',
-        hireDate: '',
         address: '',
         city: '',
         country: '',
-        region: '',
-        jobPositionId: '',
-        siteId: '',
-        salaryMultiplier: 1.0,
-        nationalIDNumber: '',
+        birthDate: '',
+        hireDate: '',
         maritalStatus: '',
         militaryStatus: '',
+        nationalIDNumber: '',
+        gender: '',
+        status: 'ACTIVE',
         education: '',
-        emergencyContactName: '',
-        emergencyContactPhone: '',
+        // Financial details
+        bonus: '',
+        commission: '',
         baseSalaryOverride: '',
-        baseSalary: '',
-        workingDaysPerWeek: '',
-        hoursPerShift: '',
-        hourlyRate: '',
-        workingDaysPerMonth: '',
-        dailyRate: '',
-        monthlyBaseSalary: '',
-        workingHours: ''
+        salaryMultiplier: 1.0,
+        // Relationships
+        jobPositionId: '',
+        siteId: ''
     });
 
     const [photoFile, setPhotoFile] = useState(null);
@@ -75,33 +67,23 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                 middleName: employee.middleName || '',
                 email: employee.email || '',
                 phoneNumber: employee.phoneNumber || '',
-                mobilePhone: employee.mobilePhone || '',
-                contractType: employee.contractType || 'FULL_TIME',
-                gender: employee.gender || '',
-                birthDate: formatDate(employee.birthDate),
-                hireDate: formatDate(employee.hireDate),
                 address: employee.address || '',
                 city: employee.city || '',
                 country: employee.country || '',
-                region: employee.region || '',
-                jobPositionId: employee.jobPositionId ? employee.jobPositionId.toString() : '',
-                siteId: employee.siteId || '',
-                salaryMultiplier: employee.salaryMultiplier || 1.0,
-                nationalIDNumber: employee.nationalIDNumber || '',
+                birthDate: formatDate(employee.birthDate),
+                hireDate: formatDate(employee.hireDate),
                 maritalStatus: employee.maritalStatus || '',
                 militaryStatus: employee.militaryStatus || '',
+                nationalIDNumber: employee.nationalIDNumber || '',
+                gender: employee.gender || '',
+                status: 'ACTIVE',
                 education: employee.education || '',
-                emergencyContactName: employee.emergencyContactName || '',
-                emergencyContactPhone: employee.emergencyContactPhone || '',
+                bonus: employee.bonus || '',
+                commission: employee.commission || '',
                 baseSalaryOverride: employee.baseSalaryOverride || '',
-                baseSalary: employee.baseSalary || '',
-                workingDaysPerWeek: employee.workingDaysPerWeek || '',
-                hoursPerShift: employee.hoursPerShift || '',
-                hourlyRate: employee.hourlyRate || '',
-                workingDaysPerMonth: employee.workingDaysPerMonth || '',
-                dailyRate: employee.dailyRate || '',
-                monthlyBaseSalary: employee.monthlyBaseSalary || '',
-                workingHours: employee.workingHours || ''
+                salaryMultiplier: employee.salaryMultiplier || 1.0,
+                jobPositionId: employee.jobPositionId ? employee.jobPositionId.toString() : '',
+                siteId: employee.siteId || ''
             });
 
             // Set photo preview if available
@@ -155,7 +137,12 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
         if (!formData.firstName) newErrors.firstName = 'First name is required';
         if (!formData.lastName) newErrors.lastName = 'Last name is required';
         if (!formData.email) newErrors.email = 'Email is required';
-        if (!formData.siteId) newErrors.siteId = 'Site is required';
+        if (!formData.jobPositionId) newErrors.jobPositionId = 'Job position is required';
+        if (!formData.birthDate) newErrors.birthDate = 'Date of Birth is required';
+        if (!formData.nationalIDNumber) newErrors.nationalIDNumber = 'National ID is required';
+        if (!formData.country) newErrors.country = 'Country is required';
+        if (!formData.gender) newErrors.gender = 'Gender is required';
+        if (!formData.hireDate) newErrors.hireDate = 'Hire date is required';
 
         // Email validation
         if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
@@ -348,16 +335,6 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Mobile Phone</label>
-                                    <input
-                                        type="tel"
-                                        name="mobilePhone"
-                                        value={formData.mobilePhone}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-
-                                <div className="r4m-form-group">
                                     <label>Address</label>
                                     <input
                                         type="text"
@@ -378,33 +355,15 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Region</label>
+                                    <label>Country *</label>
                                     <input
                                         type="text"
-                                        name="region"
-                                        value={formData.region}
+                                        name="country"
+                                        value={formData.country}
                                         onChange={handleChange}
+                                        className={errors.country ? 'error' : ''}
                                     />
-                                </div>
-
-                                <div className="r4m-form-group">
-                                    <label>Emergency Contact Name</label>
-                                    <input
-                                        type="text"
-                                        name="emergencyContactName"
-                                        value={formData.emergencyContactName}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-
-                                <div className="r4m-form-group">
-                                    <label>Emergency Contact Phone</label>
-                                    <input
-                                        type="tel"
-                                        name="emergencyContactPhone"
-                                        value={formData.emergencyContactPhone}
-                                        onChange={handleChange}
-                                    />
+                                    {errors.country && <span className="r4m-error-message">{errors.country}</span>}
                                 </div>
                             </div>
 
@@ -413,19 +372,17 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                                 <h3>Employment Information</h3>
 
                                 <div className="r4m-form-group">
-                                    <label>Site *</label>
+                                    <label>Site</label>
                                     <select
                                         name="siteId"
                                         value={formData.siteId}
                                         onChange={handleChange}
-                                        className={errors.siteId ? 'error' : ''}
                                     >
                                         <option value="">Select Site</option>
                                         {sites.map(site => (
                                             <option key={site.id} value={site.id}>{site.name}</option>
                                         ))}
                                     </select>
-                                    {errors.siteId && <span className="r4m-error-message">{errors.siteId}</span>}
                                 </div>
 
                                 <div className="r4m-form-group">
