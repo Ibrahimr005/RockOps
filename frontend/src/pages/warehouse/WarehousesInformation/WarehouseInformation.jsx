@@ -85,7 +85,13 @@ const WarehouseInformation = () => {
           </div>
 
           <div className="warehouse-image">
-            <img src={warehouseimg1} alt="Warehouse" />
+            <img
+                src={warehouseData?.photoUrl || warehouseimg1}
+                alt="Warehouse"
+                onError={(e) => {
+                  e.target.src = warehouseimg1;
+                }}
+            />
           </div>
 
           <div className="info-content">
