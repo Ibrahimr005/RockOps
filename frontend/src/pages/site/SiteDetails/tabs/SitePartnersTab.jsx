@@ -18,7 +18,7 @@ const SitePartnersTab = ({siteId}) => {
     const [editPercentage, setEditPercentage] = useState("");
     const { showSuccess, showError, showWarning } = useSnackbar();
 
-    const isSiteAdmin = currentUser?.role === "SITE_ADMIN";
+    const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || "ADMIN";
 
     // Define columns for DataTable
     const columns = [

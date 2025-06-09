@@ -244,7 +244,7 @@ const SiteEmployeesTab = ({ siteId }) => {
     }
 
     return (
-        <div className="tab-content">
+        <div >
             <Snackbar
                 show={snackbar.show}
                 message={snackbar.message}

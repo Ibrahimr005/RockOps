@@ -28,7 +28,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
         city: '',
         country: '',
         birthDate: '',
-        hireDate: '',
+        hireDate: new Date().toISOString().split('T')[0],
         maritalStatus: '',
         militaryStatus: '',
         nationalIDNumber: '',
@@ -136,6 +136,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
         if (!formData.nationalIDNumber) newErrors.nationalIDNumber = 'National ID is required';
         if (!formData.country) newErrors.country = 'Country is required';
         if (!formData.gender) newErrors.gender = 'Gender is required';
+        if (!formData.hireDate) newErrors.hireDate = 'Hire date is required';
 
         // Email validation
         if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
@@ -474,13 +475,15 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 )}
 
                                 <div className="r4m-form-group">
-                                    <label>Hire Date</label>
+                                    <label>Hire Date *</label>
                                     <input
                                         type="date"
                                         name="hireDate"
                                         value={formData.hireDate}
                                         onChange={handleChange}
+                                        className={errors.hireDate ? 'error' : ''}
                                     />
+                                    {errors.hireDate && <span className="r4m-error-message">{errors.hireDate}</span>}
                                 </div>
 
                                 {isFromCandidate && (
