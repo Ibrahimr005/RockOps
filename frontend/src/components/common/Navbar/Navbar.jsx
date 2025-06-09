@@ -1,21 +1,44 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext.jsx';
 import { useLanguage } from '../../../contexts/LanguageContext.jsx';
-import { useTheme } from '../../../contexts/ThemeContext.jsx'; // Import the theme context
+import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import { useTranslation } from 'react-i18next';
-import { FaSignOutAlt, FaBars, FaTimes, FaMoon, FaSun } from 'react-icons/fa'; // Added moon and sun icons
+import { FaSignOutAlt, FaBars, FaTimes, FaMoon, FaSun, FaArrowLeft } from 'react-icons/fa';
+import logoImage from '../../../assets/logos/Logo.png';
+import logoDarkImage from '../../../assets/logos/Logo-dark.png';
 import './Navbar.css';
 
 const Navbar = () => {
     const { currentUser, logout } = useAuth();
     const { language, switchLanguage } = useLanguage();
-    const { theme, toggleTheme } = useTheme(); // Use the theme context
+    const { theme, toggleTheme } = useTheme();
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [navigationHistory, setNavigationHistory] = useState(['/login']);
+
+    // Get the appropriate logo based on theme
+
+    // Always show the back button
+    const showBackButton = true;
+
+    // Track navigation history to avoid going back to login
+    useEffect(() => {
+        setNavigationHistory(prev => {
+            // Only add if it's different from the last page
+            const lastPage = prev[prev.length - 1];
+            if (lastPage !== location.pathname) {
+                const newHistory = [...prev, location.pathname];
+                // Keep only last 10 entries to prevent memory issues
+                return newHistory.slice(-10);
+            }
+            return prev;
+        });
+    }, [location.pathname]);
 
     const toggleLanguageDropdown = () => {
         setShowLanguageDropdown(!showLanguageDropdown);
@@ -44,13 +67,29 @@ const Navbar = () => {
         toggleTheme();
     };
 
+    const handleBackClick = () => {
+        console.log('=== BACK BUTTON CLICKED ===');
+        console.log('Navigation history:', navigationHistory);
+
+        const previousPage = navigationHistory.length > 1 ? navigationHistory[navigationHistory.length - 2] : null;
+        console.log('Previous page:', previousPage);
+
+        if (window.history.length <= 2 || previousPage === '/login') {
+            console.log('Redirecting to dashboard to avoid login page');
+            navigate('/dashboard');
+            return;
+        }
+
+        console.log('Normal back navigation');
+        navigate(-1);
+    };
+
     return (
-        <nav className="admin-navbar" style={{ direction: 'ltr' }}>
+        <nav className="admin-navbar">
             <div className="navbar-content">
                 <div className="navbar-left">
-                    {/* Logo container is empty */}
-                    <div className="logo-container">
-                    </div>
+                    {/* Logo container - moved from sidebar */}
+
                 </div>
 
                 {/* Mobile menu button */}
@@ -60,10 +99,6 @@ const Navbar = () => {
 
                 {/* Navbar right content - will be hidden on mobile and shown in mobile menu */}
                 <div className={`navbar-right ${mobileMenuOpen ? 'mobile-menu-open' : ''}`}>
-                    {/* Theme toggle button */}
-
-
-
                     <div className="language-selector">
                         <div className="language-dropdown-container">
                             <div className="language-flag" onClick={toggleLanguageDropdown}>

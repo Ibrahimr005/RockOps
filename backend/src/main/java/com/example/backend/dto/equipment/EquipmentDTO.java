@@ -30,8 +30,9 @@ public class EquipmentDTO {
     private String equipmentComplaints;
     private String countryOfOrigin;
     private String serialNumber;
-    private String shipping;
-    private String customs;
+    private double shipping;
+    private double customs;
+    private double taxes;
     private String modelNumber;
     private EquipmentStatus status;
     private String relatedDocuments;
@@ -45,6 +46,7 @@ public class EquipmentDTO {
     private String imageUrl;
     private UUID purchasedFromId;
     private String purchasedFromName;
+    private boolean drivable;
 
     // Convert Entity to DTO
     public static EquipmentDTO fromEntity(Equipment equipment) {
@@ -79,10 +81,12 @@ public class EquipmentDTO {
         dto.setSerialNumber(equipment.getSerialNumber());
         dto.setShipping(equipment.getShipping());
         dto.setCustoms(equipment.getCustoms());
+        dto.setTaxes(equipment.getTaxes());
         dto.setModelNumber(equipment.getModelNumber());
         dto.setStatus(equipment.getStatus());
         dto.setRelatedDocuments(equipment.getRelatedDocuments());
         dto.setWorkedHours(equipment.getWorkedHours());
+        dto.setDrivable(equipment.getType() != null ? equipment.getType().isDrivable() : false);
 
         // Handle site
         if (equipment.getSite() != null) {

@@ -3,6 +3,8 @@ import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import {useTranslation} from 'react-i18next';
 import {useAuth} from "../../../../contexts/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
+import Snackbar from "../../../../components/common/Snackbar/Snackbar";
+import { siteService } from "../../../../services/siteService";
 
 const SiteEquipmentTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -13,6 +15,11 @@ const SiteEquipmentTab = ({siteId}) => {
     const [showModal, setShowModal] = useState(false);
     const [availableEquipment, setAvailableEquipment] = useState([]);
     const {currentUser} = useAuth();
+    const [snackbar, setSnackbar] = useState({
+        show: false,
+        message: '',
+        type: 'success'
+    });
 
     const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || currentUser?.role === "ADMIN";
 
@@ -79,27 +86,8 @@ const SiteEquipmentTab = ({siteId}) => {
 
     const fetchEquipment = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/site/${siteId}/equipment`, {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            if (!response.ok) {
-                const text = await response.text();
-                try {
-                    const json = JSON.parse(text);
-                    throw new Error(json.message || `HTTP error! Status: ${response.status}`);
-                } catch (err) {
-                    throw new Error(`No equipment found for this site.`);
-                }
-            }
-
-            const data = await response.json();
-            console.log("Equipment data from fetchEquipment:", data); // Debug log
+            const response = await siteService.getSiteEquipment(siteId);
+            const data = response.data;
 
             if (Array.isArray(data)) {
                 const transformedData = data.map((item, index) => ({
@@ -116,6 +104,11 @@ const SiteEquipmentTab = ({siteId}) => {
                 setEquipmentData(transformedData);
             } else {
                 setEquipmentData([]);
+                setSnackbar({
+                    show: true,
+                    message: 'No equipment found for this site',
+                    type: 'info'
+                });
             }
 
             setLoading(false);
@@ -123,6 +116,11 @@ const SiteEquipmentTab = ({siteId}) => {
             setError(err.message);
             setEquipmentData([]);
             setLoading(false);
+            setSnackbar({
+                show: true,
+                message: err.message,
+                type: 'error'
+            });
         }
     };
 
@@ -141,72 +139,91 @@ const SiteEquipmentTab = ({siteId}) => {
 
     const fetchAvailableEquipment = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch("http://localhost:8080/api/v1/site/unassigned-equipment", {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            if (!response.ok) throw new Error("Failed to fetch equipment.");
-
-            const data = await response.json();
-            console.log("Modal equipment data:", data[0]);
+            const response = await siteService.getUnassignedEquipment();
+            const data = response.data;
             setAvailableEquipment(data);
+            
+            if (data.length === 0) {
+                setSnackbar({
+                    show: true,
+                    message: 'No available equipment found to assign',
+                    type: 'info'
+                });
+            }
         } catch (err) {
             console.error("Error fetching available equipment:", err);
             setAvailableEquipment([]);
+            setSnackbar({
+                show: true,
+                message: 'Failed to fetch available equipment',
+                type: 'error'
+            });
         }
     };
 
     const handleAssignEquipment = async (equipmentId) => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/siteadmin/${siteId}/assign-equipment/${equipmentId}`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            if (!response.ok) throw new Error("Failed to assign equipment.");
+            await siteService.assignEquipment(siteId, equipmentId);
             setShowModal(false);
-            fetchEquipment(); // Refresh the equipment list
+            await fetchEquipment();
+            setSnackbar({
+                show: true,
+                message: 'Equipment successfully assigned to site',
+                type: 'success'
+            });
         } catch (err) {
             console.error("Error assigning equipment:", err);
+            setSnackbar({
+                show: true,
+                message: 'Failed to assign equipment',
+                type: 'error'
+            });
         }
     };
 
     const handleUnassignEquipment = async (equipmentId) => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/siteadmin/${siteId}/remove-equipment/${equipmentId}`, {
-                method: "DELETE",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
+            await siteService.removeEquipment(siteId, equipmentId);
+            await fetchEquipment();
+            setSnackbar({
+                show: true,
+                message: 'Equipment successfully unassigned from site',
+                type: 'success'
             });
-
-            if (!response.ok) throw new Error("Failed to unassign equipment.");
-            await fetchEquipment(); // Refresh the equipment list
         } catch (err) {
             console.error("Error unassigning equipment:", err);
-            alert("Failed to unassign equipment. Please try again.");
+            setSnackbar({
+                show: true,
+                message: 'Failed to unassign equipment',
+                type: 'error'
+            });
         }
     };
 
     const handleRowClick = (row) => {
         navigate(`/equipment/${row.equipmentID}`);
+        setSnackbar({
+            show: true,
+            message: `Navigating to equipment details: ${row.equipmentType} ${row.modelNumber}`,
+            type: 'info'
+        });
+    };
+
+    const handleCloseSnackbar = () => {
+        setSnackbar(prev => ({ ...prev, show: false }));
     };
 
     if (loading) return <div className="loading-container">{t('site.loadingEquipment')}</div>;
 
     return (
         <div className="site-equipment-tab">
+            <Snackbar
+                show={snackbar.show}
+                message={snackbar.message}
+                type={snackbar.type}
+                onClose={handleCloseSnackbar}
+                duration={3000}
+            />
             <div className="departments-header">
                 <h3>{t('site.siteEquipmentReport')}</h3>
                 {isSiteAdmin && (

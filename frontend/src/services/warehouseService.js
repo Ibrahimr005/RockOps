@@ -22,6 +22,11 @@ export const warehouseService = {
         return apiClient.get(WAREHOUSE_ENDPOINTS.ITEMS(warehouseId));
     },
 
+    // Get warehouse inventory
+    getInventory: (warehouseId) => {
+        return apiClient.get(`/api/v1/warehouses/${warehouseId}/inventory`);
+    },
+
     // Create a new warehouse
     create: (warehouseData) => {
         return apiClient.post(WAREHOUSE_ENDPOINTS.CREATE, warehouseData);

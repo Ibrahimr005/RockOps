@@ -19,7 +19,7 @@ import {
 
 // Add this to your imports at the top
 import { FiCheck } from 'react-icons/fi';
-import offersImage from "../../../Assets/imgs/pro_icon.png";
+import offersImage from "../../../assets/imgs/pro_icon.png";
 
 const API_URL = 'http://localhost:8080/api/v1';
 

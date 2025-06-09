@@ -4,12 +4,15 @@
   --color-primary: #4880ff;
   --color-primary-light: #6a9aff;
   --color-primary-dark: #3060d0;
+  --color-primary-hover: #3b82f6;
 
   /* Background Colors */
   --main-background-color: #f9f9f9;
   --section-background-color: white;
   --color-surface: white;
   --color-surface-hover: #f5f5f5;
+  --color-surface-secondary: #f8fafc;
+  --color-surface-tertiary: #f1f5f9;
 
   /* Text Colors */
   --text-color: #000;
@@ -18,20 +21,57 @@
   --color-text-secondary: #999999;
   --color-text-tertiary: #6a6a6a;
   --color-text-inverse: #ffffff;
+  --color-text-muted: #9ca3af;
+  --color-text-dark: #1f2937;
+  --color-text-medium: #374151;
   --head-title-color: #000;
   --paragraph-color: #6a6a6a;
   --label-color: #555;
 
   /* Border & Decoration */
   --border-color: #e0e0e0;
+  --border-color-light: #e5e7eb;
+  --border-color-medium: #d1d5db;
+  --border-color-dark: #9ca3af;
   --border-curve: 1rem;
   --adv-table-filter: #00000080;
 
   /* Status Colors */
   --color-success: #4caf50;
+  --color-success-light: #10b981;
+  --color-success-hover: #059669;
   --color-danger: #f44336;
+  --color-danger-light: #ef4444;
+  --color-danger-hover: #dc2626;
   --color-warning: #ff9800;
+  --color-warning-light: #f59e0b;
   --color-info: #2196f3;
+  --color-info-light: #3b82f6;
+
+  /* Action Colors */
+  --color-edit: var(--color-primary);
+  --color-edit-hover: var(--color-primary-hover);
+  --color-edit-bg: rgba(59, 130, 246, 0.1);
+  --color-edit-bg-hover: rgba(59, 130, 246, 0.2);
+
+  --color-delete: var(--color-danger-light);
+  --color-delete-hover: var(--color-danger-hover);
+  --color-delete-bg: rgba(239, 68, 68, 0.1);
+  --color-delete-bg-hover: rgba(239, 68, 68, 0.2);
+
+  --color-view: #6b7280;
+  --color-view-hover: #374151;
+  --color-view-bg: rgba(107, 114, 128, 0.1);
+  --color-view-bg-hover: rgba(107, 114, 128, 0.2);
+
+  /* Table Specific Colors */
+  --table-header-bg: #e2e8f0;
+  --table-header-hover: #cbd5e1;
+  --table-row-even: #fafafa;
+  --table-row-hover: #f0f4f8;
+  --table-border: #e5e7eb;
+  --table-shadow: rgba(0, 0, 0, 0.08);
+  --table-shadow-hover: rgba(0, 0, 0, 0.1);
 
   /* Typography */
   --thin-font-weight: 200;
@@ -41,6 +81,7 @@
   /* Elevation & Shadows */
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-table: 0 2px 8px var(--table-shadow);
 
   /* Border Radius */
   --radius-sm: 6px;
@@ -58,12 +99,15 @@
   --color-primary: #4880ff;
   --color-primary-light: #6a9aff;
   --color-primary-dark: #3060d0;
+  --color-primary-hover: #5b91ff;
 
   /* Background Colors */
   --main-background-color: #1e1e1e;
   --section-background-color: #181818;
   --color-surface: #181818;
   --color-surface-hover: #3a3a3a;
+  --color-surface-secondary: #2a2a2a;
+  --color-surface-tertiary: #333333;
 
   /* Text Colors */
   --text-color: #ffffff;
@@ -72,20 +116,57 @@
   --color-text-secondary: #aaaaaa;
   --color-text-tertiary: #777777;
   --color-text-inverse: #1e1e1e;
+  --color-text-muted: #6b7280;
+  --color-text-dark: #f8fafc;
+  --color-text-medium: #e5e7eb;
   --head-title-color: #fff;
   --paragraph-color: #aaaaaa;
   --label-color: #cccccc;
 
   /* Border & Decoration */
   --border-color: #3a3a3a;
+  --border-color-light: #404040;
+  --border-color-medium: #4a4a4a;
+  --border-color-dark: #555555;
   --border-curve: 1rem;
   --adv-table-filter: #ffffff80;
 
-  /* Status Colors - slightly adjusted for better visibility in dark mode */
+  /* Status Colors - adjusted for better visibility in dark mode */
   --color-success: #5cbc60;
+  --color-success-light: #22c55e;
+  --color-success-hover: #16a34a;
   --color-danger: #ff5252;
+  --color-danger-light: #f87171;
+  --color-danger-hover: #ef4444;
   --color-warning: #ffb74d;
+  --color-warning-light: #fbbf24;
   --color-info: #42a5f5;
+  --color-info-light: #60a5fa;
+
+  /* Action Colors for Dark Mode */
+  --color-edit: var(--color-primary);
+  --color-edit-hover: var(--color-primary-hover);
+  --color-edit-bg: rgba(72, 128, 255, 0.15);
+  --color-edit-bg-hover: rgba(72, 128, 255, 0.25);
+
+  --color-delete: var(--color-danger-light);
+  --color-delete-hover: var(--color-danger-hover);
+  --color-delete-bg: rgba(248, 113, 113, 0.15);
+  --color-delete-bg-hover: rgba(248, 113, 113, 0.25);
+
+  --color-view: #9ca3af;
+  --color-view-hover: #d1d5db;
+  --color-view-bg: rgba(156, 163, 175, 0.15);
+  --color-view-bg-hover: rgba(156, 163, 175, 0.25);
+
+  /* Table Specific Colors for Dark Mode */
+  --table-header-bg: #2a2a2a;
+  --table-header-hover: #3a3a3a;
+  --table-row-even: #202020;
+  --table-row-hover: #2a2a2a;
+  --table-border: #404040;
+  --table-shadow: rgba(0, 0, 0, 0.3);
+  --table-shadow-hover: rgba(0, 0, 0, 0.4);
 
   /* Typography - keeping consistent with light theme */
   --thin-font-weight: 200;
@@ -95,10 +176,12 @@
   /* Elevation & Shadows - adjusted for dark mode */
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
   --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-table: 0 2px 8px var(--table-shadow);
 
   /* Border Radius - keeping consistent with light theme */
   --radius-sm: 6px;
   --radius-md: 12px;
+  --radius-lg: 18px;
 
   /* Transitions - keeping consistent with light theme */
   --transition-fast: 0.15s;

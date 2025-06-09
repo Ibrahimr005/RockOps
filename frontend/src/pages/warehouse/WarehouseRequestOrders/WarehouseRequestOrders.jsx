@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from "../../../components/common/DataTable/DataTable.jsx";
-import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx"
 import { useNavigate } from 'react-router-dom';
 import './WarehouseRequestOrders.scss';
@@ -35,81 +34,197 @@ const WarehouseRequestOrders = ({ warehouseId }) => {
     // Column configuration for pending request orders
     const pendingOrderColumns = [
         {
+            id: 'title',
             header: 'TITLE',
             accessor: 'title',
+            width: '200px',
+            minWidth: '150px',
             sortable: true,
-            render: (row) => row.title || 'N/A'
+            filterable: true,
+            render: (row, value) => {
+                return value || 'N/A';
+            }
         },
         {
+            id: 'deadline',
             header: 'DEADLINE',
             accessor: 'deadline',
+            width: '140px',
+            minWidth: '120px',
             sortable: true,
-            render: (row) => row.deadline ? new Date(row.deadline).toLocaleDateString() : 'N/A'
+            filterable: true,
+            filterType: 'text',
+            render: (row, value) => {
+                return value ? new Date(value).toLocaleDateString() : 'N/A';
+            }
         },
         {
+            id: 'createdAt',
             header: 'CREATED AT',
             accessor: 'createdAt',
+            width: '140px',
+            minWidth: '120px',
             sortable: true,
-            render: (row) => row.createdAt ? new Date(row.createdAt).toLocaleDateString() : 'N/A'
+            filterable: true,
+            filterType: 'text',
+            render: (row, value) => {
+                return value ? new Date(value).toLocaleDateString() : 'N/A';
+            }
         },
         {
+            id: 'createdBy',
             header: 'CREATED BY',
             accessor: 'createdBy',
+            width: '150px',
+            minWidth: '120px',
             sortable: true,
-            render: (row) => row.createdBy || 'N/A'
+            filterable: true,
+            filterType: 'text',
+            render: (row, value) => {
+                return value || 'N/A';
+            }
         }
     ];
 
     // Column configuration for validated request orders
     const validatedOrderColumns = [
         {
-            header: 'ITEM',
-            accessor: 'itemName',
+            id: 'title',
+            header: 'TITLE',
+            accessor: 'title',
+            width: '200px',
+            minWidth: '150px',
             sortable: true,
-            render: (row) => row.item?.name || row.itemName || 'N/A'
+            filterable: true,
+            render: (row, value) => {
+                return value || 'N/A';
+            }
         },
         {
-            header: 'REQUESTED QTY',
-            accessor: 'requestedQuantity',
-            sortable: true
-        },
-        {
+            id: 'deadline',
             header: 'DEADLINE',
             accessor: 'deadline',
+            width: '200px',
+            minWidth: '120px',
             sortable: true,
-            render: (row) => row.deadline ? new Date(row.deadline).toLocaleDateString() : 'N/A'
+            filterable: true,
+            filterType: 'text',
+            render: (row, value) => {
+                return value ? new Date(value).toLocaleDateString() : 'N/A';
+            }
         },
         {
-            header: 'APPROVED QTY',
-            accessor: 'approvedQuantity',
-            sortable: true
-        },
-        {
-            header: 'VALIDATED BY',
-            accessor: 'validatedBy',
-            sortable: true
-        },
-        {
-            header: 'VALIDATED DATE',
-            accessor: 'validatedDate',
+            id: 'createdAt',
+            header: 'CREATED AT',
+            accessor: 'createdAt',
+            width: '200px',
+            minWidth: '120px',
             sortable: true,
-            render: (row) => row.validatedDate ? new Date(row.validatedDate).toLocaleDateString() : 'N/A'
+            filterable: true,
+            filterType: 'text',
+            render: (row, value) => {
+                return value ? new Date(value).toLocaleDateString() : 'N/A';
+            }
+        },
+        {
+            id: 'createdBy',
+            header: 'CREATED BY',
+            accessor: 'createdBy',
+            width: '200px',
+            minWidth: '120px',
+            sortable: true,
+            filterable: true,
+            filterType: 'text',
+            render: (row, value) => {
+                return value || 'N/A';
+            }
+        },
+        {
+            id: 'approvedBy',
+            header: 'APPROVED BY',
+            accessor: 'approvedBy',
+            width: '200px',
+            minWidth: '120px',
+            sortable: true,
+            filterable: true,
+            filterType: 'text',
+            render: (row, value) => {
+                return value || row.validatedBy || 'N/A';
+            }
+        },
+        {
+            id: 'approvedAt',
+            header: 'APPROVED AT',
+            accessor: 'approvedAt',
+            width: '200px',
+            minWidth: '120px',
+            sortable: true,
+            filterable: true,
+            filterType: 'text',
+            render: (row, value) => {
+                const approvedDate = value || row.validatedDate || row.approvedDate;
+                return approvedDate ? new Date(approvedDate).toLocaleDateString() : 'N/A';
+            }
         }
     ];
 
-    // Action configuration for pending orders
-    const pendingActions = [
+    // Actions configuration for pending orders - edit and delete
+    const pendingOrderActions = [
         {
-            label: 'Edit request',
-            icon: <FaEdit />,
+            label: 'Edit Request',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+            ),
             onClick: (row) => handleEditRequest(row),
-            className: 'primary'
+            className: 'request-edit-button'
         },
         {
-            label: 'Delete request',
-            icon: <FaTrash />,
+            label: 'Delete Request',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="3,6 5,6 21,6"/>
+                    <path d="M19,6v14a2,2 0,0,1-2,2H7a2,2 0,0,1-2-2V6m3,0V4a2,2 0,0,1,2-2h4a2,2 0,0,1,2,2v2"/>
+                    <line x1="10" y1="11" x2="10" y2="17"/>
+                    <line x1="14" y1="11" x2="14" y2="17"/>
+                </svg>
+            ),
             onClick: (row) => handleDeleteRequest(row),
-            className: 'danger'
+            className: 'request-delete-button'
+        }
+    ];
+
+    // Filterable columns configuration
+    const pendingFilterableColumns = [
+        {
+            header: 'Title',
+            accessor: 'title',
+            filterType: 'text'
+        },
+        {
+            header: 'Created By',
+            accessor: 'createdBy',
+            filterType: 'select'
+        }
+    ];
+
+    const validatedFilterableColumns = [
+        {
+            header: 'Title',
+            accessor: 'title',
+            filterType: 'text'
+        },
+        {
+            header: 'Created By',
+            accessor: 'createdBy',
+            filterType: 'select'
+        },
+        {
+            header: 'Approved By',
+            accessor: 'approvedBy',
+            filterType: 'select'
         }
     ];
 
@@ -452,9 +567,7 @@ const WarehouseRequestOrders = ({ warehouseId }) => {
 
     return (
         <div className="warehouse-request-orders-container">
-            <div className="request-orders-header">
-                <h1 className="request-orders-title">Request Orders</h1>
-            </div>
+
 
             {/* Pending Orders Section */}
             <div className="request-orders-section">
@@ -465,17 +578,19 @@ const WarehouseRequestOrders = ({ warehouseId }) => {
 
                 <div className="request-orders-table-card">
                     <DataTable
-                        columns={pendingOrderColumns}
                         data={pendingOrders}
-                        actions={pendingActions}
+                        columns={pendingOrderColumns}
+                        actions={pendingOrderActions}
+                        onRowClick={handleRowClick}
                         loading={isLoadingPending}
+                        emptyMessage="No pending request orders found"
+                        className="request-orders-table"
+                        itemsPerPageOptions={[5, 10, 15, 20]}
+                        defaultItemsPerPage={10}
                         showSearch={true}
                         showFilters={true}
-                        filterableColumns={pendingOrderColumns.filter(col => col.sortable)}
-                        itemsPerPageOptions={[10, 25, 50]}
-                        defaultItemsPerPage={10}
-                        className="request-orders-table"
-                        onRowClick={handleRowClick}
+                        filterableColumns={pendingFilterableColumns}
+                        actionsColumnWidth="120px"
                     />
                 </div>
             </div>
@@ -489,16 +604,17 @@ const WarehouseRequestOrders = ({ warehouseId }) => {
 
                 <div className="request-orders-table-card">
                     <DataTable
-                        columns={validatedOrderColumns}
                         data={validatedOrders}
+                        columns={validatedOrderColumns}
+                        onRowClick={handleRowClick}
                         loading={isLoadingValidated}
+                        emptyMessage="No validated request orders found"
+                        className="request-orders-table"
+                        itemsPerPageOptions={[5, 10, 15, 20]}
+                        defaultItemsPerPage={10}
                         showSearch={true}
                         showFilters={true}
-                        filterableColumns={validatedOrderColumns.filter(col => col.sortable)}
-                        itemsPerPageOptions={[10, 25, 50]}
-                        defaultItemsPerPage={10}
-                        className="request-orders-table"
-                        onRowClick={handleRowClick}
+                        filterableColumns={validatedFilterableColumns}
                     />
                 </div>
             </div>
@@ -510,7 +626,9 @@ const WarehouseRequestOrders = ({ warehouseId }) => {
                     title="Create New Request"
                     onClick={handleOpenModal}
                 >
-                    <FaPlus className="request-orders-plus-icon" />
+                    <svg className="request-orders-plus-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
                 </button>
             )}
 

@@ -28,6 +28,8 @@ const WarehouseInformation = () => {
         }
 
         const data = await response.json();
+        console.log(JSON.stringify(data, null, 2));
+
         setWarehouseData(data);
       } catch (error) {
         setError(error.message);
@@ -93,7 +95,7 @@ const WarehouseInformation = () => {
                 <div className="field-list">
                   <FieldItem label="Warehouse ID" value={warehouseData.id} />
                   <FieldItem label="Warehouse Name" value={warehouseData.name} />
-                  <FieldItem label="Location" value={warehouseData.location} />
+                  <FieldItem label="Capacity" value={warehouseData.capacity} />
                 </div>
               </div>
 

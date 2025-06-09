@@ -198,7 +198,7 @@ const ProcurementRequestOrderDetails = () => {
             </div>
 
             {/* Navigation Tabs */}
-            <div className="tab-navigation">
+            <div className="tab-navigation2">
                 <button
                     className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
                     onClick={() => setActiveTab('overview')}

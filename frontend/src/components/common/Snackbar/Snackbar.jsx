@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Snackbar.scss';
 
 /**
@@ -10,19 +10,78 @@ import './Snackbar.scss';
  * @param {function} props.onClose - Function to call when Snackbar should close
  * @param {number} props.duration - Duration to show Snackbar in ms (default: 3000)
  * @param {boolean} props.persistent - Whether the snackbar should stay open until manually closed
+ * @param {Object} props.actions - Optional action buttons configuration
+ * @param {Array} props.actions.buttons - Array of button configurations
+ * @param {string} props.actions.buttons[].label - Button label
+ * @param {string} props.actions.buttons[].type - Button type ('confirm' or 'cancel')
+ * @param {function} props.actions.buttons[].onClick - Button click handler
  */
-const Snackbar = ({ type = 'success', message, show, onClose, duration = 3000, persistent = false }) => {
+const Snackbar = ({ 
+    type = 'success', 
+    message, 
+    show, 
+    onClose, 
+    duration = 3000, 
+    persistent = false,
+    actions = null 
+}) => {
+    const [visible, setVisible] = useState(false);
+    const [animationState, setAnimationState] = useState('hidden');
+
+    // Animation timings (in ms)
+    const slideInDuration = 165;
+    const animationDuration = 535; // Should match CSS transition time exactly
+
     useEffect(() => {
-        if (show && !persistent) {
+        if (show) {
+            // First make it visible
+            setVisible(true);
+
+            // Then trigger the slide-in animation after a brief delay
+            setTimeout(() => {
+                setAnimationState('slide-in');
+            }, slideInDuration);
+
+            // Start hiding after 'duration' ms (only if not persistent and no actions)
+            if (!persistent && !actions) {
+                const hideTimer = setTimeout(() => {
+                    // Trigger slide-out animation
+                    setAnimationState('slide-out');
+
+                    // Remove from DOM after animation completes
+                    const removeTimer = setTimeout(() => {
+                        setVisible(false);
+                        if (onClose) onClose();
+                    }, animationDuration);
+
+                    return () => clearTimeout(removeTimer);
+                }, duration);
+
+                return () => clearTimeout(hideTimer);
+            }
+        } else {
+            // If show changes to false
+            setAnimationState('slide-out');
+
             const timer = setTimeout(() => {
-                if (onClose) onClose();
-            }, duration);
+                setVisible(false);
+            }, animationDuration);
 
             return () => clearTimeout(timer);
         }
-    }, [show, onClose, duration, persistent]);
+    }, [show, duration, onClose, persistent, actions]);
 
-    if (!show) return null;
+    // Manual close handler for persistent snackbars
+    const handleManualClose = () => {
+        setAnimationState('slide-out');
+        setTimeout(() => {
+            setVisible(false);
+            if (onClose) onClose();
+        }, animationDuration);
+    };
+
+    // Don't render anything if not visible
+    if (!visible) return null;
 
     // Define icons for different Snackbar types
     const getIcon = () => {
@@ -63,12 +122,49 @@ const Snackbar = ({ type = 'success', message, show, onClose, duration = 3000, p
         }
     };
 
+    // Check if message contains line breaks to determine layout
+    const hasMultipleLines = typeof message === 'string' && message.includes('\n');
+
     return (
-        <div className={`global-notification ${type}-notification`}>
-            <div>
+        <div className={`snackbar ${type}-snackbar ${animationState} ${persistent ? 'persistent' : ''} ${hasMultipleLines ? 'multi-line' : ''}`}>
+            <div className="snackbar-icon">
                 {getIcon()}
-                <span>{message}</span>
             </div>
+            <div className="snackbar-content">
+                {hasMultipleLines ? (
+                    <pre className="snackbar-message">{message}</pre>
+                ) : (
+                    <span className="snackbar-message">{message}</span>
+                )}
+                {actions && actions.buttons && (
+                    <div className="snackbar-actions">
+                        {actions.buttons.map((button, index) => (
+                            <button
+                                key={index}
+                                className={`snackbar-action-button ${button.type || 'default'}`}
+                                onClick={() => {
+                                    if (button.onClick) button.onClick();
+                                    if (!button.preventClose) handleManualClose();
+                                }}
+                            >
+                                {button.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+            {persistent && !actions && (
+                <button 
+                    className="snackbar-close-button" 
+                    onClick={handleManualClose}
+                    aria-label="Close notification"
+                >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            )}
         </div>
     );
 };

@@ -74,4 +74,20 @@ public class SarkyLog {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    /**
+     * Set the document path (maps to fileUrl field for backward compatibility)
+     * @param documentPath The document path to set
+     */
+    public void setDocumentPath(String documentPath) {
+        this.fileUrl = documentPath;
+    }
+
+    /**
+     * Get the document path (maps to fileUrl field for backward compatibility)
+     * @return The document path
+     */
+    public String getDocumentPath() {
+        return this.fileUrl;
+    }
 }

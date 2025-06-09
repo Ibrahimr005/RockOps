@@ -2,7 +2,8 @@ import React, {useEffect, useState} from "react";
 import DataTable from "../../../../components/common/DataTable/DataTable";
 import {useTranslation} from 'react-i18next';
 import {useAuth} from "../../../../contexts/AuthContext";
-
+import Snackbar from "../../../../components/common/Snackbar/Snackbar";
+import { siteService } from "../../../../services/siteService";
 
 const SiteFixedAssetsTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -12,6 +13,11 @@ const SiteFixedAssetsTab = ({siteId}) => {
     const [showModal, setShowModal] = useState(false);
     const [availableFixedAsset, setAvailableFixedAsset] = useState([]);
     const {currentUser} = useAuth();
+    const [snackbar, setSnackbar] = useState({
+        show: false,
+        message: '',
+        type: 'success'
+    });
 
     const isSiteAdmin = currentUser?.role === "SITE_ADMIN";
 
@@ -45,26 +51,8 @@ const SiteFixedAssetsTab = ({siteId}) => {
 
     const fetchFixedAssets = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/site/${siteId}/fixedassets`, {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            if (!response.ok) {
-                const text = await response.text();
-                try {
-                    const json = JSON.parse(text);
-                    throw new Error(json.message || `HTTP error! Status: ${response.status}`);
-                } catch (err) {
-                    throw new Error(`No fixed assets found for this site.`);
-                }
-            }
-
-            const data = await response.json();
+            const response = await siteService.getSiteFixedAssets(siteId);
+            const data = response.data;
 
             if (Array.isArray(data)) {
                 const transformedData = data.map((asset, index) => ({
@@ -78,6 +66,11 @@ const SiteFixedAssetsTab = ({siteId}) => {
                 setAssetsData(transformedData);
             } else {
                 setAssetsData([]);
+                setSnackbar({
+                    show: true,
+                    message: 'No fixed assets found for this site',
+                    type: 'info'
+                });
             }
 
             setLoading(false);
@@ -85,6 +78,11 @@ const SiteFixedAssetsTab = ({siteId}) => {
             setError(err.message);
             setAssetsData([]);
             setLoading(false);
+            setSnackbar({
+                show: true,
+                message: err.message,
+                type: 'error'
+            });
         }
     };
 
@@ -96,42 +94,45 @@ const SiteFixedAssetsTab = ({siteId}) => {
 
     const fetchAvailableFixedAsset = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch("http://localhost:8080/fixedAssets", {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            if (!response.ok) throw new Error("Failed to fetch fixed assets.");
-
-            const data = await response.json();
+            const response = await siteService.getUnassignedFixedAssets();
+            const data = response.data;
             const unassignedFixedAsset = data.filter(ep => !ep.site);
             setAvailableFixedAsset(unassignedFixedAsset);
+            if (unassignedFixedAsset.length === 0) {
+                setSnackbar({
+                    show: true,
+                    message: 'No available fixed assets found to assign',
+                    type: 'info'
+                });
+            }
         } catch (err) {
             console.error("Error fetching available fixed asset:", err);
             setAvailableFixedAsset([]);
+            setSnackbar({
+                show: true,
+                message: 'Failed to fetch available fixed assets',
+                type: 'error'
+            });
         }
     };
 
     const handleAssignFixedAsset = async (fixedAssetId) => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/siteadmin/${siteId}/assign-fixedAsset/${fixedAssetId}`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            if (!response.ok) throw new Error("Failed to assign fixed asset.");
+            await siteService.assignFixedAsset(siteId, fixedAssetId);
             setShowModal(false);
-            fetchFixedAssets(); // Refresh the fixed assets list
+            await fetchFixedAssets();
+            setSnackbar({
+                show: true,
+                message: 'Fixed asset successfully assigned to site',
+                type: 'success'
+            });
         } catch (err) {
             console.error("Error assigning fixed asset:", err);
+            setSnackbar({
+                show: true,
+                message: 'Failed to assign fixed asset',
+                type: 'error'
+            });
         }
     };
 
@@ -142,10 +143,21 @@ const SiteFixedAssetsTab = ({siteId}) => {
 
     const handleCloseModal = () => setShowModal(false);
 
+    const handleCloseSnackbar = () => {
+        setSnackbar(prev => ({ ...prev, show: false }));
+    };
+
     if (loading) return <div className="loading-container">{t('site.loadingFixedAssets')}</div>;
 
     return (
         <div className="site-fixed-assets-tab">
+            <Snackbar
+                show={snackbar.show}
+                message={snackbar.message}
+                type={snackbar.type}
+                onClose={handleCloseSnackbar}
+                duration={3000}
+            />
             <div className="departments-header">
                 <h3>{t('site.siteFixedAssetsReport')}</h3>
                 {isSiteAdmin && (

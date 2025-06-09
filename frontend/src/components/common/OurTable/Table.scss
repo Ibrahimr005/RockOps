@@ -294,7 +294,7 @@
     margin-bottom: 6px;
     opacity: 0.9;
     pointer-events: none;
-    z-index: 20;
+    z-index: 20000;
   }
 
   &[title]:hover:after {
@@ -308,7 +308,7 @@
     border-color: #1f2937 transparent transparent transparent;
     margin-bottom: 2px;
     pointer-events: none;
-    z-index: 20;
+    z-index: 20000000;
   }
 }
 

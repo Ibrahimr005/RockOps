@@ -3,6 +3,7 @@ package com.example.backend.models.transaction;
 import com.example.backend.models.PartyType;
 import com.example.backend.models.equipment.InSiteMaintenance;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -54,7 +55,9 @@ public class Transaction {
 
     // Transaction items - new relationship
     @OneToMany(mappedBy = "transaction", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TransactionItem> items = new ArrayList<>();
+    @JsonIgnoreProperties({"transaction", "hibernateLazyInitializer", "handler"})
+    private List<TransactionItem> items;
+
 
     @Enumerated(EnumType.STRING)
     private TransactionPurpose purpose = TransactionPurpose.GENERAL; // Default to GENERAL

@@ -57,7 +57,7 @@ public class Equipment {
     @JoinColumn(name = "merchant_id")
     private Merchant purchasedFrom;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String examinedBy;
 
     @Column(nullable = true)
@@ -69,11 +69,14 @@ public class Equipment {
     @Column(nullable = false, unique = true)
     private String serialNumber;
 
-    @Column(nullable = false)
-    private String shipping;
+    @Column(nullable = true)
+    private double shipping;
 
-    @Column(nullable = false)
-    private String customs;
+    @Column(nullable = true)
+    private double customs;
+
+    @Column(nullable = true)
+    private double taxes;
 
     @Column(nullable = false)
     private String modelNumber;

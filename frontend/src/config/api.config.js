@@ -8,26 +8,66 @@ export const EQUIPMENT_ENDPOINTS = {
     TYPES: '/api/equipment-types',
     TYPE_BY_ID: (id) => `/api/equipment-types/${id}`,
     TYPE_BY_NAME: (name) => `/api/equipment-types/name/${name}`,
+    TYPE_SUPPORTED_WORK_TYPES: (typeId) => `/api/equipment-types/${typeId}/supported-work-types`,
     STATUS: (id) => `/api/equipment/status/${id}`,
     STATUS_DTO: (id) => `/api/equipment/status/dto/${id}`,
     BY_TYPE: (typeId) => `/api/equipment/type/${typeId}`,
     CONSUMABLES: (equipmentId) => `/api/equipment/${equipmentId}/consumables`,
+    CONSUMABLES_BY_CATEGORY: (equipmentId, category) => `/api/equipment/${equipmentId}/consumables/by-category/${category}`,
+    CONSUMABLES_ANALYTICS: (equipmentId) => `/api/equipment/${equipmentId}/consumables/analytics`,
+    MAINTENANCE: (equipmentId) => `/api/equipment/${equipmentId}/maintenance`,
+    MAINTENANCE_TECHNICIANS: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/technicians`,
+    MAINTENANCE_BY_ID: (equipmentId, maintenanceId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}`,
+    MAINTENANCE_TRANSACTIONS: (equipmentId, maintenanceId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}/transactions`,
+    MAINTENANCE_CHECK_TRANSACTION: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`,
     CREATE_DTO: '/api/equipment/dto',
     UPDATE_DTO: (id) => `/api/equipment/dto/${id}`,
     ELIGIBLE_DRIVERS: (typeId) => `/api/equipment/type/${typeId}/eligible-drivers`,
     SARKY_DRIVERS: (typeId) => `/api/equipment/type/${typeId}/sarky-drivers`,
+    SUPPORTED_WORK_TYPES: (typeId) => `/api/equipment/type/${typeId}/supported-work-types`,
     CHECK_DRIVER_COMPATIBILITY: (equipmentId, employeeId) =>
         `/api/equipment/${equipmentId}/check-driver-compatibility/${employeeId}`,
     BRANDS: '/api/equipment/brands',
     BRAND_BY_ID: (id) => `/api/equipment/brands/${id}`,
+    SARKY_ANALYTICS: (equipmentId) => `/api/equipment/${equipmentId}/sarky-analytics`,
     // Transaction endpoints
+    TRANSACTIONS: (equipmentId) => `/api/equipment/${equipmentId}/transactions`,
+    TRANSACTIONS_INITIATED: (equipmentId) => `/api/equipment/${equipmentId}/transactions/initiated`,
     SEND_TRANSACTION: (equipmentId) => `/api/equipment/${equipmentId}/send-transaction`,
-    RECEIVE_TRANSACTION: (equipmentId) => `/api/equipment/${equipmentId}/receive-transaction`
+    RECEIVE_TRANSACTION: (equipmentId) => `/api/equipment/${equipmentId}/receive-transaction`,
+    ACCEPT_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept`,
+    REJECT_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/reject`,
+    UPDATE_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}`
+};
+
+// Consumable Resolution endpoints
+export const CONSUMABLE_ENDPOINTS = {
+    RESOLVE_DISCREPANCY: '/api/v1/consumables/resolve-discrepancy',
+    RESOLUTION_HISTORY: (equipmentId) => `/api/v1/consumables/resolution-history/equipment/${equipmentId}`,
+    DISCREPANCIES: (equipmentId) => `/api/v1/consumables/equipment/${equipmentId}/discrepancies`,
+    RESOLVED: (equipmentId) => `/api/v1/consumables/equipment/${equipmentId}/resolved`
+};
+
+// Equipment Types module endpoints
+export const EQUIPMENT_TYPE_ENDPOINTS = {
+    BASE: '/api/equipment-types',
+    BY_ID: (id) => `/api/equipment-types/${id}`,
+    CREATE: '/api/equipment-types',
+    UPDATE: (id) => `/api/equipment-types/${id}`,
+    DELETE: (id) => `/api/equipment-types/${id}`,
+    SEARCH: '/api/equipment-types/search',
+    SUPPORTED_WORK_TYPES: (id) => `/api/equipment-types/${id}/supported-work-types`,
+    SET_SUPPORTED_WORK_TYPES: (id) => `/api/equipment-types/${id}/supported-work-types`,
 };
 
 // Sarky module endpoints
 export const SARKY_ENDPOINTS = {
     BY_EQUIPMENT: (equipmentId) => `/api/v1/equipment/${equipmentId}/sarky`,
+    BY_EQUIPMENT_AND_DATE: (equipmentId, date) => `/api/v1/equipment/${equipmentId}/sarky/date/${date}`,
+    BY_EQUIPMENT_DATE_RANGE: (equipmentId) => `/api/v1/equipment/${equipmentId}/sarky/date-range`,
+    DAILY_SUMMARY: (equipmentId, date) => `/api/v1/equipment/${equipmentId}/sarky/daily-summary/${date}`,
+    EXISTING_DATES: (equipmentId) => `/api/v1/equipment/${equipmentId}/sarky/existing-dates`,
+    VALIDATION_INFO: (equipmentId) => `/api/v1/equipment/${equipmentId}/sarky/validation-info`,
     LATEST_DATE: (equipmentId) => `/api/v1/equipment/${equipmentId}/sarky/latest-date`,
     BY_ID: (id) => `/api/v1/sarky/${id}`,
     CREATE: (equipmentId) => `/api/v1/equipment/${equipmentId}/sarky`,
@@ -156,7 +196,8 @@ export const JOB_POSITION_ENDPOINTS = {
 export const DOCUMENT_ENDPOINTS = {
     BY_ID: (id) => `/api/v1/documents/${id}`,
     BY_ENTITY: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents`,
-    CREATE: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents`
+    CREATE: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents`,
+    DELETE: (id) => `/api/v1/documents/${id}`
 };
 
 // Partner module endpoints
@@ -244,10 +285,13 @@ export const ATTENDANCE_ENDPOINTS = {
 export const TRANSACTION_ENDPOINTS = {
     BASE: '/api/v1/transactions',
     CREATE: '/api/v1/transactions/create',
+    BY_ID: (transactionId) => `/api/v1/transactions/${transactionId}`,
     BY_BATCH: (batchNumber) => `/api/v1/transactions/batch/${batchNumber}`,
     ACCEPT: (transactionId) => `/api/v1/transactions/${transactionId}/accept`,
     REJECT: (transactionId) => `/api/v1/transactions/${transactionId}/reject`,
-    UPDATE: (transactionId) => `/api/v1/transactions/${transactionId}/update`
+    UPDATE: (transactionId) => `/api/v1/transactions/${transactionId}`,
+    BY_WAREHOUSE: (warehouseId) => `/api/v1/transactions/warehouse/${warehouseId}`,
+    BY_EQUIPMENT: (equipmentId) => `/api/v1/transactions/equipment/${equipmentId}`
 };
 
 // Item Type module endpoints
@@ -268,4 +312,29 @@ export const WAREHOUSE_ENDPOINTS = {
     CREATE: '/api/v1/warehouses',
     UPDATE: (id) => `/api/v1/warehouses/${id}`,
     DELETE: (id) => `/api/v1/warehouses/${id}`
+};
+
+// Maintenance Type module endpoints
+export const MAINTENANCE_TYPE_ENDPOINTS = {
+    BASE: '/api/v1/maintenancetypes',
+    MANAGEMENT: '/api/v1/maintenancetypes/management',
+    BY_ID: (id) => `/api/v1/maintenancetypes/${id}`,
+    CREATE: '/api/v1/maintenancetypes',
+    UPDATE: (id) => `/api/v1/maintenancetypes/${id}`,
+    DELETE: (id) => `/api/v1/maintenancetypes/${id}`
+};
+
+// InSite Maintenance module endpoints
+export const INSITE_MAINTENANCE_ENDPOINTS = {
+    BASE: (equipmentId) => `/api/equipment/${equipmentId}/maintenance`,
+    BY_ID: (equipmentId, maintenanceId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}`,
+    CREATE: (equipmentId) => `/api/equipment/${equipmentId}/maintenance`,
+    UPDATE: (equipmentId, maintenanceId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}`,
+    DELETE: (equipmentId, maintenanceId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}`,
+    TECHNICIANS: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/technicians`,
+    LINK_TRANSACTION: (equipmentId, maintenanceId, transactionId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}/link-transaction/${transactionId}`,
+    CREATE_TRANSACTION: (equipmentId, maintenanceId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}/transactions`,
+    CHECK_TRANSACTION: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`,
+    VALIDATE_TRANSACTION: (equipmentId, maintenanceId, transactionId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}/validate-transaction/${transactionId}`,
+    ANALYTICS: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/analytics`
 };

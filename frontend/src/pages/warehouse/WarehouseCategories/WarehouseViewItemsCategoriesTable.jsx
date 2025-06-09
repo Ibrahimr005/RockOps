@@ -2,16 +2,18 @@ import React, { useState, useEffect, useRef } from "react";
 import "./WarehouseViewItemCategories.scss";
 import ParentCategoriesTable from "./ParentCategoriesTable";
 import ChildCategoriesTable from "./ChildCategoriesTable";
+import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx"; // Import the Snackbar component
 
-const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
+const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => {
   const [allCategories, setAllCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const modalRef = useRef(null);
-  const [showNotification, setShowNotification] = useState(false);
-  const [showNotification2, setShowNotification2] = useState(false);
   const [tableUpdateTrigger, setTableUpdateTrigger] = useState(0);
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState('parent');
 
   const [categoryAction, setCategoryAction] = useState('create'); // Default to 'create'
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -21,13 +23,54 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
   const [validParentCategories, setValidParentCategories] = useState([]);
   const [userRole, setUserRole] = useState("");
 
+  // Snackbar states - replace old notification states
+  const [showSnackbar, setShowSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarType, setSnackbarType] = useState('success');
+
+  // Helper function to show snackbar
+  const displaySnackbar = (message, type = 'success') => {
+    setSnackbarMessage(message);
+    setSnackbarType(type);
+    setShowSnackbar(true);
+  };
+
+  // Helper function to close snackbar
+  const closeSnackbar = () => {
+    setShowSnackbar(false);
+  };
+
+  const openCategoryModal = (category) => {
+    if (category) {
+      setCategoryAction('update');
+      setSelectedCategory(category);
+      setNewCategoryName(category.name);
+      setNewCategoryDescription(category.description);
+      setSelectedParentCategory(category.parentCategory ? category.parentCategory.id : null);
+    } else {
+      setCategoryAction('create');
+      setNewCategoryName('');
+      setNewCategoryDescription('');
+      setSelectedCategory(null);
+      setSelectedParentCategory(null);
+    }
+    setIsModalOpen(true);
+  };
+
+  // Register the add function with parent component
+  useEffect(() => {
+    if (onAddButtonClick) {
+      onAddButtonClick(openCategoryModal);
+    }
+  }, [onAddButtonClick]);
+
   // Define fetchAllCategories function at the component level
   const fetchAllCategories = async () => {
     try {
       setLoading(true);
       setError(null);
       const token = localStorage.getItem("token");
-      
+
       if (!token) {
         throw new Error("No authentication token found");
       }
@@ -133,7 +176,7 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
     e.preventDefault();
 
     if (!newCategoryName || !newCategoryDescription) {
-      alert("Please provide both name and description.");
+      displaySnackbar("Please provide both name and description.", "error");
       return;
     }
 
@@ -178,7 +221,7 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
             }
         );
       } else {
-        alert("Invalid action or missing category selection.");
+        displaySnackbar("Invalid action or missing category selection.", "error");
         return;
       }
 
@@ -212,33 +255,18 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
       // Trigger a refresh of the tables
       setTableUpdateTrigger(prev => prev + 1);
 
-      // Show success notification
-      setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 3000);
+      // Show success notification with Snackbar
+      displaySnackbar(
+          `Category successfully ${categoryAction === 'update' ? 'updated' : 'added'}!`,
+          "success"
+      );
 
       // Fetch all categories again to ensure everything is up to date
       fetchAllCategories();
     } catch (error) {
       console.error("Error saving category:", error);
-      alert("Failed to save category. Error: " + error.message);
+      displaySnackbar(`Failed to save category: ${error.message}`, "error");
     }
-  };
-
-  const openCategoryModal = (category) => {
-    if (category) {
-      setCategoryAction('update');
-      setSelectedCategory(category);
-      setNewCategoryName(category.name);
-      setNewCategoryDescription(category.description);
-      setSelectedParentCategory(category.parentCategory ? category.parentCategory.id : null);
-    } else {
-      setCategoryAction('create');
-      setNewCategoryName('');
-      setNewCategoryDescription('');
-      setSelectedCategory(null);
-      setSelectedParentCategory(null);
-    }
-    setIsModalOpen(true);
   };
 
   const deleteItemCategory = async (id) => {
@@ -265,80 +293,113 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
       // Trigger a refresh of the tables
       setTableUpdateTrigger(prev => prev + 1);
 
-      // Show delete success notification
-      setShowNotification2(true);
-      setTimeout(() => {
-        setShowNotification2(false);
-      }, 3000);
+      // Show delete success notification with Snackbar
+      displaySnackbar("Category successfully deleted!", "success");
 
       // Fetch all categories again to ensure everything is in sync
       fetchAllCategories();
     } catch (error) {
       console.error("Error deleting item category:", error);
-      alert("Failed to delete item category. Error: " + error.message);
+      displaySnackbar(`Failed to delete category: ${error.message}`, "error");
     }
   };
 
   // Show loading state
   if (loading) {
     return (
-      <div className="warehouse-view2">
-        <div className="page-header">
-          <h1 className="page-title2">Item Categories</h1>
-        </div>
         <div style={{ padding: '40px', textAlign: 'center' }}>
           <p>Loading categories...</p>
         </div>
-      </div>
     );
   }
 
   // If there's an error, show error message instead of crashing
   if (error) {
     return (
-      <div className="warehouse-view2">
-        <div className="page-header">
-          <h1 className="page-title2">Item Categories</h1>
-        </div>
         <div className="error-container">
           <p>Error loading categories: {error}</p>
           <button onClick={fetchAllCategories} className="retry-button">
             Retry
           </button>
         </div>
-      </div>
     );
   }
 
   return (
-      <div className="warehouse-view2">
-        <div className="page-header">
-          <h1 className="page-title2">Item Categories</h1>
+      <>
+        {/* Tabs Container */}
+        <div className="categories-tabs-container">
+          <div className="categories-tabs">
+            <button
+                className={`categories-tab ${activeTab === 'parent' ? 'active' : ''}`}
+                onClick={() => setActiveTab('parent')}
+            >
+              Parent Categories
+            </button>
+            <button
+                className={`categories-tab ${activeTab === 'child' ? 'active' : ''}`}
+                onClick={() => setActiveTab('child')}
+            >
+              Child Categories
+            </button>
+          </div>
         </div>
 
-        {/* Parent Categories Table - Using its own API endpoint */}
-        <ParentCategoriesTable
-            onEdit={openCategoryModal}
-            onDelete={deleteItemCategory}
-            key={`parent-${tableUpdateTrigger}`}
-        />
-
-        {/* Child Categories Table - Using its own API endpoint */}
-        <ChildCategoriesTable
-            onEdit={openCategoryModal}
-            onDelete={deleteItemCategory}
-            key={`child-${tableUpdateTrigger}`}
-        />
-
-        {/* Add button */}
-        {userRole === "WAREHOUSE_MANAGER" && (
-            <button className="add-button2" onClick={() => openCategoryModal()}>
-              <svg className="plus-icon2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-            </button>
+        {/* Category Info Cards */}
+        {activeTab === 'parent' && (
+            <div className="category-info-card">
+              <div className="category-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                </svg>
+              </div>
+              <div className="category-info-content">
+                <h3>Item Types Can Only Be Assigned to Child Categories</h3>
+                <p>
+                  <strong>Important:</strong> To create or assign item types, you must use child categories only.
+                  Child categories require a parent category to be created first. This two-level hierarchy ensures proper organization:
+                  Parent → Child → Item Types.
+                </p>
+              </div>
+            </div>
         )}
 
+        {activeTab === 'child' && (
+            <div className="category-info-card">
+              <div className="category-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="category-info-content">
+                <h3>Item Types Can Only Be Assigned to Child Categories</h3>
+                <p>
+                  <strong>Important:</strong> To create or assign item types, you must use child categories only.
+                  Child categories require a parent category to be created first. This two-level hierarchy ensures proper organization:
+                  Parent → Child → Item Types.
+                </p>
+              </div>
+            </div>
+        )}
+
+        {/* Tab Content */}
+        {activeTab === 'parent' && (
+            <ParentCategoriesTable
+                onEdit={openCategoryModal}
+                onDelete={deleteItemCategory}
+                key={`parent-${tableUpdateTrigger}`}
+            />
+        )}
+
+        {activeTab === 'child' && (
+            <ChildCategoriesTable
+                onEdit={openCategoryModal}
+                onDelete={deleteItemCategory}
+                key={`child-${tableUpdateTrigger}`}
+            />
+        )}
+
+        {/* Modal for adding/editing categories */}
         {isModalOpen && (
             <div className="modal-backdrop2">
               <div className="modal2" ref={modalRef}>
@@ -399,7 +460,7 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
                         </select>
 
                         <small className="form-text text-muted">
-                          Only categories that are already parents or don't have assigned item types are available as parent categories.
+                          Only categories that are already parents or don't have assigned parent categories are available as parent categories.
                         </small>
                       </div>
                     </div>
@@ -416,27 +477,15 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId }) => {
             </div>
         )}
 
-        {/* Success notification */}
-        {showNotification && (
-            <div className="notification2 success-notification2">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                <path d="M22 4L12 14.01l-3-3"/>
-              </svg>
-              <span>Category successfully {categoryAction === 'update' ? 'updated' : 'added'}</span>
-            </div>
-        )}
-
-        {showNotification2 && (
-            <div className="notification2 delete-notification2">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                <path d="M22 4L12 14.01l-3-3"/>
-              </svg>
-              <span>Category successfully deleted</span>
-            </div>
-        )}
-      </div>
+        {/* Snackbar Component - replaces old notification system */}
+        <Snackbar
+            type={snackbarType}
+            text={snackbarMessage}
+            isVisible={showSnackbar}
+            onClose={closeSnackbar}
+            duration={3000}
+        />
+      </>
   );
 };
 

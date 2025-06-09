@@ -1,15 +1,17 @@
-import React, {useEffect, useState} from 'react';
-import {NavLink, useLocation} from 'react-router-dom';
+import React, {useEffect, useState, createContext, useContext} from 'react';
+import {NavLink, useLocation, useNavigate} from 'react-router-dom';
 import {useAuth} from '../../../contexts/AuthContext.jsx';
 import {useTheme} from '../../../contexts/ThemeContext.jsx';
 import {useTranslation} from 'react-i18next';
 import {
     FaBars,
     FaBoxes,
-    FaBriefcase, FaBuilding,
+    FaBriefcase,
+    FaBuilding,
     FaChartLine,
     FaChevronDown,
     FaChevronRight,
+    FaChevronLeft,
     FaClipboard,
     FaCog,
     FaFileContract,
@@ -29,37 +31,43 @@ import {
     FaTruck,
     FaUser,
     FaUsers,
-<<<<<<< Updated upstream
-    FaWarehouse
-=======
     FaWarehouse,
     FaTags,
     FaListAlt,
-    FaBook
->>>>>>> Stashed changes
+    FaArrowLeft
 } from 'react-icons/fa';
 
-import logoImage from '../../../assets/logos/Logo.png';
 import './Sidebar.css';
-import {BsFillPersonVcardFill} from "react-icons/bs";
+import logoDarkImage from "../../../assets/logos/Logo-dark.png";
+import logoImage from "../../../assets/logos/Logo.png";
 
+// Create Sidebar Context
+const SidebarContext = createContext();
 
-const Sidebar = () => {
-    const {currentUser, logout} = useAuth();
-    const {theme, toggleTheme} = useTheme();
-    const {t} = useTranslation();
-    const location = useLocation();
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+export const useSidebar = () => {
+    const context = useContext(SidebarContext);
+    if (!context) {
+        throw new Error('useSidebar must be used within a SidebarProvider');
+    }
+    return context;
+};
+
+export const SidebarProvider = ({ children }) => {
+    const { theme } = useTheme(); // Fix: Get theme from context
+    const [isExpanded, setIsExpanded] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
-    const [expandedMenus, setExpandedMenus] = useState({});
-    const [isExpanded, setIsExpanded] = useState(false);
 
-    const userRole = currentUser?.role || 'USER';
-
-    // Check if screen is mobile
+    // Check if screen is mobile and set initial state
     useEffect(() => {
         const checkIfMobile = () => {
-            setIsMobile(window.innerWidth < 768);
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            // On mobile, start collapsed. On desktop, start expanded
+            if (mobile) {
+                setIsExpanded(false);
+            } else {
+                setIsExpanded(true);
+            }
         };
 
         // Initial check
@@ -72,6 +80,96 @@ const Sidebar = () => {
         return () => window.removeEventListener('resize', checkIfMobile);
     }, []);
 
+    const toggleSidebar = () => {
+        setIsExpanded(!isExpanded);
+    };
+
+    // Add class to body to handle main content margin and navbar positioning
+    useEffect(() => {
+        if (isExpanded && !isMobile) {
+            document.body.classList.remove('sidebar-collapsed');
+        } else {
+            document.body.classList.add('sidebar-collapsed');
+        }
+
+        return () => {
+            document.body.classList.remove('sidebar-collapsed');
+        };
+    }, [isExpanded, isMobile]);
+
+    return (
+        <SidebarContext.Provider value={{
+            isExpanded,
+            setIsExpanded,
+            isMobile,
+            toggleSidebar
+        }}>
+            {children}
+        </SidebarContext.Provider>
+    );
+};
+
+const Sidebar = () => {
+    const {currentUser, logout} = useAuth();
+    const {theme, toggleTheme} = useTheme();
+    const {t} = useTranslation();
+    const location = useLocation();
+    const navigate = useNavigate();
+    const {isExpanded, setIsExpanded, isMobile, toggleSidebar} = useSidebar();
+    const [expandedMenus, setExpandedMenus] = useState({});
+    const [navigationHistory, setNavigationHistory] = useState(['/login']);
+
+    const userRole = currentUser?.role || 'USER';
+
+    // Get the appropriate logo based on theme
+    const currentLogo = theme === 'dark' ? logoDarkImage : logoImage;
+
+    // Track navigation history to avoid going back to login
+    useEffect(() => {
+        setNavigationHistory(prev => {
+            const lastPage = prev[prev.length - 1];
+            if (lastPage !== location.pathname) {
+                const newHistory = [...prev, location.pathname];
+                return newHistory.slice(-10);
+            }
+            return prev;
+        });
+    }, [location.pathname]);
+
+    const handleBackClick = () => {
+        const previousPage = navigationHistory.length > 1 ? navigationHistory[navigationHistory.length - 2] : null;
+
+        if (window.history.length <= 2 || previousPage === '/login') {
+            navigate('/dashboard');
+            return;
+        }
+
+        navigate(-1);
+    };
+
+    // Fixed theme toggle handler
+    const handleThemeToggle = (e) => {
+        e.stopPropagation();
+        toggleTheme();
+    };
+
+    // Auto-expand submenus when on submenu pages
+    useEffect(() => {
+        const currentPath = location.pathname;
+        const newExpandedMenus = {...expandedMenus};
+
+        menuItems.forEach(item => {
+            if (item.hasSubmenu && item.submenuItems) {
+                const isOnSubmenuPage = item.submenuItems.some(sub => currentPath === sub.path);
+                if (isOnSubmenuPage) {
+                    newExpandedMenus[item.title] = true;
+                }
+            }
+        });
+
+        setExpandedMenus(newExpandedMenus);
+    }, [location.pathname]);
+
     // Toggle submenu expansion
     const toggleSubmenu = (title) => {
         setExpandedMenus(prev => ({
@@ -80,12 +178,7 @@ const Sidebar = () => {
         }));
     };
 
-    // Check if current path is in a submenu to determine if parent should be highlighted
-    const isInSubmenu = (parentPath, currentPath) => {
-        return currentPath.startsWith(parentPath);
-    };
-
-    // Menu items with role-based access control - with updated role names
+    // Menu items with role-based access control
     const menuItems = [
         {
             title: 'Admin',
@@ -115,7 +208,40 @@ const Sidebar = () => {
             title: 'Equipment',
             icon: <FaTruck/>,
             path: '/equipment',
-            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
+            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE'],
+            hasSubmenu: true,
+            submenuItems: [
+                {
+                    title: 'Equipment List',
+                    icon: <FaTruck/>,
+                    path: '/equipment',
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
+                },
+                {
+                    title: 'Equipment Types',
+                    icon: <FaTags/>,
+                    path: '/equipment/type-management',
+                    roles: ['ADMIN', 'EQUIPMENT_MANAGER']
+                },
+                {
+                    title: 'Equipment Brands',
+                    icon: <FaTags/>,
+                    path: '/equipment/brand-management',
+                    roles: ['ADMIN', 'EQUIPMENT_MANAGER']
+                },
+                {
+                    title: 'Work Types',
+                    icon: <FaListAlt/>,
+                    path: '/equipment/work-type-management',
+                    roles: ['ADMIN', 'EQUIPMENT_MANAGER']
+                },
+                {
+                    title: 'Maintenance Types',
+                    icon: <FaTools/>,
+                    path: '/equipment/maintenance-type-management',
+                    roles: ['ADMIN', 'EQUIPMENT_MANAGER']
+                }
+            ]
         },
         {
             title: 'Warehouses',
@@ -129,12 +255,6 @@ const Sidebar = () => {
             path: '/merchants',
             roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT']
         },
-        // {
-        //     title: 'Assets',
-        //     icon: <FaBoxes/>,
-        //     path: '/assets',
-        //     roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'EQUIPMENT_MANAGER', 'WAREHOUSE_MANAGER']
-        // },
         {
             title: 'HR',
             icon: <FaUsers/>,
@@ -147,6 +267,12 @@ const Sidebar = () => {
                     icon: <FaBuilding/>,
                     path: '/hr/departments',
                     roles: ['USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
+                },
+                {
+                    title: 'Employees',
+                    icon: <FaIdCard/>,
+                    path: '/hr/employees',
+                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
                 },
                 {
                     title: 'Vacancies',
@@ -164,12 +290,6 @@ const Sidebar = () => {
                     title: 'Attendance',
                     icon: <FaTasks/>,
                     path: '/hr/attendance',
-                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
-                },
-                {
-                    title: 'Employees',
-                    icon: <FaIdCard/>,
-                    path: '/hr/employees',
                     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
                 },
             ]
@@ -228,12 +348,12 @@ const Sidebar = () => {
             path: '/secretary',
             roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'SECRETARY']
         },
-        {
-            title: 'Equipment MT ',
-            icon: <FaTruck/>,
-            path: '/equipment-team',
-            roles: ['ADMIN', 'USER', 'EQUIPMENT_MANAGER']
-        },
+        // {
+        //     title: 'Equipment MT',
+        //     icon: <FaTruck/>,
+        //     path: '/equipment-team',
+        //     roles: ['ADMIN', 'USER', 'EQUIPMENT_MANAGER']
+        // },
         {
             title: 'Settings',
             icon: <FaCog/>,
@@ -242,27 +362,48 @@ const Sidebar = () => {
         }
     ];
 
-    // Filter menu items based on user role
-    const filteredMenuItems = menuItems.filter(item => item.roles.includes(userRole));
-
-    const toggleMobileMenu = () => {
-        setMobileMenuOpen(!mobileMenuOpen);
-    };
-
     const handleLogout = () => {
         logout();
     };
 
-    const toggleSidebar = () => {
-        setIsExpanded(!isExpanded);
-    };
-
     return (
         <>
-            <div className={`sidebar ${isExpanded ? 'expanded' : ''}`}>
+            {/* Mobile toggle button */}
+            {isMobile && (
+                <button
+                    className="mobile-sidebar-toggle"
+                    onClick={toggleSidebar}
+                    aria-label="Toggle sidebar"
+                >
+                    {isExpanded ? <FaTimes /> : <FaBars />}
+                </button>
+            )}
+
+            <div
+                className={`sidebar ${isExpanded ? 'expanded' : 'collapsed'}`}
+                data-expanded={isExpanded}
+            >
+                {/* Toggle button - Uses icon swap instead of rotation */}
+                {!isMobile && (
+                    <button
+                        className="sidebar-toggle-btn"
+                        onClick={toggleSidebar}
+                        aria-label="Toggle sidebar"
+                    >
+                        <span className={`chevron-icon ${isExpanded ? 'expanded' : 'collapsed'}`}>
+                            {isExpanded ? <FaChevronLeft /> : <FaChevronRight />}
+                        </span>
+                    </button>
+                )}
+
                 <div className="sidebar-header">
-                    <div className="logo">
-                        <img src={logoImage} alt="Logo" className="logo-image" />
+                    <div className="logo-container">
+                        <img
+                            src={currentLogo}
+                            alt="Logo"
+                            className="logo-image"
+                            key={theme}
+                        />
                     </div>
                 </div>
 
@@ -275,21 +416,36 @@ const Sidebar = () => {
                                 <NavLink
                                     to={item.hasSubmenu ? '#' : item.path}
                                     className={() => {
-                                        const isSubActive = item.hasSubmenu && item.submenuItems.some(sub => location.pathname.startsWith(sub.path));
-                                        const isDirectActive = location.pathname === item.path;
-                                        return `menu-item ${(isSubActive || isDirectActive) ? 'active' : ''}`;
+                                        if (item.hasSubmenu) {
+                                            const isOnParentPath = location.pathname === item.path;
+                                            return `menu-item ${isOnParentPath ? 'active' : ''}`;
+                                        } else {
+                                            const isDirectActive = location.pathname === item.path;
+                                            return `menu-item ${isDirectActive ? 'active' : ''}`;
+                                        }
                                     }}
+                                    data-tooltip={t(item.title)}
                                     onClick={(e) => {
                                         if (item.hasSubmenu) {
                                             e.preventDefault();
-                                            toggleSubmenu(item.title); // Toggle open/close
+
+                                            // If sidebar is collapsed, expand it first
+                                            if (!isExpanded) {
+                                                setIsExpanded(true);
+                                                // Add a small delay to allow the sidebar to expand before toggling submenu
+                                                setTimeout(() => {
+                                                    toggleSubmenu(item.title);
+                                                }, 100);
+                                            } else {
+                                                // If already expanded, just toggle the submenu
+                                                toggleSubmenu(item.title);
+                                            }
                                         } else if (isMobile) {
-                                            setIsExpanded(false);
+                                            toggleSidebar();
                                         }
                                     }}
                                 >
-
-                                <span className="menu-icon">{item.icon}</span>
+                                    <span className="menu-icon">{item.icon}</span>
                                     <span className="menu-title">{t(item.title)}</span>
                                     {item.hasSubmenu && (
                                         <span className="submenu-toggle">
@@ -303,17 +459,19 @@ const Sidebar = () => {
                                 </NavLink>
 
                                 {item.hasSubmenu && expandedMenus[item.title] && (
-                                    <div className="submenu">
+                                    <div className={`submenu ${expandedMenus[item.title] ? 'expanded' : ''}`}>
                                         {item.submenuItems.map((subItem) => {
-                                            const isActive = location.pathname === subItem.path;
                                             return (
                                                 <NavLink
                                                     key={subItem.title}
                                                     to={subItem.path}
-                                                    className={`submenu-item ${isActive ? 'active' : ''}`}
+                                                    className={() => {
+                                                        const isActive = location.pathname === subItem.path;
+                                                        return `submenu-item ${isActive ? 'active' : ''}`;
+                                                    }}
                                                     onClick={() => {
                                                         if (isMobile) {
-                                                            setIsExpanded(false);
+                                                            toggleSidebar();
                                                         }
                                                     }}
                                                 >
@@ -334,17 +492,30 @@ const Sidebar = () => {
                 </div>
 
                 <div className="sidebar-footer">
+                    {/* Back Button with text when expanded */}
+                    <button
+                        className="back-button"
+                        onClick={handleBackClick}
+                        title={t('common.back') || 'Go back'}
+                    >
+                        <FaArrowLeft />
+                        {isExpanded && <span className="back-text">Back</span>}
+                    </button>
+
                     <div className="theme-toggle-container">
-                        <div className="theme-toggle-item">
+                        <div
+                            className="theme-toggle-item"
+                            onClick={handleThemeToggle}
+                        >
                             <div className="menu-icon">
                                 {theme === 'dark' ? <FaMoon/> : <FaSun/>}
                             </div>
-                            <div className="menu-title"> {theme === 'dark' ? 'Dark' : 'Light'} Mode</div>
-                            <label className="toggle-switch">
+                            <div className="menu-title">{theme === 'dark' ? 'Dark' : 'Light'} Mode</div>
+                            <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
                                 <input
                                     type="checkbox"
                                     checked={theme === 'dark'}
-                                    onChange={toggleTheme}
+                                    onChange={handleThemeToggle}
                                 />
                                 <span className="toggle-slider"></span>
                             </label>
@@ -359,10 +530,12 @@ const Sidebar = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Enhanced backdrop with blur effect */}
             {isMobile && isExpanded && (
                 <div
                     className="sidebar-backdrop active"
-                    onClick={() => setIsExpanded(false)}
+                    onClick={() => toggleSidebar()}
                 />
             )}
         </>

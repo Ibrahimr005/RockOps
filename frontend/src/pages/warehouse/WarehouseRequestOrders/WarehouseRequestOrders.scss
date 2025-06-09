@@ -1,21 +1,4 @@
-.warehouse-request-orders-container {
-  position: relative;
-  padding: 20px;
-  background-color: var(--color-surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  font-family: var(--font-family);
-  color: var(--color-text-primary);
-  margin-bottom: 20px;
-  min-height: 200px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  overflow: hidden;
-  position: relative;
-  padding-bottom: 90px;
-  margin-top: 5rem;
-}
+
 
 /* Header Styles */
 .request-orders-header {
@@ -364,8 +347,16 @@
   background-color: rgba(72, 128, 255, 0.1);
   color: var(--color-primary);
 
+  [data-theme="dark"] & {
+    background-color: rgba(72, 128, 255, 0.1);
+  }
+
   &:hover {
     background-color: rgba(72, 128, 255, 0.2);
+
+    [data-theme="dark"] & {
+      background-color: rgba(72, 128, 255, 0.2);
+    }
   }
 }
 
@@ -373,8 +364,16 @@
   background-color: rgba(244, 67, 54, 0.1);
   color: var(--color-danger);
 
+  [data-theme="dark"] & {
+    background-color: rgba(255, 82, 82, 0.1);
+  }
+
   &:hover {
     background-color: rgba(244, 67, 54, 0.2);
+
+    [data-theme="dark"] & {
+      background-color: rgba(255, 82, 82, 0.2);
+    }
   }
 }
 
@@ -402,6 +401,10 @@
   cursor: pointer;
   color: #6b7280;
 
+  [data-theme="dark"] & {
+    color: var(--color-text-secondary);
+  }
+
   svg {
     width: 20px;
     height: 20px;
@@ -409,6 +412,10 @@
 
   &:hover {
     background-color: #f3f4f6;
+
+    [data-theme="dark"] & {
+      background-color: var(--color-surface-hover);
+    }
   }
 }
 
@@ -440,11 +447,19 @@
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 12px;
 
+  [data-theme="dark"] & {
+    border-bottom-color: var(--border-color);
+  }
+
   h3 {
     margin: 0;
     font-size: 16px;
     font-weight: 600;
     color: #374151;
+
+    [data-theme="dark"] & {
+      color: var(--color-text-primary);
+    }
   }
 }
 
@@ -462,8 +477,16 @@
   border-radius: 6px;
   transition: background-color 0.2s;
 
+  [data-theme="dark"] & {
+    color: var(--color-primary);
+  }
+
   &:hover {
     background-color: #eff6ff;
+
+    [data-theme="dark"] & {
+      background-color: rgba(72, 128, 255, 0.1);
+    }
   }
 
   svg {
@@ -482,6 +505,10 @@
     font-size: 14px;
     font-weight: 500;
     color: #374151;
+
+    [data-theme="dark"] & {
+      color: var(--color-text-primary);
+    }
   }
 
   input, select, textarea {
@@ -490,10 +517,21 @@
     border-radius: 8px;
     font-size: 14px;
 
+    [data-theme="dark"] & {
+      border-color: var(--border-color);
+      background-color: var(--section-background-color);
+      color: var(--color-text-primary);
+    }
+
     &:focus {
       outline: none;
       border-color: #3b82f6;
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+
+      [data-theme="dark"] & {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+      }
     }
   }
 
@@ -530,6 +568,12 @@
   margin-bottom: 16px;
   background-color: #f9fafb;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+  [data-theme="dark"] & {
+    border-color: var(--border-color);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+  }
 }
 
 .warehouse-request-item-header {
@@ -540,10 +584,18 @@
   padding-bottom: 8px;
   border-bottom: 1px solid #e5e7eb;
 
+  [data-theme="dark"] & {
+    border-bottom-color: var(--border-color);
+  }
+
   span {
     font-weight: 600;
     font-size: 15px;
     color: #374151;
+
+    [data-theme="dark"] & {
+      color: var(--color-text-primary);
+    }
   }
 }
 
@@ -561,8 +613,16 @@
   border-radius: 6px;
   transition: background-color 0.2s;
 
+  [data-theme="dark"] & {
+    color: var(--color-danger);
+  }
+
   &:hover {
     background-color: #fee2e2;
+
+    [data-theme="dark"] & {
+      background-color: rgba(255, 82, 82, 0.1);
+    }
   }
 
   svg {
@@ -602,6 +662,12 @@
   height: 22px;
   display: flex;
   align-items: center;
+
+  [data-theme="dark"] & {
+    color: var(--color-text-secondary);
+    background-color: var(--color-surface);
+    border-left-color: var(--border-color);
+  }
 }
 
 // Footer with buttons
@@ -612,6 +678,10 @@
   margin-top: 12px;
   padding-top: 20px;
   border-top: 1px solid #e5e7eb;
+
+  [data-theme="dark"] & {
+    border-top-color: var(--border-color);
+  }
 }
 
 .warehouse-request-cancel-button,
@@ -629,8 +699,18 @@
   color: #4b5563;
   border: 1px solid #d1d5db;
 
+  [data-theme="dark"] & {
+    background-color: var(--section-background-color);
+    color: var(--color-text-secondary);
+    border-color: var(--border-color);
+  }
+
   &:hover {
     background-color: #f3f4f6;
+
+    [data-theme="dark"] & {
+      background-color: var(--color-surface-hover);
+    }
   }
 }
 
@@ -639,16 +719,32 @@
   color: white;
   border: none;
 
+  [data-theme="dark"] & {
+    background-color: var(--color-primary);
+  }
+
   &:hover {
     background-color: #2563eb;
+
+    [data-theme="dark"] & {
+      background-color: var(--color-primary-dark);
+    }
   }
 
   &:disabled {
     background-color: #9ca3af;
     cursor: not-allowed;
 
+    [data-theme="dark"] & {
+      background-color: var(--color-text-secondary);
+    }
+
     &:hover {
       background-color: #9ca3af;
+
+      [data-theme="dark"] & {
+        background-color: var(--color-text-secondary);
+      }
     }
   }
 }
@@ -683,48 +779,10 @@
   }
 }
 
-// Action button styles for the table
+// Action button styles for the table (duplicate styles corrected)
 .request-action-buttons {
   display: flex;
   gap: 8px;
   align-items: center;
   justify-content: center;
-}
-
-.request-edit-button,
-.request-delete-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin: 0;
-  padding: 0;
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-}
-
-.request-edit-button {
-  background-color: rgba(72, 128, 255, 0.1);
-  color: var(--color-primary);
-
-  &:hover {
-    background-color: rgba(72, 128, 255, 0.2);
-  }
-}
-
-.request-delete-button {
-  background-color: rgba(244, 67, 54, 0.1);
-  color: var(--color-danger);
-
-  &:hover {
-    background-color: rgba(244, 67, 54, 0.2);
-  }
 }

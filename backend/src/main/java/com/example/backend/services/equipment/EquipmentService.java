@@ -4,18 +4,21 @@ import com.example.backend.dto.equipment.EquipmentCreateDTO;
 import com.example.backend.dto.equipment.EquipmentDTO;
 import com.example.backend.dto.equipment.EquipmentStatusUpdateDTO;
 import com.example.backend.dto.equipment.EquipmentUpdateDTO;
+import com.example.backend.dto.equipment.WorkTypeDTO;
+import com.example.backend.dto.equipment.EquipmentSarkyAnalyticsDTO;
+import com.example.backend.dto.equipment.WorkTypeAnalyticsDTO;
+import com.example.backend.dto.equipment.DriverAnalyticsDTO;
+import com.example.backend.dto.equipment.MonthlyWorkHoursDTO;
 import com.example.backend.dto.hr.EmployeeSummaryDTO;
 import com.example.backend.exceptions.ResourceNotFoundException;
+import com.example.backend.models.equipment.*;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.services.MinioService;
 import com.example.backend.repositories.equipment.EquipmentBrandRepository;
 import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.repositories.equipment.EquipmentTypeRepository;
-import com.example.backend.models.equipment.Equipment;
-import com.example.backend.models.equipment.EquipmentBrand;
-import com.example.backend.models.equipment.EquipmentStatus;
-import com.example.backend.models.equipment.EquipmentType;
+import com.example.backend.repositories.equipment.SarkyLogRepository;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.site.Site;
 import com.example.backend.repositories.hr.EmployeeRepository;
@@ -31,6 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 
 
@@ -48,6 +53,9 @@ public class EquipmentService {
 
     @Autowired
     private final EquipmentBrandRepository equipmentBrandRepository ;
+
+    @Autowired
+    private SarkyLogRepository sarkyLogRepository;
 
     @Autowired
     public EquipmentService(
@@ -166,6 +174,7 @@ public class EquipmentService {
         equipment.setSerialNumber(createDTO.getSerialNumber());
         equipment.setShipping(createDTO.getShipping());
         equipment.setCustoms(createDTO.getCustoms());
+        equipment.setTaxes(createDTO.getTaxes());
         equipment.setModelNumber(createDTO.getModelNumber());
         equipment.setStatus(createDTO.getStatus() != null ? createDTO.getStatus() : equipment.getStatus());
         equipment.setRelatedDocuments(createDTO.getRelatedDocuments());
@@ -177,6 +186,11 @@ public class EquipmentService {
                     .orElseThrow(() -> new ResourceNotFoundException("Site not found with id: "
                             + createDTO.getSiteId()));
             equipment.setSite(site);
+        }
+
+        // Validate driver assignment for drivable equipment types
+        if (!equipmentType.isDrivable() && (createDTO.getMainDriverId() != null || createDTO.getSubDriverId() != null)) {
+            throw new IllegalArgumentException("Cannot assign drivers to non-drivable equipment type: " + equipmentType.getName());
         }
 
         // Fixed driver validation in EquipmentService.java createEquipment method
@@ -217,7 +231,8 @@ public class EquipmentService {
             equipment.setSubDriver(subDriver);
         }
 
-
+        // Automatically assign drivers to equipment's site if both site and drivers are assigned
+        assignDriversToEquipmentSite(equipment);
 
         // Save the equipment
         Equipment savedEquipment = equipmentRepository.save(equipment);
@@ -286,9 +301,11 @@ public class EquipmentService {
         if (requestBody.get("serialNumber") != null)
             createDTO.setSerialNumber(requestBody.get("serialNumber").toString());
         if (requestBody.get("shipping") != null)
-            createDTO.setShipping(requestBody.get("shipping").toString());
+            createDTO.setShipping(Double.parseDouble(requestBody.get("shipping").toString()));
         if (requestBody.get("customs") != null)
-            createDTO.setCustoms(requestBody.get("customs").toString());
+            createDTO.setCustoms(Double.parseDouble(requestBody.get("customs").toString()));
+        if (requestBody.get("taxes") != null)
+            createDTO.setTaxes(Double.parseDouble(requestBody.get("taxes").toString()));
         if (requestBody.get("modelNumber") != null)
             createDTO.setModelNumber(requestBody.get("modelNumber").toString());
         if (requestBody.get("status") != null) {
@@ -375,6 +392,7 @@ public class EquipmentService {
         if (updateDTO.getSerialNumber() != null) equipment.setSerialNumber(updateDTO.getSerialNumber());
         if (updateDTO.getShipping() != null) equipment.setShipping(updateDTO.getShipping());
         if (updateDTO.getCustoms() != null) equipment.setCustoms(updateDTO.getCustoms());
+        if (updateDTO.getTaxes() != null) equipment.setTaxes(updateDTO.getTaxes());
         if (updateDTO.getModelNumber() != null) equipment.setModelNumber(updateDTO.getModelNumber());
         if (updateDTO.getStatus() != null) equipment.setStatus(updateDTO.getStatus());
         if (updateDTO.getRelatedDocuments() != null) equipment.setRelatedDocuments(updateDTO.getRelatedDocuments());
@@ -396,19 +414,24 @@ public class EquipmentService {
             equipment.setPurchasedFrom(merchant);
         }
 
+        // Get the equipment type for driver validation
+        EquipmentType equipmentType = equipment.getType();
+        
+        // Validate driver assignment for drivable equipment types
+        if (!equipmentType.isDrivable() && (updateDTO.getMainDriverId() != null || updateDTO.getSubDriverId() != null)) {
+            throw new IllegalArgumentException("Cannot assign drivers to non-drivable equipment type: " + equipmentType.getName());
+        }
+
         if (updateDTO.getMainDriverId() != null) {
             Employee driver = employeeRepository.findById(updateDTO.getMainDriverId())
                     .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: "
                             + updateDTO.getMainDriverId()));
 
             // Get the equipment type - either from update DTO or from existing equipment
-            EquipmentType equipmentType;
             if (updateDTO.getTypeId() != null) {
                 equipmentType = equipmentTypeRepository.findById(updateDTO.getTypeId())
                         .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: "
                                 + updateDTO.getTypeId()));
-            } else {
-                equipmentType = equipment.getType();
             }
 
             if (!driver.canDrive(equipmentType)) {
@@ -427,13 +450,10 @@ public class EquipmentService {
                             + updateDTO.getSubDriverId()));
 
             // Get the equipment type - either from update DTO or from existing equipment
-            EquipmentType equipmentType;
             if (updateDTO.getTypeId() != null) {
                 equipmentType = equipmentTypeRepository.findById(updateDTO.getTypeId())
                         .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: "
                                 + updateDTO.getTypeId()));
-            } else {
-                equipmentType = equipment.getType();
             }
 
             if (!subDriver.canDrive(equipmentType)) {
@@ -444,6 +464,9 @@ public class EquipmentService {
 
             equipment.setSubDriver(subDriver);
         }
+
+        // Automatically assign drivers to equipment's site if both site and drivers are assigned
+        assignDriversToEquipmentSite(equipment);
 
         // Save the equipment
         Equipment updatedEquipment = equipmentRepository.save(equipment);
@@ -512,9 +535,11 @@ public class EquipmentService {
         if (requestBody.get("serialNumber") != null && !requestBody.get("serialNumber").toString().isEmpty())
             updateDTO.setSerialNumber(requestBody.get("serialNumber").toString());
         if (requestBody.get("shipping") != null && !requestBody.get("shipping").toString().isEmpty())
-            updateDTO.setShipping(requestBody.get("shipping").toString());
+            updateDTO.setShipping(Double.parseDouble(requestBody.get("shipping").toString()));
         if (requestBody.get("customs") != null && !requestBody.get("customs").toString().isEmpty())
-            updateDTO.setCustoms(requestBody.get("customs").toString());
+            updateDTO.setCustoms(Double.parseDouble(requestBody.get("customs").toString()));
+        if (requestBody.get("taxes") != null && !requestBody.get("taxes").toString().isEmpty())
+            updateDTO.setTaxes(Double.parseDouble(requestBody.get("taxes").toString()));
         if (requestBody.get("modelNumber") != null && !requestBody.get("modelNumber").toString().isEmpty())
             updateDTO.setModelNumber(requestBody.get("modelNumber").toString());
         if (requestBody.get("status") != null && !requestBody.get("status").toString().isEmpty()) {
@@ -693,6 +718,44 @@ public class EquipmentService {
     }
 
     /**
+     * Helper method to automatically assign drivers to the equipment's site
+     * This ensures that if equipment is assigned to a site and has drivers,
+     * those drivers are also assigned to the same site
+     */
+    private void assignDriversToEquipmentSite(Equipment equipment) {
+        if (equipment.getSite() == null) {
+            return; // No site assigned, nothing to do
+        }
+
+        Site equipmentSite = equipment.getSite();
+        boolean driversUpdated = false;
+
+        // Assign main driver to equipment's site if driver exists and is not already assigned to this site
+        if (equipment.getMainDriver() != null && 
+            (equipment.getMainDriver().getSite() == null || 
+             !equipment.getMainDriver().getSite().getId().equals(equipmentSite.getId()))) {
+            
+            equipment.getMainDriver().setSite(equipmentSite);
+            employeeRepository.save(equipment.getMainDriver());
+            driversUpdated = true;
+        }
+
+        // Assign sub driver to equipment's site if driver exists and is not already assigned to this site
+        if (equipment.getSubDriver() != null && 
+            (equipment.getSubDriver().getSite() == null || 
+             !equipment.getSubDriver().getSite().getId().equals(equipmentSite.getId()))) {
+            
+            equipment.getSubDriver().setSite(equipmentSite);
+            employeeRepository.save(equipment.getSubDriver());
+            driversUpdated = true;
+        }
+
+        if (driversUpdated) {
+            System.out.println("Automatically assigned driver(s) to site: " + equipmentSite.getName());
+        }
+    }
+
+    /**
      * Check if an employee can be assigned as a driver for an equipment
      * Returns a response with compatibility status and reason
      */
@@ -718,6 +781,142 @@ public class EquipmentService {
         }
 
         return response;
+    }
+
+    /**
+     * Get supported work types for a specific equipment type
+     */
+    public List<WorkTypeDTO> getSupportedWorkTypesForEquipmentType(UUID equipmentTypeId) {
+        EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
+
+        return equipmentType.getSupportedWorkTypes().stream()
+                .filter(WorkType::isActive)
+                .map(workType -> {
+                    WorkTypeDTO dto = new WorkTypeDTO();
+                    dto.setId(workType.getId());
+                    dto.setName(workType.getName());
+                    dto.setDescription(workType.getDescription());
+                    dto.setActive(workType.isActive());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get sarky analytics data for equipment dashboard
+     */
+    public EquipmentSarkyAnalyticsDTO getSarkyAnalyticsForEquipment(UUID equipmentId) {
+        Equipment equipment = equipmentRepository.findById(equipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + equipmentId));
+
+        // Get all sarky logs for this equipment
+        List<SarkyLog> sarkyLogs = sarkyLogRepository.findByEquipmentIdOrderByDateAsc(equipmentId);
+        
+        EquipmentSarkyAnalyticsDTO analytics = new EquipmentSarkyAnalyticsDTO();
+        analytics.setEquipmentId(equipmentId);
+        analytics.setEquipmentName(equipment.getName());
+        analytics.setEquipmentType(equipment.getType().getName());
+
+        if (sarkyLogs.isEmpty()) {
+            analytics.setTotalWorkHours(0.0);
+            analytics.setTotalWorkDays(0);
+            analytics.setAverageHoursPerDay(0.0);
+            analytics.setWorkTypeBreakdown(new ArrayList<>());
+            analytics.setDriverBreakdown(new ArrayList<>());
+            analytics.setMonthlyWorkHours(new ArrayList<>());
+            return analytics;
+        }
+
+        // Calculate total work hours and days
+        double totalHours = sarkyLogs.stream().mapToDouble(SarkyLog::getWorkedHours).sum();
+        int totalDays = sarkyLogs.size();
+        double averageHours = totalDays > 0 ? totalHours / totalDays : 0.0;
+
+        analytics.setTotalWorkHours(Math.round(totalHours * 100.0) / 100.0);
+        analytics.setTotalWorkDays(totalDays);
+        analytics.setAverageHoursPerDay(Math.round(averageHours * 100.0) / 100.0);
+
+        // Work type breakdown
+        Map<String, Double> workTypeHours = sarkyLogs.stream()
+                .collect(Collectors.groupingBy(
+                    log -> log.getWorkType().getName(),
+                    Collectors.summingDouble(SarkyLog::getWorkedHours)
+                ));
+
+        List<WorkTypeAnalyticsDTO> workTypeBreakdown = workTypeHours.entrySet().stream()
+                .map(entry -> {
+                    WorkTypeAnalyticsDTO dto = new WorkTypeAnalyticsDTO();
+                    dto.setWorkTypeName(entry.getKey());
+                    dto.setTotalHours(Math.round(entry.getValue() * 100.0) / 100.0);
+                    dto.setPercentage(Math.round((entry.getValue() / totalHours) * 100.0 * 100.0) / 100.0);
+                    return dto;
+                })
+                .sorted((a, b) -> Double.compare(b.getTotalHours(), a.getTotalHours()))
+                .collect(Collectors.toList());
+
+        analytics.setWorkTypeBreakdown(workTypeBreakdown);
+
+        // Driver breakdown
+        Map<String, Double> driverHours = sarkyLogs.stream()
+                .collect(Collectors.groupingBy(
+                    log -> log.getDriver().getFirstName() + " " + log.getDriver().getLastName(),
+                    Collectors.summingDouble(SarkyLog::getWorkedHours)
+                ));
+
+        List<DriverAnalyticsDTO> driverBreakdown = driverHours.entrySet().stream()
+                .map(entry -> {
+                    DriverAnalyticsDTO dto = new DriverAnalyticsDTO();
+                    dto.setDriverName(entry.getKey());
+                    dto.setTotalHours(Math.round(entry.getValue() * 100.0) / 100.0);
+                    dto.setPercentage(Math.round((entry.getValue() / totalHours) * 100.0 * 100.0) / 100.0);
+                    return dto;
+                })
+                .sorted((a, b) -> Double.compare(b.getTotalHours(), a.getTotalHours()))
+                .collect(Collectors.toList());
+
+        analytics.setDriverBreakdown(driverBreakdown);
+
+        // Monthly work hours for the last 12 months
+        Map<String, Double> monthlyHours = sarkyLogs.stream()
+                .collect(Collectors.groupingBy(
+                    log -> log.getDate().getYear() + "-" + String.format("%02d", log.getDate().getMonthValue()),
+                    Collectors.summingDouble(SarkyLog::getWorkedHours)
+                ));
+
+        List<MonthlyWorkHoursDTO> monthlyWorkHours = monthlyHours.entrySet().stream()
+                .map(entry -> {
+                    MonthlyWorkHoursDTO dto = new MonthlyWorkHoursDTO();
+                    dto.setMonth(entry.getKey());
+                    dto.setTotalHours(Math.round(entry.getValue() * 100.0) / 100.0);
+                    
+                    // Count work days for this month
+                    long workDays = sarkyLogs.stream()
+                            .filter(log -> {
+                                String logMonth = log.getDate().getYear() + "-" + String.format("%02d", log.getDate().getMonthValue());
+                                return logMonth.equals(entry.getKey());
+                            })
+                            .count();
+                    dto.setWorkDays((int) workDays);
+                    dto.setAverageHoursPerDay(workDays > 0 ? Math.round((entry.getValue() / workDays) * 100.0) / 100.0 : 0.0);
+                    
+                    return dto;
+                })
+                .sorted(Comparator.comparing(MonthlyWorkHoursDTO::getMonth))
+                .collect(Collectors.toList());
+
+        // Get only last 12 months
+        if (monthlyWorkHours.size() > 12) {
+            monthlyWorkHours = monthlyWorkHours.subList(monthlyWorkHours.size() - 12, monthlyWorkHours.size());
+        }
+
+        analytics.setMonthlyWorkHours(monthlyWorkHours);
+
+        // Set first and last work dates
+        analytics.setFirstWorkDate(sarkyLogs.get(0).getDate());
+        analytics.setLastWorkDate(sarkyLogs.get(sarkyLogs.size() - 1).getDate());
+
+        return analytics;
     }
 
     // Create a simple response class for compatibility checking

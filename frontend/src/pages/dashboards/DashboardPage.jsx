@@ -1,13 +1,13 @@
 import React, {useState, useEffect } from 'react';
-import {useAuth} from '../../Contexts/AuthContext';
+import {useAuth} from '../../contexts/AuthContext';
 import Navbar from '../../components/common/Navbar/Navbar';
 import Sidebar from '../../components/common/Sidebar/Sidebar';
 import UserDashboard from './UserDashboard.jsx';
 import SiteAdminDashboard from './SiteAdminDashboard.jsx';
 import ProcurementDashboard from './ProcurementDashboard';
-import WarehouseManagerDashboard from './WarehouseManagerDashboard.jsx';
+import WarehouseDashboard from '../../pages/warehouse/WarehouseDashboard/WarehouseDashboard.jsx';
 import SecretaryDashboard from './SecretaryDashboard.jsx';
-import EquipmentManagerDashboard from './EquipmentManagerDashboard.jsx';
+import EquipmentManagerDashboard from '../equipment/EquipmentManagerDashboard/EquipmentManagerDashboard.jsx';
 import HRManagerDashboard from './HRManagerDashboard.jsx';
 import HREmployeeDashboard from './HR/HREmployeeDashboard.jsx';
 import './Dashboard.css';
@@ -67,7 +67,7 @@ const DashboardPage = () => {
             case 'PROCUREMENT':
                 return <ProcurementDashboard/>;
             case 'WAREHOUSE_MANAGER':
-                return <WarehouseManagerDashboard/>;
+                return <WarehouseDashboard/>;
             case 'SECRETARY':
                 return <SecretaryDashboard/>;
             case 'EQUIPMENT_MANAGER':
@@ -86,7 +86,7 @@ const DashboardPage = () => {
 
     return (
         <div className="dashboard-layout">
-            <Sidebar/>
+
 
 
             <div className="dashboard-content">

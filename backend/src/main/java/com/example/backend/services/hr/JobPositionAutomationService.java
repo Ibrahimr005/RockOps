@@ -47,16 +47,19 @@ public class JobPositionAutomationService {
             .orElseThrow(() -> new RuntimeException(
                 "Logistics department not found. Please ensure basic departments are created."));
 
+        // Calculate base salary
+        Double baseSalary = calculateBaseSalary(equipmentType);
+
         // Create the new job position
         JobPosition driverPosition = JobPosition.builder()
             .positionName(requiredPositionName)
             .department(logisticsDept)
             .head("Operations Manager")
-            .baseSalary(calculateBaseSalary(equipmentType))
+            .baseSalary(baseSalary)
             .probationPeriod(90) // 90 days probation
-            .type("FULL_TIME")
+            .contractType(JobPosition.ContractType.MONTHLY)
             .experienceLevel(determineExperienceLevel(equipmentType))
-            .workingDays(6) // 6 days a week
+            .monthlyBaseSalary(baseSalary)
             .shifts("Day Shift")
             .workingHours(8)
             .vacations("21 days annual leave")
@@ -152,8 +155,13 @@ public class JobPositionAutomationService {
             if (findExistingPosition(newPositionName).isEmpty()) {
                 // Update the position name
                 position.setPositionName(newPositionName);
+                
+                // Calculate new base salary
+                Double newBaseSalary = calculateBaseSalary(updatedEquipmentType);
+                
                 // Update salary and experience level based on new name
-                position.setBaseSalary(calculateBaseSalary(updatedEquipmentType));
+                position.setBaseSalary(newBaseSalary);
+                position.setMonthlyBaseSalary(newBaseSalary);
                 position.setExperienceLevel(determineExperienceLevel(updatedEquipmentType));
                 
                 jobPositionRepository.save(position);

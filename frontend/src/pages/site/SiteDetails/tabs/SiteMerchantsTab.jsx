@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import DataTable from "../../../../components/common/DataTable/DataTable";
 import { useTranslation } from 'react-i18next';
 import {useNavigate} from "react-router-dom";
+import Snackbar from "../../../../components/common/Snackbar/Snackbar";
+import { siteService } from "../../../../services/siteService";
 
 const SiteMerchantsTab = ({ siteId }) => {
     const { t } = useTranslation();
@@ -9,6 +11,15 @@ const SiteMerchantsTab = ({ siteId }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
+    const [snackbar, setSnackbar] = useState({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
+    const handleCloseSnackbar = () => {
+        setSnackbar(prev => ({ ...prev, show: false }));
+    };
 
     const handleRowClick = (row) => {
         navigate(`/merchants/${row.id}`);
@@ -49,26 +60,8 @@ const SiteMerchantsTab = ({ siteId }) => {
 
     const fetchMerchants = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/site/${siteId}/merchants`, {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            if (!response.ok) {
-                const text = await response.text();
-                try {
-                    const json = JSON.parse(text);
-                    throw new Error(json.message || `HTTP error! Status: ${response.status}`);
-                } catch (err) {
-                    throw new Error(`No merchants found for this site.`);
-                }
-            }
-
-            const data = await response.json();
+            const response = await siteService.getMerchants(siteId);
+            const data = response.data;
 
             if (Array.isArray(data)) {
                 const transformedData = data.map((item, index) => ({
@@ -83,6 +76,11 @@ const SiteMerchantsTab = ({ siteId }) => {
                 setMerchantData(transformedData);
             } else {
                 setMerchantData([]);
+                setSnackbar({
+                    show: true,
+                    message: 'No merchants found for this site',
+                    type: 'info'
+                });
             }
 
             setLoading(false);
@@ -90,6 +88,11 @@ const SiteMerchantsTab = ({ siteId }) => {
             setError(err.message);
             setMerchantData([]);
             setLoading(false);
+            setSnackbar({
+                show: true,
+                message: err.message,
+                type: 'error'
+            });
         }
     };
 
@@ -102,6 +105,14 @@ const SiteMerchantsTab = ({ siteId }) => {
 
     return (
         <div className="site-merchants-tab">
+            <Snackbar
+                show={snackbar.show}
+                message={snackbar.message}
+                type={snackbar.type}
+                onClose={handleCloseSnackbar}
+                duration={3000}
+            />
+            
             <div className="departments-header">
                 <h3>{t('site.siteMerchantsReport')}</h3>
             </div>
@@ -128,7 +139,14 @@ const SiteMerchantsTab = ({ siteId }) => {
                         filterableColumns={columns}
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10}
-                        onRowClick={handleRowClick}
+                        onRowClick={(row) => {
+                            handleRowClick(row);
+                            setSnackbar({
+                                show: true,
+                                message: `Navigating to merchant: ${row.merchantName}`,
+                                type: 'info'
+                            });
+                        }}
                         tableTitle="Merchants List"
                     />
                 </div>

@@ -1,11 +1,14 @@
 package com.example.backend.services.equipment;
 
 import com.example.backend.dto.equipment.EquipmentTypeDTO;
+import com.example.backend.dto.equipment.WorkTypeDTO;
 import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.equipment.EquipmentType;
+import com.example.backend.models.equipment.WorkType;
 import com.example.backend.models.hr.Department;
 import com.example.backend.models.hr.JobPosition;
 import com.example.backend.repositories.equipment.EquipmentTypeRepository;
+import com.example.backend.repositories.equipment.WorkTypeRepository;
 import com.example.backend.repositories.hr.DepartmentRepository;
 import com.example.backend.repositories.hr.JobPositionRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -23,14 +26,17 @@ import java.util.stream.Collectors;
 public class EquipmentTypeService {
 
     private final EquipmentTypeRepository equipmentTypeRepository;
+    private final WorkTypeRepository workTypeRepository;
     private final DepartmentRepository departmentRepository;
     private final JobPositionRepository jobPositionRepository;
 
     @Autowired
     public EquipmentTypeService(EquipmentTypeRepository equipmentTypeRepository,
+                                WorkTypeRepository workTypeRepository,
                                 DepartmentRepository departmentRepository,
                                 JobPositionRepository jobPositionRepository) {
         this.equipmentTypeRepository = equipmentTypeRepository;
+        this.workTypeRepository = workTypeRepository;
         this.departmentRepository = departmentRepository;
         this.jobPositionRepository = jobPositionRepository;
     }
@@ -62,12 +68,15 @@ public class EquipmentTypeService {
         // Create the equipment type
         EquipmentType entity = dto.toEntity();
         entity.setDriverPositionName(dto.getName() + " Driver");
+        entity.setDrivable(dto.isDrivable());
         EquipmentType savedEntity = equipmentTypeRepository.save(entity);
 
         log.info("Created equipment type: {}", savedEntity.getName());
 
-        // IMMEDIATELY create the job position in the same transaction
-        createJobPositionForEquipmentType(savedEntity);
+        // Create job position if the equipment is drivable
+        if (dto.isDrivable()) {
+            createJobPositionForEquipmentType(savedEntity);
+        }
 
         return EquipmentTypeDTO.fromEntity(savedEntity);
     }
@@ -84,21 +93,35 @@ public class EquipmentTypeService {
             throw new IllegalArgumentException("Equipment type with name '" + dto.getName() + "' already exists");
         }
 
-        // Store the old name to check if it changed
+        // Store the old values to check for changes
         String oldName = existingType.getName();
+        boolean wasDrivable = existingType.isDrivable();
 
         // Update fields
         existingType.setName(dto.getName());
         existingType.setDescription(dto.getDescription());
         existingType.setDriverPositionName(dto.getName() + " Driver");
+        existingType.setDrivable(dto.isDrivable());
 
         // Save and return
         EquipmentType updatedEntity = equipmentTypeRepository.save(existingType);
 
-        // If the name changed, create new job position
-        if (!oldName.equals(dto.getName())) {
-            log.info("Equipment type renamed from '{}' to '{}' - creating new job position", oldName, dto.getName());
-            createJobPositionForEquipmentType(updatedEntity);
+        // Handle job position changes
+        if (dto.isDrivable()) {
+            // If it's now drivable (either newly drivable or name changed)
+            if (!wasDrivable || !oldName.equals(dto.getName())) {
+                if (!wasDrivable) {
+                    log.info("Equipment type '{}' is now drivable - creating job position", dto.getName());
+                    createJobPositionForEquipmentType(updatedEntity);
+                } else {
+                    log.info("Equipment type renamed from '{}' to '{}' - updating job position", oldName, dto.getName());
+                    handleEquipmentTypeRenamed(oldName, updatedEntity);
+                }
+            }
+        } else if (wasDrivable) {
+            // Equipment type is no longer drivable - optionally handle job position removal
+            log.info("Equipment type '{}' is no longer drivable - consider removing job position", dto.getName());
+            // Note: We don't automatically delete job positions as they might have employees
         }
 
         return EquipmentTypeDTO.fromEntity(updatedEntity);
@@ -117,6 +140,85 @@ public class EquipmentTypeService {
 
     public boolean existsByName(String name) {
         return equipmentTypeRepository.existsByName(name);
+    }
+
+    /**
+     * Add supported work types to an equipment type
+     */
+    @Transactional
+    public EquipmentTypeDTO addSupportedWorkTypes(UUID equipmentTypeId, List<UUID> workTypeIds) {
+        EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
+
+        for (UUID workTypeId : workTypeIds) {
+            WorkType workType = workTypeRepository.findById(workTypeId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Work type not found with id: " + workTypeId));
+
+            if (!equipmentType.getSupportedWorkTypes().contains(workType)) {
+                equipmentType.getSupportedWorkTypes().add(workType);
+            }
+        }
+
+        EquipmentType savedEntity = equipmentTypeRepository.save(equipmentType);
+        return EquipmentTypeDTO.fromEntity(savedEntity);
+    }
+
+    /**
+     * Remove supported work types from an equipment type
+     */
+    @Transactional
+    public EquipmentTypeDTO removeSupportedWorkTypes(UUID equipmentTypeId, List<UUID> workTypeIds) {
+        EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
+
+        for (UUID workTypeId : workTypeIds) {
+            equipmentType.getSupportedWorkTypes().removeIf(wt -> wt.getId().equals(workTypeId));
+        }
+
+        EquipmentType savedEntity = equipmentTypeRepository.save(equipmentType);
+        return EquipmentTypeDTO.fromEntity(savedEntity);
+    }
+
+    /**
+     * Set supported work types for an equipment type (replaces existing)
+     */
+    @Transactional
+    public EquipmentTypeDTO setSupportedWorkTypes(UUID equipmentTypeId, List<UUID> workTypeIds) {
+        EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
+
+        // Clear existing work types
+        equipmentType.getSupportedWorkTypes().clear();
+
+        // Add new work types
+        for (UUID workTypeId : workTypeIds) {
+            WorkType workType = workTypeRepository.findById(workTypeId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Work type not found with id: " + workTypeId));
+            equipmentType.getSupportedWorkTypes().add(workType);
+        }
+
+        EquipmentType savedEntity = equipmentTypeRepository.save(equipmentType);
+        return EquipmentTypeDTO.fromEntity(savedEntity);
+    }
+
+    /**
+     * Get supported work types for an equipment type
+     */
+    public List<WorkTypeDTO> getSupportedWorkTypes(UUID equipmentTypeId) {
+        EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
+
+        return equipmentType.getSupportedWorkTypes().stream()
+                .filter(WorkType::isActive)
+                .map(workType -> {
+                    WorkTypeDTO dto = new WorkTypeDTO();
+                    dto.setId(workType.getId());
+                    dto.setName(workType.getName());
+                    dto.setDescription(workType.getDescription());
+                    dto.setActive(workType.isActive());
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
     /**
@@ -148,26 +250,79 @@ public class EquipmentTypeService {
             return;
         }
 
+        // Calculate base salary
+        Double baseSalary = calculateBaseSalary(equipmentType);
+
         // Create the job position with smart defaults
-        JobPosition driverPosition = JobPosition.builder()
-                .positionName(requiredPositionName)
-                .department(logisticsDept.get())
-                .head("Operations Manager")
-                .baseSalary(calculateBaseSalary(equipmentType))
-                .probationPeriod(90) // 90 days probation
-                .type("FULL_TIME")
-                .experienceLevel(determineExperienceLevel(equipmentType))
-                .workingDays(6) // 6 days a week
-                .shifts("Day Shift")
-                .workingHours(8)
-                .vacations("21 days annual leave")
-                .active(true)
-                .build();
+        JobPosition driverPosition = new JobPosition();
+        driverPosition.setPositionName(requiredPositionName);
+        driverPosition.setDepartment(logisticsDept.get());
+        driverPosition.setHead("Operations Manager");
+        driverPosition.setBaseSalary(baseSalary);
+        driverPosition.setProbationPeriod(90); // 90 days probation
+        driverPosition.setContractType(JobPosition.ContractType.MONTHLY);
+        driverPosition.setExperienceLevel(determineExperienceLevel(equipmentType));
+        driverPosition.setActive(true);
+        
+        // Monthly contract specific fields
+        driverPosition.setMonthlyBaseSalary(baseSalary);
+        driverPosition.setWorkingHours(8);
+        driverPosition.setShifts("Day Shift");
+        driverPosition.setVacations("21 days annual leave");
 
         JobPosition savedPosition = jobPositionRepository.save(driverPosition);
 
         log.info("✅ Successfully created job position: {} with ID: {} for equipment type: {}",
                 requiredPositionName, savedPosition.getId(), equipmentType.getName());
+    }
+
+    /**
+     * Update job position when equipment type is renamed
+     * This handles the case where an equipment type name is changed
+     */
+    @Transactional
+    public void handleEquipmentTypeRenamed(String oldName, EquipmentType updatedEquipmentType) {
+        String oldPositionName = oldName + " Driver";
+        String newPositionName = updatedEquipmentType.getRequiredDriverPosition();
+
+        // Find the old position
+        Optional<JobPosition> existingPosition = findExistingPosition(oldPositionName);
+
+        if (existingPosition.isPresent()) {
+            JobPosition position = existingPosition.get();
+
+            // Check if new position name already exists
+            if (findExistingPosition(newPositionName).isEmpty()) {
+                // Update the position name
+                position.setPositionName(newPositionName);
+                // Update salary and experience level based on new name
+                Double newSalary = calculateBaseSalary(updatedEquipmentType);
+                position.setBaseSalary(newSalary);
+                position.setMonthlyBaseSalary(newSalary); // Update monthly salary as well
+                position.setExperienceLevel(determineExperienceLevel(updatedEquipmentType));
+
+                jobPositionRepository.save(position);
+
+                log.info("Updated job position from '{}' to '{}' for equipment type change",
+                        oldPositionName, newPositionName);
+            } else {
+                log.warn("Cannot rename position from '{}' to '{}' - new name already exists",
+                        oldPositionName, newPositionName);
+            }
+        } else {
+            // Old position doesn't exist, create new one
+            createJobPositionForEquipmentType(updatedEquipmentType);
+        }
+    }
+
+    /**
+     * Check if a job position with the given name already exists
+     */
+    private Optional<JobPosition> findExistingPosition(String positionName) {
+        return jobPositionRepository.findAll()
+                .stream()
+                .filter(jp -> positionName.equals(jp.getPositionName()))
+                .findFirst();
     }
 
     /**

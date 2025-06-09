@@ -9,6 +9,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -36,4 +37,8 @@ public class Consumable {
     @JoinColumn(name="equipment_id", referencedColumnName = "id")
     @JsonManagedReference
     private Equipment equipment;
+
+    private boolean resolved = false;
+
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

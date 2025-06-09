@@ -1,11 +1,12 @@
 package com.example.backend.models.warehouse;
 
 import com.example.backend.models.transaction.TransactionItem;
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -32,20 +33,18 @@ public class Item {
     @Enumerated(EnumType.STRING)
     private ItemStatus itemStatus;
 
-//    @ManyToOne
-//    @JoinColumn(name = "transaction_id")
-//    private Transaction transaction;
-
     @Builder.Default
     private boolean resolved = false;
 
+    private LocalDateTime createdAt;
+    private String createdBy;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transaction_item_id")
-    @JsonBackReference("item-transactionItem")
+    @JsonIgnoreProperties({"items", "hibernateLazyInitializer", "handler"})
     private TransactionItem transactionItem;
 
-
-    public Item(ItemType itemType, Warehouse warehousez, int quantity, ItemStatus itemStatus) {
+    public Item(ItemType itemType, Warehouse warehouse, int quantity, ItemStatus itemStatus) {
         this.itemType = itemType;
         this.warehouse = warehouse;
         this.quantity = quantity;

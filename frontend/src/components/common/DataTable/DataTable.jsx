@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { FaSort, FaSortUp, FaSortDown, FaSearch, FaFilter, FaEllipsisV } from 'react-icons/fa';
 import './DataTable.scss';
 
 const DataTable = ({
                        data = [],
                        columns = [],
-                       itemsPerPageOptions = [10, 25, 50, 100],
+                       itemsPerPageOptions = [5, 10, 15, 20],
                        defaultItemsPerPage = 10,
                        defaultSortField = null,
                        defaultSortDirection = 'asc',
@@ -18,7 +18,8 @@ const DataTable = ({
                        customFilters = [],
                        className = '',
                        actions = [], // Array of action objects
-                       actionsColumnWidth = '120px' // Default width for actions column
+                       actionsColumnWidth = '120px', // Default width for actions column
+                       emptyMessage = 'No data available' // Custom empty message
                    }) => {
     // States for pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -35,6 +36,23 @@ const DataTable = ({
 
     // Track which row's actions menu is open
     const [activeActionRow, setActiveActionRow] = useState(null);
+
+    // Table refs for consistency
+    const tableRef = useRef(null);
+    const wrapperRef = useRef(null);
+
+    // Include action column if configured
+    const allColumns = actions.length > 0
+        ? [...columns, {
+            id: 'actions',
+            header: 'ACTIONS',
+            accessor: 'actions',
+            width: actionsColumnWidth,
+            minWidth: actionsColumnWidth,
+            sortable: false,
+            filterable: false
+        }]
+        : columns;
 
     // Reset current page when data, search term, or filters change
     useEffect(() => {
@@ -54,6 +72,21 @@ const DataTable = ({
             document.removeEventListener('click', handleOutsideClick);
         };
     }, [activeActionRow]);
+
+    // Helper function to get nested object values
+    function getValue(obj, path) {
+        if (!path) return obj;
+
+        const keys = path.split('.');
+        let value = obj;
+
+        for (const key of keys) {
+            if (value === null || value === undefined) return '';
+            value = value[key];
+        }
+
+        return value;
+    }
 
     // Apply search filter
     const searchFiltered = useMemo(() => {
@@ -147,21 +180,6 @@ const DataTable = ({
         }));
     };
 
-    // Helper function to get nested object values
-    function getValue(obj, path) {
-        if (!path) return obj;
-
-        const keys = path.split('.');
-        let value = obj;
-
-        for (const key of keys) {
-            if (value === null || value === undefined) return '';
-            value = value[key];
-        }
-
-        return value;
-    }
-
     // Handle page change
     const goToPage = (page) => {
         if (page >= 1 && page <= totalPages) {
@@ -185,283 +203,72 @@ const DataTable = ({
         }
     };
 
-    // Render table header with sorting
-    const renderTableHeader = () => {
-        return (
-            <thead className="rockops-table__header">
-            <tr>
-                {columns.map((column, index) => (
-                    <th
-                        key={index}
-                        className={`rockops-table__th ${column.sortable !== false ? 'rockops-table__th--sortable' : ''}`}
-                        style={column.width ? { width: column.width } : {}}
-                        onClick={() => column.sortable !== false ? handleSort(column.accessor) : null}
-                    >
-                        <div className="rockops-table__th-content">
-                            <span>{column.header}</span>
-                            {column.sortable !== false && (
-                                <span className="rockops-table__sort-icon">
-                    {sortField === column.accessor ? (
-                        sortDirection === 'asc' ? <FaSortUp /> : <FaSortDown />
-                    ) : (
-                        <FaSort />
-                    )}
-                  </span>
-                            )}
-                        </div>
-                    </th>
-                ))}
-
-                {/* Actions column if actions array is provided */}
-                {actions.length > 0 && (
-                    <th
-                        className="rockops-table__th rockops-table__th--actions"
-                        style={{ width: actionsColumnWidth }}
-                    >
-                        <div className="rockops-table__th-content">
-                            <span>Actions</span>
-                        </div>
-                    </th>
-                )}
-            </tr>
-            </thead>
-        );
+    // Get filter options for a column
+    const getFilterOptions = (columnAccessor) => {
+        const values = data.map(row => getValue(row, columnAccessor)).filter(val => val != null);
+        return [...new Set(values)].sort();
     };
 
-    // Render filter panel
-    const renderFilterPanel = () => {
-        if (!showFilterPanel) return null;
-
-        return (
-            <div className="rockops-table__filter-panel">
-                <div className="rockops-table__filter-list">
-                    {filterableColumns.map((column, index) => (
-                        <div key={index} className="rockops-table__filter-item">
-                            <label>{column.header}</label>
-                            <input
-                                type="text"
-                                value={filters[column.accessor] || ''}
-                                onChange={(e) => handleFilterChange(column.accessor, e.target.value)}
-                                placeholder={`Filter by ${column.header.toLowerCase()}`}
-                            />
-                        </div>
-                    ))}
-
-                    {customFilters.map((filter, index) => (
-                        <div key={`custom-${index}`} className="rockops-table__filter-item">
-                            <label>{filter.label}</label>
-                            {filter.component}
-                        </div>
-                    ))}
-                </div>
-
-                <div className="rockops-table__filter-actions">
-                    <button
-                        className="rockops-table__btn rockops-table__btn--secondary"
-                        onClick={() => setFilters({})}
-                    >
-                        Clear Filters
-                    </button>
-                    <button
-                        className="rockops-table__btn rockops-table__btn--primary"
-                        onClick={() => setShowFilterPanel(false)}
-                    >
-                        Apply Filters
-                    </button>
-                </div>
-            </div>
-        );
+    // Clear all filters
+    const clearFilters = () => {
+        setFilters({});
+        setSearchTerm('');
     };
 
-    // Render actions menu for a row
-    const renderActionsMenu = (row, rowIndex) => {
-        // Actions menu for small screens or when more than 2 actions
-        if (actions.length > 2) {
-            return (
-                <div className="rockops-table__actions">
-                    <button
-                        className="rockops-table__action-toggle"
-                        onClick={(e) => toggleActionsMenu(e, rowIndex)}
-                        aria-label="Toggle actions menu"
-                    >
-                        <FaEllipsisV />
-                    </button>
-
-                    {activeActionRow === rowIndex && (
-                        <div className="rockops-table__actions-dropdown">
-                            {actions.map((action, idx) => (
-                                <button
-                                    key={idx}
-                                    className={`rockops-table__action-item ${action.className || ''}`}
-                                    onClick={(e) => handleActionClick(e, action, row)}
-                                    disabled={action.isDisabled ? action.isDisabled(row) : false}
-                                >
-                                    {action.icon && <span className="rockops-table__action-icon">{action.icon}</span>}
-                                    <span>{action.label}</span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        // Inline buttons for 1-2 actions
-        return (
-            <div className="rockops-table__actions-inline">
-                {actions.map((action, idx) => (
-                    <button
-                        key={idx}
-                        className={`rockops-table__action-button ${action.className || ''}`}
-                        onClick={(e) => handleActionClick(e, action, row)}
-                        disabled={action.isDisabled ? action.isDisabled(row) : false}
-                        aria-label={action.label}
-                        title={action.label}
-                    >
-                        {action.icon}
-                    </button>
-                ))}
-            </div>
-        );
+    // Clear individual filter
+    const clearFilter = (columnAccessor) => {
+        setFilters(prev => {
+            const newFilters = { ...prev };
+            delete newFilters[columnAccessor];
+            return newFilters;
+        });
     };
 
-    // Render pagination controls
-    const renderPagination = () => {
-        if (sortedData.length <= itemsPerPage) return null;
+    // Get active filters count
+    const activeFiltersCount = Object.values(filters).filter(val => val && val !== '').length + (searchTerm ? 1 : 0);
 
-        const pageNeighbors = 1;
-        const totalNumbers = pageNeighbors * 2 + 3;
-        const totalBlocks = totalNumbers + 2;
+    // Generate page numbers for pagination
+    const getPageNumbers = () => {
+        const pageNumbers = [];
+        const maxVisiblePages = 5;
 
-        if (totalPages > totalBlocks) {
-            let pages = [];
-
-            const leftBound = currentPage - pageNeighbors;
-            const rightBound = currentPage + pageNeighbors;
-            const beforeLastPage = totalPages - 1;
-
-            const startPage = leftBound > 2 ? leftBound : 2;
-            const endPage = rightBound < beforeLastPage ? rightBound : beforeLastPage;
-
-            pages = range(startPage, endPage);
-
-            const pagesCount = pages.length;
-            const singleSpillOffset = totalNumbers - pagesCount - 1;
-
-            const leftSpill = startPage > 2;
-            const rightSpill = endPage < beforeLastPage;
-
-            const leftSpillPage = 'LEFT';
-            const rightSpillPage = 'RIGHT';
-
-            if (leftSpill && !rightSpill) {
-                const extraPages = range(startPage - singleSpillOffset, startPage - 1);
-                pages = [leftSpillPage, ...extraPages, ...pages];
-            } else if (!leftSpill && rightSpill) {
-                const extraPages = range(endPage + 1, endPage + singleSpillOffset);
-                pages = [...pages, ...extraPages, rightSpillPage];
-            } else if (leftSpill && rightSpill) {
-                pages = [leftSpillPage, ...pages, rightSpillPage];
+        if (totalPages <= maxVisiblePages) {
+            for (let i = 1; i <= totalPages; i++) {
+                pageNumbers.push(i);
             }
-
-            pages = [1, ...pages, totalPages];
-
-            return (
-                <div className="rockops-table__pagination">
-                    <button
-                        className="rockops-table__pagination-btn"
-                        disabled={currentPage === 1}
-                        onClick={() => goToPage(currentPage - 1)}
-                    >
-                        Previous
-                    </button>
-
-                    <div className="rockops-table__pagination-numbers">
-                        {pages.map((page, index) => {
-                            if (page === leftSpillPage) {
-                                return (
-                                    <button
-                                        key={index}
-                                        className="rockops-table__pagination-btn rockops-table__pagination-btn--ellipsis"
-                                        onClick={() => goToPage(startPage - 1)}
-                                    >
-                                        ...
-                                    </button>
-                                );
-                            }
-
-                            if (page === rightSpillPage) {
-                                return (
-                                    <button
-                                        key={index}
-                                        className="rockops-table__pagination-btn rockops-table__pagination-btn--ellipsis"
-                                        onClick={() => goToPage(endPage + 1)}
-                                    >
-                                        ...
-                                    </button>
-                                );
-                            }
-
-                            return (
-                                <button
-                                    key={index}
-                                    className={`rockops-table__pagination-btn ${currentPage === page ? 'rockops-table__pagination-btn--active' : ''}`}
-                                    onClick={() => goToPage(page)}
-                                >
-                                    {page}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    <button
-                        className="rockops-table__pagination-btn"
-                        disabled={currentPage === totalPages}
-                        onClick={() => goToPage(currentPage + 1)}
-                    >
-                        Next
-                    </button>
-                </div>
-            );
+        } else {
+            if (currentPage <= 3) {
+                for (let i = 1; i <= Math.min(5, totalPages); i++) {
+                    pageNumbers.push(i);
+                }
+                if (totalPages > 5) {
+                    pageNumbers.push('...');
+                    pageNumbers.push(totalPages);
+                }
+            } else if (currentPage >= totalPages - 2) {
+                pageNumbers.push(1);
+                if (totalPages > 5) {
+                    pageNumbers.push('...');
+                }
+                for (let i = Math.max(totalPages - 4, 2); i <= totalPages; i++) {
+                    pageNumbers.push(i);
+                }
+            } else {
+                pageNumbers.push(1);
+                pageNumbers.push('...');
+                for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                    pageNumbers.push(i);
+                }
+                pageNumbers.push('...');
+                pageNumbers.push(totalPages);
+            }
         }
 
-        return (
-            <div className="rockops-table__pagination">
-                <button
-                    className="rockops-table__pagination-btn"
-                    disabled={currentPage === 1}
-                    onClick={() => goToPage(currentPage - 1)}
-                >
-                    Previous
-                </button>
-
-                <div className="rockops-table__pagination-numbers">
-                    {range(1, totalPages).map(page => (
-                        <button
-                            key={page}
-                            className={`rockops-table__pagination-btn ${currentPage === page ? 'rockops-table__pagination-btn--active' : ''}`}
-                            onClick={() => goToPage(page)}
-                        >
-                            {page}
-                        </button>
-                    ))}
-                </div>
-
-                <button
-                    className="rockops-table__pagination-btn"
-                    disabled={currentPage === totalPages}
-                    onClick={() => goToPage(currentPage + 1)}
-                >
-                    Next
-                </button>
-            </div>
-        );
+        return pageNumbers;
     };
 
-    // Helper function to create a range of numbers
-    function range(start, end) {
-        return Array.from({ length: end - start + 1 }, (_, i) => start + i);
-    }
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, sortedData.length);
 
     return (
         <div className={`rockops-table__container ${className}`}>
@@ -484,39 +291,212 @@ const DataTable = ({
 
                     {showFilters && filterableColumns.length > 0 && (
                         <button
-                            className={`rockops-table__filter-btn ${Object.keys(filters).length > 0 ? 'rockops-table__filter-btn--active' : ''}`}
-                            onClick={() => setShowFilterPanel(!showFilterPanel)}
+                            className={`rockops-table__filter-btn ${showFilterPanel ? 'rockops-table__filter-btn--active' : ''}`}
+                            onClick={() => {
+                                if (showFilterPanel) {
+                                    // Reset filters when closing the panel
+                                    clearFilters();
+                                }
+                                setShowFilterPanel(!showFilterPanel);
+                            }}
                         >
                             <FaFilter />
                             <span>Filters</span>
-                            {Object.keys(filters).length > 0 && (
-                                <span className="rockops-table__filter-count">{Object.keys(filters).length}</span>
+                            {activeFiltersCount > 0 && (
+                                <span className="rockops-table__filter-count">{activeFiltersCount}</span>
                             )}
                         </button>
                     )}
                 </div>
             </div>
 
-            {renderFilterPanel()}
+            {/* Filter Panel - Professional Design */}
+            {showFilters && showFilterPanel && (
+                <div className="rockops-table__filter-panel">
+                    <div className="rockops-table__filter-header">
+                        <h4>
+                            <FaFilter />
+                            Filter Options
+                        </h4>
+                        <div className="filter-actions">
+                            {activeFiltersCount > 0 && (
+                                <span className="filter-stats">
+                                    {activeFiltersCount} active filter{activeFiltersCount !== 1 ? 's' : ''}
+                                </span>
+                            )}
+                            <button
+                                className="filter-collapse-btn"
+                                onClick={() => {
+                                    // Reset filters when closing via collapse button
+                                    clearFilters();
+                                    setShowFilterPanel(false);
+                                }}
+                                title="Close and reset filters"
+                            >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <polyline points="18,15 12,9 6,15"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
 
-            <div className="rockops-table__wrapper">
+                    <div className="rockops-table__filter-list">
+                        {filterableColumns.map((column, index) => (
+                            <div
+                                key={index}
+                                className={`rockops-table__filter-item ${filters[column.accessor] ? 'has-filter' : ''}`}
+                            >
+                                <label>{column.header}</label>
+                                <div className="filter-input-wrapper">
+                                    {column.filterType === 'select' ? (
+                                        <select
+                                            value={filters[column.accessor] || ''}
+                                            onChange={(e) => handleFilterChange(column.accessor, e.target.value)}
+                                        >
+                                            <option value="">All {column.header}</option>
+                                            {getFilterOptions(column.accessor).map(option => (
+                                                <option key={option} value={option}>
+                                                    {option}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <>
+                                            <input
+                                                type={column.filterType === 'number' ? 'number' : 'text'}
+                                                placeholder={`Search ${column.header.toLowerCase()}...`}
+                                                value={filters[column.accessor] || ''}
+                                                onChange={(e) => handleFilterChange(column.accessor, e.target.value)}
+                                            />
+                                            {filters[column.accessor] && (
+                                                <button
+                                                    className="clear-filter-btn"
+                                                    onClick={() => clearFilter(column.accessor)}
+                                                    title="Clear filter"
+                                                >
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                    </svg>
+                                                </button>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+
+                        {customFilters.map((filter, index) => (
+                            <div key={`custom-${index}`} className="rockops-table__filter-item">
+                                <label>{filter.label}</label>
+                                <div className="filter-input-wrapper">
+                                    {filter.component}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="rockops-table__filter-actions">
+                        <div className="filter-stats">
+                            {sortedData.length} of {data.length} results
+                            {activeFiltersCount > 0 && ` with ${activeFiltersCount} filter${activeFiltersCount !== 1 ? 's' : ''} applied`}
+                        </div>
+
+                        <div className="filter-buttons">
+                            <button
+                                className="rockops-table__btn rockops-table__btn--secondary"
+                                onClick={clearFilters}
+                                disabled={activeFiltersCount === 0}
+                            >
+                                Clear All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Table Wrapper - Always full-width */}
+            <div ref={wrapperRef} className="rockops-table__wrapper full-width">
                 {loading ? (
                     <div className="rockops-table__loading">
                         <div className="rockops-table__spinner"></div>
                         <p>Loading data...</p>
                     </div>
                 ) : (
-                    <>
-                        {paginatedData.length === 0 ? (
-                            <div className="rockops-table__empty">
-                                <p>No data available</p>
-                            </div>
-                        ) : (
-                            <table className="rockops-table">
-                                {renderTableHeader()}
+                    <div style={{ position: 'relative' }}>
+                        <table ref={tableRef} className="rockops-table">
+                            <thead className="rockops-table__header">
+                            <tr>
+                                {columns.map((column, index) => (
+                                    <th
+                                        key={index}
+                                        className={`rockops-table__th ${
+                                            column.sortable !== false ? 'rockops-table__th--sortable' : ''
+                                        } ${
+                                            sortField === column.accessor ? `sorted-${sortDirection}` : ''
+                                        }`}
+                                        style={{
+                                            textAlign: column.align || 'left',
+                                            minWidth: column.minWidth || 'auto'
+                                        }}
+                                        data-flex-weight={column.flexWeight || 1}
+                                        onClick={() => column.sortable !== false ? handleSort(column.accessor) : null}
+                                    >
+                                        <div className="rockops-table__th-content">
+                                            <span>{column.header}</span>
+                                            {column.sortable !== false && (
+                                                <span className="rockops-table__sort-icon">
+                                                    {sortField === column.accessor ? (
+                                                        sortDirection === 'asc' ? <FaSortUp /> : <FaSortDown />
+                                                    ) : (
+                                                        <FaSort />
+                                                    )}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </th>
+                                ))}
 
-                                <tbody>
-                                {paginatedData.map((row, rowIndex) => (
+                                {/* Actions column if actions array is provided */}
+                                {actions.length > 0 && (
+                                    <th
+                                        className="rockops-table__th rockops-table__th--actions"
+                                        style={{
+                                            textAlign: 'left',
+                                            minWidth: actionsColumnWidth
+                                        }}
+                                        data-flex-weight={1}
+                                    >
+                                        <div className="rockops-table__th-content">
+                                            <span>Actions</span>
+                                        </div>
+                                    </th>
+                                )}
+                            </tr>
+                            </thead>
+
+                            <tbody style={{ position: 'relative' }}>
+                            {paginatedData.length === 0 ? (
+                                <>
+                                    <tr style={{ height: '200px' }}>
+                                        {allColumns.map((_, index) => (
+                                            <td key={index} style={{ border: 'none', padding: 0 }}></td>
+                                        ))}
+                                    </tr>
+                                    {/* Empty State Overlay - Positioned absolutely over the tbody */}
+                                    <div className="rockops-table__empty-overlay">
+                                        <div className="rockops-table__empty">
+                                            <p>{activeFiltersCount > 0 ? 'No results match your filters' : emptyMessage}</p>
+                                            {activeFiltersCount > 0 && (
+                                                <button className="rockops-table__btn rockops-table__btn--secondary" onClick={clearFilters}>
+                                                    Clear Filters
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                paginatedData.map((row, rowIndex) => (
                                     <tr
                                         key={rowIndex}
                                         className={`rockops-table__row ${onRowClick ? 'rockops-table__row--clickable' : ''}`}
@@ -525,8 +505,13 @@ const DataTable = ({
                                         {columns.map((column, colIndex) => (
                                             <td
                                                 key={colIndex}
-                                                className="rockops-table__cell"
-                                                style={column.cellStyle ? column.cellStyle(row, getValue(row, column.accessor)) : {}}
+                                                className={`rockops-table__cell ${column.className || ''}`}
+                                                style={{
+                                                    textAlign: column.align || 'left',
+                                                    minWidth: column.minWidth || 'auto',
+                                                    ...(column.cellStyle ? column.cellStyle(row, getValue(row, column.accessor)) : {})
+                                                }}
+                                                data-flex-weight={column.flexWeight || 1}
                                             >
                                                 {column.render ? (
                                                     column.render(row, getValue(row, column.accessor))
@@ -538,42 +523,132 @@ const DataTable = ({
 
                                         {/* Actions column */}
                                         {actions.length > 0 && (
-                                            <td className="rockops-table__cell rockops-table__cell--actions">
-                                                {renderActionsMenu(row, rowIndex)}
+                                            <td
+                                                className="rockops-table__cell rockops-table__cell--actions"
+                                                style={{
+                                                    textAlign: 'left',
+                                                    minWidth: actionsColumnWidth
+                                                }}
+                                                data-flex-weight={1}
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                {actions.length > 2 ? (
+                                                    // Dropdown menu for 3+ actions
+                                                    <div className="rockops-table__actions">
+                                                        <button
+                                                            className="rockops-table__action-toggle"
+                                                            onClick={(e) => toggleActionsMenu(e, rowIndex)}
+                                                            aria-label="Toggle actions menu"
+                                                        >
+                                                            <FaEllipsisV />
+                                                        </button>
+
+                                                        {activeActionRow === rowIndex && (
+                                                            <div className="rockops-table__actions-dropdown">
+                                                                {actions.map((action, idx) => (
+                                                                    <button
+                                                                        key={idx}
+                                                                        className={`rockops-table__action-item ${action.className || ''}`}
+                                                                        onClick={(e) => handleActionClick(e, action, row)}
+                                                                        disabled={action.isDisabled ? action.isDisabled(row) : false}
+                                                                    >
+                                                                        {action.icon && <span className="rockops-table__action-icon">{action.icon}</span>}
+                                                                        <span>{action.label}</span>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    // Inline buttons for 1-2 actions
+                                                    <div className="rockops-table__actions-inline">
+                                                        {actions.map((action, idx) => (
+                                                            <button
+                                                                key={idx}
+                                                                className={`rockops-table__action-button ${action.className || ''}`}
+                                                                onClick={(e) => handleActionClick(e, action, row)}
+                                                                disabled={action.isDisabled ? action.isDisabled(row) : false}
+                                                                aria-label={action.label}
+                                                                title={action.label}
+                                                            >
+                                                                {action.icon}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </td>
                                         )}
                                     </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </>
+                                ))
+                            )}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
 
+            {/* Footer with items per page and pagination */}
             <div className="rockops-table__footer">
-                <div className="rockops-table__items-per-page">
-                    <span>Items per page:</span>
-                    <select
-                        value={itemsPerPage}
-                        onChange={(e) => {
-                            setItemsPerPage(Number(e.target.value));
-                            setCurrentPage(1);
-                        }}
-                    >
-                        {itemsPerPageOptions.map(option => (
-                            <option key={option} value={option}>{option}</option>
-                        ))}
-                    </select>
+                <div className="rockops-table__footer-left">
+                    <div className="rockops-table__items-per-page">
+                        <span>Items per page:</span>
+                        <select
+                            value={itemsPerPage}
+                            onChange={(e) => {
+                                setItemsPerPage(Number(e.target.value));
+                                setCurrentPage(1);
+                            }}
+                        >
+                            {itemsPerPageOptions.map(option => (
+                                <option key={option} value={option}>{option}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
-                <div className="rockops-table__showing">
-                    Showing {filtered.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}-
-                    {Math.min(currentPage * itemsPerPage, filtered.length)} of {filtered.length} entries
-                    {sortedData.length !== data.length && ` (filtered from ${data.length} total entries)`}
-                </div>
+                <div className="rockops-table__footer-right">
+                    {/*<div className="rockops-table__showing">*/}
+                    {/*    Showing {startIndex + 1} to {endIndex} of {sortedData.length} entries*/}
+                    {/*    {sortedData.length !== data.length && ` (filtered from ${data.length} total entries)`}*/}
+                    {/*</div>*/}
 
-                {renderPagination()}
+                    {/* Pagination */}
+                    {sortedData.length > itemsPerPage && (
+                        <div className="rockops-table__pagination-controls">
+                            <button
+                                className="rockops-table__pagination-btn"
+                                onClick={() => goToPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                            >
+                                Previous
+                            </button>
+
+                            <div className="rockops-table__pagination-numbers">
+                                {getPageNumbers().map((pageNum, index) => (
+                                    pageNum === '...' ? (
+                                        <span key={`ellipsis-${index}`} className="rockops-table__pagination-btn rockops-table__pagination-btn--ellipsis">...</span>
+                                    ) : (
+                                        <button
+                                            key={pageNum}
+                                            className={`rockops-table__pagination-btn ${currentPage === pageNum ? 'rockops-table__pagination-btn--active' : ''}`}
+                                            onClick={() => goToPage(pageNum)}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    )
+                                ))}
+                            </div>
+
+                            <button
+                                className="rockops-table__pagination-btn"
+                                onClick={() => goToPage(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -74,7 +74,6 @@ const Login = () => {
                             <label className="rockops-login__label" htmlFor="password">
                                 Password
                             </label>
-                            <a href="#" className="rockops-login__forgot-link">Forgot Password?</a>
                         </div>
                         <input
                             id="password"
@@ -84,6 +83,7 @@ const Login = () => {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />
+                        <a href="#" className="rockops-login__forgot-link">Forgot Password?</a>
                     </div>
 
                     <div className="rockops-login__remember">

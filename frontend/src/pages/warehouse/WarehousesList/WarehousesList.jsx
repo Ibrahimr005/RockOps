@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import "./WarehousesList.scss";
 import warehouseImg from "../../../assets/imgs/warehouse1.jpg"; // Default warehouse image
 import { FaWarehouse, FaTimes } from 'react-icons/fa'; // Added FaTimes for remove icons
-import { useAuth } from "../../../Contexts/AuthContext";
+import { useAuth } from "../../../contexts/AuthContext";
+import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
 
 const WarehousesList = () => {
     const [warehouses, setWarehouses] = useState([]);
@@ -128,7 +129,7 @@ const WarehousesList = () => {
             const items = await response.json();
 
             // Filter items with status 'IN_WAREHOUSE'
-            const inWarehouseItems = items.filter(item => item.itemStatus === 'IN_WAREHOUSE' || item.status === 'OVERRECEIVED');
+            const inWarehouseItems = items.filter(item => item.itemStatus === 'IN_WAREHOUSE');
 
             // Calculate total items based on the quantity field
             const total = inWarehouseItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -439,7 +440,7 @@ const WarehousesList = () => {
         }
     };
 
-    if (loading) return <div className="warehouse-list-loading">Loading warehouses...</div>;
+    if (loading) return <LoadingPage/>;
     if (error) return <div className="warehouse-list-error">{error}</div>;
 
 
@@ -448,9 +449,6 @@ const WarehousesList = () => {
         <div className="warehouse-list-container">
             <div className="departments-header">
                 <h1 className="warehouse-list-title">Warehouses</h1>
-
-
-
 
             </div>
 
@@ -504,15 +502,7 @@ const WarehousesList = () => {
 
                                     <div className="warehouse-list-card-actions">
 
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation(); // Prevents click event from bubbling to the card
-                                                    handleOpenEditModal(warehouse);
-                                                }}
-                                                className="warehouse-list-edit-button"
-                                            >
-                                                Edit Warehouse
-                                            </button>
+
 
 
                                         <button

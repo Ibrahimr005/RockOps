@@ -69,6 +69,8 @@ const enTranslations = {
         EQUIPMENT_MANAGER: 'Equipment Manager',
         HR_MANAGER: 'HR Manager',
         HR_EMPLOYEE: 'HR Employee',
+        FINANCE_EMPLOYEE: 'Finance Employee',
+        FINANCE_MANAGER: 'Finance Manager'
     },
     hr: {
         dashboard: {
@@ -240,6 +242,8 @@ const arTranslations = {
         EQUIPMENT_MANAGER: 'مدير المعدات',
         HR_MANAGER: 'مدير الموارد البشرية',
         HR_EMPLOYEE: 'موظف الموارد البشرية',
+        FINANCE_EMPLOYEE: 'موظف مالي',
+        FINANCE_MANAGER: 'مدير المالية'
     },
     site: {
         site: 'الموقع',

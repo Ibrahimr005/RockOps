@@ -1,7 +1,7 @@
 package com.example.backend.models.transaction;
 
 import com.example.backend.models.warehouse.ItemType;
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,7 +22,7 @@ public class TransactionItem {
 
     @ManyToOne
     @JoinColumn(name = "transaction_id")
-    @JsonBackReference
+    @JsonIgnoreProperties({"transactionItems", "hibernateLazyInitializer", "handler"})
     private Transaction transaction;
 
     @ManyToOne
@@ -32,7 +32,6 @@ public class TransactionItem {
     private int quantity;
     private Integer receivedQuantity;
 
-    // Individual item status (may differ from transaction status)
     @Enumerated(EnumType.STRING)
     private TransactionStatus status;
 

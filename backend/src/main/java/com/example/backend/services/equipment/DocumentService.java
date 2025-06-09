@@ -3,7 +3,7 @@ package com.example.backend.services.equipment;
 import com.example.backend.dto.equipment.DocumentDTO;
 import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.equipment.Equipment;
-import com.example.backend.models.hr.Employee;
+import com.example.backend.models.user.User;
 import com.example.backend.models.site.Site;
 import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
@@ -13,9 +13,11 @@ import com.example.backend.models.equipment.Document.EntityType;
 import com.example.backend.repositories.*;
 import com.example.backend.models.equipment.Document;
 import com.example.backend.repositories.equipment.EquipmentRepository;
-import com.example.backend.repositories.hr.EmployeeRepository;
+import com.example.backend.repositories.UserRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,7 +43,7 @@ public class DocumentService {
     private WarehouseRepository warehouseRepository;
 
     @Autowired
-    private EmployeeRepository employeeRepository;
+    private UserRepository userRepository;
 
     @Autowired
     private MinioService minioService;
@@ -77,10 +79,15 @@ public class DocumentService {
         // Verify that the entity exists and get its name
         String entityName = verifyEntityExists(entityType, entityId);
 
-        // Hardcoded employee ID as requested
-        UUID employeeId = UUID.fromString("aeff4938-09fe-4b86-8b5b-4fd6ab3d47d9");
-        Employee currentUser = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + employeeId));
+        // Get the currently authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResourceNotFoundException("No authenticated user found");
+        }
+
+        // Find the User entity based on the username
+        User currentUser = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + authentication.getName()));
 
         // Create new document
         Document document = new Document();
@@ -102,7 +109,7 @@ public class DocumentService {
             minioService.createBucketIfNotExists(bucketName);
 
             // Upload the file with the document prefix and the document ID
-            String fileName = "document-" + savedDocument.getId().toString();
+            String fileName = name + savedDocument.getId().toString();
             minioService.uploadFile(bucketName, file, fileName);
 
             // Set the file URL in the document
@@ -156,6 +163,9 @@ public class DocumentService {
         dto.setType(document.getType());
         dto.setDateUploaded(document.getUploadDate());
 
+        // Set raw file size
+        dto.setFileSize(document.getFileSize());
+        
         // Format file size
         if (document.getFileSize() != null) {
             long size = document.getFileSize();
@@ -187,7 +197,7 @@ public class DocumentService {
             case EQUIPMENT:
                 Equipment equipment = equipmentRepository.findById(entityId)
                         .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + entityId));
-                return equipment.getType() + " - " + equipment.getFullModelName();
+                return equipment.getType().getName() + " - " + equipment.getFullModelName();
 
             case SITE:
                 Site site = siteRepository.findById(entityId)
@@ -198,11 +208,6 @@ public class DocumentService {
                 Warehouse warehouse = warehouseRepository.findById(entityId)
                         .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + entityId));
                 return warehouse.getName();
-
-            case EMPLOYEE:
-                Employee employee = employeeRepository.findById(entityId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + entityId));
-                return employee.getFirstName() + " " + employee.getLastName();
 
             default:
                 throw new IllegalArgumentException("Unsupported entity type: " + entityType);

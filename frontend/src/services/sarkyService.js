@@ -7,6 +7,28 @@ export const sarkyService = {
         return apiClient.get(SARKY_ENDPOINTS.BY_EQUIPMENT(equipmentId));
     },
 
+    getByEquipmentAndDate: (equipmentId, date) => {
+        return apiClient.get(SARKY_ENDPOINTS.BY_EQUIPMENT_AND_DATE(equipmentId, date));
+    },
+
+    getByEquipmentDateRange: (equipmentId, startDate, endDate) => {
+        return apiClient.get(SARKY_ENDPOINTS.BY_EQUIPMENT_DATE_RANGE(equipmentId), {
+            params: { startDate, endDate }
+        });
+    },
+
+    getDailySummary: (equipmentId, date) => {
+        return apiClient.get(SARKY_ENDPOINTS.DAILY_SUMMARY(equipmentId, date));
+    },
+
+    getExistingDates: (equipmentId) => {
+        return apiClient.get(SARKY_ENDPOINTS.EXISTING_DATES(equipmentId));
+    },
+
+    getValidationInfo: (equipmentId) => {
+        return apiClient.get(SARKY_ENDPOINTS.VALIDATION_INFO(equipmentId));
+    },
+
     getLatestDate: (equipmentId) => {
         return apiClient.get(SARKY_ENDPOINTS.LATEST_DATE(equipmentId));
     },
@@ -27,7 +49,8 @@ export const sarkyService = {
         return apiClient.delete(SARKY_ENDPOINTS.DELETE(id));
     },
 
-    // Range sarky log operations
+    // Range sarky log operations (deprecated - keeping for backward compatibility)
+    // These methods are deprecated in favor of using multiple individual sarky entries per day
     getRangeByEquipment: (equipmentId) => {
         return apiClient.get(SARKY_ENDPOINTS.RANGE_BY_EQUIPMENT(equipmentId));
     },

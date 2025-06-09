@@ -156,4 +156,42 @@ public class SarkyLogController {
         sarkyLogService.deleteSarkyLogRange(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/equipment/{equipmentId}/sarky/date/{date}")
+    public ResponseEntity<List<SarkyLogResponseDTO>> getSarkyLogsByEquipmentIdAndDate(
+            @PathVariable UUID equipmentId,
+            @PathVariable String date) {
+        LocalDate localDate = LocalDate.parse(date);
+        return ResponseEntity.ok(sarkyLogService.getSarkyLogsByEquipmentIdAndDate(equipmentId, localDate));
+    }
+
+    @GetMapping("/equipment/{equipmentId}/sarky/date-range")
+    public ResponseEntity<List<SarkyLogResponseDTO>> getSarkyLogsByEquipmentIdAndDateRange(
+            @PathVariable UUID equipmentId,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        LocalDate start = LocalDate.parse(startDate);
+        LocalDate end = LocalDate.parse(endDate);
+        return ResponseEntity.ok(sarkyLogService.getSarkyLogsByEquipmentIdAndDateRange(equipmentId, start, end));
+    }
+
+    @GetMapping("/equipment/{equipmentId}/sarky/daily-summary/{date}")
+    public ResponseEntity<DailySarkySummaryDTO> getDailySarkySummary(
+            @PathVariable UUID equipmentId,
+            @PathVariable String date) {
+        LocalDate localDate = LocalDate.parse(date);
+        return ResponseEntity.ok(sarkyLogService.getDailySarkySummary(equipmentId, localDate));
+    }
+
+    @GetMapping("/equipment/{equipmentId}/sarky/existing-dates")
+    public ResponseEntity<List<String>> getExistingSarkyDatesForEquipment(@PathVariable UUID equipmentId) {
+        List<LocalDate> dates = sarkyLogService.getExistingSarkyDatesForEquipment(equipmentId);
+        List<String> dateStrings = dates.stream().map(LocalDate::toString).collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(dateStrings);
+    }
+
+    @GetMapping("/equipment/{equipmentId}/sarky/validation-info")
+    public ResponseEntity<SarkyValidationInfoDTO> getSarkyValidationInfo(@PathVariable UUID equipmentId) {
+        return ResponseEntity.ok(sarkyLogService.getSarkyValidationInfo(equipmentId));
+    }
 }

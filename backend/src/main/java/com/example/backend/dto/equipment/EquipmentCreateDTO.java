@@ -26,8 +26,9 @@ public class EquipmentCreateDTO {
     private String equipmentComplaints;
     private String countryOfOrigin;
     private String serialNumber;
-    private String shipping;
-    private String customs;
+    private double shipping;
+    private double customs;
+    private double taxes;
     private String modelNumber;
     private EquipmentStatus status;
     private String relatedDocuments;

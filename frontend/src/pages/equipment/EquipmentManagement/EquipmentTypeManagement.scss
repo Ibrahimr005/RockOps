@@ -43,7 +43,6 @@ form .form-group textarea {
   padding: 1.5rem;
   margin: 1rem 0;
   width: 100%;
-  max-width: 1200px;
   transition: all var(--transition-normal);
 }
 
@@ -54,6 +53,18 @@ form .form-group textarea {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
+
+  .header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .header-subtitle {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
 
   h1 {
     font-size: 1.5rem;
@@ -106,9 +117,7 @@ form .form-group textarea {
 }
 
 .equipment-types-list {
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+
 
   .equipment-types-list-header {
     display: grid;
@@ -488,18 +497,38 @@ form {
 }
 
 .delete-confirmation-content {
-  background-color: var(--color-background);
+  background-color: var(--section-background-color);
   padding: 2rem;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
   width: 400px;
   max-width: 90%;
   
+  h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    color: var(--head-title-color);
+    font-weight: var(--bold-font-weight);
+    text-align: center;
+  }
+  
   p {
     margin-bottom: 1.5rem;
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: var(--color-text-primary);
     text-align: center;
+    line-height: 1.5;
+
+    &:last-of-type {
+      margin-bottom: 2rem;
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+    }
+
+    strong {
+      color: var(--color-text-primary);
+      font-weight: var(--bold-font-weight);
+    }
   }
   
   .confirmation-actions {
@@ -509,7 +538,7 @@ form {
     
     button {
       flex: 1;
-      padding: 0.75rem;
+      padding: 0.75rem 1rem;
       border-radius: var(--radius-sm);
       border: none;
       cursor: pointer;
@@ -518,24 +547,202 @@ form {
       justify-content: center;
       gap: 0.5rem;
       font-weight: var(--bold-font-weight);
+      font-size: 0.875rem;
+      transition: all var(--transition-fast);
       
       &.confirm-button {
         background-color: var(--color-danger);
         color: white;
         
         &:hover {
-          background-color: var(--color-danger-dark);
+          background-color: var(--color-danger-dark, #c53030);
+        }
+
+        svg {
+          font-size: 0.875rem;
         }
       }
       
       &.cancel-button {
-        background-color: var(--color-light);
+        background-color: var(--color-surface);
         color: var(--color-text-primary);
+        border: 1px solid var(--border-color);
         
         &:hover {
-          background-color: var(--color-light-dark);
+          background-color: var(--color-surface-hover);
         }
       }
     }
   }
+}
+
+// Work type management modal styles
+.work-type-modal {
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+
+    .work-types-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 16px;
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 16px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background: var(--color-surface);
+
+        .work-type-item {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--section-background-color);
+            transition: all var(--transition-normal);
+
+            &:hover {
+                border-color: var(--color-primary);
+                box-shadow: var(--shadow-sm);
+            }
+
+            .checkbox-label {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                cursor: pointer;
+                position: relative;
+
+                input[type="checkbox"] {
+                    position: absolute;
+                    opacity: 0;
+                    cursor: pointer;
+                    height: 0;
+                    width: 0;
+
+                    &:checked ~ .checkmark {
+                        background-color: var(--color-primary);
+                        border-color: var(--color-primary);
+
+                        &:after {
+                            display: block;
+                        }
+                    }
+                }
+
+                .checkmark {
+                    height: 20px;
+                    width: 20px;
+                    background-color: var(--color-surface);
+                    border: 2px solid var(--border-color);
+                    border-radius: 4px;
+                    position: relative;
+                    transition: all var(--transition-normal);
+                    flex-shrink: 0;
+                    margin-top: 2px;
+
+                    &:after {
+                        content: "";
+                        position: absolute;
+                        display: none;
+                        left: 5px;
+                        top: 1px;
+                        width: 6px;
+                        height: 10px;
+                        border: solid white;
+                        border-width: 0 2px 2px 0;
+                        transform: rotate(45deg);
+                    }
+                }
+
+                .work-type-name {
+                    font-weight: var(--bold-font-weight);
+                    color: var(--color-text-primary);
+                    margin-bottom: 4px;
+                }
+
+                .work-type-description {
+                    font-size: 12px;
+                    color: var(--color-text-secondary);
+                    line-height: 1.4;
+                }
+            }
+        }
+    }
+
+    .no-work-types {
+        text-align: center;
+        color: var(--color-text-secondary);
+        font-style: italic;
+        padding: 32px;
+    }
+}
+
+// Work types list in table
+.work-types-list {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+// Equipment types list in work types table
+.equipment-types-list {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+// Action button styles for info class
+.action-buttons {
+    .info {
+        background-color: var(--color-info);
+        color: white;
+
+        &:hover {
+            background-color: var(--color-info-dark, #1976d2);
+        }
+    }
+}
+
+// Status badge styles
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    &.active {
+        background-color: rgba(34, 197, 94, 0.1);
+        color: var(--color-success);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    &.inactive {
+        background-color: rgba(156, 163, 175, 0.1);
+        color: var(--color-text-secondary);
+        border: 1px solid rgba(156, 163, 175, 0.2);
+    }
+
+    &.drivable {
+        background-color: rgba(34, 197, 94, 0.1);
+        color: var(--color-success);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    &.non-drivable {
+        background-color: rgba(156, 163, 175, 0.1);
+        color: var(--color-text-secondary);
+        border: 1px solid rgba(156, 163, 175, 0.2);
+    }
+}
+
+// Form help text styling
+.form-help-text {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--color-text-tertiary);
+    line-height: 1.4;
 }

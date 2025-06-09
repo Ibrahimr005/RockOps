@@ -20,6 +20,8 @@ public class SalaryStatisticsDTO {
     private BigDecimal averageBonus;
     private BigDecimal averageCommission;
     private Integer employeeCount;
+    private BigDecimal minSalary;
+    private BigDecimal maxSalary;
 
     // Department-wise average salaries
     private Map<String, BigDecimal> departmentAverageSalaries;

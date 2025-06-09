@@ -1,23 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import "./ProcurementMerchants.scss"
-import merchantsImage from "../../../Assets/imgs/pro_icon.png";
+import merchantsImage from "../../../assets/imgs/pro_icon.png";
+import DataTable from '../../../components/common/DataTable/DataTable'; // Adjust path as needed
+import Snackbar from '../../../components/common/Snackbar/Snackbar.jsx'
 
 const ProcurementMerchants = () => {
     const [merchants, setMerchants] = useState([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [localSearchTerm, setLocalSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
     const [showAddModal, setShowAddModal] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
     const [sites, setSites] = useState([]);
-    const [selectedCategory, setSelectedCategory] = useState('');
     const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
     const [currentMerchantId, setCurrentMerchantId] = useState(null);
-    const [showNotification, setShowNotification] = useState(false);
-    const [showSuccessNotification, setShowSuccessNotification] = useState("");
+    const [showSnackbar, setShowSnackbar] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [snackbarType, setSnackbarType] = useState("success");
     const [userRole, setUserRole] = useState('');
 
     // Form data for adding a new merchant
@@ -35,12 +35,8 @@ const ProcurementMerchants = () => {
         reliabilityScore: '',
         averageDeliveryTime: '',
         lastOrderDate: '',
-        notes: '',
-        itemCategoryIds: ''
+        notes: ''
     });
-
-    const [itemCategories, setItemCategories] = useState([]);
-    const [selectedItemCategories, setSelectedItemCategories] = useState([]);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -82,23 +78,14 @@ const ProcurementMerchants = () => {
             .catch(error => {
                 console.error('Error fetching sites:', error);
             });
+    }, []);
 
-        // Fetch item categories for the dropdown
-        fetch('http://localhost:8080/api/v1/item-categories', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to fetch item categories');
-                return response.json();
-            })
-            .then(data => {
-                setItemCategories(data);
-            })
-            .catch(error => {
-                console.error('Error fetching item categories:', error);
-            });
+    useEffect(() => {
+        // Add this code to get the user role
+        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+        if (userInfo && userInfo.role) {
+            setUserRole(userInfo.role);
+        }
     }, []);
 
     const onEdit = (merchant) => {
@@ -119,49 +106,22 @@ const ProcurementMerchants = () => {
             reliabilityScore: merchant.reliabilityScore || '',
             averageDeliveryTime: merchant.averageDeliveryTime || '',
             lastOrderDate: merchant.lastOrderDate ? new Date(merchant.lastOrderDate).toISOString().split('T')[0] : '',
-            notes: merchant.notes || '',
-            itemCategoryIds: merchant.itemCategories ? merchant.itemCategories.map(cat => cat.id).join(',') : ''
+            notes: merchant.notes || ''
         });
 
-        // Set selected item categories if any
-        if (merchant.itemCategories && merchant.itemCategories.length > 0) {
-            setSelectedItemCategories(merchant.itemCategories.map(cat => cat.id));
-        } else {
-            setSelectedItemCategories([]);
-        }
-
         // Set modal mode to edit
-        const newMode = 'edit';
-        setModalMode(newMode);
-        console.log("modee" + modalMode);
-
-        // Store current merchant ID
+        setModalMode('edit');
         setCurrentMerchantId(merchant.id);
-
-        // Show modal
         setShowAddModal(true);
     };
 
-    useEffect(() => {
-        // Add this code to get the user role
-        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-        if (userInfo && userInfo.role) {
-            setUserRole(userInfo.role);
+    const onDelete = (merchant) => {
+        console.log("Deleting merchant with id:", merchant.id);
+        // Implement delete logic here
+        if (window.confirm(`Are you sure you want to delete ${merchant.name}?`)) {
+            // Add delete API call here
         }
-
-        setLoading(true);
-
-        // Rest of your existing useEffect code...
-    }, []);
-
-    const onDelete = (id) => {
-        console.log("Deleting merchant with id:", id);
-        // Optionally implement delete logic here
     };
-
-    const filteredMerchants = merchants.filter(m =>
-        m.name.toLowerCase().includes(localSearchTerm.toLowerCase())
-    );
 
     const handleOpenModal = () => {
         setShowAddModal(true);
@@ -186,11 +146,9 @@ const ProcurementMerchants = () => {
             reliabilityScore: '',
             averageDeliveryTime: '',
             lastOrderDate: '',
-            notes: '',
-            itemCategoryIds: ''
+            notes: ''
         });
         setPreviewImage(null);
-        setSelectedItemCategories([]);
     };
 
     const handleFileChange = (e) => {
@@ -212,80 +170,31 @@ const ProcurementMerchants = () => {
         });
     };
 
-    // Function to fetch item categories
-    const fetchItemCategories = () => {
-        const token = localStorage.getItem('token');
-
-        fetch('http://localhost:8080/api/v1/itemCategories/children', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to fetch item categories');
-                return response.json();
-            })
-            .then(data => {
-                setItemCategories(data);
-            })
-            .catch(error => {
-                console.error('Error fetching item categories:', error);
-            });
-    };
-
-// Call it in useEffect
-    useEffect(() => {
-        fetchItemCategories();
-        // Add other fetches here if needed
-    }, []);
-
-
-    const handleCategorySelect = (e) => {
-        setSelectedCategory(e.target.value);
-    };
-
-    const handleAddCategory = () => {
-        if (selectedCategory && !selectedItemCategories.includes(selectedCategory)) {
-            const updatedCategories = [...selectedItemCategories, selectedCategory];
-            setSelectedItemCategories(updatedCategories);
-
-            // Update form data with comma-separated category IDs
-            setFormData({
-                ...formData,
-                itemCategoryIds: updatedCategories.join(',')
-            });
-        }
-    };
-
-    const handleRemoveCategory = (categoryId) => {
-        const updatedCategories = selectedItemCategories.filter(id => id !== categoryId);
-        setSelectedItemCategories(updatedCategories);
-
-        // Update form data with comma-separated category IDs
-        setFormData({
-            ...formData,
-            itemCategoryIds: updatedCategories.join(',')
-        });
-    };
-
-    const getCategoryName = (categoryId) => {
-        const category = itemCategories.find(cat => cat.id === categoryId);
-        return category ? category.name : 'Unknown Category';
-    };
-
     const handleAddMerchant = (e) => {
         e.preventDefault();
         const token = localStorage.getItem('token');
 
         // Create a merchant object from form data
         const merchantData = {
-            ...formData,
-            // Convert numeric string values to numbers if they exist
+            name: formData.name,
+            merchantType: formData.merchantType,
+            contactEmail: formData.contactEmail || '',
+            contactPhone: formData.contactPhone || '',
+            contactSecondPhone: formData.contactSecondPhone || '',
+            contactPersonName: formData.contactPersonName || '',
+            address: formData.address || '',
+            preferredPaymentMethod: formData.preferredPaymentMethod || '',
+            taxIdentificationNumber: formData.taxIdentificationNumber || '',
             reliabilityScore: formData.reliabilityScore ? parseFloat(formData.reliabilityScore) : null,
             averageDeliveryTime: formData.averageDeliveryTime ? parseFloat(formData.averageDeliveryTime) : null,
-            // Convert date to timestamp if it exists
-            lastOrderDate: formData.lastOrderDate ? new Date(formData.lastOrderDate).getTime() : null
+            lastOrderDate: formData.lastOrderDate ? new Date(formData.lastOrderDate).getTime() : null,
+            notes: formData.notes || ''
         };
+
+        // Only include siteId if it has a value
+        if (formData.siteId && formData.siteId.trim() !== '') {
+            merchantData.siteId = formData.siteId;
+        }
 
         fetch('http://localhost:8080/api/v1/procurement', {
             method: 'POST',
@@ -303,15 +212,15 @@ const ProcurementMerchants = () => {
                 // Add the new merchant to the list
                 setMerchants([...merchants, newMerchant]);
                 handleCloseModals();
-                setShowSuccessNotification("added");
-                setShowNotification(true);
-                setTimeout(() => {
-                    setShowNotification(false);
-                }, 3000);
+                setSnackbarMessage("Merchant successfully added");
+                setSnackbarType("success");
+                setShowSnackbar(true);
             })
             .catch(error => {
                 console.error('Error adding merchant:', error);
-                // Handle error (could add error state and display it)
+                setSnackbarMessage("Failed to add merchant. Please try again.");
+                setSnackbarType("error");
+                setShowSnackbar(true);
             });
     };
 
@@ -323,23 +232,23 @@ const ProcurementMerchants = () => {
         const merchantData = {
             name: formData.name,
             merchantType: formData.merchantType,
-            // Make sure to include these fields even if they're empty strings
             contactEmail: formData.contactEmail || '',
             contactPhone: formData.contactPhone || '',
             contactSecondPhone: formData.contactSecondPhone || '',
             contactPersonName: formData.contactPersonName || '',
             address: formData.address || '',
-            siteId: formData.siteId || '',
             preferredPaymentMethod: formData.preferredPaymentMethod || '',
             taxIdentificationNumber: formData.taxIdentificationNumber || '',
             reliabilityScore: formData.reliabilityScore ? parseFloat(formData.reliabilityScore) : null,
             averageDeliveryTime: formData.averageDeliveryTime ? parseFloat(formData.averageDeliveryTime) : null,
             lastOrderDate: formData.lastOrderDate ? new Date(formData.lastOrderDate).getTime() : null,
-            notes: formData.notes || '',
-            itemCategoryIds: formData.itemCategoryIds || ''
+            notes: formData.notes || ''
         };
-        console.log('Updating merchant with data:', JSON.stringify(merchantData, null, 2));
 
+        // Only include siteId if it has a value
+        if (formData.siteId && formData.siteId.trim() !== '') {
+            merchantData.siteId = formData.siteId;
+        }
 
         fetch(`http://localhost:8080/api/v1/procurement/${currentMerchantId}`, {
             method: 'PUT',
@@ -358,18 +267,120 @@ const ProcurementMerchants = () => {
                 const updatedMerchants = merchants.map(m =>
                     m.id === updatedMerchant.id ? updatedMerchant : m
                 );
-                setShowSuccessNotification("updated");
                 setMerchants(updatedMerchants);
-                setShowNotification(true);
                 handleCloseModals();
-                setTimeout(() => {
-                    setShowNotification(false);
-                }, 3000);
+                setSnackbarMessage("Merchant successfully updated");
+                setSnackbarType("success");
+                setShowSnackbar(true);
             })
             .catch(error => {
                 console.error('Error updating merchant:', error);
-                // Handle error
+                setSnackbarMessage("Failed to update merchant. Please try again.");
+                setSnackbarType("error");
+                setShowSnackbar(true);
             });
+    };
+
+    // Define columns for DataTable
+    const columns = [
+        {
+            id: 'name',
+            header: 'MERCHANT',
+            accessor: 'name',
+            sortable: true,
+            minWidth: '150px',
+            flexWeight: 2
+        },
+        {
+            id: 'type',
+            header: 'TYPE',
+            accessor: 'merchantType',
+            sortable: true,
+            minWidth: '120px'
+        },
+        {
+            id: 'email',
+            header: 'EMAIL',
+            accessor: 'contactEmail',
+            sortable: true,
+            minWidth: '180px',
+            render: (row, value) => value || '-'
+        },
+        {
+            id: 'phone',
+            header: 'PHONE',
+            accessor: 'contactPhone',
+            sortable: true,
+            minWidth: '130px',
+            render: (row, value) => value || '-'
+        },
+        {
+            id: 'address',
+            header: 'ADDRESS',
+            accessor: 'address',
+            sortable: true,
+            minWidth: '150px',
+            flexWeight: 2,
+            render: (row, value) => value || '-'
+        },
+        {
+            id: 'site',
+            header: 'SITE',
+            accessor: 'site.name',
+            sortable: true,
+            minWidth: '120px',
+            render: (row, value) => value || 'None'
+        }
+    ];
+
+    // Define filterable columns
+    const filterableColumns = [
+        {
+            header: 'Merchant',
+            accessor: 'name',
+            filterType: 'text'
+        },
+        {
+            header: 'Type',
+            accessor: 'merchantType',
+            filterType: 'select'
+        },
+        {
+            header: 'Site',
+            accessor: 'site.name',
+            filterType: 'select'
+        }
+    ];
+
+    // Define actions for each row
+    const actions = [
+        {
+            label: 'Edit',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+            ),
+            onClick: onEdit,
+            className: 'edit'
+        },
+        {
+            label: 'Delete',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
+                </svg>
+            ),
+            onClick: onDelete,
+            className: 'delete'
+        }
+    ];
+
+    const handleRowClick = (merchant) => {
+        navigate(`/merchants/${merchant.id}`);
     };
 
     return (
@@ -378,7 +389,7 @@ const ProcurementMerchants = () => {
             <div className="procurement-intro-card">
                 <div className="procurement-intro-left">
                     <img
-                        src={merchantsImage} // Provide the merchants image
+                        src={merchantsImage}
                         alt="Merchants"
                         className="procurement-intro-image"
                     />
@@ -395,9 +406,6 @@ const ProcurementMerchants = () => {
                             <span className="procurement-stat-value">{merchants.length}</span>
                             <span className="procurement-stat-label">Total Merchants</span>
                         </div>
-                        <div className="procurement-stat-item">
-
-                        </div>
                     </div>
                 </div>
 
@@ -412,120 +420,29 @@ const ProcurementMerchants = () => {
                 </div>
             </div>
 
-            {/* Search and Description */}
+            {/* Description */}
             <div className="procurement-requests-section-description">
                 (Vendors, suppliers, and business partners that provide products or services)
-
-                <div className="procurement-search-container">
-                    <input
-                        type="text"
-                        placeholder="Search merchants..."
-                        className="procurement-search-input"
-                        value={localSearchTerm}
-                        onChange={(e) => setLocalSearchTerm(e.target.value)}
-                    />
-                    <svg className="procurement-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="11" cy="11" r="8" />
-                        <path d="M21 21l-4.35-4.35" />
-                    </svg>
-                </div>
             </div>
 
-            {/* Then your merchants table like you already have */}
-
-
-    <div className="procurement-merchants-table-container">
-
-            <div className="procurement-merchants-table-wrapper">
-                <div
-                    className="procurement-merchants-table-card"
-                    style={{ minHeight: filteredMerchants.length === 0 ? '300px' : 'auto' }}
-                >
-                    {loading ? (
-                        <div className="procurement-merchants-loading-container">
-                            <div className="procurement-merchants-loading-spinner"></div>
-                            <p>Loading merchants data...</p>
-                        </div>
-                    ) : error ? (
-                        <div className="procurement-merchants-error-container">
-                            <p>Error: {error}</p>
-                            <p>Please try again later or contact support.</p>
-                        </div>
-                    ) : (
-                        <div className="procurement-merchants-table-body">
-                            <div className="procurement-merchants-header-row">
-                                <div className="procurement-merchants-header-cell name-cell">MERCHANT</div>
-                                <div className="procurement-merchants-header-cell type-cell">TYPE</div>
-                                <div className="procurement-merchants-header-cell email-cell">EMAIL</div>
-                                <div className="procurement-merchants-header-cell phone-cell">PHONE</div>
-                                <div className="procurement-merchants-header-cell address-cell">ADDRESS</div>
-                                <div className="procurement-merchants-header-cell site-cell">SITE</div>
-                                <div className="procurement-merchants-header-cell actions-cell">ACTIONS</div>
-                            </div>
-
-                            {filteredMerchants.length > 0 ? (
-                                filteredMerchants.map((merchant, index) => (
-                                    <div
-                                        className="procurement-merchants-table-row"
-                                        key={index}
-                                        onClick={() => navigate(`/merchants/${merchant.id}`)}
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        <div className="procurement-merchants-table-cell name-cell">{merchant.name}</div>
-                                        <div className="procurement-merchants-table-cell type-cell">{merchant.merchantType}</div>
-                                        <div className="procurement-merchants-table-cell email-cell">
-                                            {merchant.contactEmail || "-"}
-                                        </div>
-                                        <div className="procurement-merchants-table-cell phone-cell">
-                                            {merchant.contactPhone || "-"}
-                                        </div>
-                                        <div className="procurement-merchants-table-cell address-cell">
-                                            {merchant.address || "-"}
-                                        </div>
-                                        <div className="procurement-merchants-table-cell site-cell">
-                                            {merchant.site ? merchant.site.name : "None"}
-                                        </div>
-                                        <div
-                                            className="procurement-merchants-table-cell actions-cell"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <button
-                                                className="procurement-merchants-edit-button"
-                                                onClick={() => onEdit(merchant)}
-                                            >
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                className="procurement-merchants-delete-button"
-                                                onClick={() => onDelete(merchant.id)}
-                                            >
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                                                    <line x1="10" y1="11" x2="10" y2="17" />
-                                                    <line x1="14" y1="11" x2="14" y2="17" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="procurement-merchants-empty-state">
-                                    <div className="procurement-merchants-empty-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                    </div>
-                                    <h3>No merchants found</h3>
-                                    <p>Try adjusting your search or add a new merchant</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
+            {/* DataTable */}
+            <div className="procurement-merchants-table-container">
+                <DataTable
+                    data={merchants}
+                    columns={columns}
+                    loading={loading}
+                    onRowClick={handleRowClick}
+                    showSearch={true}
+                    showFilters={true}
+                    filterableColumns={filterableColumns}
+                    actions={actions}
+                    itemsPerPageOptions={[10, 20, 50]}
+                    defaultItemsPerPage={10}
+                    defaultSortField="name"
+                    defaultSortDirection="asc"
+                    emptyMessage="No merchants found"
+                    className="procurement-merchants-datatable"
+                />
 
                 {userRole === 'PROCUREMENT' && (
                     <div className="procurement-merchants-add-button-container">
@@ -598,12 +515,6 @@ const ProcurementMerchants = () => {
                                                     >
                                                         <option value="">Select a Type</option>
                                                         <option value="SUPPLIER">Supplier</option>
-                                                        <option value="DISTRIBUTOR">Distributor</option>
-                                                        <option value="MANUFACTURER">Manufacturer</option>
-                                                        <option value="SERVICE_PROVIDER">Service Provider</option>
-                                                        <option value="RETAILER">Retailer</option>
-                                                        <option value="WHOLESALER">Wholesaler</option>
-                                                        <option value="OTHER">Other</option>
                                                     </select>
                                                 </div>
 
@@ -744,60 +655,6 @@ const ProcurementMerchants = () => {
                                                     />
                                                 </div>
 
-
-
-                                                {/* Item Categories Section */}
-                                                <div className="merchant-form-group merchant-description-group">
-                                                    <label className="merchant-form-label required-field">Item Categories</label>
-                                                    <div className="merchant-form-category-selector">
-                                                        <div className="merchant-form-category-input-group">
-                                                            <select
-                                                                value={selectedCategory}
-                                                                onChange={handleCategorySelect}
-                                                                className="merchant-form-select"
-                                                            >
-                                                                <option value="">Select a Category</option>
-                                                                {itemCategories
-                                                                    .filter(cat => !selectedItemCategories.includes(cat.id))
-                                                                    .map(category => (
-                                                                        <option key={category.id} value={category.id}>
-                                                                            {category.name}
-                                                                        </option>
-                                                                    ))
-                                                                }
-                                                            </select>
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleAddCategory}
-                                                                disabled={!selectedCategory}
-                                                                className="merchant-form-category-add-button"
-                                                            >
-                                                                Add
-                                                            </button>
-                                                        </div>
-
-                                                        {/* Display selected categories */}
-                                                        <div className="merchant-form-selected-categories">
-                                                            {selectedItemCategories.length > 0 ? (
-                                                                selectedItemCategories.map((categoryId) => (
-                                                                    <div key={categoryId} className="merchant-form-selected-category">
-                                                                        <span>{getCategoryName(categoryId)}</span>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleRemoveCategory(categoryId)}
-                                                                            className="merchant-form-category-remove-button"
-                                                                        >
-                                                                            ×
-                                                                        </button>
-                                                                    </div>
-                                                                ))
-                                                            ) : (
-                                                                <p className="merchant-form-no-categories">No categories selected</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
                                                 {/* Notes Section */}
                                                 <div className="merchant-form-group merchant-description-group">
                                                     <label className="merchant-form-label">Notes</label>
@@ -826,16 +683,15 @@ const ProcurementMerchants = () => {
                     </div>
                 </div>
             )}
-            {showNotification && (
-                <div className="notification success-notification">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-                        <path d="M22 4L12 14.01l-3-3" />
-                    </svg>
-                    <span>Merchant successfully {showSuccessNotification}</span>
-                </div>
-            )}
-        </div>
+
+            {/* Snackbar */}
+            <Snackbar
+                type={snackbarType}
+                message={snackbarMessage}
+                show={showSnackbar}
+                onClose={() => setShowSnackbar(false)}
+                duration={3000}
+            />
         </div>
     );
 };

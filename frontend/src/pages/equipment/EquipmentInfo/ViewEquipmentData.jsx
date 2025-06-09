@@ -1,11 +1,10 @@
 import React, { Fragment, useEffect, useState } from "react";
-// import "../../formStyle.scss";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import { IoDocumentOutline, IoArrowBackOutline } from "react-icons/io5";
 import { BsPrinter } from "react-icons/bs";
 import { equipmentService } from "../../../services/equipmentService.js";
-
+import "./ViewEquipmentData.scss";
 
 const ViewEquipmentData = () => {
     const params = useParams();
@@ -36,114 +35,55 @@ const ViewEquipmentData = () => {
         navigate(-1); // Navigate back to the previous page
     };
 
-    if (loading) return <p>Loading...</p>;
-    if (error) return <p>Error: {error}</p>;
-    if (!equipmentData) return <p>No equipment data found</p>;
-
-    // Use the data directly from the response
-    const equipment = equipmentData;
-
-    const categorizedData = [
-        {
-            title: "General Information",
-            inputs: [
-                { label: "Equipment ID", type: "text", name: "equipmentID", value: equipment.id || "N/A" },
-                { label: "Equipment Name", type: "text", name: "equipmentName", value: equipment.name || "N/A" },
-                { label: "Model", type: "text", name: "model", value: equipment.model || "N/A" },
-                { label: "Model Number", type: "text", name: "modelNumber", value: equipment.modelNumber || "N/A" },
-                { label: "Equipment Type", type: "text", name: "equipmentType", value: equipment.typeName || "N/A" },
-                { label: "Equipment Brand", type: "text", name: "equipmentBrand", value: equipment.brandName || "N/A" },
-            ],
-        },
-        {
-            title: "Operational Information",
-            inputs: [
-                { label: "Worked Hours", type: "text", name: "workedHours", value: equipment.workedHours || "N/A" },
-                { label: "Status", type: "text", name: "status", value: equipment.status || "N/A" },
-                {
-                    label: "Main Driver",
-                    type: "text",
-                    name: "mainDriver",
-                    value: equipment.mainDriverName || "N/A",
-                },
-                {
-                    label: "Sub Driver",
-                    type: "text",
-                    name: "subDriver",
-                    value: equipment.subDriverName || "N/A",
-                },
-            ],
-        },
-        {
-            title: "Ownership & Delivery",
-            inputs: [
-                {
-                    label: "Site",
-                    type: "text",
-                    name: "site",
-                    value: equipment.siteName || "N/A",
-                },
-                { label: "Manufacture Year", type: "text", name: "manufactureYear", value: equipment.manufactureYear || "N/A" },
-                { label: "Purchase Date", type: "text", name: "purchaseDate", value: equipment.purchasedDate || "N/A" },
-                { label: "Delivered Date", type: "text", name: "deliveredDate", value: equipment.deliveredDate || "N/A" },
-                { label: "Purchased From", type: "text", name: "purchasedFrom", value: equipment.purchasedFromName || "N/A" },
-                { label: "Examined By", type: "text", name: "examinedBy", value: equipment.examinedBy || "N/A" },
-            ],
-        },
-        {
-            title: "Financial Information",
-            inputs: [
-                { label: "Dollar Price", type: "text", name: "dollarPrice", value: equipment.dollarPrice ? `$${equipment.dollarPrice.toLocaleString()}` : "N/A" },
-                { label: "EGP Price", type: "text", name: "egpPrice", value: equipment.egpPrice ? `EGP ${equipment.egpPrice.toLocaleString()}` : "N/A" },
-            ],
-        },
-        {
-            title: "Additional Information",
-            inputs: [
-                {
-                    label: "Equipment Complaints",
-                    type: "text",
-                    name: "equipmentComplains",
-                    value: equipment.equipmentComplaints || "N/A",
-                },
-                { label: "Country Of Origin", type: "text", name: "countryOfOrigin", value: equipment.countryOfOrigin || "N/A" },
-                { label: "Serial Number", type: "text", name: "serialNumber", value: equipment.serialNumber || "N/A" },
-                { label: "Shipping Status", type: "text", name: "shippingStatus", value: equipment.shipping || "N/A" },
-                { label: "Customs Status", type: "text", name: "customsStatus", value: equipment.customs || "N/A" },
-            ],
-        },
-    ];
-
-    const LabelInputComponent = ({ label, type, name, value }) => (
-        <div className="input-container">
-            <input className="input-field" type={type} name={name} value={value} readOnly />
-            <label className="input-label" htmlFor={name}>{label}</label>
-        </div>
-    );
-
     const handlePrint = () => {
         const printContent = document.getElementById("print-section");
         const originalContent = document.body.innerHTML;
-
         document.body.innerHTML = printContent.innerHTML;
         window.print();
-
         document.body.innerHTML = originalContent;
         window.location.reload();
     };
 
+    // Field component for displaying label/value pairs
+    const FieldItem = ({ label, value, type = "default" }) => {
+        const getValueClass = () => {
+            if (!value || value === "Not available") return "not-available";
+            if (value === "Not applicable") return "not-applicable";
+            
+            switch (type) {
+                case "status":
+                    return "status-value";
+                case "price":
+                    return "price-value";
+                case "driver":
+                    return "driver-value";
+                default:
+                    return "";
+            }
+        };
+
+        return (
+            <div className="field-item">
+                <div className="field-label">{label}</div>
+                <div className={`field-value ${getValueClass()}`}>{value || "Not available"}</div>
+            </div>
+        );
+    };
+
+    if (loading) return <div className="equipment-info-page"><div className="loading-message">Loading equipment details...</div></div>;
+    if (error) return <div className="equipment-info-page"><div className="error-message">Error: {error}</div></div>;
+    if (!equipmentData) return <div className="equipment-info-page"><div className="error-message">No equipment data found</div></div>;
+
+    // Use the data directly from the response
+    const equipment = equipmentData;
+
     return (
-        <Fragment>
-            <div id="print-section" className="DetailsContainer">
-                <div className="InformationHeaderSection">
-                    <div className="HeaderLefttSide">
-                        {/*<BackButton />*/}
-                    </div>
+        <div className="equipment-info-page">
+            <div id="print-section" className="equipment-info-container">
+                <div className="info-header">
                     <h1>Equipment Information</h1>
-                    <div className="actionButtons">
-                        <NavLink
-                            to={`/RelatedDocuments/equipment/${params.EquipmentID}`}
-                            className={({ isActive }) => isActive ? "active" : ""}>
+                    <div className="header-actions">
+                        <NavLink to={`/related-documents/equipment/${params.EquipmentID}`}>
                             <IoDocumentOutline />
                         </NavLink>
                         <button onClick={handlePrint}>
@@ -151,35 +91,92 @@ const ViewEquipmentData = () => {
                         </button>
                     </div>
                 </div>
-                <div className="DetailsImage">
+
+                <div className="equipment-image">
                     <img
                         src={equipment.imageUrl}
-                        alt="Equipment Profile"
-                        onError={(e) => { e.target.src = Excavator1; }} // Fallback if image fails
+                        alt="Equipment"
+                        onError={(e) => { 
+                            e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5FcXVpcG1lbnQgSW1hZ2U8L3RleHQ+PC9zdmc+'; 
+                        }}
                     />
                 </div>
-                <div className="DetailsInputs">
-                    <div className="categoryContainer">
-                        {categorizedData.map((category, index) => (
-                            <div key={index} className="categorySection">
-                                <h2>{category.title}</h2>
-                                <div className="categoryInputs">
-                                    {category.inputs.map((input, idx) => (
-                                        <LabelInputComponent
-                                            key={idx}
-                                            label={input.label}
-                                            type={input.type}
-                                            name={input.name}
-                                            value={input.value}
-                                        />
-                                    ))}
-                                </div>
+
+                <div className="info-content">
+                    <div className="info-sections">
+                        <div className="info-section">
+                            <h2 className="section-title">Equipment Details</h2>
+                            <div className="field-list">
+                                <FieldItem label="Equipment ID" value={equipment.id} />
+                                <FieldItem label="Equipment Name" value={equipment.name} />
+                                <FieldItem label="Type" value={equipment.typeName} />
+                                <FieldItem label="Brand" value={equipment.brandName} />
+                                <FieldItem label="Model" value={equipment.model} />
+                                <FieldItem label="Serial Number" value={equipment.serialNumber} />
                             </div>
-                        ))}
+                        </div>
+
+                        <div className="info-section">
+                            <h2 className="section-title">Status & Location</h2>
+                            <div className="field-list">
+                                <FieldItem label="Status" value={equipment.status} type="status" />
+                                <FieldItem label="Site Location" value={equipment.siteName} />
+                                <FieldItem label="Worked Hours" value={equipment.workedHours} />
+                                <FieldItem label="Manufacture Year" value={equipment.manufactureYear} />
+                            </div>
+                        </div>
+
+                        <div className="info-section">
+                            <h2 className="section-title">Personnel</h2>
+                            <div className="field-list">
+                                <FieldItem 
+                                    label="Main Driver" 
+                                    value={equipment.drivable ? (equipment.mainDriverName || "Not assigned") : "Not applicable"} 
+                                    type="driver"
+                                />
+                                <FieldItem 
+                                    label="Sub Driver" 
+                                    value={equipment.drivable ? (equipment.subDriverName || "Not assigned") : "Not applicable"} 
+                                    type="driver"
+                                />
+                                <FieldItem label="Examined By" value={equipment.examinedBy} />
+                            </div>
+                        </div>
+
+                        <div className="info-section">
+                            <h2 className="section-title">Purchase Information</h2>
+                            <div className="field-list">
+                                <FieldItem label="Purchased From" value={equipment.purchasedFromName} />
+                                <FieldItem label="Purchase Date" value={equipment.purchasedDate} />
+                                <FieldItem label="Delivery Date" value={equipment.deliveredDate} />
+                                <FieldItem label="Country of Origin" value={equipment.countryOfOrigin} />
+                                <FieldItem 
+                                    label="EGP Price" 
+                                    value={equipment.egpPrice ? `EGP ${equipment.egpPrice.toLocaleString()}` : "N/A"} 
+                                    type="price"
+                                />
+                                <FieldItem 
+                                    label="USD Price" 
+                                    value={equipment.dollarPrice ? `$${equipment.dollarPrice.toLocaleString()}` : "N/A"} 
+                                    type="price"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="info-section">
+                            <h2 className="section-title">Additional Information</h2>
+                            <div className="field-list">
+                                <FieldItem label="Model Number" value={equipment.modelNumber} />
+                                <FieldItem label="Shipping Status" value={equipment.shipping} />
+                                <FieldItem label="Customs Status" value={equipment.customs} />
+                                <FieldItem label="Equipment Complaints" value={equipment.equipmentComplaints} />
+                                <FieldItem label="Related Documents" value={equipment.relatedDocuments} />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </Fragment>
+        </div>
     );
 };
 

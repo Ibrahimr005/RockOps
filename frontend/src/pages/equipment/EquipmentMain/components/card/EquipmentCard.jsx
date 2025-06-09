@@ -113,9 +113,7 @@ const EquipmentCard = forwardRef((props, ref) => {
                 </div>
 
                 <div className="equipment-actions">
-                    <button className="btn-view-details" onClick={handleViewDetails}>
-                        View Details
-                    </button>
+
 
                     {/* Render custom actions if available */}
                     {customActions.map((action, index) => (
@@ -148,6 +146,9 @@ const EquipmentCard = forwardRef((props, ref) => {
                             Edit Equipment
                         </button>
                     )}
+                    <button className="btn-view-details" onClick={handleViewDetails}>
+                        View Details
+                    </button>
                 </div>
             </div>
         </div>

@@ -1,3 +1,234 @@
+// Snackbar with improved design for transaction details
+.snackbar {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  z-index: 1100;
+  opacity: 0;
+  transition: transform 0.535s ease, opacity 0.535s ease;
+  max-width: 400px;
+  min-width: 300px;
+
+  &.slide-in {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  &.slide-out {
+    transform: translateX(-50%) translateY(-100px);
+    opacity: 0;
+  }
+
+  // Enhanced styling for multi-line content
+  &.multi-line {
+    max-width: 500px;
+    padding: 20px;
+    
+    .snackbar-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .snackbar-message {
+      white-space: pre-line;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      line-height: 1.6;
+      font-size: 14px;
+      margin: 0;
+      
+      &.pre {
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 13px;
+        background: rgba(0, 0, 0, 0.05);
+        padding: 8px;
+        border-radius: 4px;
+        border-left: 3px solid currentColor;
+      }
+    }
+  }
+
+  // Default single-line layout
+  &:not(.multi-line) {
+    align-items: center;
+    
+    .snackbar-content {
+      flex: 1;
+    }
+
+    .snackbar-message {
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+  }
+
+  .snackbar-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .snackbar-content {
+    flex: 1;
+    min-width: 0;
+    word-wrap: break-word;
+  }
+
+  // Close button for persistent snackbars
+  .snackbar-close-button {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+
+    &:hover {
+      opacity: 1;
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  // Persistent snackbar styling
+  &.persistent {
+    border: 2px solid transparent;
+    transition: transform 0.535s ease, opacity 0.535s ease, border-color 0.2s ease;
+
+    &:hover {
+      border-color: rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+.success-snackbar {
+  background-color: #ecfdf5;
+  border-left: 4px solid #4ade80;
+
+  .snackbar-icon svg {
+    color: #16a34a;
+  }
+
+  .snackbar-message {
+    color: #065f46;
+  }
+
+  .snackbar-close-button {
+    color: #16a34a;
+
+    &:hover {
+      background: rgba(22, 163, 74, 0.1);
+    }
+  }
+
+  &.persistent:hover {
+    border-color: #4ade80;
+  }
+}
+
+.error-snackbar {
+  background-color: #fef2f2;
+  border-left: 4px solid #f87171;
+
+  .snackbar-icon svg {
+    color: #dc2626;
+  }
+
+  .snackbar-message {
+    color: #991b1b;
+  }
+
+  .snackbar-close-button {
+    color: #dc2626;
+
+    &:hover {
+      background: rgba(220, 38, 38, 0.1);
+    }
+  }
+
+  &.persistent:hover {
+    border-color: #f87171;
+  }
+}
+
+.info-snackbar {
+  background-color: #eff6ff;
+  border-left: 4px solid #60a5fa;
+
+  .snackbar-icon svg {
+    color: #2563eb;
+  }
+
+  .snackbar-message {
+    color: #1e40af;
+  }
+
+  .snackbar-close-button {
+    color: #2563eb;
+
+    &:hover {
+      background: rgba(37, 99, 235, 0.1);
+    }
+  }
+
+  &.persistent:hover {
+    border-color: #60a5fa;
+  }
+}
+
+.warning-snackbar {
+  background-color: #fffbeb;
+  border-left: 4px solid #fbbf24;
+
+  .snackbar-icon svg {
+    color: #d97706;
+  }
+
+  .snackbar-message {
+    color: #92400e;
+  }
+
+  .snackbar-close-button {
+    color: #d97706;
+
+    &:hover {
+      background: rgba(217, 119, 6, 0.1);
+    }
+  }
+
+  &.persistent:hover {
+    border-color: #fbbf24;
+  }
+}
+
+// Legacy styles for backwards compatibility (kept but not used with new design)
 .global-notification {
   position: fixed;
   top: 20px;
@@ -14,12 +245,12 @@
   animation: slideDownFade 0.3s ease, slideUpFade 0.3s ease 2.7s;
   min-width: 300px;
   max-width: 500px;
-}
 
-.global-notification > div:first-child {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  > div:first-child {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 }
 
 @keyframes slideDownFade {
@@ -48,48 +279,48 @@
   background-color: #f0fdf4;
   border: 1px solid #dcfce7;
   color: #166534;
-}
 
-.success-notification svg {
-  color: #16a34a;
-  width: 20px;
-  height: 20px;
+  svg {
+    color: #16a34a;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .error-notification {
   background-color: #fef2f2;
   border: 1px solid #fecaca;
   color: #991b1b;
-}
 
-.error-notification svg {
-  color: #dc2626;
-  width: 20px;
-  height: 20px;
+  svg {
+    color: #dc2626;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .info-notification {
   background-color: #eff6ff;
   border: 1px solid #dbeafe;
   color: #1e40af;
-}
 
-.info-notification svg {
-  color: #3b82f6;
-  width: 20px;
-  height: 20px;
+  svg {
+    color: #3b82f6;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .warning-notification {
   background-color: #fffbeb;
   border: 1px solid #fef3c7;
   color: #92400e;
-}
 
-.warning-notification svg {
-  color: #f59e0b;
-  width: 20px;
-  height: 20px;
+  svg {
+    color: #f59e0b;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 // Styles for action buttons in confirmation snackbars

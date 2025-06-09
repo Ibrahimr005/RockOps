@@ -1,21 +1,4 @@
-.warehouse-view2 {
-  position: relative;
-  padding: 20px;
-  background-color: var(--color-surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  font-family: var(--font-family);
-  color: var(--color-text-primary);
-  margin-bottom: 20px;
-  min-height: 200px; /* Ensures the container has some minimum height */
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start; /* Ensure content starts at the top */
-  overflow: hidden;
-  position: relative; /* For positioning the Add button */
-  padding-bottom: 90px; /* Add some space at the bottom for the button */
-  margin-top:5rem;
-}
+
 
 /* Header Styles */
 .header-container2 {
@@ -236,9 +219,6 @@
   text-align: left; /* Align* Adjust padding for action buttons */
 }
 
-
-
-
 /* Category and Status Styles */
 .category-tag2 {
   display: inline-block;
@@ -257,8 +237,6 @@
   font-size: 12px;
   font-weight: 500;
 }
-
-
 
 /* Action Button Styles */
 .edit-button2,
@@ -286,7 +264,7 @@
 
 .edit-button2:hover,
 .delete-button2:hover {
-  background-color: #f3f4f6;
+  background-color: var(--color-surface-hover);
 }
 
 .edit-button2 svg,
@@ -365,7 +343,7 @@
   top: 50%; /* Vertically center */
   left: 50%; /* Horizontally center */
   transform: translate(-50%, -50%); /* Fine-tune positioning */
-  color: #6b7280;
+  color: var(--color-text-tertiary);
   z-index: 10; /* Ensure it's on top of other content */
   width: 100%;
   height: auto;
@@ -374,7 +352,7 @@
 .empty-state2 .empty-icon2 {
   width: 60px;
   height: 60px;
-  background-color: #f3f4f6;
+  background-color: var(--color-surface-hover);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -385,13 +363,13 @@
 .empty-state2 svg {
   width: 30px;
   height: 30px;
-  color: #9ca3af;
+  color: var(--color-text-secondary);
 }
 
 .empty-state h3 {
   font-size: 18px;
   margin: 0 0 8px 0;
-  color: #4b5563;
+  color: var(--color-text-primary);
 }
 
 .empty-state2 p {
@@ -427,7 +405,7 @@
 .modal2 {
   width: 100%;
   max-width: 600px;
-  background-color: white;
+  background-color: var(--color-surface);
   border-radius: 16px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
   animation: slideUp 0.3s ease;
@@ -453,13 +431,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header2 h2 {
   font-size: 18px;
   font-weight: 600;
-  color: #1a2b42;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -473,13 +451,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   transition: all 0.2s ease;
 }
 
 .close-modal2:hover {
-  background-color: #f3f4f6;
-  color: #1a2b42;
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
 }
 
 .close-modal2 svg {
@@ -514,46 +492,45 @@ form {
 .form-group2 input,
 .form-group2 select,
 .form-group2 textarea {
-  width: 100%; /* Ensure inputs take the full width */
+  width: 100%;
   padding: 8px;
   font-size: 13px;
   border-radius: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
+  background-color: var(--color-surface-secondary); /* Changed from var(--color-surface) */
+  color: var(--color-text-primary);
+  transition: all 0.2s ease; /* Added transition for smooth changes */
 }
 
-
-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: #4b5563;
-  margin-bottom: 8px;
+.form-group2 input:focus,
+.form-group2 select:focus,
+.form-group2 textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(72, 128, 255, 0.1);
+  background-color: var(--color-surface); /* Better focus background */
 }
-//
-//input,
-//select {
-//  width: 100%;
-//  padding: 12px 16px;
-//  border: 1px solid #e5e7eb;
-//  border-radius: 10px;
-//  font-size: 14px;
-//  transition: all 0.2s ease;
-//}
-//
-//input:focus,
-//select:focus {
-//  outline: none;
-//  border-color: #4f85e5;
-//  box-shadow: 0 0 0 4px rgba(79, 133, 229, 0.1);
-//}
-//
-//select {
-//  appearance: none;
-//  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-//  background-repeat: no-repeat;
-//  background-position: right 16px center;
-//  padding-right: 40px;
-//}
+
+/* Add specific dark mode styles for better contrast */
+[data-theme="dark"] .form-group2 input,
+[data-theme="dark"] .form-group2 select,
+[data-theme="dark"] .form-group2 textarea {
+  background-color: #2a2a2a !important; /* Darker background for dark mode */
+  border-color: #404040 !important; /* Darker border for dark mode */
+  color: #e0e0e0 !important; /* Light text for dark mode */
+}
+
+[data-theme="dark"] .form-group2 input:focus,
+[data-theme="dark"] .form-group2 select:focus,
+[data-theme="dark"] .form-group2 textarea:focus {
+  background-color: #333333; /* Slightly lighter on focus */
+  border-color: var(--color-primary);
+}
+
+/* Also fix the label color for dark mode */
+[data-theme="dark"] .form-group2 label {
+  color: #cccccc; /* Light color for labels in dark mode */
+}
 
 .modal-footer2 {
   display: flex;
@@ -573,9 +550,9 @@ label {
 }
 
 .cancel-button2 {
-  background-color: white;
-  color: #4b5563;
-  border: 1px solid #e5e7eb;
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .submit-button2 {
@@ -585,13 +562,12 @@ label {
 }
 
 .cancel-button2:hover {
-  background-color: #f9fafb;
+  background-color: var(--color-surface-hover);
 }
 
 .submit-button2:hover {
   background-color: #3b72d9;
 }
-
 
 .notification2{
   position: fixed;
@@ -631,7 +607,6 @@ label {
   }
 }
 
-
 .success-notification2 {
   background-color: #f0fdf4;
   border: 1px solid #dcfce7;
@@ -656,9 +631,6 @@ label {
   height: 20px;
 }
 
-
-
-
 /* Responsive Styles */
 @media (max-width: 768px) {
   .form-row2 {
@@ -674,14 +646,14 @@ label {
 
 .section-description {
   font-size: 14px;
-  color: #64748b;
+  color: var(--color-text-secondary);
   margin-bottom: 20px;
 }
 
 .table-section-title{
   font-size: 22px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text-primary);
   margin-bottom: 8px;
 }
 
@@ -699,10 +671,19 @@ label {
   text-align: center;
 }
 
+[data-theme="dark"] .error-container {
+  background-color: #2d1b1b;
+  border: 1px solid #5c3232;
+}
+
 .error-container p {
   color: #991b1b;
   margin-bottom: 20px;
   font-size: 14px;
+}
+
+[data-theme="dark"] .error-container p {
+  color: #ff8a80;
 }
 
 .retry-button {
@@ -721,4 +702,103 @@ label {
   background-color: #b91c1c;
 }
 
+/* Dark mode specific adjustments for notifications */
+[data-theme="dark"] .success-notification2 {
+  background-color: #1a2e1a;
+  border: 1px solid #2d5a2d;
+  color: #81c784;
+}
 
+[data-theme="dark"] .success-notification2 svg {
+  color: #4caf50;
+}
+
+[data-theme="dark"] .delete-notification2 {
+  background-color: #2d1b1b;
+  border: 1px solid #5c3232;
+  color: #ff8a80;
+}
+
+[data-theme="dark"] .delete-notification2 svg {
+  color: #f44336;
+}
+
+/* Dark mode adjustments for modal shadow */
+[data-theme="dark"] .modal2 {
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.categories-tabs-container {
+  margin-top: 30px;
+}
+
+.categories-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  margin-bottom: 30px;
+}
+
+.categories-tab {
+  padding: 16px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--color-text-tertiary, #64748b);
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.categories-tab.active {
+  color: var(--color-primary, #4880ff);
+  font-weight: 500;
+}
+
+.categories-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: var(--color-primary, #4880ff);
+  border-radius: 2px 2px 0 0;
+}
+
+.categories-tab:hover:not(.active) {
+  color: var(--color-text-primary, #334155);
+}
+
+.category-info-card {
+  display: flex;
+  align-items: center;
+  background-color: rgba(var(--color-info-rgb, 33, 150, 243), 0.1);
+  border: 1px solid var(--color-info);
+  border-radius: 6px;
+  padding: 16px;
+
+  .category-icon {
+    color: var(--color-info);
+    margin-right: 16px;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .category-info-content {
+    h3 {
+      margin: 0 0 4px 0;
+      font-size: 16px;
+      color: var(--color-text-primary);
+    }
+
+    p {
+      margin: 0;
+      color: var(--color-text-secondary);
+      font-size: 14px;
+    }
+  }
+}

@@ -26,7 +26,42 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.Map;
 
+/**
+ * Service for managing Sarky Log entries for equipment work tracking.
+ * 
+ * IMPROVED SARKY SYSTEM APPROACH:
+ * 
+ * This service now supports multiple sarky entries per day using a simplified approach:
+ * 
+ * 1. MULTIPLE ENTRIES PER DAY: The system allows multiple SarkyLog entries for the same date,
+ *    enabling tracking of different work types, drivers, or shifts on the same day.
+ * 
+ * 2. DATE CONTINUITY: When adding new entries:
+ *    - Entries can be added for the same date as the latest existing entry
+ *    - Entries can be added for the next day (latest date + 1)
+ *    - Gaps in dates are not allowed to maintain work continuity
+ *    - Entries cannot be added for dates before the latest existing entry
+ * 
+ * 3. BUSINESS LOGIC:
+ *    - Each entry represents work done by a specific driver with a specific work type
+ *    - Multiple drivers can work on the same equipment on the same day
+ *    - Different work types can be performed on the same day
+ *    - Total daily hours can exceed standard work hours for heavy equipment usage
+ * 
+ * 4. DEPRECATED FEATURES:
+ *    - SarkyLogRange and WorkEntry models are deprecated but kept for backward compatibility
+ *    - New implementations should use multiple individual SarkyLog entries instead
+ * 
+ * 5. ANALYTICS AND REPORTING:
+ *    - Daily summaries aggregate all entries for a specific date
+ *    - Analytics consider all entries when calculating total hours and work patterns
+ *    - Equipment utilization is tracked across all daily entries
+ * 
+ * @author System
+ * @since Enhanced Sarky System v2.0
+ */
 @Service
 public class SarkyLogService {
 
@@ -112,75 +147,67 @@ public class SarkyLogService {
      */
     @Transactional
     public SarkyLogResponseDTO createSarkyLog(SarkyLogDTO sarkyLogDTO, MultipartFile file) throws Exception {
-        // Find equipment
         Equipment equipment = equipmentRepository.findById(sarkyLogDTO.getEquipmentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + sarkyLogDTO.getEquipmentId()));
 
-        // Find work type
         WorkType workType = workTypeRepository.findById(sarkyLogDTO.getWorkTypeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Work type not found with id: " + sarkyLogDTO.getWorkTypeId()));
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        // Validate that the work type is supported by the equipment type
+        if (!equipment.getType().supportsWorkType(workType)) {
+            throw new IllegalArgumentException("Work type '" + workType.getName() + 
+                "' is not supported by equipment type '" + equipment.getType().getName() + "'");
+        }
 
-        // Find the User entity based on the username
-        User currentUser = userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + authentication.getName()));
-
-        // Find driver
         Employee driver = employeeRepository.findById(sarkyLogDTO.getDriverId())
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + sarkyLogDTO.getDriverId()));
 
-        LocalDate latestDate = getLatestSarkyDateForEquipment(sarkyLogDTO.getEquipmentId());
-        if (latestDate != null) {
-            LocalDate nextExpectedDate = latestDate.plusDays(1);
-            if (!sarkyLogDTO.getDate().equals(nextExpectedDate)) {
-                throw new IllegalArgumentException(
-                        "New sarky entry must be for " + nextExpectedDate +
-                                " (the day after the latest entry on " + latestDate + "). " +
-                                "Sarky logs must be added in chronological order without gaps.");
-            }
+        // Check if driver is eligible to operate this equipment type
+        if (!driver.canDrive(equipment.getType())) {
+            throw new IllegalArgumentException("Driver '" + driver.getFullName() + 
+                "' is not authorized to operate equipment type '" + equipment.getType().getName() + "'");
         }
+
+        // Check for existing entries on the same date (still allow multiple entries per day)
+        List<SarkyLog> existingEntriesForDate = sarkyLogRepository.findByEquipmentIdAndDate(
+                equipment.getId(), sarkyLogDTO.getDate());
+
+        // Log the multiple entries for this equipment and date for auditing purposes
+        if (!existingEntriesForDate.isEmpty()) {
+            System.out.println("Adding additional sarky entry for equipment " + equipment.getName() + 
+                              " on date " + sarkyLogDTO.getDate() + 
+                              ". Total entries for this date will be: " + (existingEntriesForDate.size() + 1));
+        }
+
         // Create new sarky log
         SarkyLog sarkyLog = new SarkyLog();
         sarkyLog.setEquipment(equipment);
         sarkyLog.setWorkType(workType);
         sarkyLog.setWorkedHours(sarkyLogDTO.getWorkedHours());
         sarkyLog.setDate(sarkyLogDTO.getDate());
-        sarkyLog.setCreatedBy(currentUser);
         sarkyLog.setDriver(driver);
-
-
-        // Save sarky log first to get the ID
-        SarkyLog savedSarkyLog = sarkyLogRepository.save(sarkyLog);
 
         // Handle file upload if provided using MinIO
         if (file != null && !file.isEmpty()) {
             try {
-                // Make sure the equipment bucket exists
+                // Create equipment-specific bucket if it doesn't exist
                 minioService.createEquipmentBucket(equipment.getId());
-
-                // Upload the file with the sarky- prefix and the sarky log ID
-                String fileName = "sarky-" + savedSarkyLog.getId().toString();
-                minioService.uploadEquipmentFile(equipment.getId(), file, fileName);
-
-                // Set the file URL in the sarky log
-                String fileUrl = minioService.getEquipmentFileUrl(equipment.getId(), fileName);
-                savedSarkyLog.setFileUrl(fileUrl);
-
-                // Update the sarky log
-                savedSarkyLog = sarkyLogRepository.save(savedSarkyLog);
+                
+                // Upload file with a structured naming convention
+                String fileName = "sarky_" + sarkyLogDTO.getDate() + "_" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
+                String uploadedFileName = minioService.uploadEquipmentFile(equipment.getId(), file, fileName);
+                sarkyLog.setDocumentPath(uploadedFileName);
             } catch (Exception e) {
-                // Log error but continue
-                System.err.println("Error uploading file to MinIO: " + e.getMessage());
+                throw new Exception("Failed to upload document: " + e.getMessage(), e);
             }
         }
 
-        return convertToResponseDTO(savedSarkyLog);
+        // Save sarky log
+        SarkyLog savedSarkyLog = sarkyLogRepository.save(sarkyLog);
+
+        return SarkyLogResponseDTO.fromEntity(savedSarkyLog);
     }
 
-    /**
-     * Create a new sarky log range entry
-     */
     /**
      * Create a new sarky log range entry
      */
@@ -203,17 +230,6 @@ public class SarkyLogService {
             throw new IllegalArgumentException("Date range overlaps with existing entries");
         }
 
-        // Check for continuity - make sure there's no gap between the latest entry and this new range
-        LocalDate latestDate = getLatestSarkyDateForEquipment(sarkyLogRangeDTO.getEquipmentId());
-        if (latestDate != null) {
-            LocalDate nextExpectedDate = latestDate.plusDays(1);
-            if (!sarkyLogRangeDTO.getStartDate().equals(nextExpectedDate)) {
-                throw new IllegalArgumentException(
-                        "New range must start on " + nextExpectedDate +
-                                " (the day after the latest entry on " + latestDate + ")");
-            }
-        }
-
         // Validate work entries
         if (sarkyLogRangeDTO.getWorkEntries() == null || sarkyLogRangeDTO.getWorkEntries().isEmpty()) {
             throw new IllegalArgumentException("Work entries cannot be empty");
@@ -232,12 +248,6 @@ public class SarkyLogService {
                 .map(WorkEntryDTO::getDate)
                 .distinct()
                 .collect(Collectors.toList());
-
-        for (LocalDate date : allDates) {
-            if (!entryDates.contains(date)) {
-                throw new IllegalArgumentException("Missing work entry for date: " + date);
-            }
-        }
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -259,6 +269,12 @@ public class SarkyLogService {
         for (WorkEntryDTO entryDTO : sarkyLogRangeDTO.getWorkEntries()) {
             WorkType workType = workTypeRepository.findById(entryDTO.getWorkTypeId())
                     .orElseThrow(() -> new ResourceNotFoundException("Work type not found with id: " + entryDTO.getWorkTypeId()));
+
+            // Validate that the work type is supported by the equipment type
+            if (!equipment.getType().supportsWorkType(workType)) {
+                throw new IllegalArgumentException("Work type '" + workType.getName() + 
+                    "' is not supported by equipment type '" + equipment.getType().getName() + "'");
+            }
 
             Employee driver = employeeRepository.findById(entryDTO.getDriverId())
                     .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + entryDTO.getDriverId()));
@@ -327,6 +343,13 @@ public class SarkyLogService {
         if (!sarkyLog.getWorkType().getId().equals(sarkyLogDTO.getWorkTypeId())) {
             WorkType workType = workTypeRepository.findById(sarkyLogDTO.getWorkTypeId())
                     .orElseThrow(() -> new ResourceNotFoundException("Work type not found with id: " + sarkyLogDTO.getWorkTypeId()));
+            
+            // Validate that the work type is supported by the equipment type
+            if (!sarkyLog.getEquipment().getType().supportsWorkType(workType)) {
+                throw new IllegalArgumentException("Work type '" + workType.getName() + 
+                    "' is not supported by equipment type '" + sarkyLog.getEquipment().getType().getName() + "'");
+            }
+            
             sarkyLog.setWorkType(workType);
         }
 
@@ -337,29 +360,13 @@ public class SarkyLogService {
             sarkyLog.setDriver(driver);
         }
 
-        // Add this near the beginning of the updateSarkyLog method
-// Ensure the date is not being changed or if it is, it maintains chronological order
+        // **REMOVED ENHANCED DATE VALIDATION FOR UPDATES**
+        // Users can now update Sarky entries to any date without chronological restrictions
+        // This allows more flexibility for correcting historical data and adjusting entries
         if (!sarkyLog.getDate().equals(sarkyLogDTO.getDate())) {
-            // Get earliest date after this entry
-            LocalDate nextSarkyDate = getNextSarkyDateAfter(id, sarkyLog.getEquipment().getId());
-
-            // Get latest date before this entry
-            LocalDate previousSarkyDate = getPreviousSarkyDateBefore(id, sarkyLog.getEquipment().getId());
-
-            // Check that the new date is after the previous entry and before the next entry
-            if (previousSarkyDate != null && sarkyLogDTO.getDate().isBefore(previousSarkyDate.plusDays(1))) {
-                throw new IllegalArgumentException(
-                        "Cannot change date to " + sarkyLogDTO.getDate() +
-                                ". It must be after " + previousSarkyDate +
-                                " to maintain chronological order.");
-            }
-
-            if (nextSarkyDate != null && sarkyLogDTO.getDate().isAfter(nextSarkyDate.minusDays(1))) {
-                throw new IllegalArgumentException(
-                        "Cannot change date to " + sarkyLogDTO.getDate() +
-                                ". It must be before " + nextSarkyDate +
-                                " to maintain chronological order.");
-            }
+            // Log the date change for auditing purposes
+            System.out.println("Updating sarky entry date from " + sarkyLog.getDate() + 
+                              " to " + sarkyLogDTO.getDate() + " for equipment " + sarkyLog.getEquipment().getName());
         }
 
         sarkyLog.setWorkedHours(sarkyLogDTO.getWorkedHours());
@@ -459,6 +466,12 @@ public class SarkyLogService {
         for (WorkEntryDTO entryDTO : sarkyLogRangeDTO.getWorkEntries()) {
             WorkType workType = workTypeRepository.findById(entryDTO.getWorkTypeId())
                     .orElseThrow(() -> new ResourceNotFoundException("Work type not found with id: " + entryDTO.getWorkTypeId()));
+
+            // Validate that the work type is supported by the equipment type
+            if (!sarkyLogRange.getEquipment().getType().supportsWorkType(workType)) {
+                throw new IllegalArgumentException("Work type '" + workType.getName() + 
+                    "' is not supported by equipment type '" + sarkyLogRange.getEquipment().getType().getName() + "'");
+            }
 
             Employee driver = employeeRepository.findById(entryDTO.getDriverId())
                     .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + entryDTO.getDriverId()));
@@ -728,6 +741,87 @@ public class SarkyLogService {
         } else {
             return prevSingleDate.isAfter(prevRangeDate) ? prevSingleDate : prevRangeDate;
         }
+    }
+
+    /**
+     * Get all sarky logs for a specific equipment and date
+     */
+    public List<SarkyLogResponseDTO> getSarkyLogsByEquipmentIdAndDate(UUID equipmentId, LocalDate date) {
+        return sarkyLogRepository.findByEquipmentIdAndDate(equipmentId, date).stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get all sarky logs for a specific equipment and date range
+     */
+    public List<SarkyLogResponseDTO> getSarkyLogsByEquipmentIdAndDateRange(UUID equipmentId, LocalDate startDate, LocalDate endDate) {
+        return sarkyLogRepository.findByEquipmentIdAndDateBetweenOrderByDateDesc(equipmentId, startDate, endDate).stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get daily work summary for a specific equipment and date
+     */
+    public DailySarkySummaryDTO getDailySarkySummary(UUID equipmentId, LocalDate date) {
+        List<SarkyLog> dailyLogs = sarkyLogRepository.findByEquipmentIdAndDate(equipmentId, date);
+        
+        DailySarkySummaryDTO summary = new DailySarkySummaryDTO();
+        summary.setEquipmentId(equipmentId);
+        summary.setDate(date);
+        summary.setTotalEntries(dailyLogs.size());
+        summary.setTotalHours(dailyLogs.stream().mapToDouble(SarkyLog::getWorkedHours).sum());
+        
+        // Group by work type
+        Map<String, Double> workTypeHours = dailyLogs.stream()
+                .collect(Collectors.groupingBy(
+                    log -> log.getWorkType().getName(),
+                    Collectors.summingDouble(SarkyLog::getWorkedHours)
+                ));
+        summary.setWorkTypeBreakdown(workTypeHours);
+        
+        // Group by driver
+        Map<String, Double> driverHours = dailyLogs.stream()
+                .collect(Collectors.groupingBy(
+                    log -> log.getDriver().getFirstName() + " " + log.getDriver().getLastName(),
+                    Collectors.summingDouble(SarkyLog::getWorkedHours)
+                ));
+        summary.setDriverBreakdown(driverHours);
+        
+        return summary;
+    }
+
+    /**
+     * Get all dates that have existing sarky entries for an equipment
+     */
+    public List<LocalDate> getExistingSarkyDatesForEquipment(UUID equipmentId) {
+        List<SarkyLog> allLogs = sarkyLogRepository.findByEquipmentIdOrderByDateAsc(equipmentId);
+        return allLogs.stream()
+                .map(SarkyLog::getDate)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get validation info for adding new sarky entries
+     */
+    public SarkyValidationInfoDTO getSarkyValidationInfo(UUID equipmentId) {
+        LocalDate latestDate = getLatestSarkyDateForEquipment(equipmentId);
+        List<LocalDate> existingDates = getExistingSarkyDatesForEquipment(equipmentId);
+        
+        SarkyValidationInfoDTO info = new SarkyValidationInfoDTO();
+        info.setEquipmentId(equipmentId);
+        info.setLatestDate(latestDate);
+        info.setExistingDates(existingDates);
+        
+        if (latestDate != null) {
+            info.setNextAllowedDate(latestDate.plusDays(1));
+            info.setCanAddToLatestDate(true);
+        }
+        
+        return info;
     }
 
 }

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FaPlus, FaTags, FaFilter, FaSearch, FaExclamationCircle } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { FaPlus, FaFilter, FaSearch, FaExclamationCircle } from "react-icons/fa";
 import EquipmentModal from "./components/EquipmentModal/EquipmentModal.jsx";
 import "./EquipmentMain.scss";
 import equipmentImage from "../../../assets/imgs/equipment_icon.png";
 import { equipmentService } from "../../../services/equipmentService";
 import EquipmentCard from "./components/card/EquipmentCard.jsx";
+import { useAuth } from "../../../contexts/AuthContext";
+import { useEquipmentPermissions } from "../../../utils/rbac";
 
 const EquipmentMain = () => {
     const [equipmentData, setEquipmentData] = useState([]);
@@ -31,6 +32,10 @@ const EquipmentMain = () => {
 
     const equipmentCardsRefs = useRef([]);
     const actionsSetFlags = useRef({});
+
+    // Get authentication context and permissions
+    const auth = useAuth();
+    const permissions = useEquipmentPermissions(auth);
 
     // Fetch equipment data
     const fetchEquipmentData = async () => {
@@ -195,14 +200,19 @@ const EquipmentMain = () => {
 
             if (!actionsSetFlags.current[cardKey] && card.setActions) {
                 actionsSetFlags.current[cardKey] = true;
-                card.setActions([
-                    {
+                
+                // Only add edit actions if user has edit permissions
+                const actions = [];
+                if (permissions.canEdit) {
+                    actions.push({
                         icon: <FaPlus />,
                         label: "Edit",
                         className: "btn-edit",
                         action: () => handleEditEquipment(equipmentId)
-                    }
-                ]);
+                    });
+                }
+                
+                card.setActions(actions);
             }
         }
     };
@@ -325,18 +335,11 @@ const EquipmentMain = () => {
 
                     {/* Action buttons */}
                     <div className="equipment-actions-buttons">
-                        <Link to="/equipment/type-management" className="equipment-type-button">
-                            <FaTags /> Manage Types
-                        </Link>
-                        <Link to="/equipment/brand-management" className="equipment-brand-button">
-                            <FaTags /> Manage Brands
-                        </Link>
-                        <Link to="/equipment/work-type-management" className="equipment-work-type-button">
-                            <FaTags /> Manage Work Types
-                        </Link>
-                        <button className="equipment-add-button" onClick={handleAddEquipment}>
-                            <FaPlus /> Add Equipment
-                        </button>
+                        {permissions.canCreate && (
+                            <button className="btn-primary" onClick={handleAddEquipment}>
+                                <FaPlus /> Add Equipment
+                            </button>
+                        )}
                     </div>
                 </div>
             </section>

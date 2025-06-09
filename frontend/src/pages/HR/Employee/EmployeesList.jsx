@@ -196,7 +196,11 @@ const EmployeesList = () => {
                     <div className="salary-info__monthly">
                         {formatCurrency(employee.monthlySalary)}
                     </div>
-                    <div className="salary-info__period">per month</div>
+                    <div className="salary-info__period">
+                        {employee.jobPositionType === 'HOURLY' ? 'per hour' :
+                         employee.jobPositionType === 'DAILY' ? 'per day' :
+                         'per month'}
+                    </div>
                 </div>
             )
         },
@@ -487,11 +491,9 @@ const EmployeesList = () => {
                     className="filter-select"
                 >
                     <option value="">All Types</option>
-                    <option value="FULL_TIME">Full Time</option>
-                    <option value="PART_TIME">Part Time</option>
-                    <option value="CONTRACT">Contract</option>
-                    <option value="TEMPORARY">Temporary</option>
-                    <option value="INTERNSHIP">Internship</option>
+                    <option value="HOURLY">Hourly</option>
+                    <option value="DAILY">Daily</option>
+                    <option value="MONTHLY">Monthly</option>
                 </select>
             )
         },

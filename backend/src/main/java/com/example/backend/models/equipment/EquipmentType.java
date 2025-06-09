@@ -21,9 +21,7 @@ public class EquipmentType {
     private String name;
 
     @Column(nullable = true)
-    private String description;@Column(nullable = false)
-
-
+    private String description;
 
     @OneToMany(mappedBy = "type", cascade = CascadeType.ALL)
     @JsonIgnore
@@ -31,6 +29,17 @@ public class EquipmentType {
 
     @Column(nullable = true)
     private String driverPositionName;
+
+    @Column(nullable = false)
+    private boolean drivable = true;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "equipment_type_work_types",
+        joinColumns = @JoinColumn(name = "equipment_type_id"),
+        inverseJoinColumns = @JoinColumn(name = "work_type_id")
+    )
+    private List<WorkType> supportedWorkTypes = new ArrayList<>();
 
     public EquipmentType() {
 
@@ -56,4 +65,14 @@ public class EquipmentType {
         };
     }
 
+    // Helper method to check if a work type is supported
+    public boolean supportsWorkType(WorkType workType) {
+        return supportedWorkTypes.contains(workType);
+    }
+
+    // Helper method to check if a work type is supported by ID
+    public boolean supportsWorkType(UUID workTypeId) {
+        return supportedWorkTypes.stream()
+                .anyMatch(wt -> wt.getId().equals(workTypeId));
+    }
 }

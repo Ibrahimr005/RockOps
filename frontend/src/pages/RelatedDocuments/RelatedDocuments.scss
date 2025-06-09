@@ -1,0 +1,945 @@
+/* ====================================
+   RELATED DOCUMENTS MODULE STYLES
+   Modern, consistent with theme system
+   ==================================== */
+
+.rockops-documents-page {
+    padding: 2rem;
+    background-color: var(--main-background-color);
+    min-height: 100vh;
+
+    @media (max-width: 768px) {
+        padding: 1rem;
+    }
+}
+
+/* ====================================
+   HEADER STYLES
+   ==================================== */
+
+.rockops-documents-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    gap: 2rem;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .rockops-documents-header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+
+        .rockops-documents-back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+
+            &:hover {
+                background: var(--color-primary);
+                color: var(--color-text-inverse);
+                border-color: var(--color-primary);
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-sm);
+            }
+
+            &:focus-visible {
+                outline: 2px solid var(--color-primary);
+                outline-offset: 2px;
+            }
+        }
+
+        .rockops-documents-header-info {
+            flex: 1;
+
+            .rockops-documents-title {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                font-size: 2rem;
+                font-weight: var(--bold-font-weight);
+                color: var(--head-title-color);
+                margin-bottom: 0.5rem;
+
+                svg {
+                    color: var(--color-primary);
+                }
+
+                @media (max-width: 768px) {
+                    font-size: 1.5rem;
+                }
+            }
+
+            .rockops-documents-subtitle {
+                color: var(--paragraph-color);
+                font-size: 1rem;
+                margin: 0;
+            }
+        }
+    }
+
+    .rockops-documents-header-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+
+        @media (max-width: 768px) {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+}
+
+/* ====================================
+   CONTROLS AND FILTERS
+   ==================================== */
+
+.rockops-documents-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    background: var(--section-background-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+
+    @media (max-width: 1024px) {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .rockops-documents-filters {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex: 1;
+
+        @media (max-width: 768px) {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
+        }
+
+        .rockops-documents-search {
+            position: relative;
+            flex: 1;
+            max-width: 300px;
+
+            @media (max-width: 768px) {
+                max-width: none;
+            }
+
+            svg {
+                position: absolute;
+                left: 0.75rem;
+                top: 50%;
+                transform: translateY(-50%);
+                color: var(--color-text-secondary);
+                z-index: 1;
+            }
+
+            input {
+                width: 100%;
+                padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius-sm);
+                font-size: 0.875rem;
+                background: var(--color-surface);
+                color: var(--color-text-primary);
+                transition: all var(--transition-fast);
+
+                &:focus {
+                    outline: none;
+                    border-color: var(--color-primary);
+                    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+                }
+
+                &::placeholder {
+                    color: var(--color-text-tertiary);
+                }
+            }
+        }
+
+        .rockops-documents-filter-group,
+        .rockops-documents-sort-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            svg {
+                color: var(--color-text-secondary);
+            }
+
+            select {
+                padding: 0.75rem;
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius-sm);
+                font-size: 0.875rem;
+                background: var(--color-surface);
+                color: var(--color-text-primary);
+                min-width: 150px;
+                cursor: pointer;
+                transition: all var(--transition-fast);
+
+                &:focus {
+                    outline: none;
+                    border-color: var(--color-primary);
+                    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+                }
+
+                @media (max-width: 768px) {
+                    min-width: auto;
+                    width: 100%;
+                }
+            }
+        }
+    }
+
+    .rockops-documents-view-controls {
+        display: flex;
+        gap: 0.5rem;
+        background: var(--color-surface);
+        padding: 0.25rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+
+        @media (max-width: 1024px) {
+            justify-content: center;
+        }
+
+        .rockops-documents-view-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border: none;
+            background: none;
+            color: var(--color-text-secondary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+
+            &:hover {
+                background: var(--color-surface-hover);
+                color: var(--color-text-primary);
+            }
+
+            &.active {
+                background: var(--color-primary);
+                color: var(--color-text-inverse);
+
+                &:hover {
+                    background: var(--color-primary-dark);
+                }
+            }
+        }
+    }
+}
+
+/* ====================================
+   DOCUMENTS CONTAINER
+   ==================================== */
+
+.rockops-documents-container {
+    background: var(--section-background-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    min-height: 400px;
+    overflow: hidden;
+}
+
+/* ====================================
+   LOADING AND EMPTY STATES
+   ==================================== */
+
+.rockops-documents-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: var(--color-text-secondary);
+
+    .rockops-documents-loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid var(--color-surface-hover);
+        border-top-color: var(--color-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    p {
+        margin: 0;
+        font-size: 1rem;
+    }
+}
+
+.rockops-documents-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+    color: var(--color-text-secondary);
+
+    .rockops-documents-empty-icon {
+        opacity: 0.5;
+        margin-bottom: 1.5rem;
+        color: var(--color-text-tertiary);
+    }
+
+    h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.5rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+    }
+
+    p {
+        margin: 0 0 2rem 0;
+        font-size: 1rem;
+        max-width: 400px;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ====================================
+   DOCUMENTS GRID
+   ==================================== */
+
+.rockops-documents-grid {
+    padding: 1.5rem;
+
+    &.grid-view {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+
+        @media (max-width: 768px) {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .rockops-documents-card {
+            flex-direction: column;
+            text-align: center;
+
+            .rockops-documents-card-icon {
+                align-self: center;
+                margin-bottom: 1rem;
+            }
+
+            .rockops-documents-card-content {
+                flex: 1;
+            }
+
+            .rockops-documents-card-header {
+                flex-direction: column;
+                align-items: center;
+                gap: 1rem;
+                margin-bottom: 1rem;
+
+                .rockops-documents-card-title {
+                    text-align: center;
+                }
+            }
+
+            .rockops-documents-card-meta {
+                .rockops-documents-card-info {
+                    justify-content: center;
+                    flex-wrap: wrap;
+                }
+            }
+        }
+    }
+
+    &.list-view {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+
+        .rockops-documents-card {
+            flex-direction: row;
+            align-items: center;
+            padding: 1rem 1.5rem;
+
+            .rockops-documents-card-icon {
+                margin-right: 1rem;
+                flex-shrink: 0;
+            }
+
+            .rockops-documents-card-content {
+                flex: 1;
+            }
+
+            .rockops-documents-card-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 0.5rem;
+            }
+
+            .rockops-documents-card-meta {
+                .rockops-documents-card-type {
+                    margin-bottom: 0.25rem;
+                }
+
+                .rockops-documents-card-info {
+                    flex-direction: row;
+                    gap: 1rem;
+                }
+            }
+        }
+    }
+}
+
+.rockops-documents-card {
+    display: flex;
+    background: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    transition: all var(--transition-fast);
+    position: relative;
+
+    &:hover {
+        border-color: var(--color-primary);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+
+        .rockops-documents-card-actions {
+            transform: scale(1.05);
+        }
+    }
+
+    .rockops-documents-card-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 3rem;
+        height: 3rem;
+        border-radius: var(--radius-md);
+        background: rgba(72, 128, 255, 0.1);
+        color: var(--color-primary);
+        font-size: 1.5rem;
+    }
+
+    .rockops-documents-card-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .rockops-documents-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+
+        .rockops-documents-card-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: var(--bold-font-weight);
+            color: var(--color-text-primary);
+            word-break: break-word;
+            line-height: 1.4;
+        }
+
+        .rockops-documents-card-actions {
+            display: flex;
+            gap: 0.5rem;
+            opacity: 1;
+            transition: all var(--transition-fast);
+        }
+    }
+
+    .rockops-documents-card-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+
+        .rockops-documents-card-type {
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-sm);
+            background: rgba(72, 128, 255, 0.1);
+            color: var(--color-primary);
+            align-self: flex-start;
+        }
+
+        .rockops-documents-card-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+
+            span {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+
+            .rockops-documents-card-size {
+                font-weight: 500;
+            }
+        }
+    }
+}
+
+.rockops-documents-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-sm);
+    }
+
+    &.view:hover {
+        background: var(--color-info);
+        color: var(--color-text-inverse);
+        border-color: var(--color-info);
+    }
+
+    &.edit:hover {
+        background: var(--color-warning);
+        color: var(--color-text-inverse);
+        border-color: var(--color-warning);
+    }
+
+    &.delete:hover {
+        background: var(--color-danger);
+        color: var(--color-text-inverse);
+        border-color: var(--color-danger);
+    }
+}
+
+/* ====================================
+   MODAL STYLES
+   ==================================== */
+
+.rockops-documents-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+    backdrop-filter: blur(4px);
+}
+
+.rockops-documents-modal {
+    background: var(--section-background-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalSlideUp 0.3s ease-out;
+
+    .rockops-documents-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        background: var(--color-surface-secondary);
+
+        h2 {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 0;
+            font-size: 1.25rem;
+            color: var(--head-title-color);
+
+            svg {
+                color: var(--color-primary);
+            }
+        }
+
+        .rockops-documents-modal-close {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+
+            &:hover {
+                background: var(--color-danger);
+                color: var(--color-text-inverse);
+                border-color: var(--color-danger);
+            }
+        }
+    }
+
+    .rockops-documents-modal-form {
+        padding: 1.5rem;
+    }
+
+    .rockops-documents-form-group {
+        margin-bottom: 1.5rem;
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--label-color);
+            font-size: 0.875rem;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            color: var(--color-text-primary);
+            font-size: 0.875rem;
+            transition: all var(--transition-fast);
+            box-sizing: border-box;
+
+            &:focus {
+                outline: none;
+                border-color: var(--color-primary);
+                box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+            }
+
+            &::placeholder {
+                color: var(--color-text-tertiary);
+            }
+        }
+
+        .rockops-documents-file-input {
+            position: relative;
+
+            input[type="file"] {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                opacity: 0;
+                cursor: pointer;
+            }
+
+            .rockops-documents-file-input-label {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                padding: 2rem;
+                border: 2px dashed var(--border-color);
+                border-radius: var(--radius-md);
+                background: var(--color-surface-hover);
+                color: var(--color-text-secondary);
+                cursor: pointer;
+                transition: all var(--transition-fast);
+
+                &:hover {
+                    border-color: var(--color-primary);
+                    background: rgba(72, 128, 255, 0.05);
+                    color: var(--color-primary);
+                }
+
+                svg {
+                    color: var(--color-text-tertiary);
+                }
+
+                span {
+                    font-size: 0.875rem;
+                    font-weight: 500;
+                }
+            }
+        }
+
+        .rockops-documents-file-preview {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background: var(--color-surface-hover);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+
+            svg {
+                color: var(--color-primary);
+            }
+
+            .file-name {
+                flex: 1;
+                font-weight: 500;
+                color: var(--color-text-primary);
+                font-size: 0.875rem;
+            }
+
+            .file-size {
+                color: var(--color-text-secondary);
+                font-size: 0.75rem;
+            }
+        }
+    }
+
+    .rockops-documents-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-color);
+
+        @media (max-width: 480px) {
+            flex-direction: column;
+
+            .rockops-btn {
+                width: 100%;
+            }
+        }
+    }
+}
+
+@keyframes modalSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ====================================
+   BUTTON STYLES (extending existing)
+   ==================================== */
+
+.rockops-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: 1px solid transparent;
+    text-decoration: none;
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    &--primary {
+        background: var(--color-primary);
+        color: var(--color-text-inverse);
+        border-color: var(--color-primary);
+
+        &:hover:not(:disabled) {
+            background: var(--color-primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+    }
+
+    &--outline {
+        background: transparent;
+        color: var(--color-primary);
+        border-color: var(--color-primary);
+
+        &:hover:not(:disabled) {
+            background: var(--color-primary);
+            color: var(--color-text-inverse);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+    }
+
+    &--ghost {
+        background: transparent;
+        color: var(--color-text-secondary);
+        border-color: transparent;
+
+        &:hover:not(:disabled) {
+            background: var(--color-surface-hover);
+            color: var(--color-text-primary);
+        }
+    }
+}
+
+/* ====================================
+   RESPONSIVE DESIGN
+   ==================================== */
+
+@media (max-width: 1024px) {
+    .rockops-documents-page {
+        padding: 1.5rem;
+    }
+
+    .rockops-documents-grid.grid-view {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .rockops-documents-page {
+        padding: 1rem;
+    }
+
+    .rockops-documents-header {
+        .rockops-documents-title {
+            font-size: 1.5rem;
+        }
+    }
+
+    .rockops-documents-controls {
+        padding: 1rem;
+    }
+
+    .rockops-documents-grid {
+        padding: 1rem;
+
+        &.grid-view {
+            gap: 1rem;
+        }
+
+        &.list-view .rockops-documents-card {
+            padding: 1rem;
+        }
+    }
+
+    .rockops-documents-modal {
+        margin: 0.5rem;
+
+        .rockops-documents-modal-header,
+        .rockops-documents-modal-form {
+            padding: 1rem;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .rockops-documents-card {
+        .rockops-documents-card-header {
+            flex-direction: column;
+            align-items: stretch;
+
+            .rockops-documents-card-actions {
+                justify-content: center;
+                margin-top: 0.75rem;
+            }
+        }
+    }
+
+    .rockops-documents-action-btn {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+}
+
+/* ====================================
+   DARK THEME ADJUSTMENTS
+   ==================================== */
+
+[data-theme="dark"] {
+    .rockops-documents-card-icon {
+        background: rgba(106, 154, 255, 0.15);
+    }
+
+    .rockops-documents-card-type {
+        background: rgba(106, 154, 255, 0.15);
+    }
+
+    .rockops-documents-file-input-label {
+        &:hover {
+            background: rgba(106, 154, 255, 0.1);
+        }
+    }
+}
+
+/* ====================================
+   PRINT STYLES
+   ==================================== */
+
+@media print {
+    .rockops-documents-page {
+        padding: 0;
+        background: white !important;
+    }
+
+    .rockops-documents-header-actions,
+    .rockops-documents-controls,
+    .rockops-documents-card-actions,
+    .rockops-documents-modal-overlay {
+        display: none !important;
+    }
+
+    .rockops-documents-container,
+    .rockops-documents-card {
+        background: white !important;
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+
+    .rockops-documents-grid {
+        display: block !important;
+
+        .rockops-documents-card {
+            page-break-inside: avoid;
+            margin-bottom: 1rem;
+            padding: 1rem;
+        }
+    }
+}

@@ -15,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -39,11 +41,42 @@ public class ItemController {
     // Existing endpoints
     @GetMapping("/warehouse/{warehouseId}")
     public ResponseEntity<List<Item>> getItemsByWarehouse(@PathVariable UUID warehouseId) {
+        System.out.println("🔍 === DEBUGGING WAREHOUSE ITEMS REQUEST ===");
+        System.out.println("Received request for warehouse ID: " + warehouseId);
+
         try {
+            // Check if warehouse ID is valid
+            if (warehouseId == null) {
+                System.err.println("❌ Warehouse ID is null");
+                return ResponseEntity.badRequest().build();
+            }
+
+            System.out.println("📞 Calling itemService.getItemsByWarehouse...");
             List<Item> items = itemService.getItemsByWarehouse(warehouseId);
+
+            System.out.println("✅ Successfully fetched items from service");
+            System.out.println("📊 Number of items: " + (items != null ? items.size() : "null"));
+
+            if (items != null && items.size() > 0) {
+                System.out.println("📋 Sample item: " + items.get(0).getId());
+                System.out.println("📋 Sample item status: " + items.get(0).getItemStatus());
+            }
+
             return ResponseEntity.ok(items);
+
         } catch (IllegalArgumentException e) {
+            System.err.println("❌ IllegalArgumentException: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().build();
+
+        } catch (Exception e) {
+            System.err.println("💥 Unexpected error occurred");
+            System.err.println("Error class: " + e.getClass().getSimpleName());
+            System.err.println("Error message: " + e.getMessage());
+            System.err.println("Stack trace:");
+            e.printStackTrace();
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
@@ -53,10 +86,24 @@ public class ItemController {
             UUID itemTypeId = UUID.fromString((String) request.get("itemTypeId"));
             UUID warehouseId = UUID.fromString((String) request.get("warehouseId"));
             int initialQuantity = (int) request.get("initialQuantity");
+            String username = request.get("username").toString();
 
-            Item newItem = itemService.createItem(itemTypeId, warehouseId, initialQuantity);
+            // Convert date string to LocalDateTime
+            String dateString = (String) request.get("createdAt");
+            LocalDateTime createdAt;
+            if (dateString != null && !dateString.isEmpty()) {
+                // Parse YYYY-MM-DD and set time to start of day
+                LocalDate date = LocalDate.parse(dateString);
+                createdAt = date.atStartOfDay();
+            } else {
+                createdAt = LocalDateTime.now();
+            }
+
+            Item newItem = itemService.createItem(itemTypeId, warehouseId, initialQuantity, username, createdAt);
             return ResponseEntity.ok(newItem);
         } catch (Exception e) {
+            System.err.println("Error creating item: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(null);
         }
     }
@@ -308,6 +355,20 @@ public class ItemController {
         } catch (Exception e) {
             System.out.println("💥 Error fetching resolution history: " + e.getMessage());
             e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/transaction-details/{warehouseId}/{itemTypeId}")
+    public ResponseEntity<List<Item>> getItemTransactionDetails(
+            @PathVariable UUID warehouseId,
+            @PathVariable UUID itemTypeId) {
+        try {
+            List<Item> transactionDetails = itemService.getItemTransactionDetails(warehouseId, itemTypeId);
+            return ResponseEntity.ok(transactionDetails);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

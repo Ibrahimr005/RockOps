@@ -23,6 +23,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Sarky Log Range model for tracking equipment work over date ranges.
+ * 
+ * @deprecated This model is deprecated in favor of using multiple individual SarkyLog entries.
+ * The new approach allows for better flexibility and simpler data modeling.
+ * Use multiple SarkyLog entries for the same date instead of SarkyLogRange with WorkEntry.
+ * 
+ * This model is kept for backward compatibility with existing data.
+ */
 @Entity
 @Table(name = "sarky_log_ranges")
 @Data

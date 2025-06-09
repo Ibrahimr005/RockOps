@@ -51,5 +51,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
      * Used to find pending transactions initiated by a party
      */
     List<Transaction> findByStatusAndSentFirst(TransactionStatus status, UUID sentFirst);
+    List<Transaction> findByBatchNumberAndStatus(int batchNumber, TransactionStatus status);
 }
 

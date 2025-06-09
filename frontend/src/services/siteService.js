@@ -8,6 +8,10 @@ export const siteService = {
         return apiClient.get(SITE_ENDPOINTS.BASE);
     },
 
+    getAllSites: () => {
+        return apiClient.get(SITE_ENDPOINTS.BASE);
+    },
+
     getById: (id) => {
         return apiClient.get(SITE_ENDPOINTS.BY_ID(id));
     },
@@ -90,7 +94,7 @@ export const siteService = {
     },
 
     removeEmployee: (siteId, employeeId) => {
-        return apiClient.delete(`/siteadmin/${siteId}/remove-employee/${employeeId}`);
+        return apiClient.delete(SITE_ENDPOINTS.ADMIN.REMOVE_EMPLOYEE(siteId, employeeId));
     },
 
     // Warehouse assignment
@@ -100,7 +104,7 @@ export const siteService = {
 
     // Fixed asset assignment
     assignFixedAsset: (siteId, fixedAssetId) => {
-        return apiClient.post(SITE_ENDPOINTS.ADMIN.ASSIGN_FIXED_ASSET(siteId, fixedAssetId));
+        return apiClient.post(`/siteadmin/${siteId}/assign-fixedAsset/${fixedAssetId}`);
     },
 
     // Partner assignment
@@ -118,5 +122,29 @@ export const siteService = {
 
     removePartner: (siteId, partnerId) => {
         return apiClient.delete(SITE_ENDPOINTS.ADMIN.REMOVE_PARTNER(siteId, partnerId));
+    },
+
+    // Equipment operations
+    getUnassignedEquipment: () => {
+        return apiClient.get('/api/v1/site/unassigned-equipment');
+    },
+
+    // Fixed Assets operations
+    getUnassignedFixedAssets: () => {
+        return apiClient.get('/fixedAssets');
+    },
+
+    // Warehouse operations
+    getWarehouseManagers: () => {
+        return apiClient.get('/api/v1/employees/warehouse-managers');
+    },
+
+    getWarehouseWorkers: () => {
+        return apiClient.get('/api/v1/employees/warehouse-workers');
+    },
+
+    // Merchant operations
+    getMerchants: (siteId) => {
+        return apiClient.get(`/api/v1/site/${siteId}/merchants`);
     }
 }; 

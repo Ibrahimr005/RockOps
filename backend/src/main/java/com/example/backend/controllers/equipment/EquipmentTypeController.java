@@ -1,6 +1,7 @@
 package com.example.backend.controllers.equipment;
 
 import com.example.backend.dto.equipment.EquipmentTypeDTO;
+import com.example.backend.dto.equipment.WorkTypeDTO;
 import com.example.backend.services.equipment.EquipmentTypeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -55,5 +56,40 @@ public class EquipmentTypeController {
     public ResponseEntity<Void> deleteEquipmentType(@PathVariable UUID id) {
         equipmentTypeService.deleteEquipmentType(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Get supported work types for an equipment type
+     */
+    @GetMapping("/{id}/supported-work-types")
+    public ResponseEntity<List<WorkTypeDTO>> getSupportedWorkTypes(@PathVariable UUID id) {
+        return ResponseEntity.ok(equipmentTypeService.getSupportedWorkTypes(id));
+    }
+
+    /**
+     * Set supported work types for an equipment type (replaces existing)
+     */
+    @PutMapping("/{id}/supported-work-types")
+    public ResponseEntity<EquipmentTypeDTO> setSupportedWorkTypes(@PathVariable UUID id, @RequestBody List<UUID> workTypeIds) {
+        EquipmentTypeDTO updatedType = equipmentTypeService.setSupportedWorkTypes(id, workTypeIds);
+        return ResponseEntity.ok(updatedType);
+    }
+
+    /**
+     * Add supported work types to an equipment type
+     */
+    @PostMapping("/{id}/supported-work-types")
+    public ResponseEntity<EquipmentTypeDTO> addSupportedWorkTypes(@PathVariable UUID id, @RequestBody List<UUID> workTypeIds) {
+        EquipmentTypeDTO updatedType = equipmentTypeService.addSupportedWorkTypes(id, workTypeIds);
+        return ResponseEntity.ok(updatedType);
+    }
+
+    /**
+     * Remove supported work types from an equipment type
+     */
+    @DeleteMapping("/{id}/supported-work-types")
+    public ResponseEntity<EquipmentTypeDTO> removeSupportedWorkTypes(@PathVariable UUID id, @RequestBody List<UUID> workTypeIds) {
+        EquipmentTypeDTO updatedType = equipmentTypeService.removeSupportedWorkTypes(id, workTypeIds);
+        return ResponseEntity.ok(updatedType);
     }
 }

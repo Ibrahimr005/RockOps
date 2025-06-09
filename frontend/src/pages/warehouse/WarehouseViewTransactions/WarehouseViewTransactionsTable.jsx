@@ -1,24 +1,36 @@
 import React, {useState, useEffect} from "react";
 import "./WarehouseViewTransactions.scss";
-import PendingTransactionsTable from "./PendingTransactionsTable";
+import PendingTransactionsTable from "./PendingTransactions/PendingTransactionsTable.jsx";
 import ValidatedTransactionsTable from "./ValidatedTransactionsTable";
 import IncomingTransactionsTable from "./IncomingTransactionsTable";
+import Snackbar from "../../../components/common/Snackbar2/Snackbar2"; // Import the Snackbar component
 
-const WarehouseViewTransactionsTable = ({warehouseId}) => {
+const WarehouseViewTransactionsTable = ({ warehouseId, onAddButtonClick }) => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [allTransactions, setAllTransactions] = useState([]);
   const [pendingTransactions, setPendingTransactions] = useState([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [items, setItems] = useState([]);
-  const [allItemTypes, setAllItemTypes] = useState([]); // New state for all item types
+  const [allItemTypes, setAllItemTypes] = useState([]);
   const [senderOptions, setSenderOptions] = useState([]);
   const [receiverOptions, setReceiverOptions] = useState([]);
   const [warehouseData, setWarehouseData] = useState({
     name: "",
     id: "",
   });
-  const [showCreateNotification, setShowCreateNotification] = useState(false);
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState("pending");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Snackbar states
+  const [snackbar, setSnackbar] = useState({
+    isVisible: false,
+    type: 'success',
+    text: ''
+  });
+
   const [transactionRole, setTransactionRole] = useState("sender");
 
   // Site data and selections
@@ -29,7 +41,7 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
   // Updated transaction state for multiple items
   const [newTransaction, setNewTransaction] = useState({
     transactionDate: "",
-    items: [{ itemType: { id: "" }, quantity: "1" }], // Array of items
+    items: [{ itemType: { id: "" }, quantity: "1" }],
     senderType: "WAREHOUSE",
     senderId: warehouseId,
     receiverType: "",
@@ -37,21 +49,48 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     batchNumber: "",
   });
 
-  const entityTypes = ["WAREHOUSE", "MERCHANT", "EQUIPMENT"];
+  const entityTypes = ["WAREHOUSE", "EQUIPMENT"];
   const [userRole, setUserRole] = useState("");
+
+  // Tab configuration
+  const tabs = [
+    { id: "pending", label: "Pending Transactions", component: PendingTransactionsTable },
+    { id: "incoming", label: "Incoming Transactions", component: IncomingTransactionsTable },
+    { id: "validated", label: "Validated Transactions", component: ValidatedTransactionsTable }
+  ];
+
+  // Function to show snackbar
+  const showSnackbar = (type, text) => {
+    setSnackbar({
+      isVisible: true,
+      type,
+      text
+    });
+  };
+
+  // Function to hide snackbar
+  const hideSnackbar = () => {
+    setSnackbar(prev => ({
+      ...prev,
+      isVisible: false
+    }));
+  };
+
+  const triggerRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   useEffect(() => {
     fetchTransactions();
     fetchItems();
-    fetchAllItemTypes(); // Fetch all item types when component mounts
+    fetchAllItemTypes();
     fetchWarehouseDetails();
-    fetchAllSites(); // Fetch all sites on component mount
+    fetchAllSites();
   }, [warehouseId]);
 
   // Process and categorize transactions after data is loaded
   useEffect(() => {
     if (allTransactions.length > 0) {
-      // Pending transactions that need to be accepted (where this warehouse is the receiver)
       const pending = allTransactions.filter(
           transaction =>
               transaction.status === "PENDING" &&
@@ -82,7 +121,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
       if (newTransaction.senderType && selectedSenderSite && transactionRole === "receiver") {
         let senderData = await fetchEntitiesByTypeAndSite(newTransaction.senderType, selectedSenderSite);
 
-        // Filter out the current warehouse from sender options
         if (newTransaction.senderType === "WAREHOUSE") {
           senderData = senderData.filter((entity) => entity.id !== warehouseId);
         }
@@ -96,13 +134,18 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     updateSenderOptions();
   }, [newTransaction.senderType, selectedSenderSite, warehouseId, transactionRole]);
 
+  useEffect(() => {
+    if (onAddButtonClick) {
+      onAddButtonClick(() => setIsCreateModalOpen(true));
+    }
+  }, [onAddButtonClick]);
+
   // Update receiver options when receiver site and type changes
   useEffect(() => {
     const updateReceiverOptions = async () => {
       if (newTransaction.receiverType && selectedReceiverSite && transactionRole === "sender") {
         let receiverData = await fetchEntitiesByTypeAndSite(newTransaction.receiverType, selectedReceiverSite);
 
-        // Filter out the current warehouse from receiver options
         if (newTransaction.receiverType === "WAREHOUSE") {
           receiverData = receiverData.filter((entity) => entity.id !== warehouseId);
         }
@@ -119,10 +162,10 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
   // Reset form when modal is opened
   useEffect(() => {
     if (isCreateModalOpen) {
-      setTransactionRole("sender"); // Default role is sender
+      setTransactionRole("sender");
       setNewTransaction({
         transactionDate: "",
-        items: [{ itemType: { id: "" }, quantity: "1" }], // Reset to a single empty item
+        items: [{ itemType: { id: "" }, quantity: "1" }],
         senderType: "WAREHOUSE",
         senderId: warehouseId,
         receiverType: "",
@@ -219,7 +262,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     }
   };
 
-  // Fetch all item types from the system
   const fetchAllItemTypes = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -245,7 +287,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      // Using the API endpoint
       const response = await fetch(`http://localhost:8080/api/v1/transactions/warehouse/${warehouseId}`, {
         headers: {
           "Authorization": `Bearer ${token}`
@@ -253,10 +294,8 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
       });
       if (response.ok) {
         const data = await response.json();
-        // Fetch sender and receiver data for each transaction
         const updatedData = await Promise.all(
             data.map(async (transaction) => {
-              // Fetch sender
               const sender = await fetchEntitiesByType(transaction.senderType);
               const receiver = await fetchEntitiesByType(transaction.receiverType);
               return {
@@ -277,7 +316,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     }
   };
 
-  // Function to fetch entities based on entity type
   const fetchEntitiesByType = async (entityType) => {
     if (!entityType) return [];
 
@@ -285,7 +323,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
       const token = localStorage.getItem("token");
       let endpoint;
 
-      // Check if the entityType is "WAREHOUSE" or "SITE"
       if (entityType === "WAREHOUSE") {
         endpoint = `http://localhost:8080/api/v1/warehouses`;
       } else if (entityType === "SITE") {
@@ -293,7 +330,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
       } else if (entityType === "EQUIPMENT") {
         endpoint = `http://localhost:8080/api/equipment`;
       } else {
-        // If the entityType is anything else, pluralize and fetch accordingly
         endpoint = `http://localhost:8080/api/v1/${entityType.toLowerCase()}s`;
       }
 
@@ -316,7 +352,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     }
   };
 
-  // Function to fetch entities based on entity type and site
   const fetchEntitiesByTypeAndSite = async (entityType, siteId) => {
     if (!entityType || !siteId) return [];
 
@@ -324,7 +359,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
       const token = localStorage.getItem("token");
       let endpoint;
 
-      // Customize endpoint based on entity type and site
       if (entityType === "WAREHOUSE") {
         endpoint = `http://localhost:8080/api/v1/warehouses/site/${siteId}`;
       } else if (entityType === "EQUIPMENT") {
@@ -364,7 +398,7 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     });
   };
 
-  // Handle changes to item fields
+  // Enhanced handleItemChange with quantity validation
   const handleItemChange = (index, field, value) => {
     const updatedItems = [...newTransaction.items];
 
@@ -372,6 +406,35 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
       updatedItems[index] = {
         ...updatedItems[index],
         itemType: { id: value }
+      };
+    } else if (field === 'quantity') {
+      // Validate quantity for sender role
+      if (transactionRole === "sender" && value && updatedItems[index].itemType.id) {
+        const warehouseItemsOfType = items.filter(warehouseItem =>
+            warehouseItem.itemStatus === "IN_WAREHOUSE" &&
+            warehouseItem.itemType.id === updatedItems[index].itemType.id
+        );
+
+        if (warehouseItemsOfType.length > 0) {
+          const aggregatedItems = aggregateWarehouseItems(warehouseItemsOfType);
+          const aggregatedItem = aggregatedItems.find(aggItem => aggItem.itemType.id === updatedItems[index].itemType.id);
+
+          if (aggregatedItem) {
+            const totalAvailableQuantity = aggregatedItem.quantity;
+            const requestedQuantity = parseInt(value);
+
+            if (requestedQuantity > totalAvailableQuantity) {
+              showSnackbar('error', `Not enough quantity available for ${aggregatedItem.itemType.name}. Only ${totalAvailableQuantity} items in stock.`);
+              // Don't update the value if it exceeds available quantity
+              return;
+            }
+          }
+        }
+      }
+
+      updatedItems[index] = {
+        ...updatedItems[index],
+        [field]: value
       };
     } else {
       updatedItems[index] = {
@@ -386,7 +449,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     });
   };
 
-  // Add a new item to the transaction
   const addItem = () => {
     setNewTransaction({
       ...newTransaction,
@@ -394,10 +456,8 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     });
   };
 
-  // Remove an item from the transaction
   const removeItem = (index) => {
     if (newTransaction.items.length <= 1) {
-      // Don't remove if it's the last item
       return;
     }
 
@@ -412,7 +472,7 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     setNewTransaction({
       ...newTransaction,
       senderType: e.target.value,
-      senderId: "", // Reset sender ID when type changes
+      senderId: "",
     });
   };
 
@@ -420,13 +480,12 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     setNewTransaction({
       ...newTransaction,
       receiverType: e.target.value,
-      receiverId: "", // Reset receiver ID when type changes
+      receiverId: "",
     });
   };
 
   const handleSenderSiteChange = (e) => {
     setSelectedSenderSite(e.target.value);
-    // Reset sender type and ID when site changes
     setNewTransaction({
       ...newTransaction,
       senderType: "",
@@ -436,7 +495,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
 
   const handleReceiverSiteChange = (e) => {
     setSelectedReceiverSite(e.target.value);
-    // Reset receiver type and ID when site changes
     setNewTransaction({
       ...newTransaction,
       receiverType: "",
@@ -448,89 +506,86 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
     setTransactionRole(e.target.value);
   };
 
-  // Get available item types for a specific item dropdown
-  // This filters out items that are already selected in other dropdowns
   const getAvailableItemTypes = (currentIndex) => {
-    // Get all selected item type IDs except the current one
     const selectedItemTypeIds = newTransaction.items
         .filter((_, idx) => idx !== currentIndex && !!_.itemType.id)
         .map(item => item.itemType.id);
 
-    // If we're in receiver mode, use the full list of item types
-    // Otherwise, use the warehouse items
     if (transactionRole === "receiver") {
       return allItemTypes.filter(itemType =>
           !selectedItemTypeIds.includes(itemType.id)
       );
     } else {
-      // Return items that aren't selected elsewhere and have status IN_WAREHOUSE
-      return items
-          .filter(warehouseItem => {
-            // If role is sender, show only items with status IN_WAREHOUSE
-            const statusOk = warehouseItem.itemStatus === "IN_WAREHOUSE";
-            // Don't show items already selected in other dropdowns
-            const notSelectedElsewhere = !selectedItemTypeIds.includes(warehouseItem.itemType.id);
+      const aggregatedItems = aggregateWarehouseItems(
+          items.filter(warehouseItem => warehouseItem.itemStatus === "IN_WAREHOUSE")
+      );
 
-            return statusOk && notSelectedElsewhere;
-          });
+      return aggregatedItems.filter(aggregatedItem =>
+          !selectedItemTypeIds.includes(aggregatedItem.itemType.id)
+      );
     }
   };
 
-  // Function to render the item options in the dropdown
   const renderItemOptions = (currentIndex) => {
     const availableItems = getAvailableItemTypes(currentIndex);
 
     if (transactionRole === "receiver") {
-      // For receiver, we use the allItemTypes list
       return availableItems.map((itemType) => (
           <option key={itemType.id} value={itemType.id}>
-            {itemType.name} {itemType.unit ? `(${itemType.unit})` : ""}
+            {itemType.name}
           </option>
       ));
+
     } else {
-      // For sender, we use the warehouse items list with available quantities
-      return availableItems.map((warehouseItem) => (
-          <option key={warehouseItem.id} value={warehouseItem.itemType.id}>
-            {warehouseItem.itemType.name} {warehouseItem.itemType.unit ? `(${warehouseItem.itemType.unit})` : ""} ({warehouseItem.quantity} available)
+      return availableItems.map((aggregatedItem) => (
+          <option key={aggregatedItem.itemType.id} value={aggregatedItem.itemType.id}>
+            {aggregatedItem.itemType.name} {aggregatedItem.itemType.measuringUnit ? `(${aggregatedItem.itemType.measuringUnit})` : ""} ({aggregatedItem.quantity} available)
           </option>
       ));
     }
   };
 
-  // Function to handle create transaction
   const handleCreateTransaction = async (e) => {
     e.preventDefault();
 
     // Validate items
     for (const item of newTransaction.items) {
       if (!item.itemType.id || !item.quantity) {
-        alert("Please complete all item fields");
+        showSnackbar('error', 'Please complete all item fields');
         return;
       }
 
       // Check if the warehouse is the sender and verify inventory
       if (transactionRole === "sender") {
-
-        const selectedItem = items.filter(warehouseItem =>
-            warehouseItem.itemStatus === "IN_WAREHOUSE"
-        ).find(warehouseItem =>
+        const warehouseItemsOfType = items.filter(warehouseItem =>
+            warehouseItem.itemStatus === "IN_WAREHOUSE" &&
             warehouseItem.itemType.id === item.itemType.id
         );
 
-        if (!selectedItem) {
-          alert(`Item not found in the warehouse inventory or not available (IN_WAREHOUSE status)`);
+        if (warehouseItemsOfType.length === 0) {
+          showSnackbar('error', 'Item not found in the warehouse inventory or not available (IN_WAREHOUSE status)');
           return;
         }
 
-        // Check if there's enough quantity
-        if (selectedItem.quantity < parseInt(item.quantity)) {
-          alert(`Not enough quantity available for ${selectedItem.itemType.name}. Only ${selectedItem.quantity} items in stock.`);
+        const aggregatedItems = aggregateWarehouseItems(warehouseItemsOfType);
+        const aggregatedItem = aggregatedItems.find(aggItem => aggItem.itemType.id === item.itemType.id);
+
+        if (!aggregatedItem) {
+          showSnackbar('error', 'Item not found in the warehouse inventory');
+          return;
+        }
+
+        const totalAvailableQuantity = aggregatedItem.quantity;
+        const itemTypeName = aggregatedItem.itemType.name;
+
+        if (totalAvailableQuantity < parseInt(item.quantity)) {
+          showSnackbar('error', `Not enough quantity available for ${itemTypeName}. Only ${totalAvailableQuantity} items in stock.`);
           return;
         }
       }
     }
 
-    let username = "system"; // Default fallback
+    let username = "system";
     const userInfoString = localStorage.getItem('userInfo');
 
     if (userInfoString) {
@@ -544,7 +599,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
       }
     }
 
-    // Format data for the new multi-item API
     const transactionData = {
       transactionDate: newTransaction.transactionDate,
       senderType: newTransaction.senderType,
@@ -574,71 +628,96 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
       });
 
       if (response.ok) {
-        // Successfully created transaction
-        fetchTransactions(); // Refresh data
+        fetchTransactions();
+        triggerRefresh(); // Add this line
         setIsCreateModalOpen(false);
-        setShowCreateNotification(true);
-        setTimeout(() => {
-          setShowCreateNotification(false);
-        }, 3000);
-      } else {
-        // Try to get error details
+        showSnackbar('success', 'Transaction created successfully!');
+      }else {
         const errorText = await response.text();
         console.error("Failed to create transaction:", response.status, errorText);
-        alert("Failed to create transaction. Please check the console for details.");
+        showSnackbar('error', 'Failed to create transaction. Please try again.');
       }
     } catch (error) {
       console.error("Error creating transaction:", error);
+      showSnackbar('error', 'Failed to create transaction. Please check your connection.');
     }
+  };
+
+  const aggregateWarehouseItems = (items) => {
+    const aggregated = {};
+
+    items.forEach(item => {
+      const key = item.itemType?.id;
+      if (!key) return;
+
+      if (aggregated[key]) {
+        aggregated[key].quantity += item.quantity;
+        aggregated[key].individualItems.push(item);
+      } else {
+        aggregated[key] = {
+          ...item,
+          quantity: item.quantity,
+          individualItems: [item],
+          id: `aggregated_${key}`,
+          isAggregated: true
+        };
+      }
+    });
+
+    return Object.values(aggregated);
+  };
+
+  // Render the active tab content
+  const renderActiveTabContent = () => {
+    const activeTabConfig = tabs.find(tab => tab.id === activeTab);
+    if (!activeTabConfig) return null;
+
+    const TabComponent = activeTabConfig.component;
+    return <TabComponent warehouseId={warehouseId} refreshTrigger={refreshTrigger} />;
   };
 
   return (
       <div className="warehouse-view3">
+        {/* Snackbar Component */}
+        <Snackbar
+            type={snackbar.type}
+            text={snackbar.text}
+            isVisible={snackbar.isVisible}
+            onClose={hideSnackbar}
+            duration={4000}
+        />
+
         {/* Header with count and search */}
         <div className="header-container3">
           <div className="left-section3">
-            <h1 className="page-title3">Transactions</h1>
           </div>
           <div className="right-section3">
             {/* Global search removed as it seems it's not needed based on the design */}
           </div>
         </div>
 
-        {/* Container for all transaction tables */}
-        <div className="transaction-tables-container">
-          {/* Pending Transactions Table */}
-          <PendingTransactionsTable
-              warehouseId={warehouseId}
-          />
-          <IncomingTransactionsTable
-              warehouseId={warehouseId}
-          />
-          <ValidatedTransactionsTable
-              warehouseId={warehouseId}
-          />
-
-          {/* Add Transaction Button */}
-          {userRole === "WAREHOUSE_MANAGER" && (
-          <div className="add-button-container">
-            <button className="add-button3" onClick={() => setIsCreateModalOpen(true)}>
-              <svg className="plus-icon3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-            </button>
-            <div className="transaction-row-warning">
-              <svg className="warning-icon" viewBox="0 0 16 16" fill="#ffc107">
-                <circle cx="8" cy="8" r="7.5" fill="#ffc107" stroke="none"/>
-                <path d="M8 4.5c.41 0 .75.34.75.75v3.5a.75.75 0 01-1.5 0v-3.5c0-.41.34-.75.75-.75z" fill="#fff"/>
-                <circle cx="8" cy="11" r="0.75" fill="#fff"/>
-              </svg>
-              Always check incoming transactions before adding a transaction.
-            </div>
+        {/* Tab Navigation */}
+        <div className="transaction-tabs-container">
+          <div className="transaction-tabs">
+            {tabs.map((tab) => (
+                <button
+                    key={tab.id}
+                    className={`transaction-tab ${activeTab === tab.id ? 'active' : ''}`}
+                    onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
+                </button>
+            ))}
           </div>
 
-          )}
-
-
+          {/* Tab Content */}
+          <div className="transaction-tab-content">
+            {renderActiveTabContent()}
+          </div>
         </div>
+
+        {/* Add Transaction Button */}
+
 
 
         {/* Modal for Creating Transaction */}
@@ -746,14 +825,10 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
                                     inputMode="numeric"
                                     value={item.quantity}
                                     onChange={(e) => {
-                                      // Allow the field to be temporarily empty during typing
                                       let value = e.target.value.replace(/[^0-9]/g, '');
-
-                                      // Only enforce minimum of 1 when losing focus, not during typing
                                       handleItemChange(index, 'quantity', value);
                                     }}
                                     onBlur={(e) => {
-                                      // When the field loses focus, enforce minimum of 1
                                       let value = e.target.value.replace(/[^0-9]/g, '');
                                       if (value === '' || parseInt(value) < 1) {
                                         handleItemChange(index, 'quantity', '1');
@@ -764,23 +839,21 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
                                 />
                                 {item.itemType.id && (
                                     <span className="ro-unit-label">
-        {(() => {
-          // Find the selected item type to get its unit
-          let unit = '';
-          // if (transactionRole === "receiver") {
-          //   const itemType = allItemTypes.find(it => it.id === item.itemType.id);
-          //   unit = itemType?.measuringUnit || '';
-          // } else {
-            const warehouseItem = items.find(it => it.itemType.id === item.itemType.id);
-            unit = warehouseItem?.itemType?.measuringUnit || '';
-          // }
-          return unit;
-        })()}
-      </span>
+                                      {(() => {
+                                        let unit = '';
+                                        if (transactionRole === "receiver") {
+                                          const itemType = allItemTypes.find(it => it.id === item.itemType.id);
+                                          unit = itemType?.measuringUnit || '';
+                                        } else {
+                                          const warehouseItem = items.find(it => it.itemType.id === item.itemType.id);
+                                          unit = warehouseItem?.itemType?.measuringUnit || '';
+                                        }
+                                        return unit;
+                                      })()}
+                                    </span>
                                 )}
                               </div>
                             </div>
-
                           </div>
                         </div>
                     ))}
@@ -816,7 +889,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
                             />
                           </div>
 
-                          {/* Site Selection First */}
                           <div className="form-group3">
                             <label htmlFor="receiverSite">Destination Site</label>
                             <select
@@ -875,15 +947,12 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
                                 <option value="" disabled>Select {newTransaction.receiverType.charAt(0).toUpperCase() + newTransaction.receiverType.slice(1).toLowerCase()}</option>
                                 {receiverOptions.length > 0 ? (
                                     receiverOptions.map((entity) => {
-                                      // Handle different entity types appropriately
                                       let displayName, entityId;
 
                                       if (newTransaction.receiverType === "EQUIPMENT") {
-                                        // For equipment, access the nested equipment object
                                         displayName = entity ? entity.fullModelName : "No model name available";
                                         entityId = entity ? entity.id : entity.id;
                                       } else {
-                                        // For other types (WAREHOUSE, MERCHANT, etc.), use entity.name
                                         displayName = entity.name;
                                         entityId = entity.id;
                                       }
@@ -905,7 +974,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
                       <>
                         {/* When warehouse is receiver */}
                         <div className="form-row3">
-                          {/* Site Selection First */}
                           <div className="form-group3">
                             <label htmlFor="senderSite">Source Site</label>
                             <select
@@ -974,15 +1042,12 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
                                 <option value="" disabled>Select {newTransaction.senderType.charAt(0).toUpperCase() + newTransaction.senderType.slice(1).toLowerCase()}</option>
                                 {senderOptions.length > 0 ? (
                                     senderOptions.map((entity) => {
-                                      // Handle different entity types appropriately
                                       let displayName, entityId;
 
                                       if (newTransaction.senderType === "EQUIPMENT") {
-                                        // For equipment, access the nested equipment object
                                         displayName = entity.equipment ? entity.equipment.fullModelName : "No model name available";
                                         entityId = entity.equipment ? entity.equipment.id : entity.id;
                                       } else{
-                                        // For other types (WAREHOUSE, MERCHANT, etc.), use entity.name
                                         displayName = entity.name;
                                         entityId = entity.id;
                                       }
@@ -1007,17 +1072,6 @@ const WarehouseViewTransactionsTable = ({warehouseId}) => {
                   </div>
                 </form>
               </div>
-            </div>
-        )}
-
-        {/* Notification for transaction creation */}
-        {showCreateNotification && (
-            <div className="notification3 success-notification3">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                <path d="M22 4L12 14.01l-3-3"/>
-              </svg>
-              <span>Transaction Created Successfully</span>
             </div>
         )}
       </div>

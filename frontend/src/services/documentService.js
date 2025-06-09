@@ -20,5 +20,9 @@ export const documentService = {
         return apiClient.post(DOCUMENT_ENDPOINTS.CREATE(entityType, entityId), formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
+    },
+
+    delete: (id) => {
+        return apiClient.delete(DOCUMENT_ENDPOINTS.DELETE(id));
     }
 }; 
