@@ -14,6 +14,7 @@ import CommissionsTab from '../tabs/CommissionsTab.jsx';
 import LoansTab from '../tabs/LoansTab.jsx';
 import PayslipsTab from '../tabs/PayslipsTab.jsx';
 import VacationTab from '../tabs/VacationTab.jsx';
+import LoadingPage from "../../../../components/common/LoadingPage/LoadingPage.jsx";
 
 const EmployeeDetails = () => {
     const { id } = useParams();
@@ -128,12 +129,7 @@ const EmployeeDetails = () => {
 
     if (loading) {
         return (
-            <div className="employee-details-container">
-                <div className="loading-spinner">
-                    <div className="spinner"></div>
-                    <p>Loading employee details...</p>
-                </div>
-            </div>
+             <LoadingPage/>
         );
     }
 

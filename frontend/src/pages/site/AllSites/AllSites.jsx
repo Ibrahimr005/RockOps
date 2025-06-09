@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { FaBuilding } from 'react-icons/fa';
 import { siteService } from "../../../services/siteService.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
+import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
 
 // Default placeholder for site image
 const siteimg = "data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23ddd'/%3e%3ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23999'%3eSite%3c/text%3e%3c/svg%3e";
@@ -363,7 +364,7 @@ const AllSites = () => {
         }
     };
 
-    if (loading) return <div className="loading-container">{t('common.loading')}</div>;
+    if (loading) return <LoadingPage />;
     if (error) return <div className="error-container">{error}</div>;
 
     return (

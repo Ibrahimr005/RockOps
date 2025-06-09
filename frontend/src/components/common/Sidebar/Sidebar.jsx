@@ -115,7 +115,7 @@ const Sidebar = () => {
     const {t} = useTranslation();
     const location = useLocation();
     const navigate = useNavigate();
-    const {isExpanded, isMobile, toggleSidebar} = useSidebar();
+    const {isExpanded, setIsExpanded, isMobile, toggleSidebar} = useSidebar();
     const [expandedMenus, setExpandedMenus] = useState({});
     const [navigationHistory, setNavigationHistory] = useState(['/login']);
 
@@ -391,12 +391,12 @@ const Sidebar = () => {
 
                 <div className="sidebar-header">
                     <div className="logo-container">
-                            <img
-                                src={currentLogo}
-                                alt="Logo"
-                                className="logo-image"
-                                key={theme}
-                            />
+                        <img
+                            src={currentLogo}
+                            alt="Logo"
+                            className="logo-image"
+                            key={theme}
+                        />
                     </div>
                 </div>
 
@@ -421,7 +421,18 @@ const Sidebar = () => {
                                     onClick={(e) => {
                                         if (item.hasSubmenu) {
                                             e.preventDefault();
-                                            toggleSubmenu(item.title);
+
+                                            // If sidebar is collapsed, expand it first
+                                            if (!isExpanded) {
+                                                setIsExpanded(true);
+                                                // Add a small delay to allow the sidebar to expand before toggling submenu
+                                                setTimeout(() => {
+                                                    toggleSubmenu(item.title);
+                                                }, 100);
+                                            } else {
+                                                // If already expanded, just toggle the submenu
+                                                toggleSubmenu(item.title);
+                                            }
                                         } else if (isMobile) {
                                             toggleSidebar();
                                         }

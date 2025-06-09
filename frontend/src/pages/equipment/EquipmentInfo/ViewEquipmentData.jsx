@@ -83,7 +83,7 @@ const ViewEquipmentData = () => {
                 <div className="info-header">
                     <h1>Equipment Information</h1>
                     <div className="header-actions">
-                        <NavLink to={`/RelatedDocuments/equipment/${params.EquipmentID}`}>
+                        <NavLink to={`/related-documents/equipment/${params.EquipmentID}`}>
                             <IoDocumentOutline />
                         </NavLink>
                         <button onClick={handlePrint}>

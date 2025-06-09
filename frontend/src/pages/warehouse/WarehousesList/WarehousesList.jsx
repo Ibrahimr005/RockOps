@@ -4,6 +4,7 @@ import "./WarehousesList.scss";
 import warehouseImg from "../../../assets/imgs/warehouse1.jpg"; // Default warehouse image
 import { FaWarehouse, FaTimes } from 'react-icons/fa'; // Added FaTimes for remove icons
 import { useAuth } from "../../../contexts/AuthContext";
+import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
 
 const WarehousesList = () => {
     const [warehouses, setWarehouses] = useState([]);
@@ -439,7 +440,7 @@ const WarehousesList = () => {
         }
     };
 
-    if (loading) return <div className="warehouse-list-loading">Loading warehouses...</div>;
+    if (loading) return <LoadingPage/>;
     if (error) return <div className="warehouse-list-error">{error}</div>;
 
 
@@ -448,9 +449,6 @@ const WarehousesList = () => {
         <div className="warehouse-list-container">
             <div className="departments-header">
                 <h1 className="warehouse-list-title">Warehouses</h1>
-
-
-
 
             </div>
 

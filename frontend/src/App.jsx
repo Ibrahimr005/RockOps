@@ -156,7 +156,7 @@ function App() {
                                     </Route>
 
                                     {/* Generic Related Documents Route */}
-                                    <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
+                                    <Route path="/related-documents/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
                                 </Route>
 
 
