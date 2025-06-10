@@ -116,6 +116,9 @@ const AllSites = () => {
             setLoading(true);
             const response = await siteService.getAll();
             console.log("Sites fetched from service:", response.data);
+            response.data.forEach((site, index) => {
+                console.log(`Site ${index} photoUrl:`, site.photoUrl);
+            });
 
             if (response.data.length > 0) {
                 console.log("First site structure:", Object.keys(response.data[0]));

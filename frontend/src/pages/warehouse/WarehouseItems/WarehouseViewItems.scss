@@ -470,13 +470,19 @@
     }
   }
 
-  .resolve-submit-button {
+  .resolve-submit-button2 {
     background-color: var(--color-primary);
     color: var(--color-text-inverse);
     border: none;
 
     &:hover {
+      /* Light mode - use the primary-dark which is darker */
       background-color: var(--color-primary-dark);
+
+      /* Dark mode - use primary-light which is lighter */
+      [data-theme="dark"] & {
+        background-color: var(--color-primary-light);
+      }
     }
 
     &:disabled {
