@@ -6,8 +6,8 @@
 ## Quick Start
 1. Extract this folder
 2. Open terminal/command prompt in this directory
-3. Run: `./start.sh` (Linux/Mac) or `docker-compose up -d` (Windows)
-4. Wait for services to start (first time takes 5-10 minutes)
+3. Run: `./start.sh`
+4. Wait for "✅ Application started successfully!" message
 5. Open: http://localhost:3000
 
 ## Services

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import "./ProcurementRequestOrder.scss";
 import procurementImage from "../../../assets/imgs/pro_icon.png";
@@ -450,6 +450,15 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
         setShowAddModal(true);
     };
 
+    const pendingOrders = useMemo(() =>
+            requestOrders.filter(order => order.status === 'PENDING'),
+        [requestOrders]
+    );
+
+    const approvedOrders = useMemo(() =>
+            requestOrders.filter(order => order.status === 'APPROVED'),
+        [requestOrders]
+    );
 
     return (
         <div className="procurement-requests-container">
@@ -515,14 +524,14 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
                 <IncomingRequestOrders
                     onEditRequest={handleEditClick}
                     onDataChange={fetchRequestOrders}
-                    requestOrders={requestOrders}  // Pass the data
-                    loading={loading}              // Pass loading state
+                    requestOrders={pendingOrders}  // Use memoized data
+                    loading={loading}
                 />
             ) : (
                 <ApprovedRequestOrders
                     onDataChange={fetchRequestOrders}
-                    requestOrders={requestOrders}  // Pass the data
-                    loading={loading}              // Pass loading state
+                    requestOrders={approvedOrders}  // Use memoized data
+                    loading={loading}
                 />
             )}
 

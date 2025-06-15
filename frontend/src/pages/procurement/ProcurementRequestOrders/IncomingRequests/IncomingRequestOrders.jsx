@@ -1,31 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Table from '../../../../components/common/OurTable/Table.jsx';
+import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx"
 import './IncomingRequestOrders.scss';
 
 const IncomingRequestOrders = ({ onEditRequest, onDataChange, requestOrders, loading }) => {
     const navigate = useNavigate();
-    const [filteredOrders, setFilteredOrders] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
-
-    // Remove the local fetchRequestOrders function and state since data comes from props
-
-    useEffect(() => {
-        // Filter orders based on search term and props data
-        const term = searchTerm.toLowerCase();
-        const pendingOrders = requestOrders.filter(order => order.status === 'PENDING');
-
-        setFilteredOrders(
-            pendingOrders.filter((order) =>
-                order.title?.toLowerCase().includes(term) ||
-                order.requesterName?.toLowerCase().includes(term)
-            )
-        );
-    }, [searchTerm, requestOrders]); // Update when props change
 
     const handleRowClick = (row) => {
         navigate(`/procurement/request-orders/${row.id}`);
@@ -104,22 +87,30 @@ const IncomingRequestOrders = ({ onEditRequest, onDataChange, requestOrders, loa
         }
     };
 
-    // Define columns for the table
+    // Define columns for DataTable
     const columns = [
         {
             id: 'title',
-            label: 'TITLE',
-            width: '250px'
+            header: 'TITLE',
+            accessor: 'title',
+            sortable: true,
+            filterable: true,
+            minWidth: '250px'
         },
         {
             id: 'requesterName',
-            label: 'REQUESTER',
-            width: '250px'
+            header: 'REQUESTER',
+            accessor: 'requesterName',
+            sortable: true,
+            filterable: true,
+            minWidth: '250px'
         },
         {
             id: 'deadline',
-            label: 'DEADLINE',
-            width: '250px',
+            header: 'DEADLINE',
+            accessor: 'deadline',
+            sortable: true,
+            minWidth: '250px',
             render: (row) => (
                 <span className="date-cell">
                     {new Date(row.deadline).toLocaleDateString()}
@@ -128,13 +119,18 @@ const IncomingRequestOrders = ({ onEditRequest, onDataChange, requestOrders, loa
         },
         {
             id: 'createdBy',
-            label: 'CREATED BY',
-            width: '250px'
+            header: 'CREATED BY',
+            accessor: 'createdBy',
+            sortable: true,
+            filterable: true,
+            minWidth: '250px'
         },
         {
             id: 'createdAt',
-            label: 'CREATED AT',
-            width: '250px',
+            header: 'CREATED AT',
+            accessor: 'createdAt',
+            sortable: true,
+            minWidth: '250px',
             render: (row) => (
                 <span className="date-cell">
                     {new Date(row.createdAt).toLocaleDateString()}
@@ -143,47 +139,65 @@ const IncomingRequestOrders = ({ onEditRequest, onDataChange, requestOrders, loa
         }
     ];
 
-    // Action column configuration
-    const actionConfig = {
-        label: 'ACTIONS',
-        width: '200px',
-        renderActions: (row) => (
-            <>
-                <button
-                    className="custom-table-action-button approve"
-                    onClick={(e) => handleApproveClick(row, e)}
-                    title="Approve request"
-                >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                </button>
-                <button
-                    className="custom-table-action-button edit"
-                    onClick={(e) => handleEditClick(row, e)}
-                    title="Edit request"
-                >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                </button>
-            </>
-        )
-    };
+    // Define actions for DataTable
+    const actions = [
+        {
+            label: 'Approve',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 6L9 17l-5-5" />
+                </svg>
+            ),
+            onClick: (row) => handleApproveClick(row, { stopPropagation: () => {} }),
+            className: 'approve-action'
+        },
+        {
+            label: 'Edit',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+            ),
+            onClick: (row) => handleEditClick(row, { stopPropagation: () => {} }),
+            className: 'edit-action'
+        }
+    ];
+
+    // Define filterable columns
+    const filterableColumns = [
+        {
+            header: 'Title',
+            accessor: 'title',
+            filterType: 'text'
+        },
+        {
+            header: 'Requester',
+            accessor: 'requesterName',
+            filterType: 'select'
+        },
+        {
+            header: 'Created By',
+            accessor: 'createdBy',
+            filterType: 'select'
+        }
+    ];
 
     return (
         <div className="incoming-requests-container">
-
-
-            <Table
+            <DataTable
+                data={requestOrders || []}
                 columns={columns}
-                data={filteredOrders}
+                actions={actions}
                 onRowClick={handleRowClick}
-                isLoading={loading}
+                loading={loading}
                 emptyMessage="No incoming requests found"
-                actionConfig={actionConfig}
                 className="incoming-requests-table"
+                showSearch={true}
+                showFilters={true}
+                filterableColumns={filterableColumns}
+                defaultItemsPerPage={10}
+                itemsPerPageOptions={[5, 10, 15, 20]}
             />
 
             <Snackbar

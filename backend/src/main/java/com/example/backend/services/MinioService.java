@@ -12,6 +12,8 @@ import java.io.InputStream;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import io.minio.SetBucketPolicyArgs;
+
 @Service
 public class MinioService {
 
@@ -19,6 +21,9 @@ public class MinioService {
 
     @Value("${minio.bucketName}")
     private String bucketName;
+
+    @Value("${minio.publicUrl:http://localhost:9000}")
+    private String minioPublicUrl;
 
     public MinioService(MinioClient minioClient) {
         this.minioClient = minioClient;
@@ -29,6 +34,35 @@ public class MinioService {
         boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
         if (!found) {
             minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+        }
+    }
+
+    public void setBucketPublicReadPolicy(String bucketName) throws Exception {
+        String policy = """
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": "s3:GetObject",
+                    "Resource": "arn:aws:s3:::%s/*"
+                }
+            ]
+        }
+        """.formatted(bucketName);
+
+        try {
+            minioClient.setBucketPolicy(
+                    SetBucketPolicyArgs.builder()
+                            .bucket(bucketName)
+                            .config(policy)
+                            .build()
+            );
+            System.out.println("✅ Public read policy set for bucket: " + bucketName);
+        } catch (Exception e) {
+            System.out.println("⚠️ Could not set bucket policy for " + bucketName + ": " + e.getMessage());
+            // Don't throw exception - continue even if policy setting fails
         }
     }
 
@@ -53,14 +87,7 @@ public class MinioService {
 
     // Get file URL (for access)
     public String getFileUrl(String fileName) throws Exception {
-        return minioClient.getPresignedObjectUrl(
-                GetPresignedObjectUrlArgs.builder()
-                        .method(Method.GET)
-                        .bucket(bucketName)
-                        .object(fileName)
-                        .expiry(7, TimeUnit.DAYS)
-                        .build()
-        );
+        return minioPublicUrl + "/" + bucketName + "/" + fileName;
     }
 
     @PostConstruct
@@ -80,6 +107,25 @@ public class MinioService {
         } else {
             System.out.println("✅ Bucket already exists: " + bucketName);
         }
+
+        // Always ensure the bucket has public read policy
+        setBucketPublicReadPolicy(bucketName);
+    }
+
+    /**
+     * Create a bucket if it does not exist for any bucket name
+     */
+    public void createBucketIfNotExists(String bucketName) throws Exception {
+        boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+        if (!found) {
+            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+            System.out.println("✅ Bucket created: " + bucketName);
+        } else {
+            System.out.println("✅ Bucket already exists: " + bucketName);
+        }
+
+        // Always ensure the bucket has public read policy
+        setBucketPublicReadPolicy(bucketName);
     }
 
     // Upload file with custom path/name
@@ -108,21 +154,24 @@ public class MinioService {
     //Equipment Methods
 
     public void createEquipmentBucket(UUID equipmentId) throws Exception {
-        String bucketName = "equipment-" + equipmentId.toString(); // Ensure valid bucket name
+        String bucketName = "equipment-" + equipmentId.toString();
         boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
 
         if (!found) {
             minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
-            System.out.println("Bucket created: " + bucketName);
+            System.out.println("✅ Equipment bucket created: " + bucketName);
         } else {
-            System.out.println("Bucket already exists: " + bucketName);
+            System.out.println("✅ Equipment bucket already exists: " + bucketName);
         }
+
+        // Always ensure the bucket has public read policy
+        setBucketPublicReadPolicy(bucketName);
     }
 
     public String uploadEquipmentFile(UUID equipmentId, MultipartFile file, String fileName) throws Exception {
         String equipmentBucket = "equipment-" + equipmentId.toString();
         // Ensure bucket exists before uploading
-
+        createEquipmentBucket(equipmentId);
 
         minioClient.putObject(
                 PutObjectArgs.builder()
@@ -146,15 +195,9 @@ public class MinioService {
 
         for (Result<Item> result : results) {
             Item item = result.get();
-            if (item.objectName().contains("Main_Image")) { // Assuming naming convention
-                return minioClient.getPresignedObjectUrl(
-                        GetPresignedObjectUrlArgs.builder()
-                                .method(Method.GET)
-                                .bucket(equipmentBucket)
-                                .object(item.objectName())
-                                .expiry(7, TimeUnit.DAYS)
-                                .build()
-                );
+            if (item.objectName().contains("Main_Image")) {
+                // Return simple public URL like working photos
+                return minioPublicUrl + "/" + equipmentBucket + "/" + item.objectName();
             }
         }
 
@@ -197,38 +240,11 @@ public class MinioService {
     public String getEquipmentFileUrl(UUID equipmentId, String documentPath) throws Exception {
         String equipmentBucket = "equipment-" + equipmentId.toString();
 
-        // Check if bucket exists
-        boolean bucketExists = minioClient.bucketExists(
-                BucketExistsArgs.builder().bucket(equipmentBucket).build()
-        );
-
-        if (!bucketExists) {
-            throw new Exception("Equipment bucket does not exist: " + equipmentBucket);
-        }
-
-        // Get the presigned URL for the file
-        return minioClient.getPresignedObjectUrl(
-                GetPresignedObjectUrlArgs.builder()
-                        .method(Method.GET)
-                        .bucket(equipmentBucket)
-                        .object(documentPath)
-                        .expiry(7, TimeUnit.DAYS)
-                        .build()
-        );
+        // Simple public URL (same as working photos)
+        return minioPublicUrl + "/" + equipmentBucket + "/" + documentPath;
     }
 
     // NEW GENERIC DOCUMENT METHODS
-
-    /**
-     * Create a bucket if it does not exist for any entity type
-     */
-    public void createBucketIfNotExists(String bucketName) throws Exception {
-        boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
-        if (!found) {
-            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
-            System.out.println("Bucket created: " + bucketName);
-        }
-    }
 
     /**
      * Upload a file to any bucket
@@ -254,14 +270,7 @@ public class MinioService {
      * Get a file URL from any bucket
      */
     public String getFileUrl(String bucketName, String fileName) throws Exception {
-        return minioClient.getPresignedObjectUrl(
-                GetPresignedObjectUrlArgs.builder()
-                        .method(Method.GET)
-                        .bucket(bucketName)
-                        .object(fileName)
-                        .expiry(7, TimeUnit.DAYS)
-                        .build()
-        );
+        return minioPublicUrl + "/" + bucketName + "/" + fileName;
     }
 
     /**
@@ -320,7 +329,17 @@ public class MinioService {
      */
     public void createEntityBucket(String entityType, UUID entityId) throws Exception {
         String bucketName = entityType.toLowerCase() + "-" + entityId.toString();
-        createBucketIfNotExists(bucketName);
+        boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+
+        if (!found) {
+            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+            System.out.println("✅ Entity bucket created: " + bucketName);
+        } else {
+            System.out.println("✅ Entity bucket already exists: " + bucketName);
+        }
+
+        // Always ensure the bucket has public read policy
+        setBucketPublicReadPolicy(bucketName);
     }
 
     /**
@@ -337,7 +356,7 @@ public class MinioService {
      */
     public String getEntityFileUrl(String entityType, UUID entityId, String fileName) throws Exception {
         String bucketName = entityType.toLowerCase() + "-" + entityId.toString();
-        return getFileUrl(bucketName, fileName);
+        return minioPublicUrl + "/" + bucketName + "/" + fileName;
     }
 
     /**

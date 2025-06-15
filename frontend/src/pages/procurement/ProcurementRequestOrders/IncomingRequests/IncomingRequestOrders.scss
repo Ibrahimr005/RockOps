@@ -15,23 +15,23 @@
   input {
     width: 100%;
     padding: 10px 40px 10px 16px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-sm);
     font-size: 14px;
-    color: #1f2937;
-    background-color: white;
-    transition: all 0.2s;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    color: var(--color-text-dark);
+    background-color: var(--color-surface);
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-sm);
 
     &:focus {
       outline: none;
-      border-color: #3b82f6;
-      background-color: white;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+      border-color: var(--color-primary);
+      background-color: var(--color-surface);
+      box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
     }
 
     &::placeholder {
-      color: #9ca3af;
+      color: var(--color-text-muted);
     }
   }
 
@@ -42,7 +42,7 @@
     transform: translateY(-50%);
     width: 16px;
     height: 16px;
-    color: #9ca3af;
+    color: var(--color-text-muted);
     pointer-events: none;
   }
 }
@@ -52,10 +52,10 @@
 
   // Adding the gray border to the header cells
   :global(.custom-table-header-cell) {
-    background-color: #f1f3f5;
-    border-bottom: 1px solid #e5e7eb;
-    font-weight: 600;
-    color: #4b5563;
+    background-color: var(--table-header-bg);
+    border-bottom: 1px solid var(--table-border);
+    font-weight: var(--bold-font-weight);
+    color: var(--color-text-secondary);
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -63,7 +63,7 @@
 
   // Adjusting the row hover style to match screenshots
   :global(.custom-table-row:hover) {
-    background-color: #f9fafb;
+    background-color: var(--table-row-hover);
   }
 
   // Ensuring action buttons match the style in screenshots
@@ -73,28 +73,118 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
 
     svg {
       width: 16px;
       height: 16px;
     }
 
-    &.approve {
-      color: #10b981;
+    &.approve,
+    &.approve-action {
+      color: var(--color-success-light);
       background-color: rgba(16, 185, 129, 0.1);
+
+      &:hover {
+        background-color: rgba(16, 185, 129, 0.2);
+        transform: translateY(-1px);
+      }
     }
 
-    &.edit {
-      color: #3b82f6;
-      background-color: rgba(59, 130, 246, 0.1);
+    &.edit,
+    &.edit-action {
+      color: var(--color-edit);
+      background-color: var(--color-edit-bg);
+
+      &:hover {
+        background-color: var(--color-edit-bg-hover);
+        transform: translateY(-1px);
+      }
+    }
+  }
+
+  // DataTable specific styles
+  :global(.rockops-table__action-button) {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin: 0 2px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &.approve-action {
+      color: var(--color-success-light);
+      background-color: rgba(16, 185, 129, 0.1);
+
+      &:hover {
+        background-color: rgba(16, 185, 129, 0.2);
+        transform: translateY(-1px);
+      }
+    }
+
+    &.edit-action {
+      color: var(--color-edit);
+      background-color: var(--color-edit-bg);
+
+      &:hover {
+        background-color: var(--color-edit-bg-hover);
+        transform: translateY(-1px);
+      }
     }
   }
 
   // Date cell formatting
   .date-cell {
     white-space: nowrap;
-    color: #6b7280;
+    color: var(--color-text-secondary);
+  }
+
+  // DataTable search and other global styles
+  :global(.rockops-table__search-input) {
+    background-color: var(--color-surface);
+    border: 1px solid var(--border-color-light);
+    color: var(--color-text-primary);
+  }
+
+  :global(.rockops-table__search-input::placeholder) {
+    color: var(--color-text-muted);
+  }
+
+  :global(.rockops-table__search-input:focus) {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
+  }
+
+  :global(.rockops-table__filter-panel) {
+    background-color: var(--color-surface-secondary);
+    border: 1px solid var(--border-color-light);
+  }
+
+  :global(.rockops-table__pagination-btn) {
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    border: 1px solid var(--border-color-light);
+  }
+
+  :global(.rockops-table__pagination-btn:hover) {
+    background-color: var(--color-surface-hover);
+  }
+
+  :global(.rockops-table__pagination-btn--active) {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
   }
 }
 
