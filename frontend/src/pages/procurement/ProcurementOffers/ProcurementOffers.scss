@@ -1,588 +1,94 @@
-// _base.scss - Shared base styles for all procurement offer types
+// ===================================
+// ProcurementOffers.scss - Dark Mode Compatible
+// ===================================
 
-// Variables
-$primary-color: #3b82f6;
-$primary-light: #e0e7ff;
-$success-color: #10b981;
-$success-light: #d1fae5;
-$warning-color: #f59e0b;
-$warning-light: #fef3c7;
-$danger-color: #ef4444;
-$danger-light: #fee2e2;
-$gray-50: #f9fafb;
-$gray-100: #f3f4f6;
-$gray-200: #e5e7eb;
-$gray-300: #d1d5db;
-$gray-400: #9ca3af;
-$gray-500: #6b7280;
-$gray-600: #4b5563;
-$gray-700: #374151;
-$gray-800: #1f2937;
-$gray-900: #111827;
+// ===================================
+// 1. VARIABLES (Using CSS Custom Properties)
+// ===================================
+$primary-color: var(--color-primary);
+$primary-light: var(--color-primary-light);
+$primary-hover: var(--color-primary-hover);
 
-// Base container
+$success-color: var(--color-success-light);
+$success-light: rgba(34, 197, 94, 0.1);
+$success-hover: var(--color-success-hover);
+
+$warning-color: var(--color-warning-light);
+$warning-light: rgba(251, 191, 36, 0.1);
+
+$danger-color: var(--color-danger-light);
+$danger-light: rgba(248, 113, 113, 0.1);
+$danger-hover: var(--color-danger-hover);
+
+// Using theme variables for grays
+$gray-50: var(--color-surface-tertiary);
+$gray-100: var(--color-surface-secondary);
+$gray-200: var(--border-color-light);
+$gray-300: var(--border-color-medium);
+$gray-400: var(--border-color-dark);
+$gray-500: var(--color-text-muted);
+$gray-600: var(--color-text-tertiary);
+$gray-700: var(--color-text-secondary);
+$gray-800: var(--color-text-medium);
+$gray-900: var(--color-text-dark);
+
+// ===================================
+// 2. BASE CONTAINER
+// ===================================
 .procurement-offers-container {
+  max-width: 1600px;
+  background-color: var(--main-background-color);
+}
+
+
+
+.procurement-content-container {
+  background-color: var(--section-background-color);
+  border-radius: var(--radius-md);
   padding: 1.5rem;
-}
+  margin-top: 2rem;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal) ease;
 
-// Shared notification system
-.procurement-notification {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 12px 20px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  z-index: 1000;
-  animation: slideDownFade 0.3s ease, slideUpFade 0.3s ease 2.7s;
-
-  @keyframes slideDownFade {
-    from {
-      transform: translate(-50%, -20px);
-      opacity: 0;
-    }
-    to {
-      transform: translate(-50%, 0);
-      opacity: 1;
-    }
-  }
-
-  @keyframes slideUpFade {
-    from {
-      transform: translate(-50%, 0);
-      opacity: 1;
-    }
-    to {
-      transform: translate(-50%, -20px);
-      opacity: 0;
-    }
-  }
-
-  &-icon {
-    margin-right: 0.75rem;
-  }
-
-  &-close {
-    background: none;
-    border: none;
-    color: inherit;
-    margin-left: auto;
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 50%;
-
-    &:hover {
-      background: rgba(0, 0, 0, 0.1);
-    }
-  }
-
-  &-success {
-    background-color: $success-light;
-    color: darken($success-color, 15%);
-    border-left: 4px solid $success-color;
-  }
-
-  &-error {
-    background-color: $danger-light;
-    color: darken($danger-color, 15%);
-    border-left: 4px solid $danger-color;
-  }
-}
-
-// Shared main content layout
-.procurement-main-content {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 1.5rem;
-
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-
-    .procurement-list-section {
-      margin-bottom: 1.5rem;
-    }
-  }
-}
-
-// Shared list section base
-.procurement-list-section {
-  background-color: white;
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  height: auto;
-  align-self: flex-start;
-  flex: 0 0 auto;
-  width: 100%;
-
-  .procurement-list-header {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid $gray-200;
-
-    h3 {
-      margin: 0;
-      font-size: 1rem;
-      font-weight: 600;
-      color: $gray-800;
-    }
-  }
-}
-
-// Shared details section base
-.procurement-details-section {
-  background-color: white;
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-
-  .procurement-details-content {
-    padding: 1.5rem;
-  }
-}
-
-// Shared status badges
-.procurement-status-badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 0.25rem 0.5rem;
-  border-radius: 1rem;
-
-  &.status-unstarted {
-    background-color: $gray-200;
-    color: $gray-700;
-  }
-
-  &.status-inprogress {
-    background-color: $primary-light;
-    color: darken($primary-color, 15%);
-  }
-
-  &.status-submitted, &.status-sent {
-    background-color: $warning-light;
-    color: darken($warning-color, 15%);
-  }
-
-  &.status-manageraccepted {
-    background-color: $success-light;
-    color: darken($success-color, 15%);
-  }
-
-  &.status-managerrejected {
-    background-color: $danger-light;
-    color: darken($danger-color, 15%);
-  }
-
-  &.status-complete {
-    background-color: $success-light;
-    color: darken($success-color, 15%);
-    display: flex;
-    align-items: center;
-    padding: 6px 12px;
-    border-radius: 16px;
-    font-size: 14px;
-    font-weight: 500;
-
-    svg {
-      margin-right: 6px;
-    }
-  }
-
-  &.status-needed {
-    background-color: $danger-light;
-    color: darken($danger-color, 15%);
-    display: flex;
-    align-items: center;
-    padding: 6px 12px;
-    border-radius: 16px;
-    font-size: 14px;
-    font-weight: 500;
-
-    svg {
-      margin-right: 6px;
-    }
-  }
-}
-
-// Shared buttons
-.procurement-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s;
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  &.primary {
-    background-color: $primary-color;
-    color: white;
-
-    &:hover:not(:disabled) {
-      background-color: darken($primary-color, 8%);
-    }
-  }
-
-  &.secondary {
-    background-color: white;
-    border: 1px solid $gray-300;
-    color: $gray-700;
-
-    &:hover:not(:disabled) {
-      background-color: $gray-50;
-      border-color: $gray-400;
-    }
-  }
-
-  &.success {
-    background-color: $success-color;
-    color: white;
-
-    &:hover:not(:disabled) {
-      background-color: darken($success-color, 8%);
-    }
-  }
-
-  &.danger {
-    background-color: $danger-color;
-    color: white;
-
-    &:hover:not(:disabled) {
-      background-color: darken($danger-color, 8%);
-    }
-  }
-
-  &.start-working {
-    background-color: $primary-color;
-    color: white;
-    padding: 8px 16px;
-    border-radius: 6px;
-    border: none;
-    font-weight: 500;
-    cursor: pointer;
-    gap: 8px;
-
-    &:hover {
-      background-color: darken($primary-color, 8%);
-    }
-
-    &:active {
-      background-color: darken($primary-color, 15%);
-    }
-  }
-
-  &.primary-outline {
-    background-color: white;
-    color: $primary-color;
-    border-color: $primary-color;
-
-    &:hover {
-      background-color: #eff6ff;
-    }
-  }
-
-  &.small {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-  }
-}
-
-// Shared empty states
-.procurement-empty-state {
-  padding: 3rem 1.5rem;
-  text-align: center;
-  color: $gray-500;
-
-  .empty-icon {
-    color: $gray-300;
-    margin-bottom: 1rem;
-  }
-
-  p {
-    margin: 0 0 1rem;
-  }
-
-  &.centered {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-
-    .instruction-text {
-      font-size: 0.875rem;
-      max-width: 300px;
-      margin-top: 1rem;
-      color: $gray-400;
-    }
-  }
-}
-
-.procurement-empty-state-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  justify-content: center;
-  align-items: center;
-  background: #f8fafc;
-
-  .procurement-empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    border-radius: 10px;
-    width: 100%;
-    max-width: 500px;
-    background: #f8fafc;
-
-    h3 {
-      margin: 16px 0 8px;
-      color: #2d3748;
-    }
-
-    .empty-icon {
-      color: #a0aec0;
-    }
-  }
-}
-
-// Shared loading state
-.procurement-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 0;
-
-  .procurement-spinner {
-    width: 2.5rem;
-    height: 2.5rem;
-    border: 3px solid $gray-200;
-    border-top-color: $primary-color;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1rem;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-}
-
-// Shared action buttons
-.procurement-action-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: $gray-500;
-
+  /* Optional: Add a subtle hover effect */
   &:hover {
-    background-color: $gray-100;
-    color: $gray-800;
+    box-shadow: var(--shadow-md);
   }
 
-  &.edit {
-    color: $primary-color;
-
-    &:hover {
-      background-color: #eff6ff;
-      color: darken($primary-color, 8%);
-    }
-  }
-
-  &.delete {
-    color: $danger-color;
-
-    &:hover {
-      background-color: $danger-light;
-    }
-  }
+  /* Ensure the container adapts to content */
+  overflow: hidden;
 }
 
-.procurement-action-buttons {
+// Tabs Navigation
+.procurement-offers-tabs {
   display: flex;
-  gap: 8px;
-}
-// _components.scss - Shared components for all procurement offer types
+  border-bottom: 1px solid var(--border-color-light);
+  margin-bottom: 0; // Remove margin since container will provide spacing
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  padding: 0;
 
-// Shared intro card
-.procurement-intro-card {
-  display: flex;
-  align-items: center;
-  background-color: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-
-  .procurement-intro-left {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 1.5rem;
-
-    .procurement-intro-image {
-      width: 100%;
-      height: auto;
-      object-fit: contain;
-    }
-  }
-
-  .procurement-intro-content {
-    flex: 1;
-
-    .procurement-intro-header {
-      margin-bottom: 0.75rem;
-
-      .procurement-label {
-        display: block;
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: $gray-500;
-        margin-bottom: 0.25rem;
-      }
-
-      .procurement-intro-title {
-        font-size: 32px;
-        font-weight: 600;
-        color: var(--color-text-dark);
-        margin: 0;
-      }
-    }
-
-    .procurement-stats {
-      display: flex;
-      gap: 2rem;
-
-      .procurement-stat-item {
-        .procurement-stat-value {
-          font-size: 1.25rem;
-          font-weight: 600;
-          color: $primary-color;
-          display: block;
-        }
-
-        .procurement-stat-label {
-          font-size: 0.875rem;
-          color: $gray-500;
-        }
-      }
-    }
-  }
-
-  .procurement-intro-right {
-    .procurement-back-button {
-      display: flex;
-      align-items: center;
-      background: none;
-      border: 1px solid $gray-300;
-      border-radius: 0.375rem;
-      padding: 0.5rem 0.75rem;
-      font-size: 0.875rem;
-      color: $gray-700;
-      cursor: pointer;
-
-      &:hover {
-        background-color: $gray-100;
-        border-color: $gray-400;
-      }
-
-      .icon-rotate-180 {
-        transform: rotate(180deg);
-        margin-right: 0.5rem;
-      }
-    }
-
-    .procurement-info-button {
-      background: none;
-      border: none;
-      color: $gray-500;
-      cursor: pointer;
-      width: 2rem;
-      height: 2rem;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      &:hover {
-        background-color: $gray-100;
-        color: $gray-700;
-      }
-
-      svg {
-        width: 1.25rem;
-        height: 1.25rem;
-      }
-    }
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    align-items: flex-start;
-
-    .procurement-intro-left {
-      margin-bottom: 1rem;
-    }
-
-    .procurement-intro-right {
-      margin-top: 1rem;
-      align-self: flex-end;
-    }
-  }
-}
-
-// Shared tabs
-.procurement-tabs {
-  display: flex;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid $gray-200;
-  gap: 12px;
-
-  .procurement-tab {
-    display: flex;
-    align-items: center;
+  .procurement-offers-tab {
+    padding: 16px 24px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
     background: none;
     border: none;
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: $gray-500;
-    cursor: pointer;
     border-bottom: 2px solid transparent;
-    margin-right: 1rem;
-
-    svg {
-      margin-right: 0.5rem;
-    }
+    cursor: pointer;
+    transition: all var(--transition-fast);
 
     &:hover {
-      color: $gray-900;
+      color: var(--color-primary) !important;
     }
 
     &.active {
-      color: $primary-color;
-      border-bottom-color: $primary-color;
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+
+    svg {
+      margin-right: 0.5rem;
     }
   }
 
@@ -597,15 +103,15 @@ $gray-900: #111827;
   }
 }
 
-// Shared section description
+// Section Description with Search
 .procurement-section-description {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
-  margin-top: 2rem;
+  margin-top: 0; // Remove top margin since it's now inside container
   font-size: 0.875rem;
-  color: $gray-500;
+  color: var(--color-text-muted);
 
   .procurement-search-container {
     position: relative;
@@ -614,15 +120,21 @@ $gray-900: #111827;
     .procurement-search-input {
       width: 100%;
       padding: 0.5rem 0.75rem 0.5rem 2rem;
-      border: 1px solid $gray-300;
-      border-radius: 8px;
+      border: 1px solid var(--border-color-medium);
+      border-radius: var(--radius-sm);
       font-size: 0.875rem;
-      background-color: white;
+      background-color: var(--section-background-color);
+      color: var(--color-text-primary);
+      transition: all var(--transition-fast) ease;
 
       &:focus {
         outline: none;
-        border-color: $primary-color;
-        box-shadow: 0 0 0 2px rgba($primary-color, 0.1);
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
+      }
+
+      &::placeholder {
+        color: var(--color-text-muted);
       }
     }
 
@@ -633,7 +145,7 @@ $gray-900: #111827;
       transform: translateY(-50%);
       width: 0.875rem;
       height: 0.875rem;
-      color: $gray-400;
+      color: var(--color-text-muted);
     }
   }
 
@@ -648,515 +160,485 @@ $gray-900: #111827;
   }
 }
 
-// Shared form components
-.procurement-form-group {
-  margin-bottom: 2.5rem;
+// ===================================
+// 4. MAIN LAYOUT STRUCTURE (Used by ALL tabs)
+// ===================================
 
-  label {
-    display: block;
-    font-size: 14px;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 6px;
-  }
+// Two-column layout
+.procurement-main-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+  background: var(--main-background-color);
 
-  &.half {
-    flex: 1;
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+
+    .procurement-list-section {
+      margin-bottom: 1.5rem;
+    }
   }
 }
 
-.procurement-form-row {
+// Left Column - List Section (BASE structure for all tabs)
+.procurement-list-section {
+  background: var(--section-background-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-table);
+  border: 1px solid var(--border-color-light);
+  overflow: hidden;
+  height: fit-content;
+
+  .procurement-list-header {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    background: var(--table-header-bg);
+    border-bottom: 1px solid var(--border-color-light);
+
+    h3 {
+      margin: 0;
+      font-size: 1.125rem;
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-dark);
+    }
+  }
+
+  .procurement-items-list {
+    padding: 1rem;
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    background: var(--section-background-color);
+  }
+}
+
+// Right Column - Details Section (BASE structure for all tabs)
+.procurement-details-section {
+  background: var(--section-background-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-table);
+  border: 1px solid var(--border-color-light);
+  overflow: hidden;
+
+  .procurement-details-content {
+    padding: 0;
+  }
+}
+
+// ===================================
+// 5. ITEM CARD STRUCTURE (BASE for all tabs)
+// ===================================
+
+.procurement-item-card {
+  border: 1px solid var(--border-color-light);
+  border-left: 3px solid var(--color-primary); // Default color, tabs can override
+  background: linear-gradient(to right, rgba(72, 128, 255, 0.05), var(--section-background-color));
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+  transition: all var(--transition-normal) ease;
+  position: relative;
+
+  &:hover {
+    border-color: var(--color-primary-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+    background: linear-gradient(to right, rgba(72, 128, 255, 0.08), var(--color-surface-hover));
+  }
+
+  &.selected {
+    border-color: var(--color-primary-hover);
+    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+    background-color: var(--color-surface-secondary);
+  }
+
+  .procurement-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+
+    h4 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-dark);
+      margin-right: 1rem;
+    }
+  }
+
+  .procurement-item-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+
+    svg {
+      margin-right: 0.3rem;
+      vertical-align: -1px;
+    }
+  }
+
+  .procurement-item-date {
+    margin-bottom: 0.5rem;
+  }
+}
+
+// ===================================
+// 6. DETAILS HEADER STRUCTURE (BASE for all tabs)
+// ===================================
+
+.procurement-details-header {
   display: flex;
-  gap: 22px;
-  margin-bottom: 16px;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--table-header-bg);
+  border-bottom: 1px solid var(--border-color-light);
+
+  .procurement-header-content {
+    flex: 1;
+  }
+
+  .procurement-title-section {
+    h3 {
+      margin: 0 0 0.75rem 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--head-title-color);
+      line-height: 1.2;
+    }
+
+    .procurement-header-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+
+      .procurement-meta-item {
+        display: flex;
+        align-items: center;
+        font-size: 0.875rem;
+        color: var(--color-text-secondary);
+        font-weight: 500;
+
+        svg {
+          margin-right: 0.5rem;
+          color: var(--color-text-muted);
+        }
+      }
+    }
+  }
+
+  .procurement-details-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-left: 1.5rem;
+  }
 
   @media (max-width: 768px) {
     flex-direction: column;
-    gap: 0.75rem;
+    padding: 1.25rem;
 
-    .procurement-form-group.half {
-      flex: 1;
-    }
-  }
-}
+    .procurement-details-actions {
+      margin-left: 0;
+      margin-top: 1rem;
+      align-self: stretch;
 
-.procurement-form-select,
-.procurement-form-input,
-.procurement-form-textarea {
-  width: 100%;
-  height: 40px;
-  padding: 0 16px;
-  font-size: 14px;
-  border: 1px solid $gray-300;
-  border-radius: 8px;
-  color: #111827;
-  background-color: #fff;
-  box-sizing: border-box;
-  appearance: none;
-
-  &:focus {
-    border-color: $primary-color;
-    outline: none;
-    box-shadow: 0 0 0 3px rgba($primary-color, 0.1);
-  }
-}
-
-.procurement-form-input-with-icon {
-  position: relative;
-
-  .procurement-form-input {
-    &.with-currency-suffix {
-      padding-right: 45px;
-    }
-  }
-
-  .currency-prefix {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: $gray-500;
-    font-weight: 500;
-  }
-}
-
-.procurement-form-input-readonly {
-  background-color: $gray-100;
-  cursor: not-allowed;
-}
-
-.procurement-form-textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-// Shared progress components
-.procurement-progress-container {
-  margin-bottom: 16px;
-}
-
-.procurement-progress-bar {
-  height: 8px;
-  background-color: $gray-200;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 8px;
-}
-
-.procurement-progress-fill {
-  height: 100%;
-  background-color: $primary-color;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-
-  &.complete {
-    background-color: $success-color;
-  }
-}
-
-.procurement-progress-details {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  color: $gray-500;
-}
-
-.procurement-progress-stats {
-  display: flex;
-  justify-content: space-around;
-  align-items: flex-start;
-  width: 100%;
-  gap: 30px;
-  padding: 0 15px;
-}
-
-.procurement-progress-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  flex: 1;
-  min-width: 0;
-}
-
-.procurement-progress-stat-label {
-  width: 100%;
-  text-align: center;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: $gray-500;
-}
-
-.procurement-progress-stat-value {
-  font-size: 16px;
-  font-weight: 600;
-  color: #2d3748;
-
-  &.unfulfilled {
-    color: $danger-color;
-  }
-
-  &.fulfilled {
-    color: $success-color;
-  }
-}
-
-// Currency totals
-.currency-totals {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  align-items: center;
-  width: 100%;
-}
-
-.currency-total-item {
-  display: flex;
-  align-items: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.currency-separator {
-  margin-left: 8px;
-  color: #94a3b8;
-}
-// _modals.scss - Shared modal styles for all procurement offer types
-
-// Base modal overlay
-.procurement-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-  animation: ro-fadeIn 0.2s ease;
-
-  @keyframes ro-fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-}
-
-// Base modal container
-.procurement-modal-container {
-  max-height: 900px;
-  display: flex;
-  flex-direction: column;
-  max-width: 600px;
-  width: 100%;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-// Modal header
-.procurement-modal-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid $gray-200;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  background-color: #ffffff;
-  z-index: 10;
-
-  h4 {
-    font-size: 18px;
-    font-weight: 600;
-    color: $gray-800;
-    margin: 0;
-  }
-}
-
-.procurement-modal-close-button {
-  background: none;
-  border: none;
-  color: $gray-500;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background-color: $gray-100;
-    color: $gray-800;
-  }
-}
-
-// Modal body
-.procurement-modal-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px 20px;
-  max-height: calc(80vh - 140px);
-}
-
-.procurement-modal-item-info {
-  display: flex;
-  background-color: $gray-50;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 20px;
-}
-
-.procurement-modal-item-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  background-color: #e0f2fe;
-  border-radius: 8px;
-  color: #0ea5e9;
-  margin-right: 16px;
-}
-
-.procurement-modal-item-details {
-  flex: 1;
-}
-
-.item-info-row {
-  margin-bottom: 4px;
-}
-
-.item-info-label {
-  font-weight: 600;
-  color: $gray-600;
-  margin-right: 4px;
-}
-
-.item-info-value {
-  color: $gray-800;
-}
-
-// Modal footer
-.procurement-modal-footer {
-  padding: 16px 20px;
-  border-top: 1px solid $gray-200;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  position: sticky;
-  bottom: 0;
-  background-color: #ffffff;
-  z-index: 10;
-}
-
-// Button spinner for modal actions
-.button-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: white;
-  animation: spin 1s linear infinite;
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-}
-
-.rejected-offer-actions {
-  display: flex;
-  justify-content: flex-end;
-  width: 100%;
-}
-
-
-.procurement-request-order-info-card {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 2rem;
-  margin-bottom: 0;
-  box-shadow: none;
-
-  h4 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #111827;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e8eaed;
-  }
-}
-
-.procurement-request-order-details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-}
-
-.request-order-detail-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  border-radius: 12px;
-  border: 1px solid #e8eaed;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease;
-  }
-
-  &:hover {
-    background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
-    border-color: #d2d7db;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-
-    &::before {
-      transform: scaleX(1);
-    }
-
-    .request-order-detail-icon {
-      transform: scale(1.05);
-      box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
-    }
-  }
-
-  &.description-item {
-    grid-column: 1 / -1;
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    border-color: #e8eaed;
-
-    &::before {
-      background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
-    }
-
-    &:hover {
-      background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
-      border-color: #d2d7db;
-
-      .request-order-detail-icon {
-        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+      .procurement-button {
+        flex: 1;
+        justify-content: center;
       }
     }
+  }
+}
 
-    .request-order-detail-icon {
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+// ===================================
+// 7. SHARED COMPONENTS
+// ===================================
+
+// Status Badges
+.procurement-status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+
+  &.status-unstarted {
+    background-color: var(--color-text-muted);
+    color: var(--section-background-color);
+  }
+
+  &.status-inprogress {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+  }
+
+  &.status-submitted, &.status-sent {
+    background-color: var(--color-warning-light);
+    color: var(--section-background-color);
+  }
+
+  &.status-manageraccepted {
+    background-color: var(--color-success-light);
+    color: var(--section-background-color);
+  }
+
+  &.status-managerrejected {
+    background-color: var(--color-danger-light);
+    color: var(--section-background-color);
+  }
+
+  &.status-complete {
+    background-color: var(--color-success-light);
+    color: var(--section-background-color);
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 500;
+
+    svg {
+      margin-right: 6px;
+    }
+  }
+
+  &.status-needed {
+    background-color: var(--color-danger-light);
+    color: var(--section-background-color);
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 14px;
+    font-weight: 500;
+
+    svg {
+      margin-right: 6px;
     }
   }
 }
 
-.request-order-detail-icon {
-  display: flex;
+// Buttons
+.procurement-button {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border-radius: 10px;
-  color: white;
-  flex-shrink: 0;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-}
-
-.request-order-detail-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.request-order-detail-label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 6px;
-}
-
-.request-order-detail-value {
-  display: block;
-  font-size: 14px;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
   font-weight: 500;
-  color: #1f2937;
-  line-height: 1.4;
+  cursor: pointer;
+  border: none;
+  transition: all var(--transition-fast) ease;
+  font-family: var(--font-family);
 
-  &.description-text {
-    font-weight: 400;
-    line-height: 1.5;
-    color: #374151;
-    margin-top: 2px;
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
-  &.request-priority {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  &.primary {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
 
-    &.high {
-      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-      color: #dc2626;
-      border: 1px solid #fecaca;
+    &:hover:not(:disabled) {
+      background-color: var(--color-primary-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+
+  &.secondary {
+    background-color: var(--section-background-color);
+    border: 1px solid var(--border-color-medium);
+    color: var(--color-text-medium);
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-surface-hover);
+      border-color: var(--border-color-dark);
+      color: var(--color-text-primary);
+    }
+  }
+
+  &.success {
+    background-color: var(--color-success-light);
+    color: var(--color-text-inverse);
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-success-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+
+  &.danger {
+    background-color: var(--color-danger-light);
+    color: var(--color-text-inverse);
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-danger-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+
+  &.start-working {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    gap: 8px;
+
+    &:hover {
+      background-color: var(--color-primary-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
     }
 
-    &.medium {
-      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-      color: #d97706;
-      border: 1px solid #fed7aa;
+    &:active {
+      transform: translateY(0);
     }
+  }
 
-    &.low {
-      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-      color: #16a34a;
-      border: 1px solid #bbf7d0;
-    }
+  &.primary-outline {
+    background-color: var(--section-background-color);
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
 
-    &.urgent {
-      background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
-      color: #ffffff;
-      border: 1px solid #991b1b;
+    &:hover {
+      background-color: rgba(72, 128, 255, 0.1);
+      color: var(--color-primary-hover);
     }
   }
 }
 
+// Empty States
+.procurement-empty-state {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--color-text-muted);
+
+  .empty-icon {
+    color: var(--color-text-muted);
+    margin-bottom: 1rem;
+    opacity: 0.6;
+  }
+
+  p {
+    margin: 0 0 1rem;
+    color: var(--color-text-secondary);
+  }
+
+  h3 {
+    color: var(--color-text-primary);
+    margin: 16px 0 8px;
+  }
+}
+
+.procurement-empty-state-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+  background: var(--color-surface-secondary);
+
+  .procurement-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    border-radius: var(--radius-md);
+    width: 100%;
+    max-width: 500px;
+    background: var(--color-surface-secondary);
+  }
+}
+
+// Loading States
+.procurement-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 0;
+
+  .procurement-spinner {
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 3px solid var(--border-color-light);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    color: var(--color-text-muted);
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+}
+
+// Action Buttons
+.procurement-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  color: var(--color-text-muted);
+
+  &:hover {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  &.edit {
+    color: var(--color-edit);
+
+    &:hover {
+      background-color: var(--color-edit-bg-hover);
+      color: var(--color-edit-hover);
+    }
+  }
+
+  &.delete {
+    color: var(--color-delete);
+
+    &:hover {
+      background-color: var(--color-delete-bg-hover);
+      color: var(--color-delete-hover);
+    }
+  }
+
+  &.view {
+    color: var(--color-view);
+
+    &:hover {
+      background-color: var(--color-view-bg-hover);
+      color: var(--color-view-hover);
+    }
+  }
+}
+
+.procurement-action-buttons {
+  display: flex;
+  gap: 8px;
+}

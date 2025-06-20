@@ -1,0 +1,138 @@
+/* Procurement Intro Card Component */
+.procurement-intro-card {
+  display: flex;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+  overflow: hidden;
+  position: relative;
+  border-left: 4px solid var(--color-primary);
+}
+
+.procurement-intro-left {
+  width: 150px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.procurement-intro-image {
+  width: 100%;
+  height: auto;
+  max-height: 100px;
+  object-fit: contain;
+}
+
+.procurement-intro-content {
+  flex: 1;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.procurement-intro-header {
+  margin-bottom: 16px;
+}
+
+.procurement-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+.procurement-intro-title {
+  font-size: 32px;
+  font-weight: var(--bold-font-weight);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.procurement-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-top: 16px;
+}
+
+.procurement-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.procurement-stat-value {
+  font-size: 24px;
+  font-weight: var(--bold-font-weight);
+  color: var(--color-primary);
+}
+
+.procurement-stat-label {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.procurement-intro-right {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 300px;
+}
+
+.procurement-info-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  align-self: flex-end;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
+
+  svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--color-primary);
+  }
+
+  &:hover {
+    background-color: var(--color-edit-bg);
+
+    svg {
+      stroke: var(--color-primary-hover);
+    }
+  }
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  .procurement-intro-card {
+    flex-direction: column;
+  }
+
+  .procurement-intro-left {
+    width: 100%;
+  }
+
+  .procurement-intro-right {
+    width: 100%;
+    min-width: unset;
+    align-items: stretch;
+  }
+
+  .procurement-stats {
+    flex-direction: column;
+    gap: 16px;
+  }
+}

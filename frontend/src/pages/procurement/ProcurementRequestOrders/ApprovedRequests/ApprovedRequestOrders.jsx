@@ -73,7 +73,7 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
             sortable: true,
             minWidth: '200px',
             render: (row) => (
-                <span className="date-cell">
+                <span className="pro-roa-date-cell">
                     {row.deadline ? new Date(row.deadline).toLocaleDateString() : '-'}
                 </span>
             )
@@ -94,7 +94,7 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
             sortable: true,
             minWidth: '200px',
             render: (row) => (
-                <span className="date-cell">
+                <span className="pro-roa-date-cell">
                     {new Date(row.createdAt).toLocaleDateString()}
                 </span>
             )
@@ -106,7 +106,7 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
             sortable: true,
             minWidth: '200px',
             render: (row) => (
-                <span className="date-cell">
+                <span className="pro-roa-date-cell">
                     {row.approvedAt ? new Date(row.approvedAt).toLocaleDateString() : '-'}
                 </span>
             )
@@ -162,7 +162,7 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
     ];
 
     return (
-        <div className="approved-requests-container">
+        <div className="pro-roa-approved-requests-container">
             <DataTable
                 data={requestOrders || []}
                 columns={columns}
@@ -170,7 +170,7 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
                 onRowClick={handleRowClick}
                 loading={loading}
                 emptyMessage="No approved requests found"
-                className="approved-requests-table"
+                className="pro-roa-approved-requests-table"
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}

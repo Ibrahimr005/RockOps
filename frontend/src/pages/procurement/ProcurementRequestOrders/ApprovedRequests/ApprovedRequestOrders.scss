@@ -1,14 +1,14 @@
-.approved-requests-container {
+.pro-roa-approved-requests-container {
   margin-bottom: 24px;
 }
 
-.approved-requests-header {
+.pro-roa-approved-requests-header {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 16px;
 }
 
-.approved-requests-search {
+.pro-roa-approved-requests-search {
   position: relative;
   width: 300px;
 
@@ -35,7 +35,7 @@
     }
   }
 
-  .approved-requests-search-icon {
+  .pro-roa-approved-requests-search-icon {
     position: absolute;
     right: 12px;
     top: 50%;
@@ -47,7 +47,7 @@
   }
 }
 
-.approved-requests-table {
+.pro-roa-approved-requests-table {
   // Style overrides for this specific table instance
 
   // Match the header style from the screenshots
@@ -127,9 +127,10 @@
   }
 
   // Date formatting
-  .date-cell {
+  .pro-roa-date-cell {
     white-space: nowrap;
     color: var(--color-text-secondary);
+    font-weight: 500;
   }
 
   // DataTable header styling
@@ -144,14 +145,20 @@
   }
 
   // DataTable row styling
-  :global(.rockops-table__row:hover) {
-    background-color: var(--table-row-hover);
+  :global(.rockops-table__row) {
+    border-bottom: 1px solid var(--table-border);
+    transition: background-color var(--transition-fast);
+
+    &:hover {
+      background-color: var(--table-row-hover);
+    }
   }
 
   // DataTable cell styling
   :global(.rockops-table__cell) {
     color: var(--color-text-primary);
     border-bottom: 1px solid var(--table-border);
+    padding: 12px 16px;
   }
 
   // DataTable container styling
@@ -159,6 +166,7 @@
     background-color: var(--color-surface);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-table);
+    border: 1px solid var(--border-color-light);
   }
 
   // DataTable search input styling
@@ -181,6 +189,7 @@
   :global(.rockops-table__filter-panel) {
     background-color: var(--color-surface-secondary);
     border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-sm);
   }
 
   // DataTable pagination styling
@@ -197,12 +206,155 @@
   :global(.rockops-table__pagination-btn--active) {
     background-color: var(--color-primary);
     color: var(--color-text-inverse);
+    border-color: var(--color-primary);
+  }
+
+  // Filter dropdown styling
+  :global(.rockops-table__filter-select) {
+    background-color: var(--color-surface);
+    border: 1px solid var(--border-color-medium);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-sm);
+
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
+    }
+  }
+
+  // Filter input styling
+  :global(.rockops-table__filter-input) {
+    background-color: var(--color-surface);
+    border: 1px solid var(--border-color-medium);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-sm);
+
+    &::placeholder {
+      color: var(--color-text-muted);
+    }
+
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
+    }
+  }
+
+  // Empty state styling
+  :global(.rockops-table__empty-state) {
+    color: var(--color-text-secondary);
+    background-color: var(--color-surface-secondary);
+  }
+
+  // Loading state styling
+  :global(.rockops-table__loading) {
+    color: var(--color-text-secondary);
+  }
+
+  // Sort indicators - FIXED: Separated into individual selectors
+  :global(.rockops-table__sort-indicator) {
+    color: var(--color-text-muted);
+  }
+
+  :global(.rockops-table__sort-indicator--active) {
+    color: var(--color-primary);
+  }
+}
+
+// Dark mode specific adjustments
+[data-theme="dark"] {
+  .pro-roa-approved-requests-table {
+    :global(.rockops-table__action-button) {
+      &.view-action {
+        background-color: var(--color-view-bg);
+
+        &:hover {
+          background-color: var(--color-view-bg-hover);
+        }
+      }
+    }
+
+    :global(.rockops-table__container) {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    :global(.rockops-table__filter-panel) {
+      background-color: var(--color-surface-tertiary);
+    }
   }
 }
 
 // Responsive adjustments
 @media (max-width: 768px) {
-  .approved-requests-search {
+  .pro-roa-approved-requests-search {
     width: 100%;
+  }
+
+  .pro-roa-approved-requests-table {
+    :global(.rockops-table__container) {
+      border-radius: var(--radius-sm);
+    }
+
+    :global(.rockops-table__cell) {
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+
+    :global(.rockops-table__action-button) {
+      width: 28px;
+      height: 28px;
+      margin: 0 1px;
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+    }
+
+    :global(.rockops-table__th) {
+      padding: 8px 12px;
+      font-size: 9px;
+    }
+
+    // Stack filters vertically on mobile
+    :global(.rockops-table__filter-panel) {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    // Adjust pagination for mobile
+    :global(.rockops-table__pagination) {
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    :global(.rockops-table__pagination-btn) {
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .pro-roa-approved-requests-table {
+    :global(.rockops-table__action-button),
+    :global(.rockops-table__search-input),
+    :global(.rockops-table__filter-panel),
+    :global(.rockops-table__pagination) {
+      display: none !important;
+    }
+
+    :global(.rockops-table__container) {
+      box-shadow: none;
+      border: 1px solid #000;
+    }
+
+    :global(.rockops-table__th),
+    :global(.rockops-table__cell) {
+      border: 1px solid #000;
+      color: #000;
+      background: #fff;
+    }
   }
 }

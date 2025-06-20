@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { FaSort, FaSortUp, FaSortDown, FaSearch, FaFilter, FaEllipsisV } from 'react-icons/fa';
+import { FaSort, FaSortUp, FaSortDown, FaSearch, FaFilter, FaEllipsisV, FaPlus } from 'react-icons/fa';
 import './DataTable.scss';
 
 const DataTable = ({
@@ -19,7 +19,13 @@ const DataTable = ({
                        className = '',
                        actions = [], // Array of action objects
                        actionsColumnWidth = '120px', // Default width for actions column
-                       emptyMessage = 'No data available' // Custom empty message
+                       emptyMessage = 'No data available', // Custom empty message
+                       // New add button props
+                       showAddButton = false, // Whether to show the add button
+                       addButtonText = 'Add New', // Text for the add button
+                       addButtonIcon = <FaPlus />, // Icon for the add button (default plus)
+                       onAddClick = null, // Callback when add button is clicked
+                       addButtonProps = {} // Additional props for the add button
                    }) => {
     // States for pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -203,6 +209,13 @@ const DataTable = ({
         }
     };
 
+    // Handle add button click
+    const handleAddButtonClick = () => {
+        if (onAddClick) {
+            onAddClick();
+        }
+    };
+
     // Get filter options for a column
     const getFilterOptions = (columnAccessor) => {
         const values = data.map(row => getValue(row, columnAccessor)).filter(val => val != null);
@@ -273,38 +286,57 @@ const DataTable = ({
     return (
         <div className={`rockops-table__container ${className}`}>
             <div className="rockops-table__header-container">
-                {tableTitle && <h3 className="rockops-table__title">{tableTitle}</h3>}
+                <div className="rockops-table__header-left">
+                    {tableTitle && <h3 className="rockops-table__title">{tableTitle}</h3>}
+                </div>
 
-                <div className="rockops-table__controls">
-                    {showSearch && (
-                        <div className="rockops-table__search">
-                            <FaSearch className="rockops-table__search-icon" />
-                            <input
-                                type="text"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                placeholder="Search..."
-                                className="rockops-table__search-input"
-                            />
-                        </div>
-                    )}
+                <div className="rockops-table__header-center">
+                    <div className="rockops-table__controls">
+                        {showSearch && (
+                            <div className="rockops-table__search">
+                                <FaSearch className="rockops-table__search-icon" />
+                                <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    placeholder="Search..."
+                                    className="rockops-table__search-input"
+                                />
+                            </div>
+                        )}
 
-                    {showFilters && filterableColumns.length > 0 && (
+                        {showFilters && filterableColumns.length > 0 && (
+                            <button
+                                className={`rockops-table__filter-btn ${showFilterPanel ? 'rockops-table__filter-btn--active' : ''}`}
+                                onClick={() => {
+                                    if (showFilterPanel) {
+                                        // Reset filters when closing the panel
+                                        clearFilters();
+                                    }
+                                    setShowFilterPanel(!showFilterPanel);
+                                }}
+                            >
+                                <FaFilter />
+                                <span>Filters</span>
+                                {activeFiltersCount > 0 && (
+                                    <span className="rockops-table__filter-count">{activeFiltersCount}</span>
+                                )}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                <div className="rockops-table__header-right">
+                    {/* Add Button - Uses your existing primary button styles */}
+                    {showAddButton && onAddClick && (
                         <button
-                            className={`rockops-table__filter-btn ${showFilterPanel ? 'rockops-table__filter-btn--active' : ''}`}
-                            onClick={() => {
-                                if (showFilterPanel) {
-                                    // Reset filters when closing the panel
-                                    clearFilters();
-                                }
-                                setShowFilterPanel(!showFilterPanel);
-                            }}
+                            className={`btn-primary rockops-table__add-btn ${addButtonProps.className || ''}`}
+                            onClick={handleAddButtonClick}
+                            type="button"
+                            {...addButtonProps}
                         >
-                            <FaFilter />
-                            <span>Filters</span>
-                            {activeFiltersCount > 0 && (
-                                <span className="rockops-table__filter-count">{activeFiltersCount}</span>
-                            )}
+                            {addButtonIcon}
+                            <span>{addButtonText}</span>
                         </button>
                     )}
                 </div>
