@@ -1069,7 +1069,6 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
                           onChange={handleResolutionInputChange}
                           placeholder="Provide details about this resolution"
                           rows={4}
-                          required
                       />
                     </div>
 
@@ -1098,8 +1097,8 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick }) => {
                       </button>
                       <button
                           type="submit"
-                          className="resolve-submit-button"
-                          disabled={!resolutionData.resolutionType || !resolutionData.notes}
+                          className="resolve-submit-button2"
+                          disabled={!resolutionData.resolutionType}
                       >
                         Resolve Discrepancy
                       </button>

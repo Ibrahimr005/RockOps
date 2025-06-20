@@ -10,6 +10,7 @@ import SiteWarehousesTab from './tabs/SiteWarehousesTab';
 import SiteFixedAssetsTab from './tabs/SiteFixedAssetsTab';
 import SiteMerchantsTab from './tabs/SiteMerchantsTab';
 import SitePartnersTab from './tabs/SitePartnersTab';
+import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
 
 const SiteDetails = () => {
     const { siteId } = useParams();
@@ -65,12 +66,7 @@ const SiteDetails = () => {
 
     if (loading) {
         return (
-            <div className="site-details-container">
-                <div className="loading-spinner">
-                    <div className="spinner"></div>
-                    <p>Loading site details...</p>
-                </div>
-            </div>
+            <LoadingPage/>
         );
     }
 

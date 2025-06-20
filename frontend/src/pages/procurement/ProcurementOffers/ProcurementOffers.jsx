@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import './ProcurementOffers.scss';
 
 // Import tabs
@@ -9,7 +10,10 @@ import SubmittedOffers from './SubmittedOffers/SubmittedOffers';
 import ValidatedOffers from "./ManagerValidatedOffers/ValidatedOffers";
 import FinanceValidatedOffers from "./FinanceValidatedOffers/FinanceValidatedOffers";
 import FinalizeOffers from "./FinalizeOffers/FinalizeOffers";
-import CompletedOffers from "./CompletedOffers/CompletedOffers.jsx"; // Import the CompletedOffers component
+import CompletedOffers from "./CompletedOffers/CompletedOffers.jsx";
+
+// Import the new component
+import ProcurementIntroCard from '../../../components/procurement/IntroCard/ProcurementIntroCard.jsx';
 
 // Icons
 import {
@@ -20,12 +24,13 @@ import {
 // Add this to your imports at the top
 import { FiCheck } from 'react-icons/fi';
 import offersImage from "../../../assets/imgs/pro_icon.png";
+import offersImageDark from "../../../assets/imgs/pro_icon_dark.png"; // Add dark mode image
 
 const API_URL = 'http://localhost:8080/api/v1';
 
-
 const ProcurementOffers = () => {
     const navigate = useNavigate();
+    const { theme } = useTheme();
 
     // State
     const [loading, setLoading] = useState(true);
@@ -278,120 +283,86 @@ const ProcurementOffers = () => {
         setOffers(prevOffers => prevOffers.filter(offer => offer.id !== finalizedOfferId));
     };
 
+    // Handle info button click
+    const handleInfoClick = () => {
+        // Navigate back to request orders or show info modal
+        navigate('/procurement/request-orders');
+    };
+
+    // Prepare stats data for the intro card
+    const getActiveTabLabel = () => {
+        switch(activeTab) {
+            case 'unstarted': return 'Unstarted Offers';
+            case 'inprogress': return 'In Progress Offers';
+            case 'submitted': return 'Submitted Offers';
+            case 'validated': return 'Validated Offers';
+            case 'finance': return 'Finance Validated Offers';
+            case 'finalize': return 'Finalize Offers';
+            case 'completed': return 'Completed Offers';
+            default: return 'Offers';
+        }
+    };
+
+    const statsData = [
+        {
+            value: offers.length,
+            label: getActiveTabLabel()
+        },
+        {
+            value: `$${offers.reduce((total, offer) => total + getTotalPrice(offer), 0).toFixed(2)}`,
+            label: 'Total Value'
+        }
+    ];
+
     return (
         <div className="procurement-offers-container">
-            {/*/!* Notification system *!/*/}
-            {/*{error && (*/}
-            {/*    <div className="procurement-notification procurement-notification-error">*/}
-            {/*        <FiAlertCircle className="procurement-notification-icon" />*/}
-            {/*        <span>{error}</span>*/}
-            {/*        <button*/}
-            {/*            className="procurement-notification-close"*/}
-            {/*            onClick={() => setError(null)}*/}
-            {/*        >*/}
-            {/*            <FiX />*/}
-            {/*        </button>*/}
-            {/*    </div>*/}
-            {/*)}*/}
-
-            {/*{success && (*/}
-            {/*    <div className="procurement-notification procurement-notification-success">*/}
-            {/*        <FiCheckCircle className="procurement-notification-icon" />*/}
-            {/*        <span>{success}</span>*/}
-            {/*        <button*/}
-            {/*            className="procurement-notification-close"*/}
-            {/*            onClick={() => setSuccess(null)}*/}
-            {/*        >*/}
-            {/*            <FiX />*/}
-            {/*        </button>*/}
-            {/*    </div>*/}
-            {/*)}*/}
-
-            {/* Header - Intro Card */}
-            <div className="procurement-intro-card">
-                <div className="procurement-intro-left">
-                    <img
-                        src={offersImage}
-                        alt="Offers"
-                        className="procurement-intro-image"
-                    />
-                </div>
-
-                <div className="procurement-intro-content">
-                    <div className="procurement-intro-header">
-                        <span className="procurement-label">PROCUREMENT CENTER</span>
-                        <h2 className="procurement-intro-title">Offers</h2>
-                    </div>
-
-                    <div className="procurement-stats">
-                        <div className="procurement-stat-item">
-                            <span className="procurement-stat-value">{offers.length}</span>
-                            <span className="procurement-stat-label">
-                                 {activeTab === 'unstarted' ? 'Unstarted Offers' :
-                                     activeTab === 'inprogress' ? 'In Progress Offers' :
-                                         activeTab === 'submitted' ? 'Submitted Offers' :
-                                             activeTab === 'validated' ? 'Validated Offers' :
-                                                 activeTab === 'finance' ? 'Finance Validated Offers' :
-                                                     activeTab === 'finalize' ? 'Finalize Offers' :
-                                                         'Completed Offers'}
-                            </span>
-                        </div>
-                        <div className="procurement-stat-item">
-                            <span className="procurement-stat-value">
-                                ${offers.reduce((total, offer) => total + getTotalPrice(offer), 0).toFixed(2)}
-                            </span>
-                            <span className="procurement-stat-label">Total Value</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="procurement-intro-right">
-                    <button
-                        className="procurement-back-button"
-                        onClick={() => navigate('/procurement/request-orders')}
-                    >
-                        <FiChevronRight className="icon-rotate-180" /> Back to Request Orders
-                    </button>
-                </div>
-            </div>
+            {/* Header - Intro Card using the new component */}
+            <ProcurementIntroCard
+                title="Offers"
+                label="PROCUREMENT CENTER"
+                lightModeImage={offersImage}
+                darkModeImage={offersImageDark}
+                stats={statsData}
+                onInfoClick={handleInfoClick}
+            />
 
             {/* Tabs Navigation */}
-            <div className="procurement-tabs">
+            <div className="procurement-offers-tabs">
                 <button
-                    className={`procurement-tab ${activeTab === 'unstarted' ? 'active' : ''}`}
+                    className={`procurement-offers-tab ${activeTab === 'unstarted' ? 'active' : ''}`}
                     onClick={() => setActiveTab('unstarted')}
                 >
                     <FiInbox /> Unstarted
                 </button>
                 <button
-                    className={`procurement-tab ${activeTab === 'inprogress' ? 'active' : ''}`}
+                    className={`procurement-offers-tab ${activeTab === 'inprogress' ? 'active' : ''}`}
                     onClick={() => setActiveTab('inprogress')}
                 >
                     <FiEdit /> In Progress
                 </button>
                 <button
-                    className={`procurement-tab ${activeTab === 'submitted' ? 'active' : ''}`}
+                    className={`procurement-offers-tab ${activeTab === 'submitted' ? 'active' : ''}`}
                     onClick={() => setActiveTab('submitted')}
                 >
                     <FiSend /> Submitted
                 </button>
 
                 <button
-                    className={`procurement-tab ${activeTab === 'validated' ? 'active' : ''}`}
+                    className={`procurement-offers-tab ${activeTab === 'validated' ? 'active' : ''}`}
                     onClick={() => setActiveTab('validated')}
                 >
                     <FiCheck /> Manager Validated
                 </button>
 
                 <button
-                    className={`procurement-tab ${activeTab === 'finance' ? 'active' : ''}`}
+                    className={`procurement-offers-tab ${activeTab === 'finance' ? 'active' : ''}`}
                     onClick={() => setActiveTab('finance')}
                 >
                     <FiDollarSign /> Finance Validated
                 </button>
 
                 <button
-                    className={`procurement-tab ${activeTab === 'finalize' ? 'active' : ''}`}
+                    className={`procurement-offers-tab ${activeTab === 'finalize' ? 'active' : ''}`}
                     onClick={() => setActiveTab('finalize')}
                 >
                     <FiCheckCircle /> Finalize
@@ -399,120 +370,123 @@ const ProcurementOffers = () => {
 
                 {/* Add the Completed Offers tab */}
                 <button
-                    className={`procurement-tab ${activeTab === 'completed' ? 'active' : ''}`}
+                    className={`procurement-offers-tab ${activeTab === 'completed' ? 'active' : ''}`}
                     onClick={() => setActiveTab('completed')}
                 >
                     <FiCheckCircle /> Completed
                 </button>
             </div>
 
-            {/* Search and Description */}
-            <div className="procurement-section-description">
-                {getTabDescription()}
+            {/* Content Container with Theme Support */}
+            <div className="procurement-content-container">
+                {/* Search and Description */}
+                <div className="procurement-section-description">
+                    {getTabDescription()}
 
-                <div className="procurement-search-container">
-                    <input
-                        type="text"
-                        placeholder="Search offers..."
-                        className="procurement-search-input"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <svg className="procurement-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="11" cy="11" r="8" />
-                        <path d="M21 21l-4.35-4.35" />
-                    </svg>
+                    <div className="procurement-search-container">
+                        <input
+                            type="text"
+                            placeholder="Search offers..."
+                            className="procurement-search-input"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                        <svg className="procurement-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="M21 21l-4.35-4.35" />
+                        </svg>
+                    </div>
                 </div>
+
+                {/* Render the active tab component */}
+                {loading ? (
+                    <div className="procurement-loading">
+                        <div className="procurement-spinner"></div>
+                        <p>Loading offers data...</p>
+                    </div>
+                ) : (
+                    <>
+                        {activeTab === 'unstarted' && (
+                            <UnstartedOffers
+                                offers={filteredOffers}
+                                activeOffer={activeOffer}
+                                setActiveOffer={setActiveOffer}
+                                handleOfferStatusChange={handleOfferStatusChange}
+                            />
+                        )}
+
+                        {activeTab === 'inprogress' && (
+                            <InProgressOffers
+                                offers={filteredOffers}
+                                activeOffer={activeOffer}
+                                setActiveOffer={setActiveOffer}
+                                handleOfferStatusChange={handleOfferStatusChange}
+                                fetchWithAuth={fetchWithAuth}
+                                API_URL={API_URL}
+                                setError={setError}
+                                setSuccess={setSuccess}
+                            />
+                        )}
+
+                        {activeTab === 'submitted' && (
+                            <SubmittedOffers
+                                offers={filteredOffers}
+                                setOffers={setOffers}  // ← ADD THIS LINE
+                                activeOffer={activeOffer}
+                                setActiveOffer={setActiveOffer}
+                                getTotalPrice={getTotalPrice}
+                            />
+                        )}
+
+                        {activeTab === 'validated' && (
+                            <ValidatedOffers
+                                offers={filteredOffers}
+                                activeOffer={activeOffer}
+                                setActiveOffer={setActiveOffer}
+                                getTotalPrice={getTotalPrice}
+                                onRetryOffer={handleRetryOffer} // Pass the callback
+                            />
+                        )}
+
+                        {activeTab === 'finance' && (
+                            <FinanceValidatedOffers
+                                offers={filteredOffers}
+                                activeOffer={activeOffer}
+                                setActiveOffer={setActiveOffer}
+                                getTotalPrice={getTotalPrice}
+                                fetchWithAuth={fetchWithAuth}
+                                API_URL={API_URL}
+                            />
+                        )}
+
+                        {activeTab === 'finalize' && (
+                            <FinalizeOffers
+                                offers={filteredOffers}
+                                activeOffer={activeOffer}
+                                setActiveOffer={setActiveOffer}
+                                getTotalPrice={getTotalPrice}
+                                fetchWithAuth={fetchWithAuth}
+                                API_URL={API_URL}
+                                setError={setError}              // ADD THIS
+                                setSuccess={setSuccess}          // ADD THIS
+                                onOfferFinalized={handleOfferFinalized}  // ADD THIS
+                            />
+                        )}
+
+                        {/* Render the CompletedOffers component when the completed tab is active */}
+                        {activeTab === 'completed' && (
+                            <CompletedOffers
+                                offers={filteredOffers}
+                                activeOffer={activeOffer}
+                                setActiveOffer={setActiveOffer}
+                                getTotalPrice={getTotalPrice}
+                                fetchWithAuth={fetchWithAuth}
+                                API_URL={API_URL}
+                            />
+                        )}
+                    </>
+                )}
             </div>
-
-            {/* Render the active tab component */}
-            {loading ? (
-                <div className="procurement-loading">
-                    <div className="procurement-spinner"></div>
-                    <p>Loading offers data...</p>
-                </div>
-            ) : (
-                <>
-                    {activeTab === 'unstarted' && (
-                        <UnstartedOffers
-                            offers={filteredOffers}
-                            activeOffer={activeOffer}
-                            setActiveOffer={setActiveOffer}
-                            handleOfferStatusChange={handleOfferStatusChange}
-                        />
-                    )}
-
-                    {activeTab === 'inprogress' && (
-                        <InProgressOffers
-                            offers={filteredOffers}
-                            activeOffer={activeOffer}
-                            setActiveOffer={setActiveOffer}
-                            handleOfferStatusChange={handleOfferStatusChange}
-                            fetchWithAuth={fetchWithAuth}
-                            API_URL={API_URL}
-                            setError={setError}
-                            setSuccess={setSuccess}
-                        />
-                    )}
-
-                    {activeTab === 'submitted' && (
-                        <SubmittedOffers
-                            offers={filteredOffers}
-                            setOffers={setOffers}  // ← ADD THIS LINE
-                            activeOffer={activeOffer}
-                            setActiveOffer={setActiveOffer}
-                            getTotalPrice={getTotalPrice}
-                        />
-                    )}
-
-                    {activeTab === 'validated' && (
-                        <ValidatedOffers
-                            offers={filteredOffers}
-                            activeOffer={activeOffer}
-                            setActiveOffer={setActiveOffer}
-                            getTotalPrice={getTotalPrice}
-                            onRetryOffer={handleRetryOffer} // Pass the callback
-                        />
-                    )}
-
-                    {activeTab === 'finance' && (
-                        <FinanceValidatedOffers
-                            offers={filteredOffers}
-                            activeOffer={activeOffer}
-                            setActiveOffer={setActiveOffer}
-                            getTotalPrice={getTotalPrice}
-                            fetchWithAuth={fetchWithAuth}
-                            API_URL={API_URL}
-                        />
-                    )}
-
-                    {activeTab === 'finalize' && (
-                        <FinalizeOffers
-                            offers={filteredOffers}
-                            activeOffer={activeOffer}
-                            setActiveOffer={setActiveOffer}
-                            getTotalPrice={getTotalPrice}
-                            fetchWithAuth={fetchWithAuth}
-                            API_URL={API_URL}
-                            setError={setError}              // ADD THIS
-                            setSuccess={setSuccess}          // ADD THIS
-                            onOfferFinalized={handleOfferFinalized}  // ADD THIS
-                        />
-                    )}
-
-                    {/* Render the CompletedOffers component when the completed tab is active */}
-                    {activeTab === 'completed' && (
-                        <CompletedOffers
-                            offers={filteredOffers}
-                            activeOffer={activeOffer}
-                            setActiveOffer={setActiveOffer}
-                            getTotalPrice={getTotalPrice}
-                            fetchWithAuth={fetchWithAuth}
-                            API_URL={API_URL}
-                        />
-                    )}
-                </>
-            )}
         </div>
     );
 };

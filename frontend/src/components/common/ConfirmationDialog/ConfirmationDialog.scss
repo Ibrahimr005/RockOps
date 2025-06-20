@@ -1,0 +1,350 @@
+// ===================================
+// ConfirmationDialog.scss - Dark Mode Compatible
+// ===================================
+
+.confirmation-dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+  animation: confirmationFadeIn 0.2s ease-out;
+  padding: 1rem;
+
+  @keyframes confirmationFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+.confirmation-dialog {
+  background: var(--section-background-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color-light);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: confirmationSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+
+  @keyframes confirmationSlideIn {
+    from {
+      transform: scale(0.8) translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  // Size variants
+  &--small {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  &--medium {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  &--large {
+    width: 100%;
+    max-width: 600px;
+  }
+
+  // Type-specific styling
+  &--warning {
+    border-left: 4px solid var(--color-warning-light);
+  }
+
+  &--danger,
+  &--delete {
+    border-left: 4px solid var(--color-danger-light);
+  }
+
+  &--success {
+    border-left: 4px solid var(--color-success-light);
+  }
+
+  &--info,
+  &--send {
+    border-left: 4px solid var(--color-info-light);
+  }
+}
+
+.confirmation-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.confirmation-dialog-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  transition: all var(--transition-normal) ease;
+
+  &--warning {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(251, 191, 36, 0.1) 100%);
+    color: var(--color-warning-light);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+  }
+
+  &--danger,
+  &--delete {
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.2) 0%, rgba(248, 113, 113, 0.1) 100%);
+    color: var(--color-danger-light);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+  }
+
+  &--success {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+    color: var(--color-success-light);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+
+  &--info,
+  &--send {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
+    color: var(--color-info-light);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+  }
+}
+
+.confirmation-dialog-title {
+  font-size: 1.25rem;
+  font-weight: var(--bold-font-weight);
+  color: var(--head-title-color);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.confirmation-dialog-content {
+  padding: 1.25rem 1.5rem 1.75rem;
+}
+
+.confirmation-dialog-message {
+  font-size: 1.1rem;
+  color: var(--color-text-dark);
+  line-height: 1.7;
+  margin: 0;
+  font-weight: 500;
+  text-align: center;
+  padding: 0.75rem 0;
+  white-space: pre-line; /* This allows \n to create line breaks */
+}
+
+.confirmation-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--border-color-light);
+  background: linear-gradient(135deg, var(--color-surface-secondary) 0%, var(--color-surface-tertiary) 100%);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+
+  @media (max-width: 480px) {
+    flex-direction: column-reverse;
+
+    .confirmation-dialog-cancel,
+    .confirmation-dialog-confirm {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+.confirmation-dialog-cancel {
+  padding: 0.75rem 1.5rem;
+  background: var(--section-background-color);
+  color: var(--color-text-medium);
+  border: 1px solid var(--border-color-medium);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+    border-color: var(--border-color-dark);
+    color: var(--color-text-primary);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.confirmation-dialog-confirm {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: var(--bold-font-weight);
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+
+  // Default (warning) style
+  background-color: var(--color-warning-light);
+  color: var(--color-text-inverse);
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-warning);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  // Type-specific confirm buttons
+  &--danger,
+  &--delete {
+    background-color: var(--color-danger-light);
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-danger-hover);
+    }
+  }
+
+  &--success {
+    background-color: var(--color-success-light);
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-success-hover);
+    }
+  }
+
+  &--info,
+  &--send {
+    background-color: var(--color-primary);
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-primary-hover);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}
+
+.confirmation-dialog-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: confirmationSpin 1s linear infinite;
+
+  @keyframes confirmationSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+}
+
+// Dark mode specific adjustments
+[data-theme="dark"] {
+  .confirmation-dialog-backdrop {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+
+  .confirmation-dialog {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .confirmation-dialog-icon {
+    &--warning {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.25) 0%, rgba(251, 191, 36, 0.15) 100%);
+    }
+
+    &--danger,
+    &--delete {
+      background: linear-gradient(135deg, rgba(248, 113, 113, 0.25) 0%, rgba(248, 113, 113, 0.15) 100%);
+    }
+
+    &--success {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(34, 197, 94, 0.15) 100%);
+    }
+
+    &--info,
+    &--send {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0.15) 100%);
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .confirmation-dialog-backdrop {
+    padding: 0.5rem;
+  }
+
+  .confirmation-dialog {
+    &--small,
+    &--medium,
+    &--large {
+      max-width: 100%;
+    }
+  }
+
+  .confirmation-dialog-header {
+    padding: 1.25rem 1.25rem 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .confirmation-dialog-icon {
+    width: 40px;
+    height: 40px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .confirmation-dialog-title {
+    font-size: 1.125rem;
+  }
+
+  .confirmation-dialog-content {
+    padding: 0.75rem 1.25rem 1.25rem;
+  }
+
+  .confirmation-dialog-actions {
+    padding: 0.75rem 1.25rem 1.25rem;
+    gap: 0.5rem;
+  }
+}

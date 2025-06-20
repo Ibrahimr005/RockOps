@@ -639,16 +639,39 @@
 // Header Controls - Table.jsx style
 .rockops-table__header-container {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 1rem;
   padding: 1rem 0;
-  flex-wrap: wrap;
   gap: 1rem;
+
+  .rockops-table__header-left {
+    flex: 0 0 auto; // Don't grow or shrink
+  }
+
+  .rockops-table__header-center {
+    flex: 1; // Take up available space
+    display: flex;
+    justify-content: flex-start; // Align search and filter to the left
+  }
+
+  .rockops-table__header-right {
+    flex: 0 0 auto; // Don't grow or shrink
+    margin-left: auto; // Push to the right end
+  }
 
   @media (max-width: 768px) {
     flex-direction: column;
     align-items: stretch;
+
+    .rockops-table__header-center {
+      justify-content: flex-start; // Keep left-aligned on mobile too
+    }
+
+    .rockops-table__header-right {
+      align-self: stretch;
+      margin-left: 0;
+    }
   }
 }
 
@@ -1532,4 +1555,8 @@
       overflow-x: auto;
     }
   }
+}
+
+.rockops-table__add-btn {
+  margin-right: 1rem;
 }

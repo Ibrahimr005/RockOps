@@ -395,7 +395,9 @@
 
     color: white;
     border-color: var(--color-primary);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    box-shadow:
+            inset -2px 0 8px rgba(102, 126, 234, 0.3),
+            4px 0 12px rgba(102, 126, 234, 0.5);
     transform: translate(50%,-50%) scale(1.1);
 }
 

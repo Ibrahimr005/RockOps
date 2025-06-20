@@ -1,61 +1,61 @@
-.incoming-requests-container {
+.pro-roi-incoming-requests-container {
   margin-bottom: 24px;
 }
 
-.incoming-requests-header {
+.pro-roi-incoming-requests-header {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 16px;
 }
 
-.incoming-requests-search {
+.pro-roi-incoming-requests-search {
   position: relative;
   width: 300px;
 
   input {
     width: 100%;
     padding: 10px 40px 10px 16px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-sm);
     font-size: 14px;
-    color: #1f2937;
-    background-color: white;
-    transition: all 0.2s;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    color: var(--color-text-dark);
+    background-color: var(--color-surface);
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-sm);
 
     &:focus {
       outline: none;
-      border-color: #3b82f6;
-      background-color: white;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+      border-color: var(--color-primary);
+      background-color: var(--color-surface);
+      box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
     }
 
     &::placeholder {
-      color: #9ca3af;
+      color: var(--color-text-muted);
     }
   }
 
-  .incoming-requests-search-icon {
+  .pro-roi-incoming-requests-search-icon {
     position: absolute;
     right: 12px;
     top: 50%;
     transform: translateY(-50%);
     width: 16px;
     height: 16px;
-    color: #9ca3af;
+    color: var(--color-text-muted);
     pointer-events: none;
   }
 }
 
-.incoming-requests-table {
+.pro-roi-incoming-requests-table {
   // Style overrides for this specific table instance
 
   // Adding the gray border to the header cells
   :global(.custom-table-header-cell) {
-    background-color: #f1f3f5;
-    border-bottom: 1px solid #e5e7eb;
-    font-weight: 600;
-    color: #4b5563;
+    background-color: var(--table-header-bg);
+    border-bottom: 1px solid var(--table-border);
+    font-weight: var(--bold-font-weight);
+    color: var(--color-text-secondary);
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -63,7 +63,7 @@
 
   // Adjusting the row hover style to match screenshots
   :global(.custom-table-row:hover) {
-    background-color: #f9fafb;
+    background-color: var(--table-row-hover);
   }
 
   // Ensuring action buttons match the style in screenshots
@@ -73,34 +73,234 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
 
     svg {
       width: 16px;
       height: 16px;
     }
 
-    &.approve {
-      color: #10b981;
+    &.approve,
+    &.approve-action {
+      color: var(--color-success-light);
       background-color: rgba(16, 185, 129, 0.1);
+
+      &:hover {
+        background-color: rgba(16, 185, 129, 0.2);
+        transform: translateY(-1px);
+      }
     }
 
-    &.edit {
-      color: #3b82f6;
-      background-color: rgba(59, 130, 246, 0.1);
+    &.edit,
+    &.edit-action {
+      color: var(--color-edit);
+      background-color: var(--color-edit-bg);
+
+      &:hover {
+        background-color: var(--color-edit-bg-hover);
+        transform: translateY(-1px);
+      }
+    }
+  }
+
+  // DataTable specific styles
+  :global(.rockops-table__action-button) {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin: 0 2px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &.approve-action {
+      color: var(--color-success-light);
+      background-color: rgba(16, 185, 129, 0.1);
+
+      &:hover {
+        background-color: rgba(16, 185, 129, 0.2);
+        transform: translateY(-1px);
+      }
+    }
+
+    &.edit-action {
+      color: var(--color-edit);
+      background-color: var(--color-edit-bg);
+
+      &:hover {
+        background-color: var(--color-edit-bg-hover);
+        transform: translateY(-1px);
+      }
     }
   }
 
   // Date cell formatting
-  .date-cell {
+  .pro-roi-date-cell {
     white-space: nowrap;
-    color: #6b7280;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+  }
+
+  // DataTable search and other global styles
+  :global(.rockops-table__search-input) {
+    background-color: var(--color-surface);
+    border: 1px solid var(--border-color-light);
+    color: var(--color-text-primary);
+
+    &::placeholder {
+      color: var(--color-text-muted);
+    }
+
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
+    }
+  }
+
+  :global(.rockops-table__filter-panel) {
+    background-color: var(--color-surface-secondary);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-sm);
+  }
+
+  :global(.rockops-table__pagination-btn) {
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    border: 1px solid var(--border-color-light);
+  }
+
+  :global(.rockops-table__pagination-btn:hover) {
+    background-color: var(--color-surface-hover);
+  }
+
+  :global(.rockops-table__pagination-btn--active) {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+    border-color: var(--color-primary);
+  }
+
+  // Table container styling
+  :global(.rockops-table__container) {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-table);
+    border: 1px solid var(--border-color-light);
+  }
+
+  // Table header styling
+  :global(.rockops-table__th) {
+    background-color: var(--table-header-bg);
+    border-bottom: 1px solid var(--table-border);
+    color: var(--color-text-secondary);
+    font-weight: var(--bold-font-weight);
+  }
+
+  // Table row styling
+  :global(.rockops-table__row) {
+    border-bottom: 1px solid var(--table-border);
+    transition: background-color var(--transition-fast);
+
+    &:hover {
+      background-color: var(--table-row-hover);
+    }
+  }
+
+  // Table cell styling
+  :global(.rockops-table__cell) {
+    color: var(--color-text-primary);
+    padding: 12px 16px;
+  }
+
+  // Filter dropdown styling
+  :global(.rockops-table__filter-select) {
+    background-color: var(--color-surface);
+    border: 1px solid var(--border-color-medium);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-sm);
+
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
+    }
+  }
+
+  // Filter input styling
+  :global(.rockops-table__filter-input) {
+    background-color: var(--color-surface);
+    border: 1px solid var(--border-color-medium);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-sm);
+
+    &::placeholder {
+      color: var(--color-text-muted);
+    }
+
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
+    }
+  }
+}
+
+// Dark mode specific adjustments
+[data-theme="dark"] {
+  .pro-roi-incoming-requests-table {
+    :global(.rockops-table__action-button) {
+      &.approve-action {
+        background-color: rgba(34, 197, 94, 0.15);
+
+        &:hover {
+          background-color: rgba(34, 197, 94, 0.25);
+        }
+      }
+
+      &.edit-action {
+        background-color: var(--color-edit-bg);
+
+        &:hover {
+          background-color: var(--color-edit-bg-hover);
+        }
+      }
+    }
   }
 }
 
 // Responsive adjustments
 @media (max-width: 768px) {
-  .incoming-requests-search {
+  .pro-roi-incoming-requests-search {
     width: 100%;
+  }
+
+  .pro-roi-incoming-requests-table {
+    :global(.rockops-table__container) {
+      border-radius: var(--radius-sm);
+    }
+
+    :global(.rockops-table__cell) {
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+
+    :global(.rockops-table__action-button) {
+      width: 28px;
+      height: 28px;
+      margin: 0 1px;
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+    }
   }
 }

@@ -1,7 +1,7 @@
-package com.example.backend.controllers;
+package com.example.backend.controllers.procurement;
 
 import com.example.backend.models.merchant.Merchant;
-import com.example.backend.services.ProcurementTeamService;
+import com.example.backend.services.procurement.ProcurementTeamService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

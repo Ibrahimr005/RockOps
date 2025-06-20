@@ -8,6 +8,7 @@ import WarehouseViewItemsCategoriesTable from "../../warehouse/WarehouseCategori
 import WarehouseViewTransactionsTable from "../../warehouse/WarehouseViewTransactions/WarehouseViewTransactionsTable";
 import WarehouseRequestOrders from "../../warehouse/WarehouseRequestOrders/WarehouseRequestOrders";
 import "./WarehouseDetails.scss";
+import warehouseImg from "../../../assets/imgs/warehouse1.jpg";
 
 // Simple Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -84,6 +85,8 @@ const WarehouseDetails = () => {
         }
         const data = await response.json();
         setWarehouseData(data);
+        console.log("warehouse:", JSON.stringify(data, null, 2));
+
       } catch (error) {
         console.error("Error fetching warehouse details:", error);
       }
@@ -240,7 +243,14 @@ const WarehouseDetails = () => {
         <div className="WarehouseDetailsContainer">
           <div className="warehouse-card">
             <div className="left-side">
-              <img src={warehouseimg1} alt="Warehouse" className="warehouse-image" />
+              <img
+                  className="warehouse-image"
+                  src={warehouseData?.photoUrl || warehouseImg}
+                  alt="Warehouse"
+                  onError={(e) => {
+                    e.target.src = warehouseImg;
+                  }}
+              />
             </div>
             <div className="center-content">
               <div className="label">WAREHOUSE NAME</div>

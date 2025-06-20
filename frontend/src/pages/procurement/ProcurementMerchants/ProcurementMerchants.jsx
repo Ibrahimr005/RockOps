@@ -4,6 +4,7 @@ import "./ProcurementMerchants.scss"
 import merchantsImage from "../../../assets/imgs/pro_icon.png";
 import DataTable from '../../../components/common/DataTable/DataTable'; // Adjust path as needed
 import Snackbar from '../../../components/common/Snackbar/Snackbar.jsx'
+import MerchantModal from './MerchantModal'; // Import the new wizard component
 
 const ProcurementMerchants = () => {
     const [merchants, setMerchants] = useState([]);
@@ -456,233 +457,19 @@ const ProcurementMerchants = () => {
                 )}
             </div>
 
-            {/* Add Merchant Modal */}
-            {showAddModal && (
-                <div className="merchant-modal-overlay">
-                    <div className="merchant-modal-content">
-                        <div className="merchant-modal-header">
-                            <h2>{modalMode === 'add' ? 'Add New Merchant' : 'Edit Merchant'}</h2>
-                            <button className="merchant-modal-close-button" onClick={handleCloseModals}>×</button>
-                        </div>
-
-                        <div className="merchant-modal-body">
-                            <div className="merchant-form-container">
-                                <div className="merchant-form-card">
-                                    <div className="merchant-form-profile-section">
-                                        <label htmlFor="merchantImageUpload" className="merchant-form-image-label">
-                                            {previewImage ? (
-                                                <img src={previewImage} alt="Merchant" className="merchant-form-image" />
-                                            ) : (
-                                                <div className="merchant-form-image-placeholder"></div>
-                                            )}
-                                            <span className="merchant-form-upload-text">Upload Logo</span>
-                                        </label>
-                                        <input
-                                            type="file"
-                                            id="merchantImageUpload"
-                                            name="photo"
-                                            accept="image/*"
-                                            onChange={handleFileChange}
-                                            style={{ display: "none" }}
-                                        />
-                                    </div>
-
-                                    <div className="merchant-form-fields-section">
-                                        <form onSubmit={modalMode === 'add' ? handleAddMerchant : handleUpdateMerchant}>
-                                            <div className="merchant-form-grid">
-                                                {/* Basic Information Section */}
-                                                <div className="merchant-form-group">
-                                                    <label className="merchant-form-label required-field">Merchant Name</label>
-                                                    <input
-                                                        type="text"
-                                                        name="name"
-                                                        value={formData.name}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                        className="merchant-form-input"
-                                                        placeholder="Enter merchant name"
-                                                    />
-                                                </div>
-
-                                                <div className="merchant-form-group">
-                                                    <label className="merchant-form-label required-field">Merchant Type *</label>
-                                                    <select
-                                                        name="merchantType"
-                                                        value={formData.merchantType}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                        className="merchant-form-select"
-                                                    >
-                                                        <option value="">Select a Type</option>
-                                                        <option value="SUPPLIER">Supplier</option>
-                                                    </select>
-                                                </div>
-
-                                                {/* Contact Information Section */}
-                                                <div className="merchant-form-group">
-                                                    <label className="merchant-form-label required-field">Contact Person Name </label>
-                                                    <input
-                                                        type="text"
-                                                        name="contactPersonName"
-                                                        value={formData.contactPersonName}
-                                                        onChange={handleInputChange}
-                                                        className="merchant-form-input"
-                                                        placeholder="Enter contact person name"
-                                                    />
-                                                </div>
-
-                                                <div className="merchant-form-group">
-                                                    <label className="merchant-form-label required-field">Contact Email</label>
-                                                    <input
-                                                        type="email"
-                                                        name="contactEmail"
-                                                        value={formData.contactEmail}
-                                                        onChange={handleInputChange}
-                                                        className="merchant-form-input"
-                                                        placeholder="Enter contact email"
-                                                    />
-                                                </div>
-
-                                                <div className="merchant-form-group">
-                                                    <label className="merchant-form-label required-field">Primary Phone</label>
-                                                    <input
-                                                        type="tel"
-                                                        name="contactPhone"
-                                                        value={formData.contactPhone}
-                                                        onChange={handleInputChange}
-                                                        className="merchant-form-input"
-                                                        placeholder="Enter primary phone"
-                                                    />
-                                                </div>
-
-                                                <div className="merchant-form-group">
-                                                    <label className="merchant-form-label">Secondary Phone</label>
-                                                    <input
-                                                        type="tel"
-                                                        name="contactSecondPhone"
-                                                        value={formData.contactSecondPhone}
-                                                        onChange={handleInputChange}
-                                                        className="merchant-form-input"
-                                                        placeholder="Enter secondary phone"
-                                                    />
-                                                </div>
-
-                                                <div className="merchant-form-group">
-                                                    <label className="merchant-form-label required-field">Address</label>
-                                                    <input
-                                                        type="text"
-                                                        name="address"
-                                                        value={formData.address}
-                                                        onChange={handleInputChange}
-                                                        className="merchant-form-input"
-                                                        placeholder="Enter address"
-                                                    />
-                                                </div>
-
-                                                <div className="merchant-form-group">
-                                                    <label className="merchant-form-label required-field">Site</label>
-                                                    <select
-                                                        name="siteId"
-                                                        value={formData.siteId}
-                                                        onChange={handleInputChange}
-                                                        className="merchant-form-select"
-                                                    >
-                                                        <option value="">Select a Site</option>
-                                                        {sites.map(site => (
-                                                            <option key={site.id} value={site.id}>{site.name}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                {/* Business Information Section */}
-                                                <div className="merchant-form-group">
-                                                    <label className="merchant-form-label required-field">Preferred Payment Method</label>
-                                                    <select
-                                                        name="preferredPaymentMethod"
-                                                        value={formData.preferredPaymentMethod}
-                                                        onChange={handleInputChange}
-                                                        className="merchant-form-select"
-                                                    >
-                                                        <option value="">Select Payment Method</option>
-                                                        <option value="BANK_TRANSFER">Bank Transfer</option>
-                                                        <option value="CREDIT_CARD">Credit Card</option>
-                                                        <option value="CASH">Cash</option>
-                                                        <option value="CHECK">Check</option>
-                                                        <option value="PAYPAL">PayPal</option>
-                                                        <option value="OTHER">Other</option>
-                                                    </select>
-                                                </div>
-
-                                                <div className="merchant-form-group">
-                                                    <label className="merchant-form-label required-field">Tax Identification Number</label>
-                                                    <input
-                                                        type="text"
-                                                        name="taxIdentificationNumber"
-                                                        value={formData.taxIdentificationNumber}
-                                                        onChange={handleInputChange}
-                                                        className="merchant-form-input"
-                                                        placeholder="Enter tax ID number"
-                                                    />
-                                                </div>
-
-                                                {/* Performance Metrics Section */}
-                                                <div className="merchant-form-group">
-                                                    <label className="merchant-form-label required-field">Reliability Score</label>
-                                                    <input
-                                                        type="number"
-                                                        name="reliabilityScore"
-                                                        value={formData.reliabilityScore}
-                                                        onChange={handleInputChange}
-                                                        className="merchant-form-input"
-                                                        placeholder="Enter score (0-5)"
-                                                        min="0"
-                                                        max="5"
-                                                        step="0.1"
-                                                    />
-                                                </div>
-
-                                                <div className="merchant-form-group">
-                                                    <label className="merchant-form-label">Average Delivery Time (days)</label>
-                                                    <input
-                                                        type="number"
-                                                        name="averageDeliveryTime"
-                                                        value={formData.averageDeliveryTime}
-                                                        onChange={handleInputChange}
-                                                        className="merchant-form-input"
-                                                        placeholder="Enter avg. delivery time"
-                                                        min="0"
-                                                        step="0.1"
-                                                    />
-                                                </div>
-
-                                                {/* Notes Section */}
-                                                <div className="merchant-form-group merchant-description-group">
-                                                    <label className="merchant-form-label">Notes</label>
-                                                    <textarea
-                                                        name="notes"
-                                                        value={formData.notes}
-                                                        onChange={handleInputChange}
-                                                        className="merchant-form-textarea"
-                                                        placeholder="Enter notes about this merchant"
-                                                        rows="3"
-                                                    ></textarea>
-                                                </div>
-                                            </div>
-
-                                            <div className="merchant-form-button-group">
-                                                <button type="submit" className="merchant-form-add-button">
-                                                    {modalMode === 'add' ? 'Add Merchant' : 'Update Merchant'}
-                                                </button>
-                                                <button type="button" className="merchant-form-cancel-button" onClick={handleCloseModals}>Cancel</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Multi-Step Merchant Modal Wizard */}
+            <MerchantModal
+                showAddModal={showAddModal}
+                modalMode={modalMode}
+                formData={formData}
+                handleInputChange={handleInputChange}
+                handleFileChange={handleFileChange}
+                previewImage={previewImage}
+                sites={sites}
+                handleCloseModals={handleCloseModals}
+                handleAddMerchant={handleAddMerchant}
+                handleUpdateMerchant={handleUpdateMerchant}
+            />
 
             {/* Snackbar */}
             <Snackbar

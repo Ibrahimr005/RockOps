@@ -39,7 +39,7 @@ const AllSites = () => {
     });
 
     const dropdownRef = useRef(null);
-    const isSiteAdmin = currentUser?.role === "SITE_ADMIN";
+    const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || "ADMIN";
 
     useEffect(() => {
         console.log("AllSites component mounted");
@@ -116,6 +116,9 @@ const AllSites = () => {
             setLoading(true);
             const response = await siteService.getAll();
             console.log("Sites fetched from service:", response.data);
+            response.data.forEach((site, index) => {
+                console.log(`Site ${index} photoUrl:`, site.photoUrl);
+            });
 
             if (response.data.length > 0) {
                 console.log("First site structure:", Object.keys(response.data[0]));

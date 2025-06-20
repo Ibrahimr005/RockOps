@@ -1,374 +1,212 @@
-.procurement-requests-table-container {
-  margin-bottom: 45px;
-  margin-top: 45px;
+/* Main container */
+
+.pro-ro-procurement-requests-container {
+  max-width: 1600px;
+  background-color: var(--main-background-color);
 }
 
-/* Header Styles */
-.procurement-requests-header-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2px;
-}
+.pro-ro-table-container {
+  background-color: var(--section-background-color);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  margin-top: 2rem;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal) ease;
 
-.procurement-requests-left-section {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-
-.procurement-requests-section-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1a2b42;
-  margin: 0;
-  margin-right: 16px;
-}
-
-.procurement-requests-count {
-  font-size: 14px;
-  color: #6b7280;
-  background-color: #f3f4f6;
-  padding: 4px 10px;
-  border-radius: 20px;
-}
-
-.procurement-requests-section-description {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%; // ✅ very important
-  padding: 0 1rem; // optional: to give some space from edges
-}
-
-
-.procurement-requests-right-section {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-bottom: 0px;
-  margin-right:2rem;
-}
-
-
-
-.procurement-requests-search-input {
-  width: 20%;
-  padding: 12px 18px 12px 42px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 14px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-}
-
-.procurement-requests-search-input:focus {
-  outline: none;
-  border-color: #4f85e5;
-  box-shadow: 0 0 0 4px rgba(79, 133, 229, 0.1);
-}
-
-.procurement-requests-search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 18px;
-  color: #9ca3af;
-}
-
-/* Table Card Styles */
-.procurement-requests-table-card {
-  background-color: white;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 4px 10px -5px rgba(0, 0, 0, 0.04);
-  border: 1px solid #e5e7eb;
-  width: 100%;
-  position: relative;
-  overflow-x: auto;
-  margin-top:2rem;
-}
-
-/* Table Structure */
-.procurement-requests-table-body {
-  display: table;
-  width: 100%;
-  min-width: 1000px;
-  table-layout: auto;
-  border-collapse: collapse;
-}
-
-/* Table Header Styles */
-.procurement-requests-header-row {
-  display: table-row;
-  background-color: #f1f3f5;
-  border-bottom: 1px solid #e5e7eb;
-  font-weight: 600;
-  color: #4b5563;
-  font-size: 10px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.procurement-requests-header-cell {
-  display: table-cell;
-  vertical-align: middle;
-  white-space: nowrap;
-  font-size: 12px;
-  text-align: left;
-}
-
-/* Table Row Styles */
-.procurement-requests-table-row {
-  display: table-row;
-  border-bottom: 1px solid #e5e7eb;
-  transition: all 0.2s ease;
-}
-
-.procurement-requests-table-row:last-child {
-  border-bottom: none;
-}
-
-.procurement-requests-table-row:hover {
-  background-color: #f9fafb;
-}
-
-.procurement-requests-table-cell {
-  display: table-cell;
-  vertical-align: middle;
-  white-space: nowrap;
-  font-size: 12px;
-  text-align: left;
-}
-
-/* Padding-based column spacing */
-.procurement-requests-header-cell.name-cell,
-.procurement-requests-table-cell.name-cell {
-  padding-left:15px;
-  padding-right:60px;
-}
-.procurement-requests-header-cell.title-cell,
-.procurement-requests-table-cell.title-cell {
-  padding-left:15px;
-  padding-right:80px;
-}
-
-.procurement-requests-header-cell.requester-cell,
-.procurement-requests-table-cell.requester-cell {
-  padding-left:15px;
-  padding-right:80px;
-}
-
-.procurement-requests-header-cell.createdby-cell,
-.procurement-requests-table-cell.createdby-cell {
-  padding-left:15px;
-  padding-right:80px;
-}
-
-.procurement-requests-header-cell.createdat-cell,
-.procurement-requests-table-cell.createdat-cell {
-  padding-left:15px;
-  padding-right:80px;
-}
-
-.procurement-requests-header-cell.status-cell,
-.procurement-requests-table-cell.status-cell {
-  padding-left:15px;
-  padding-right:60px;
-}
-
-
-.procurement-requests-header-cell.actions-cell,
-.procurement-requests-table-cell.actions-cell {
-  padding-left:15px;
-  padding-right:60px;
-}
-
-/* Action Button Styles */
-.procurement-requests-edit-button,
-.procurement-requests-delete-button {
-  background: none;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  margin-left: 3px;
-}
-
-.procurement-requests-edit-button {
-  color: #4f85e5;
-}
-
-.procurement-requests-delete-button {
-  color: #ef4444;
-}
-
-.procurement-requests-edit-button:hover,
-.procurement-requests-delete-button:hover {
-  background-color: #f3f4f6;
-}
-
-.procurement-requests-edit-button svg,
-.procurement-requests-delete-button svg {
-  width: 16px;
-  height: 16px;
-}
-
-/* Loading State Styles */
-.procurement-requests-loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 0;
-}
-
-.procurement-requests-loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(79, 133, 229, 0.2);
-  border-radius: 50%;
-  border-top-color: #4f85e5;
-  animation: procurement-requests-spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-@keyframes procurement-requests-spin {
-  to {
-    transform: rotate(360deg);
+  /* Optional: Add a subtle hover effect */
+  &:hover {
+    box-shadow: var(--shadow-md);
   }
+
+  /* Ensure the container adapts to content */
+  overflow: hidden;
 }
 
-/* Empty State Styles */
-.procurement-requests-empty-state {
+/* Intro card */
+.pro-ro-procurement-intro-card {
   display: flex;
-  flex-direction: column;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+  overflow: hidden;
+  position: relative;
+  border-left: 4px solid var(--color-primary);
+}
+
+.pro-ro-procurement-intro-left {
+  width: 150px;
+  padding: 24px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #6b7280;
-  z-index: 10;
+}
+
+.pro-ro-procurement-intro-image {
   width: 100%;
   height: auto;
+  max-height: 100px;
+  object-fit: contain;
 }
 
-.procurement-requests-empty-state .procurement-requests-empty-icon {
-  width: 60px;
-  height: 60px;
-  background-color: #f3f4f6;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.procurement-requests-empty-state svg {
-  width: 30px;
-  height: 30px;
-  color: #9ca3af;
-}
-
-.procurement-requests-empty-state h3 {
-  font-size: 18px;
-  margin: 0 0 8px 0;
-  color: #4b5563;
-}
-
-.procurement-requests-empty-state p {
-  font-size: 14px;
-  margin: 0;
-}
-
-/* Error State Styles */
-.procurement-requests-error-container {
+.pro-ro-procurement-intro-content {
+  flex: 1;
+  padding: 24px 32px;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  padding: 80px 0;
   text-align: center;
 }
 
-.procurement-requests-error-container p {
-  color: #ef4444;
+.pro-ro-procurement-intro-header {
+  margin-bottom: 16px;
+}
+
+.pro-ro-procurement-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
   margin-bottom: 8px;
+  letter-spacing: 0.05em;
 }
 
-/* Responsive Styles */
-@media (max-width: 768px) {
-  .procurement-requests-header-container {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
+.pro-ro-procurement-intro-title {
+  font-size: 32px;
+  font-weight: var(--bold-font-weight);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.pro-ro-procurement-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-top: 16px;
+}
+
+.pro-ro-procurement-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pro-ro-procurement-stat-value {
+  font-size: 24px;
+  font-weight: var(--bold-font-weight);
+  color: var(--color-primary);
+}
+
+.pro-ro-procurement-stat-label {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.pro-ro-procurement-intro-right {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 300px;
+}
+
+.pro-ro-procurement-info-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  align-self: flex-end;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
+
+  svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--color-primary);
   }
 
-  .procurement-requests-right-section {
-    width: 100%;
+  &:hover {
+    background-color: var(--color-edit-bg);
+
+    svg {
+      stroke: var(--color-primary-hover);
+    }
+  }
+}
+
+/* Tab styles */
+.pro-ro-procurement-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color-light);
+  margin-bottom: 16px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  padding: 0;
+}
+
+.pro-ro-procurement-tab {
+  padding: 16px 24px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    color: var(--color-primary) !important;
   }
 
-
+  &.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+  }
 }
-.procurement-requests-search-and-add {
+
+/* Add Button */
+.pro-ro-procurement-requests-add-button-container {
   display: flex;
-  flex-direction: column;  // Align elements vertically
-  gap: 10px;               // Space between search input and button
-  align-items: flex-end;   // Align button to the right
+  justify-content: flex-end;
+  margin-top: 24px;
+  margin-bottom: 3rem;
 }
 
-
-
-
-.procurement-requests-add-button-container {
-  display: flex;
-  justify-content: flex-end; // Or center, if you want it in the middle
-  margin-top: 24px; // Adjust spacing as needed
-  margin-bottom:3rem;
-}
-
-.procurement-requests-add-button {
-  position: absolute; // Changed from absolute
+.pro-ro-procurement-requests-add-button {
+  position: absolute;
   width: 60px;
   height: 60px;
   border-radius: 30px;
-  background-color: #4f85e5;
-  color: white;
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   cursor: pointer;
-  box-shadow: 0 10px 25px rgba(79, 133, 229, 0.4);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 10px 25px rgba(72, 128, 255, 0.4);
+  transition: all var(--transition-normal) cubic-bezier(0.25, 0.8, 0.25, 1);
   z-index: 100;
 }
 
-.procurement-requests-add-button:hover {
+.pro-ro-procurement-requests-add-button:hover {
   transform: translateY(-5px);
-  box-shadow: 0 15px 30px rgba(79, 133, 229, 0.5);
+  box-shadow: 0 15px 30px rgba(72, 128, 255, 0.5);
+  background-color: var(--color-primary-hover);
 }
 
-.plus-icon {
+.pro-ro-plus-icon {
   width: 24px;
   height: 24px;
 }
 
-/* Add these styles to your existing ProcurementMerchants.scss file */
-
-/* Merchant Modal Styles */
-/* Add these styles to your existing ProcurementMerchants.scss file */
-
-/* Merchant Modal Styles */
-.ro-modal-backdrop {
+/* Modal Styles */
+.pro-ro-modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
@@ -380,10 +218,10 @@
   justify-content: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
-  animation: ro-fadeIn 0.2s ease;
+  animation: pro-ro-fadeIn 0.2s ease;
 }
 
-@keyframes ro-fadeIn {
+@keyframes pro-ro-fadeIn {
   from {
     opacity: 0;
   }
@@ -392,33 +230,34 @@
   }
 }
 
-.ro-modal {
+.pro-ro-modal {
   width: 100%;
-  max-width: 640px;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
+  max-width: 700px;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
+  max-height: 90vh;
+  border: 1px solid var(--border-color-light);
 }
 
-.ro-modal-header {
+.pro-ro-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color-light);
+
+  h2 {
+    font-size: 18px;
+    font-weight: var(--bold-font-weight);
+    color: var(--color-text-primary);
+    margin: 0;
+  }
 }
 
-.ro-modal-header h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a2b42;
-  margin: 0;
-}
-
-.ro-close-modal {
+.pro-ro-close-modal {
   background: none;
   border: none;
   width: 24px;
@@ -428,306 +267,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
-  transition: all 0.2s ease;
-}
-
-.ro-close-modal svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* Form Styles */
-.ro-form-transaction {
-  padding: 32px;
-  margin-right: 10px;
-}
-
-/* Form row spacing */
-.ro-form-row {
-  display: flex;
-  gap: 24px;
-  margin-bottom: 32px;
-  margin-top: 30px;
-}
-
-
-/* Each form group takes 50% of the space */
-.ro-form-group {
-  width: 50%;
-}
-
-/* Full width for single-field rows */
-.ro-form-group.ro-full-width {
-  width: 100%;
-  margin-top: 20px;
-}
-
-/* Labels with consistent styling */
-.ro-form-group label {
-  display: block;
-  font-size: 16px;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 8px;
-}
-
-/* Consistent input styling */
-.ro-form-group input,
-.ro-form-group select,
-.ro-form-group textarea {
-  width: 100%;
-  height: 40px;
-  padding: 0 16px;
-  font-size: 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  color: #111827;
-  background-color: #fff;
-  box-sizing: border-box;
-  appearance: none;
-}
-
-.ro-form-group textarea {
-  height: auto;
-  padding: 12px 16px;
-  min-height: 100px;
-}
-
-/* Custom styling for select dropdowns */
-.ro-form-group select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 16px center;
-  padding-right: 40px;
-}
-
-/* Items section styling */
-.ro-items-section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.ro-add-item-button {
-  background: none;
-  border: none;
-  color: #4f85e5;
-  font-weight: 500;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.ro-transaction-item-container {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.ro-transaction-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.ro-transaction-item-header span {
-  font-weight: 600;
-  font-size: 16px;
-  color: #374151;
-}
-
-.ro-remove-item-button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  color: #ef4444;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.ro-remove-item-button svg {
-  width: 16px;
-  height: 16px;
-}
-
-.ro-empty-items {
-  background-color: #f9fafb;
-  border-radius: 8px;
-  padding: 20px;
-  text-align: center;
-  color: #6b7280;
-  margin-bottom: 20px;
-}
-
-/* Footer with submit button */
-.ro-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 4rem;
-}
-
-.ro-submit-button {
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background-color: #4f85e5;
-  color: white;
-  border: none;
-}
-
-.ro-submit-button:hover {
-  background-color: #3b72d9;
-}
-
-.required-field::after {
-  content: '*';
-  color: #e53e3e;
-  margin-left: 4px;
-}
-
-
-.notifications{
-  position: fixed;
-  top: 20px; /* Position at the top */
-  left: 40%;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background-color: white;
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  z-index: 1100;
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  &.success-notification {
-    border-left: 4px solid #4ade80;
-
-    svg {
-      color: #16a34a;
-    }
-  }
-
-  &.error-notification {
-    border-left: 4px solid #f87171;
-
-    svg {
-      color: #dc2626;
-    }
-  }
-
-  span {
-    font-size: 14px;
-    color: #1e293b;
-    font-weight: 500;
-  }
-}
-
-
-
-/* Responsive Styles */
-@media (max-width: 768px) {
-  .form-row {
-    flex-direction: column;
-    gap: 20px;
-  }
-}
-
-.procurement-requests-add-button {
-  position: absolute; // Changed from absolute
-  width: 60px;
-  height: 60px;
-  border-radius: 30px;
-  background-color: #4f85e5;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 10px 25px rgba(79, 133, 229, 0.4);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  z-index: 100;
-}
-
-.procurement-requests-add-button:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 30px rgba(79, 133, 229, 0.5);
-}
-
-.plus-icon {
-  width: 24px;
-  height: 24px;
-}
-
-// Request Modal Styles
-// Modal backdrop
-.ro-modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(2px);
-}
-
-// Modal container
-.ro-modal {
-  width: 100%;
-  max-width: 700px;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-}
-
-// Modal header
-.ro-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid #e5e7eb;
-
-  h2 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: #1f2937;
-  }
-}
-
-.ro-close-modal {
-  background: transparent;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #6b7280;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast) ease;
+  border-radius: var(--radius-sm);
 
   svg {
     width: 20px;
@@ -735,62 +277,61 @@
   }
 
   &:hover {
-    background-color: #f3f4f6;
+    background-color: var(--color-surface-hover);
   }
 }
 
-// Modal content
-.ro-modal-content {
+.pro-ro-modal-content {
   padding: 24px;
   overflow-y: auto;
   max-height: calc(90vh - 64px);
 }
 
-// Form styles
-.ro-form {
+/* Form Styles */
+.pro-ro-form {
   display: flex;
   flex-direction: column;
   gap: 40px;
 }
 
-.ro-form-section {
+.pro-ro-form-section {
   display: flex;
   flex-direction: column;
   gap: 32px;
 }
 
-.ro-section-header {
+.pro-ro-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color-light);
   padding-bottom: 12px;
 
   h3 {
     margin: 0;
     font-size: 16px;
-    font-weight: 600;
-    color: #374151;
+    font-weight: var(--bold-font-weight);
+    color: var(--color-text-medium);
   }
 }
 
-.ro-add-item-button {
+.pro-ro-add-item-button {
   display: flex;
   align-items: center;
   gap: 8px;
   background: none;
   border: none;
-  color: #3b82f6;
+  color: var(--color-primary);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   padding: 6px 12px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
 
   &:hover {
-    background-color: #eff6ff;
+    background-color: var(--color-edit-bg);
   }
 
   svg {
@@ -799,7 +340,7 @@
   }
 }
 
-.ro-form-field {
+.pro-ro-form-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -808,19 +349,21 @@
   label {
     font-size: 14px;
     font-weight: 500;
-    color: #374151;
+    color: var(--color-text-medium);
   }
 
   input, select, textarea {
     padding: 10px 16px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
+    border: 1px solid var(--border-color-medium);
+    border-radius: var(--radius-sm);
     font-size: 14px;
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
 
     &:focus {
       outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
     }
   }
 
@@ -838,78 +381,78 @@
   }
 }
 
-// For two-column fields
-.ro-form-section:first-of-type {
+/* Two-column fields */
+.pro-ro-form-section:first-of-type {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 32px;
 }
 
-.ro-form-field.ro-full-width {
+.pro-ro-form-field.pro-ro-full-width {
   grid-column: span 2;
 }
 
-// Selected requester display
-.ro-selected-requester {
+/* Selected requester display */
+.pro-ro-selected-requester {
   display: flex;
   align-items: center;
-  background-color: #f3f4f6;
+  background-color: var(--color-surface-secondary);
   padding: 12px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
-.ro-requester-label {
+.pro-ro-requester-label {
   font-weight: 500;
-  color: #4b5563;
+  color: var(--color-text-secondary);
   margin-right: 8px;
 }
 
-.ro-requester-value {
-  font-weight: 600;
-  color: #1f2937;
+.pro-ro-requester-value {
+  font-weight: var(--bold-font-weight);
+  color: var(--color-text-primary);
 }
 
-// Item cards
-.ro-item-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+/* Item cards */
+.pro-ro-item-card {
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-sm);
   padding: 16px;
   margin-bottom: 16px;
-  background-color: #f9fafb;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add this line for the shadow */
+  background-color: var(--color-surface-secondary);
+  box-shadow: var(--shadow-sm);
 }
 
-.ro-item-header {
+.pro-ro-item-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color-light);
 
   span {
-    font-weight: 600;
+    font-weight: var(--bold-font-weight);
     font-size: 15px;
-    color: #374151;
+    color: var(--color-text-medium);
   }
 }
 
-.ro-remove-button {
+.pro-ro-remove-button {
   display: flex;
   align-items: center;
   gap: 6px;
   background: none;
   border: none;
-  color: #ef4444;
+  color: var(--color-delete);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   padding: 6px 12px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
 
   &:hover {
-    background-color: #fee2e2;
+    background-color: var(--color-delete-bg);
   }
 
   svg {
@@ -918,379 +461,106 @@
   }
 }
 
-.ro-item-fields {
+.pro-ro-item-fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 25px;
   margin-bottom: 16px;
 }
 
-// Footer with buttons
-.ro-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 12px;
-  padding-top: 20px;
-  border-top: 1px solid #e5e7eb;
-}
-
-.ro-cancel-button,
-.ro-submit-button {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.ro-cancel-button {
-  background-color: white;
-  color: #4b5563;
-  border: 1px solid #d1d5db;
-
-  &:hover {
-    background-color: #f3f4f6;
-  }
-}
-
-.ro-submit-button {
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-
-  &:hover {
-    background-color: #2563eb;
-  }
-
-  &:disabled {
-    background-color: #9ca3af;
-    cursor: not-allowed;
-
-    &:hover {
-      background-color: #9ca3af;
-    }
-  }
-}
-.notification {
-  position: fixed;
-  top: 20px; /* Position at the top */
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 12px 20px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  z-index: 1000;
-  animation: slideDownFade 0.3s ease, slideUpFade 0.3s ease 2.7s;
-}
-
-@keyframes slideDownFade {
-  from {
-    transform: translate(-50%, -20px);
-    opacity: 0;
-  }
-  to {
-    transform: translate(-50%, 0);
-    opacity: 1;
-  }
-}
-
-@keyframes slideUpFade {
-  from {
-    transform: translate(-50%, 0);
-    opacity: 1;
-  }
-  to {
-    transform: translate(-50%, -20px);
-    opacity: 0;
-  }
-}
-
-
-.success-notification {
-  background-color: #f0fdf4;
-  border: 1px solid #dcfce7;
-  color: #166534;
-}
-
-.success-notification svg {
-  color: #16a34a;
-  width: 20px;
-  height: 20px;
-}
-
-.ro-quantity-unit-container {
+.pro-ro-quantity-unit-container {
   display: flex;
   align-items: center;
   width: 100%;
   position: relative;
 }
 
-.ro-quantity-input {
+.pro-ro-quantity-input {
   width: 100%;
-  padding-right: 60px; // Make room for the unit label
+  padding-right: 60px;
 }
 
-.ro-unit-label {
+.pro-ro-unit-label {
   position: absolute;
   right: 12px;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   font-size: 14px;
-  pointer-events: none; // Prevent the label from interfering with input
-  background-color: #f9fafb;
+  pointer-events: none;
+  background-color: var(--color-surface-secondary);
   padding: 0 5px;
-  border-left: 1px solid #d1d5db;
+  border-left: 1px solid var(--border-color-medium);
   height: 22px;
   display: flex;
   align-items: center;
 }
 
-.procurement-requests-approve-button {
+/* Footer with buttons */
+.pro-ro-modal-footer {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background-color: rgba(16, 185, 129, 0.1);
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  svg {
-    width: 18px;
-    height: 18px;
-    stroke: #10b981; // Green color
-  }
-
-  &:hover {
-    background-color: rgba(16, 185, 129, 0.2);
-  }
-}
-/* Add these styles to your ProcurementRequestOrder.scss file */
-
-/* Tabs */
-/* Add these styles to your ProcurementRequestOrder.scss file */
-/* Updated styles for centered title intro section */
-
-/* Main container */
-.procurement-requests-container {
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 24px;
-  background-color: #f9fafb;
-}
-
-/* Page title */
-.procurement-page-title {
-  font-size: 28px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 24px;
-}
-
-/* Intro card - matching the design in the screenshot */
-.procurement-intro-card {
-  display: flex;
-  background-color: var(--color-surface);    // ✅ Theme-aware background
-  border-radius: 8px;
-  box-shadow: var(--shadow-sm);              // ✅ Theme-aware shadow
-  margin-bottom: 24px;
-  overflow: hidden;
-  position: relative;
-  border-left: 4px solid var(--color-primary); // ✅ Theme-aware border
-}
-
-.procurement-intro-left {
-  width: 150px;
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.procurement-intro-image {
-  width: 100%;
-  height: auto;
-  max-height: 100px;
-  object-fit: contain;
-}
-
-.procurement-intro-content {
-  flex: 1;
-  padding: 24px 32px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center; /* Center the text */
-}
-
-.procurement-intro-header {
-  margin-bottom: 16px;
-}
-
-.procurement-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: #6b7280;
-  margin-bottom: 8px;
-  letter-spacing: 0.05em;
-}
-
-.procurement-intro-title {
-  font-size: 32px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 0;
-}
-
-.procurement-stats {
-  display: flex;
-  justify-content: center; /* Center the stats */
-  gap: 32px;
-  margin-top: 16px;
-}
-
-.procurement-stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* Center stat items */
-}
-
-.procurement-stat-value {
-  font-size: 24px;
-  font-weight: 600;
-  color: #3b82f6;
-}
-
-.procurement-stat-label {
-  font-size: 14px;
-  color: #6b7280;
-}
-
-.procurement-intro-right {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  min-width: 300px; /* Give enough space for the search bar */
-}
-
-
-
-/* Refined tab styles to match design */
-.procurement-tabs {
-  display: flex;
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 16px;
-  background-color: white;
-  border-radius: 8px 8px 0 0;
-  padding: 0;
-}
-
-.procurement-tab {
-  padding: 16px 24px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #6b7280;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    color: #3b82f6;
-  }
-
-  &.active {
-    color: #3b82f6;
-    border-bottom-color: #3b82f6;
-  }
-}
-
-.procurement-requests-section-description {
-  color: #6b7280;
-  font-size: 14px;
-  margin-bottom: 16px;
-}
-
-/* Add these styles to your SCSS file for the search bar */
-
-.procurement-intro-right {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  min-width: 300px; /* Give enough space for the search bar */
-}
-
-.procurement-search-container {
-  position: relative;
-  width: 25%;
-  margin-bottom: 12px;
   justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color-light);
 }
 
-.procurement-search-input {
-  width: 100%;
-  padding: 8px 36px 8px 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+.pro-ro-cancel-button,
+.pro-ro-submit-button {
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
   font-size: 14px;
-  color: #374151;
-  background-color: #f9fafb;
-  transition: all 0.2s;
-
-  &:focus {
-    outline: none;
-    border-color: #3b82f6;
-    background-color: white;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-  }
-
-  &::placeholder {
-    color: #9ca3af;
-  }
-}
-
-.procurement-search-icon {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  color: #9ca3af;
-  pointer-events: none;
-}
-
-.procurement-info-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background-color: transparent;
-  border: none;
+  font-weight: 500;
   cursor: pointer;
-  align-self: flex-end;
+  transition: background-color var(--transition-fast);
+}
 
-  svg {
-    width: 20px;
-    height: 20px;
-    stroke: #3b82f6;
+.pro-ro-cancel-button {
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--border-color-medium);
+
+  &:hover {
+    background-color: var(--color-surface-hover);
+  }
+}
+
+.pro-ro-submit-button {
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+  border: none;
+
+  &:hover {
+    background-color: var(--color-primary-hover);
   }
 
-  &:hover svg {
-    stroke: #2563eb;
+  &:disabled {
+    background-color: var(--color-text-muted);
+    cursor: not-allowed;
+
+    &:hover {
+      background-color: var(--color-text-muted);
+    }
+  }
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  .pro-ro-procurement-intro-card {
+    flex-direction: column;
+  }
+
+  .pro-ro-procurement-intro-left {
+    width: 100%;
+  }
+
+  .pro-ro-procurement-intro-right {
+    width: 100%;
+    min-width: unset;
+    align-items: stretch;
+  }
+
+  .pro-ro-procurement-stats {
+    flex-direction: column;
+    gap: 16px;
   }
 }

@@ -95,7 +95,7 @@ const ValidatedOffers = ({
         }
     };
     return (
-        <div className="procurement-main-content">
+        <div className="procurement-offers-main-content">
             {success && (
                 <div className="procurement-notification procurement-notification-success">
                     <FiCheckCircle /> {success}
