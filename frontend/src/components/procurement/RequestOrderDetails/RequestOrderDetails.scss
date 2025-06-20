@@ -2,7 +2,7 @@
 // RequestOrderDetails.scss - Reusable Component Styles
 // ===================================
 
-.procurement-request-summary-card {
+.r0-details-procurement-request-summary-card {
   background: var(--section-background-color);
 
   border-radius: var(--radius-md);
@@ -20,7 +20,7 @@
   }
 }
 
-.procurement-request-details-grid {
+.r0-details-procurement-request-details-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
@@ -31,7 +31,7 @@
   }
 }
 
-.request-detail-item {
+.r0-details-request-detail-item {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -66,13 +66,13 @@
       transform: scaleX(1);
     }
 
-    .request-detail-icon {
+    .r0-details-request-detail-icon {
       transform: scale(1.05);
       box-shadow: 0 4px 8px rgba(72, 128, 255, 0.3);
     }
   }
 
-  .request-detail-icon {
+  .r0-details-request-detail-icon {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -91,11 +91,11 @@
     }
   }
 
-  .request-detail-content {
+  .r0-details-request-detail-content {
     flex: 1;
     min-width: 0;
 
-    .request-detail-label {
+    .r0-details-request-detail-label {
       display: block;
       font-size: 12px;
       font-weight: var(--bold-font-weight);
@@ -105,21 +105,21 @@
       margin-bottom: 6px;
     }
 
-    .request-detail-value {
+    .r0-details-request-detail-value {
       display: block;
       font-size: 14px;
       font-weight: 500;
       color: var(--color-text-dark);
       line-height: 1.4;
 
-      &.description-text {
+      &.r0-details-description-text {
         font-weight: 400;
         line-height: 1.5;
         color: var(--color-text-medium);
         margin-top: 2px;
       }
 
-      &.request-priority {
+      &.r0-details-request-priority {
         display: inline-block;
         padding: 6px 12px;
         border-radius: var(--radius-sm);
@@ -159,20 +159,20 @@
 
 // Responsive design
 @media (max-width: 768px) {
-  .procurement-request-summary-card {
+  .r0-details-procurement-request-summary-card {
     padding: 1rem;
     margin-bottom: 1rem;
   }
 
-  .procurement-request-details-grid {
+  .r0-details-procurement-request-details-grid {
     gap: 0.5rem;
   }
 
-  .request-detail-item {
+  .r0-details-request-detail-item {
     gap: 0.5rem;
     padding: 12px;
 
-    .request-detail-icon {
+    .r0-details-request-detail-icon {
       width: 36px;
       height: 36px;
 
@@ -186,7 +186,7 @@
 
 // Dark mode adjustments
 [data-theme="dark"] {
-  .request-detail-item {
+  .r0-details-request-detail-item {
     &:hover {
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }

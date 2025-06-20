@@ -78,160 +78,8 @@
 // 2. REQUEST ORDER DETAILS (Unstarted-specific)
 // ===================================
 
-.procurement-request-summary-card {
-  background: var(--section-background-color);
-  border: 1px solid var(--border-color-light);
-  border-radius: var(--radius-md);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-sm);
 
-  h4 {
-    font-size: 1.125rem;
-    font-weight: var(--bold-font-weight);
-    color: var(--head-title-color);
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border-color-light);
-  }
-}
 
-.procurement-request-details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-}
-
-.request-detail-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  background: linear-gradient(135deg, var(--color-surface-secondary) 0%, var(--color-surface-tertiary) 100%);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color-light);
-  transition: all var(--transition-normal) ease;
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform var(--transition-normal) ease;
-  }
-
-  &:hover {
-    background: linear-gradient(135deg, var(--color-surface-tertiary) 0%, var(--color-surface-hover) 100%);
-    border-color: var(--border-color-medium);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-
-    &::before {
-      transform: scaleX(1);
-    }
-
-    .request-detail-icon {
-      transform: scale(1.05);
-      box-shadow: 0 4px 8px rgba(72, 128, 255, 0.3);
-    }
-  }
-
-  .request-detail-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-    border-radius: 10px;
-    color: var(--color-text-inverse);
-    flex-shrink: 0;
-    transition: all var(--transition-normal) ease;
-    box-shadow: 0 2px 4px rgba(72, 128, 255, 0.2);
-
-    svg {
-      width: 18px;
-      height: 18px;
-    }
-  }
-
-  .request-detail-content {
-    flex: 1;
-    min-width: 0;
-
-    .request-detail-label {
-      display: block;
-      font-size: 12px;
-      font-weight: var(--bold-font-weight);
-      color: var(--color-text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
-    }
-
-    .request-detail-value {
-      display: block;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--color-text-dark);
-      line-height: 1.4;
-
-      &.description-text {
-        font-weight: 400;
-        line-height: 1.5;
-        color: var(--color-text-medium);
-        margin-top: 2px;
-      }
-
-      &.request-priority {
-        display: inline-block;
-        padding: 6px 12px;
-        border-radius: var(--radius-sm);
-        font-size: 12px;
-        font-weight: var(--bold-font-weight);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        box-shadow: var(--shadow-sm);
-
-        &.high {
-          background: linear-gradient(135deg, rgba(248, 113, 113, 0.2) 0%, rgba(248, 113, 113, 0.1) 100%);
-          color: var(--color-danger-light);
-          border: 1px solid rgba(248, 113, 113, 0.3);
-        }
-
-        &.medium {
-          background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(251, 191, 36, 0.1) 100%);
-          color: var(--color-warning-light);
-          border: 1px solid rgba(251, 191, 36, 0.3);
-        }
-
-        &.low {
-          background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
-          color: var(--color-success-light);
-          border: 1px solid rgba(34, 197, 94, 0.3);
-        }
-
-        &.urgent {
-          background: linear-gradient(135deg, rgba(220, 38, 38, 0.9) 0%, rgba(185, 28, 28, 0.9) 100%);
-          color: var(--color-text-inverse);
-          border: 1px solid var(--color-danger-hover);
-        }
-      }
-    }
-  }
-}
 
 // ===================================
 // 3. ITEMS PREVIEW SECTION (Unstarted-specific)
@@ -463,24 +311,9 @@
     margin-bottom: 1rem;
   }
 
-  .procurement-request-details-grid {
-    gap: 0.5rem;
-  }
 
-  .request-detail-item {
-    gap: 0.5rem;
-    padding: 12px;
 
-    .request-detail-icon {
-      width: 36px;
-      height: 36px;
 
-      svg {
-        width: 16px;
-        height: 16px;
-      }
-    }
-  }
 
   .procurement-unstarted-offers-item-preview-card {
     padding: 1.25rem;

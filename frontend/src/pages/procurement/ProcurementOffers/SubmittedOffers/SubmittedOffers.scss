@@ -576,31 +576,7 @@
 }
 
 // Clean request summary card - no container styling
-.procurement-request-summary-card {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 2rem;
-  margin-bottom: 0;
-  box-shadow: none;
-  border-top: 1px solid #e8eaed;
 
-  h4 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #111827;
-    margin: 0 0 1.5rem 0;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e8eaed;
-  }
-
-  .procurement-section-description {
-    color: #6b7280;
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-    line-height: 1.5;
-  }
-}
 
 // Responsive adjustments
 @media (max-width: 1024px) {

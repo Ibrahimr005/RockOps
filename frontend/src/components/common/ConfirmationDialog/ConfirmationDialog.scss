@@ -10,12 +10,12 @@
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.6);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 9999;
   backdrop-filter: blur(4px);
   animation: confirmationFadeIn 0.2s ease-out;
-  padding: 1rem;
+  padding: 2rem 1rem 1rem;
 
   @keyframes confirmationFadeIn {
     from {
@@ -30,21 +30,21 @@
 .confirmation-dialog {
   background: var(--section-background-color);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border-color-light);
   max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
-  animation: confirmationSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: confirmationSlideDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   position: relative;
 
-  @keyframes confirmationSlideIn {
+  @keyframes confirmationSlideDown {
     from {
-      transform: scale(0.8) translateY(20px);
+      transform: translateY(-100px);
       opacity: 0;
     }
     to {
-      transform: scale(1) translateY(0);
+      transform: translateY(0);
       opacity: 1;
     }
   }

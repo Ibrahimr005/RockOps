@@ -1,31 +1,36 @@
-// inprogress-offers.scss - Enhanced styles matching Unstarted design
+// inprogress-offers.scss - Enhanced styles matching Unstarted design (Dark Mode Compatible)
 
 // In Progress specific list items
-.procurement-items-list {
+.procurement-items-list-inprogress {
   padding: 1rem;
   max-height: calc(100vh - 250px);
   overflow-y: auto;
 
-  .procurement-item-card {
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
+  .procurement-item-card-inprogress {
+    border: 1px solid var(--border-color-light);
+    border-left: 3px solid var(--color-primary);
+    background: linear-gradient(to right, rgba(72, 128, 255, 0.05), var(--section-background-color));
+    border-radius: var(--radius-md);
     padding: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--transition-normal) ease;
+    position: relative;
 
     &:hover {
-      border-color: #d1d5db;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      border-color: var(--color-primary-hover);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+      background: linear-gradient(to right, rgba(72, 128, 255, 0.08), var(--color-surface-hover));
     }
 
     &.selected {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+      border-color: var(--color-primary-hover);
+      box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+      background-color: var(--color-surface-secondary);
     }
 
-    .procurement-item-header {
+    .procurement-item-header-inprogress {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
@@ -33,438 +38,228 @@
 
       h4 {
         margin: 0;
-        font-size: 0.9375rem;
-        font-weight: 600;
-        color: #1f2937;
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-dark);
+        margin-right: 1rem;
       }
     }
 
-    .procurement-item-footer {
+    .procurement-item-footer-inprogress {
       display: flex;
       justify-content: space-between;
-      font-size: 0.75rem;
-      color: #6b7280;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
 
       svg {
-        margin-right: 0.25rem;
-        vertical-align: -2px;
+        margin-right: 0.3rem;
+        vertical-align: -1px;
       }
 
       .completion-complete {
-        color: #10b981;
+        color: var(--color-success);
+        font-weight: var(--bold-font-weight);
+
+        svg {
+          color: var(--color-success);
+        }
       }
 
       .completion-incomplete {
-        color: #f59e0b;
+        color: var(--color-warning);
+        font-weight: var(--bold-font-weight);
+
+        svg {
+          color: var(--color-warning);
+        }
       }
     }
 
-    .procurement-item-date {
+    .procurement-item-date-inprogress {
       margin-bottom: 0.5rem;
     }
   }
 }
 
+// Request Items Section - Better Separated Design
+.procurement-request-items-section-inprogress {
+  padding: 0 1.5rem;
 
+  .procurement-request-item-card-inprogress {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 2.5rem 0;
+    margin-bottom: 0;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    transform: translateY(0);
 
-// Request Order Information Card Styling - matching Unstarted design
-.procurement-request-order-info-card {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 2rem;
-  margin-bottom: 0;
-  box-shadow: none;
-
-  h4 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #111827;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e8eaed;
-  }
-}
-
-// Enhanced Request Order Details Grid - matching Unstarted (handle both class names)
-.procurement-request-order-details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-}
-
-.request-order-detail-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  border-radius: 12px;
-  border: 1px solid #e8eaed;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease;
-  }
-
-  &:hover {
-    background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
-    border-color: #d2d7db;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-
-    &::before {
-      transform: scaleX(1);
+    &:first-child {
+      border-top: 2px solid var(--border-color-medium);
+      padding-top: 2.5rem;
+      transition: border-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 
-    .request-order-detail-icon {
-      transform: scale(1.05);
-      box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
-    }
-  }
-
-  //&.description-item {
-  //  grid-column: 1 / -1;
-  //  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
-  //  border-color: #bbf7d0;
-  //
-  //  &::before {
-  //    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
-  //  }
-  //
-  //  &:hover {
-  //    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  //    border-color: #86efac;
-  //
-  //    .request-order-detail-icon,
-  //    .request-detail-icon {
-  //      box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
-  //    }
-  //  }
-  //
-  //  .request-order-detail-icon,
-  //  .request-detail-icon {
-  //    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  //  }
-  //}
-}
-
-.request-order-detail-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border-radius: 10px;
-  color: white;
-  flex-shrink: 0;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-}
-
-.request-order-detail-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.request-order-detail-label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 6px;
-}
-
-.request-order-detail-value {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: #1f2937;
-  line-height: 1.4;
-
-  &.description-text {
-    font-weight: 400;
-    line-height: 1.5;
-    color: #374151;
-    margin-top: 2px;
-  }
-
-  &.request-priority {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
-    &.high {
-      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-      color: #dc2626;
-      border: 1px solid #fecaca;
+    &:not(:last-child) {
+      border-bottom: 2px solid var(--border-color-medium);
+      transition: border-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 
-    &.medium {
-      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-      color: #d97706;
-      border: 1px solid #fed7aa;
+    &:last-child {
+      border-bottom: 2px solid var(--border-color-medium);
+      padding-bottom: 2.5rem;
+      transition: border-color 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 
-    &.low {
-      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-      color: #16a34a;
-      border: 1px solid #bbf7d0;
+    &:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, var(--border-color-light) 20%, var(--border-color-light) 80%, transparent 100%);
+      transition: opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
-
-    &.urgent {
-      background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
-      color: #ffffff;
-      border: 1px solid #991b1b;
-    }
-  }
-}
-
-// Request Summary Card - no container styling to match Unstarted
-.procurement-request-summary-card {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 2rem;
-  margin-bottom: 0;
-  box-shadow: none;
-  border-top: 1px solid #e8eaed;
-
-  h4 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #111827;
-    margin: 0 0 1.5rem 0;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e8eaed;
-  }
-
-  .procurement-section-description {
-    color: #64748b;
-    font-size: 0.9rem;
-    margin-bottom: 1.25rem;
-    line-height: 1.5;
-  }
-}
-
-.procurement-progress-overview {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin: 1.25rem 0;
-  border: 1px solid #e2e8f0;
-
-  .procurement-progress-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 1.5rem;
-    align-items: center;
-
-    .procurement-progress-stat {
-      text-align: center;
-      padding: 0.75rem;
-      background: rgba(255, 255, 255, 0.8);
-      border-radius: 8px;
-      backdrop-filter: blur(10px);
-
-      .procurement-progress-stat-value {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #0f172a;
-        margin-bottom: 0.5rem;
-        line-height: 1.2;
-
-        &.unfulfilled {
-          color: #ef4444;
-        }
-
-        &.fulfilled {
-          color: #10b981;
-        }
-      }
-
-      .procurement-progress-stat-label {
-        font-size: 0.75rem;
-        font-weight: 500;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      .currency-totals {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        align-items: center;
-
-        .currency-total-item {
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: #3b82f6;
-        }
-
-        .currency-separator {
-          display: none;
-        }
-      }
-    }
-  }
-}
-
-// Request Items Section - standardized design
-.procurement-request-items-section {
-  .procurement-request-item-card {
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    transition: all 0.2s ease;
 
     &:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      transform: translateY(-1px);
+      background: linear-gradient(135deg, var(--color-surface-hover) 0%, var(--color-surface-secondary) 100%);
+      transform: translateY(-2px);
+      margin: 0 -1.5rem;
+      padding: 2.5rem 1.5rem;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      border-top: 2px solid var(--color-primary);
+      border-bottom: 2px solid var(--color-primary);
+      position: relative;
+      z-index: 10;
+      transition: all 0.15s ease-out;
+
+      &:first-child {
+        padding-top: 2.5rem;
+      }
+
+      &::after {
+        opacity: 0;
+      }
     }
 
-    .procurement-request-item-header {
+    .procurement-request-item-header-inprogress {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.25rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #f1f5f9;
+      margin-bottom: 1.5rem;
 
-      .item-icon-name {
+      .item-icon-name-inprogress {
         display: flex;
         align-items: center;
 
         h5 {
-          margin: 0 0 0 12px;
-          font-size: 1.125rem;
-          font-weight: 600;
-          color: #0f172a;
+          margin: 0 0 0 1rem;
+          font-size: 1.25rem;
+          font-weight: var(--bold-font-weight);
+          color: var(--color-text-dark);
         }
       }
     }
 
-    .item-icon-container {
+    .item-icon-container-inprogress {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 44px;
-      height: 44px;
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      border-radius: 10px;
-      color: white;
-      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+      width: 48px;
+      height: 48px;
+      background: var(--color-primary);
+      border-radius: var(--radius-sm);
+      color: var(--color-text-inverse);
     }
 
-    .procurement-request-item-details {
-      .procurement-request-item-info {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin-bottom: 1.25rem;
+    .procurement-request-item-details-inprogress {
+      .procurement-request-item-info-inprogress {
+        margin-bottom: 1.5rem;
 
-        .item-detail {
-          display: flex;
-          flex-direction: column;
-          flex: 1 0 150px;
-          padding: 0.75rem;
-          background: #f8fafc;
-          border-radius: 8px;
+        .item-quantity-info-inprogress {
+          margin-bottom: 1rem;
 
-          &.full-width {
-            flex: 1 0 100%;
-          }
-
-          .detail-label {
-            font-size: 0.75rem;
-            color: #64748b;
-            margin-bottom: 0.25rem;
+          .quantity-required-inprogress {
+            font-size: 0.95rem;
+            color: var(--color-text-medium);
             font-weight: 500;
+            font-style: italic;
+
+            strong {
+              color: var(--color-text-dark);
+              font-weight: var(--bold-font-weight);
+              font-style: normal;
+            }
+          }
+        }
+
+        .item-notes-info-inprogress {
+          padding: 0.75rem 1rem;
+          background: var(--color-surface-secondary);
+          border-radius: var(--radius-sm);
+          border-left: 3px solid var(--color-info);
+
+          .notes-label-inprogress {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            font-weight: var(--bold-font-weight);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            display: block;
+            margin-bottom: 0.5rem;
           }
 
-          .detail-value {
+          .notes-text-inprogress {
             font-size: 0.9rem;
-            color: #0f172a;
-            font-weight: 600;
+            color: var(--color-text-dark);
+            line-height: 1.5;
+            font-weight: 500;
           }
         }
       }
     }
 
-    .procurement-request-item-actions {
+    .procurement-request-item-actions-inprogress {
       display: flex;
       justify-content: flex-end;
-      margin-top: 1rem;
-      padding-top: 1rem;
-      border-top: 1px solid #f1f5f9;
+      margin-top: 1.5rem;
     }
   }
 }
 
-// Existing Offer Items Table - enhanced design
-.procurement-existing-offer-items {
+// Existing Offer Items Table - Dark Mode Compatible
+.procurement-existing-offer-items-inprogress {
   margin-bottom: 1.25rem;
 
   h6 {
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: var(--bold-font-weight);
     margin-bottom: 0.75rem;
-    color: #0f172a;
+    color: var(--color-text-dark);
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--border-color-light);
   }
 
-  .procurement-offer-entries-table {
+  .procurement-offer-entries-table-inprogress {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
-    background: #ffffff;
-    border-radius: 8px;
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-sm);
 
     th {
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      background: var(--color-surface-secondary);
       text-align: left;
       padding: 12px 16px;
-      font-weight: 600;
-      color: #374151;
-      border-bottom: 1px solid #e2e8f0;
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-medium);
+      border-bottom: 1px solid var(--border-color-light);
       font-size: 0.8rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -477,8 +272,8 @@
 
     td {
       padding: 12px 16px;
-      border-bottom: 1px solid #f1f5f9;
-      color: #1f2937;
+      border-bottom: 1px solid var(--border-color-light);
+      color: var(--color-text-dark);
       font-weight: 500;
 
       &:last-child {
@@ -487,10 +282,10 @@
     }
 
     tbody tr {
-      transition: all 0.2s ease;
+      transition: all var(--transition-normal) ease;
 
       &:hover {
-        background-color: #f8fafc;
+        background-color: var(--color-surface-hover);
         transform: scale(1.001);
       }
 
@@ -501,27 +296,27 @@
   }
 }
 
-// Enhanced progress bar styling
-.procurement-progress-container {
+// Enhanced progress bar styling - Dark Mode Compatible
+.procurement-progress-container-inprogress {
   margin-bottom: 1.25rem;
   padding: 1rem;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color-light);
 }
 
-.procurement-progress-bar {
+.procurement-progress-bar-inprogress {
   height: 10px;
-  background: #e2e8f0;
+  background: var(--border-color-medium);
   border-radius: 5px;
   overflow: hidden;
   margin-bottom: 0.75rem;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.procurement-progress-fill {
+.procurement-progress-fill-inprogress {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   border-radius: 5px;
   transition: width 0.5s ease;
   position: relative;
@@ -538,7 +333,7 @@
   }
 
   &.complete {
-    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(90deg, var(--color-success) 0%, var(--color-success-hover) 100%);
   }
 
   @keyframes shimmer {
@@ -550,75 +345,360 @@
 .procurement-progress-details {
   display: flex;
   justify-content: space-between;
-  font-size: 0.8rem;
-  color: #64748b;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
-// Responsive adjustments
-@media (max-width: 1024px) {
-  .procurement-request-order-details-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  }
-
-  .procurement-progress-overview .procurement-progress-stats {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-}
-
-@media (max-width: 640px) {
-  .procurement-request-order-info-card,
-  .procurement-request-summary-card {
-    padding: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  .request-order-detail-item {
-    padding: 12px;
-    gap: 8px;
-  }
-
-  .request-order-detail-icon {
-    width: 36px;
-    height: 36px;
-
-    svg {
-      width: 16px;
-      height: 16px;
-    }
-  }
-
-  .procurement-request-items-section .procurement-request-item-card {
-    padding: 1.25rem;
-
-    .procurement-request-item-details .procurement-request-item-info {
-      flex-direction: column;
-      gap: 0.75rem;
-
-      .item-detail {
-        flex: 1 0 auto;
-      }
-    }
-  }
-}
-
-.procurement-header-meta {
+.procurement-header-meta-inprogress {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
 
-  .procurement-meta-item {
+  .procurement-meta-item-inprogress {
     display: flex;
     align-items: center;
     font-size: 0.875rem;
-    color: #64748b;
+    color: var(--color-text-muted);
     font-weight: 500;
 
     svg {
       margin-right: 0.5rem;
-      color: #94a3b8;
+      color: var(--color-text-muted);
     }
+  }
+}
+
+// Request Order Summary - InProgress Design
+.procurement-request-summary-card-inprogress {
+  background: var(--section-background-color);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+
+  h4 {
+    font-size: 1.125rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--head-title-color);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color-light);
+  }
+
+  .procurement-section-description-inprogress {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+    font-weight: 500;
+  }
+}
+
+.procurement-overall-progress-inprogress {
+  padding: 1.5rem 0;
+}
+
+.procurement-progress-stats-inprogress {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.procurement-progress-stat-inprogress {
+  text-align: center;
+  padding: 0;
+  transition: all var(--transition-normal) ease;
+
+  &:hover {
+    transform: translateY(-2px);
+
+    .procurement-progress-stat-value-inprogress {
+      transform: scale(1.05);
+    }
+  }
+
+  .procurement-progress-stat-label-inprogress {
+    font-size: 0.75rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 2px;
+      background: var(--color-primary);
+      border-radius: 1px;
+    }
+  }
+
+  .procurement-progress-stat-value-inprogress {
+    font-size: 1.75rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--color-text-dark);
+    line-height: 1.2;
+    transition: transform var(--transition-normal) ease;
+    margin-top: 20px;
+
+    &.fulfilled {
+      color: var(--color-success);
+    }
+
+    &.unfulfilled {
+      color: var(--color-warning);
+    }
+
+    &.currency-totals-inprogress {
+      font-size: 1.125rem;
+      font-weight: var(--bold-font-weight);
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      align-items: center;
+
+      .currency-total-item-inprogress {
+        display: inline-block;
+        color: var(--color-text-dark);
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+        line-height: 1.3;
+
+        .currency-separator-inprogress {
+          color: var(--color-text-muted);
+          margin: 0 0.5rem;
+          font-size: 0.9rem;
+          font-weight: normal;
+        }
+      }
+
+      .currency-total-item-inprogress + .currency-total-item-inprogress {
+        margin-top: 0.125rem;
+      }
+    }
+  }
+}
+
+// Status Badges - Dark Mode Compatible
+.procurement-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: var(--bold-font-weight);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &.status-complete {
+    background: var(--color-success);
+    color: var(--color-text-inverse);
+  }
+
+  &.status-needed {
+    background: var(--color-warning);
+    color: var(--color-text-inverse);
+  }
+
+  svg {
+    margin: 0;
+  }
+}
+
+// Action Buttons - Dark Mode Compatible
+.procurement-action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.procurement-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-medium);
+  cursor: pointer;
+  transition: all var(--transition-normal) ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &.edit {
+    color: var(--color-edit);
+
+    &:hover {
+      background: var(--color-edit-bg);
+      color: var(--color-edit-hover);
+    }
+  }
+
+  &.delete {
+    color: var(--color-delete);
+
+    &:hover {
+      background: var(--color-delete-bg);
+      color: var(--color-delete-hover);
+    }
+  }
+
+  &.view {
+    color: var(--color-view);
+
+    &:hover {
+      background: var(--color-view-bg);
+      color: var(--color-view-hover);
+    }
+  }
+}
+
+// Procurement Buttons - Dark Mode Compatible
+.procurement-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: var(--bold-font-weight);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-normal) ease;
+  border: 1px solid transparent;
+
+  &.primary-outline {
+    background: transparent;
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+
+    &:hover {
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  svg {
+    margin: 0;
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .procurement-request-summary-card-inprogress {
+    padding: 1rem;
+    margin-bottom: 1rem;
+
+    h4 {
+      font-size: 1.125rem;
+    }
+
+    .procurement-section-description-inprogress {
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+  }
+
+  .procurement-overall-progress-inprogress {
+    padding: 1.25rem 0;
+  }
+
+  .procurement-progress-stat-inprogress {
+    .procurement-progress-stat-value-inprogress {
+      font-size: 1.5rem;
+
+      &.currency-totals-inprogress {
+        font-size: 1rem;
+
+        .currency-total-item-inprogress {
+          font-size: 0.85rem;
+        }
+      }
+    }
+  }
+
+  .procurement-request-items-section-inprogress {
+    .procurement-request-item-card-inprogress {
+      padding: 1rem;
+
+      .procurement-request-item-info-inprogress {
+        flex-direction: column;
+        gap: 0.75rem;
+
+        .item-detail-inprogress {
+          flex: 1 0 auto;
+        }
+      }
+    }
+  }
+
+  .procurement-offer-entries-table-inprogress {
+    font-size: 12px;
+
+    th, td {
+      padding: 8px 12px;
+    }
+  }
+}
+
+// Enhanced Animation
+@keyframes statPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.9;
+  }
+}
+
+.procurement-progress-stat-inprogress.fulfilled .procurement-progress-stat-value-inprogress {
+  animation: statPulse 2s ease-in-out infinite;
+}
+
+.btn-add-solution {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  font-weight: var(--bold-font-weight);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-normal) ease;
+
+  &:hover {
+    background: rgba(72, 128, 255, 0.1);
+    color: var(--color-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  svg {
+    margin: 0;
   }
 }

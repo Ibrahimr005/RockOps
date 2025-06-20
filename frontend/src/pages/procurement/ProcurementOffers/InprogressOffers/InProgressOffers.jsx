@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
     FiPackage, FiSend, FiClock, FiAlertCircle,
-    FiCheckCircle, FiPlusCircle, FiX, FiEdit, FiTrash2,
-    FiUser, FiCalendar, FiFlag, FiFileText  // Add these new imports
+    FiCheckCircle, FiPlusCircle, FiEdit, FiTrash2
 } from 'react-icons/fi';
 
 import "../ProcurementOffers.scss"
 import "./InprogressOffers.scss"
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx"
+import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
+import ProcurementSolutionModal from './ProcurementSolutionModal.jsx';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx'; // Add this import
 
 const InProgressOffers = ({
                               offers,
@@ -22,9 +24,10 @@ const InProgressOffers = ({
     // State for InProgress tab
     const [merchants, setMerchants] = useState([]);
     const [selectedRequestItem, setSelectedRequestItem] = useState(null);
-    const [showAddItemModal, setShowAddItemModal] = useState(false);
-    const [showEditItemModal, setShowEditItemModal] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+    const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
     const [selectedOfferItem, setSelectedOfferItem] = useState(null);
+
     // Snackbar state
     const [snackbar, setSnackbar] = useState({
         show: false,
@@ -32,30 +35,14 @@ const InProgressOffers = ({
         message: ''
     });
 
-    // New offer item state
-    const [newOfferItem, setNewOfferItem] = useState({
-        requestOrderItemId: '',
-        merchantId: '',
-        quantity: 1,
-        unitPrice: 0,
-        totalPrice: 0,
-        currency: 'EGP',
-        estimatedDeliveryDays: 7,
-        deliveryNotes: '',
-        comment: ''
-    });
-
-    // Edit offer item state
-    const [editOfferItem, setEditOfferItem] = useState({
-        merchantId: '',
-        requestOrderItemId: '',
-        quantity: 1,
-        unitPrice: 0,
-        totalPrice: 0,
-        currency: 'EGP',
-        estimatedDeliveryDays: 7,
-        deliveryNotes: '',
-        comment: ''
+    // Add confirmation dialog state
+    const [confirmationDialog, setConfirmationDialog] = useState({
+        show: false,
+        type: 'success',
+        title: '',
+        message: '',
+        onConfirm: null,
+        isLoading: false
     });
 
     // Fetch merchants for dropdown
@@ -75,8 +62,40 @@ const InProgressOffers = ({
 
     // Submit an offer (change from INPROGRESS to SUBMITTED)
     const submitOffer = (offer) => {
-        handleOfferStatusChange(offer.id, 'SUBMITTED');
-        showSnackbar("success" , "Offer submitted successfully");
+        // Show confirmation dialog before submitting
+        setConfirmationDialog({
+            show: true,
+            type: 'success',
+            title: 'Submit Offer',
+            message: `Are you sure you want to submit the offer "${offer.title}"? Once submitted, you won't be able to make changes.`,
+            onConfirm: () => handleConfirmSubmit(offer),
+            isLoading: false
+        });
+    };
+
+    // Handle confirmed submission
+    const handleConfirmSubmit = async (offer) => {
+        try {
+            setConfirmationDialog(prev => ({ ...prev, isLoading: true }));
+
+            // Call the status change handler
+            await handleOfferStatusChange(offer.id, 'SUBMITTED');
+
+            // Close confirmation dialog
+            setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
+
+            // Show success message
+            showSnackbar("success", "Offer submitted successfully");
+        } catch (error) {
+            console.error('Error submitting offer:', error);
+            setConfirmationDialog(prev => ({ ...prev, isLoading: false }));
+            showSnackbar('error', 'Failed to submit offer. Please try again.');
+        }
+    };
+
+    // Handle confirmation dialog cancel
+    const handleConfirmationCancel = () => {
+        setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
     };
 
     // Check if an offer is complete (has items for all request items)
@@ -123,159 +142,89 @@ const InProgressOffers = ({
 
     // Get default currency for the offer
     const getDefaultCurrency = () => {
-        if (!activeOffer || !activeOffer.offerItems || activeOffer.offerItems.length === 0) return 'USD';
-        return activeOffer.offerItems[0].currency || 'USD';
+        if (!activeOffer || !activeOffer.offerItems || activeOffer.offerItems.length === 0) return 'EGP';
+        return activeOffer.offerItems[0].currency || 'EGP';
     };
 
-    // Handle add offer item
-    const handleAddOfferItem = async () => {
+    // Handle modal save (both add and edit)
+    const handleModalSave = async (formData) => {
         if (!activeOffer || !selectedRequestItem) return;
 
         try {
-            // Ensure total price is calculated correctly
-            const totalPrice = newOfferItem.quantity * newOfferItem.unitPrice;
+            if (modalMode === 'add') {
+                // Add new offer item
+                const itemToAdd = {
+                    ...formData,
+                    requestOrderItemId: selectedRequestItem.id
+                };
 
-            const itemToAdd = {
-                ...newOfferItem,
-                requestOrderItemId: selectedRequestItem.id,
-                totalPrice: totalPrice
-            };
+                const addedItem = await fetchWithAuth(`${API_URL}/offers/${activeOffer.id}/items`, {
+                    method: 'POST',
+                    body: JSON.stringify([itemToAdd])
+                });
 
-            const addedItem = await fetchWithAuth(`${API_URL}/offers/${activeOffer.id}/items`, {
-                method: 'POST',
-                body: JSON.stringify([itemToAdd])
-            });
+                // Update active offer with new items
+                const updatedOffer = {
+                    ...activeOffer,
+                    offerItems: [...(activeOffer.offerItems || []), ...addedItem]
+                };
 
-            // Update active offer with new items
-            const updatedOffer = {
-                ...activeOffer,
-                offerItems: [...(activeOffer.offerItems || []), ...addedItem]
-            };
+                setActiveOffer(updatedOffer);
+                showSnackbar('success', 'Procurement solution added successfully!');
+            } else {
+                // Edit existing offer item
+                const response = await fetchWithAuth(`${API_URL}/offers/items/${selectedOfferItem.id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(formData)
+                });
 
-            // Update active offer
-            setActiveOffer(updatedOffer);
+                // Update the offer item in the current state
+                const updatedOfferItems = activeOffer.offerItems.map(item =>
+                    item.id === selectedOfferItem.id ? response : item
+                );
 
-            showSnackbar('success', 'Procurement solution added successfully!');
+                // Update active offer with the updated items
+                const updatedOffer = {
+                    ...activeOffer,
+                    offerItems: updatedOfferItems
+                };
 
-            // Reset form and selected request item
-            setNewOfferItem({
-                requestOrderItemId: '',
-                merchantId: '',
-                quantity: 1,
-                unitPrice: 0,
-                totalPrice: 0,
-                currency: 'USD',
-                estimatedDeliveryDays: 7,
-                deliveryNotes: '',
-                comment: ''
-            });
-            setSelectedRequestItem(null);
-            setShowAddItemModal(false);
+                setActiveOffer(updatedOffer);
+                showSnackbar('success', 'Procurement solution updated successfully!');
+            }
 
+            // Close modal and reset state
+            handleCloseModal();
             setTimeout(() => setSuccess(null), 3000);
         } catch (error) {
-            console.error('Error adding offer item:', error);
-            showSnackbar('error', 'Failed to add procurement solution. Please try again.');
+            console.error('Error saving offer item:', error);
+            showSnackbar('error', `Failed to ${modalMode === 'add' ? 'add' : 'update'} procurement solution. Please try again.`);
             setTimeout(() => setError(null), 3000);
         }
     };
 
-    // Handle edit offer item
+    // Handle opening modal for adding new item
+    const handleSelectRequestItem = (requestItem) => {
+        setSelectedRequestItem(requestItem);
+        setSelectedOfferItem(null);
+        setModalMode('add');
+        setShowModal(true);
+    };
+
+    // Handle opening modal for editing existing item
     const handleEditOfferItem = (offerItem, requestItem) => {
         setSelectedRequestItem(requestItem);
         setSelectedOfferItem(offerItem);
-
-        // Pre-populate the form with the existing item data
-        setEditOfferItem({
-            merchantId: offerItem.merchant?.id || offerItem.merchantId,
-            requestOrderItemId: requestItem.id,
-            quantity: offerItem.quantity,
-            unitPrice: parseFloat(offerItem.unitPrice),
-            totalPrice: parseFloat(offerItem.totalPrice),
-            currency: offerItem.currency || 'USD',
-            estimatedDeliveryDays: offerItem.estimatedDeliveryDays,
-            deliveryNotes: offerItem.deliveryNotes || '',
-            comment: offerItem.comment || ''
-        });
-
-        setShowEditItemModal(true);
+        setModalMode('edit');
+        setShowModal(true);
     };
 
-    // Handle save edited offer item
-    const handleSaveEditedOfferItem = async () => {
-        if (!activeOffer || !selectedOfferItem || !selectedRequestItem) return;
-
-        try {
-            // Ensure total price is calculated correctly
-            const totalPrice = editOfferItem.quantity * editOfferItem.unitPrice;
-
-            const itemToUpdate = {
-                ...editOfferItem,
-                totalPrice: totalPrice
-            };
-
-            const response = await fetchWithAuth(`${API_URL}/offers/items/${selectedOfferItem.id}`, {
-                method: 'PUT',
-                body: JSON.stringify(itemToUpdate)
-            });
-
-            // Update the offer item in the current state
-            const updatedOfferItems = activeOffer.offerItems.map(item =>
-                item.id === selectedOfferItem.id ? response : item
-            );
-
-            // Update active offer with the updated items
-            const updatedOffer = {
-                ...activeOffer,
-                offerItems: updatedOfferItems
-            };
-
-            // Update active offer
-            setActiveOffer(updatedOffer);
-
-            showSnackbar('success', 'Procurement solution updated successfully!');
-
-            // Reset form and selected items
-            setEditOfferItem({
-                merchantId: '',
-                requestOrderItemId: '',
-                quantity: 1,
-                unitPrice: 0,
-                totalPrice: 0,
-                currency: 'USD',
-                estimatedDeliveryDays: 7,
-                deliveryNotes: '',
-                comment: ''
-            });
-            setSelectedOfferItem(null);
-            setSelectedRequestItem(null);
-            setShowEditItemModal(false);
-
-            setTimeout(() => setSuccess(null), 3000);
-        } catch (error) {
-            console.error('Error updating offer item:', error);
-            showSnackbar('error', 'Failed to update procurement solution. Please try again.');
-            setTimeout(() => setError(null), 3000);
-        }
-    };
-
-    // Select a request item to add procurement for
-    const handleSelectRequestItem = (requestItem) => {
-        setSelectedRequestItem(requestItem);
-
-        // Get existing offer items for this request item
-        const offerItems = getOfferItemsForRequestItem(requestItem.id);
-        const totalOffered = offerItems.reduce((total, item) => total + (item.quantity || 0), 0);
-
-        // Set default quantity to remaining needed quantity
-        setNewOfferItem({
-            ...newOfferItem,
-            requestOrderItemId: requestItem.id,
-            quantity: Math.max(1, requestItem.quantity - totalOffered),
-            currency: getDefaultCurrency() // Set default currency
-        });
-
-        setShowAddItemModal(true);
+    // Handle closing modal
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setSelectedRequestItem(null);
+        setSelectedOfferItem(null);
+        setModalMode('add');
     };
 
     // Get total price for an offer
@@ -355,6 +304,10 @@ const InProgressOffers = ({
             };
 
             setActiveOffer(updatedOffer);
+
+            // Force re-render to update completion status
+            setTimeout(() => setActiveOffer({...updatedOffer}), 100);
+
             showSnackbar('success', 'Procurement solution removed successfully!');
             setTimeout(() => setSuccess(null), 3000);
         } catch (error) {
@@ -373,7 +326,7 @@ const InProgressOffers = ({
         });
     };
 
-// Helper function to hide snackbar
+    // Helper function to hide snackbar
     const hideSnackbar = () => {
         setSnackbar(prev => ({
             ...prev,
@@ -395,25 +348,25 @@ const InProgressOffers = ({
                         <p>No offers in progress. Start working on an unstarted offer first.</p>
                     </div>
                 ) : (
-                    <div className="procurement-items-list">
+                    <div className="procurement-items-list-inprogress">
                         {offers.map(offer => (
                             <div
                                 key={offer.id}
-                                className={`procurement-item-card ${activeOffer?.id === offer.id ? 'selected' : ''}`}
+                                className={`procurement-item-card-inprogress ${activeOffer?.id === offer.id ? 'selected' : ''}`}
                                 onClick={() => setActiveOffer(offer)}
                             >
                                 <div className="procurement-item-header">
                                     <h4>{offer.title}</h4>
-                                    <span className={`procurement-status-badge status-${offer.status.toLowerCase()}`}>
-                                    {offer.status}
-                                </span>
+                                    {/*    <span className={`procurement-status-badge status-${offer.status.toLowerCase()}`}>*/}
+                                    {/*    {offer.status}*/}
+                                    {/*</span>*/}
                                 </div>
-                                <div className="procurement-item-footer">
-                                <span className="procurement-item-date">
+                                <div className="procurement-item-footer-inprogress">
+                                <span className="procurement-item-date-inprogress">
                                     <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
                                 </span>
                                 </div>
-                                <div className="procurement-item-footer">
+                                <div className="procurement-item-footer-inprogress">
                                 <span className="procurement-item-completion">
                                     {isOfferComplete(offer) ?
                                         <span className="completion-complete"><FiCheckCircle /> Complete</span> :
@@ -432,13 +385,13 @@ const InProgressOffers = ({
                 {activeOffer ? (
                     <div className="procurement-details-content">
                         <div className="procurement-details-header">
-                            <div>
+                            <div className="procurement-title-section">
                                 <h3>{activeOffer.title}</h3>
-                                <div className="procurement-header-meta">
+                                <div className="procurement-header-meta-inprogress">
                                 <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
                                     {activeOffer.status}
                                 </span>
-                                    <span className="procurement-meta-item">
+                                    <span className="procurement-meta-item-inprogress">
                                     <FiClock /> Created: {new Date(activeOffer.createdAt).toLocaleDateString()}
                                 </span>
                                 </div>
@@ -446,7 +399,7 @@ const InProgressOffers = ({
 
                             <div className="procurement-details-actions">
                                 <button
-                                    className="procurement-button start-working"
+                                    className="btn-primary"
                                     onClick={() => submitOffer(activeOffer)}
                                     disabled={!isOfferComplete(activeOffer)}
                                 >
@@ -462,114 +415,41 @@ const InProgressOffers = ({
                             </div>
                         ) : (
                             <>
-                                {/* Request Order Information Card - NEW SECTION */}
-                                <div className="procurement-request-order-info-card">
-                                    <h4>Request Order Information</h4>
-
-                                    <div className="procurement-request-order-details-grid">
-                                        <div className="request-order-detail-item">
-                                            <div className="request-order-detail-icon">
-                                                <FiUser size={18} />
-                                            </div>
-                                            <div className="request-order-detail-content">
-                                                <span className="request-order-detail-label">Requester</span>
-                                                <span className="request-order-detail-value">{activeOffer.requestOrder.requesterName || 'Unknown'}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="request-order-detail-item">
-                                            <div className="request-order-detail-icon">
-                                                <FiCalendar size={18} />
-                                            </div>
-                                            <div className="request-order-detail-content">
-                                                <span className="request-order-detail-label">Request Date</span>
-                                                <span className="request-order-detail-value">{new Date(activeOffer.requestOrder.createdAt).toLocaleDateString()}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="request-order-detail-item">
-                                            <div className="request-order-detail-icon">
-                                                <FiCalendar size={18} />
-                                            </div>
-                                            <div className="request-order-detail-content">
-                                                <span className="request-order-detail-label">Deadline</span>
-                                                <span className="request-order-detail-value">{new Date(activeOffer.requestOrder.deadline).toLocaleDateString()}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="request-order-detail-item">
-                                            <div className="request-order-detail-icon">
-                                                <FiUser size={18} />
-                                            </div>
-                                            <div className="request-order-detail-content">
-                                                <span className="request-order-detail-label">Created By</span>
-                                                <span className="request-order-detail-value">{activeOffer.requestOrder.createdBy || 'Unknown'}</span>
-                                            </div>
-                                        </div>
-
-                                        {activeOffer.requestOrder.priority && (
-                                            <div className="request-order-detail-item">
-                                                <div className="request-order-detail-icon">
-                                                    <FiFlag size={18} />
-                                                </div>
-                                                <div className="request-order-detail-content">
-                                                    <span className="request-order-detail-label">Priority</span>
-                                                    <span className={`request-order-detail-value request-priority ${activeOffer.requestOrder.priority.toLowerCase()}`}>
-                                                    {activeOffer.requestOrder.priority}
-                                                </span>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {activeOffer.requestOrder.description && (
-                                            <div className="request-order-detail-item description-item">
-                                                <div className="request-order-detail-icon">
-                                                    <FiFileText size={18} />
-                                                </div>
-                                                <div className="request-order-detail-content">
-                                                    <span className="request-order-detail-label">Description</span>
-                                                    <p className="request-order-detail-value description-text">
-                                                        {activeOffer.requestOrder.description}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+                                {/* Use RequestOrderDetails Component */}
+                                <RequestOrderDetails requestOrder={activeOffer.requestOrder} />
 
                                 {/* Request Order Summary */}
-                                <div className="procurement-request-summary-card">
+                                <div className="procurement-request-summary-card-inprogress">
                                     <h4>Request Order Items</h4>
-                                    <p className="procurement-section-description">
+                                    <p className="procurement-section-description-inprogress">
                                         Complete all items below to submit this procurement offer.
                                     </p>
 
                                     {/* Progress Overview */}
-                                    {/* Updated Progress Overview section */}
-                                    <div className="procurement-overall-progress">
-                                        <div className="procurement-progress-stats">
-                                            <div className="procurement-progress-stat">
-                                                <div className="procurement-progress-stat-label">Total Items</div>
-                                                <div className="procurement-progress-stat-value">
+                                    <div className="procurement-overall-progress-inprogress">
+                                        <div className="procurement-progress-stats-inprogress">
+                                            <div className="procurement-progress-stat-inprogress">
+                                                <div className="procurement-progress-stat-label-inprogress">Total Items</div>
+                                                <div className="procurement-progress-stat-value-inprogress">
                                                     {activeOffer.requestOrder?.requestItems?.length || 0}
                                                 </div>
                                             </div>
-                                            <div className="procurement-progress-stat">
-                                                <div className="procurement-progress-stat-label">Items Covered</div>
-                                                <div className={`procurement-progress-stat-value ${
+                                            <div className="procurement-progress-stat-inprogress">
+                                                <div className="procurement-progress-stat-label-inprogress">Items Covered</div>
+                                                <div className={`procurement-progress-stat-value-inprogress ${
                                                     isOfferComplete(activeOffer) ? 'fulfilled' : 'unfulfilled'
                                                 }`}>
                                                     {activeOffer.requestOrder?.requestItems?.filter(item =>
                                                         hasOfferItem(item.id)).length || 0} / {activeOffer.requestOrder?.requestItems?.length || 0}
                                                 </div>
                                             </div>
-                                            <div className="procurement-progress-stat">
-                                                <div className="procurement-progress-stat-label">Total Value</div>
-                                                <div className="procurement-progress-stat-value currency-totals">
+                                            <div className="procurement-progress-stat-inprogress">
+                                                <div className="procurement-progress-stat-label-inprogress">Total Value</div>
+                                                <div className="procurement-progress-stat-value-inprogress currency-totals-inprogress">
                                                     {Object.entries(getTotalsByCurrency(activeOffer)).map(([currency, total], index) => (
-                                                        <div key={currency} className="currency-total-item">
+                                                        <div key={currency} className="currency-total-item-inprogress">
                                                             {currency} {total.toFixed(2)}
-                                                            {index < Object.entries(getTotalsByCurrency(activeOffer)).length - 1 && <span className="currency-separator">|</span>}
+                                                            {index < Object.entries(getTotalsByCurrency(activeOffer)).length - 1 && <span className="currency-separator-inprogress">|</span>}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -579,7 +459,7 @@ const InProgressOffers = ({
                                 </div>
 
                                 {/* Request Items with their Offer Items */}
-                                <div className="procurement-request-items-section">
+                                <div className="procurement-request-items-section-inprogress">
                                     {activeOffer.requestOrder?.requestItems?.map(requestItem => {
                                         const offerItems = getOfferItemsForRequestItem(requestItem.id);
                                         const totalOffered = offerItems.reduce((total, item) => total + (item.quantity || 0), 0);
@@ -587,10 +467,10 @@ const InProgressOffers = ({
                                         const isComplete = totalOffered >= requestItem.quantity;
 
                                         return (
-                                            <div key={requestItem.id} className="procurement-request-item-card">
-                                                <div className="procurement-request-item-header">
-                                                    <div className="item-icon-name">
-                                                        <div className="item-icon-container">
+                                            <div key={requestItem.id} className="procurement-request-item-card-inprogress">
+                                                <div className="procurement-request-item-header-inprogress">
+                                                    <div className="item-icon-name-inprogress">
+                                                        <div className="item-icon-container-inprogress">
                                                             <FiPackage size={20} />
                                                         </div>
                                                         <h5>{requestItem.itemType?.name || 'Item'}</h5>
@@ -607,28 +487,29 @@ const InProgressOffers = ({
                                                     )}
                                                 </div>
 
-                                                {/* Item Details */}
-                                                <div className="procurement-request-item-details">
-                                                    <div className="procurement-request-item-info">
-                                                        <div className="item-detail">
-                                                            <span className="detail-label">Required:</span>
-                                                            <span className="detail-value">{requestItem.quantity} {requestItem.itemType.measuringUnit}</span>
+                                                {/* Item Details - Simple Design */}
+                                                <div className="procurement-request-item-details-inprogress">
+                                                    <div className="procurement-request-item-info-inprogress">
+                                                        <div className="item-quantity-info-inprogress">
+                                                            <span className="quantity-required-inprogress">
+                                                                Required: <strong>{requestItem.quantity} {requestItem.itemType.measuringUnit}</strong>
+                                                            </span>
                                                         </div>
 
                                                         {requestItem.comment && (
-                                                            <div className="item-detail full-width">
-                                                                <span className="detail-label">Notes:</span>
-                                                                <span className="detail-value">{requestItem.comment}</span>
+                                                            <div className="item-notes-info-inprogress">
+                                                                <span className="notes-label-inprogress">Notes:</span>
+                                                                <span className="notes-text-inprogress">{requestItem.comment}</span>
                                                             </div>
                                                         )}
                                                     </div>
                                                 </div>
 
                                                 {/* Progress Bar */}
-                                                <div className="procurement-progress-container">
-                                                    <div className="procurement-progress-bar">
+                                                <div className="procurement-progress-container-inprogress">
+                                                    <div className="procurement-progress-bar-inprogress">
                                                         <div
-                                                            className={`procurement-progress-fill ${isComplete ? 'complete' : ''}`}
+                                                            className={`procurement-progress-fill-inprogress ${isComplete ? 'complete' : ''}`}
                                                             style={{ width: `${progress}%` }}
                                                         ></div>
                                                     </div>
@@ -640,9 +521,9 @@ const InProgressOffers = ({
 
                                                 {/* Current Offer Items for this Request Item */}
                                                 {offerItems.length > 0 && (
-                                                    <div className="procurement-existing-offer-items">
+                                                    <div className="procurement-existing-offer-items-inprogress">
                                                         <h6>Current Procurement Solutions</h6>
-                                                        <table className="procurement-offer-entries-table">
+                                                        <table className="procurement-offer-entries-table-inprogress">
                                                             <thead>
                                                             <tr>
                                                                 <th>Merchant</th>
@@ -693,9 +574,9 @@ const InProgressOffers = ({
                                                 )}
 
                                                 {/* Add New Offer Item Button */}
-                                                <div className="procurement-request-item-actions">
+                                                <div className="procurement-request-item-actions-inprogress">
                                                     <button
-                                                        className="procurement-button primary-outline"
+                                                        className="btn-add-solution"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             handleSelectRequestItem(requestItem);
@@ -732,343 +613,31 @@ const InProgressOffers = ({
                 )}
             </div>
 
-            {/* Modal for adding offer item */}
-            {showAddItemModal && selectedRequestItem && (
-                <div className="procurement-modal-overlay">
-                    <div className="procurement-modal-container">
-                        <div className="procurement-modal-header">
-                            <h4>Add Procurement Solution for: {selectedRequestItem.itemType?.name || 'Item'}</h4>
-                            <button
-                                className="procurement-modal-close-button"
-                                onClick={() => setShowAddItemModal(false)}
-                            >
-                                <FiX />
-                            </button>
-                        </div>
+            {/* Procurement Solution Modal */}
+            <ProcurementSolutionModal
+                isVisible={showModal}
+                mode={modalMode}
+                requestItem={selectedRequestItem}
+                offerItem={selectedOfferItem}
+                merchants={merchants}
+                onClose={handleCloseModal}
+                onSave={handleModalSave}
+                defaultCurrency={getDefaultCurrency()}
+            />
 
-                        <div className="procurement-modal-body">
-                            <div className="procurement-form-group">
-                                <label>Merchant</label>
-                                <select
-                                    className="procurement-form-select"
-                                    value={newOfferItem.merchantId}
-                                    onChange={(e) => setNewOfferItem({...newOfferItem, merchantId: e.target.value})}
-                                    required
-                                >
-                                    <option value="">Select a merchant</option>
-                                    {merchants.map(merchant => (
-                                        <option key={merchant.id} value={merchant.id}>
-                                            {merchant.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="procurement-form-group">
-                                <label>Currency</label>
-                                <select
-                                    className="procurement-form-select"
-                                    value={newOfferItem.currency}
-                                    onChange={(e) => setNewOfferItem({...newOfferItem, currency: e.target.value})}
-                                    required
-                                >
-                                    <option value="EGP">EGP (Egyptian Pound)</option>
-                                    <option value="USD">USD (US Dollar)</option>
-                                    <option value="EUR">EUR (Euro)</option>
-                                    <option value="GBP">GBP (British Pound)</option>
-                                    <option value="JPY">JPY (Japanese Yen)</option>
-                                    <option value="CAD">CAD (Canadian Dollar)</option>
-                                    <option value="AUD">AUD (Australian Dollar)</option>
-                                    <option value="CHF">CHF (Swiss Franc)</option>
-                                    <option value="CNY">CNY (Chinese Yuan)</option>
-                                    <option value="INR">INR (Indian Rupee)</option>
-                                    <option value="SGD">SGD (Singapore Dollar)</option>
-                                </select>
-                            </div>
-
-                            <div className="procurement-form-row">
-                                <div className="procurement-form-group half">
-                                    <label>Quantity ({selectedRequestItem.itemType?.measuringUnit})</label>
-                                    <div className="procurement-form-input-with-icon">
-                                        <input
-                                            type="number"
-                                            className="procurement-form-input"
-                                            min="1"
-                                            value={newOfferItem.quantity}
-                                            onChange={(e) => {
-                                                const qty = parseInt(e.target.value) || 0;
-                                                setNewOfferItem({
-                                                    ...newOfferItem,
-                                                    quantity: qty,
-                                                    totalPrice: qty * newOfferItem.unitPrice
-                                                });
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="procurement-form-group half">
-                                    <label>Unit Price</label>
-                                    <div className="procurement-form-input-with-icon">
-                                        <input
-                                            type="number"
-                                            className="procurement-form-input"
-                                            step="0.01"
-                                            min="0"
-                                            value={newOfferItem.unitPrice}
-                                            onChange={(e) => {
-                                                const price = parseFloat(e.target.value) || 0;
-                                                setNewOfferItem({
-                                                    ...newOfferItem,
-                                                    unitPrice: price,
-                                                    totalPrice: newOfferItem.quantity * price
-                                                });
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="procurement-form-row">
-                                <div className="procurement-form-group half">
-                                    <label>Total Price</label>
-                                    <div className="procurement-form-input-with-icon">
-                                        <input
-                                            type="text"
-                                            className="procurement-form-input procurement-form-input-readonly with-currency-suffix"
-                                            value={(newOfferItem.quantity * newOfferItem.unitPrice).toFixed(2)}
-                                            readOnly
-                                        />
-                                        <div className="currency-prefix">{newOfferItem.currency}</div>
-                                    </div>
-                                </div>
-
-                                <div className="procurement-form-group half">
-                                    <label>Est. Delivery (days)</label>
-                                    <div className="procurement-form-input-with-icon">
-                                        <input
-                                            type="number"
-                                            className="procurement-form-input"
-                                            min="1"
-                                            value={newOfferItem.estimatedDeliveryDays}
-                                            onChange={(e) => setNewOfferItem({
-                                                ...newOfferItem,
-                                                estimatedDeliveryDays: parseInt(e.target.value) || 7
-                                            })}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="procurement-form-group">
-                                <label>Delivery Notes</label>
-                                <textarea
-                                    className="procurement-form-textarea"
-                                    value={newOfferItem.deliveryNotes}
-                                    onChange={(e) => setNewOfferItem({
-                                        ...newOfferItem,
-                                        deliveryNotes: e.target.value
-                                    })}
-                                    placeholder="Any special delivery instructions"
-                                    rows={2}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="procurement-modal-footer">
-                            <button
-                                className="procurement-button secondary"
-                                onClick={() => setShowAddItemModal(false)}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                className="procurement-button start-working"
-                                onClick={handleAddOfferItem}
-                                disabled={!newOfferItem.merchantId || newOfferItem.quantity < 1 || newOfferItem.unitPrice <= 0}
-                            >
-                                Add to Offer
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal for editing offer item */}
-            {showEditItemModal && selectedOfferItem && selectedRequestItem && (
-                <div className="procurement-modal-overlay">
-                    <div className="procurement-modal-container">
-                        <div className="procurement-modal-header">
-                            <h4>Edit Procurement Solution for: {selectedRequestItem.itemType?.name || 'Item'}</h4>
-                            <button
-                                className="procurement-modal-close-button"
-                                onClick={() => setShowEditItemModal(false)}
-                            >
-                                <FiX />
-                            </button>
-                        </div>
-
-                        <div className="procurement-modal-body">
-                            <div className="procurement-form-group">
-                                <label>Merchant</label>
-                                <select
-                                    className="procurement-form-select"
-                                    value={editOfferItem.merchantId}
-                                    onChange={(e) => setEditOfferItem({...editOfferItem, merchantId: e.target.value})}
-                                    required
-                                >
-                                    <option value="">Select a merchant</option>
-                                    {merchants.map(merchant => (
-                                        <option key={merchant.id} value={merchant.id}>
-                                            {merchant.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="procurement-form-group">
-                                <label>Currency</label>
-                                <select
-                                    className="procurement-form-select"
-                                    value={editOfferItem.currency}
-                                    onChange={(e) => setEditOfferItem({...editOfferItem, currency: e.target.value})}
-                                    required
-                                >
-                                    <option value="EGP">EGP (Egyptian Pound)</option>
-                                    <option value="USD">USD (US Dollar)</option>
-                                    <option value="EUR">EUR (Euro)</option>
-                                    <option value="GBP">GBP (British Pound)</option>
-                                    <option value="JPY">JPY (Japanese Yen)</option>
-                                    <option value="CAD">CAD (Canadian Dollar)</option>
-                                    <option value="AUD">AUD (Australian Dollar)</option>
-                                    <option value="CHF">CHF (Swiss Franc)</option>
-                                    <option value="CNY">CNY (Chinese Yuan)</option>
-                                    <option value="INR">INR (Indian Rupee)</option>
-                                    <option value="SGD">SGD (Singapore Dollar)</option>
-                                </select>
-                            </div>
-
-                            <div className="procurement-form-row">
-                                <div className="procurement-form-group half">
-                                    <label>Quantity ({selectedRequestItem.itemType?.measuringUnit})</label>
-                                    <div className="procurement-form-input-with-icon">
-                                        <input
-                                            type="number"
-                                            className="procurement-form-input"
-                                            min="1"
-                                            value={editOfferItem.quantity}
-                                            onChange={(e) => {
-                                                const qty = parseInt(e.target.value) || 0;
-                                                setEditOfferItem({
-                                                    ...editOfferItem,
-                                                    quantity: qty,
-                                                    totalPrice: qty * editOfferItem.unitPrice
-                                                });
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="procurement-form-group half">
-                                    <label>Unit Price</label>
-                                    <div className="procurement-form-input-with-icon">
-                                        <input
-                                            type="number"
-                                            className="procurement-form-input"
-                                            step="0.01"
-                                            min="0"
-                                            value={editOfferItem.unitPrice}
-                                            onChange={(e) => {
-                                                const price = parseFloat(e.target.value) || 0;
-                                                setEditOfferItem({
-                                                    ...editOfferItem,
-                                                    unitPrice: price,
-                                                    totalPrice: editOfferItem.quantity * price
-                                                });
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="procurement-form-row">
-                                <div className="procurement-form-group half">
-                                    <label>Total Price</label>
-                                    <div className="procurement-form-input-with-icon">
-                                        <input
-                                            type="text"
-                                            className="procurement-form-input procurement-form-input-readonly with-currency-suffix"
-                                            value={(editOfferItem.quantity * editOfferItem.unitPrice).toFixed(2)}
-                                            readOnly
-                                        />
-                                        <div className="currency-prefix">{editOfferItem.currency}</div>
-                                    </div>
-                                </div>
-
-                                <div className="procurement-form-group half">
-                                    <label>Est. Delivery (days)</label>
-                                    <div className="procurement-form-input-with-icon">
-                                        <input
-                                            type="number"
-                                            className="procurement-form-input"
-                                            min="1"
-                                            value={editOfferItem.estimatedDeliveryDays}
-                                            onChange={(e) => setEditOfferItem({
-                                                ...editOfferItem,
-                                                estimatedDeliveryDays: parseInt(e.target.value) || 7
-                                            })}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="procurement-form-group">
-                                <label>Delivery Notes</label>
-                                <textarea
-                                    className="procurement-form-textarea"
-                                    value={editOfferItem.deliveryNotes}
-                                    onChange={(e) => setEditOfferItem({
-                                        ...editOfferItem,
-                                        deliveryNotes: e.target.value
-                                    })}
-                                    placeholder="Any special delivery instructions"
-                                    rows={2}
-                                />
-                            </div>
-
-                            <div className="procurement-form-group">
-                                <label>Comments</label>
-                                <textarea
-                                    className="procurement-form-textarea"
-                                    value={editOfferItem.comment}
-                                    onChange={(e) => setEditOfferItem({
-                                        ...editOfferItem,
-                                        comment: e.target.value
-                                    })}
-                                    placeholder="Additional comments about this item"
-                                    rows={2}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="procurement-modal-footer">
-                            <button
-                                className="procurement-button secondary"
-                                onClick={() => setShowEditItemModal(false)}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                className="procurement-button start-working"
-                                onClick={handleSaveEditedOfferItem}
-                                disabled={!editOfferItem.merchantId || editOfferItem.quantity < 1 || editOfferItem.unitPrice <= 0}
-                            >
-                                Save Changes
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={confirmationDialog.show}
+                type={confirmationDialog.type}
+                title={confirmationDialog.title}
+                message={confirmationDialog.message}
+                confirmText="Submit Offer"
+                cancelText="Cancel"
+                onConfirm={confirmationDialog.onConfirm}
+                onCancel={handleConfirmationCancel}
+                isLoading={confirmationDialog.isLoading}
+                size="large"
+            />
 
             <Snackbar
                 type={snackbar.type}

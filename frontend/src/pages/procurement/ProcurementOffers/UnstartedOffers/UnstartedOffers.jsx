@@ -80,9 +80,9 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                             >
                                 <div className="procurement-item-header">
                                     <h4>{offer.title}</h4>
-                                    <span className={`procurement-status-badge status-${offer.status.toLowerCase()}`}>
-                                        {offer.status}
-                                    </span>
+                                    {/*<span className={`procurement-status-badge status-${offer.status.toLowerCase()}`}>*/}
+                                    {/*    {offer.status}*/}
+                                    {/*</span>*/}
                                 </div>
                                 <div className="procurement-item-footer">
                                     <span className="procurement-item-date">

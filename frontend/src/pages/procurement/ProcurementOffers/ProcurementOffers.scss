@@ -229,7 +229,7 @@ $gray-900: var(--color-text-dark);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   padding: 1.5rem;
   background: var(--table-header-bg);
   border-bottom: 1px solid var(--border-color-light);
@@ -312,9 +312,10 @@ $gray-900: var(--color-text-dark);
   }
 
   &.status-inprogress {
-    background-color: var(--color-primary);
-    color: var(--color-text-inverse);
+    background-color: #f59e0b; /* amber-500 */
+    color: var(--color-text-primary); /* black in light, white in dark */
   }
+
 
   &.status-submitted, &.status-sent {
     background-color: var(--color-warning-light);

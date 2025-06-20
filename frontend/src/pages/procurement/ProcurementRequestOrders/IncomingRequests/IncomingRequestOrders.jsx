@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaPlus } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx"
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import './IncomingRequestOrders.scss';
 
 const IncomingRequestOrders = ({
@@ -19,6 +20,11 @@ const IncomingRequestOrders = ({
     const [showAddModal, setShowAddModal] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [currentOrderId, setCurrentOrderId] = useState(null);
+
+    // Confirmation dialog states
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [selectedRowForApproval, setSelectedRowForApproval] = useState(null);
+    const [isApproving, setIsApproving] = useState(false);
 
     // Form data and related states
     const [formData, setFormData] = useState({
@@ -113,67 +119,83 @@ const IncomingRequestOrders = ({
 
     const handleApproveClick = async (row, e) => {
         e.stopPropagation();
+        setSelectedRowForApproval(row);
+        setShowConfirmDialog(true);
+    };
 
-        if (window.confirm('Are you sure you want to approve this request and create an offer?')) {
-            try {
-                // Step 1: Update the request order status
-                const token = localStorage.getItem('token');
-                const updateResponse = await fetch(`http://localhost:8080/api/v1/requestOrders/${row.id}/status`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ status: 'APPROVED' })
-                });
+    const handleConfirmApproval = async () => {
+        if (!selectedRowForApproval) return;
 
-                if (!updateResponse.ok) {
-                    throw new Error('Failed to update request order status');
-                }
+        setIsApproving(true);
 
-                // Step 2: Create a new offer based on this request order
-                const offerData = {
-                    requestOrderId: row.id,
-                    title: `Procurement Offer for: ${row.title}`,
-                    description: `This procurement offer responds to the request "${row.title}".
-            Original request description: ${row.description}`,
-                    status: 'UNSTARTED',
-                    validUntil: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-                    offerItems: []
-                };
+        try {
+            // Step 1: Update the request order status
+            const token = localStorage.getItem('token');
+            const updateResponse = await fetch(`http://localhost:8080/api/v1/requestOrders/${selectedRowForApproval.id}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ status: 'APPROVED' })
+            });
 
-                const createOfferResponse = await fetch('http://localhost:8080/api/v1/offers', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(offerData)
-                });
+            if (!updateResponse.ok) {
+                throw new Error('Failed to update request order status');
+            }
 
-                if (!createOfferResponse.ok) {
-                    setNotificationMessage('Failed to accept request order');
-                    setShowNotification(true);
-                    setNotificationType("error");
-                    return;
-                }
+            // Step 2: Create a new offer based on this request order
+            const offerData = {
+                requestOrderId: selectedRowForApproval.id,
+                title: `Procurement Offer for: ${selectedRowForApproval.title}`,
+                description: `This procurement offer responds to the request "${selectedRowForApproval.title}".
+        Original request description: ${selectedRowForApproval.description}`,
+                status: 'UNSTARTED',
+                validUntil: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                offerItems: []
+            };
 
-                // Success notification
-                setNotificationMessage('Request Order accepted successfully, Visit Offers to start on the offer.');
-                setShowNotification(true);
-                setNotificationType("success");
+            const createOfferResponse = await fetch('http://localhost:8080/api/v1/offers', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(offerData)
+            });
 
-                // Refresh the request orders list in parent
-                if (onDataChange) {
-                    onDataChange();
-                }
-            } catch (err) {
-                console.error('Error approving request order:', err);
-                setNotificationMessage(`Error: ${err.message}`);
+            if (!createOfferResponse.ok) {
+                setNotificationMessage('Failed to accept request order');
                 setShowNotification(true);
                 setNotificationType("error");
+                return;
             }
+
+            // Success notification
+            setNotificationMessage('Request Order accepted successfully, Visit Offers to start on the offer.');
+            setShowNotification(true);
+            setNotificationType("success");
+
+            // Refresh the request orders list in parent
+            if (onDataChange) {
+                onDataChange();
+            }
+        } catch (err) {
+            console.error('Error approving request order:', err);
+            setNotificationMessage(`Error: ${err.message}`);
+            setShowNotification(true);
+            setNotificationType("error");
+        } finally {
+            setIsApproving(false);
+            setShowConfirmDialog(false);
+            setSelectedRowForApproval(null);
         }
+    };
+
+    const handleCancelApproval = () => {
+        setShowConfirmDialog(false);
+        setSelectedRowForApproval(null);
+        setIsApproving(false);
     };
 
     const handleEditClick = (row, e) => {
@@ -880,6 +902,20 @@ const IncomingRequestOrders = ({
                     </div>
                 </div>
             )}
+
+            {/* Confirmation Dialog for Approval */}
+            <ConfirmationDialog
+                isVisible={showConfirmDialog}
+                type="success"
+                title="Approve Request Order"
+                message={`Are you sure you want to approve "${selectedRowForApproval?.title}"? This will create a new procurement offer.`}
+                confirmText="Approve & Create Offer"
+                cancelText="Cancel"
+                onConfirm={handleConfirmApproval}
+                onCancel={handleCancelApproval}
+                isLoading={isApproving}
+                size="medium"
+            />
 
             <Snackbar
                 type={notificationType}
