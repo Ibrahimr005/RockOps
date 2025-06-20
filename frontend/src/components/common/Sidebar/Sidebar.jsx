@@ -34,7 +34,8 @@ import {
     FaWarehouse,
     FaTags,
     FaListAlt,
-    FaArrowLeft
+    FaArrowLeft,
+    FaBook,
 } from 'react-icons/fa';
 
 import './Sidebar.css';

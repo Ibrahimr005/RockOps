@@ -156,15 +156,13 @@ function App() {
                                         <Route path="info/:EquipmentID" element={<RoleRoute allowedRoles={allRoles}><ViewEquipmentData/></RoleRoute>}/>
                                         <Route path=":EquipmentID" element={<RoleRoute allowedRoles={allRoles}><EquipmentDetails/></RoleRoute>}/>
                                     </Route>
-<<<<<<< Updated upstream
-=======
 
                                     {/* Finance Routes */}
                                     <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={allRoles}><GeneralLedger/></RoleRoute>} />
 
                                     {/* Generic Related Documents Route */}
                                     <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
->>>>>>> Stashed changes
+
 
                                     {/* Generic Related Documents Route */}
                                     <Route path="/related-documents/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
