@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTheme } from '../../contexts/ThemeContext.jsx';
+import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import './ProcurementIntroCard.scss';
 
 const ProcurementIntroCard = ({

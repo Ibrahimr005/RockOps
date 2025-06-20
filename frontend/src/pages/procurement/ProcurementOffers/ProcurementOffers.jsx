@@ -13,7 +13,7 @@ import FinalizeOffers from "./FinalizeOffers/FinalizeOffers";
 import CompletedOffers from "./CompletedOffers/CompletedOffers.jsx";
 
 // Import the new component
-import ProcurementIntroCard from '../../../components/procurement/ProcurementIntroCard';
+import ProcurementIntroCard from '../../../components/procurement/IntroCard/ProcurementIntroCard.jsx';
 
 // Icons
 import {

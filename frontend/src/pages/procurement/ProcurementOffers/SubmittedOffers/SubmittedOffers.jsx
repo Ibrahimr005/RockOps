@@ -176,7 +176,7 @@ const SubmittedOffers = ({
     };
 
     return (
-        <div className="procurement-main-content">
+        <div className="procurement-offers-main-content">
             {/* Offers List */}
             <div className="procurement-list-section">
                 <div className="procurement-list-header">

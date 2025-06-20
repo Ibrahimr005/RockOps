@@ -176,7 +176,7 @@ const FinalizeOffers = ({
     const totalFinalizedItems = Object.values(finalizedItems).filter(v => v).length;
 
     return (
-        <div className="procurement-main-content">
+        <div className="procurement-offers-main-content">
             {/* Snackbar Notification */}
             <Snackbar
                 type={snackbarType}

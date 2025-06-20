@@ -11,6 +11,8 @@ import {
     FiFlag
 } from 'react-icons/fi';
 import Snackbar from '../../../../components/common/Snackbar2/Snackbar2.jsx'
+import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import "../ProcurementOffers.scss"
 import "./UnstartedOffers.scss"
 
@@ -20,25 +22,43 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
 
+    // Confirmation dialog state
+    const [showStartWorkingConfirm, setShowStartWorkingConfirm] = useState(false);
+    const [isStartingWork, setIsStartingWork] = useState(false);
+
     // Start working on an offer (change from UNSTARTED to INPROGRESS)
-    const startWorkingOnOffer = async (offer) => {
+    const handleStartWorkingClick = () => {
+        setShowStartWorkingConfirm(true);
+    };
+
+    const confirmStartWorking = async () => {
+        setIsStartingWork(true);
         try {
-            await handleOfferStatusChange(offer.id, 'INPROGRESS');
+            await handleOfferStatusChange(activeOffer.id, 'INPROGRESS');
 
             // Show success notification
-            setNotificationMessage(`Offer "${offer.title}" is in progress`);
+            setNotificationMessage(`Offer "${activeOffer.title}" is now in progress`);
             setNotificationType('success');
             setShowNotification(true);
+
+            // Close confirmation dialog
+            setShowStartWorkingConfirm(false);
         } catch (error) {
             // Show error notification if something goes wrong
             setNotificationMessage('Failed to start working on offer. Please try again.');
             setNotificationType('error');
             setShowNotification(true);
+        } finally {
+            setIsStartingWork(false);
         }
     };
 
+    const cancelStartWorking = () => {
+        setShowStartWorkingConfirm(false);
+    };
+
     return (
-        <div className="procurement-main-content">
+        <div className="procurement-offers-main-content">
             {/* Offers List */}
             <div className="procurement-list-section">
                 <div className="procurement-list-header">
@@ -55,7 +75,7 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                         {offers.map(offer => (
                             <div
                                 key={offer.id}
-                                className={`procurement-item-card ${activeOffer?.id === offer.id ? 'selected' : ''}`}
+                                className={`procurement-item-card-unstarted ${activeOffer?.id === offer.id ? 'selected' : ''}`}
                                 onClick={() => setActiveOffer(offer)}
                             >
                                 <div className="procurement-item-header">
@@ -80,7 +100,7 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                 {activeOffer ? (
                     <div className="procurement-details-content">
                         <div className="procurement-details-header">
-                            <div>
+                            <div className="procurement-title-section">
                                 <h3>{activeOffer.title}</h3>
                                 <div className="procurement-header-meta">
                                     <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
@@ -94,8 +114,8 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
 
                             <div className="procurement-details-actions">
                                 <button
-                                    className="procurement-button start-working"
-                                    onClick={() => startWorkingOnOffer(activeOffer)}
+                                    className="btn-primary"
+                                    onClick={handleStartWorkingClick}
                                 >
                                     Start Working
                                 </button>
@@ -110,81 +130,12 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                         ) : (
                             /* Unstarted Offer Content with updated class names */
                             <div className="procurement-unstarted-offers-info">
-                                <div className="procurement-request-summary-card">
-                                    <h4>Request Order Details</h4>
-
-                                    <div className="procurement-request-details-grid">
-                                        <div className="request-detail-item">
-                                            <div className="request-detail-icon">
-                                                <FiUser size={18} />
-                                            </div>
-                                            <div className="request-detail-content">
-                                                <span className="request-detail-label">Requester</span>
-                                                <span className="request-detail-value">{activeOffer.requestOrder.requesterName || 'Unknown'}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="request-detail-item">
-                                            <div className="request-detail-icon">
-                                                <FiCalendar size={18} />
-                                            </div>
-                                            <div className="request-detail-content">
-                                                <span className="request-detail-label">Request Date</span>
-                                                <span className="request-detail-value">{new Date(activeOffer.requestOrder.createdAt).toLocaleDateString()}</span>
-                                            </div>
-
-                                        </div>
-
-                                        {activeOffer.requestOrder.description && (
-                                            <div className="request-detail-item">
-                                                <div className="request-detail-icon">
-                                                    <FiFileText size={18} />
-                                                </div>
-                                                <div className="request-detail-content">
-                                                    <span className="request-detail-label">Description</span>
-                                                    <p className="request-detail-value description-text">
-                                                        {activeOffer.requestOrder.description}
-                                                    </p>
-                                                </div>
-
-
-                                            </div>
-                                        )}
-                                        <div className="request-detail-item">
-                                            <div className="request-detail-icon">
-                                                <FiCalendar size={18} />
-                                            </div>
-                                            <div className="request-detail-content">
-                                                <span className="request-detail-label">Deadline</span>
-                                                <span className="request-detail-value">{new Date(activeOffer.requestOrder.deadline).toLocaleDateString()}</span>
-                                            </div>
-
-                                        </div>
-
-
-
-
-                                        {activeOffer.requestOrder.priority && (
-                                            <div className="request-detail-item">
-                                                <div className="request-detail-icon">
-                                                    <FiFlag size={18} />
-                                                </div>
-                                                <div className="request-detail-content">
-                                                    <span className="request-detail-label">Priority</span>
-                                                    <span className={`request-detail-value request-priority ${activeOffer.requestOrder.priority.toLowerCase()}`}>
-                                                        {activeOffer.requestOrder.priority}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+                                <RequestOrderDetails requestOrder={activeOffer.requestOrder} />
 
                                 {/* Show list of request items that will need procurement with updated class names */}
                                 {activeOffer.requestOrder.requestItems && activeOffer.requestOrder.requestItems.length > 0 && (
                                     <div className="procurement-unstarted-offers-items-preview">
                                         <h4>Items That Will Need Procurement</h4>
-
 
                                         {/* Updated Item Cards with specific class names */}
                                         <div className="procurement-unstarted-offers-items-grid">
@@ -237,6 +188,21 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                     </div>
                 )}
             </div>
+
+            {/* Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={showStartWorkingConfirm}
+                type="success"
+                title="Start Working on Offer"
+                message={`Are you sure you want to start working on "${activeOffer?.title}"?\u00A0\u00A0\u00A0This will move the offer to In Progress status.`}
+
+                confirmText="Start Working"
+                cancelText="Cancel"
+                onConfirm={confirmStartWorking}
+                onCancel={cancelStartWorking}
+                isLoading={isStartingWork}
+                size="medium"
+            />
 
             {/* Snackbar Component */}
             <Snackbar

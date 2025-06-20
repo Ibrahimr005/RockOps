@@ -12,35 +12,67 @@
 // ===================================
 
 // Override item card colors for unstarted offers
-.procurement-offers-container[data-tab="unstarted"] {
 
-  .procurement-item-card {
-    // Override the default blue with gray for unstarted
-    border-left-color: var(--color-text-muted);
-    background: linear-gradient(to right, rgba(156, 163, 175, 0.1), var(--section-background-color));
 
-    &:hover {
-      border-color: var(--color-text-secondary);
-      box-shadow: var(--shadow-md);
-      background: linear-gradient(to right, rgba(156, 163, 175, 0.15), var(--color-surface-hover));
-    }
 
-    &.selected {
-      border-color: var(--color-text-secondary);
-      box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.1);
-      background-color: var(--color-surface-secondary);
+.procurement-item-card-unstarted {
+  border: 1px solid var(--border-color-light);
+  border-left: 3px solid var(--color-primary); // Default color, tabs can override
+  background: linear-gradient(to right, rgba(72, 128, 255, 0.05), var(--section-background-color));
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+  transition: all var(--transition-normal) ease;
+  position: relative;
+
+  &:hover {
+    border-color: var(--color-primary-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+    background: linear-gradient(to right, rgba(72, 128, 255, 0.08), var(--color-surface-hover));
+  }
+
+  &.selected {
+    border-color: var(--color-primary-hover);
+    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+    background-color: var(--color-surface-secondary);
+  }
+
+  .procurement-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+
+    h4 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-dark);
+      margin-right: 1rem;
     }
   }
 
-  // Customize the "Start Working" button color
-  .procurement-button.start-working {
-    background-color: var(--color-success-light);
+  .procurement-item-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
 
-    &:hover {
-      background-color: var(--color-success-hover);
+    svg {
+      margin-right: 0.3rem;
+      vertical-align: -1px;
     }
+  }
+
+  .procurement-item-date {
+    margin-bottom: 0.5rem;
   }
 }
+
+
 
 // ===================================
 // 2. REQUEST ORDER DETAILS (Unstarted-specific)
@@ -206,12 +238,12 @@
 // ===================================
 
 .procurement-unstarted-offers-items-preview {
-  background: var(--section-background-color);
-  border: 1px solid var(--border-color-light);
-  border-radius: var(--radius-md);
+
+
+
   padding: 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-sm);
+
 
   h4 {
     font-size: 1.125rem;
@@ -246,6 +278,7 @@
 }
 
 .procurement-unstarted-offers-items-grid {
+  margin-top: 1rem;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 1.25rem;
