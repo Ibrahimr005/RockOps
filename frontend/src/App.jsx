@@ -45,7 +45,9 @@ import ProcurementRequestOrders from "./pages/procurement/ProcurementRequestOrde
 import PurchaseOrders from "./pages/procurement/ProcurementPurchaseOrders/ProcurementPurchaseOrders/PurchaseOrders.jsx";
 import PurchaseOrderDetails
     from "./pages/procurement/ProcurementPurchaseOrders/PurchaseOrderDetails/PurchaseOrderDetails.jsx";
+
 import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
+import GeneralLedger from "./pages/finance/GeneralLedger/GeneralLedger.jsx";
 import LoadingPage from "./components/common/LoadingPage/LoadingPage.jsx";
 
 
@@ -154,6 +156,13 @@ function App() {
                                         <Route path="info/:EquipmentID" element={<RoleRoute allowedRoles={allRoles}><ViewEquipmentData/></RoleRoute>}/>
                                         <Route path=":EquipmentID" element={<RoleRoute allowedRoles={allRoles}><EquipmentDetails/></RoleRoute>}/>
                                     </Route>
+
+                                    {/* Finance Routes */}
+                                    <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={allRoles}><GeneralLedger/></RoleRoute>} />
+
+                                    {/* Generic Related Documents Route */}
+                                    <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
+
 
                                     {/* Generic Related Documents Route */}
                                     <Route path="/related-documents/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
