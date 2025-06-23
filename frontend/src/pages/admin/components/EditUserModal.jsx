@@ -89,6 +89,8 @@ const EditUserModal = ({user, mode = 'edit', onCancel, onSave}) => {
             'HR_EMPLOYEE',
             'FINANCE_EMPLOYEE',
             'FINANCE_MANAGER',
+            'MAINTENANCE_EMPLOYEE',
+            'MAINTENANCE_MANAGER',
         ];
 
         return roles.map(role => (

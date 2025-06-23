@@ -42,7 +42,7 @@ public class InSiteMaintenanceService {
 
     // Get all maintenance records for equipment with related transactions
     public List<InSiteMaintenance> getMaintenanceByEquipmentId(UUID equipmentId) {
-        return inSiteMaintenanceRepository.findByEquipmentIdWithTransactions(equipmentId);
+        return inSiteMaintenanceRepository.findByEquipmentId(equipmentId);
     }
 
     // Create a new maintenance record

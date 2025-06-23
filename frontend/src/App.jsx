@@ -48,7 +48,12 @@ import PurchaseOrderDetails
 import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
 import LoadingPage from "./components/common/LoadingPage/LoadingPage.jsx";
 
-
+// ===================== Maintenance Team Components =====================
+import MaintenanceLayout from "./pages/maintenance/MaintenanceLayout.jsx";
+import MaintenanceDashboard from "./pages/maintenance/MaintenanceDashboard/MaintenanceDashboard.jsx";
+import MaintenanceRecords from "./pages/maintenance/MaintenanceRecords/MaintenanceRecords.jsx";
+import MaintenanceRecordDetail from "./pages/maintenance/MaintenanceRecordDetail/MaintenanceRecordDetail.jsx";
+import Contacts from "./pages/maintenance/Contacts/Contacts.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -65,9 +70,9 @@ const RoleRoute = ({allowedRoles, children, redirectPath = '/dashboard'}) => {
     return children;
 };
 
-const allRoles = ["ADMIN", "USER", "SITE_ADMIN", "PROCUREMENT", "WAREHOUSE_MANAGER", "SECRETARY", "EQUIPMENT_MANAGER", "HR_MANAGER", "HR_EMPLOYEE", "FINANCE_EMPLOYEE", "FINANCE_MANAGER"];
+const allRoles = ["ADMIN", "USER", "SITE_ADMIN", "PROCUREMENT", "WAREHOUSE_MANAGER", "SECRETARY", "EQUIPMENT_MANAGER", "HR_MANAGER", "HR_EMPLOYEE", "FINANCE_EMPLOYEE", "FINANCE_MANAGER", "MAINTENANCE_EMPLOYEE", "MAINTENANCE_MANAGER"];
 
-const mostRoles = ["ADMIN", "USER", "SITE_ADMIN", "PROCUREMENT", "WAREHOUSE_MANAGER", "SECRETARY", "EQUIPMENT_MANAGER", "HR_MANAGER", "HR_EMPLOYEE"];
+const mostRoles = ["ADMIN", "USER", "SITE_ADMIN", "PROCUREMENT", "WAREHOUSE_MANAGER", "SECRETARY", "EQUIPMENT_MANAGER", "HR_MANAGER", "HR_EMPLOYEE", "MAINTENANCE_EMPLOYEE", "MAINTENANCE_MANAGER"];
 
 
 // ===================== Layout Components =====================
@@ -157,6 +162,14 @@ function App() {
 
                                     {/* Generic Related Documents Route */}
                                     <Route path="/related-documents/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
+
+                                    {/* Maintenance Team Routes */}
+                                    <Route path="/maintenance" element={<RoleRoute allowedRoles={["MAINTENANCE_EMPLOYEE", "MAINTENANCE_MANAGER", "ADMIN"]}><MaintenanceLayout/></RoleRoute>}>
+                                        <Route index element={<MaintenanceDashboard/>}/>
+                                        <Route path="records" element={<MaintenanceRecords/>}/>
+                                        <Route path="records/:recordId" element={<MaintenanceRecordDetail/>}/>
+                                        <Route path="contacts" element={<Contacts/>}/>
+                                    </Route>
                                 </Route>
 
 

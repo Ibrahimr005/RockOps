@@ -21,6 +21,9 @@ const DataTable = ({
                        actionsColumnWidth = '120px', // Default width for actions column
                        emptyMessage = 'No data available' // Custom empty message
                    }) => {
+    // Ensure data is always an array
+    const safeData = Array.isArray(data) ? data : [];
+
     // States for pagination
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
@@ -57,7 +60,7 @@ const DataTable = ({
     // Reset current page when data, search term, or filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, filters, data]);
+    }, [searchTerm, filters, safeData]);
 
     // Close actions menu when clicking outside
     useEffect(() => {
@@ -90,16 +93,16 @@ const DataTable = ({
 
     // Apply search filter
     const searchFiltered = useMemo(() => {
-        if (!searchTerm.trim()) return data;
+        if (!searchTerm.trim()) return safeData;
 
-        return data.filter(item => {
+        return safeData.filter(item => {
             return columns.some(column => {
                 if (!column.accessor || column.excludeFromSearch) return false;
                 const value = getValue(item, column.accessor);
                 return value && String(value).toLowerCase().includes(searchTerm.toLowerCase());
             });
         });
-    }, [data, searchTerm, columns]);
+    }, [safeData, searchTerm, columns]);
 
     // Apply column filters
     const filtered = useMemo(() => {
@@ -205,7 +208,7 @@ const DataTable = ({
 
     // Get filter options for a column
     const getFilterOptions = (columnAccessor) => {
-        const values = data.map(row => getValue(row, columnAccessor)).filter(val => val != null);
+        const values = safeData.map(row => getValue(row, columnAccessor)).filter(val => val != null);
         return [...new Set(values)].sort();
     };
 
@@ -398,7 +401,7 @@ const DataTable = ({
 
                     <div className="rockops-table__filter-actions">
                         <div className="filter-stats">
-                            {sortedData.length} of {data.length} results
+                            {sortedData.length} of {safeData.length} results
                             {activeFiltersCount > 0 && ` with ${activeFiltersCount} filter${activeFiltersCount !== 1 ? 's' : ''} applied`}
                         </div>
 
@@ -609,7 +612,7 @@ const DataTable = ({
                 <div className="rockops-table__footer-right">
                     {/*<div className="rockops-table__showing">*/}
                     {/*    Showing {startIndex + 1} to {endIndex} of {sortedData.length} entries*/}
-                    {/*    {sortedData.length !== data.length && ` (filtered from ${data.length} total entries)`}*/}
+                    {/*    {sortedData.length !== safeData.length && ` (filtered from ${safeData.length} total entries)`}*/}
                     {/*</div>*/}
 
                     {/* Pagination */}

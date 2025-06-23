@@ -7,7 +7,9 @@
 export const EQUIPMENT_MANAGER_ROLES = [
     'Equipment Manager',
     'EQUIPMENT_MANAGER',
-    'equipment_manager'
+    'equipment_manager',
+    'MAINTENANCE_EMPLOYEE',
+    'MAINTENANCE_MANAGER'
 ];
 
 // Define admin roles that have all permissions

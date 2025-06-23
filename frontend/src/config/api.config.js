@@ -338,3 +338,65 @@ export const INSITE_MAINTENANCE_ENDPOINTS = {
     VALIDATE_TRANSACTION: (equipmentId, maintenanceId, transactionId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}/validate-transaction/${transactionId}`,
     ANALYTICS: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/analytics`
 };
+
+// External Maintenance Tracking module endpoints
+export const MAINTENANCE_ENDPOINTS = {
+    // Dashboard
+    DASHBOARD: '/api/maintenance/dashboard',
+    
+    // Maintenance Records
+    RECORDS: {
+        BASE: '/api/maintenance/records',
+        BY_ID: (id) => `/api/maintenance/records/${id}`,
+        CREATE: '/api/maintenance/records',
+        UPDATE: (id) => `/api/maintenance/records/${id}`,
+        DELETE: (id) => `/api/maintenance/records/${id}`,
+        ACTIVE: '/api/maintenance/records/active',
+        OVERDUE: '/api/maintenance/records/overdue',
+        BY_EQUIPMENT: (equipmentId) => `/api/maintenance/records/equipment/${equipmentId}`
+    },
+    
+    // Maintenance Steps
+    STEPS: {
+        BY_RECORD: (recordId) => `/api/maintenance/records/${recordId}/steps`,
+        BY_ID: (stepId) => `/api/maintenance/steps/${stepId}`,
+        CREATE: (recordId) => `/api/maintenance/records/${recordId}/steps`,
+        UPDATE: (stepId) => `/api/maintenance/steps/${stepId}`,
+        DELETE: (stepId) => `/api/maintenance/steps/${stepId}`,
+        COMPLETE: (stepId) => `/api/maintenance/steps/${stepId}/complete`,
+        HANDOFF: (stepId) => `/api/maintenance/steps/${stepId}/handoff`,
+        ASSIGN_CONTACT: (stepId, contactId) => `/api/maintenance/steps/${stepId}/assign-contact/${contactId}`,
+        MARK_AS_FINAL: (stepId) => `/api/maintenance/steps/${stepId}/mark-as-final`
+    },
+    
+    // Contact Logs
+    CONTACTS: {
+        BY_RECORD: (recordId) => `/api/maintenance/records/${recordId}/contacts`,
+        CREATE: (stepId) => `/api/maintenance/steps/${stepId}/contacts`
+    },
+    
+    // Available Contacts
+    AVAILABLE_CONTACTS: '/api/maintenance/available-contacts'
+};
+
+// Contact Management module endpoints
+export const CONTACT_ENDPOINTS = {
+    BASE: '/api/contacts',
+    BY_ID: (id) => `/api/contacts/${id}`,
+    CREATE: '/api/contacts',
+    UPDATE: (id) => `/api/contacts/${id}`,
+    DELETE: (id) => `/api/contacts/${id}`,
+    FILTER: '/api/contacts/filter',
+    ACTIVE: '/api/contacts/active',
+    BY_TYPE: (contactType) => `/api/contacts/type/${contactType}`,
+    AVAILABLE: '/api/contacts/available',
+    AVAILABLE_BY_SPECIALIZATION: (specialization) => `/api/contacts/available/specialization/${specialization}`,
+    AVAILABLE_BY_TYPE: (contactType) => `/api/contacts/available/type/${contactType}`,
+    EMERGENCY: '/api/contacts/emergency',
+    SEARCH: '/api/contacts/search',
+    DEACTIVATE: (id) => `/api/contacts/${id}/deactivate`,
+    ACTIVATE: (id) => `/api/contacts/${id}/activate`,
+    OVERDUE_ASSIGNMENTS: '/api/contacts/overdue-assignments',
+    NEEDING_FOLLOWUP: '/api/contacts/needing-followup',
+    STATISTICS: '/api/contacts/statistics'
+};
