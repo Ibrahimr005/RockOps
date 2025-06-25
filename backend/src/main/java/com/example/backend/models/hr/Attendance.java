@@ -5,237 +5,145 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.Duration;
 import java.util.UUID;
 
 @Entity
-@Table(name = "attendances")
+@Table(name = "attendance",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"employee_id", "date"})
+        })
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Attendance {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", nullable = false)
+    @JsonBackReference("employee-attendance")
     private Employee employee;
 
-    @Column(name = "attendance_date", nullable = false)
+    @Column(nullable = false)
     private LocalDate date;
 
-    // Contract type for this attendance record
-    @Enumerated(EnumType.STRING)
-    private ContractType contractType;
+    // For MONTHLY (Full-time) employees - time tracking
+    @Column(name = "check_in")
+    private LocalTime checkIn;
 
-    // HOURLY contract fields
-    private LocalTime checkInTime;
-    private LocalTime checkOutTime;
-    private Integer breakDurationMinutes;
+    @Column(name = "check_out")
+    private LocalTime checkOut;
+
+    // For HOURLY employees
+    @Column(name = "hours_worked")
     private Double hoursWorked;
+
+    @Column(name = "expected_hours")
+    private Double expectedHours; // Based on JobPosition.hoursPerShift
+
+    @Column(name = "overtime_hours")
     private Double overtimeHours;
-    private Double regularHours;
 
-    // DAILY contract fields
+    // For all employees
     @Enumerated(EnumType.STRING)
-    private DailyAttendanceStatus dailyStatus;
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    private AttendanceStatus status = AttendanceStatus.ABSENT;
 
-    // MONTHLY contract fields (existing)
+    // Day type for better tracking
     @Enumerated(EnumType.STRING)
-    private AttendanceStatus status;
+    @Column(name = "day_type")
+    @Builder.Default
+    private DayType dayType = DayType.WORKING_DAY;
 
-    // Common fields
+    // Leave information
+    @Column(name = "leave_type")
+    private String leaveType; // SICK, VACATION, PERSONAL, etc.
+
+    @Column(name = "leave_approved")
+    private Boolean leaveApproved;
+
+    // Optional fields
+    @Column(length = 500)
     private String notes;
-    private Boolean isHoliday;
-    private Boolean isLeave;
-    private String location;
-    private Double latitude;
-    private Double longitude;
 
-    // Calculated fields
-    private Double dailyEarnings;
-    private Boolean isLate;
-    private Integer lateMinutes;
+    // Location tracking (optional)
+    @Column(name = "check_in_location")
+    private String checkInLocation;
 
-    public enum ContractType {
-        HOURLY, DAILY, MONTHLY
+    @Column(name = "check_out_location")
+    private String checkOutLocation;
+
+    // Audit fields
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "created_by")
+    private String createdBy;
+
+    @Column(name = "updated_by")
+    private String updatedBy;
+
+    // Enum for attendance status
+    public enum AttendanceStatus {
+        PRESENT,      // Employee was present
+        ABSENT,       // Employee was absent without leave
+        OFF,          // Scheduled off day (weekend/holiday)
+        ON_LEAVE,     // Employee on approved leave
+        HALF_DAY,     // Half day attendance
+        LATE,         // Present but late
+        EARLY_OUT     // Left early
     }
 
-    public enum DailyAttendanceStatus {
-        PRESENT, ABSENT, HOLIDAY, LEAVE
+    // Enum for day type
+    public enum DayType {
+        WORKING_DAY,
+        WEEKEND,
+        PUBLIC_HOLIDAY,
+        COMPANY_HOLIDAY
     }
 
-    // Helper methods for HOURLY contract
-    public void calculateHoursWorked() {
-        if (checkInTime != null && checkOutTime != null) {
-            Duration duration = Duration.between(checkInTime, checkOutTime);
-
-            // Subtract break time if applicable
-            long totalMinutes = duration.toMinutes();
-            if (breakDurationMinutes != null) {
-                totalMinutes -= breakDurationMinutes;
-            }
-
-            // Convert to hours with 2 decimal precision
-            this.hoursWorked = Math.round((totalMinutes / 60.0) * 100.0) / 100.0;
-
-            // Calculate regular and overtime hours
-            calculateRegularAndOvertimeHours();
+    // Helper methods
+    public Double calculateTotalHours() {
+        if (checkIn != null && checkOut != null) {
+            long minutes = java.time.Duration.between(checkIn, checkOut).toMinutes();
+            return minutes / 60.0;
+        } else if (hoursWorked != null) {
+            return hoursWorked;
         }
+        return 0.0;
     }
 
-    private void calculateRegularAndOvertimeHours() {
-        if (hoursWorked != null && employee != null && employee.getJobPosition() != null) {
-            JobPosition jobPosition = employee.getJobPosition();
-            Integer standardHours = jobPosition.getHoursPerShift();
-
-            if (standardHours != null) {
-                if (hoursWorked <= standardHours) {
-                    this.regularHours = hoursWorked;
-                    this.overtimeHours = 0.0;
-                } else {
-                    this.regularHours = standardHours.doubleValue();
-                    this.overtimeHours = hoursWorked - standardHours;
-                }
-            } else {
-                // Default to 8 hours if not specified
-                if (hoursWorked <= 8) {
-                    this.regularHours = hoursWorked;
-                    this.overtimeHours = 0.0;
-                } else {
-                    this.regularHours = 8.0;
-                    this.overtimeHours = hoursWorked - 8;
-                }
-            }
+    public Double calculateOvertimeHours() {
+        if (expectedHours != null && hoursWorked != null) {
+            double overtime = hoursWorked - expectedHours;
+            return overtime > 0 ? overtime : 0.0;
         }
+        return 0.0;
     }
 
-    // Calculate daily earnings based on contract type
-    public void calculateDailyEarnings() {
-        if (employee == null || employee.getJobPosition() == null) {
-            this.dailyEarnings = 0.0;
-            return;
-        }
-
-        JobPosition jobPosition = employee.getJobPosition();
-
-        switch (contractType) {
-            case HOURLY:
-                calculateHourlyEarnings(jobPosition);
-                break;
-            case DAILY:
-                calculateDailyEarnings(jobPosition);
-                break;
-            case MONTHLY:
-                this.dailyEarnings = jobPosition.calculateDailySalary();
-                break;
-            default:
-                this.dailyEarnings = 0.0;
-        }
+    public boolean isWorkingDay() {
+        return dayType == DayType.WORKING_DAY;
     }
 
-    private void calculateHourlyEarnings(JobPosition jobPosition) {
-        Double hourlyRate = jobPosition.getHourlyRate();
-        Double overtimeMultiplier = jobPosition.getOvertimeMultiplier();
-
-        if (hourlyRate == null) {
-            this.dailyEarnings = 0.0;
-            return;
-        }
-
-        double earnings = 0.0;
-
-        // Regular hours earnings
-        if (regularHours != null) {
-            earnings += regularHours * hourlyRate;
-        }
-
-        // Overtime earnings
-        if (overtimeHours != null && overtimeHours > 0) {
-            double overtimeRate = hourlyRate * (overtimeMultiplier != null ? overtimeMultiplier : 1.5);
-            earnings += overtimeHours * overtimeRate;
-        }
-
-        this.dailyEarnings = Math.round(earnings * 100.0) / 100.0;
-    }
-
-    private void calculateDailyEarnings(JobPosition jobPosition) {
-        if (dailyStatus == DailyAttendanceStatus.PRESENT) {
-            this.dailyEarnings = jobPosition.getDailyRate();
-        } else {
-            this.dailyEarnings = 0.0;
-        }
-    }
-
-    // Check if employee is late (for HOURLY contracts)
-    public void checkLateness() {
-        if (contractType == ContractType.HOURLY && checkInTime != null
-                && employee != null && employee.getJobPosition() != null) {
-
-            // Assume standard start time is 9:00 AM (can be configurable)
-            LocalTime standardStartTime = LocalTime.of(9, 0);
-
-            if (checkInTime.isAfter(standardStartTime)) {
-                this.isLate = true;
-                Duration lateDuration = Duration.between(standardStartTime, checkInTime);
-                this.lateMinutes = (int) lateDuration.toMinutes();
-            } else {
-                this.isLate = false;
-                this.lateMinutes = 0;
-            }
-        }
-    }
-
-    // Auto-calculate fields before saving
-    @PrePersist
-    @PreUpdate
-    public void autoCalculate() {
-        if (contractType == ContractType.HOURLY) {
-            calculateHoursWorked();
-            checkLateness();
-        }
-        calculateDailyEarnings();
-    }
-
-    // Get display status based on contract type
-    public String getDisplayStatus() {
-        switch (contractType) {
-            case HOURLY:
-                if (checkInTime != null && checkOutTime == null) {
-                    return "CHECKED_IN";
-                } else if (checkInTime != null && checkOutTime != null) {
-                    return isLate != null && isLate ? "PRESENT_LATE" : "PRESENT";
-                } else {
-                    return "ABSENT";
-                }
-            case DAILY:
-                return dailyStatus != null ? dailyStatus.name() : "ABSENT";
-            case MONTHLY:
-                return status != null ? status.name() : "ABSENT";
-            default:
-                return "UNKNOWN";
-        }
-    }
-
-    // Validation methods
-    public boolean isValidHourlyRecord() {
-        return contractType == ContractType.HOURLY
-                && checkInTime != null;
-    }
-
-    public boolean isValidDailyRecord() {
-        return contractType == ContractType.DAILY
-                && dailyStatus != null;
-    }
-
-    public boolean isValidMonthlyRecord() {
-        return contractType == ContractType.MONTHLY
-                && status != null;
+    public boolean isPresent() {
+        return status == AttendanceStatus.PRESENT ||
+                status == AttendanceStatus.LATE ||
+                status == AttendanceStatus.HALF_DAY ||
+                status == AttendanceStatus.EARLY_OUT;
     }
 }

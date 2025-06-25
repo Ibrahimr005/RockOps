@@ -1,262 +1,195 @@
 package com.example.backend.controllers.hr;
 
-import com.example.backend.dto.hr.AttendanceDTO;
-import com.example.backend.models.hr.Attendance;
-import com.example.backend.models.hr.AttendanceStatus;
+import com.example.backend.dto.hr.*;
 import com.example.backend.services.hr.AttendanceService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.backend.models.hr.Attendance;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/attendance")
-@CrossOrigin(origins = "*")
+@RequiredArgsConstructor
+@Slf4j
+@CrossOrigin(origins = "*", maxAge = 3600)
 public class AttendanceController {
 
-    @Autowired
-    private AttendanceService attendanceService;
+    private final AttendanceService attendanceService;
 
     /**
-     * Record attendance for any contract type
+     * Get attendance by date and site
      */
-    @PostMapping("/record")
-    public ResponseEntity<AttendanceDTO> recordAttendance(@RequestBody AttendanceDTO attendanceDTO) {
-        try {
-            AttendanceDTO result = attendanceService.recordAttendance(attendanceDTO);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    /**
-     * Check in for hourly employees
-     */
-    @PostMapping("/check-in")
-    public ResponseEntity<AttendanceDTO> checkIn(
-            @RequestParam UUID employeeId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime checkInTime,
-            @RequestParam(required = false) String location,
-            @RequestParam(required = false) Double latitude,
-            @RequestParam(required = false) Double longitude) {
-        try {
-            AttendanceDTO result = attendanceService.checkIn(employeeId, checkInTime, location, latitude, longitude);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    AttendanceDTO.builder()
-                            .validationMessage(e.getMessage())
-                            .isValidRecord(false)
-                            .build()
-            );
-        }
-    }
-
-    /**
-     * Check out for hourly employees
-     */
-    @PostMapping("/check-out")
-    public ResponseEntity<AttendanceDTO> checkOut(
-            @RequestParam UUID employeeId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime checkOutTime) {
-        try {
-            AttendanceDTO result = attendanceService.checkOut(employeeId, checkOutTime);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    AttendanceDTO.builder()
-                            .validationMessage(e.getMessage())
-                            .isValidRecord(false)
-                            .build()
-            );
-        }
-    }
-
-    /**
-     * Mark daily attendance for daily contract employees
-     */
-    @PostMapping("/daily")
-    public ResponseEntity<AttendanceDTO> markDailyAttendance(
-            @RequestParam UUID employeeId,
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'SITE_ADMIN')")
+    public ResponseEntity<List<EmployeeMonthlyAttendanceDTO>> getAttendance(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @RequestParam Attendance.DailyAttendanceStatus status,
-            @RequestParam(required = false) String notes) {
-        try {
-            AttendanceDTO result = attendanceService.markDailyAttendance(employeeId, date, status, notes);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    AttendanceDTO.builder()
-                            .validationMessage(e.getMessage())
-                            .isValidRecord(false)
-                            .build()
-            );
-        }
+            @RequestParam UUID siteId) {
+
+        log.info("Fetching attendance for site: {} on date: {}", siteId, date);
+        // For daily view, we can use the monthly endpoint with the same month
+        List<EmployeeMonthlyAttendanceDTO> attendance = attendanceService.getMonthlyAttendance(
+                siteId, date.getYear(), date.getMonthValue()
+        );
+        return ResponseEntity.ok(attendance);
     }
 
     /**
-     * Generate monthly attendance for monthly contract employees
+     * Get monthly attendance sheet
      */
-    @PostMapping("/generate-monthly")
-    public ResponseEntity<List<AttendanceDTO>> generateMonthlyAttendance(
-            @RequestParam UUID employeeId,
+    @GetMapping("/monthly")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'SITE_ADMIN')")
+    public ResponseEntity<List<EmployeeMonthlyAttendanceDTO>> getMonthlyAttendance(
+            @RequestParam UUID siteId,
             @RequestParam int year,
             @RequestParam int month) {
+
+        log.info("Fetching monthly attendance for site: {} for {}/{}", siteId, month, year);
+        List<EmployeeMonthlyAttendanceDTO> monthlyAttendance = attendanceService.getMonthlyAttendance(siteId, year, month);
+        return ResponseEntity.ok(monthlyAttendance);
+    }
+
+    /**
+     * Update single attendance record
+     */
+    @PutMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'SITE_ADMIN')")
+    public ResponseEntity<?> updateAttendance(@RequestBody AttendanceRequestDTO requestDTO) {
         try {
-            List<AttendanceDTO> result = attendanceService.generateMonthlyAttendance(employeeId, year, month);
-            return ResponseEntity.ok(result);
+            log.info("Updating attendance for employee: {} on date: {}", requestDTO.getEmployeeId(), requestDTO.getDate());
+            AttendanceResponseDTO response = attendanceService.updateAttendance(requestDTO);
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            log.error("Error updating attendance: ", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
     /**
-     * Get attendance by employee and date range
+     * Bulk save attendance
+     */
+    @PostMapping("/bulk")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'SITE_ADMIN')")
+    public ResponseEntity<?> bulkSaveAttendance(@RequestBody BulkAttendanceDTO bulkDTO) {
+        try {
+            log.info("Bulk saving attendance for {} employees", bulkDTO.getAttendanceRecords().size());
+            List<AttendanceResponseDTO> responses = attendanceService.bulkUpdateAttendance(bulkDTO);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "processed", responses.size(),
+                    "records", responses
+            ));
+        } catch (Exception e) {
+            log.error("Error in bulk save: ", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Get attendance summary
+     */
+    @GetMapping("/summary")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'SITE_ADMIN')")
+    public ResponseEntity<Map<String, Object>> getAttendanceSummary(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam UUID siteId) {
+
+        log.info("Fetching attendance summary for site: {} on date: {}", siteId, date);
+        // For now, return a simple summary based on monthly data
+        List<EmployeeMonthlyAttendanceDTO> monthlyData = attendanceService.getMonthlyAttendance(
+                siteId, date.getYear(), date.getMonthValue()
+        );
+
+        // Calculate summary
+        int totalEmployees = monthlyData.size();
+        int totalPresent = monthlyData.stream()
+                .mapToInt(EmployeeMonthlyAttendanceDTO::getPresentDays)
+                .sum();
+        int totalAbsent = monthlyData.stream()
+                .mapToInt(EmployeeMonthlyAttendanceDTO::getAbsentDays)
+                .sum();
+        double totalHours = monthlyData.stream()
+                .mapToDouble(EmployeeMonthlyAttendanceDTO::getTotalHours)
+                .sum();
+
+        Map<String, Object> summary = Map.of(
+                "totalEmployees", totalEmployees,
+                "totalPresent", totalPresent,
+                "totalAbsent", totalAbsent,
+                "totalHours", totalHours,
+                "date", date,
+                "siteId", siteId
+        );
+
+        return ResponseEntity.ok(summary);
+    }
+
+    /**
+     * Get employee attendance history
      */
     @GetMapping("/employee/{employeeId}")
-    public ResponseEntity<List<AttendanceDTO>> getEmployeeAttendance(
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE')")
+    public ResponseEntity<List<Attendance>> getEmployeeAttendance(
             @PathVariable UUID employeeId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        try {
-            List<AttendanceDTO> result = attendanceService.getAttendanceByEmployeeAndDateRange(
-                    employeeId, startDate, endDate);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+
+        log.info("Fetching attendance for employee: {} from {} to {}", employeeId, startDate, endDate);
+        List<Attendance> attendance = attendanceService.getEmployeeAttendanceHistory(employeeId, startDate, endDate);
+        return ResponseEntity.ok(attendance);
     }
 
     /**
-     * Get monthly attendance summary for an employee
-     */
-    @GetMapping("/employee/{employeeId}/monthly-summary")
-    public ResponseEntity<Map<String, Object>> getMonthlyAttendanceSummary(
-            @PathVariable UUID employeeId,
-            @RequestParam int year,
-            @RequestParam int month) {
-        try {
-            Map<String, Object> result = attendanceService.getMonthlyAttendanceSummary(employeeId, year, month);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    /**
-     * Get daily attendance summary for all employees
-     */
-    @GetMapping("/daily-summary")
-    public ResponseEntity<Map<String, Object>> getDailyAttendanceSummary(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        try {
-            Map<String, Object> result = attendanceService.getDailyAttendanceSummary(date);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    /**
-     * Update attendance status (for monthly employees)
-     */
-    @PutMapping("/{attendanceId}/status")
-    public ResponseEntity<AttendanceDTO> updateAttendanceStatus(
-            @PathVariable UUID attendanceId,
-            @RequestParam AttendanceStatus status) {
-        try {
-            AttendanceDTO result = attendanceService.updateAttendanceStatus(attendanceId, status);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    /**
-     * Get attendance statistics for an employee
-     */
-    @GetMapping("/employee/{employeeId}/statistics")
-    public ResponseEntity<Map<String, Object>> getAttendanceStatistics(
-            @PathVariable UUID employeeId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        try {
-            Map<String, Object> result = attendanceService.getAttendanceStatistics(employeeId, startDate, endDate);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    /**
-     * Legacy endpoints for backward compatibility
+     * Get employee monthly attendance
      */
     @GetMapping("/employee/{employeeId}/monthly")
-    public ResponseEntity<List<AttendanceDTO>> getMonthlyAttendance(
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE')")
+    public ResponseEntity<List<AttendanceResponseDTO>> getEmployeeMonthlyAttendance(
             @PathVariable UUID employeeId,
             @RequestParam int year,
             @RequestParam int month) {
-        try {
-            LocalDate startDate = LocalDate.of(year, month, 1);
-            LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
 
-            List<AttendanceDTO> result = attendanceService.getAttendanceByEmployeeAndDateRange(
-                    employeeId, startDate, endDate);
-            return ResponseEntity.ok(result);
+        log.info("Fetching monthly attendance for employee: {} for {}/{}", employeeId, month, year);
+        List<AttendanceResponseDTO> attendance = attendanceService.getEmployeeMonthlyAttendance(employeeId, year, month);
+        return ResponseEntity.ok(attendance);
+    }
+
+    /**
+     * Delete attendance record
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER')")
+    public ResponseEntity<?> deleteAttendance(@PathVariable UUID id) {
+        try {
+            log.info("Deleting attendance record: {}", id);
+            attendanceService.deleteAttendance(id);
+            return ResponseEntity.ok(Map.of("success", true, "message", "Attendance record deleted"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            log.error("Error deleting attendance: ", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
-    @PostMapping("/hourly")
-    public ResponseEntity<AttendanceDTO> recordHourlyAttendance(
-            @RequestBody Map<String, Object> requestBody) {
-        try {
-            UUID employeeId = UUID.fromString((String) requestBody.get("employeeId"));
-            LocalDate date = LocalDate.parse((String) requestBody.get("date"));
-            LocalTime startTime = LocalTime.parse((String) requestBody.get("startTime"));
-            LocalTime endTime = LocalTime.parse((String) requestBody.get("endTime"));
-
-            AttendanceDTO attendanceDTO = AttendanceDTO.builder()
-                    .employeeId(employeeId)
-                    .date(date)
-                    .checkInTime(startTime)
-                    .checkOutTime(endTime)
-                    .contractType(Attendance.ContractType.HOURLY)
-                    .build();
-
-            AttendanceDTO result = attendanceService.recordAttendance(attendanceDTO);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    @PostMapping("/mark-present")
-    public ResponseEntity<AttendanceDTO> markPresent(
-            @RequestBody Map<String, Object> requestBody) {
-        try {
-            UUID employeeId = UUID.fromString((String) requestBody.get("employeeId"));
-            LocalDate date = LocalDate.parse((String) requestBody.get("date"));
-
-            AttendanceDTO attendanceDTO = AttendanceDTO.builder()
-                    .employeeId(employeeId)
-                    .date(date)
-                    .status(AttendanceStatus.PRESENT)
-                    .contractType(Attendance.ContractType.MONTHLY)
-                    .build();
-
-            AttendanceDTO result = attendanceService.recordAttendance(attendanceDTO);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
-        }
+    /**
+     * Check if API is working
+     */
+    @GetMapping("/health")
+    public ResponseEntity<Map<String, String>> health() {
+        return ResponseEntity.ok(Map.of(
+                "status", "OK",
+                "service", "Attendance API",
+                "timestamp", LocalDate.now().toString()
+        ));
     }
 }
