@@ -15,6 +15,7 @@ import LoansTab from '../tabs/LoansTab.jsx';
 import PayslipsTab from '../tabs/PayslipsTab.jsx';
 import VacationTab from '../tabs/VacationTab.jsx';
 import LoadingPage from "../../../../components/common/LoadingPage/LoadingPage.jsx";
+import {FaUser} from "react-icons/fa";
 
 const EmployeeDetails = () => {
     const { id } = useParams();
@@ -195,10 +196,23 @@ const EmployeeDetails = () => {
                 {/* Minimal Info Bar */}
                 <div className="employee-info-bar">
                     <div className="employee-details-avatar">
-                        <img
-                            src={employee.photoUrl || 'https://via.placeholder.com/48?text=?'}
-                            alt={`${employee.firstName} ${employee.lastName}`}
-                        />
+                        {employee.photoUrl ? (
+                            <img
+                                src={employee.photoUrl}
+                                alt={`${employee.firstName} ${employee.lastName}`}
+                                onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextSibling.style.display = 'flex';
+                                }}
+                            />
+                        ) : (
+                            <div className="employee-details-avatar__placeholder">
+                                <FaUser />
+                            </div>
+                        )}
+                        <div className="employee-details-avatar__placeholder" style={{ display: 'none' }}>
+                            <FaUser />
+                        </div>
                         <div className={`employee-status-indicator ${employee.status?.toLowerCase() || 'active'}`}></div>
                     </div>
 

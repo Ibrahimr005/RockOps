@@ -26,6 +26,8 @@ const PositionsList = () => {
         try {
             const response = await jobPositionService.getAll();
             const data = response.data;
+
+            console.log(data);
             setPositions(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching positions:', err);
@@ -129,7 +131,28 @@ const PositionsList = () => {
             header: 'Working Days',
             accessor: 'workingDays',
             sortable: true,
-            render: (row) => row.workingDays ? `${row.workingDays}/week` : 'N/A'
+            render: (row) => {
+                const daysPerMonth = row.workingDaysPerMonth;
+                const daysPerWeek = row.workingDaysPerWeek;
+                
+                if (daysPerMonth) {
+                    return (
+                        <div className="salary-info">
+                            <span className="salary-info__monthly">{daysPerMonth}</span>
+                            <span className="salary-info__period"> days/month</span>
+                        </div>
+                    );
+                } else if (daysPerWeek) {
+                    return (
+                        <div className="salary-info">
+                            <span className="salary-info__monthly">{daysPerWeek}</span>
+                            <span className="salary-info__period"> days/week</span>
+                        </div>
+                    );
+                } else {
+                    return <div className=".salary-info__period">N/A</div>;
+                }
+            }
         },
         {
             header: 'Working Hours',
