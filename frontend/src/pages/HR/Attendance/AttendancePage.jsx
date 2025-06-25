@@ -71,15 +71,42 @@ const AttendancePage = () => {
         }
     };
 
+    // Complete fix for date handling in AttendancePage.jsx
+
     const handleAttendanceUpdate = useCallback((employeeId, date, updates) => {
         const key = `${employeeId}_${date}`;
+
+        // Ensure date is in correct format (YYYY-MM-DD)
+        let formattedDate = date;
+        if (date && typeof date === 'string') {
+            // If date is already in ISO format, use it
+            if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                formattedDate = date;
+            } else {
+                // Try to parse and format the date
+                const parsedDate = new Date(date);
+                if (!isNaN(parsedDate.getTime())) {
+                    formattedDate = parsedDate.toISOString().split('T')[0];
+                }
+            }
+        }
+
+        const updateRecord = {
+            employeeId,
+            date: formattedDate, // Use the formatted date
+            ...updates
+        };
+
+        // Validate required fields
+        if (!updateRecord.employeeId || !updateRecord.date) {
+            console.error('Missing required fields:', { employeeId, date: formattedDate });
+            showSnackbar('Missing required fields for attendance update', 'error');
+            return;
+        }
+
         setModifiedRecords(prev => {
             const newMap = new Map(prev);
-            newMap.set(key, {
-                employeeId,
-                date,
-                ...updates
-            });
+            newMap.set(key, updateRecord);
             return newMap;
         });
 
@@ -90,7 +117,7 @@ const AttendancePage = () => {
                     return {
                         ...employee,
                         dailyAttendance: employee.dailyAttendance.map(day => {
-                            if (day.date === date) {
+                            if (day.date === date || day.date === formattedDate) {
                                 return { ...day, ...updates };
                             }
                             return day;
@@ -100,7 +127,7 @@ const AttendancePage = () => {
                 return employee;
             })
         );
-    }, []);
+    }, [showSnackbar]);
 
     const handleSaveAttendance = async () => {
         if (modifiedRecords.size === 0) {
@@ -112,12 +139,33 @@ const AttendancePage = () => {
         try {
             const recordsToSave = Array.from(modifiedRecords.values());
 
-            // Create bulk attendance DTO according to your backend structure
+            // Enhanced validation
+            const validationErrors = [];
+            recordsToSave.forEach((record, index) => {
+                if (!record.employeeId) {
+                    validationErrors.push(`Record ${index + 1}: Missing employee ID`);
+                }
+                if (!record.date) {
+                    validationErrors.push(`Record ${index + 1}: Missing date`);
+                }
+                // Validate date format
+                if (record.date && !record.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    validationErrors.push(`Record ${index + 1}: Invalid date format (${record.date})`);
+                }
+            });
+
+            if (validationErrors.length > 0) {
+                throw new Error(`Validation errors:\n${validationErrors.join('\n')}`);
+            }
+
+            // Create bulk attendance DTO
             const bulkAttendanceData = {
-                date: null, // This can be null for bulk updates with individual dates
+                date: null, // Individual records have their own dates
                 siteId: selectedSite,
                 attendanceRecords: recordsToSave
             };
+
+            console.log('Sending bulk attendance data:', JSON.stringify(bulkAttendanceData, null, 2));
 
             // Use the attendance service
             const response = await attendanceService.bulkSaveAttendance(bulkAttendanceData);
@@ -127,14 +175,27 @@ const AttendancePage = () => {
 
             // Clear modified records and refresh data
             setModifiedRecords(new Map());
-            fetchMonthlyAttendance();
+            await fetchMonthlyAttendance();
 
         } catch (error) {
             console.error('Error saving attendance:', error);
-            const message = error?.response?.data?.error ||
-                error?.response?.data?.message ||
-                error?.message ||
-                'Failed to save attendance';
+
+            // Enhanced error message extraction
+            let message = 'Failed to save attendance';
+
+            if (error?.response?.data?.error) {
+                message = error.response.data.error;
+            } else if (error?.response?.data?.message) {
+                message = error.response.data.message;
+            } else if (error?.message) {
+                message = error.message;
+            }
+
+            // Check for specific database constraint errors
+            if (message.includes('null value in column "date"')) {
+                message = 'Date field is missing for one or more attendance records. Please refresh and try again.';
+            }
+
             showSnackbar(message, 'error');
         } finally {
             setSaving(false);
@@ -171,6 +232,7 @@ const AttendancePage = () => {
         };
 
         monthlyAttendance.forEach(employee => {
+
             stats.totalPresent += employee.presentDays || 0;
             stats.totalAbsent += employee.absentDays || 0;
             stats.totalOnLeave += employee.leaveDays || 0;
