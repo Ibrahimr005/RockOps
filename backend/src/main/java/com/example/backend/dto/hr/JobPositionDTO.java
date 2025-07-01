@@ -53,26 +53,40 @@ public class JobPositionDTO {
         if (contractType != null) {
             switch (contractType) {
                 case HOURLY:
+                    // Daily salary: hourly rate * hours per shift
                     this.calculatedDailySalary = (hourlyRate != null && hoursPerShift != null)
                             ? hourlyRate * hoursPerShift : 0.0;
-                    Integer workingDays = workingDaysPerWeek != null ? workingDaysPerWeek * 4 : 22;
-                    this.calculatedMonthlySalary = calculatedDailySalary * workingDays;
+                    // Monthly salary: hourly rate * hours per shift * working days per week * 4 weeks
+                    if (hourlyRate != null && hoursPerShift != null && workingDaysPerWeek != null) {
+                        this.calculatedMonthlySalary = hourlyRate * hoursPerShift * workingDaysPerWeek * 4;
+                    } else {
+                        this.calculatedMonthlySalary = 0.0;
+                    }
                     this.isValidConfiguration = hourlyRate != null && hourlyRate > 0
                             && hoursPerShift != null && hoursPerShift > 0
                             && workingDaysPerWeek != null && workingDaysPerWeek > 0;
                     break;
                 case DAILY:
+                    // Daily salary: daily rate
                     this.calculatedDailySalary = dailyRate != null ? dailyRate : 0.0;
-                    Integer monthlyDays = workingDaysPerMonth != null ? workingDaysPerMonth : 22;
-                    this.calculatedMonthlySalary = calculatedDailySalary * monthlyDays;
+                    // Monthly salary: daily rate * working days per month
+                    if (dailyRate != null && workingDaysPerMonth != null) {
+                        this.calculatedMonthlySalary = dailyRate * workingDaysPerMonth;
+                    } else {
+                        this.calculatedMonthlySalary = 0.0;
+                    }
                     this.isValidConfiguration = dailyRate != null && dailyRate > 0
                             && workingDaysPerMonth != null && workingDaysPerMonth > 0;
                     break;
                 case MONTHLY:
+                    // Monthly salary: monthly base salary
                     this.calculatedMonthlySalary = monthlyBaseSalary != null ? monthlyBaseSalary : 0.0;
-                    this.calculatedDailySalary = (monthlyBaseSalary != null && workingHours != null)
-                            ? monthlyBaseSalary / 22 : 0.0; // Assuming 22 working days per month
-                    this.isValidConfiguration = monthlyBaseSalary != null && monthlyBaseSalary > 0;
+                    // Daily salary: monthly salary / working days per month (default 22)
+                    Integer workingDays = workingDaysPerMonth != null ? workingDaysPerMonth : 22;
+                    this.calculatedDailySalary = (monthlyBaseSalary != null && workingDays > 0)
+                            ? monthlyBaseSalary / workingDays : 0.0;
+                    this.isValidConfiguration = monthlyBaseSalary != null && monthlyBaseSalary > 0
+                            && workingDaysPerMonth != null && workingDaysPerMonth > 0;
                     break;
                 default:
                     this.calculatedDailySalary = 0.0;

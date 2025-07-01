@@ -1,0 +1,447 @@
+// ProcurementSolutionModal.scss - Dark Mode Compatible
+
+.procurement-modal-overlay-inprogress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+  animation: modalFadeIn-inprogress 0.2s ease-out;
+  padding: 1rem;
+
+  @keyframes modalFadeIn-inprogress {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+.procurement-modal-container-inprogress {
+  background: var(--section-background-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color-light);
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideUp-inprogress 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  @keyframes modalSlideUp-inprogress {
+    from {
+      transform: translateY(30px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}
+
+.procurement-modal-header-inprogress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border-color-light);
+}
+
+.procurement-modal-title-inprogress {
+  font-size: 1.25rem;
+  font-weight: var(--bold-font-weight);
+  color: var(--head-title-color);
+  margin: 0;
+  line-height: 1.3;
+  padding-right: 1rem;
+}
+
+.procurement-modal-close-button-inprogress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-medium);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-dark);
+    transform: scale(1.05);
+  }
+}
+
+.procurement-modal-body-inprogress {
+  padding: 1.5rem;
+}
+
+.procurement-form-group-inprogress {
+  margin-bottom: 1.75rem;
+
+  &.procurement-form-group-half-inprogress {
+    flex: 1;
+    margin-bottom: 0;
+  }
+}
+
+.procurement-form-row-inprogress {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.75rem;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 0;
+
+    .procurement-form-group-inprogress {
+      margin-bottom: 1.75rem;
+    }
+  }
+}
+
+.procurement-form-label-inprogress {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: var(--bold-font-weight);
+  color: var(--color-text-dark);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.procurement-form-input-container-inprogress {
+  position: relative;
+
+  &.procurement-form-input-with-currency-inprogress {
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+
+  &.procurement-form-input-with-unit-inprogress {
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+}
+
+.procurement-form-input-inprogress {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  background: var(--color-surface);
+  color: var(--color-text-dark);
+  transition: all var(--transition-fast) ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+  }
+
+  &:disabled {
+    background: var(--color-surface-secondary);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
+
+  &.procurement-form-input-readonly-inprogress {
+    background: var(--color-surface-secondary);
+    color: var(--color-text-medium);
+    cursor: default;
+    padding-right: 3.5rem;
+
+    &:focus {
+      border-color: var(--border-color-light);
+      box-shadow: none;
+    }
+  }
+
+  &.procurement-form-input-with-unit-suffix-inprogress {
+    padding-right: 4rem;
+  }
+}
+
+.procurement-form-select-inprogress {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  background: var(--color-surface);
+  color: var(--color-text-dark);
+  transition: all var(--transition-fast) ease;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+  }
+
+  option {
+    background: var(--color-surface);
+    color: var(--color-text-dark);
+    padding: 0.5rem;
+  }
+}
+
+.procurement-form-textarea-inprogress {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  background: var(--color-surface);
+  color: var(--color-text-dark);
+  transition: all var(--transition-fast) ease;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+  }
+
+  &::placeholder {
+    color: var(--color-text-muted);
+  }
+}
+
+.procurement-currency-prefix-inprogress {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  font-weight: var(--bold-font-weight);
+  color: var(--color-text-muted);
+  background: var(--color-surface-secondary);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color-light);
+}
+
+.procurement-unit-suffix-inprogress {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  bottom: 1px;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: var(--bold-font-weight);
+  color: var(--color-text-medium);
+  background: var(--color-surface-secondary);
+  border-left: 1px solid var(--border-color-light);
+  border-radius: 0 calc(var(--radius-sm) - 1px) calc(var(--radius-sm) - 1px) 0;
+  pointer-events: none;
+  user-select: none;
+  min-width: fit-content;
+}
+
+.procurement-modal-footer-inprogress {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid var(--border-color-light);
+  background: var(--color-surface-secondary);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+
+  @media (max-width: 480px) {
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+  }
+}
+
+.procurement-button-secondary-inprogress {
+  padding: 0.75rem 1.5rem;
+  background: var(--color-surface);
+  color: var(--color-text-medium);
+  border: 1px solid var(--border-color-medium);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: var(--bold-font-weight);
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+    border-color: var(--border-color-dark);
+    color: var(--color-text-primary);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+  }
+}
+
+.procurement-button-primary-inprogress {
+  padding: 0.75rem 1.5rem;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: var(--bold-font-weight);
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
+  svg {
+    margin: 0;
+  }
+
+  @media (max-width: 480px) {
+    width: 100%;
+  }
+}
+
+// Form validation states
+.procurement-form-input-inprogress:valid,
+.procurement-form-select-inprogress:valid {
+  border-color: var(--border-color-light);
+}
+
+// Focus states
+.procurement-form-input-inprogress:focus:invalid,
+.procurement-form-select-inprogress:focus:invalid {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+}
+
+// Loading state
+.procurement-button-primary-inprogress.loading {
+  position: relative;
+  color: transparent;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid transparent;
+    border-top: 2px solid var(--color-text-inverse);
+    border-radius: 50%;
+    animation: buttonSpinner-inprogress 1s linear infinite;
+  }
+
+  @keyframes buttonSpinner-inprogress {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+}
+
+// Dark mode specific adjustments
+[data-theme="dark"] {
+  .procurement-modal-overlay-inprogress {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+
+  .procurement-modal-container-inprogress {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  }
+
+  .procurement-form-select-inprogress {
+    option {
+      background: var(--color-surface);
+      color: var(--color-text-dark);
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .procurement-modal-overlay-inprogress {
+    padding: 0.5rem;
+  }
+
+  .procurement-modal-container-inprogress {
+    max-width: 100%;
+    max-height: 95vh;
+  }
+
+  .procurement-modal-header-inprogress {
+    padding: 1.25rem 1.25rem 0.75rem;
+  }
+
+  .procurement-modal-title-inprogress {
+    font-size: 1.125rem;
+    padding-right: 0.75rem;
+  }
+
+  .procurement-modal-close-button-inprogress {
+    width: 32px;
+    height: 32px;
+  }
+
+  .procurement-modal-body-inprogress {
+    padding: 1.25rem;
+  }
+
+  .procurement-modal-footer-inprogress {
+    padding: 0.75rem 1.25rem 1.25rem;
+  }
+}

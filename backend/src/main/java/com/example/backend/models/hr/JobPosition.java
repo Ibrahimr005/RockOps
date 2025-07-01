@@ -94,8 +94,10 @@ public class JobPosition {
             case DAILY:
                 return dailyRate != null ? dailyRate : 0.0;
             case MONTHLY:
-                return (monthlyBaseSalary != null && workingDaysPerMonth != null && workingDaysPerMonth > 0)
-                        ? monthlyBaseSalary / workingDaysPerMonth : 0.0;
+                // For monthly contracts, calculate daily rate based on working days per month
+                Integer workingDays = workingDaysPerMonth != null ? workingDaysPerMonth : 22;
+                return (monthlyBaseSalary != null && workingDays > 0)
+                        ? monthlyBaseSalary / workingDays : 0.0;
             default:
                 return 0.0;
         }
@@ -108,18 +110,25 @@ public class JobPosition {
 
         switch (contractType) {
             case HOURLY:
-                Double dailySalary = calculateDailySalary();
-                Integer workingDays = workingDaysPerWeek != null ? workingDaysPerWeek * 4 : 22;
-                return dailySalary * workingDays;
+                // For hourly contracts: hourly rate * hours per shift * working days per week * 4 weeks
+                if (hourlyRate != null && hoursPerShift != null && workingDaysPerWeek != null) {
+                    return hourlyRate * hoursPerShift * workingDaysPerWeek * 4;
+                }
+                return 0.0;
             case DAILY:
-                Integer monthlyDays = workingDaysPerMonth != null ? workingDaysPerMonth : 22;
-                return (dailyRate != null) ? dailyRate * monthlyDays : 0.0;
+                // For daily contracts: daily rate * working days per month
+                if (dailyRate != null && workingDaysPerMonth != null) {
+                    return dailyRate * workingDaysPerMonth;
+                }
+                return 0.0;
             case MONTHLY:
+                // For monthly contracts: use the monthly base salary directly
                 return monthlyBaseSalary != null ? monthlyBaseSalary : 0.0;
             default:
                 return 0.0;
         }
     }
+
 
     public boolean isHourlyTracking() {
         return contractType == ContractType.HOURLY;
@@ -144,7 +153,8 @@ public class JobPosition {
                 return dailyRate != null && dailyRate > 0
                         && workingDaysPerMonth != null && workingDaysPerMonth > 0;
             case MONTHLY:
-                return monthlyBaseSalary != null && monthlyBaseSalary > 0;
+                return monthlyBaseSalary != null && monthlyBaseSalary > 0
+                        && workingDaysPerMonth != null && workingDaysPerMonth > 0;
             default:
                 return false;
         }
@@ -168,9 +178,21 @@ public class JobPosition {
 
     // Override baseSalary getter to use contract-specific calculation
     public Double getBaseSalary() {
+        // If baseSalary is explicitly set, use it (for backward compatibility)
         if (baseSalary != null) {
             return baseSalary;
         }
+        // Otherwise, calculate based on contract type
         return calculateMonthlySalary();
+    }
+
+    // Setter for baseSalary that also updates the appropriate contract-specific field
+    public void setBaseSalary(Double baseSalary) {
+        this.baseSalary = baseSalary;
+        
+        // If this is a monthly contract and no monthlyBaseSalary is set, use this value
+        if (contractType == ContractType.MONTHLY && monthlyBaseSalary == null) {
+            this.monthlyBaseSalary = baseSalary;
+        }
     }
 }

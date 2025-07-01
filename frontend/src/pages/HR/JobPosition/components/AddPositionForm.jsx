@@ -30,6 +30,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
         monthlyBaseSalary: 0,
         shifts: 'Day Shift',
         workingHours: 8,
+        workingDaysPerMonth: 22,
         vacations: '21 days annual leave',
 
         // Legacy compatibility
@@ -105,6 +106,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                 monthlyBaseSalary: 0,
                 shifts: 'Day Shift',
                 workingHours: 8,
+                workingDaysPerMonth: 22,
                 vacations: '21 days annual leave',
 
                 // Legacy compatibility
@@ -127,16 +129,23 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
 
         switch (formData.contractType) {
             case 'HOURLY':
+                // Daily salary: hourly rate * hours per shift
                 daily = (formData.hourlyRate || 0) * (formData.hoursPerShift || 0);
+                // Monthly salary: hourly rate * hours per shift * working days per week * 4 weeks
                 monthly = daily * (formData.workingDaysPerWeek || 0) * 4;
                 break;
             case 'DAILY':
+                // Daily salary: daily rate
                 daily = formData.dailyRate || 0;
+                // Monthly salary: daily rate * working days per month
                 monthly = daily * (formData.workingDaysPerMonth || 0);
                 break;
             case 'MONTHLY':
+                // Monthly salary: monthly base salary
                 monthly = formData.monthlyBaseSalary || 0;
-                daily = monthly / 22; // Assuming 22 working days per month
+                // Daily salary: monthly salary / working days per month (default 22)
+                const workingDays = formData.workingDaysPerMonth || 22;
+                daily = workingDays > 0 ? monthly / workingDays : 0;
                 break;
             default:
                 daily = 0;
@@ -249,6 +258,9 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                 if (!formData.monthlyBaseSalary || formData.monthlyBaseSalary <= 0) {
                     errors.push('Monthly salary must be greater than 0');
                 }
+                if (!formData.workingDaysPerMonth || formData.workingDaysPerMonth <= 0 || formData.workingDaysPerMonth > 31) {
+                    errors.push('Working days per month must be between 1 and 31');
+                }
                 break;
         }
 
@@ -297,6 +309,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
 
                 ...(formData.contractType === 'MONTHLY' && {
                     monthlyBaseSalary: formData.monthlyBaseSalary,
+                    workingDaysPerMonth: formData.workingDaysPerMonth,
                     shifts: formData.shifts,
                     workingHours: formData.workingHours,
                     vacations: formData.vacations
@@ -537,6 +550,19 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                         </div>
                         <div className="jp-form-row">
                             <div className="jp-form-group">
+                                <label htmlFor="workingDaysPerMonth">Working Days per Month</label>
+                                <input
+                                    type="number"
+                                    id="workingDaysPerMonth"
+                                    name="workingDaysPerMonth"
+                                    value={formData.workingDaysPerMonth}
+                                    onChange={handleChange}
+                                    min="1"
+                                    max="31"
+                                    placeholder="22"
+                                />
+                            </div>
+                            <div className="jp-form-group">
                                 <label htmlFor="shifts">Shifts</label>
                                 <div className="jp-select-wrapper">
                                     <select
@@ -552,6 +578,8 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                                     </select>
                                 </div>
                             </div>
+                        </div>
+                        <div className="jp-form-row">
                             <div className="jp-form-group">
                                 <label htmlFor="vacations">Vacation Policy</label>
                                 <input

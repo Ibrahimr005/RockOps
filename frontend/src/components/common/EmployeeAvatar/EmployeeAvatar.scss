@@ -1,0 +1,129 @@
+.employee-avatar {
+    position: relative;
+    display: inline-block;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: var(--color-surface-hover);
+    border: 2px solid var(--border-color);
+
+    // Size variants
+    &--small {
+        width: 32px;
+        height: 32px;
+        
+        .employee-avatar__placeholder {
+            font-size: 12px;
+        }
+    }
+
+    &--medium {
+        width: 48px;
+        height: 48px;
+        
+        .employee-avatar__placeholder {
+            font-size: 18px;
+        }
+    }
+
+    &--large {
+        width: 64px;
+        height: 64px;
+        
+        .employee-avatar__placeholder {
+            font-size: 24px;
+        }
+    }
+
+    &--xlarge {
+        width: 80px;
+        height: 80px;
+        
+        .employee-avatar__placeholder {
+            font-size: 32px;
+        }
+    }
+
+    // Image styling
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    // Placeholder styling
+    &__placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--color-primary-light);
+        color: var(--color-primary);
+    }
+
+    // Status indicator
+    .employee-status-indicator {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid var(--color-surface);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+
+        &.active {
+            background-color: var(--color-success);
+        }
+
+        &.inactive {
+            background-color: var(--color-text-tertiary);
+        }
+
+        &.invited {
+            background-color: var(--color-info);
+        }
+
+        &.on_leave {
+            background-color: var(--color-warning);
+        }
+
+        &.suspended {
+            background-color: var(--color-danger);
+        }
+
+        &.terminated {
+            background-color: var(--color-danger);
+        }
+    }
+
+    // Hover effects
+    &:hover {
+        border-color: var(--color-primary);
+        transition: border-color 0.2s ease;
+    }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+    .employee-avatar {
+        &--large {
+            width: 56px;
+            height: 56px;
+            
+            .employee-avatar__placeholder {
+                font-size: 20px;
+            }
+        }
+
+        &--xlarge {
+            width: 72px;
+            height: 72px;
+            
+            .employee-avatar__placeholder {
+                font-size: 28px;
+            }
+        }
+    }
+} 

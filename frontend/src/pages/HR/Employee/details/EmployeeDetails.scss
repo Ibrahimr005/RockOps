@@ -176,10 +176,23 @@
 
       img {
         width: 96px;
-        height:96px;
+        height: 96px;
         border-radius: 50%;
         object-fit: cover;
         border: 2px solid var(--border-color);
+      }
+
+      .employee-details-avatar__placeholder {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        border: 2px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--color-primary-light);
+        color: var(--color-primary);
+        font-size: 2.4rem;
       }
 
       .employee-status-indicator {

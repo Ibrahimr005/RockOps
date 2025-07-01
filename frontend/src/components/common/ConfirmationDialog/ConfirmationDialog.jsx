@@ -35,31 +35,52 @@ const ConfirmationDialog = ({
         }
     };
 
+    // Enhanced handlers that ensure body overflow is reset
+    const handleCancel = () => {
+        document.body.style.overflow = 'unset'; // Reset overflow immediately
+        onCancel?.();
+    };
+
+    const handleConfirm = () => {
+        document.body.style.overflow = 'unset'; // Reset overflow immediately
+        onConfirm?.();
+    };
+
     // Handle backdrop click
     const handleBackdropClick = (e) => {
         if (e.target === e.currentTarget) {
-            onCancel?.();
+            handleCancel();
         }
     };
 
-    // Handle ESC key
+    // Handle ESC key and manage body overflow
     React.useEffect(() => {
         const handleEscKey = (e) => {
             if (e.key === 'Escape' && isVisible) {
-                onCancel?.();
+                handleCancel();
             }
         };
 
         if (isVisible) {
             document.addEventListener('keydown', handleEscKey);
             document.body.style.overflow = 'hidden'; // Prevent background scroll
+        } else {
+            // Ensure overflow is reset when dialog becomes invisible
+            document.body.style.overflow = 'unset';
         }
 
         return () => {
             document.removeEventListener('keydown', handleEscKey);
+            document.body.style.overflow = 'unset'; // Always reset on cleanup
+        };
+    }, [isVisible]);
+
+    // Additional effect to ensure body overflow is reset when component unmounts
+    React.useEffect(() => {
+        return () => {
             document.body.style.overflow = 'unset';
         };
-    }, [isVisible, onCancel]);
+    }, []);
 
     return (
         <div
@@ -99,7 +120,7 @@ const ConfirmationDialog = ({
                     <button
                         type="button"
                         className="btn-secondary confirmation-dialog-cancel"
-                        onClick={onCancel}
+                        onClick={handleCancel}
                         disabled={isLoading}
                     >
                         {cancelText}
@@ -107,7 +128,7 @@ const ConfirmationDialog = ({
                     <button
                         type="button"
                         className={`btn-primary confirmation-dialog-confirm confirmation-dialog-confirm--${type}`}
-                        onClick={onConfirm}
+                        onClick={handleConfirm}
                         disabled={isLoading}
                     >
                         {isLoading ? (
