@@ -185,9 +185,11 @@ const EmployeesList = () => {
                         {formatCurrency(employee.monthlySalary)}
                     </div>
                     <div className="salary-info__period">
-                        {employee.jobPositionType === 'HOURLY' ? 'per hour' :
-                         employee.jobPositionType === 'DAILY' ? 'per day' :
-                         'per month'}
+                        {/* {employee.jobPositionType === 'HOURLY' ? 'per hour' :
+                         employee.jobPositionType === 'DAILY' ? 'per day' : */}
+                         {/* ' */}
+                         per month
+                         {/* '} */}
                     </div>
                 </div>
             )

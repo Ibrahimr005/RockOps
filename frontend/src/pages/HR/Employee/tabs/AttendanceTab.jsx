@@ -244,6 +244,15 @@ const AttendanceTab = ({ employee, formatDate }) => {
             );
         }
 
+        // Find the record closest to today
+        const today = new Date();
+        let mostRecentRecord = attendanceData.reduce((prev, curr) => {
+            const prevDiff = Math.abs(new Date(prev.date) - today);
+            const currDiff = Math.abs(new Date(curr.date) - today);
+            return currDiff < prevDiff ? curr : prev;
+        }, attendanceData[0]);
+        const recordsToShow = [mostRecentRecord];
+
         if (attendanceType === 'HOURLY') {
             return (
                 <table className="attendance-table">
@@ -258,7 +267,7 @@ const AttendanceTab = ({ employee, formatDate }) => {
                     </tr>
                     </thead>
                     <tbody>
-                    {attendanceData.slice(0, 7).map((record, index) => (
+                    {recordsToShow.map((record, index) => (
                         <tr key={index}>
                             <td>{formatDate ? formatDate(record.date) : new Date(record.date).toLocaleDateString()}</td>
                             <td>{formatTime(record.startTime)}</td>
@@ -286,7 +295,7 @@ const AttendanceTab = ({ employee, formatDate }) => {
                     </tr>
                     </thead>
                     <tbody>
-                    {attendanceData.slice(0, 7).map((record, index) => (
+                    {recordsToShow.map((record, index) => (
                         <tr key={index}>
                             <td>{formatDate ? formatDate(record.date) : new Date(record.date).toLocaleDateString()}</td>
                             <td>{getStatusBadge(record.status)}</td>
@@ -309,7 +318,7 @@ const AttendanceTab = ({ employee, formatDate }) => {
                     </tr>
                     </thead>
                     <tbody>
-                    {attendanceData.slice(0, 7).map((record, index) => {
+                    {recordsToShow.map((record, index) => {
                         const date = new Date(record.date);
                         const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
 

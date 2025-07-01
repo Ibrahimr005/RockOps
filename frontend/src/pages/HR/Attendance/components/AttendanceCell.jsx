@@ -74,15 +74,22 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
         const statusConfig = getStatusDisplay();
         const isWeekend = attendance?.dayType === 'WEEKEND';
         const isEditable = attendance?.isEditable !== false;
+        // Determine if the day is in the future
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Set to midnight for date-only comparison
+        const cellDate = attendance?.date ? new Date(attendance.date) : null;
+        if (cellDate) cellDate.setHours(0, 0, 0, 0);
+        const isFuture = cellDate && cellDate > today;
 
         return (
             <div
-                className={`attendance-cell ${statusConfig.color} ${isWeekend ? 'weekend' : ''} ${!isEditable ? 'disabled' : ''}`}
-                onClick={() => isEditable && !isEditing && setIsEditing(true)}
+                className={`attendance-cell ${statusConfig.color} ${isWeekend ? 'weekend' : ''} ${!isEditable || isFuture ? 'disabled' : ''} ${isFuture ? 'future' : ''}`}
+                onClick={() => isEditable && !isEditing && !isFuture && setIsEditing(true)}
                 title={statusConfig.label}
             >
                 <span className="attendance-status-indicator">{statusConfig.label[0]}</span>
                 {attendance?.notes && <span className="has-notes">*</span>}
+                {renderExpandedInfo()}
             </div>
         );
     };
@@ -182,7 +189,6 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
     return (
         <>
             {renderCompactView()}
-            {renderExpandedInfo()}
         </>
     );
 };

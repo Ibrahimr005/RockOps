@@ -39,7 +39,6 @@ public class JobPositionDTO {
 
     // MONTHLY contract specific fields
     private Double monthlyBaseSalary;
-    private Integer workingDaysPerMonth;
     private String shifts;
     private Integer workingHours;
     private String vacations;
