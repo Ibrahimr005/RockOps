@@ -121,6 +121,7 @@ public class JobPosition {
         }
     }
 
+
     public boolean isHourlyTracking() {
         return contractType == ContractType.HOURLY;
     }
