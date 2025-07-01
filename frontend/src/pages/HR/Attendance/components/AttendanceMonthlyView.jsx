@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import EmployeeAvatar from '../../../../components/common/EmployeeAvatar';
 import AttendanceCell from './AttendanceCell';
 // import './AttendanceMonthlyView.scss';
 
@@ -46,9 +47,11 @@ const AttendanceMonthlyView = ({ monthlyData, onAttendanceUpdate, loading, month
                     >
                         {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
                     </button>
-                    <img
-                        src={employee.employeePhoto || '/api/placeholder/32/32'}
-                        alt={employee.employeeName}
+                    <EmployeeAvatar
+                        photoUrl={employee.employeePhoto}
+                        firstName={employee.employeeName?.split(' ')[0]}
+                        lastName={employee.employeeName?.split(' ').slice(1).join(' ')}
+                        size="small"
                         className="employee-avatar"
                     />
                     <div className="employee-details">

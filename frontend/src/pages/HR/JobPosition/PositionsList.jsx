@@ -107,9 +107,15 @@ const PositionsList = () => {
         },
         {
             header: 'Type',
-            accessor: 'type',
+            accessor: 'contractType',
             sortable: true,
-            render: (row) => row.type?.replace('_', ' ') || 'N/A'
+            render: (row) => {
+                if (row.contractType) {
+                    return row.contractType.replace('_', ' ');
+                }
+                // Fallback to legacy type field
+                return row.type ? row.type.replace('_', ' ') : 'N/A';
+            }
         },
         {
             header: 'Experience Level',
@@ -223,7 +229,7 @@ const PositionsList = () => {
                 tableTitle="Job Positions"
                 showSearch={true}
                 showFilters={true}
-                filterableColumns={['department', 'type', 'experienceLevel']}
+                filterableColumns={['department', 'contractType', 'experienceLevel']}
                 defaultSortField="positionName"
                 defaultSortDirection="asc"
                 emptyMessage="No job positions found. Click 'Add Position' to create one."

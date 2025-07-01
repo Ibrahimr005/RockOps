@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaUserPlus, FaEdit, FaTrash,  FaUser } from 'react-icons/fa';
 import './EmployeesList.scss';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import EmployeeAvatar from '../../../components/common/EmployeeAvatar';
 import AddEmployeeModal from './modals/AddEmployeeModal.jsx';
 import EditEmployeeModal from './modals/EditEmployeeModal.jsx';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
@@ -122,25 +123,12 @@ const EmployeesList = () => {
             sortable: false,
             width: '80px',
             render: (employee, photoUrl) => (
-                <div className="employee-avatar">
-                    {photoUrl ? (
-                        <img
-                            src={photoUrl}
-                            alt={`${employee.firstName} ${employee.lastName}`}
-                            onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                            }}
-                        />
-                    ) : (
-                        <div className="employee-avatar__placeholder">
-                            <FaUser />
-                        </div>
-                    )}
-                    <div className="employee-avatar__placeholder" style={{ display: 'none' }}>
-                        <FaUser />
-                    </div>
-                </div>
+                <EmployeeAvatar
+                    photoUrl={photoUrl}
+                    firstName={employee.firstName}
+                    lastName={employee.lastName}
+                    size="medium"
+                />
             )
         },
         {

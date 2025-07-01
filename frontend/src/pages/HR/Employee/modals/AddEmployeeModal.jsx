@@ -2,18 +2,35 @@ import React, { useState, useEffect } from 'react';
 import './EmployeeModals.scss';
 
 const calculateMonthlySalary = (jobPosition, baseSalaryOverride, salaryMultiplier) => {
-    const baseSalary = baseSalaryOverride ? parseFloat(baseSalaryOverride) : (jobPosition.baseSalary || 0);
     const multiplier = salaryMultiplier ? parseFloat(salaryMultiplier) : 1.0;
+
+    if (!jobPosition) {
+        return 0;
+    }
 
     switch (jobPosition.contractType) {
         case 'HOURLY':
-            return baseSalary * multiplier * (jobPosition.workingDaysPerWeek * 4) * jobPosition.hoursPerShift;
+            // For hourly contracts: hourly rate * hours per shift * working days per week * 4 weeks
+            if (jobPosition.hourlyRate && jobPosition.hoursPerShift && jobPosition.workingDaysPerWeek) {
+                const baseCalculation = jobPosition.hourlyRate * jobPosition.hoursPerShift * jobPosition.workingDaysPerWeek * 4;
+                return baseSalaryOverride ? parseFloat(baseSalaryOverride) * multiplier : baseCalculation * multiplier;
+            }
+            return baseSalaryOverride ? parseFloat(baseSalaryOverride) * multiplier : 0;
         case 'DAILY':
-            return baseSalary * multiplier * jobPosition.workingDaysPerMonth;
+            // For daily contracts: daily rate * working days per month
+            if (jobPosition.dailyRate && jobPosition.workingDaysPerMonth) {
+                const baseCalculation = jobPosition.dailyRate * jobPosition.workingDaysPerMonth;
+                return baseSalaryOverride ? parseFloat(baseSalaryOverride) * multiplier : baseCalculation * multiplier;
+            }
+            return baseSalaryOverride ? parseFloat(baseSalaryOverride) * multiplier : 0;
         case 'MONTHLY':
+            // For monthly contracts: use monthly base salary
+            const baseSalary = baseSalaryOverride ? parseFloat(baseSalaryOverride) : (jobPosition.monthlyBaseSalary || jobPosition.baseSalary || 0);
             return baseSalary * multiplier;
         default:
-            return baseSalary * multiplier;
+            // Fallback to base salary
+            const fallbackSalary = baseSalaryOverride ? parseFloat(baseSalaryOverride) : (jobPosition.baseSalary || 0);
+            return fallbackSalary * multiplier;
     }
 };
 

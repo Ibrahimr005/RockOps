@@ -137,29 +137,53 @@ public class Employee
      * @return Monthly salary amount
      */
     public BigDecimal getMonthlySalary() {
-        BigDecimal baseSalary = getBaseSalary();
         BigDecimal multiplier = salaryMultiplier != null ? salaryMultiplier : BigDecimal.ONE;
 
         if (jobPosition != null) {
             switch (jobPosition.getContractType()) {
                 case HOURLY:
-                    // For hourly contracts, calculate based on standard working hours
-                    return baseSalary.multiply(multiplier)
-                            .multiply(BigDecimal.valueOf(jobPosition.getWorkingDaysPerWeek() * 4))
-                            .multiply(BigDecimal.valueOf(jobPosition.getHoursPerShift()));
+                    // For hourly contracts: if override is set, use it; otherwise calculate from job position
+                    if (baseSalaryOverride != null) {
+                        return baseSalaryOverride.multiply(multiplier);
+                    } else {
+                        // Calculate from job position hourly rate
+                        if (jobPosition.getHourlyRate() != null && jobPosition.getHoursPerShift() != null && 
+                            jobPosition.getWorkingDaysPerWeek() != null) {
+                            return BigDecimal.valueOf(jobPosition.getHourlyRate())
+                                    .multiply(BigDecimal.valueOf(jobPosition.getHoursPerShift()))
+                                    .multiply(BigDecimal.valueOf(jobPosition.getWorkingDaysPerWeek()))
+                                    .multiply(BigDecimal.valueOf(4))
+                                    .multiply(multiplier);
+                        }
+                    }
+                    break;
                 case DAILY:
-                    // For daily contracts, calculate based on working days per month
-                    return baseSalary.multiply(multiplier)
-                            .multiply(BigDecimal.valueOf(jobPosition.getWorkingDaysPerMonth()));
+                    // For daily contracts: if override is set, use it; otherwise calculate from job position
+                    if (baseSalaryOverride != null) {
+                        return baseSalaryOverride.multiply(multiplier);
+                    } else {
+                        // Calculate from job position daily rate
+                        if (jobPosition.getDailyRate() != null && jobPosition.getWorkingDaysPerMonth() != null) {
+                            return BigDecimal.valueOf(jobPosition.getDailyRate())
+                                    .multiply(BigDecimal.valueOf(jobPosition.getWorkingDaysPerMonth()))
+                                    .multiply(multiplier);
+                        }
+                    }
+                    break;
                 case MONTHLY:
-                    // For monthly contracts, use the base salary directly
-                    return baseSalary.multiply(multiplier);
+                    // For monthly contracts: use override or job position monthly salary
+                    BigDecimal monthlySalary = baseSalaryOverride != null ? baseSalaryOverride : 
+                        BigDecimal.valueOf(jobPosition.getMonthlyBaseSalary() != null ? 
+                            jobPosition.getMonthlyBaseSalary() : jobPosition.getBaseSalary());
+                    return monthlySalary.multiply(multiplier);
                 default:
-                    return baseSalary.multiply(multiplier);
+                    // Fallback to base salary calculation
+                    return getBaseSalary().multiply(multiplier);
             }
         }
 
-        return baseSalary.multiply(multiplier);
+        // Fallback to base salary if no job position or calculation failed
+        return getBaseSalary().multiply(multiplier);
     }
 
     /**
