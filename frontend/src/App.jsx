@@ -49,6 +49,7 @@ import PurchaseOrderDetails
 import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
 import GeneralLedger from "./pages/finance/GeneralLedger/GeneralLedger.jsx";
 import LoadingPage from "./components/common/LoadingPage/LoadingPage.jsx";
+import Payables from "./pages/finance/Payables/Payables.jsx";
 
 
 
@@ -159,6 +160,8 @@ function App() {
 
                                     {/* Finance Routes */}
                                     <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={allRoles}><GeneralLedger/></RoleRoute>} />
+                                    <Route path="/finance/payables" element={<RoleRoute allowedRoles={allRoles}><Payables/></RoleRoute>} />
+
 
                                     {/* Generic Related Documents Route */}
                                     <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>

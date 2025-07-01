@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FaBook, FaCalendarAlt, FaHistory } from 'react-icons/fa';
 import './GeneralLedger.css';
+import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 
 // Import your components
 import JournalEntries from './JournalEntries/JournalEntries';
@@ -9,6 +10,7 @@ import AuditTrail from './AuditTrail/AuditTrail';
 
 const GeneralLedger = () => {
     const [activeTab, setActiveTab] = useState('journals');
+    const { showSuccess, showError } = useSnackbar();
 
     const tabs = [
         { id: 'journals', label: 'Journal Entries', icon: <FaBook /> },

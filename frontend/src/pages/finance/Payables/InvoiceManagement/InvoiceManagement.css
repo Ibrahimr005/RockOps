@@ -1,0 +1,380 @@
+/* InvoiceManagement.css */
+
+.invoice-management {
+    padding: 0;
+}
+
+/* Invoice Stats */
+.invoice-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--section-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--color-primary);
+    transition: all var(--transition-fast);
+}
+
+.stat-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-item.overdue {
+    border-left-color: var(--color-danger);
+}
+
+.stat-item.pending {
+    border-left-color: #f59e0b;
+}
+
+.stat-icon {
+    font-size: 1.5rem;
+    color: var(--color-primary);
+    flex-shrink: 0;
+}
+
+.stat-item.overdue .stat-icon {
+    color: var(--color-danger);
+}
+
+.stat-item.pending .stat-icon {
+    color: #f59e0b;
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin-top: 0.25rem;
+}
+
+/* Overdue date styling */
+.overdue-date {
+    color: var(--color-danger);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.overdue-icon {
+    font-size: 0.75rem;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal {
+    background: var(--section-background-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--color-surface);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.modal-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+}
+
+.modal-content {
+    padding: 1.5rem;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Form specific adjustments */
+.modal-content .payables-form-group {
+    margin-bottom: 1rem;
+}
+
+.modal-content .payables-form-row {
+    margin-bottom: 0;
+}
+
+.modal-content .payables-form-row .payables-form-group {
+    margin-bottom: 1rem;
+}
+
+/* Table customizations */
+.invoice-table .rockops-table__container {
+    margin-top: 1rem;
+}
+
+.invoice-table .rockops-table__th,
+.invoice-table .rockops-table__cell {
+    padding: 12px 16px;
+}
+
+.invoice-table .rockops-table__action-button {
+    margin-right: 0.5rem;
+}
+
+.invoice-table .rockops-table__action-button:last-child {
+    margin-right: 0;
+}
+
+/* Status badge customizations for invoices */
+.invoice-table .payables-status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .invoice-stats {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .stat-item {
+        padding: 0.75rem;
+    }
+
+    .stat-icon {
+        font-size: 1.25rem;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+    }
+
+    .modal {
+        margin: 0.5rem;
+        max-width: none;
+    }
+
+    .modal-header {
+        padding: 1rem;
+    }
+
+    .modal-content {
+        padding: 1rem;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .modal-actions .payables-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .payables-form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .invoice-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .payables-card-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .payables-card-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .payables-card-actions .payables-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+/* Animation for modal */
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal {
+    animation: modalSlideIn 0.2s ease-out;
+}
+
+/* Loading state for table */
+.invoice-table .rockops-table__loading {
+    padding: 3rem;
+}
+
+.invoice-table .rockops-table__empty {
+    padding: 3rem;
+    text-align: center;
+}
+
+.invoice-table .rockops-table__empty p {
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* Action button customizations */
+.invoice-table .rockops-table__action-button.view {
+    color: var(--color-primary);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.invoice-table .rockops-table__action-button.view:hover {
+    background: rgba(59, 130, 246, 0.2);
+}
+
+.invoice-table .rockops-table__action-button.edit {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.invoice-table .rockops-table__action-button.edit:hover {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+.invoice-table .rockops-table__action-button.danger {
+    color: var(--color-danger);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.invoice-table .rockops-table__action-button.danger:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.invoice-table .rockops-table__action-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.invoice-table .rockops-table__action-button:disabled:hover {
+    background: none;
+    transform: none;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .modal-overlay {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .stat-item {
+    background: var(--color-surface);
+}
+
+[data-theme="dark"] .stat-item:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .invoice-table .rockops-table__action-button.view {
+    color: var(--color-primary);
+    background: rgba(72, 128, 255, 0.1);
+}
+
+[data-theme="dark"] .invoice-table .rockops-table__action-button.view:hover {
+    background: rgba(72, 128, 255, 0.2);
+}
+
+[data-theme="dark"] .invoice-table .rockops-table__action-button.edit {
+    color: var(--color-success);
+    background: rgba(92, 188, 96, 0.1);
+}
+
+[data-theme="dark"] .invoice-table .rockops-table__action-button.edit:hover {
+    background: rgba(92, 188, 96, 0.2);
+}
+
+[data-theme="dark"] .invoice-table .rockops-table__action-button.danger {
+    color: var(--color-danger);
+    background: rgba(255, 82, 82, 0.1);
+}
+
+[data-theme="dark"] .invoice-table .rockops-table__action-button.danger:hover {
+    background: rgba(255, 82, 82, 0.2);
+}

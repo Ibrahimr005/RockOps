@@ -4,6 +4,7 @@ import './JournalEntries.css';
 import { useAuth } from "../../../../Contexts/AuthContext";
 import { FaBook, FaSearch, FaFilter, FaPlus, FaCheck, FaTimes, FaEye } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 
 const JournalEntries = () => {
     const [journalEntries, setJournalEntries] = useState([]);
@@ -11,6 +12,7 @@ const JournalEntries = () => {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
     const { currentUser } = useAuth();
+    const { showError, showSuccess } = useSnackbar();
 
     // Filter states
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -90,7 +92,7 @@ const JournalEntries = () => {
             setJournalEntries(entriesArray);
             setError(null);
         } catch (err) {
-            setError('Error: ' + err.message);
+            showError('Could not fetch journal entries. Please try again.');
             console.error("Error fetching journal entries:", err);
             setJournalEntries([]);
         } finally {
@@ -135,7 +137,7 @@ const JournalEntries = () => {
 
             setShowDetailModal(true);
         } catch (err) {
-            setError('Error: ' + err.message);
+            showError('Could not fetch journal entry details. Please try again.');
             console.error("Error fetching journal entry details:", err);
         }
     };
@@ -235,10 +237,10 @@ const JournalEntries = () => {
             // Refresh entries and close modal
             await fetchJournalEntries();
             handleCloseModals();
-            setError(null);
+            showSuccess('Journal entry created successfully!');
         } catch (err) {
             console.error("Failed to add journal entry:", err.message);
-            setError('Failed to add journal entry: ' + err.message);
+            showError('Could not create journal entry. Please check your input and try again.');
         }
     };
 
@@ -271,18 +273,18 @@ const JournalEntries = () => {
 
                 // Check if current user is trying to approve their own entry
                 if (entryDetails.createdBy === currentUser?.username || entryDetails.createdBy === currentUser?.name) {
-                    setError('You cannot approve your own journal entries. Another finance manager must review and approve this entry.');
+                    showError('You cannot approve your own journal entries. Another finance manager must review and approve this entry.');
                     return;
                 }
 
                 // Check entry status
                 if (entryDetails.status !== 'PENDING') {
-                    setError(`Cannot approve entry. Current status: ${entryDetails.status}`);
+                    showError(`Cannot approve entry. Current status: ${entryDetails.status}`);
                     return;
                 }
             } else {
                 console.error('Failed to fetch entry details:', checkResponse.status);
-                setError('Could not verify entry details. Please try again.');
+                showError('Could not verify entry details. Please try again.');
                 return;
             }
 
@@ -311,25 +313,25 @@ const JournalEntries = () => {
                         try {
                             const errorJson = JSON.parse(errorText);
                             if (errorJson.error && errorJson.error.includes('cannot approve')) {
-                                setError('You cannot approve your own journal entries. Another finance manager must review and approve this entry.');
+                                showError('You cannot approve your own journal entries. Another finance manager must review and approve this entry.');
                             } else {
-                                setError(`Approval failed: ${errorJson.error || 'Invalid request. Please check entry status and your permissions.'}`);
+                                showError(`Approval failed: ${errorJson.error || 'Invalid request. Please check entry status and your permissions.'}`);
                             }
                         } catch (parseError) {
-                            setError('You cannot approve your own journal entries. Another finance manager must review and approve this entry.');
+                            showError('You cannot approve your own journal entries. Another finance manager must review and approve this entry.');
                         }
                         break;
                     case 401:
-                        setError('Session expired. Please log in again.');
+                        showError('Session expired. Please log in again.');
                         break;
                     case 403:
-                        setError('You do not have permission to approve entries. Only Finance Managers can approve journal entries.');
+                        showError('You do not have permission to approve entries. Only Finance Managers can approve journal entries.');
                         break;
                     case 404:
-                        setError('Journal entry not found.');
+                        showError('Journal entry not found.');
                         break;
                     default:
-                        setError(`Server error: Unable to approve entry. Please try again later.`);
+                        showError(`Server error: Unable to approve entry. Please try again later.`);
                 }
                 return;
             }
@@ -341,14 +343,11 @@ const JournalEntries = () => {
             // Refresh entries and close modal
             await fetchJournalEntries();
             handleCloseModals();
-            setError(null);
-
-            // Show success message
-            alert('Journal entry approved successfully!');
+            showSuccess('Journal entry approved successfully!');
 
         } catch (err) {
             console.error("Failed to approve journal entry:", err);
-            setError('Network error: Unable to connect to server. Please check your connection and try again.');
+            showError('Network error: Unable to connect to server. Please check your connection and try again.');
         }
     };
 
@@ -393,10 +392,10 @@ const JournalEntries = () => {
             // Refresh entries and close modal
             await fetchJournalEntries();
             handleCloseModals();
-            setError(null);
+            showSuccess('Journal entry rejected successfully!');
         } catch (err) {
             console.error("Failed to reject journal entry:", err);
-            setError('Failed to reject journal entry: ' + err.message);
+            showError('Failed to reject journal entry: ' + err.message);
         }
     };
 
@@ -452,21 +451,21 @@ const JournalEntries = () => {
             sortable: true,
             minWidth: '200px'
         },
-        {
-            id: 'amount',
-            header: 'Amount',
-            accessor: 'amount',
-            sortable: true,
-            width: '120px',
-            render: (row) => {
-                try {
-                    const amount = parseFloat(row.amount) || 0;
-                    return `$${amount.toFixed(2)}`;
-                } catch (e) {
-                    return '$0.00';
-                }
-            }
-        },
+        // {
+        //     id: 'amount',
+        //     header: 'Amount',
+        //     accessor: 'amount',
+        //     sortable: true,
+        //     width: '120px',
+        //     render: (row) => {
+        //         try {
+        //             const amount = parseFloat(row.amount) || 0;
+        //             return `$${amount.toFixed(2)}`;
+        //         } catch (e) {
+        //             return '$0.00';
+        //         }
+        //     }
+        // },
         {
             id: 'status',
             header: 'Status',

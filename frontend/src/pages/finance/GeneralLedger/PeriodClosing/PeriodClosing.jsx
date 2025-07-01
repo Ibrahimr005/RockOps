@@ -3,6 +3,7 @@ import { FaCalendarAlt, FaLock, FaLockOpen, FaCheck, FaExclamationTriangle, FaPl
 import { useAuth } from "../../../../Contexts/AuthContext";
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import './PeriodClosing.css';
+import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 
 const PeriodClosing = () => {
     const [accountingPeriods, setAccountingPeriods] = useState([]);
@@ -24,60 +25,68 @@ const PeriodClosing = () => {
     });
 
     const isFinanceManager = currentUser?.role === "FINANCE_MANAGER";
+    const { showError, showSuccess } = useSnackbar();
 
     useEffect(() => {
         fetchAccountingPeriods();
     }, []);
 
-    const fetchAccountingPeriods = async () => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem('token');
-
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-
-            const response = await fetch('http://localhost:8080/api/v1/accounting-periods', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("Fetched periods raw data:", data);
-
-            // Ensure data is an array
-            const periodsArray = Array.isArray(data) ? data : [];
-            setAccountingPeriods(periodsArray);
-
-            // Debug the data structure
-            if (periodsArray.length > 0) {
-                console.log("First period object:", periodsArray[0]);
-                console.log("First period keys:", Object.keys(periodsArray[0]));
-            }
-
-            setError(null);
-        } catch (err) {
-            setError('Error: ' + err.message);
-            console.error("Error fetching accounting periods:", err);
-            setAccountingPeriods([]); // Set empty array on error
-        } finally {
-            setLoading(false);
-        }
-    };
+    // const fetchAccountingPeriods = async () => {
+    //     try {
+    //         setLoading(true);
+    //         const token = localStorage.getItem('token');
+    //
+    //         if (!token) {
+    //             throw new Error('No authentication token found');
+    //         }
+    //
+    //         const response = await fetch('http://localhost:8080/api/v1/accounting-periods', {
+    //             headers: {
+    //                 'Authorization': `Bearer ${token}`,
+    //                 'Content-Type': 'application/json'
+    //             }
+    //         });
+    //
+    //         if (!response.ok) {
+    //             throw new Error(`HTTP error! Status: ${response.status}`);
+    //         }
+    //
+    //         const data = await response.json();
+    //         console.log("Fetched periods raw data:", data);
+    //
+    //         // Ensure data is an array
+    //         const periodsArray = Array.isArray(data) ? data : [];
+    //         setAccountingPeriods(periodsArray);
+    //
+    //         // Debug the data structure
+    //         if (periodsArray.length > 0) {
+    //             console.log("First period object:", periodsArray[0]);
+    //             console.log("First period keys:", Object.keys(periodsArray[0]));
+    //         }
+    //
+    //         setError(null);
+    //     } catch (err) {
+    //         setError('Error: ' + err.message);
+    //         console.error("Error fetching accounting periods:", err);
+    //         setAccountingPeriods([]); // Set empty array on error
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
 
     const handleTogglePeriod = (periodId, currentlyClosed) => {
         console.log(`Toggling period ${periodId}, currently closed: ${currentlyClosed}`);
+
+        // Find the actual period to get its current status
+        const period = accountingPeriods.find(p => p.id === periodId);
+        const isCurrentlyClosed = period?.status === 'CLOSED';
+
+        console.log(`Period status: ${period?.status}, isCurrentlyClosed: ${isCurrentlyClosed}`);
+
         setConfirmationModal({
             show: true,
             periodId,
-            action: currentlyClosed ? 'reopen' : 'close',
+            action: isCurrentlyClosed ? 'reopen' : 'close',
         });
     };
 
@@ -108,13 +117,14 @@ const PeriodClosing = () => {
                 // Refresh periods after successful action
                 await fetchAccountingPeriods();
                 setConfirmationModal({ show: false, periodId: null, action: null });
+                showSuccess('Period closed successfully.');
             } else {
                 // Your backend doesn't seem to have a reopen endpoint at the moment
-                setError('Reopening periods is not currently supported');
+                showError('Reopening periods is not currently supported');
                 setConfirmationModal({ show: false, periodId: null, action: null });
             }
         } catch (err) {
-            setError('Error: ' + err.message);
+            showError('Error: ' + err.message);
             console.error("Error updating accounting period:", err);
             setConfirmationModal({ show: false, periodId: null, action: null });
         }
@@ -170,10 +180,11 @@ const PeriodClosing = () => {
 
             // Refresh periods list
             await fetchAccountingPeriods();
-            setError(null); // Clear any previous errors
+            showSuccess('Period created successfully.');
         } catch (err) {
-            setError('Error creating period: ' + err.message);
+            showError('Error creating period: ' + err.message);
             console.error("Error creating period:", err);
+            showError('Could not create period. Please check your input and try again.');
         }
     };
 
@@ -191,6 +202,59 @@ const PeriodClosing = () => {
         }
     };
 
+    // Replace your fetchAccountingPeriods function with this:
+    const fetchAccountingPeriods = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            const response = await fetch('http://localhost:8080/api/v1/accounting-periods', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Fetched periods raw data:", data);
+
+            // Ensure data is an array and normalize the closed field
+            const periodsArray = Array.isArray(data) ? data.map(period => ({
+                ...period,
+                // Backend uses 'status' field, not 'closed' field
+                closed: period.status === 'CLOSED' || period.status === 'closed'
+            })) : [];
+
+            setAccountingPeriods(periodsArray);
+
+            // Debug the normalized data
+            if (periodsArray.length > 0) {
+                console.log("Normalized periods:", periodsArray);
+                periodsArray.forEach(period => {
+                    console.log(`Period: ${period.name}, Closed: ${period.closed} (${typeof period.closed})`);
+                });
+            }
+
+            setError(null);
+        } catch (err) {
+            showError('Error: ' + err.message);
+            console.error("Error fetching accounting periods:", err);
+            setAccountingPeriods([]);
+            showError('Could not fetch periods. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+// Replace your columns configuration with this:
     const columns = [
         {
             id: 'name',
@@ -202,10 +266,10 @@ const PeriodClosing = () => {
         {
             id: 'dateRange',
             header: 'Date Range',
-            accessor: 'startDate', // Use a simple accessor for DataTable
+            accessor: 'startDate',
             sortable: false,
             width: '200px',
-            render: (row) => formatPeriodRange(row) // Use render instead of function accessor
+            render: (row) => formatPeriodRange(row)
         },
         {
             id: 'status',
@@ -213,29 +277,32 @@ const PeriodClosing = () => {
             accessor: 'closed',
             sortable: true,
             width: '120px',
-            render: (row) => (
-                <span className={`status-badge ${row.closed ? 'closed' : 'open'}`}>
+            render: (row) => {
+                console.log('Rendering status for row:', row.name, 'closed:', row.closed, typeof row.closed);
+                return (
+                    <span className={`status-badge ${row.closed ? 'closed' : 'open'}`}>
                     {row.closed ? 'Closed' : 'Open'}
                 </span>
-            )
+                );
+            }
         }
     ];
 
-    // Fix the actions array - remove conditional functions that might cause issues
+// Fix the actions to properly show/hide based on status
     const actions = isFinanceManager ? [
         {
             icon: <FaLock />,
             label: 'Close Period',
             onClick: (row) => handleTogglePeriod(row.id, row.closed),
             className: 'action-close',
-            isDisabled: (row) => row.closed // Only show for open periods
+            isDisabled: (row) => row.closed // Disable for already closed periods
         },
         {
             icon: <FaLockOpen />,
             label: 'Reopen Period',
             onClick: (row) => handleTogglePeriod(row.id, row.closed),
             className: 'action-reopen',
-            isDisabled: (row) => !row.closed // Only show for closed periods
+            isDisabled: (row) => !row.closed // Disable for open periods
         }
     ] : [];
 

@@ -1,15 +1,20 @@
+// Payment Service - handles all payment business logic
 package com.example.backend.services.finance;
 
 import com.example.backend.dto.finance.PaymentRequestDTO;
+import com.example.backend.dto.finance.PaymentSearchRequestDTO;
 import com.example.backend.dto.finance.PaymentResponseDTO;
+import com.example.backend.dto.finance.PaymentValidationResponseDTO;
 import com.example.backend.models.finance.Invoice;
+import com.example.backend.models.finance.InvoiceStatus;
 import com.example.backend.models.finance.Payment;
-import com.example.backend.models.finance.PaymentMethod;
 import com.example.backend.models.finance.PaymentStatus;
 import com.example.backend.repositories.finance.InvoiceRepository;
-import com.example.backend.repositories.finance.PaymentMethodRepository;
 import com.example.backend.repositories.finance.PaymentRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,132 +26,293 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
+@RequiredArgsConstructor
 public class PaymentService {
 
-    @Autowired
-    private PaymentRepository paymentRepository;
+    private final PaymentRepository paymentRepository;
+    private final InvoiceRepository invoiceRepository;
 
-    @Autowired
-    private InvoiceRepository invoiceRepository;
+    // Create a new payment
+    // Replace your createPayment method with this fixed version
+    public PaymentResponseDTO createPayment(PaymentRequestDTO request, String createdBy) {
+        // Step 1: Find the invoice
+        Optional<Invoice> invoiceOpt = invoiceRepository.findById(request.getInvoiceId());
+        if (invoiceOpt.isEmpty()) {
+            throw new RuntimeException("Invoice not found with ID: " + request.getInvoiceId());
+        }
+        Invoice invoice = invoiceOpt.get();
 
-    @Autowired
-    private PaymentMethodRepository paymentMethodRepository;
-
-    // Create a new payment (main feature!)
-    @Transactional
-    public PaymentResponseDTO createPayment(PaymentRequestDTO paymentRequest) {
-        // 1. Get the invoice
-        Invoice invoice = invoiceRepository.findById(paymentRequest.getInvoiceId())
-                .orElseThrow(() -> new RuntimeException("Invoice not found with id: " + paymentRequest.getInvoiceId()));
-
-        // 2. Get the payment method
-        PaymentMethod paymentMethod = paymentMethodRepository.findById(paymentRequest.getPaymentMethodId())
-                .orElseThrow(() -> new RuntimeException("Payment method not found with id: " + paymentRequest.getPaymentMethodId()));
-
-        // 3. Validate payment amount
-        BigDecimal remainingBalance = invoice.getRemainingBalance();
-        if (paymentRequest.getAmount().compareTo(remainingBalance) > 0) {
-            throw new RuntimeException("Payment amount (" + paymentRequest.getAmount() +
-                    ") cannot exceed remaining balance (" + remainingBalance + ")");
+        // Step 2: Get CURRENT remaining balance from database
+        BigDecimal currentRemainingBalance = invoiceRepository.getCurrentRemainingBalance(request.getInvoiceId());
+        if (request.getAmount().compareTo(currentRemainingBalance) > 0) {
+            throw new RuntimeException(String.format(
+                    "Payment amount $%.2f exceeds current remaining balance $%.2f",
+                    request.getAmount(), currentRemainingBalance));
         }
 
-        if (paymentRequest.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+        if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuntimeException("Payment amount must be greater than zero");
         }
 
-        // 4. Create payment record
+        // Step 3: Create the payment
         Payment payment = new Payment();
         payment.setInvoice(invoice);
-        payment.setAmount(paymentRequest.getAmount());
-        payment.setPaymentDate(paymentRequest.getPaymentDate());
-        payment.setReferenceNumber(paymentRequest.getReferenceNumber());
-        payment.setPaymentMethod(paymentMethod);
-        payment.setNotes(paymentRequest.getNotes());
-        payment.setCreatedBy(paymentRequest.getCreatedBy());
+        payment.setAmount(request.getAmount());
+        payment.setPaymentDate(request.getPaymentDate());
+        payment.setPaymentMethod(request.getPaymentMethod());
+        payment.setReferenceNumber(request.getReferenceNumber());
+        payment.setNotes(request.getNotes());
+        payment.setStatus(PaymentStatus.PROCESSED);
+        payment.setCreatedBy(createdBy);
 
+        // Step 4: Save payment
         Payment savedPayment = paymentRepository.save(payment);
 
-        // 5. Update invoice payment status
-        updateInvoicePaymentStatus(invoice.getId());
+        // Step 5: Calculate current paid amount from database
+        BigDecimal totalPaidAmount = invoiceRepository.calculateTotalPaidAmount(request.getInvoiceId());
+        if (totalPaidAmount == null) {
+            totalPaidAmount = BigDecimal.ZERO;
+        }
 
-        return convertToResponseDTO(savedPayment);
+        // Update invoice with calculated amounts
+        invoice.setPaidAmount(totalPaidAmount);
+
+        // Update status
+        if (totalPaidAmount.compareTo(BigDecimal.ZERO) == 0) {
+            invoice.setStatus(invoice.isOverdue() ? InvoiceStatus.OVERDUE : InvoiceStatus.PENDING);
+        } else if (totalPaidAmount.compareTo(invoice.getTotalAmount()) >= 0) {
+            invoice.setStatus(InvoiceStatus.FULLY_PAID);
+        } else {
+            invoice.setStatus(InvoiceStatus.PARTIALLY_PAID);
+        }
+
+        Invoice updatedInvoice = invoiceRepository.save(invoice);
+
+        System.out.println("Updated invoice " + invoice.getInvoiceNumber() +
+                " - Paid: $" + totalPaidAmount +
+                " - Status: " + invoice.getStatus());
+
+        return convertToResponseWithUpdatedInvoice(savedPayment, updatedInvoice);
     }
 
-    // Get all payments for an invoice
-    public List<PaymentResponseDTO> getPaymentsByInvoiceId(UUID invoiceId) {
-        return paymentRepository.findByInvoiceIdOrderByPaymentDateDesc(invoiceId)
-                .stream()
-                .map(this::convertToResponseDTO)
-                .collect(Collectors.toList());
+    // Helper method to convert Payment entity to PaymentResponseDTO with updated invoice
+    private PaymentResponseDTO convertToResponseWithUpdatedInvoice(Payment payment, Invoice updatedInvoice) {
+        PaymentResponseDTO response = new PaymentResponseDTO();
+        response.setId(payment.getId());
+        response.setAmount(payment.getAmount());
+        response.setPaymentDate(payment.getPaymentDate());
+        response.setPaymentMethod(payment.getPaymentMethod());
+        response.setReferenceNumber(payment.getReferenceNumber());
+        response.setNotes(payment.getNotes());
+        response.setStatus(payment.getStatus());
+        response.setCreatedBy(payment.getCreatedBy());
+        response.setCreatedAt(payment.getCreatedAt());
+        response.setUpdatedAt(payment.getUpdatedAt());
+
+        // Set invoice summary with UPDATED invoice data
+        PaymentResponseDTO.InvoiceSummary invoiceSummary = new PaymentResponseDTO.InvoiceSummary(
+                updatedInvoice.getId(),
+                updatedInvoice.getInvoiceNumber(),
+                updatedInvoice.getVendorName(),
+                updatedInvoice.getTotalAmount(),
+                updatedInvoice.getRemainingBalance()  // ✅ This will be the CORRECT balance!
+        );
+        response.setInvoice(invoiceSummary);
+
+        return response;
     }
 
     // Get payment by ID
-    public Optional<PaymentResponseDTO> getPaymentById(UUID id) {
-        return paymentRepository.findById(id)
-                .map(this::convertToResponseDTO);
+    @Transactional(readOnly = true)
+    public PaymentResponseDTO getPaymentById(UUID id) {
+        Optional<Payment> paymentOpt = paymentRepository.findById(id);
+        if (paymentOpt.isEmpty()) {
+            throw new RuntimeException("Payment not found with ID: " + id);
+        }
+        return convertToResponse(paymentOpt.get());
     }
 
-    // Get recent payments (last 30 days)
-    public List<PaymentResponseDTO> getRecentPayments() {
-        LocalDate thirtyDaysAgo = LocalDate.now().minusDays(30);
-        return paymentRepository.findRecentPayments(thirtyDaysAgo)
-                .stream()
-                .map(this::convertToResponseDTO)
+    // Get all payments for an invoice
+    @Transactional(readOnly = true)
+    public List<PaymentResponseDTO> getPaymentsByInvoiceId(UUID invoiceId) {
+        List<Payment> payments = paymentRepository.findByInvoiceIdOrderByPaymentDateDesc(invoiceId);
+        return payments.stream()
+                .map(this::convertToResponse)
                 .collect(Collectors.toList());
+    }
+
+    // Get all payments with pagination
+    @Transactional(readOnly = true)
+    public Page<PaymentResponseDTO> getAllPayments(Pageable pageable) {
+        Page<Payment> paymentsPage = paymentRepository.findAllByOrderByPaymentDateDesc(pageable);
+        return paymentsPage.map(this::convertToResponse);
+    }
+
+    // Update payment status
+    public PaymentResponseDTO updatePaymentStatus(UUID paymentId, PaymentStatus status, String updatedBy) {
+        Optional<Payment> paymentOpt = paymentRepository.findById(paymentId);
+        if (paymentOpt.isEmpty()) {
+            throw new RuntimeException("Payment not found with ID: " + paymentId);
+        }
+
+        Payment payment = paymentOpt.get();
+        PaymentStatus oldStatus = payment.getStatus();
+        payment.setStatus(status);
+
+        Payment savedPayment = paymentRepository.save(payment);
+
+        // If status changed, update invoice
+        if (!oldStatus.equals(status)) {
+            payment.getInvoice().updatePaidAmountAndStatus();
+            invoiceRepository.save(payment.getInvoice());
+        }
+
+        return convertToResponse(savedPayment);
     }
 
     // Get payments by date range
+    @Transactional(readOnly = true)
     public List<PaymentResponseDTO> getPaymentsByDateRange(LocalDate startDate, LocalDate endDate) {
-        return paymentRepository.findByPaymentDateBetween(startDate, endDate)
-                .stream()
-                .map(this::convertToResponseDTO)
+        List<Payment> payments = paymentRepository.findByPaymentDateBetweenOrderByPaymentDateDesc(startDate, endDate);
+        return payments.stream()
+                .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
-    // Update invoice payment status after payment
-    @Transactional
-    public void updateInvoicePaymentStatus(UUID invoiceId) {
-        Invoice invoice = invoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new RuntimeException("Invoice not found with id: " + invoiceId));
+    // Get payments by vendor
+    @Transactional(readOnly = true)
+    public List<PaymentResponseDTO> getPaymentsByVendor(String vendorName) {
+        List<Payment> payments = paymentRepository.findByVendorNameContaining(vendorName);
+        return payments.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
 
-        // Calculate total payments
-        BigDecimal totalPayments = paymentRepository.getTotalPaymentsForInvoice(invoiceId);
-        invoice.setPaidAmount(totalPayments);
+    // Get payments by status
+    @Transactional(readOnly = true)
+    public List<PaymentResponseDTO> getPaymentsByStatus(PaymentStatus status) {
+        List<Payment> payments = paymentRepository.findByStatusOrderByPaymentDateDesc(status);
+        return payments.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
 
-        // Update payment status
-        if (totalPayments.compareTo(BigDecimal.ZERO) == 0) {
-            invoice.setPaymentStatus(PaymentStatus.UNPAID);
-        } else if (totalPayments.compareTo(invoice.getTotalAmount()) < 0) {
-            invoice.setPaymentStatus(PaymentStatus.PARTIALLY_PAID);
-        } else if (totalPayments.compareTo(invoice.getTotalAmount()) == 0) {
-            invoice.setPaymentStatus(PaymentStatus.FULLY_PAID);
-        } else {
-            invoice.setPaymentStatus(PaymentStatus.OVERPAID);
+    // Search payments by reference number
+    @Transactional(readOnly = true)
+    public List<PaymentResponseDTO> searchPaymentsByReference(String referenceNumber) {
+        List<Payment> payments = paymentRepository.findByReferenceNumberContainingIgnoreCase(referenceNumber);
+        return payments.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Advanced search with multiple criteria
+    @Transactional(readOnly = true)
+    public Page<PaymentResponseDTO> searchPayments(PaymentSearchRequestDTO searchRequest) {
+        Pageable pageable = PageRequest.of(searchRequest.getPage(), searchRequest.getSize());
+
+        Page<Payment> paymentsPage = paymentRepository.searchPayments(
+                searchRequest.getVendorName(),
+                searchRequest.getReferenceNumber(),
+                searchRequest.getStatus(),
+                searchRequest.getStartDate(),
+                searchRequest.getEndDate(),
+                searchRequest.getMinAmount(),
+                searchRequest.getMaxAmount(),
+                pageable
+        );
+
+        return paymentsPage.map(this::convertToResponse);
+    }
+
+    // Calculate total payments for period
+    @Transactional(readOnly = true)
+    public BigDecimal calculateTotalPaymentsByPeriod(LocalDate startDate, LocalDate endDate, PaymentStatus status) {
+        return paymentRepository.calculateTotalPaymentsByPeriodAndStatus(startDate, endDate, status);
+    }
+
+    // Get recent payments
+    @Transactional(readOnly = true)
+    public List<PaymentResponseDTO> getRecentPayments(int days) {
+        LocalDate cutoffDate = LocalDate.now().minusDays(days);
+        List<Payment> payments = paymentRepository.findRecentPayments(cutoffDate);
+        return payments.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Get largest payments in period
+    @Transactional(readOnly = true)
+    public List<PaymentResponseDTO> getLargestPayments(LocalDate startDate, LocalDate endDate, int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Payment> payments = paymentRepository.findLargestPaymentsByPeriod(startDate, endDate, pageable);
+        return payments.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // Get payments by vendor for reporting
+    @Transactional(readOnly = true)
+    public List<Object[]> getPaymentsByVendorForPeriod(LocalDate startDate, LocalDate endDate) {
+        return paymentRepository.calculatePaymentsByVendor(startDate, endDate, PaymentStatus.PROCESSED);
+    }
+
+    // Validate payment amount
+    @Transactional(readOnly = true)
+    public PaymentValidationResponseDTO validatePaymentAmount(UUID invoiceId, BigDecimal paymentAmount) {
+        // Check if payment amount is positive
+        if (paymentAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            return PaymentValidationResponseDTO.invalid("Payment amount must be greater than zero", BigDecimal.ZERO);
         }
 
-        invoiceRepository.save(invoice);
+        // Find invoice and check remaining balance
+        Optional<Invoice> invoiceOpt = invoiceRepository.findById(invoiceId);
+        if (invoiceOpt.isEmpty()) {
+            return PaymentValidationResponseDTO.invalid("Invoice not found", BigDecimal.ZERO);
+        }
+
+        Invoice invoice = invoiceOpt.get();
+        BigDecimal remainingBalance = invoice.getRemainingBalance();
+
+        if (paymentAmount.compareTo(remainingBalance) > 0) {
+            return PaymentValidationResponseDTO.invalid(
+                    String.format("Payment amount $%.2f exceeds remaining balance $%.2f",
+                            paymentAmount, remainingBalance),
+                    remainingBalance);
+        }
+
+        return PaymentValidationResponseDTO.valid(remainingBalance);
     }
 
-    // Convert Payment entity to PaymentResponseDTO
-    private PaymentResponseDTO convertToResponseDTO(Payment payment) {
-        PaymentResponseDTO dto = new PaymentResponseDTO();
-        dto.setId(payment.getId());
-        dto.setAmount(payment.getAmount());
-        dto.setPaymentDate(payment.getPaymentDate());
-        dto.setReferenceNumber(payment.getReferenceNumber());
-        dto.setNotes(payment.getNotes());
-        dto.setCreatedBy(payment.getCreatedBy());
-        dto.setCreatedAt(payment.getCreatedAt());
+    // Helper method to convert Payment entity to PaymentResponseDTO DTO
+    private PaymentResponseDTO convertToResponse(Payment payment) {
+        PaymentResponseDTO response = new PaymentResponseDTO();
+        response.setId(payment.getId());
+        response.setAmount(payment.getAmount());
+        response.setPaymentDate(payment.getPaymentDate());
+        response.setPaymentMethod(payment.getPaymentMethod());
+        response.setReferenceNumber(payment.getReferenceNumber());
+        response.setNotes(payment.getNotes());
+        response.setStatus(payment.getStatus());
+        response.setCreatedBy(payment.getCreatedBy());
+        response.setCreatedAt(payment.getCreatedAt());
+        response.setUpdatedAt(payment.getUpdatedAt());
 
-        // Invoice information
-        dto.setInvoiceId(payment.getInvoice().getId());
-        dto.setInvoiceNumber(payment.getInvoice().getInvoiceNumber());
-        dto.setVendorName(payment.getInvoice().getVendorName());
+        // Set invoice summary
+        Invoice invoice = payment.getInvoice();
+        PaymentResponseDTO.InvoiceSummary invoiceSummary = new PaymentResponseDTO.InvoiceSummary(
+                invoice.getId(),
+                invoice.getInvoiceNumber(),
+                invoice.getVendorName(),
+                invoice.getTotalAmount(),
+                invoice.getRemainingBalance()
+        );
+        response.setInvoice(invoiceSummary);
 
-        // Payment method information
-        dto.setPaymentMethodId(payment.getPaymentMethod().getId());
-        dto.setPaymentMethodName(payment.getPaymentMethod().getName());
-
-        return dto;
+        return response;
     }
 }
+
+
+

@@ -1,0 +1,268 @@
+/* PayablesDashboard.css */
+
+.payables-dashboard {
+    padding: 0;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.dashboard-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.dashboard-header p {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* Aging Summary Grid */
+.aging-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.aging-bucket {
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    text-align: center;
+    border: 2px solid transparent;
+    transition: all var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+}
+
+.aging-bucket::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    transition: height var(--transition-fast);
+}
+
+.aging-bucket:hover::before {
+    height: 8px;
+}
+
+.aging-bucket.current {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.aging-bucket.current::before {
+    background: #10b981;
+}
+
+.aging-bucket.current h4 {
+    color: #10b981;
+}
+
+.aging-bucket.current p {
+    color: #059669;
+}
+
+.aging-bucket.warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.aging-bucket.warning::before {
+    background: #f59e0b;
+}
+
+.aging-bucket.warning h4 {
+    color: #f59e0b;
+}
+
+.aging-bucket.warning p {
+    color: #d97706;
+}
+
+.aging-bucket.danger {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+}
+
+.aging-bucket.danger::before {
+    background: #ef4444;
+}
+
+.aging-bucket.danger h4 {
+    color: #ef4444;
+}
+
+.aging-bucket.danger p {
+    color: #dc2626;
+}
+
+.aging-bucket.critical {
+    background: rgba(127, 29, 29, 0.1);
+    border-color: rgba(127, 29, 29, 0.2);
+}
+
+.aging-bucket.critical::before {
+    background: #7f1d1d;
+}
+
+.aging-bucket.critical h4 {
+    color: #7f1d1d;
+}
+
+.aging-bucket.critical p {
+    color: #991b1b;
+}
+
+.aging-bucket h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0 0 0.75rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.aging-bucket p {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Dashboard Tables */
+.dashboard-tables {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.table-section {
+    min-height: 400px;
+}
+
+.table-section .payables-table {
+    height: 100%;
+}
+
+.table-section .rockops-table__container {
+    margin: 0;
+    background: var(--section-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.table-section .rockops-table__header-container {
+    padding: 1rem;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.table-section .rockops-table__title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.table-section .rockops-table__wrapper {
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+/* Dark theme adjustments for aging buckets */
+[data-theme="dark"] .aging-bucket.current {
+    background: rgba(92, 188, 96, 0.1);
+    border-color: rgba(92, 188, 96, 0.2);
+}
+
+[data-theme="dark"] .aging-bucket.current::before {
+    background: var(--color-success);
+}
+
+[data-theme="dark"] .aging-bucket.current h4 {
+    color: var(--color-success);
+}
+
+[data-theme="dark"] .aging-bucket.current p {
+    color: var(--color-success);
+}
+
+[data-theme="dark"] .aging-bucket.danger {
+    background: rgba(255, 82, 82, 0.1);
+    border-color: rgba(255, 82, 82, 0.2);
+}
+
+[data-theme="dark"] .aging-bucket.danger::before {
+    background: var(--color-danger);
+}
+
+[data-theme="dark"] .aging-bucket.danger h4 {
+    color: var(--color-danger);
+}
+
+[data-theme="dark"] .aging-bucket.danger p {
+    color: var(--color-danger);
+}
+
+[data-theme="dark"] .aging-bucket.critical h4 {
+    color: #fca5a5;
+}
+
+[data-theme="dark"] .aging-bucket.critical p {
+    color: #f87171;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .dashboard-tables {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .aging-summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .aging-bucket {
+        padding: 1rem;
+    }
+
+    .aging-bucket h4 {
+        font-size: 0.75rem;
+    }
+
+    .aging-bucket p {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .aging-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .payables-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
