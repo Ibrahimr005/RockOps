@@ -253,22 +253,23 @@ public class EquipmentTypeService {
         // Calculate base salary
         Double baseSalary = calculateBaseSalary(equipmentType);
 
-        // Create the job position with smart defaults
+        // Create the job position with smart defaults for MONTHLY contract
         JobPosition driverPosition = new JobPosition();
         driverPosition.setPositionName(requiredPositionName);
         driverPosition.setDepartment(logisticsDept.get());
         driverPosition.setHead("Operations Manager");
-        driverPosition.setBaseSalary(baseSalary);
         driverPosition.setProbationPeriod(90); // 90 days probation
         driverPosition.setContractType(JobPosition.ContractType.MONTHLY);
         driverPosition.setExperienceLevel(determineExperienceLevel(equipmentType));
         driverPosition.setActive(true);
-        
-        // Monthly contract specific fields
+
+        // Set only MONTHLY contract fields
         driverPosition.setMonthlyBaseSalary(baseSalary);
         driverPosition.setWorkingHours(8);
         driverPosition.setShifts("Day Shift");
         driverPosition.setVacations("21 days annual leave");
+
+        // Leave HOURLY and DAILY fields as null (default)
 
         JobPosition savedPosition = jobPositionRepository.save(driverPosition);
 
