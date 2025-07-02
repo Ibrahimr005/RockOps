@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Data
@@ -43,10 +44,18 @@ public class JobPositionDTO {
     private Integer workingHours;
     private String vacations;
 
+    // NEW: Time fields for MONTHLY contracts
+    private LocalTime startTime;
+    private LocalTime endTime;
+
     // Calculated fields (read-only)
     private Double calculatedDailySalary;
     private Double calculatedMonthlySalary;
     private Boolean isValidConfiguration;
+
+    // NEW: Calculated time-related fields
+    private Integer calculatedWorkingHours;
+    private String workingTimeRange;
 
     // Helper method to populate calculated fields
     public void calculateFields() {
@@ -85,12 +94,32 @@ public class JobPositionDTO {
                     Integer workingDays = workingDaysPerMonth != null ? workingDaysPerMonth : 22;
                     this.calculatedDailySalary = (monthlyBaseSalary != null && workingDays > 0)
                             ? monthlyBaseSalary / workingDays : 0.0;
-                    this.isValidConfiguration = monthlyBaseSalary != null && monthlyBaseSalary > 0
+
+                    // NEW: Calculate working hours from time range
+                    if (startTime != null && endTime != null) {
+                        long hours = java.time.Duration.between(startTime, endTime).toHours();
+                        this.calculatedWorkingHours = (int) hours;
+                        this.workingTimeRange = startTime.toString() + " - " + endTime.toString();
+                    } else {
+                        this.calculatedWorkingHours = workingHours;
+                        this.workingTimeRange = null;
+                    }
+
+                    // Updated validation to include time validation
+                    boolean basicValidation = monthlyBaseSalary != null && monthlyBaseSalary > 0
                             && workingDaysPerMonth != null && workingDaysPerMonth > 0;
+
+                    if (startTime != null && endTime != null) {
+                        this.isValidConfiguration = basicValidation && endTime.isAfter(startTime);
+                    } else {
+                        this.isValidConfiguration = basicValidation;
+                    }
                     break;
                 default:
                     this.calculatedDailySalary = 0.0;
                     this.calculatedMonthlySalary = 0.0;
+                    this.calculatedWorkingHours = 0;
+                    this.workingTimeRange = null;
                     this.isValidConfiguration = false;
             }
         }
