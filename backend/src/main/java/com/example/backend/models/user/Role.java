@@ -6,6 +6,7 @@ public enum Role
     SITE_ADMIN,
     PROCUREMENT,
     WAREHOUSE_MANAGER,
+    WAREHOUSE_EMPLOYEE,
     SECRETARY,
     EQUIPMENT_MANAGER,
     HR_MANAGER,
@@ -13,4 +14,5 @@ public enum Role
     FINANCE_MANAGER,
     FINANCE_EMPLOYEE,
     ADMIN;
+
 }

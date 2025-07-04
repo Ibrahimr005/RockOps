@@ -12,20 +12,12 @@ export const hrEmployeeService = {
 
         // Create new employee with multipart form data
         create: (formData) => {
-            return apiClient.post(HR_ENDPOINTS.EMPLOYEE.CREATE, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            return apiClient.post(HR_ENDPOINTS.EMPLOYEE.CREATE, formData);
         },
 
         // Update existing employee with multipart form data
         update: (id, formData) => {
-            return apiClient.put(HR_ENDPOINTS.EMPLOYEE.UPDATE(id), formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            return apiClient.put(HR_ENDPOINTS.EMPLOYEE.UPDATE(id), formData);
         },
 
         // Delete employee
