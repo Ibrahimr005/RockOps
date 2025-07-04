@@ -162,7 +162,9 @@ const Sidebar = () => {
 
         menuItems.forEach(item => {
             if (item.hasSubmenu && item.submenuItems) {
-                const isOnSubmenuPage = item.submenuItems.some(sub => currentPath === sub.path);
+                const isOnSubmenuPage = item.submenuItems.some(sub =>
+                    currentPath === sub.path || currentPath.startsWith(sub.path + '/')
+                );
                 if (isOnSubmenuPage) {
                     newExpandedMenus[item.title] = true;
                 }
@@ -249,7 +251,28 @@ const Sidebar = () => {
             title: 'Warehouses',
             icon: <FaWarehouse/>,
             path: '/warehouses',
-            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE],
+            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE'],
+            hasSubmenu: true,
+            submenuItems: [
+                {
+                    title: 'Warehouses List',
+                    icon: <FaWarehouse/>,
+                    path: '/warehouses',
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
+                },
+                {
+                    title: 'Item Categories',
+                    icon: <FaBoxes/>,
+                    path: '/warehouses/item-categories',
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
+                },
+                {
+                    title: 'Item Types',
+                    icon: <FaTags/>,
+                    path: '/warehouses/item-types',
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
+                }
+            ]
         },
         {
             title: 'Merchants',
@@ -356,7 +379,12 @@ const Sidebar = () => {
             path: '/secretary',
             roles: [ADMIN, USER, SITE_ADMIN, SECRETARY]
         },
-
+        // {
+        //     title: 'Equipment MT',
+        //     icon: <FaTruck/>,
+        //     path: '/equipment-team',
+        //     roles: ['ADMIN', 'USER', 'EQUIPMENT_MANAGER']
+        // },
         {
             title: 'Settings',
             icon: <FaCog/>,

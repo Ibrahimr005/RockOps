@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./WarehouseViewTransactions.scss";
-import TransactionViewModal from "./PendingTransactions/TransactionViewModal.jsx"; // Add this import
+import TransactionViewModal from "./TransactionViewModal.jsx"; // Add this import
 import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx";
 
@@ -312,14 +312,12 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
         <div className="transaction-table-section">
             <div className="table-header-section">
                 <div className="left-section3">
-                    <h2 className="transaction-section-title">Validated Transactions</h2>
+
                     <div className="item-count3">{validatedTransactions.length} validated transactions</div>
                 </div>
             </div>
 
-            <div className="section-description">
-                (Completed transactions - accepted or rejected)
-            </div>
+
 
             {/* DataTable Component */}
             <DataTable

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./WarehouseViewTransactions.scss";
 import "./AcceptRejectModal.scss";
-import TransactionViewModal from "./PendingTransactions/TransactionViewModal.jsx";
+import TransactionViewModal from "./TransactionViewModal.jsx";
 import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 
@@ -494,14 +494,12 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
         <div className="transaction-table-section">
             <div className="table-header-section">
                 <div className="left-section3">
-                    <h2 className="transaction-section-title">Incoming Transactions</h2>
+
                     <div className="item-count3">{pendingTransactions.length} incoming transactions</div>
                 </div>
             </div>
 
-            <div className="section-description">
-                (Transactions waiting for your approval)
-            </div>
+
 
             {/* DataTable Component */}
             <DataTable

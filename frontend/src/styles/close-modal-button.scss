@@ -1,0 +1,191 @@
+/* Global Close Button Classes with Built-in X Icon */
+/* Regular CSS - No SCSS compilation needed */
+
+.btn-close {
+  background: none;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary, #6b7280);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+/* Create the X icon using pseudo-elements */
+.btn-close::before,
+.btn-close::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 2px;
+  background-color: currentColor;
+  border-radius: 1px;
+  transition: all 0.2s ease;
+}
+
+.btn-close::before {
+  transform: rotate(45deg);
+}
+
+.btn-close::after {
+  transform: rotate(-45deg);
+}
+
+.btn-close:hover:not(:disabled) {
+  background-color: var(--color-surface-hover, #f3f4f6);
+  color: var(--color-text-primary, #1f2937);
+}
+
+.btn-close:hover:not(:disabled)::before {
+  transform: scale(1.1) rotate(45deg);
+}
+
+.btn-close:hover:not(:disabled)::after {
+  transform: scale(1.1) rotate(-45deg);
+}
+
+.btn-close:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-light, #3b82f6);
+}
+
+.btn-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Size variations */
+.btn-close-sm {
+  width: 24px;
+  height: 24px;
+}
+
+.btn-close-sm::before,
+.btn-close-sm::after {
+  width: 12px;
+  height: 1.5px;
+}
+
+.btn-close-lg {
+  width: 40px;
+  height: 40px;
+}
+
+.btn-close-lg::before,
+.btn-close-lg::after {
+  width: 18px;
+  height: 2.5px;
+}
+
+/* Color variations */
+.btn-close-primary {
+  color: var(--color-primary, #3b82f6);
+}
+
+.btn-close-primary::before,
+.btn-close-primary::after {
+  background-color: var(--color-primary, #3b82f6);
+}
+
+.btn-close-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-light, #dbeafe);
+  color: var(--color-primary-dark, #1d4ed8);
+}
+
+.btn-close-primary:hover:not(:disabled)::before,
+.btn-close-primary:hover:not(:disabled)::after {
+  background-color: var(--color-primary-dark, #1d4ed8);
+}
+
+.btn-close-danger {
+  color: var(--color-danger, #ef4444);
+}
+
+.btn-close-danger::before,
+.btn-close-danger::after {
+  background-color: var(--color-danger, #ef4444);
+}
+
+.btn-close-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-light, #fee2e2);
+  color: var(--color-danger-dark, #dc2626);
+}
+
+.btn-close-danger:hover:not(:disabled)::before,
+.btn-close-danger:hover:not(:disabled)::after {
+  background-color: var(--color-danger-dark, #dc2626);
+}
+
+/* Alternative SVG version */
+.btn-close-svg {
+  background: none;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary, #6b7280);
+  transition: all 0.2s ease;
+  position: relative;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M18 6L6 18M6 6l12 12'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 14px 14px;
+}
+
+.btn-close-svg:hover:not(:disabled) {
+  background-color: var(--color-surface-hover, #f3f4f6);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%231f2937' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M18 6L6 18M6 6l12 12'/%3E%3C/svg%3E");
+  transform: scale(1.05);
+}
+
+.btn-close-svg:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-light, #3b82f6);
+}
+
+.btn-close-svg:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .btn-close-sm {
+    width: 28px;
+    height: 28px;
+  }
+
+  .btn-close-sm::before,
+  .btn-close-sm::after {
+    width: 14px;
+  }
+
+  .btn-close {
+    width: 36px;
+    height: 36px;
+  }
+
+  .btn-close::before,
+  .btn-close::after {
+    width: 16px;
+  }
+
+  .btn-close-lg {
+    width: 44px;
+    height: 44px;
+  }
+
+  .btn-close-lg::before,
+  .btn-close-lg::after {
+    width: 20px;
+  }
+}

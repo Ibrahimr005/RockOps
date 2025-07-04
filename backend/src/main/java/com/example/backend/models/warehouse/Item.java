@@ -1,6 +1,7 @@
 package com.example.backend.models.warehouse;
 
 import com.example.backend.models.transaction.TransactionItem;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
@@ -22,12 +23,13 @@ public class Item {
 
     @ManyToOne
     @JoinColumn(name = "item_type_id", nullable = false)
-    private ItemType itemType;
+    private ItemType itemType; // REMOVED @JsonBackReference - keep for serialization
 
     private int quantity;
 
     @ManyToOne
     @JoinColumn(name = "warehouse_id", nullable = false)
+    @JsonIgnore // ADDED @JsonIgnore to break circular reference
     private Warehouse warehouse;
 
     @Enumerated(EnumType.STRING)

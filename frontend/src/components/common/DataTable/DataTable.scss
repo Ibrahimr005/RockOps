@@ -1162,7 +1162,7 @@
   padding: 1.5rem 0 0 0;
   border-top: 1px solid #e5e7eb;
   background-color: transparent;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* Changed from wrap to nowrap */
   gap: 1rem;
   margin-top: 1rem;
 
@@ -1170,33 +1170,57 @@
     border-top-color: var(--border-color);
   }
 
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
+  /* REMOVE THE ENTIRE @media BLOCK - this is what's causing the stacking */
+}
+
+.rockops-table__footer-left {
+  flex: 0 0 auto;
+  min-width: fit-content;
+}
+
+.rockops-table__footer-right {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Keep them side by side on all screen sizes */
+@media (max-width: 768px) {
+  .rockops-table__footer {
+    gap: 0.5rem; /* Reduce gap on smaller screens */
+  }
+
+  .rockops-table__footer-left {
+    flex-shrink: 0; /* Prevent shrinking */
+  }
+
+  .rockops-table__footer-right {
+    flex-shrink: 1; /* Allow shrinking if needed */
   }
 }
 
 .rockops-table__items-per-page {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem; /* Reduced gap */
   color: #6b7280;
   font-size: 0.875rem;
   font-weight: 500;
+  white-space: nowrap; /* Prevent wrapping */
 
   [data-theme="dark"] & {
     color: var(--color-text-secondary);
   }
 
   select {
-    padding: 0.5rem 0.75rem;
+    padding: 0.375rem 0.5rem; /* Reduced padding */
     border: 1px solid #d1d5db;
     border-radius: 6px;
     background-color: white;
     color: #1f2937;
     font-size: 0.875rem;
     cursor: pointer;
+    min-width: 60px; /* Set minimum width */
 
     [data-theme="dark"] & {
       background-color: var(--section-background-color);
@@ -1559,4 +1583,210 @@
 
 .rockops-table__add-btn {
   margin-right: 1rem;
+}
+/* Additional SCSS for Excel Export Button - Add to your existing DataTable.scss */
+
+/* Export Button Styles */
+.rockops-table__export-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 0.75rem;
+
+  [data-theme="dark"] & {
+    background: linear-gradient(135deg, var(--color-success) 0%, #059669 100%);
+    border-color: var(--color-success);
+    color: var(--color-text-inverse);
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+  }
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    border-color: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+
+    [data-theme="dark"] & {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      border-color: #059669;
+      box-shadow: 0 4px 12px rgba(92, 188, 96, 0.3);
+    }
+
+    svg {
+      transform: scale(1.05);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #d1d5db;
+    border-color: #d1d5db;
+    color: #6b7280;
+
+    [data-theme="dark"] & {
+      background: var(--color-surface);
+      border-color: var(--border-color);
+      color: var(--color-text-secondary);
+    }
+
+    &:hover {
+      transform: none;
+      box-shadow: none;
+
+      svg {
+        transform: none;
+      }
+    }
+  }
+}
+
+/* Export Loading Spinner */
+.rockops-table__export-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+
+  [data-theme="dark"] & {
+    border-color: rgba(255, 255, 255, 0.3);
+    border-top-color: var(--color-text-inverse);
+  }
+}
+
+/* Enhanced Header Right - Support for multiple buttons */
+.rockops-table__header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    justify-content: stretch;
+    width: 100%;
+    margin-top: 1rem;
+
+    .rockops-table__export-btn,
+    .rockops-table__add-btn {
+      flex: 1;
+      justify-content: center;
+      min-width: 140px;
+
+      span {
+        font-size: 0.85rem;
+      }
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+}
+
+/* Enhanced Button Base Styles for consistency */
+.btn-primary, .btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  text-decoration: none;
+  white-space: nowrap;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+
+    svg {
+      transform: scale(1.05);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+
+    &:hover {
+      transform: none;
+
+      svg {
+        transform: none;
+      }
+    }
+  }
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: 1px solid #3b82f6;
+
+  [data-theme="dark"] & {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: var(--color-text-inverse);
+    border-color: var(--color-primary);
+  }
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-color: #2563eb;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+
+    [data-theme="dark"] & {
+      background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+      border-color: var(--color-primary-dark);
+      box-shadow: 0 4px 12px rgba(72, 128, 255, 0.3);
+    }
+  }
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: 1px solid #10b981;
+
+  [data-theme="dark"] & {
+    background: linear-gradient(135deg, var(--color-success) 0%, #059669 100%);
+    color: var(--color-text-inverse);
+    border-color: var(--color-success);
+  }
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    border-color: #059669;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+
+    [data-theme="dark"] & {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      border-color: #059669;
+      box-shadow: 0 4px 12px rgba(92, 188, 96, 0.3);
+    }
+  }
 }

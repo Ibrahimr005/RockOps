@@ -8,7 +8,7 @@ import DataTable from '../../../components/common/DataTable/DataTable';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
 import EquipmentConsumablesHistoryModal from "./EquipmentConsumablesHistoryModal.jsx";
-import TransactionViewModal from "../../warehouse/WarehouseViewTransactions/PendingTransactions/TransactionViewModal.jsx";
+import TransactionViewModal from "../../warehouse/WarehouseViewTransactions/TransactionViewModal.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 
 const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref) => {
