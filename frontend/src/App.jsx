@@ -70,7 +70,7 @@ const RoleRoute = ({allowedRoles, children, redirectPath = '/dashboard'}) => {
     return children;
 };
 
-const allRoles = ROLES;
+const allRoles = Object.values(ROLES);
 
 
 
