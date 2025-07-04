@@ -1,0 +1,434 @@
+/* PaymentManagement.css */
+
+.payment-management {
+    padding: 0;
+}
+
+/* Payment Stats */
+.payment-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+/* Payment Method Badge */
+.payment-method-badge {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+[data-theme="dark"] .payment-method-badge {
+    background: rgba(72, 128, 255, 0.1);
+    color: var(--color-primary);
+    border-color: rgba(72, 128, 255, 0.2);
+}
+
+/* Payment Modal Specific Styles */
+.payment-modal {
+    max-width: 700px;
+}
+
+.payment-modal .modal-content {
+    padding: 1.5rem;
+}
+
+/* Invoice Details Section */
+.invoice-details {
+    background: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.invoice-details h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.invoice-details h4::before {
+    content: '';
+    width: 4px;
+    height: 16px;
+    background: var(--color-primary);
+    border-radius: 2px;
+}
+
+.invoice-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.info-value {
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    font-weight: 600;
+    text-align: right;
+}
+
+.info-value.remaining {
+    color: var(--color-primary);
+    font-weight: 700;
+}
+
+.info-value.overdue {
+    color: var(--color-danger);
+    font-weight: 700;
+}
+
+/* Validation Messages */
+.validation-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: var(--radius-sm);
+    color: #dc2626;
+    font-size: 0.875rem;
+}
+
+.validation-success {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: var(--radius-sm);
+    color: #059669;
+    font-size: 0.875rem;
+}
+
+[data-theme="dark"] .validation-error {
+    background: rgba(255, 82, 82, 0.1);
+    border-color: rgba(255, 82, 82, 0.2);
+    color: var(--color-danger);
+}
+
+[data-theme="dark"] .validation-success {
+    background: rgba(92, 188, 96, 0.1);
+    border-color: rgba(92, 188, 96, 0.2);
+    color: var(--color-success);
+}
+
+/* Error state for form inputs */
+.payables-form-input.error {
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+[data-theme="dark"] .payables-form-input.error {
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 3px rgba(255, 82, 82, 0.1);
+}
+
+/* Table customizations */
+.payment-table .rockops-table__container {
+    margin-top: 1rem;
+}
+
+.payment-table .rockops-table__th,
+.payment-table .rockops-table__cell {
+    padding: 12px 16px;
+}
+
+/* Action button customizations */
+.payment-table .rockops-table__action-button.view {
+    color: var(--color-primary);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.payment-table .rockops-table__action-button.view:hover {
+    background: rgba(59, 130, 246, 0.2);
+}
+
+[data-theme="dark"] .payment-table .rockops-table__action-button.view {
+    color: var(--color-primary);
+    background: rgba(72, 128, 255, 0.1);
+}
+
+[data-theme="dark"] .payment-table .rockops-table__action-button.view:hover {
+    background: rgba(72, 128, 255, 0.2);
+}
+
+/* Status badge customizations for payments */
+.payment-table .payables-status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+/* Modal button states */
+.modal-actions .payables-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.modal-actions .payables-btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Select dropdown styling improvements */
+.payables-form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+}
+
+[data-theme="dark"] .payables-form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%9ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* Invoice selection placeholder styling */
+.payables-form-select option:first-child {
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .payment-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .payment-modal {
+        margin: 0.5rem;
+        max-width: none;
+    }
+
+    .invoice-info-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .info-value {
+        text-align: left;
+    }
+
+    .payables-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .modal-actions .payables-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .payment-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .payables-card-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .payables-card-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .payables-card-actions .payables-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .invoice-details {
+        padding: 0.75rem;
+    }
+
+    .invoice-details h4 {
+        font-size: 0.9rem;
+    }
+
+    .info-label,
+    .info-value {
+        font-size: 0.8rem;
+    }
+}
+
+/* Loading and empty states */
+.payment-table .rockops-table__loading {
+    padding: 3rem;
+}
+
+.payment-table .rockops-table__empty {
+    padding: 3rem;
+    text-align: center;
+}
+
+.payment-table .rockops-table__empty p {
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+/* Animation for validation messages */
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.validation-error,
+.validation-success {
+    animation: slideInDown 0.3s ease-out;
+}
+
+/* Enhanced invoice details styling */
+.invoice-details {
+    background: linear-gradient(135deg, var(--color-surface) 0%, var(--section-background-color) 100%);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin: 1rem 0;
+    box-shadow: var(--shadow-sm);
+}
+
+.invoice-details:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* Payment amount input focus state */
+.payables-form-input[type="number"]:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+[data-theme="dark"] .payables-form-input[type="number"]:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+}
+
+/* Enhanced payment method badge variants */
+.payment-method-badge {
+    transition: all var(--transition-fast);
+}
+
+.payment-method-badge:hover {
+    transform: scale(1.05);
+}
+
+/* Different colors for different payment methods */
+.payment-table .payment-method-badge {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    color: #2563eb;
+}
+
+/* Dark theme adjustments for invoice details */
+[data-theme="dark"] .invoice-details {
+    background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-hover) 100%);
+    border-color: var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .invoice-details:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Improved select dropdown for dark theme */
+[data-theme="dark"] .payables-form-select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+}
+
+/* Better spacing for form elements in modal */
+.payment-modal .payables-form-group:last-child {
+    margin-bottom: 0;
+}
+
+.payment-modal .payables-form-row:last-child .payables-form-group {
+    margin-bottom: 1rem;
+}
+
+/* Enhanced button states in modal */
+.modal-actions .payables-btn-primary:not(:disabled):hover {
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, #1d4ed8 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+[data-theme="dark"] .modal-actions .payables-btn-primary:not(:disabled):hover {
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, #1d4ed8 100%);
+    box-shadow: 0 4px 12px rgba(72, 128, 255, 0.3);
+}
+
+/* Loading state for payment stats */
+.payment-stats .stat-item {
+    transition: all var(--transition-fast);
+}
+
+.payment-stats .stat-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+[data-theme="dark"] .payment-stats .stat-item:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}

@@ -1,10 +1,10 @@
 package com.example.backend.models.finance;
 
 public enum PaymentStatus {
-    UNPAID("Unpaid"),
-    PARTIALLY_PAID("Partially Paid"),
-    FULLY_PAID("Fully Paid"),
-    OVERPAID("Overpaid");
+    PENDING("Payment Scheduled/Pending"),
+    PROCESSED("Payment Completed"),
+    CANCELLED("Payment Cancelled"),
+    FAILED("Payment Failed");
 
     private final String displayName;
 

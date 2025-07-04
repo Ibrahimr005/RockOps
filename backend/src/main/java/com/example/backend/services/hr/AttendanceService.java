@@ -1,549 +1,582 @@
 package com.example.backend.services.hr;
 
-import com.example.backend.dto.hr.AttendanceDTO;
+import com.example.backend.dto.hr.*;
 import com.example.backend.models.hr.Attendance;
-import com.example.backend.models.hr.AttendanceStatus;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.hr.JobPosition;
 import com.example.backend.repositories.hr.AttendanceRepository;
 import com.example.backend.repositories.hr.EmployeeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class AttendanceService {
 
-    @Autowired
-    private AttendanceRepository attendanceRepository;
-
-    @Autowired
-    private EmployeeRepository employeeRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final EmployeeRepository employeeRepository;
 
     /**
-     * Record attendance based on employee's contract type
+     * Generate monthly attendance sheet for a site
      */
     @Transactional
-    public AttendanceDTO recordAttendance(AttendanceDTO attendanceDTO) {
-        Employee employee = employeeRepository.findById(attendanceDTO.getEmployeeId())
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+    public List<EmployeeMonthlyAttendanceDTO> generateMonthlyAttendanceSheet(UUID siteId, int year, int month) {
+        log.info("Generating monthly attendance sheet for site: {} for {}/{}", siteId, month, year);
 
+        // Get all active employees for the site
+        List<Employee> employees = employeeRepository.findBySiteId(siteId).stream()
+                .filter(emp -> "ACTIVE".equalsIgnoreCase(emp.getStatus()))
+                .collect(Collectors.toList());
+
+        YearMonth yearMonth = YearMonth.of(year, month);
+        LocalDate startDate = yearMonth.atDay(1);
+        LocalDate endDate = yearMonth.atEndOfMonth();
+
+        List<EmployeeMonthlyAttendanceDTO> monthlySheets = new ArrayList<>();
+
+        for (Employee employee : employees) {
+            // Get existing attendance records for the month
+            List<Attendance> existingAttendance = attendanceRepository.findByEmployeeIdAndDateRange(
+                    employee.getId(), startDate, endDate
+            );
+
+            // Create attendance map for quick lookup
+            Map<LocalDate, Attendance> attendanceMap = existingAttendance.stream()
+                    .collect(Collectors.toMap(Attendance::getDate, a -> a));
+
+            // Generate or update attendance for each day
+            List<DailyAttendanceDTO> dailyAttendance = new ArrayList<>();
+            LocalDate currentDate = startDate;
+
+            while (!currentDate.isAfter(endDate)) {
+                Attendance attendance = attendanceMap.get(currentDate);
+
+                if (attendance == null && employee.getJobPosition() != null) {
+                    // Create new attendance record based on contract type
+                    attendance = createDefaultAttendance(employee, currentDate);
+                    attendance = attendanceRepository.save(attendance);
+                }
+
+                if (attendance != null) {
+                    dailyAttendance.add(convertToDailyDTO(attendance));
+                }
+
+                currentDate = currentDate.plusDays(1);
+            }
+
+            // Create monthly DTO
+            EmployeeMonthlyAttendanceDTO monthlyDTO = buildMonthlyAttendanceDTO(employee, dailyAttendance, yearMonth);
+            monthlySheets.add(monthlyDTO);
+        }
+
+        return monthlySheets;
+    }
+
+    /**
+     * Create default attendance record based on contract type and day
+     */
+    private Attendance createDefaultAttendance(Employee employee, LocalDate date) {
+        JobPosition jobPosition = employee.getJobPosition();
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
+
+        Attendance attendance = Attendance.builder()
+                .employee(employee)
+                .date(date)
+                .build();
+
+        // Determine if it's a working day
+        boolean isWeekend = (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY);
+
+        if (isWeekend) {
+            attendance.setDayType(Attendance.DayType.WEEKEND);
+            attendance.setStatus(Attendance.AttendanceStatus.OFF);
+        } else {
+            attendance.setDayType(Attendance.DayType.WORKING_DAY);
+            attendance.setStatus(Attendance.AttendanceStatus.ABSENT); // Default to absent
+        }
+
+        // Set expected hours for HOURLY employees
+        if (jobPosition.getContractType() == JobPosition.ContractType.HOURLY) {
+            if (!isWeekend && jobPosition.getHoursPerShift() != null) {
+                attendance.setExpectedHours(jobPosition.getHoursPerShift().doubleValue());
+            }
+        }
+
+        return attendance;
+    }
+
+    /**
+     * Update attendance for a single employee and date
+     */
+    @Transactional
+    public AttendanceResponseDTO updateAttendance(AttendanceRequestDTO requestDTO) {
+        log.info("Updating attendance for employee: {} on date: {}", requestDTO.getEmployeeId(), requestDTO.getDate());
+
+        // Find the employee
+        Employee employee = employeeRepository.findById(requestDTO.getEmployeeId())
+                .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + requestDTO.getEmployeeId()));
+
+        // Find or create attendance record
+        Attendance attendance = attendanceRepository.findByEmployeeIdAndDate(
+                requestDTO.getEmployeeId(), requestDTO.getDate()
+        ).orElseGet(() -> {
+            Attendance newAttendance = new Attendance();
+            newAttendance.setEmployee(employee);
+            newAttendance.setDate(requestDTO.getDate());
+            newAttendance.setDayType(determineDayType(requestDTO.getDate()));
+            return newAttendance;
+        });
+
+        // Update attendance based on contract type
+        updateAttendanceByContractType(attendance, requestDTO, employee);
+
+        // Save and return
+        Attendance savedAttendance = attendanceRepository.save(attendance);
+        return convertToResponseDTO(savedAttendance);
+    }
+
+    /**
+     * Bulk update attendance for multiple employees
+     */
+    @Transactional
+    public List<AttendanceResponseDTO> bulkUpdateAttendance(BulkAttendanceDTO bulkDTO) {
+        log.info("Bulk updating attendance for {} employees",
+                bulkDTO.getAttendanceRecords().size());
+
+        List<AttendanceResponseDTO> responses = new ArrayList<>();
+
+        for (AttendanceRequestDTO record : bulkDTO.getAttendanceRecords()) {
+            try {
+                // CRITICAL FIX: Don't overwrite the date if it's already set in the record
+                // Only set the date from bulkDTO if the record doesn't have one
+                if (record.getDate() == null && bulkDTO.getDate() != null) {
+                    record.setDate(bulkDTO.getDate());
+                }
+
+                // Validate that we have a date before proceeding
+                if (record.getDate() == null) {
+                    log.error("No date provided for employee: {} in bulk update", record.getEmployeeId());
+                    throw new RuntimeException("Date is required for attendance record for employee: " + record.getEmployeeId());
+                }
+
+                AttendanceResponseDTO response = updateAttendance(record);
+                responses.add(response);
+            } catch (Exception e) {
+                log.error("Error updating attendance for employee: {}", record.getEmployeeId(), e);
+                // You might want to continue processing other records or throw the exception
+                // For now, we'll continue and log the error
+            }
+        }
+
+        return responses;
+    }
+
+    /**
+     * Get monthly attendance view for employees
+     */
+    public List<EmployeeMonthlyAttendanceDTO> getMonthlyAttendance(UUID siteId, int year, int month) {
+        log.info("Fetching monthly attendance for site: {} for {}/{}", siteId, month, year);
+
+        // First generate/ensure attendance records exist
+        List<EmployeeMonthlyAttendanceDTO> monthlyAttendance = generateMonthlyAttendanceSheet(siteId, year, month);
+
+        return monthlyAttendance;
+    }
+
+    /**
+     * Update attendance based on contract type
+     */
+    private void updateAttendanceByContractType(Attendance attendance, AttendanceRequestDTO requestDTO, Employee employee) {
         JobPosition jobPosition = employee.getJobPosition();
         if (jobPosition == null) {
             throw new RuntimeException("Employee has no job position assigned");
         }
 
-        // Determine contract type from job position
-        Attendance.ContractType contractType = Attendance.ContractType.valueOf(
-                jobPosition.getContractType().name()
-        );
-
-        // Check if attendance already exists for this date
-        Optional<Attendance> existingAttendance = attendanceRepository
-                .findByEmployeeIdAndDate(employee.getId(), attendanceDTO.getDate());
-
-        Attendance attendance;
-        if (existingAttendance.isPresent()) {
-            attendance = existingAttendance.get();
-            updateExistingAttendance(attendance, attendanceDTO, contractType);
-        } else {
-            attendance = createNewAttendance(employee, attendanceDTO, contractType);
+        // Update status if provided
+        if (requestDTO.getStatus() != null) {
+            try {
+                attendance.setStatus(Attendance.AttendanceStatus.valueOf(requestDTO.getStatus()));
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid status provided: {}", requestDTO.getStatus());
+            }
         }
 
-        attendance = attendanceRepository.save(attendance);
-        return convertToDTO(attendance);
-    }
+        JobPosition.ContractType contractType = jobPosition.getContractType();
 
-    private Attendance createNewAttendance(Employee employee, AttendanceDTO dto,
-                                           Attendance.ContractType contractType) {
-        Attendance attendance = Attendance.builder()
-                .employee(employee)
-                .date(dto.getDate())
-                .contractType(contractType)
-                .notes(dto.getNotes())
-                .location(dto.getLocation())
-                .latitude(dto.getLatitude())
-                .longitude(dto.getLongitude())
-                .isHoliday(dto.getIsHoliday())
-                .isLeave(dto.getIsLeave())
-                .build();
-
-        setContractSpecificFields(attendance, dto, contractType);
-        return attendance;
-    }
-
-    private void updateExistingAttendance(Attendance attendance, AttendanceDTO dto,
-                                          Attendance.ContractType contractType) {
-        // Update common fields
-        if (dto.getNotes() != null) attendance.setNotes(dto.getNotes());
-        if (dto.getLocation() != null) attendance.setLocation(dto.getLocation());
-        if (dto.getLatitude() != null) attendance.setLatitude(dto.getLatitude());
-        if (dto.getLongitude() != null) attendance.setLongitude(dto.getLongitude());
-
-        setContractSpecificFields(attendance, dto, contractType);
-    }
-
-    private void setContractSpecificFields(Attendance attendance, AttendanceDTO dto,
-                                           Attendance.ContractType contractType) {
         switch (contractType) {
+            case MONTHLY:
+                // For MONTHLY (Full-time), track status and optionally time
+                if (attendance.getStatus() == Attendance.AttendanceStatus.PRESENT ||
+                        attendance.getStatus() == Attendance.AttendanceStatus.LATE ||
+                        attendance.getStatus() == Attendance.AttendanceStatus.HALF_DAY) {
+
+                    attendance.setCheckIn(requestDTO.getCheckIn());
+                    attendance.setCheckOut(requestDTO.getCheckOut());
+
+                    // Determine if late based on JobPosition's start time
+                    if (requestDTO.getCheckIn() != null) {
+                        LocalTime expectedCheckIn = getExpectedStartTime(jobPosition);
+                        LocalTime lateThreshold = expectedCheckIn.plusMinutes(15); // 15 minutes grace period
+
+                        if (requestDTO.getCheckIn().isAfter(lateThreshold)) {
+                            attendance.setStatus(Attendance.AttendanceStatus.LATE);
+                            log.info("Employee {} marked as LATE. Expected: {}, Actual: {}, Threshold: {}",
+                                    employee.getId(), expectedCheckIn, requestDTO.getCheckIn(), lateThreshold);
+                        }
+                    }
+
+                    // Calculate expected and actual working hours for monthly employees
+                    if (requestDTO.getCheckIn() != null && requestDTO.getCheckOut() != null) {
+                        double actualHours = calculateWorkingHours(requestDTO.getCheckIn(), requestDTO.getCheckOut());
+                        attendance.setHoursWorked(actualHours);
+
+                        // Set expected hours from job position
+                        Integer expectedHours = jobPosition.getWorkingHours();
+                        if (expectedHours != null) {
+                            attendance.setExpectedHours(expectedHours.doubleValue());
+
+                            // Calculate overtime for monthly employees if they work more than expected
+                            double overtime = actualHours - expectedHours;
+                            attendance.setOvertimeHours(overtime > 0 ? overtime : 0.0);
+                        }
+                    }
+                }
+                break;
+
             case HOURLY:
-                if (dto.getCheckInTime() != null) {
-                    attendance.setCheckInTime(dto.getCheckInTime());
-                }
-                if (dto.getCheckOutTime() != null) {
-                    attendance.setCheckOutTime(dto.getCheckOutTime());
-                }
-                if (dto.getBreakDurationMinutes() != null) {
-                    attendance.setBreakDurationMinutes(dto.getBreakDurationMinutes());
+                // For HOURLY, track hours worked with more precision
+                if (attendance.getStatus() == Attendance.AttendanceStatus.PRESENT) {
+                    attendance.setHoursWorked(requestDTO.getHoursWorked());
+
+                    // Calculate overtime if applicable
+                    if (attendance.getExpectedHours() != null && requestDTO.getHoursWorked() != null) {
+                        double overtime = requestDTO.getHoursWorked() - attendance.getExpectedHours();
+                        attendance.setOvertimeHours(overtime > 0 ? overtime : 0.0);
+                    }
+
+                    // Track check-in/out for hourly workers
+                    attendance.setCheckIn(requestDTO.getCheckIn());
+                    attendance.setCheckOut(requestDTO.getCheckOut());
+
+                    // Check if hourly worker is late (they might have fixed schedules too)
+                    if (requestDTO.getCheckIn() != null) {
+                        LocalTime expectedCheckIn = getExpectedStartTime(jobPosition);
+                        LocalTime lateThreshold = expectedCheckIn.plusMinutes(15);
+
+                        if (requestDTO.getCheckIn().isAfter(lateThreshold)) {
+                            attendance.setStatus(Attendance.AttendanceStatus.LATE);
+                            log.info("Hourly employee {} marked as LATE. Expected: {}, Actual: {}",
+                                    employee.getId(), expectedCheckIn, requestDTO.getCheckIn());
+                        }
+                    }
                 }
                 break;
 
             case DAILY:
-                if (dto.getDailyStatus() != null) {
-                    attendance.setDailyStatus(dto.getDailyStatus());
+                // For DAILY, simple status tracking with late detection
+                if (attendance.getStatus() == Attendance.AttendanceStatus.PRESENT) {
+                    // Daily workers work full day if present
+                    attendance.setHoursWorked(8.0); // Standard 8 hours
+
+                    // Check if daily worker is late
+                    if (requestDTO.getCheckIn() != null) {
+                        LocalTime expectedCheckIn = getExpectedStartTime(jobPosition);
+                        LocalTime lateThreshold = expectedCheckIn.plusMinutes(15);
+
+                        if (requestDTO.getCheckIn().isAfter(lateThreshold)) {
+                            attendance.setStatus(Attendance.AttendanceStatus.LATE);
+                            log.info("Daily employee {} marked as LATE. Expected: {}, Actual: {}",
+                                    employee.getId(), expectedCheckIn, requestDTO.getCheckIn());
+                        }
+                    }
+
+                    attendance.setCheckIn(requestDTO.getCheckIn());
+                    attendance.setCheckOut(requestDTO.getCheckOut());
                 }
                 break;
+        }
 
+        // Common fields
+        attendance.setNotes(requestDTO.getNotes());
+
+        // Handle leave information
+        if (attendance.getStatus() == Attendance.AttendanceStatus.ON_LEAVE) {
+            attendance.setLeaveType(requestDTO.getLeaveType());
+            attendance.setLeaveApproved(requestDTO.getLeaveApproved());
+        }
+    }
+
+    /**
+     * Helper method to get the expected start time for an employee based on their job position
+     * Falls back to default times if job position doesn't have start time configured
+     */
+    private LocalTime getExpectedStartTime(JobPosition jobPosition) {
+        // Use the job position's start time if available
+        if (jobPosition.getStartTime() != null) {
+            return jobPosition.getStartTime();
+        }
+
+        // Fallback based on contract type and shift information
+        JobPosition.ContractType contractType = jobPosition.getContractType();
+        String shifts = jobPosition.getShifts();
+
+        if (shifts != null) {
+            switch (shifts.toLowerCase()) {
+                case "night shift":
+                    return LocalTime.of(22, 0); // 10:00 PM
+                case "early morning shift":
+                    return LocalTime.of(6, 0);  // 6:00 AM
+                case "evening shift":
+                    return LocalTime.of(14, 0); // 2:00 PM
+                case "day shift":
+                default:
+                    return LocalTime.of(9, 0);  // 9:00 AM
+            }
+        }
+
+        // Default fallback based on contract type
+        switch (contractType) {
+            case HOURLY:
+                return LocalTime.of(8, 0);  // 8:00 AM for hourly workers
+            case DAILY:
+                return LocalTime.of(7, 0);  // 7:00 AM for daily workers
             case MONTHLY:
-                if (dto.getStatus() != null) {
-                    attendance.setStatus(dto.getStatus());
-                }
-                break;
-        }
-    }
-
-    /**
-     * Check in an hourly employee
-     */
-    @Transactional
-    public AttendanceDTO checkIn(UUID employeeId, LocalTime checkInTime,
-                                 String location, Double latitude, Double longitude) {
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
-
-        if (!employee.getJobPosition().getContractType().equals(JobPosition.ContractType.HOURLY)) {
-            throw new RuntimeException("Check-in is only available for hourly employees");
-        }
-
-        LocalDate today = LocalDate.now();
-
-        // Check if already checked in today
-        Optional<Attendance> existingAttendance = attendanceRepository
-                .findByEmployeeIdAndDate(employeeId, today);
-
-        Attendance attendance;
-        if (existingAttendance.isPresent()) {
-            attendance = existingAttendance.get();
-            if (attendance.getCheckInTime() != null && attendance.getCheckOutTime() == null) {
-                throw new RuntimeException("Employee is already checked in");
-            }
-            attendance.setCheckInTime(checkInTime);
-            attendance.setCheckOutTime(null); // Reset checkout for new checkin
-        } else {
-            attendance = Attendance.builder()
-                    .employee(employee)
-                    .date(today)
-                    .contractType(Attendance.ContractType.HOURLY)
-                    .checkInTime(checkInTime)
-                    .location(location)
-                    .latitude(latitude)
-                    .longitude(longitude)
-                    .build();
-        }
-
-        attendance = attendanceRepository.save(attendance);
-        return convertToDTO(attendance);
-    }
-
-    /**
-     * Check out an hourly employee
-     */
-    @Transactional
-    public AttendanceDTO checkOut(UUID employeeId, LocalTime checkOutTime) {
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
-
-        LocalDate today = LocalDate.now();
-        Attendance attendance = attendanceRepository
-                .findByEmployeeIdAndDate(employeeId, today)
-                .orElseThrow(() -> new RuntimeException("No check-in record found for today"));
-
-        if (attendance.getCheckInTime() == null) {
-            throw new RuntimeException("Employee has not checked in today");
-        }
-
-        if (attendance.getCheckOutTime() != null) {
-            throw new RuntimeException("Employee has already checked out today");
-        }
-
-        attendance.setCheckOutTime(checkOutTime);
-        attendance = attendanceRepository.save(attendance);
-        return convertToDTO(attendance);
-    }
-
-    /**
-     * Mark daily attendance for daily contract employees
-     */
-    @Transactional
-    public AttendanceDTO markDailyAttendance(UUID employeeId, LocalDate date,
-                                             Attendance.DailyAttendanceStatus status, String notes) {
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
-
-        if (!employee.getJobPosition().getContractType().equals(JobPosition.ContractType.DAILY)) {
-            throw new RuntimeException("Daily attendance marking is only available for daily contract employees");
-        }
-
-        Optional<Attendance> existingAttendance = attendanceRepository
-                .findByEmployeeIdAndDate(employeeId, date);
-
-        Attendance attendance;
-        if (existingAttendance.isPresent()) {
-            attendance = existingAttendance.get();
-            attendance.setDailyStatus(status);
-            if (notes != null) attendance.setNotes(notes);
-        } else {
-            attendance = Attendance.builder()
-                    .employee(employee)
-                    .date(date)
-                    .contractType(Attendance.ContractType.DAILY)
-                    .dailyStatus(status)
-                    .notes(notes)
-                    .build();
-        }
-
-        attendance = attendanceRepository.save(attendance);
-        return convertToDTO(attendance);
-    }
-
-    /**
-     * Generate monthly attendance for monthly contract employees
-     */
-    @Transactional
-    public List<AttendanceDTO> generateMonthlyAttendance(UUID employeeId, int year, int month) {
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
-
-        if (!employee.getJobPosition().getContractType().equals(JobPosition.ContractType.MONTHLY)) {
-            throw new RuntimeException("Monthly attendance generation is only available for monthly contract employees");
-        }
-
-        List<LocalDate> workingDates = generateWorkingDatesForMonth(year, month);
-        List<Attendance> attendances = new ArrayList<>();
-
-        for (LocalDate date : workingDates) {
-            Optional<Attendance> existing = attendanceRepository.findByEmployeeIdAndDate(employeeId, date);
-
-            if (existing.isEmpty()) {
-                Attendance attendance = Attendance.builder()
-                        .employee(employee)
-                        .date(date)
-                        .contractType(Attendance.ContractType.MONTHLY)
-                        .status(AttendanceStatus.ABSENT) // Default to absent
-                        .isHoliday(false)
-                        .isLeave(false)
-                        .build();
-                attendances.add(attendance);
-            }
-        }
-
-        List<Attendance> savedAttendances = attendanceRepository.saveAll(attendances);
-        return savedAttendances.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Get attendance records by employee and date range
-     */
-    public List<AttendanceDTO> getAttendanceByEmployeeAndDateRange(UUID employeeId,
-                                                                   LocalDate startDate,
-                                                                   LocalDate endDate) {
-        List<Attendance> attendances = attendanceRepository
-                .findByEmployeeIdAndDateBetween(employeeId, startDate, endDate);
-
-        return attendances.stream()
-                .map(this::convertToDTO)
-                .sorted(Comparator.comparing(AttendanceDTO::getDate).reversed())
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Get monthly attendance summary for an employee
-     */
-    public Map<String, Object> getMonthlyAttendanceSummary(UUID employeeId, int year, int month) {
-        LocalDate startDate = LocalDate.of(year, month, 1);
-        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
-
-        List<Attendance> attendances = attendanceRepository
-                .findByEmployeeIdAndDateBetween(employeeId, startDate, endDate);
-
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
-
-        return generateAttendanceSummary(employee, attendances, startDate, endDate);
-    }
-
-    /**
-     * Get daily attendance summary for all employees
-     */
-    public Map<String, Object> getDailyAttendanceSummary(LocalDate date) {
-        List<Employee> allEmployees = employeeRepository.findAll();
-        Map<String, Object> summary = new HashMap<>();
-
-        Map<String, List<AttendanceDTO>> categorizedAttendance = new HashMap<>();
-        categorizedAttendance.put("present", new ArrayList<>());
-        categorizedAttendance.put("absent", new ArrayList<>());
-        categorizedAttendance.put("late", new ArrayList<>());
-        categorizedAttendance.put("checkedIn", new ArrayList<>());
-
-        for (Employee employee : allEmployees) {
-            Optional<Attendance> attendance = attendanceRepository
-                    .findByEmployeeIdAndDate(employee.getId(), date);
-
-            AttendanceDTO dto = attendance.map(this::convertToDTO)
-                    .orElse(createAbsentRecord(employee, date));
-
-            categorizeAttendance(dto, categorizedAttendance);
-        }
-
-        summary.putAll(categorizedAttendance);
-        summary.put("totalEmployees", allEmployees.size());
-        summary.put("date", date);
-
-        return summary;
-    }
-
-    /**
-     * Update attendance status (for monthly employees)
-     */
-    @Transactional
-    public AttendanceDTO updateAttendanceStatus(UUID attendanceId, AttendanceStatus status) {
-        Attendance attendance = attendanceRepository.findById(attendanceId)
-                .orElseThrow(() -> new RuntimeException("Attendance record not found"));
-
-        if (attendance.getContractType() != Attendance.ContractType.MONTHLY) {
-            throw new RuntimeException("Status update is only available for monthly contract employees");
-        }
-
-        attendance.setStatus(status);
-        attendance = attendanceRepository.save(attendance);
-        return convertToDTO(attendance);
-    }
-
-    /**
-     * Get attendance statistics for an employee
-     */
-    public Map<String, Object> getAttendanceStatistics(UUID employeeId, LocalDate startDate, LocalDate endDate) {
-        List<Attendance> attendances = attendanceRepository
-                .findByEmployeeIdAndDateBetween(employeeId, startDate, endDate);
-
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
-
-        return generateAttendanceStatistics(employee, attendances, startDate, endDate);
-    }
-
-    // Helper methods
-    private List<LocalDate> generateWorkingDatesForMonth(int year, int month) {
-        LocalDate startDate = LocalDate.of(year, month, 1);
-        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
-
-        List<LocalDate> workingDates = new ArrayList<>();
-        LocalDate currentDate = startDate;
-
-        while (!currentDate.isAfter(endDate)) {
-            // Exclude weekends (Friday and Saturday in some regions, Saturday and Sunday in others)
-            if (currentDate.getDayOfWeek() != DayOfWeek.FRIDAY &&
-                    currentDate.getDayOfWeek() != DayOfWeek.SATURDAY) {
-                workingDates.add(currentDate);
-            }
-            currentDate = currentDate.plusDays(1);
-        }
-
-        return workingDates;
-    }
-
-    private AttendanceDTO convertToDTO(Attendance attendance) {
-        AttendanceDTO dto = AttendanceDTO.builder()
-                .id(attendance.getId())
-                .employeeId(attendance.getEmployee().getId())
-                .employeeName(attendance.getEmployee().getFullName())
-                .date(attendance.getDate())
-                .contractType(attendance.getContractType())
-                .checkInTime(attendance.getCheckInTime())
-                .checkOutTime(attendance.getCheckOutTime())
-                .breakDurationMinutes(attendance.getBreakDurationMinutes())
-                .hoursWorked(attendance.getHoursWorked())
-                .overtimeHours(attendance.getOvertimeHours())
-                .regularHours(attendance.getRegularHours())
-                .isLate(attendance.getIsLate())
-                .lateMinutes(attendance.getLateMinutes())
-                .dailyStatus(attendance.getDailyStatus())
-                .status(attendance.getStatus())
-                .notes(attendance.getNotes())
-                .isHoliday(attendance.getIsHoliday())
-                .isLeave(attendance.getIsLeave())
-                .location(attendance.getLocation())
-                .latitude(attendance.getLatitude())
-                .longitude(attendance.getLongitude())
-                .dailyEarnings(attendance.getDailyEarnings())
-                .build();
-
-        dto.formatDisplayFields();
-        dto.validateRecord();
-        return dto;
-    }
-
-    private AttendanceDTO createAbsentRecord(Employee employee, LocalDate date) {
-        JobPosition.ContractType contractType = employee.getJobPosition() != null
-                ? employee.getJobPosition().getContractType()
-                : JobPosition.ContractType.MONTHLY;
-
-        return AttendanceDTO.builder()
-                .employeeId(employee.getId())
-                .employeeName(employee.getFullName())
-                .date(date)
-                .contractType(Attendance.ContractType.valueOf(contractType.name()))
-                .status(AttendanceStatus.ABSENT)
-                .dailyStatus(Attendance.DailyAttendanceStatus.ABSENT)
-                .build();
-    }
-
-    private void categorizeAttendance(AttendanceDTO dto, Map<String, List<AttendanceDTO>> categorized) {
-        String displayStatus = dto.getDisplayStatus();
-
-        switch (displayStatus) {
-            case "PRESENT":
-            case "PRESENT_LATE":
-                categorized.get("present").add(dto);
-                if ("PRESENT_LATE".equals(displayStatus)) {
-                    categorized.get("late").add(dto);
-                }
-                break;
-            case "CHECKED_IN":
-                categorized.get("checkedIn").add(dto);
-                break;
-            case "ABSENT":
             default:
-                categorized.get("absent").add(dto);
-                break;
+                return LocalTime.of(9, 0);  // 9:00 AM for monthly workers
         }
     }
 
-    private Map<String, Object> generateAttendanceSummary(Employee employee, List<Attendance> attendances,
-                                                          LocalDate startDate, LocalDate endDate) {
-        Map<String, Object> summary = new HashMap<>();
-
-        JobPosition.ContractType contractType = employee.getJobPosition().getContractType();
-
-        summary.put("employeeId", employee.getId());
-        summary.put("employeeName", employee.getFullName());
-        summary.put("contractType", contractType);
-        summary.put("startDate", startDate);
-        summary.put("endDate", endDate);
-        summary.put("totalRecords", attendances.size());
-
-        switch (contractType) {
-            case HOURLY:
-                generateHourlySummary(summary, attendances);
-                break;
-            case DAILY:
-                generateDailySummary(summary, attendances);
-                break;
-            case MONTHLY:
-                generateMonthlySummary(summary, attendances);
-                break;
+    /**
+     * Helper method to calculate working hours between check-in and check-out times
+     * Handles overnight shifts and break deductions
+     */
+    private double calculateWorkingHours(LocalTime checkIn, LocalTime checkOut) {
+        if (checkIn == null || checkOut == null) {
+            return 0.0;
         }
 
-        return summary;
-    }
+        long minutes;
 
-    private void generateHourlySummary(Map<String, Object> summary, List<Attendance> attendances) {
-        double totalHours = 0;
-        double totalOvertimeHours = 0;
-        int daysWorked = 0;
-        int lateDays = 0;
-        double totalEarnings = 0;
-
-        for (Attendance attendance : attendances) {
-            if (attendance.getHoursWorked() != null) {
-                totalHours += attendance.getHoursWorked();
-                daysWorked++;
-            }
-            if (attendance.getOvertimeHours() != null) {
-                totalOvertimeHours += attendance.getOvertimeHours();
-            }
-            if (attendance.getIsLate() != null && attendance.getIsLate()) {
-                lateDays++;
-            }
-            if (attendance.getDailyEarnings() != null) {
-                totalEarnings += attendance.getDailyEarnings();
-            }
+        // Handle overnight shifts (check-out is next day)
+        if (checkOut.isBefore(checkIn)) {
+            // Calculate time until midnight + time from midnight to check-out
+            minutes = java.time.Duration.between(checkIn, LocalTime.MAX).toMinutes() + 1 +
+                    java.time.Duration.between(LocalTime.MIN, checkOut).toMinutes();
+        } else {
+            // Normal same-day shift
+            minutes = java.time.Duration.between(checkIn, checkOut).toMinutes();
         }
 
-        summary.put("totalHours", Math.round(totalHours * 100.0) / 100.0);
-        summary.put("totalOvertimeHours", Math.round(totalOvertimeHours * 100.0) / 100.0);
-        summary.put("averageHoursPerDay", daysWorked > 0 ? Math.round((totalHours / daysWorked) * 100.0) / 100.0 : 0);
-        summary.put("daysWorked", daysWorked);
-        summary.put("lateDays", lateDays);
-        summary.put("totalEarnings", Math.round(totalEarnings * 100.0) / 100.0);
+        double hours = minutes / 60.0;
+
+        // Deduct standard break time for shifts longer than 6 hours
+        if (hours > 6.0) {
+            hours -= 1.0; // Deduct 1-hour break
+        } else if (hours > 4.0) {
+            hours -= 0.5; // Deduct 30-minute break
+        }
+
+        return Math.round(hours * 100.0) / 100.0; // Round to 2 decimal places
     }
 
-    private void generateDailySummary(Map<String, Object> summary, List<Attendance> attendances) {
-        long presentDays = attendances.stream()
-                .filter(a -> a.getDailyStatus() == Attendance.DailyAttendanceStatus.PRESENT)
-                .count();
-        long absentDays = attendances.stream()
-                .filter(a -> a.getDailyStatus() == Attendance.DailyAttendanceStatus.ABSENT)
-                .count();
-        long leaveDays = attendances.stream()
-                .filter(a -> a.getDailyStatus() == Attendance.DailyAttendanceStatus.LEAVE)
+    /**
+     * Helper method to determine if an employee should be marked as late
+     * Can be used for additional late-checking logic
+     */
+    private boolean isEmployeeLate(LocalTime checkIn, LocalTime expectedStartTime, int graceMinutes) {
+        if (checkIn == null || expectedStartTime == null) {
+            return false;
+        }
+
+        LocalTime lateThreshold = expectedStartTime.plusMinutes(graceMinutes);
+        return checkIn.isAfter(lateThreshold);
+    }
+
+    /**
+     * Enhanced method that also considers job position's break settings for hourly workers
+     */
+    private double calculateWorkingHoursWithBreaks(LocalTime checkIn, LocalTime checkOut, JobPosition jobPosition) {
+        double baseHours = calculateWorkingHours(checkIn, checkOut);
+
+        // For hourly workers with break tracking enabled
+        if (jobPosition.getContractType() == JobPosition.ContractType.HOURLY &&
+                Boolean.TRUE.equals(jobPosition.getTrackBreaks()) &&
+                jobPosition.getBreakDurationMinutes() != null) {
+
+            // Deduct configured break time
+            double breakHours = jobPosition.getBreakDurationMinutes() / 60.0;
+            baseHours = Math.max(0, baseHours - breakHours);
+        }
+
+        return Math.round(baseHours * 100.0) / 100.0;
+    }
+    /**
+     * Determine day type based on date
+     */
+    private Attendance.DayType determineDayType(LocalDate date) {
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
+
+        if (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY) {
+            return Attendance.DayType.WEEKEND;
+        }
+
+        // TODO: Check for public holidays from a holiday calendar
+
+        return Attendance.DayType.WORKING_DAY;
+    }
+
+    /**
+     * Build monthly attendance DTO
+     */
+    private EmployeeMonthlyAttendanceDTO buildMonthlyAttendanceDTO(
+            Employee employee,
+            List<DailyAttendanceDTO> dailyAttendance,
+            YearMonth yearMonth) {
+
+        JobPosition jobPosition = employee.getJobPosition();
+
+        // Calculate summary statistics
+        long presentDays = dailyAttendance.stream()
+                .filter(d -> d.getStatus() != null && d.getStatus().startsWith("PRESENT"))
                 .count();
 
-        double totalEarnings = attendances.stream()
-                .filter(a -> a.getDailyEarnings() != null)
-                .mapToDouble(Attendance::getDailyEarnings)
+        long absentDays = dailyAttendance.stream()
+                .filter(d -> "ABSENT".equals(d.getStatus()))
+                .count();
+
+        long leaveDays = dailyAttendance.stream()
+                .filter(d -> "ON_LEAVE".equals(d.getStatus()))
+                .count();
+
+        long offDays = dailyAttendance.stream()
+                .filter(d -> "OFF".equals(d.getStatus()))
+                .count();
+
+        double totalHours = dailyAttendance.stream()
+                .mapToDouble(d -> d.getHoursWorked() != null ? d.getHoursWorked() : 0.0)
                 .sum();
 
-        summary.put("presentDays", presentDays);
-        summary.put("absentDays", absentDays);
-        summary.put("leaveDays", leaveDays);
-        summary.put("attendancePercentage",
-                attendances.size() > 0 ? Math.round((presentDays * 100.0 / attendances.size()) * 100.0) / 100.0 : 0);
-        summary.put("totalEarnings", Math.round(totalEarnings * 100.0) / 100.0);
+        double overtimeHours = dailyAttendance.stream()
+                .mapToDouble(d -> d.getOvertimeHours() != null ? d.getOvertimeHours() : 0.0)
+                .sum();
+
+        return EmployeeMonthlyAttendanceDTO.builder()
+                .employeeId(employee.getId())
+                .employeeName(employee.getFullName())
+                .employeePhoto(employee.getPhotoUrl())
+                .jobPosition(jobPosition != null ? jobPosition.getPositionName() : "N/A")
+                .department(jobPosition != null && jobPosition.getDepartment() != null ?
+                        jobPosition.getDepartment().getName() : "N/A")
+                .contractType(jobPosition != null && jobPosition.getContractType() != null ?
+                        jobPosition.getContractType().name() : "MONTHLY")
+                .year(yearMonth.getYear())
+                .month(yearMonth.getMonthValue())
+                .dailyAttendance(dailyAttendance)
+                .totalDays(dailyAttendance.size())
+                .presentDays((int) presentDays)
+                .absentDays((int) absentDays)
+                .leaveDays((int) leaveDays)
+                .offDays((int) offDays)
+                .totalHours(totalHours)
+                .overtimeHours(overtimeHours)
+                .attendancePercentage(calculateAttendancePercentage(presentDays, dailyAttendance.size() - offDays))
+                .build();
     }
 
-    private void generateMonthlySummary(Map<String, Object> summary, List<Attendance> attendances) {
-        Map<AttendanceStatus, Long> statusCounts = attendances.stream()
-                .filter(a -> a.getStatus() != null)
-                .collect(Collectors.groupingBy(Attendance::getStatus, Collectors.counting()));
-
-        summary.put("statusCounts", statusCounts);
-        summary.put("presentDays", statusCounts.getOrDefault(AttendanceStatus.PRESENT, 0L));
-        summary.put("absentDays", statusCounts.getOrDefault(AttendanceStatus.ABSENT, 0L));
-        summary.put("lateDays", statusCounts.getOrDefault(AttendanceStatus.LATE, 0L));
-        summary.put("leaveDays", statusCounts.getOrDefault(AttendanceStatus.ON_LEAVE, 0L));
-
-        long presentDays = statusCounts.getOrDefault(AttendanceStatus.PRESENT, 0L);
-        summary.put("attendancePercentage",
-                attendances.size() > 0 ? Math.round((presentDays * 100.0 / attendances.size()) * 100.0) / 100.0 : 0);
+    /**
+     * Convert attendance to daily DTO
+     */
+    private DailyAttendanceDTO convertToDailyDTO(Attendance attendance) {
+        return DailyAttendanceDTO.builder()
+                .attendanceId(attendance.getId())
+                .date(attendance.getDate())
+                .dayOfWeek(attendance.getDate().getDayOfWeek().name())
+                .dayType(attendance.getDayType() != null ? attendance.getDayType().name() : null)
+                .status(attendance.getStatus() != null ? attendance.getStatus().name() : null)
+                .checkIn(attendance.getCheckIn())
+                .checkOut(attendance.getCheckOut())
+                .hoursWorked(attendance.getHoursWorked())
+                .expectedHours(attendance.getExpectedHours())
+                .overtimeHours(attendance.getOvertimeHours())
+                .leaveType(attendance.getLeaveType())
+                .notes(attendance.getNotes())
+                .isEditable(!attendance.getDate().isAfter(LocalDate.now()))
+                .build();
     }
 
-    private Map<String, Object> generateAttendanceStatistics(Employee employee, List<Attendance> attendances,
-                                                             LocalDate startDate, LocalDate endDate) {
-        Map<String, Object> stats = generateAttendanceSummary(employee, attendances, startDate, endDate);
+    /**
+     * Get employee attendance history
+     */
+    public List<Attendance> getEmployeeAttendanceHistory(UUID employeeId, LocalDate startDate, LocalDate endDate) {
+        log.info("Fetching attendance history for employee: {} from {} to {}", employeeId, startDate, endDate);
+        return attendanceRepository.findByEmployeeIdAndDateRange(employeeId, startDate, endDate);
+    }
 
-        // Add additional statistics
-        stats.put("totalDays", attendances.size());
-        stats.put("dateRange", Map.of("start", startDate, "end", endDate));
+    /**
+     * Delete attendance record
+     */
+    @Transactional
+    public void deleteAttendance(UUID attendanceId) {
+        log.info("Deleting attendance record: {}", attendanceId);
+        attendanceRepository.deleteById(attendanceId);
+    }
 
-        return stats;
+    /**
+     * Convert to response DTO
+     */
+    private AttendanceResponseDTO convertToResponseDTO(Attendance attendance) {
+        Employee employee = attendance.getEmployee();
+        JobPosition jobPosition = employee.getJobPosition();
+
+        return AttendanceResponseDTO.builder()
+                .id(attendance.getId())
+                .employeeId(employee.getId())
+                .employeeName(employee.getFullName())
+                .employeePhoto(employee.getPhotoUrl())
+                .jobPosition(jobPosition != null ? jobPosition.getPositionName() : null)
+                .department(jobPosition != null && jobPosition.getDepartment() != null ?
+                        jobPosition.getDepartment().getName() : null)
+                .contractType(jobPosition != null && jobPosition.getContractType() != null ?
+                        jobPosition.getContractType().name() : null)
+                .date(attendance.getDate())
+                .checkIn(attendance.getCheckIn())
+                .checkOut(attendance.getCheckOut())
+                .hoursWorked(attendance.getHoursWorked())
+                .overtimeHours(attendance.getOvertimeHours())
+                .status(attendance.getStatus() != null ? attendance.getStatus().name() : null)
+                .notes(attendance.getNotes())
+                .totalHours(attendance.calculateTotalHours())
+                .build();
+    }
+
+    /**
+     * Calculate attendance percentage
+     */
+    private double calculateAttendancePercentage(long presentDays, long totalWorkingDays) {
+        if (totalWorkingDays <= 0) return 0.0;
+        return (double) presentDays / totalWorkingDays * 100.0;
+    }
+
+    /**
+     * Get employee monthly attendance
+     */
+    public List<AttendanceResponseDTO> getEmployeeMonthlyAttendance(UUID employeeId, int year, int month) {
+        YearMonth yearMonth = YearMonth.of(year, month);
+        LocalDate startDate = yearMonth.atDay(1);
+        LocalDate endDate = yearMonth.atEndOfMonth();
+        List<Attendance> attendanceList = attendanceRepository.findByEmployeeIdAndDateRange(employeeId, startDate, endDate);
+        return attendanceList.stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
     }
 }

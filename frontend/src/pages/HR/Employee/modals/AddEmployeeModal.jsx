@@ -2,18 +2,24 @@ import React, { useState, useEffect } from 'react';
 import './EmployeeModals.scss';
 
 const calculateMonthlySalary = (jobPosition, baseSalaryOverride, salaryMultiplier) => {
-    const baseSalary = baseSalaryOverride ? parseFloat(baseSalaryOverride) : (jobPosition.baseSalary || 0);
+    if (!jobPosition) return 0;
     const multiplier = salaryMultiplier ? parseFloat(salaryMultiplier) : 1.0;
 
     switch (jobPosition.contractType) {
-        case 'HOURLY':
-            return baseSalary * multiplier * (jobPosition.workingDaysPerWeek * 4) * jobPosition.hoursPerShift;
-        case 'DAILY':
-            return baseSalary * multiplier * jobPosition.workingDaysPerMonth;
-        case 'MONTHLY':
-            return baseSalary * multiplier;
+        case 'HOURLY': {
+            const hourlyRate = baseSalaryOverride ? parseFloat(baseSalaryOverride) : (jobPosition.hourlyRate || 0);
+            return hourlyRate * multiplier * (jobPosition.workingDaysPerWeek * 4) * jobPosition.hoursPerShift;
+        }
+        case 'DAILY': {
+            const dailyRate = baseSalaryOverride ? parseFloat(baseSalaryOverride) : (jobPosition.dailyRate || 0);
+            return dailyRate * multiplier * jobPosition.workingDaysPerMonth;
+        }
+        case 'MONTHLY': {
+            const monthlyBaseSalary = baseSalaryOverride ? parseFloat(baseSalaryOverride) : (jobPosition.monthlyBaseSalary || 0);
+            return monthlyBaseSalary * multiplier;
+        }
         default:
-            return baseSalary * multiplier;
+            return 0;
     }
 };
 
@@ -36,10 +42,10 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
         status: 'ACTIVE',
         education: '',
         // Financial details
-        bonus: '',
-        commission: '',
+        // bonus: '',
+        // commission: '',
         baseSalaryOverride: '',
-        salaryMultiplier: 1.0,
+        // salaryMultiplier: 1.0,
         // Relationships
         jobPositionId: '',
         siteId: ''
@@ -526,29 +532,8 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                     />
                                 </div>
 
-                                <div className="r4m-form-group">
-                                    <label>Bonus</label>
-                                    <input
-                                        type="number"
-                                        name="bonus"
-                                        min="0"
-                                        step="0.01"
-                                        value={formData.bonus}
-                                        onChange={handleNumberChange}
-                                    />
-                                </div>
 
-                                <div className="r4m-form-group">
-                                    <label>Commission</label>
-                                    <input
-                                        type="number"
-                                        name="commission"
-                                        min="0"
-                                        step="0.01"
-                                        value={formData.commission}
-                                        onChange={handleNumberChange}
-                                    />
-                                </div>
+
 
                                 {selectedJobPosition && (
                                     <div className="r4m-salary-info">

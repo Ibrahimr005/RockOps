@@ -92,7 +92,7 @@
             font-family: var(--font-family);
 
             &::after {
-                content: " *";
+
                 color: var(--color-danger);
                 display: none;
             }

@@ -18,6 +18,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -123,7 +124,7 @@ public class DataInitializer implements ApplicationRunner, CommandLineRunner {
                         .positionName("Driver")
                         .department(logisticsDept.get())
                         .head("Operations Manager")
-                        .baseSalary(25000.0) // Example base salary
+                        .monthlyBaseSalary(25000.0) // Example base salary
                         .probationPeriod(90) // 90 days probation
                         .contractType(JobPosition.ContractType.MONTHLY)
                         .experienceLevel("Entry Level")
@@ -163,24 +164,34 @@ public class DataInitializer implements ApplicationRunner, CommandLineRunner {
 
             if (logisticsDept.isPresent()) {
                 Double baseSalary = getDummyBaseSalary(equipmentType);
+
                 JobPosition equipmentDriverPosition = JobPosition.builder()
                         .positionName(requiredPositionName)
                         .department(logisticsDept.get())
                         .head("Operations Manager")
                         .baseSalary(baseSalary)
-                        .probationPeriod(90) // 90 days probation
+                        .probationPeriod(90)
                         .contractType(JobPosition.ContractType.MONTHLY)
                         .experienceLevel(getDummyExperienceLevel(equipmentType))
+                        .active(true)
+
+                        // MONTHLY contract specific fields
                         .monthlyBaseSalary(baseSalary)
-                        .shifts("Day Shift")
+                        .workingDaysPerMonth(22)
                         .workingHours(8)
                         .vacations("21 days annual leave")
-                        .active(true)
+
                         .build();
 
-                jobPositionRepository.save(equipmentDriverPosition);
-                log.info("Created job position: {} for equipment type: {}",
-                        requiredPositionName, equipmentType.getName());
+                // Set equipment-specific working hours
+                setWorkingHoursForEquipmentType(equipmentDriverPosition, equipmentType);
+
+                JobPosition savedPosition = jobPositionRepository.save(equipmentDriverPosition);
+                log.info("Created job position: {} for equipment type: {} with working hours {}-{}",
+                        requiredPositionName,
+                        equipmentType.getName(),
+                        savedPosition.getStartTime(),
+                        savedPosition.getEndTime());
             } else {
                 log.warn("Logistics department not found, could not create position for equipment type: {}",
                         equipmentType.getName());
@@ -190,6 +201,32 @@ public class DataInitializer implements ApplicationRunner, CommandLineRunner {
         }
     }
 
+    // Helper method to determine appropriate working hours based on equipment type
+    private void setWorkingHoursForEquipmentType(JobPosition jobPosition, EquipmentType equipmentType) {
+        String equipmentName = equipmentType.getName().toLowerCase();
+
+        if (equipmentName.contains("truck") || equipmentName.contains("delivery")) {
+            // Early morning shift for delivery trucks
+            jobPosition.setStartTime(LocalTime.of(6, 0));  // 6:00 AM
+            jobPosition.setEndTime(LocalTime.of(14, 0));   // 2:00 PM
+            jobPosition.setShifts("Early Morning Shift");
+        } else if (equipmentName.contains("forklift") || equipmentName.contains("warehouse")) {
+            // Standard warehouse hours
+            jobPosition.setStartTime(LocalTime.of(8, 0));  // 8:00 AM
+            jobPosition.setEndTime(LocalTime.of(16, 0));   // 4:00 PM
+            jobPosition.setShifts("Day Shift");
+        } else if (equipmentName.contains("crane") || equipmentName.contains("heavy")) {
+            // Construction/heavy equipment hours
+            jobPosition.setStartTime(LocalTime.of(7, 0));  // 7:00 AM
+            jobPosition.setEndTime(LocalTime.of(15, 0));   // 3:00 PM
+            jobPosition.setShifts("Construction Shift");
+        } else {
+            // Default driver hours
+            jobPosition.setStartTime(LocalTime.of(7, 0));  // 7:00 AM
+            jobPosition.setEndTime(LocalTime.of(15, 0));   // 3:00 PM
+            jobPosition.setShifts("Day Shift");
+        }
+    }
     /**
      * Generate dummy base salary based on equipment type
      */

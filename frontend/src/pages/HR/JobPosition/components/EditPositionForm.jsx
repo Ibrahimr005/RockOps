@@ -30,7 +30,11 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
         monthlyBaseSalary: 0,
         shifts: 'Day Shift',
         workingHours: 8,
-        vacations: '21 days annual leave'
+        vacations: '21 days annual leave',
+
+        // NEW: Time fields for MONTHLY contracts
+        startTime: '09:00',
+        endTime: '17:00'
     });
 
     const [loading, setLoading] = useState(false);
@@ -41,13 +45,15 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
     const [loadingDepartments, setLoadingDepartments] = useState(false);
     const [calculatedSalary, setCalculatedSalary] = useState({
         daily: 0,
-        monthly: 0
+        monthly: 0,
+        workingHours: 0,
+        workingTimeRange: ''
     });
 
     const contractTypes = [
         { value: 'HOURLY', label: 'Hourly Contract', description: 'Pay per hour worked with time tracking' },
         { value: 'DAILY', label: 'Daily Contract', description: 'Fixed daily rate for attendance' },
-        { value: 'MONTHLY', label: 'Monthly Contract', description: 'Fixed monthly salary' }
+        { value: 'MONTHLY', label: 'Monthly Contract', description: 'Fixed monthly salary with set working hours' }
     ];
 
     const experienceLevels = [
@@ -68,8 +74,19 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
     // Update form data when position prop changes
     useEffect(() => {
         if (position && isOpen) {
-            // Map legacy data to new structure
-            const contractType = position.type || 'MONTHLY';
+            // Convert time from HH:mm:ss to HH:mm format for HTML time input
+            const formatTimeForInput = (timeString) => {
+                if (!timeString) return '';
+                // If timeString is in HH:mm:ss format, extract HH:mm
+                if (timeString.includes(':')) {
+                    const parts = timeString.split(':');
+                    return `${parts[0]}:${parts[1]}`;
+                }
+                return timeString;
+            };
+
+            // Map data from position to form
+            const contractType = position.contractType || position.type || 'MONTHLY';
             const mappedData = {
                 positionName: position.positionName || '',
                 department: position.department || '',
@@ -96,7 +113,11 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                 monthlyBaseSalary: position.monthlyBaseSalary || position.baseSalary || 0,
                 shifts: position.shifts || 'Day Shift',
                 workingHours: position.workingHours || 8,
-                vacations: position.vacations || '21 days annual leave'
+                vacations: position.vacations || '21 days annual leave',
+
+                // NEW: Time fields
+                startTime: formatTimeForInput(position.startTime) || '09:00',
+                endTime: formatTimeForInput(position.endTime) || '17:00'
             };
 
             setFormData(mappedData);
@@ -111,28 +132,59 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
     const calculateSalaries = () => {
         let daily = 0;
         let monthly = 0;
+        let workingHours = 0;
+        let workingTimeRange = '';
 
         switch (formData.contractType) {
             case 'HOURLY':
+                // Daily salary: hourly rate * hours per shift
                 daily = (formData.hourlyRate || 0) * (formData.hoursPerShift || 0);
+                // Monthly salary: hourly rate * hours per shift * working days per week * 4 weeks
                 monthly = daily * (formData.workingDaysPerWeek || 0) * 4;
+                workingHours = formData.hoursPerShift || 0;
                 break;
             case 'DAILY':
+                // Daily salary: daily rate
                 daily = formData.dailyRate || 0;
+                // Monthly salary: daily rate * working days per month
                 monthly = daily * (formData.workingDaysPerMonth || 0);
+                workingHours = formData.workingHours || 8; // Default to 8 hours
                 break;
             case 'MONTHLY':
+                // Monthly salary: monthly base salary
                 monthly = formData.monthlyBaseSalary || 0;
-                daily = monthly / 22; // Assuming 22 working days per month
+                // Daily salary: monthly salary / working days per month (default 22)
+                const workingDaysPerMonth = formData.workingDaysPerMonth || 22;
+                daily = workingDaysPerMonth > 0 ? monthly / workingDaysPerMonth : 0;
+
+                // Calculate working hours from time range
+                if (formData.startTime && formData.endTime) {
+                    const start = new Date(`1970-01-01T${formData.startTime}:00`);
+                    const end = new Date(`1970-01-01T${formData.endTime}:00`);
+                    let diffHours = (end - start) / (1000 * 60 * 60);
+
+                    // Handle overnight shifts
+                    if (diffHours < 0) {
+                        diffHours += 24;
+                    }
+
+                    workingHours = Math.round(diffHours * 100) / 100;
+                    workingTimeRange = `${formData.startTime} - ${formData.endTime}`;
+                } else {
+                    workingHours = formData.workingHours || 8;
+                }
                 break;
             default:
                 daily = 0;
                 monthly = 0;
+                workingHours = 0;
         }
 
         setCalculatedSalary({
             daily: Math.round(daily * 100) / 100,
-            monthly: Math.round(monthly * 100) / 100
+            monthly: Math.round(monthly * 100) / 100,
+            workingHours: workingHours,
+            workingTimeRange: workingTimeRange
         });
     };
 
@@ -236,6 +288,24 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                 if (!formData.monthlyBaseSalary || formData.monthlyBaseSalary <= 0) {
                     errors.push('Monthly salary must be greater than 0');
                 }
+                if (!formData.workingDaysPerMonth || formData.workingDaysPerMonth <= 0 || formData.workingDaysPerMonth > 31) {
+                    errors.push('Working days per month must be between 1 and 31');
+                }
+
+                // Validate time fields if provided
+                if (formData.startTime && formData.endTime) {
+                    const start = new Date(`1970-01-01T${formData.startTime}:00`);
+                    const end = new Date(`1970-01-01T${formData.endTime}:00`);
+
+                    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                        errors.push('Invalid time format. Please use HH:MM format');
+                    } else if (start >= end && (end.getHours() !== 0 || end.getMinutes() !== 0)) {
+                        // Allow overnight shifts but warn if end time is same as start time
+                        if (start.getTime() === end.getTime()) {
+                            errors.push('End time must be different from start time');
+                        }
+                    }
+                }
                 break;
         }
 
@@ -284,14 +354,20 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
 
                 ...(formData.contractType === 'MONTHLY' && {
                     monthlyBaseSalary: formData.monthlyBaseSalary,
+                    workingDaysPerMonth: formData.workingDaysPerMonth,
                     shifts: formData.shifts,
                     workingHours: formData.workingHours,
-                    vacations: formData.vacations
+                    vacations: formData.vacations,
+                    // NEW: Include time fields
+                    ...(formData.startTime && { startTime: formData.startTime + ':00' }), // Convert to HH:mm:ss format
+                    ...(formData.endTime && { endTime: formData.endTime + ':00' })
                 }),
 
                 // Calculated fields
                 calculatedDailySalary: calculatedSalary.daily,
-                calculatedMonthlySalary: calculatedSalary.monthly
+                calculatedMonthlySalary: calculatedSalary.monthly,
+                calculatedWorkingHours: calculatedSalary.workingHours,
+                workingTimeRange: calculatedSalary.workingTimeRange
             };
 
             await onSubmit(submitData);
@@ -479,18 +555,57 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                                 />
                             </div>
                             <div className="jp-form-group">
-                                <label htmlFor="workingHours">Standard Working Hours per Day</label>
+                                <label htmlFor="workingDaysPerMonth">Working Days per Month</label>
                                 <input
                                     type="number"
-                                    id="workingHours"
-                                    name="workingHours"
-                                    value={formData.workingHours}
+                                    id="workingDaysPerMonth"
+                                    name="workingDaysPerMonth"
+                                    value={formData.workingDaysPerMonth}
                                     onChange={handleChange}
                                     min="1"
-                                    max="24"
+                                    max="31"
+                                    placeholder="22"
                                 />
                             </div>
                         </div>
+
+                        {/* NEW: Working Time Section */}
+                        <div className="jp-time-section">
+                            <h5>Working Hours Schedule</h5>
+                            <div className="jp-form-row">
+                                <div className="jp-form-group">
+                                    <label htmlFor="startTime">Start Time</label>
+                                    <input
+                                        type="time"
+                                        id="startTime"
+                                        name="startTime"
+                                        value={formData.startTime}
+                                        onChange={handleChange}
+                                        className="jp-time-input"
+                                    />
+                                </div>
+                                <div className="jp-form-group">
+                                    <label htmlFor="endTime">End Time</label>
+                                    <input
+                                        type="time"
+                                        id="endTime"
+                                        name="endTime"
+                                        value={formData.endTime}
+                                        onChange={handleChange}
+                                        className="jp-time-input"
+                                    />
+                                </div>
+                            </div>
+                            {calculatedSalary.workingTimeRange && (
+                                <div className="jp-time-preview">
+                                    <span className="jp-time-label">Working Hours:</span>
+                                    <span className="jp-time-value">
+                                        {calculatedSalary.workingTimeRange} ({calculatedSalary.workingHours}h/day)
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="jp-form-row">
                             <div className="jp-form-group">
                                 <label htmlFor="shifts">Shifts</label>
@@ -508,6 +623,24 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                                     </select>
                                 </div>
                             </div>
+                            <div className="jp-form-group">
+                                <label htmlFor="workingHours">Manual Working Hours per Day</label>
+                                <input
+                                    type="number"
+                                    id="workingHours"
+                                    name="workingHours"
+                                    value={formData.workingHours}
+                                    onChange={handleChange}
+                                    min="1"
+                                    max="24"
+                                    placeholder="Leave empty to auto-calculate from time range"
+                                />
+                                <small className="jp-field-hint">
+                                    Leave empty to auto-calculate from start/end time
+                                </small>
+                            </div>
+                        </div>
+                        <div className="jp-form-row">
                             <div className="jp-form-group">
                                 <label htmlFor="vacations">Vacation Policy</label>
                                 <input
@@ -701,6 +834,18 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                                     <span className="jp-salary-label">Calculated Monthly Salary:</span>
                                     <span className="jp-salary-value">${calculatedSalary.monthly.toFixed(2)}</span>
                                 </div>
+                                {formData.contractType === 'MONTHLY' && calculatedSalary.workingHours > 0 && (
+                                    <div className="jp-salary-item">
+                                        <span className="jp-salary-label">Working Hours per Day:</span>
+                                        <span className="jp-salary-value">{calculatedSalary.workingHours}h</span>
+                                    </div>
+                                )}
+                                {formData.contractType === 'MONTHLY' && calculatedSalary.workingTimeRange && (
+                                    <div className="jp-salary-item">
+                                        <span className="jp-salary-label">Working Time Range:</span>
+                                        <span className="jp-salary-value">{calculatedSalary.workingTimeRange}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

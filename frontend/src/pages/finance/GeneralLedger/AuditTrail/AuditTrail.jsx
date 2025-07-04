@@ -3,11 +3,12 @@ import { FaHistory, FaFileExport, FaUser, FaCalendarAlt } from 'react-icons/fa';
 import { useAuth } from "../../../../Contexts/AuthContext";
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import './AuditTrail.css';
+import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 
 const AuditTrail = () => {
     const [auditRecords, setAuditRecords] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const { showError, showSuccess } = useSnackbar();
     const { currentUser } = useAuth();
 
     // Entity types from your backend
@@ -31,10 +32,14 @@ const AuditTrail = () => {
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
             const data = await response.json();
+
+            // Add this debugging line
+            console.log('Audit logs data:', data.content || data);
+
             setAuditRecords(data.content || data);
-            setError(null);
+            showSuccess('Audit logs fetched successfully');
         } catch (err) {
-            setError('Error: ' + err.message);
+            showError('Error: ' + err.message);
             console.error("Error fetching audit logs:", err);
         } finally {
             setLoading(false);
@@ -60,8 +65,9 @@ const AuditTrail = () => {
             document.body.appendChild(a);
             a.click();
             a.remove();
+            showSuccess('Audit logs exported successfully');
         } catch (err) {
-            setError('Error: ' + err.message);
+            showError('Error: ' + err.message);
             console.error("Error exporting audit logs:", err);
         }
     };
@@ -82,7 +88,7 @@ const AuditTrail = () => {
         {
             id: 'user',
             header: 'User',
-            accessor: 'userName',
+            accessor: 'username',
             sortable: true,
             width: '150px'
         },
@@ -105,13 +111,13 @@ const AuditTrail = () => {
                 </span>
             )
         },
-        {
-            id: 'details',
-            header: 'Details',
-            accessor: 'details',
-            sortable: true,
-            minWidth: '300px'
-        }
+        // {
+        //     id: 'details',
+        //     header: 'Details',
+        //     accessor: 'details',
+        //     sortable: true,
+        //     minWidth: '300px'
+        // }
     ];
 
     const filterableColumns = [
@@ -139,8 +145,6 @@ const AuditTrail = () => {
                     <FaFileExport /> Export to Excel
                 </button>
             </div>
-
-            {error && <div className="error-container">{error}</div>}
 
             <DataTable
                 data={auditRecords}

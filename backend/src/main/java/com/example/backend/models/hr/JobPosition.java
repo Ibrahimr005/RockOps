@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -58,6 +59,13 @@ public class JobPosition {
     private Integer workingHours;
     private String vacations;
 
+    // NEW: Time fields for MONTHLY contracts
+    @Column(name = "start_time")
+    private LocalTime startTime;
+
+    @Column(name = "end_time")
+    private LocalTime endTime;
+
     @OneToMany(mappedBy = "jobPosition", cascade = CascadeType.ALL)
     @JsonBackReference("job-employee")
     private List<Employee> employees;
@@ -94,8 +102,10 @@ public class JobPosition {
             case DAILY:
                 return dailyRate != null ? dailyRate : 0.0;
             case MONTHLY:
-                return (monthlyBaseSalary != null && workingDaysPerMonth != null && workingDaysPerMonth > 0)
-                        ? monthlyBaseSalary / workingDaysPerMonth : 0.0;
+                // For monthly contracts, calculate daily rate based on working days per month
+                Integer workingDays = workingDaysPerMonth != null ? workingDaysPerMonth : 22;
+                return (monthlyBaseSalary != null && workingDays > 0)
+                        ? monthlyBaseSalary / workingDays : 0.0;
             default:
                 return 0.0;
         }
@@ -108,13 +118,19 @@ public class JobPosition {
 
         switch (contractType) {
             case HOURLY:
-                Double dailySalary = calculateDailySalary();
-                Integer workingDays = workingDaysPerWeek != null ? workingDaysPerWeek * 4 : 22;
-                return dailySalary * workingDays;
+                // For hourly contracts: hourly rate * hours per shift * working days per week * 4 weeks
+                if (hourlyRate != null && hoursPerShift != null && workingDaysPerWeek != null) {
+                    return hourlyRate * hoursPerShift * workingDaysPerWeek * 4;
+                }
+                return 0.0;
             case DAILY:
-                Integer monthlyDays = workingDaysPerMonth != null ? workingDaysPerMonth : 22;
-                return (dailyRate != null) ? dailyRate * monthlyDays : 0.0;
+                // For daily contracts: daily rate * working days per month
+                if (dailyRate != null && workingDaysPerMonth != null) {
+                    return dailyRate * workingDaysPerMonth;
+                }
+                return 0.0;
             case MONTHLY:
+                // For monthly contracts: use the monthly base salary directly
                 return monthlyBaseSalary != null ? monthlyBaseSalary : 0.0;
             default:
                 return 0.0;
@@ -133,6 +149,24 @@ public class JobPosition {
         return contractType == ContractType.MONTHLY;
     }
 
+    // NEW: Helper method to calculate working hours from start and end time
+    public Integer calculateWorkingHoursFromTime() {
+        if (contractType == ContractType.MONTHLY && startTime != null && endTime != null) {
+            // Calculate duration in hours between start and end time
+            long hours = java.time.Duration.between(startTime, endTime).toHours();
+            return (int) hours;
+        }
+        return workingHours;
+    }
+
+    // NEW: Helper method to format time range as string
+    public String getWorkingTimeRange() {
+        if (contractType == ContractType.MONTHLY && startTime != null && endTime != null) {
+            return startTime.toString() + " - " + endTime.toString();
+        }
+        return null;
+    }
+
     // Validation methods
     public boolean isValidConfiguration() {
         switch (contractType) {
@@ -144,7 +178,15 @@ public class JobPosition {
                 return dailyRate != null && dailyRate > 0
                         && workingDaysPerMonth != null && workingDaysPerMonth > 0;
             case MONTHLY:
-                return monthlyBaseSalary != null && monthlyBaseSalary > 0;
+                boolean basicValidation = monthlyBaseSalary != null && monthlyBaseSalary > 0
+                        && workingDaysPerMonth != null && workingDaysPerMonth > 0;
+
+                // NEW: Additional validation for time fields
+                if (startTime != null && endTime != null) {
+                    // Validate that end time is after start time
+                    return basicValidation && endTime.isAfter(startTime);
+                }
+                return basicValidation;
             default:
                 return false;
         }
@@ -168,9 +210,21 @@ public class JobPosition {
 
     // Override baseSalary getter to use contract-specific calculation
     public Double getBaseSalary() {
+        // If baseSalary is explicitly set, use it (for backward compatibility)
         if (baseSalary != null) {
             return baseSalary;
         }
+        // Otherwise, calculate based on contract type
         return calculateMonthlySalary();
+    }
+
+    // Setter for baseSalary that also updates the appropriate contract-specific field
+    public void setBaseSalary(Double baseSalary) {
+        this.baseSalary = baseSalary;
+
+        // If this is a monthly contract and no monthlyBaseSalary is set, use this value
+        if (contractType == ContractType.MONTHLY && monthlyBaseSalary == null) {
+            this.monthlyBaseSalary = baseSalary;
+        }
     }
 }

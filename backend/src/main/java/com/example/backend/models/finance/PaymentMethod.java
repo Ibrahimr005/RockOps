@@ -1,28 +1,19 @@
 package com.example.backend.models.finance;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+public enum PaymentMethod {
+    CASH("Cash Payment"),
+    CHECK("Check Payment"),
+    BANK_TRANSFER("Bank Transfer/Wire"),
+    CREDIT_CARD("Credit Card"),
+    ACH("ACH Transfer");
 
-import java.util.UUID;
+    private final String displayName;
 
-@Entity
-@Table(name = "payment_methods")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class PaymentMethod {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+    PaymentMethod(String displayName) {
+        this.displayName = displayName;
+    }
 
-    @Column(nullable = false, unique = true)
-    private String name; // "Cash", "Check", "Bank Transfer", "Credit Card"
-
-    @Column(length = 500)
-    private String description;
-
-    @Column(nullable = false)
-    private Boolean isActive = true;
+    public String getDisplayName() {
+        return displayName;
+    }
 }
