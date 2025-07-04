@@ -147,10 +147,17 @@ const InProgressOffers = ({
     };
 
     // Handle modal save (both add and edit)
+// Replace your handleModalSave function with this debug version
     const handleModalSave = async (formData) => {
         if (!activeOffer || !selectedRequestItem) return;
 
         try {
+            console.log("=== FRONTEND DEBUG ===");
+            console.log("Modal mode:", modalMode);
+            console.log("Active offer ID:", activeOffer.id);
+            console.log("Selected request item ID:", selectedRequestItem.id);
+            console.log("Form data received from modal:", formData);
+
             if (modalMode === 'add') {
                 // Add new offer item
                 const itemToAdd = {
@@ -158,10 +165,43 @@ const InProgressOffers = ({
                     requestOrderItemId: selectedRequestItem.id
                 };
 
+                console.log("Final item to add:", itemToAdd);
+                console.log("Item to add details:");
+                console.log("  requestOrderItemId:", itemToAdd.requestOrderItemId);
+                console.log("  merchantId:", itemToAdd.merchantId);
+                console.log("  quantity:", itemToAdd.quantity, "(type:", typeof itemToAdd.quantity, ")");
+                console.log("  unitPrice:", itemToAdd.unitPrice, "(type:", typeof itemToAdd.unitPrice, ")");
+                console.log("  totalPrice:", itemToAdd.totalPrice, "(type:", typeof itemToAdd.totalPrice, ")");
+                console.log("  currency:", itemToAdd.currency);
+                console.log("  estimatedDeliveryDays:", itemToAdd.estimatedDeliveryDays);
+                console.log("  deliveryNotes:", itemToAdd.deliveryNotes);
+                console.log("  comment:", itemToAdd.comment);
+
+                // Validate data before sending
+                if (!itemToAdd.merchantId) {
+                    throw new Error("Merchant ID is required");
+                }
+                if (!itemToAdd.quantity || itemToAdd.quantity <= 0) {
+                    throw new Error("Quantity must be greater than 0");
+                }
+                if (!itemToAdd.unitPrice || isNaN(itemToAdd.unitPrice)) {
+                    throw new Error("Valid unit price is required");
+                }
+                if (!itemToAdd.totalPrice || isNaN(itemToAdd.totalPrice)) {
+                    throw new Error("Valid total price is required");
+                }
+                if (!itemToAdd.currency) {
+                    throw new Error("Currency is required");
+                }
+
+                console.log("Validation passed, sending request...");
+
                 const addedItem = await fetchWithAuth(`${API_URL}/offers/${activeOffer.id}/items`, {
                     method: 'POST',
                     body: JSON.stringify([itemToAdd])
                 });
+
+                console.log("Response from server:", addedItem);
 
                 // Update active offer with new items
                 const updatedOffer = {
@@ -173,6 +213,9 @@ const InProgressOffers = ({
                 showSnackbar('success', 'Procurement solution added successfully!');
             } else {
                 // Edit existing offer item
+                console.log("Editing offer item ID:", selectedOfferItem.id);
+                console.log("Edit form data:", formData);
+
                 const response = await fetchWithAuth(`${API_URL}/offers/items/${selectedOfferItem.id}`, {
                     method: 'PUT',
                     body: JSON.stringify(formData)
@@ -198,6 +241,11 @@ const InProgressOffers = ({
             setTimeout(() => setSuccess(null), 3000);
         } catch (error) {
             console.error('Error saving offer item:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                response: error.response
+            });
             showSnackbar('error', `Failed to ${modalMode === 'add' ? 'add' : 'update'} procurement solution. Please try again.`);
             setTimeout(() => setError(null), 3000);
         }
@@ -261,7 +309,7 @@ const InProgressOffers = ({
         return primaryCurrency;
     };
 
-    // Add this function to calculate totals by currency
+    // Add this function to calculate totals by currency with better formatting
     const getTotalsByCurrency = (offer) => {
         if (!offer || !offer.offerItems || offer.offerItems.length === 0) return {};
 
@@ -446,12 +494,19 @@ const InProgressOffers = ({
                                             <div className="procurement-progress-stat-inprogress">
                                                 <div className="procurement-progress-stat-label-inprogress">Total Value</div>
                                                 <div className="procurement-progress-stat-value-inprogress currency-totals-inprogress">
-                                                    {Object.entries(getTotalsByCurrency(activeOffer)).map(([currency, total], index) => (
-                                                        <div key={currency} className="currency-total-item-inprogress">
-                                                            {currency} {total.toFixed(2)}
-                                                            {index < Object.entries(getTotalsByCurrency(activeOffer)).length - 1 && <span className="currency-separator-inprogress">|</span>}
+                                                    {Object.entries(getTotalsByCurrency(activeOffer)).length === 0 ? (
+                                                        <div className="currency-total-item-inprogress">
+                                                            <span className="currency-code">No</span>
+                                                            <span className="currency-amount">items yet</span>
                                                         </div>
-                                                    ))}
+                                                    ) : (
+                                                        Object.entries(getTotalsByCurrency(activeOffer)).map(([currency, total]) => (
+                                                            <div key={currency} className="currency-total-item-inprogress">
+                                                                <span className="currency-code">{currency}</span>
+                                                                <span className="currency-amount">{total.toFixed(2)}</span>
+                                                            </div>
+                                                        ))
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

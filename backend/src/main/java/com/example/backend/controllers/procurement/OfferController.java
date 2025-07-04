@@ -7,6 +7,7 @@ import com.example.backend.models.procurement.Offer;
 import com.example.backend.models.procurement.OfferItem;
 import com.example.backend.models.procurement.RequestOrder;
 import com.example.backend.services.procurement.OfferService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,11 +44,24 @@ public class OfferController {
      * Add offer items to an existing offer
      */
     @PostMapping("/{offerId}/items")
-    public ResponseEntity<List<OfferItem>> addOfferItems(
-            @PathVariable UUID offerId,
-            @RequestBody List<OfferItemDTO> offerItemDTOs) {
-        List<OfferItem> offerItems = offerService.addOfferItems(offerId, offerItemDTOs);
-        return new ResponseEntity<>(offerItems, HttpStatus.CREATED);
+    public ResponseEntity<?> addOfferItems(@PathVariable UUID offerId, @RequestBody List<OfferItemDTO> offerItemDTOs, HttpServletRequest request) {
+        try {
+            System.out.println("=== CONTROLLER CALLED ===");
+            System.out.println("Offer ID: " + offerId);
+            System.out.println("Number of DTOs: " + offerItemDTOs.size());
+
+            List<OfferItem> savedItems = offerService.addOfferItems(offerId, offerItemDTOs);
+
+            System.out.println("=== CONTROLLER SUCCESS ===");
+            return ResponseEntity.ok(savedItems);
+        } catch (Exception e) {
+            System.err.println("=== CONTROLLER ERROR ===");
+            System.err.println("Error message: " + e.getMessage());
+            System.err.println("Error class: " + e.getClass().getSimpleName());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Server Error", "message", e.getMessage()));
+        }
     }
 
     /**

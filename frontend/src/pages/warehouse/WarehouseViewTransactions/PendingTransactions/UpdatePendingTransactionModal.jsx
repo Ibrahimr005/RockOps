@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import "./WarehouseViewTransactions.scss";
-import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx"; // Import the Snackbar component
+import "../WarehouseViewTransactions.scss";
+import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx"; // Import the Snackbar component
 
 const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate, warehouseId }) => {
     const [updatedTransaction, setUpdatedTransaction] = useState(transaction || {});
@@ -728,7 +728,7 @@ const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate,
             <div className="modal3">
                 <div className="modal-header3">
                     <h2>Update Transaction</h2>
-                    <button className="close-modal3" onClick={onClose}>
+                    <button className="btn-close" onClick={onClose}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M18 6L6 18M6 6l12 12"/>
                         </svg>

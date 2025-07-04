@@ -1,5 +1,5 @@
-/* Procurement Intro Card Component */
-.procurement-intro-card {
+/* Intro Card Component */
+.intro-card {
   display: flex;
   background-color: var(--color-surface);
   border-radius: var(--radius-sm);
@@ -10,7 +10,7 @@
   border-left: 4px solid var(--color-primary);
 }
 
-.procurement-intro-left {
+.intro-card-left {
   width: 150px;
   padding: 24px;
   display: flex;
@@ -18,14 +18,14 @@
   justify-content: center;
 }
 
-.procurement-intro-image {
+.intro-card-image {
   width: 100%;
   height: auto;
   max-height: 100px;
   object-fit: contain;
 }
 
-.procurement-intro-content {
+.intro-card-content {
   flex: 1;
   padding: 24px 32px;
   display: flex;
@@ -34,11 +34,11 @@
   text-align: center;
 }
 
-.procurement-intro-header {
+.intro-card-header {
   margin-bottom: 16px;
 }
 
-.procurement-label {
+.intro-card-label {
   display: block;
   font-size: 14px;
   font-weight: 500;
@@ -47,38 +47,38 @@
   letter-spacing: 0.05em;
 }
 
-.procurement-intro-title {
+.intro-card-title {
   font-size: 32px;
   font-weight: var(--bold-font-weight);
   color: var(--color-text-primary);
   margin: 0;
 }
 
-.procurement-stats {
+.intro-card-stats {
   display: flex;
   justify-content: center;
   gap: 32px;
   margin-top: 16px;
 }
 
-.procurement-stat-item {
+.intro-card-stat-item {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.procurement-stat-value {
+.intro-card-stat-value {
   font-size: 24px;
   font-weight: var(--bold-font-weight);
   color: var(--color-primary);
 }
 
-.procurement-stat-label {
+.intro-card-stat-label {
   font-size: 14px;
   color: var(--color-text-secondary);
 }
 
-.procurement-intro-right {
+.intro-card-right {
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -87,7 +87,7 @@
   min-width: 300px;
 }
 
-.procurement-info-button {
+.intro-card-info-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -117,21 +117,21 @@
 
 /* Responsive adjustments for mobile */
 @media (max-width: 768px) {
-  .procurement-intro-card {
+  .intro-card {
     flex-direction: column;
   }
 
-  .procurement-intro-left {
+  .intro-card-left {
     width: 100%;
   }
 
-  .procurement-intro-right {
+  .intro-card-right {
     width: 100%;
     min-width: unset;
     align-items: stretch;
   }
 
-  .procurement-stats {
+  .intro-card-stats {
     flex-direction: column;
     gap: 16px;
   }

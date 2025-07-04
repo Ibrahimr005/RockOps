@@ -71,17 +71,35 @@ public class ItemCategoryController {
         return new ResponseEntity<>(updatedCategory, HttpStatus.OK);
     }
 
-    // Delete a category
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable UUID id) {
-        itemCategoryService.deleteItemCategory(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    public ResponseEntity<?> deleteItemCategory(@PathVariable("id") UUID id) {
+        try {
+            itemCategoryService.deleteItemCategory(id);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            if (e.getMessage().equals("CHILD_CATEGORIES_EXIST")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("CHILD_CATEGORIES_EXIST");
+            } else if (e.getMessage().equals("ITEM_TYPES_EXIST")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("ITEM_TYPES_EXIST");
+            } else if (e.getMessage().contains("ItemCategory not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("CATEGORY_NOT_FOUND");
+            }
+            // Let other exceptions go to global handler
+            throw e;
+        }
     }
 
     @GetMapping("/test")
     public ResponseEntity<String> test() {
         System.out.println("🔥 TEST ENDPOINT HIT 🔥");
         return new ResponseEntity<>("Test OK ✅", HttpStatus.OK);
+    }
+
+    // Add this AFTER your existing @GetMapping("/children") method
+    @GetMapping("/children/{parentId}")
+    public ResponseEntity<List<ItemCategory>> getChildrenByParent(@PathVariable UUID parentId) {
+        List<ItemCategory> categories = itemCategoryService.getChildrenByParent(parentId);
+        return new ResponseEntity<>(categories, HttpStatus.OK);
     }
 
 }

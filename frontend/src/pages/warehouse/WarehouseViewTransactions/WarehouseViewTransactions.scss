@@ -1,5 +1,3 @@
-
-
 /* Header Styles */
 .header-container3 {
   display: flex;
@@ -77,13 +75,13 @@
   border: 1px solid var(--border-color);
   width: 100%;
   position: relative;
-  overflow-x: auto; /* Make the table scrollable horizontally */
+  overflow-x: auto;
 }
 
 .table-container3 {
   display: table;
-  width: 100%; /* Make the table take full width of the container */
-  table-layout: auto; /* Allow columns to adjust based on content */
+  width: 100%;
+  table-layout: auto;
   border-collapse: collapse;
 }
 
@@ -144,17 +142,17 @@
 .add-button-container {
   position: absolute;
   bottom: 20px;
-  right: 40px; /* This positions it on the right */
+  right: 40px;
   display: flex;
   flex-direction: column;
-  align-items: flex-end; /* This aligns children to the right */
+  align-items: flex-end;
   z-index: 100;
 }
 
 .add-button3 {
   position: absolute;
-  bottom: 0px; /* Distance from the bottom */
-  right: 20px; /* Distance from the right */
+  bottom: 0px;
+  right: 20px;
   width: 60px;
   height: 60px;
   border-radius: 30px;
@@ -179,8 +177,8 @@
   padding: 10px;
   border-radius: var(--radius-sm);
   border-left: 3px solid var(--color-warning);
-  height: fit-content; /* Make height fit the content */
-  margin: auto 0; /* Center vertically in the row */
+  height: fit-content;
+  margin: auto 0;
   max-width: 260px;
   font-size: 0.8rem;
   color: var(--color-warning);
@@ -192,13 +190,11 @@
   }
 }
 
-/* Make sure the table row has proper alignment */
 .transaction-row {
   display: flex;
-  align-items: center; /* This aligns children vertically */
+  align-items: center;
 }
 
-/* Warning icon size */
 .warning-icon {
   width: 16px;
   height: 16px;
@@ -258,12 +254,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: absolute; /* Position it inside the table */
-  top: 8rem; /* Vertically center */
-  left: 40rem; /* Horizontally center */
-  transform: translate(-50%, -50%); /* Fine-tune positioning */
+  position: absolute;
+  top: 8rem;
+  left: 40rem;
+  transform: translate(-50%, -50%);
   color: var(--color-text-secondary);
-  z-index: 10; /* Ensure it's on top of other content */
+  z-index: 10;
   width: 100%;
   height: auto;
 }
@@ -308,256 +304,10 @@
   margin: 0;
 }
 
-/* Modal Styles */
-.modal-backdrop3 {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.modal3 {
-  width: 100%;
-  max-width: 640px;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-
-  [data-theme="dark"] & {
-    background-color: var(--section-background-color);
-    box-shadow: var(--shadow-md);
-  }
-}
-
-.modal-header3 {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
-
-  [data-theme="dark"] & {
-    border-bottom-color: var(--border-color);
-  }
-}
-
-.modal-header3 h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a2b42;
-  margin: 0;
-
-  [data-theme="dark"] & {
-    color: var(--color-text-primary);
-  }
-}
-
-.close-modal3 {
-  background: none;
-  border: none;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6b7280;
-  transition: all 0.2s ease;
-
-  [data-theme="dark"] & {
-    color: var(--color-text-secondary);
-  }
-}
-
-.close-modal3 svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* Form Styles - consistent spacing and sizing */
-.form-transaction {
-  padding: 32px;
-  margin-right: 10px;
-}
-
-/* Consistent form row spacing */
-.form-row3 {
-  display: flex;
-  gap: 24px; /* Exact gap between fields in a row */
-  margin-bottom: 32px; /* Space between rows */
-  margin-top:30px;
-}
-
-/* Each form group takes exactly 50% of the space */
-.form-group3 {
-  width: 50%;
-}
-
-/* Full width for single-field rows */
-.form-group3.full-width {
-  width: 100%;
-  margin-top:20px;
-  margin-bottom: 4rem;
-}
-
-/* Labels with consistent styling */
-.form-group3 label {
-  display: block;
-  font-size: 16px;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 8px;
-
-  [data-theme="dark"] & {
-    color: var(--color-text-primary);
-  }
-}
-
-/* Consistent input styling for all form controls */
-.form-group3 input,
-.form-group3 select,
-.form-group3 textarea,
-.disabled-input {
-  width: 100%;
-  height: 40px; /* Fixed height for all inputs */
-  padding: 0 16px;
-  font-size: 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  color: #111827;
-  background-color: #fff;
-  box-sizing: border-box; /* Ensures padding doesn't affect width */
-  appearance: none; /* Removes browser-specific styling */
-
-  [data-theme="dark"] & {
-    border-color: var(--border-color);
-    color: var(--color-text-primary);
-    background-color: var(--section-background-color);
-  }
-}
-
-/* Special styling for disabled fields */
-.disabled-input {
-  background-color: #f9fafb;
-  color: #374151;
-  cursor: not-allowed;
-
-  [data-theme="dark"] & {
-    background-color: var(--color-surface-hover);
-    color: var(--color-text-secondary);
-  }
-}
-
-/* Custom styling for select dropdowns */
-.form-group3 select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 16px center;
-  padding-right: 40px;
-}
-
-/* Remove browser styling for datetime-local input */
-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  margin-left: 0;
-}
-
-/* Date input specific styling */
-#transactionDate {
-  padding-right: 16px;
-}
-
-/* Footer with submit button */
-.modal-footer3 {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 4rem;
-}
-
-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: #4b5563;
-  margin-bottom: 8px;
-
-  [data-theme="dark"] & {
-    color: var(--color-text-tertiary);
-  }
-}
-
-.cancel-button3,
-.submit-button3 {
-  padding: 12px 24px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancel-button3 {
-  background-color: white;
-  color: #4b5563;
-  border: 1px solid #e5e7eb;
-
-  [data-theme="dark"] & {
-    background-color: var(--section-background-color);
-    color: var(--color-text-secondary);
-    border-color: var(--border-color);
-  }
-}
-
-.submit-button3 {
-  background-color: #4f85e5;
-  color: white;
-  border: none;
-
-  [data-theme="dark"] & {
-    background-color: var(--color-primary);
-  }
-}
-
-.cancel-button3:hover {
-  background-color: #f9fafb;
-
-  [data-theme="dark"] & {
-    background-color: var(--color-surface-hover);
-  }
-}
-
-.submit-button3:hover {
-  background-color: #3b72d9;
-
-  [data-theme="dark"] & {
-    background-color: var(--color-primary-dark);
-  }
-}
-
+/* Notification Styles */
 .notification3{
   position: fixed;
-  top: 20px; /* Position at the top */
+  top: 20px;
   left: 50%;
   transform: translateX(-50%);
   padding: 12px 20px;
@@ -597,24 +347,16 @@ label {
   }
 }
 
-/* Responsive Styles */
-@media (max-width: 768px) {
-  .form-row2 {
-    flex-direction: column;
-    gap: 20px;
-  }
-}
-
 /* Custom radio button styles */
 .radio-container {
   display: flex;
-  flex-direction: column; /* Stack vertically */
+  flex-direction: column;
   gap: 12px;
   margin-bottom: 20px;
 }
 
 .radio-container input[type="radio"] {
-  display: none; /* Hide default radio */
+  display: none;
 }
 
 .radio-container label {
@@ -661,7 +403,6 @@ label {
   }
 }
 
-/* Checked styles */
 .radio-container input[type="radio"]:checked + label {
   font-weight: 600;
   color: #007BFF;
@@ -685,8 +426,7 @@ label {
   }
 }
 
-/* Add these styles to your WarehouseViewTransactions.scss file */
-
+/* Transaction Tables Container */
 .transaction-tables-container {
   display: flex;
   flex-direction: column;
@@ -863,7 +603,7 @@ label {
   width: 18px;
   height: 18px;
   color: #94a3b8;
-  pointer-events: none; /* Ensures the icon doesn't interfere with input interaction */
+  pointer-events: none;
 
   [data-theme="dark"] & {
     color: var(--color-text-secondary);
@@ -874,7 +614,7 @@ label {
   display: flex;
   flex-direction: column;
   gap: 80px;
-  margin-bottom: 80px; /* Add space at the bottom for the fixed button */
+  margin-bottom: 80px;
 }
 
 .status-badge3 {
@@ -919,24 +659,20 @@ label {
   }
 
   &.resolving {
-    /* Light mode: Soft orange/amber for "in progress" */
     background-color: #fef3e2;
     color: #b45309;
 
     [data-theme="dark"] & {
-      /* Dark mode: Warm orange with good contrast */
       background-color: rgba(251, 146, 60, 0.15);
       color: #fbbf24;
     }
   }
 
   &.resolved {
-    /* Light mode: Soft teal/cyan for "completed" */
     background-color: #ecfeff;
     color: #0e7490;
 
     [data-theme="dark"] & {
-      /* Dark mode: Bright cyan with good contrast */
       background-color: rgba(34, 211, 238, 0.15);
       color: #22d3ee;
     }
@@ -948,9 +684,8 @@ label {
   align-items: center;
   gap: 6px;
   position: relative;
-  /* Add this to properly align container */
   width: fit-content;
-  margin-left: 0; /* Reset any margin that might be pushing it */
+  margin-left: 0;
 }
 
 .info-icon-wrapper {
@@ -1016,7 +751,6 @@ label {
     box-shadow: var(--shadow-md);
   }
 
-  /* For tooltips at the right edge of the screen */
   @media (max-width: 1200px) {
     right: auto;
     left: -250px;
@@ -1038,7 +772,6 @@ label {
     }
   }
 
-  /* Adjust arrow positioning for left-positioned tooltips */
   @media (max-width: 1200px) {
     &:before {
       right: auto;
@@ -1114,7 +847,6 @@ label {
   }
 }
 
-/* Make sure the status badge looks good */
 .status-badge {
   padding: 4px 10px;
   border-radius: 12px;
@@ -1145,16 +877,17 @@ label {
 
 .radio-group {
   display: flex;
-  gap:85px; /* Increased spacing for better readability */
+  gap:155px;
   width: 100%;
   margin-bottom:2rem;
+  margin-top:1rem;
 }
 
 .radio-group label {
   display: flex;
   align-items: center;
-  gap: 6px; /* Reduced gap between radio and text */
-  font-size: 14px; /* Slightly smaller font */
+  gap: 6px;
+  font-size: 14px;
   font-weight: 600;
   color: #333;
   cursor: pointer;
@@ -1177,9 +910,9 @@ label {
   -moz-appearance: none;
   -webkit-appearance: none;
   appearance: none;
-  width: 10px; /* Reduced from 14px */
-  height: 30px; /* Reduced from 14px */
-  border: 1.5px solid #ccc; /* Thinner border */
+  width: 10px;
+  height: 30px;
+  border: 1.5px solid #ccc;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1188,7 +921,7 @@ label {
   transition: all 0.3s ease-in-out;
   background-color: white;
   position: relative;
-  box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+  box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
 
   [data-theme="dark"] & {
     border-color: var(--border-color);
@@ -1199,8 +932,8 @@ label {
 
 .radio-group input[type="radio"]::before {
   content: "";
-  width: 8px;  /* Reduced from 6px */
-  height: 8px;  /* Reduced from 6px */
+  width: 8px;
+  height: 8px;
   background-color: transparent;
   border-radius: 50%;
   display: block;
@@ -1211,10 +944,9 @@ label {
   transition: all 0.3s ease-in-out;
 }
 
-/* Checked State */
 .radio-group input[type="radio"]:checked {
   border-color: #007bff;
-  box-shadow: 0px 2px 5px rgba(0, 123, 255, 0.3); /* Reduced shadow */
+  box-shadow: 0px 2px 5px rgba(0, 123, 255, 0.3);
 
   [data-theme="dark"] & {
     border-color: var(--color-primary);
@@ -1230,23 +962,16 @@ label {
   }
 }
 
-/* Hover Effect */
 .radio-group input[type="radio"]:hover {
   border-color: #007bff;
-  transform: scale(1.05); /* Reduced scaling effect */
+  transform: scale(1.05);
 
   [data-theme="dark"] & {
     border-color: var(--color-primary);
   }
 }
 
-/* Optional: Make entire radio group more compact */
-.radio-group {
-  display: flex;
-  gap: 85px; /* Space between radio options */
-}
 
-/* Add these styles to your WarehouseViewTransactions.scss file */
 
 /* Items section styles */
 .items-section-header {
@@ -1257,12 +982,12 @@ label {
 }
 
 .add-item-button {
-  background-color: transparent !important; // No background
-  border: none !important; // No border
+  background-color: transparent !important;
+  border: none !important;
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #3b82f6 !important; // Blue text
+  color: #3b82f6 !important;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1275,8 +1000,8 @@ label {
   }
 
   &:hover {
-    background-color: rgba(59, 130, 246, 0.1) !important; // Light blue background on hover
-    color: #2563eb !important; // Slightly darker blue on hover
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    color: #2563eb !important;
     transform: translateY(-1px);
 
     [data-theme="dark"] & {
@@ -1308,7 +1033,7 @@ label {
   padding: 16px;
   margin-bottom: 35px;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Add this line for the shadow */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 
   [data-theme="dark"] & {
     background-color: var(--color-surface);
@@ -1317,10 +1042,9 @@ label {
   }
 }
 
-/* Make the shadow slightly more pronounced on hover */
 .transaction-item-container:hover {
   border-color: #d1d5db;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); /* Make shadow more visible on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 
   [data-theme="dark"] & {
     border-color: var(--color-text-secondary);
@@ -1382,251 +1106,6 @@ label {
   height: 16px;
 }
 
-/* Make the modal larger to accommodate multiple items */
-.modal3 {
-  max-height: 85vh;
-  overflow-y: auto;
-}
-
-/* Ensure form properly scrolls if items list gets long */
-.form-transaction {
-  max-height: 70vh;
-  overflow-y: auto;
-  padding-right: 4px; /* Space for scrollbar */
-}
-
-/* Styles for the transaction item rows */
-.transaction-item-container .form-row3 {
-  margin-bottom: 16px; /* Smaller margin within item containers */
-}
-
-/* Responsive styles for smaller screens */
-@media (max-width: 768px) {
-  .items-section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .transaction-item-container {
-    padding: 12px;
-  }
-
-  .transaction-item-container .form-row3 {
-    flex-direction: column;
-  }
-
-  .transaction-item-container .form-group3 {
-    width: 100%;
-  }
-}
-
-/* Add these styles to your WarehouseViewTransactions.scss file */
-
-/* Modal backdrop */
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-/* Comment modal */
-.comment-modal {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-
-  [data-theme="dark"] & {
-    background-color: var(--section-background-color);
-    box-shadow: var(--shadow-md);
-  }
-}
-
-.comment-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #eaeaea;
-
-  [data-theme="dark"] & {
-    border-bottom-color: var(--border-color);
-  }
-}
-
-.comment-modal-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-
-  [data-theme="dark"] & {
-    color: var(--color-text-primary);
-  }
-}
-
-.close-modal-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.close-modal-btn svg {
-  width: 20px;
-  height: 20px;
-  stroke: #666;
-
-  [data-theme="dark"] & {
-    stroke: var(--color-text-secondary);
-  }
-}
-
-.close-modal-btn:hover svg {
-  stroke: #333;
-
-  [data-theme="dark"] & {
-    stroke: var(--color-text-primary);
-  }
-}
-
-.comment-modal-content {
-  padding: 20px;
-}
-
-/* Transaction summary */
-.transaction-summary {
-  background-color: #f8f9fa;
-  border-radius: 6px;
-  padding: 15px;
-  margin-bottom: 20px;
-
-  [data-theme="dark"] & {
-    background-color: var(--color-surface);
-  }
-}
-
-.summary-row {
-  display: flex;
-  margin-bottom: 8px;
-}
-
-.summary-row:last-child {
-  margin-bottom: 0;
-}
-
-.summary-row .label {
-  font-weight: 600;
-  width: 100px;
-  color: #555;
-
-  [data-theme="dark"] & {
-    color: var(--color-text-secondary);
-  }
-}
-
-.summary-row .value {
-  flex: 1;
-}
-
-/* Status colors */
-.status-accepted {
-  color: #28a745;
-  font-weight: 500;
-
-  [data-theme="dark"] & {
-    color: var(--color-success);
-  }
-}
-
-.status-rejected {
-  color: #dc3545;
-  font-weight: 500;
-
-  [data-theme="dark"] & {
-    color: var(--color-danger);
-  }
-}
-
-/* Comment content */
-.comment-content {
-  background-color: white;
-
-  [data-theme="dark"] & {
-    background-color: var(--section-background-color);
-  }
-}
-
-.comment-content h4 {
-  margin: 0 0 10px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-
-  [data-theme="dark"] & {
-    color: var(--color-text-primary);
-  }
-}
-
-.comment-content p {
-  margin: 0;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  color: #444;
-
-  [data-theme="dark"] & {
-    color: var(--color-text-primary);
-  }
-}
-
-.ro-quantity-unit-container {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  position: relative;
-}
-
-.ro-quantity-input {
-  width: 100%;
-  padding-right: 60px; // Make room for the unit label
-}
-
-.ro-unit-label {
-  position: absolute;
-  right: 12px;
-  color: #6b7280;
-  font-size: 14px;
-  pointer-events: none; // Prevent the label from interfering with input
-  background-color: #f9fafb;
-  padding: 0 5px;
-  border-left: 1px solid #d1d5db;
-  height: 22px;
-  display: flex;
-  align-items: center;
-
-  [data-theme="dark"] & {
-    color: var(--color-text-secondary);
-    background-color: var(--color-surface);
-    border-left-color: var(--border-color);
-  }
-}
-
 .quantity-unit-container {
   position: relative;
   display: flex;
@@ -1634,7 +1113,7 @@ label {
 
   .quantity-input {
     width: 100%;
-    padding-right: 30px; // Make room for the unit label
+    padding-right: 30px;
   }
 
   .unit-label {
@@ -1657,7 +1136,7 @@ label {
 
   .procurement-form-input {
     width: 100%;
-    padding-right: 35px; // Make room for the unit suffix
+    padding-right: 35px;
 
     &.with-unit-suffix {
       border-top-right-radius: 0;
@@ -1678,9 +1157,7 @@ label {
   }
 }
 
-/* Add this to your existing SCSS file (WarehouseViewTransactions.scss) */
-
-/* View Button Styling to match Edit Button - Compact Size */
+/* View Button Styling */
 .view-button {
   color: #3b82f6 !important;
   background-color: rgba(59, 130, 246, 0.1) !important;
@@ -1724,7 +1201,6 @@ label {
   }
 }
 
-/* Alternative: If you want the view button to have a different color but same size */
 .view-button-alternative {
   color: #10b981 !important;
   background-color: rgba(16, 185, 129, 0.1) !important;
@@ -1767,8 +1243,8 @@ label {
     transform: scale(1.05);
   }
 }
-/* Transaction Tabs Styling - Add this to your WarehouseViewTransactions.scss */
 
+/* Transaction Tabs Styling */
 .transaction-tabs-container {
   margin-top: 30px;
 }
@@ -1813,4 +1289,25 @@ label {
 
 .transaction-tab-content {
   margin-top: 20px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .items-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .transaction-item-container {
+    padding: 12px;
+  }
+
+  .transaction-item-container .form-row3 {
+    flex-direction: column;
+  }
+
+  .transaction-item-container .form-group3 {
+    width: 100%;
+  }
 }

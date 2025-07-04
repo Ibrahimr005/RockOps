@@ -4,6 +4,7 @@
 @import url('./styles/theme-variables.css');
 @import url('./styles/primary-button.scss');
 @import url('./styles/status-badges.scss');
+@import url('./styles/close-modal-button.scss');
 
 /* Base styles */
 body {

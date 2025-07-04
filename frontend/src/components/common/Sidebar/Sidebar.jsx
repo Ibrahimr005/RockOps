@@ -161,7 +161,9 @@ const Sidebar = () => {
 
         menuItems.forEach(item => {
             if (item.hasSubmenu && item.submenuItems) {
-                const isOnSubmenuPage = item.submenuItems.some(sub => currentPath === sub.path);
+                const isOnSubmenuPage = item.submenuItems.some(sub =>
+                    currentPath === sub.path || currentPath.startsWith(sub.path + '/')
+                );
                 if (isOnSubmenuPage) {
                     newExpandedMenus[item.title] = true;
                 }
@@ -249,6 +251,27 @@ const Sidebar = () => {
             icon: <FaWarehouse/>,
             path: '/warehouses',
             roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE'],
+            hasSubmenu: true,
+            submenuItems: [
+                {
+                    title: 'Warehouses List',
+                    icon: <FaWarehouse/>,
+                    path: '/warehouses',
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
+                },
+                {
+                    title: 'Item Categories',
+                    icon: <FaBoxes/>,
+                    path: '/warehouses/item-categories',
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
+                },
+                {
+                    title: 'Item Types',
+                    icon: <FaTags/>,
+                    path: '/warehouses/item-types',
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
+                }
+            ]
         },
         {
             title: 'Merchants',
@@ -303,10 +326,10 @@ const Sidebar = () => {
             hasSubmenu: true,
             submenuItems: [
                 {
-                title: 'General Ledger',
-                icon: <FaBook/>,
-                path: '/finance/general-ledger',
-                roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
+                    title: 'General Ledger',
+                    icon: <FaBook/>,
+                    path: '/finance/general-ledger',
+                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
                 },
             ]
         },
@@ -418,11 +441,18 @@ const Sidebar = () => {
                                     to={item.hasSubmenu ? '#' : item.path}
                                     className={() => {
                                         if (item.hasSubmenu) {
+                                            // Check if we're on the parent path or any of its submenu paths
                                             const isOnParentPath = location.pathname === item.path;
-                                            return `menu-item ${isOnParentPath ? 'active' : ''}`;
+                                            const isOnSubmenuPath = item.submenuItems && item.submenuItems.some(subItem =>
+                                                location.pathname === subItem.path ||
+                                                location.pathname.startsWith(subItem.path + '/')
+                                            );
+                                            return `menu-item ${(isOnParentPath || isOnSubmenuPath) ? 'active' : ''}`;
                                         } else {
-                                            const isDirectActive = location.pathname === item.path;
-                                            return `menu-item ${isDirectActive ? 'active' : ''}`;
+                                            // For non-submenu items, check exact match and path prefix
+                                            const isActive = location.pathname === item.path ||
+                                                location.pathname.startsWith(item.path + '/');
+                                            return `menu-item ${isActive ? 'active' : ''}`;
                                         }
                                     }}
                                     data-tooltip={t(item.title)}
@@ -467,7 +497,28 @@ const Sidebar = () => {
                                                     key={subItem.title}
                                                     to={subItem.path}
                                                     className={() => {
-                                                        const isActive = location.pathname === subItem.path;
+                                                        const currentPath = location.pathname;
+
+                                                        // For exact matches
+                                                        if (currentPath === subItem.path) {
+                                                            return `submenu-item active`;
+                                                        }
+
+                                                        // For nested routes, we need to be smart about base paths
+                                                        let isActive = false;
+
+                                                        // Sort submenu items by path length (longest first) to check most specific paths first
+                                                        const sortedItems = [...item.submenuItems].sort((a, b) => b.path.length - a.path.length);
+
+                                                        // Find the most specific matching submenu item
+                                                        const mostSpecificMatch = sortedItems.find(sortedItem =>
+                                                            currentPath === sortedItem.path ||
+                                                            currentPath.startsWith(sortedItem.path + '/')
+                                                        );
+
+                                                        // This submenu item is active only if it's the most specific match
+                                                        isActive = mostSpecificMatch && mostSpecificMatch.path === subItem.path;
+
                                                         return `submenu-item ${isActive ? 'active' : ''}`;
                                                     }}
                                                     onClick={() => {

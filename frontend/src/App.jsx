@@ -34,6 +34,8 @@ import RelatedDocuments from "./pages/RelatedDocuments/RelatedDocuments.jsx";
 import WarehousesList from "./pages/warehouse/WarehousesList/WarehousesList.jsx";
 import WarehouseDetails from "./pages/warehouse/WarehousesDetails/WarehouseDetails.jsx";
 import WarehouseInformation from "./pages/warehouse/WarehousesInformation/WarehouseInformation.jsx";
+import WarehouseViewItemCategoriesTable from "./pages/warehouse/WarehouseCategories/WarehouseViewItemsCategoriesTable.jsx";
+import WarehouseViewItemTypesTable from "./pages/warehouse/WarehouseItemTypes/WarehouseViewItemTypesTable.jsx";
 
 // ===================== Merchant & Procurement Components =====================
 import MerchantDetails from "./pages/merchant/MerchantDetails/MerchantDetails.jsx";
@@ -118,6 +120,8 @@ function App() {
                                     {/* Warehouse Management Routes */}
                                     <Route path="/warehouses" element={<RoleRoute allowedRoles={allRoles}><SitesLayout/></RoleRoute>}>
                                         <Route index element={<RoleRoute allowedRoles={allRoles}><WarehousesList/></RoleRoute>}/>
+                                        <Route path="item-categories" element={<RoleRoute allowedRoles={allRoles}><WarehouseViewItemCategoriesTable/></RoleRoute>}/>
+                                        <Route path="item-types" element={<RoleRoute allowedRoles={allRoles}><WarehouseViewItemTypesTable/></RoleRoute>}/>
                                         <Route path=":id" element={<WarehouseDetails/>}/>
                                         <Route path="warehouse-details/:id" element={<WarehouseInformation/>}/>
                                     </Route>

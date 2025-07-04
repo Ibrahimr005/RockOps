@@ -5,8 +5,6 @@ import com.example.backend.models.warehouse.ItemType;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -15,9 +13,7 @@ import java.util.UUID;
 
 @Entity
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor  // Only keep this constructor
 public class OfferItem {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -42,7 +38,7 @@ public class OfferItem {
     private RequestOrderItem requestOrderItem;
 
     @ManyToOne
-    @JoinColumn(name = "item_type_id") // ✅ ADD THIS
+    @JoinColumn(name = "item_type_id", nullable = true)
     @JsonManagedReference
     private ItemType itemType;
 
@@ -51,7 +47,6 @@ public class OfferItem {
     private String comment;
     private String financeStatus;
     private String rejectionReason;
-
     private String financeApprovedBy;
 
     @OneToOne(mappedBy = "offerItem")

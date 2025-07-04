@@ -1,12 +1,13 @@
 import React from 'react';
 import Snackbar from '../../../../components/common/Snackbar2/Snackbar2.jsx'
+import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 
 import "../ProcurementOffers.scss"
 import "./SubmittedOffers.scss"
 import {
     FiPackage, FiSend, FiClock, FiCheckCircle,
-    FiX, FiCheck, FiTrash2,
-    FiUser, FiCalendar, FiFlag, FiFileText  // Add these
+    FiX, FiCheck, FiTrash2, FiCalendar, FiUser,
+    FiTrendingUp, FiDollarSign, FiShoppingCart
 } from 'react-icons/fi';
 
 const SubmittedOffers = ({
@@ -64,6 +65,20 @@ const SubmittedOffers = ({
         return activeOffer.offerItems.filter(
             item => item.requestOrderItem?.id === requestItemId || item.requestOrderItemId === requestItemId
         );
+    };
+
+    // Get status display info
+    const getStatusInfo = (status) => {
+        switch (status?.toUpperCase()) {
+            case 'SUBMITTED':
+                return { text: 'Submitted', icon: FiSend };
+            case 'MANAGERACCEPTED':
+                return { text: 'Accepted', icon: FiCheckCircle };
+            case 'MANAGERREJECTED':
+                return { text: 'Rejected', icon: FiX };
+            default:
+                return { text: status, icon: FiClock };
+        }
     };
 
     // Handle approve action with API call and state updates
@@ -189,21 +204,18 @@ const SubmittedOffers = ({
                         <p>No submitted offers yet. Complete an offer and submit it.</p>
                     </div>
                 ) : (
-                    <div className="procurement-items-list">
+                    <div className="procurement-items-list-submitted">
                         {offers.map(offer => (
                             <div
                                 key={offer.id}
-                                className={`procurement-item-card ${activeOffer?.id === offer.id ? 'selected' : ''}`}
+                                className={`procurement-item-card-submitted ${activeOffer?.id === offer.id ? 'selected' : ''}`}
                                 onClick={() => setActiveOffer(offer)}
                             >
-                                <div className="procurement-item-header">
+                                <div className="procurement-item-header-submitted">
                                     <h4>{offer.title}</h4>
-                                    <span className={`procurement-status-badge status-${offer.status.toLowerCase()}`}>
-                                        {offer.status}
-                                    </span>
                                 </div>
-                                <div className="procurement-item-footer">
-                                    <span className="procurement-item-date">
+                                <div className="procurement-item-footer-submitted">
+                                    <span className="procurement-item-date-submitted">
                                         <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
                                     </span>
                                 </div>
@@ -222,12 +234,15 @@ const SubmittedOffers = ({
                                 <div className="procurement-title-section">
                                     <h2 className="procurement-main-title">{activeOffer.title}</h2>
                                     <div className="procurement-header-meta">
-                <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
-                    {activeOffer.status}
-                </span>
+                                        <span className={`procurement-status-badge status-${activeOffer.status?.toLowerCase()}`}>
+                                            {getStatusInfo(activeOffer.status).text}
+                                        </span>
                                         <span className="procurement-meta-item">
-                    <FiClock /> Created: {new Date(activeOffer.createdAt).toLocaleDateString()}
-                </span>
+                                            <FiCalendar /> Created: {new Date(activeOffer.createdAt).toLocaleDateString()}
+                                        </span>
+                                        <span className="procurement-meta-item">
+                                            <FiDollarSign /> Total: ${getTotalPrice(activeOffer).toFixed(2)}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -256,81 +271,8 @@ const SubmittedOffers = ({
                             </div>
                         </div>
 
-                        {/* Request Order Information Card - ADD THIS SECTION */}
-                        <div className="procurement-request-order-info-card">
-                            <h4>Request Order Information</h4>
-
-                            <div className="procurement-request-order-details-grid">
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiUser size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Requester</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder.requesterName || 'Unknown'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiCalendar size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Request Date</span>
-                                        <span className="request-order-detail-value">{new Date(activeOffer.requestOrder.createdAt).toLocaleDateString()}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiCalendar size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Deadline</span>
-                                        <span className="request-order-detail-value">{new Date(activeOffer.requestOrder.deadline).toLocaleDateString()}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiUser size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Created By</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder.createdBy || 'Unknown'}</span>
-                                    </div>
-                                </div>
-
-                                {activeOffer.requestOrder.priority && (
-                                    <div className="request-order-detail-item">
-                                        <div className="request-order-detail-icon">
-                                            <FiFlag size={18} />
-                                        </div>
-                                        <div className="request-order-detail-content">
-                                            <span className="request-order-detail-label">Priority</span>
-                                            <span className={`request-order-detail-value request-priority ${activeOffer.requestOrder.priority.toLowerCase()}`}>
-                        {activeOffer.requestOrder.priority}
-                    </span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {activeOffer.requestOrder.description && (
-                                    <div className="request-order-detail-item description-item">
-                                        <div className="request-order-detail-icon">
-                                            <FiFileText size={18} />
-                                        </div>
-                                        <div className="request-order-detail-content">
-                                            <span className="request-order-detail-label">Description</span>
-                                            <p className="request-order-detail-value description-text">
-                                                {activeOffer.requestOrder.description}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
+                        {/* Use RequestOrderDetails Component */}
+                        <RequestOrderDetails requestOrder={activeOffer.requestOrder} />
 
                         {!activeOffer.requestOrder ? (
                             <div className="procurement-loading">
@@ -339,75 +281,105 @@ const SubmittedOffers = ({
                             </div>
                         ) : (
                             <div className="procurement-submitted-info">
-                                <div className="procurement-request-summary-card">
-                                    <h4>Submitted Offer Details</h4>
-                                    <p className="procurement-section-description">
-                                        This offer has been submitted to the manager for review.
+                                <div className="procurement-request-summary-card-submitted">
+                                    <h4>Submitted Offer Overview</h4>
+                                    <p className="procurement-section-description-submitted">
+                                        This offer has been submitted to management for review and approval. Track the progress through the timeline below.
                                     </p>
 
-                                    {/* Status Timeline */}
-                                    <div className="procurement-timeline">
-                                        <div className="procurement-timeline-item active">
-                                            <div className="timeline-icon">
-                                                <FiCheckCircle size={18} />
+                                    {/* Enhanced Status Timeline */}
+                                    <div className="procurement-timeline-submitted">
+                                        <div className="procurement-timeline-item-submitted active">
+                                            <div className="timeline-icon-submitted">
+                                                <FiCheckCircle size={20} />
                                             </div>
-                                            <div className="timeline-content">
+                                            <div className="timeline-content-submitted">
                                                 <h5>Offer Submitted</h5>
-                                                <p className="timeline-date">{new Date(activeOffer.updatedAt || activeOffer.createdAt).toLocaleDateString()}</p>
+                                                <p className="timeline-date-submitted">
+                                                    <FiCalendar size={14} />
+                                                    {new Date(activeOffer.submittedAtM).toLocaleDateString()}
+                                                </p>
                                             </div>
                                         </div>
 
-                                        <div className={`procurement-timeline-item ${activeOffer.status === 'ACCEPTED' ? 'active' : activeOffer.status === 'REJECTED' ? 'rejected' : ''}`}>
-                                            <div className="timeline-icon">
-                                                {activeOffer.status === 'ACCEPTED' ? <FiCheckCircle size={18} /> :
-                                                    activeOffer.status === 'REJECTED' ? <FiX size={18} /> :
-                                                        <FiClock size={18} />}
+                                        <div className={`procurement-timeline-item-submitted ${
+                                            activeOffer.status === 'MANAGERACCEPTED' ? 'active' :
+                                                activeOffer.status === 'MANAGERREJECTED' ? 'rejected' : ''
+                                        }`}>
+                                            <div className="timeline-icon-submitted">
+                                                {activeOffer.status === 'MANAGERACCEPTED' ? <FiCheckCircle size={20} /> :
+                                                    activeOffer.status === 'MANAGERREJECTED' ? <FiX size={20} /> :
+                                                        <FiClock size={20} />}
                                             </div>
-                                            <div className="timeline-content">
-                                                <h5>{activeOffer.status === 'ACCEPTED' ? 'Offer Accepted' :
-                                                    activeOffer.status === 'REJECTED' ? 'Offer Rejected' :
-                                                        'Awaiting Response From Manager'}</h5>
-                                                {(activeOffer.status === 'ACCEPTED' || activeOffer.status === 'REJECTED') &&
-                                                    <p className="timeline-date">{new Date(activeOffer.updatedAt).toLocaleDateString()}</p>
-                                                }
-                                                {/* Add rejection reason display */}
-                                                {activeOffer.status === 'REJECTED' && activeOffer.rejectionReason && (
-                                                    <div className="rejection-reason">
-                                                        <p><strong>Reason:</strong> {activeOffer.rejectionReason}</p>
+                                            <div className="timeline-content-submitted">
+                                                <h5>
+                                                    {activeOffer.status === 'MANAGERACCEPTED' ? 'Offer Accepted' :
+                                                        activeOffer.status === 'MANAGERREJECTED' ? 'Offer Rejected' :
+                                                            'Awaiting Management Review'}
+                                                </h5>
+                                                {(activeOffer.status === 'MANAGERACCEPTED' || activeOffer.status === 'MANAGERREJECTED') ? (
+                                                    <p className="timeline-date-submitted">
+                                                        <FiCalendar size={14} />
+                                                        {new Date(activeOffer.updatedAt).toLocaleDateString()}
+                                                    </p>
+                                                ) : (
+                                                    <p className="timeline-date-submitted">
+                                                        <FiUser size={14} />
+                                                        Pending manager decision
+                                                    </p>
+                                                )}
+
+                                                {/* Enhanced rejection reason display */}
+                                                {activeOffer.status === 'MANAGERREJECTED' && activeOffer.rejectionReason && (
+                                                    <div className="rejection-reason-submitted">
+                                                        <p><strong>Rejection Reason:</strong> {activeOffer.rejectionReason}</p>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
-                                    </div>
 
+                                        {activeOffer.status === 'MANAGERACCEPTED' && (
+                                            <div className="procurement-timeline-item-submitted">
+                                                <div className="timeline-icon-submitted">
+                                                    <FiDollarSign size={20} />
+                                                </div>
+                                                <div className="timeline-content-submitted">
+                                                    <h5>Finance Review</h5>
+                                                    <p className="timeline-date-submitted">
+                                                        <FiTrendingUp size={14} />
+                                                        Sent to finance department
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
-
-
-                                {/* Procurement Details */}
-                                <div className="procurement-submitted-details">
+                                {/* Enhanced Procurement Details */}
+                                <div className="procurement-submitted-details-submitted">
                                     <h4>Procurement Solutions</h4>
-                                    <div className="procurement-submitted-items">
+                                    <div className="procurement-submitted-items-submitted">
                                         {activeOffer.requestOrder?.requestItems?.map(requestItem => {
                                             const offerItems = getOfferItemsForRequestItem(requestItem.id);
 
                                             return (
-                                                <div key={requestItem.id} className="procurement-submitted-item-card">
-                                                    <div className="submitted-item-header">
-                                                        <div className="item-icon-name">
-                                                            <div className="item-icon-container">
-                                                                <FiPackage size={20} />
+                                                <div key={requestItem.id} className="procurement-submitted-item-card-submitted">
+                                                    <div className="submitted-item-header-submitted">
+                                                        <div className="item-icon-name-submitted">
+                                                            <div className="item-icon-container-submitted">
+                                                                <FiPackage size={22} />
                                                             </div>
                                                             <h5>{requestItem.itemType?.name || 'Item'}</h5>
                                                         </div>
-                                                        <div className="submitted-item-quantity">
+                                                        <div className="submitted-item-quantity-submitted">
+                                                            <FiShoppingCart size={14} />
                                                             {requestItem.quantity} {requestItem.itemType.measuringUnit}
                                                         </div>
                                                     </div>
 
                                                     {offerItems.length > 0 && (
-                                                        <div className="submitted-offer-solutions">
-                                                            <table className="procurement-offer-entries-table">
+                                                        <div className="submitted-offer-solutions-submitted">
+                                                            <table className="procurement-offer-entries-table-submitted">
                                                                 <thead>
                                                                 <tr>
                                                                     <th>Merchant</th>
@@ -437,15 +409,19 @@ const SubmittedOffers = ({
                                     </div>
                                 </div>
 
-                                {/* Total Summary */}
-                                <div className="procurement-submitted-summary">
-                                    <div className="submitted-summary-row">
-                                        <span>Total Items:</span>
+                                {/* Enhanced Total Summary */}
+                                <div className="procurement-submitted-summary-submitted">
+                                    <div className="submitted-summary-row-submitted">
+                                        <span><FiPackage size={16} /> Total Items:</span>
                                         <span>{activeOffer.requestOrder?.requestItems?.length || 0}</span>
                                     </div>
-                                    <div className="submitted-summary-row">
-                                        <span>Total Value:</span>
-                                        <span className="submitted-total-value">${getTotalPrice(activeOffer).toFixed(2)}</span>
+                                    <div className="submitted-summary-row-submitted">
+                                        <span><FiUser size={16} /> Submitted By:</span>
+                                        <span>{activeOffer.createdBy || 'System'}</span>
+                                    </div>
+                                    <div className="submitted-summary-row-submitted">
+                                        <span><FiDollarSign size={18} /> Total Value:</span>
+                                        <span className="submitted-total-value-submitted">${getTotalPrice(activeOffer).toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>

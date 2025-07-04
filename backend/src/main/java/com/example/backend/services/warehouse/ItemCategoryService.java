@@ -118,11 +118,20 @@ public class ItemCategoryService {
         ItemCategory itemCategory = itemCategoryRepository.findById(itemCategoryId)
                 .orElseThrow(() -> new RuntimeException("ItemCategory not found with ID: " + itemCategoryId));
 
-        // Delete the item category from the database
+        // Check for child categories
+        if (!itemCategory.getChildCategories().isEmpty()) {
+            throw new RuntimeException("CHILD_CATEGORIES_EXIST");
+        }
+
+        // Check for item types
+        if (!itemCategory.getItemTypes().isEmpty()) {
+            throw new RuntimeException("ITEM_TYPES_EXIST");
+        }
+
+        // If no dependencies, proceed with deletion
         itemCategoryRepository.delete(itemCategory);
         System.out.println("Item category deleted successfully");
     }
-
     // Update an existing ItemCategory
     public ItemCategory updateItemCategory(UUID itemCategoryId, Map<String, Object> requestBody) {
         // Fetch the item category to be updated
@@ -183,5 +192,10 @@ public class ItemCategoryService {
         }
 
         return false;
+    }
+
+    // Add this method to your service class
+    public List<ItemCategory> getChildrenByParent(UUID parentId) {
+        return itemCategoryRepository.findByParentCategoryId(parentId);
     }
 }

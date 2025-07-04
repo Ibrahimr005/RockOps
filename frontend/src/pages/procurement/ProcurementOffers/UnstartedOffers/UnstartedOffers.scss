@@ -13,8 +13,6 @@
 
 // Override item card colors for unstarted offers
 
-
-
 .procurement-item-card-unstarted {
   border: 1px solid var(--border-color-light);
   border-left: 3px solid var(--color-primary); // Default color, tabs can override
@@ -34,9 +32,13 @@
   }
 
   &.selected {
-    border-color: var(--color-primary-hover);
-    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
-    background-color: var(--color-surface-secondary);
+    border: 2px solid var(--color-primary);
+    border-left: 5px solid var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.2), var(--shadow-md);
+    background-color: var(--color-surface);
+    transform: translateY(-1px);
+    position: relative;
+    z-index: 5;
   }
 
   .procurement-item-header {
@@ -72,26 +74,17 @@
   }
 }
 
-
-
 // ===================================
 // 2. REQUEST ORDER DETAILS (Unstarted-specific)
 // ===================================
-
-
-
 
 // ===================================
 // 3. ITEMS PREVIEW SECTION (Unstarted-specific)
 // ===================================
 
 .procurement-unstarted-offers-items-preview {
-
-
-
   padding: 1.5rem;
   margin-bottom: 1.5rem;
-
 
   h4 {
     font-size: 1.125rem;
@@ -310,10 +303,6 @@
     padding: 1rem;
     margin-bottom: 1rem;
   }
-
-
-
-
 
   .procurement-unstarted-offers-item-preview-card {
     padding: 1.25rem;
