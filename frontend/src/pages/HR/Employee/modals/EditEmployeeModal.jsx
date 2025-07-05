@@ -224,7 +224,7 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
             <div className="r4m-employee-modal">
                 <div className="r4m-modal-header">
                     <h2>Edit Employee: {employee.fullName}</h2>
-                    <button className="r4m-close-button" onClick={onClose}>×</button>
+                    <button className="btn-close" onClick={onClose}>×</button>
                 </div>
 
                 <form onSubmit={handleSubmit}>

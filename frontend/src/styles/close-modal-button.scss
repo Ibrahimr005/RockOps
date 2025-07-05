@@ -38,7 +38,7 @@
 
 .btn-close:hover:not(:disabled) {
   background-color: var(--color-surface-hover, #f3f4f6);
-  color: var(--color-text-primary, #1f2937);
+  color: var(--color-danger);
 }
 
 .btn-close:hover:not(:disabled)::before {

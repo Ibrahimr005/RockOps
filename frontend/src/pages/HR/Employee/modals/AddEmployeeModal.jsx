@@ -194,7 +194,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
             <div className="r4m-employee-modal">
                 <div className="r4m-modal-header">
                     <h2>{isFromCandidate ? 'Hire Candidate as Employee' : 'Add New Employee'}</h2>
-                    <button className="r4m-close-button" onClick={onClose}>×</button>
+                    <button className="btn-close" onClick={onClose}>×</button>
                 </div>
 
                 {isFromCandidate && (

@@ -5,6 +5,8 @@
 @import url('./styles/primary-button.scss');
 @import url('./styles/status-badges.scss');
 @import url('./styles/close-modal-button.scss');
+@import url('./styles/modal-styles.scss');
+@import url('./styles/textarea-styles.scss');
 
 /* Base styles */
 body {

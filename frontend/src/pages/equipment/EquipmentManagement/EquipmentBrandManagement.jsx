@@ -189,7 +189,7 @@ const EquipmentBrandManagement = () => {
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>{editingBrand ? 'Edit Equipment Brand' : 'Add Equipment Brand'}</h2>
-                            <button className="modal-close" onClick={() => setShowModal(false)}>
+                            <button className="btn-close" onClick={() => setShowModal(false)}>
                                 &times;
                             </button>
                         </div>
