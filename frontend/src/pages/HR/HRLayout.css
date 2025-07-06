@@ -1,4 +1,4 @@
-/* HRLayout.css */
+/* HRLayout.css - Enhanced Responsive Design */
 
 .hr-module-container {
     display: flex;
@@ -6,11 +6,13 @@
     height: 100%;
     width: 100%;
     background-color: var(--main-background-color);
-    padding: 0;
+    padding: 1rem;
     overflow-y: auto;
     animation: fadeIn 0.3s ease-in-out;
     flex: 1;
     box-sizing: border-box;
+    position: relative;
+    min-height: 100vh;
 }
 
 @keyframes fadeIn {
@@ -24,59 +26,206 @@
     }
 }
 
-/* Large desktop screens */
-@media (min-width: 1200px) {
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+/* Extra large screens (1920px and above) */
+@media (min-width: 1920px) {
     .hr-module-container {
-        padding: 0;
+        padding: 2rem 4rem;
+        max-width: 1800px;
+        margin: 0 auto;
+    }
+}
+
+/* Large desktop screens (1440px - 1919px) */
+@media (min-width: 1440px) and (max-width: 1919px) {
+    .hr-module-container {
+        padding: 1.5rem 3rem;
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+}
+
+/* Desktop screens (1200px - 1439px) */
+@media (min-width: 1200px) and (max-width: 1439px) {
+    .hr-module-container {
+        padding: 1.5rem 2rem;
         max-width: 1400px;
         margin: 0 auto;
     }
 }
 
-/* Medium desktop and tablet landscape */
-@media (max-width: 1199px) and (min-width: 1024px) {
+/* Medium desktop and large tablet landscape (1024px - 1199px) */
+@media (min-width: 1024px) and (max-width: 1199px) {
     .hr-module-container {
-        padding: 0;
+        padding: 1rem 1.5rem;
+        max-width: 100%;
     }
 }
 
-/* Tablet portrait */
-@media (max-width: 1023px) and (min-width: 768px) {
+/* Tablet landscape and small desktop (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
     .hr-module-container {
-        padding: 0;
-    }
-}
-
-/* Mobile landscape */
-@media (max-width: 767px) and (min-width: 480px) {
-    .hr-module-container {
-        padding: 0;
+        padding: 1rem;
         min-height: calc(100vh - 60px);
     }
 }
 
-/* Mobile portrait */
-@media (max-width: 479px) {
+/* Large mobile landscape and small tablet (640px - 767px) */
+@media (min-width: 640px) and (max-width: 767px) {
     .hr-module-container {
-        padding: 0;
+        padding: 0.75rem;
         min-height: calc(100vh - 60px);
     }
 }
 
-/* Extra small mobile devices */
-@media (max-width: 360px) {
+/* Mobile landscape and larger phones (480px - 639px) */
+@media (min-width: 480px) and (max-width: 639px) {
     .hr-module-container {
-        padding: 0;
+        padding: 0.5rem;
+        min-height: calc(100vh - 60px);
     }
 }
 
-/* Landscape orientation adjustments for mobile */
+/* Standard mobile portrait (360px - 479px) */
+@media (min-width: 360px) and (max-width: 479px) {
+    .hr-module-container {
+        padding: 0.5rem 0.25rem;
+        min-height: calc(100vh - 60px);
+    }
+}
+
+/* Small mobile devices (320px - 359px) */
+@media (min-width: 320px) and (max-width: 359px) {
+    .hr-module-container {
+        padding: 0.25rem;
+        min-height: calc(100vh - 60px);
+    }
+}
+
+/* Extra small mobile devices (below 320px) */
+@media (max-width: 319px) {
+    .hr-module-container {
+        padding: 0.125rem;
+        min-height: calc(100vh - 60px);
+        font-size: 0.875rem;
+    }
+}
+
+/* ============================================
+   ORIENTATION-SPECIFIC ADJUSTMENTS
+   ============================================ */
+
+/* Landscape orientation for mobile and tablet */
+@media (orientation: landscape) and (max-width: 1023px) {
+    .hr-module-container {
+        padding: 0.5rem;
+        min-height: calc(100vh - 50px);
+    }
+}
+
+/* Portrait orientation for mobile and tablet */
+@media (orientation: portrait) and (max-width: 1023px) {
+    .hr-module-container {
+        padding: 0.75rem 0.5rem;
+        min-height: calc(100vh - 60px);
+    }
+}
+
+/* Very short screens (landscape phones) */
 @media (max-height: 500px) and (orientation: landscape) {
     .hr-module-container {
-        padding: 0;
+        padding: 0.25rem;
         min-height: auto;
+        overflow-y: scroll;
     }
 }
+
+/* ============================================
+   CONTAINER CONTENT RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+/* Adjust spacing for child elements on different screen sizes */
+.hr-module-container > * {
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .hr-module-container > * {
+        margin-bottom: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .hr-module-container > * {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* ============================================
+   SCROLLBAR STYLING (RESPONSIVE)
+   ============================================ */
+
+/* Desktop scrollbar */
+.hr-module-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.hr-module-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+}
+
+.hr-module-container::-webkit-scrollbar-thumb {
+    background: var(--color-primary-light, #888);
+    border-radius: 10px;
+    transition: background-color 0.2s ease;
+}
+
+.hr-module-container::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary, #666);
+}
+
+/* Tablet scrollbar */
+@media (max-width: 1023px) and (min-width: 768px) {
+    .hr-module-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .hr-module-container::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.03);
+    }
+
+    .hr-module-container::-webkit-scrollbar-thumb {
+        background: var(--color-primary-light, #aaa);
+    }
+}
+
+/* Mobile scrollbar */
+@media (max-width: 767px) {
+    .hr-module-container::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .hr-module-container::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.02);
+    }
+
+    .hr-module-container::-webkit-scrollbar-thumb {
+        background: var(--color-primary-light, #bbb);
+        border-radius: 8px;
+    }
+
+    .hr-module-container::-webkit-scrollbar-thumb:hover {
+        background: var(--color-primary, #888);
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY AND PERFORMANCE
+   ============================================ */
 
 /* High DPI displays */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
@@ -91,7 +240,7 @@
     .hr-module-container {
         animation: none;
     }
-    
+
     @keyframes fadeIn {
         from, to {
             opacity: 1;
@@ -100,37 +249,141 @@
     }
 }
 
-
-/* Scrollbar styling */
-.hr-module-container::-webkit-scrollbar {
-    width: 8px;
-}
-
-.hr-module-container::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 10px;
-}
-
-.hr-module-container::-webkit-scrollbar-thumb {
-    background: var(--color-primary-light);
-    border-radius: 10px;
-}
-
-.hr-module-container::-webkit-scrollbar-thumb:hover {
-    background: var(--color-primary);
-}
-
-/* Mobile scrollbar adjustments */
-@media (max-width: 768px) {
-    .hr-module-container::-webkit-scrollbar {
-        width: 4px;
-    }
-    
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
     .hr-module-container::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.02);
+        background: rgba(255, 255, 255, 0.1);
     }
-    
+
     .hr-module-container::-webkit-scrollbar-thumb {
-        background: var(--color-primary-light, #888);
+        background: var(--color-primary-light, rgba(255, 255, 255, 0.3));
+    }
+}
+
+/* ============================================
+   SPECIFIC DEVICE OPTIMIZATIONS
+   ============================================ */
+
+/* iPhone 14 Pro Max, 13 Pro Max, 12 Pro Max */
+@media only screen
+and (device-width: 428px)
+and (device-height: 926px)
+and (-webkit-device-pixel-ratio: 3) {
+    .hr-module-container {
+        padding: 0.5rem;
+        min-height: calc(100vh - 90px); /* Account for notch */
+    }
+}
+
+/* iPhone 14 Pro, 13 Pro, 12 Pro */
+@media only screen
+and (device-width: 390px)
+and (device-height: 844px)
+and (-webkit-device-pixel-ratio: 3) {
+    .hr-module-container {
+        padding: 0.5rem;
+        min-height: calc(100vh - 90px); /* Account for notch */
+    }
+}
+
+/* iPhone SE (3rd generation), 8, 7, 6s */
+@media only screen
+and (device-width: 375px)
+and (device-height: 667px)
+and (-webkit-device-pixel-ratio: 2) {
+    .hr-module-container {
+        padding: 0.5rem;
+        min-height: calc(100vh - 60px);
+    }
+}
+
+/* iPad Pro 12.9" */
+@media only screen
+and (device-width: 1024px)
+and (device-height: 1366px)
+and (-webkit-device-pixel-ratio: 2) {
+    .hr-module-container {
+        padding: 1.5rem 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+}
+
+/* iPad Pro 11", iPad Air */
+@media only screen
+and (device-width: 834px)
+and (device-height: 1194px)
+and (-webkit-device-pixel-ratio: 2) {
+    .hr-module-container {
+        padding: 1rem 1.5rem;
+    }
+}
+
+/* iPad Mini */
+@media only screen
+and (device-width: 768px)
+and (device-height: 1024px)
+and (-webkit-device-pixel-ratio: 2) {
+    .hr-module-container {
+        padding: 1rem;
+    }
+}
+
+/* ============================================
+   UTILITIES FOR RESPONSIVE CONTENT
+   ============================================ */
+
+/* Container for flex layouts that need to adapt */
+.hr-module-container .responsive-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .hr-module-container .responsive-flex {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+/* Grid layouts that need to adapt */
+.hr-module-container .responsive-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .hr-module-container .responsive-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .hr-module-container .responsive-grid {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+    .hr-module-container {
+        background: white !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        animation: none !important;
+        overflow: visible !important;
+        height: auto !important;
+        min-height: auto !important;
+    }
+
+    .hr-module-container::-webkit-scrollbar {
+        display: none !important;
     }
 }

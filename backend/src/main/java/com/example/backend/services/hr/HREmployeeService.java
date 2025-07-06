@@ -150,6 +150,7 @@ public class HREmployeeService {
         }
     }
 
+
     /**
      * Update an existing employee
      */
@@ -167,7 +168,12 @@ public class HREmployeeService {
             Employee existingEmployee = employeeRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Employee not found"));
 
-            // Update employee data
+            // Store existing image URLs before update
+            String existingPhotoUrl = existingEmployee.getPhotoUrl();
+            String existingIdFrontUrl = existingEmployee.getIdFrontImage();
+            String existingIdBackUrl = existingEmployee.getIdBackImage();
+
+            // Update employee data (this will NOT overwrite image URLs unless explicitly set in DTO)
             updateEmployeeFromDTO(existingEmployee, employeeData);
 
             // Update site if provided in the request
@@ -178,40 +184,55 @@ public class HREmployeeService {
                 log.info("Updated site directly from request: {}", site.getName());
             }
 
-            // Update photo if provided
+            // Update photo if provided, otherwise keep existing
             if (photo != null && !photo.isEmpty()) {
                 String photoFileName = generateImageFileName(id, "photo", photo.getOriginalFilename());
                 try {
                     minioService.uploadFile(photo, EMPLOYEE_IMAGES_FOLDER + "/" + photoFileName);
                     existingEmployee.setPhotoUrl(EMPLOYEE_IMAGES_FOLDER + "/" + photoFileName);
+                    log.info("Updated photo for employee: {}", id);
                 } catch (Exception e) {
                     log.error("Error updating employee photo", e);
                     throw new RuntimeException("Failed to update employee photo: " + e.getMessage());
                 }
+            } else {
+                // Keep existing photo URL if no new photo provided
+                existingEmployee.setPhotoUrl(existingPhotoUrl);
+                log.info("Keeping existing photo for employee: {}", id);
             }
 
-            // Update ID front image if provided
+            // Update ID front image if provided, otherwise keep existing
             if (idFrontImage != null && !idFrontImage.isEmpty()) {
                 String idFrontFileName = generateImageFileName(id, "id_front", idFrontImage.getOriginalFilename());
                 try {
                     minioService.uploadFile(idFrontImage, EMPLOYEE_IMAGES_FOLDER + "/" + idFrontFileName);
                     existingEmployee.setIdFrontImage(EMPLOYEE_IMAGES_FOLDER + "/" + idFrontFileName);
+                    log.info("Updated ID front image for employee: {}", id);
                 } catch (Exception e) {
                     log.error("Error updating ID front image", e);
                     throw new RuntimeException("Failed to update ID front image: " + e.getMessage());
                 }
+            } else {
+                // Keep existing ID front image URL if no new image provided
+                existingEmployee.setIdFrontImage(existingIdFrontUrl);
+                log.info("Keeping existing ID front image for employee: {}", id);
             }
 
-            // Update ID back image if provided
+            // Update ID back image if provided, otherwise keep existing
             if (idBackImage != null && !idBackImage.isEmpty()) {
                 String idBackFileName = generateImageFileName(id, "id_back", idBackImage.getOriginalFilename());
                 try {
                     minioService.uploadFile(idBackImage, EMPLOYEE_IMAGES_FOLDER + "/" + idBackFileName);
                     existingEmployee.setIdBackImage(EMPLOYEE_IMAGES_FOLDER + "/" + idBackFileName);
+                    log.info("Updated ID back image for employee: {}", id);
                 } catch (Exception e) {
                     log.error("Error updating ID back image", e);
                     throw new RuntimeException("Failed to update ID back image: " + e.getMessage());
                 }
+            } else {
+                // Keep existing ID back image URL if no new image provided
+                existingEmployee.setIdBackImage(existingIdBackUrl);
+                log.info("Keeping existing ID back image for employee: {}", id);
             }
 
             // Update job position if provided
@@ -459,9 +480,17 @@ public class HREmployeeService {
         employee.setGender(dto.getGender());
         employee.setStatus(dto.getStatus());
         employee.setEducation(dto.getEducation());
-        employee.setPhotoUrl(dto.getPhotoUrl());
-        employee.setIdFrontImage(dto.getIdFrontImage());
-        employee.setIdBackImage(dto.getIdBackImage());
+        
+        // Only update image URLs if they are not null (preserve existing images)
+        if (dto.getPhotoUrl() != null) {
+            employee.setPhotoUrl(dto.getPhotoUrl());
+        }
+        if (dto.getIdFrontImage() != null) {
+            employee.setIdFrontImage(dto.getIdFrontImage());
+        }
+        if (dto.getIdBackImage() != null) {
+            employee.setIdBackImage(dto.getIdBackImage());
+        }
 
         // Handle salary overrides
         if (dto.getBaseSalaryOverride() != null) {

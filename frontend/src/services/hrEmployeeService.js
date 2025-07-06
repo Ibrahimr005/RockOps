@@ -12,12 +12,20 @@ export const hrEmployeeService = {
 
         // Create new employee with multipart form data
         create: (formData) => {
-            return apiClient.post(HR_ENDPOINTS.EMPLOYEE.CREATE, formData);
+            return apiClient.post(HR_ENDPOINTS.EMPLOYEE.CREATE, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
         },
 
         // Update existing employee with multipart form data
         update: (id, formData) => {
-            return apiClient.put(HR_ENDPOINTS.EMPLOYEE.UPDATE(id), formData);
+            return apiClient.put(HR_ENDPOINTS.EMPLOYEE.UPDATE(id), formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
         },
 
         // Delete employee
@@ -38,4 +46,4 @@ export const hrEmployeeService = {
             return apiClient.get(HR_ENDPOINTS.DASHBOARD.EMPLOYEE_DISTRIBUTION);
         }
     }
-}; 
+};
