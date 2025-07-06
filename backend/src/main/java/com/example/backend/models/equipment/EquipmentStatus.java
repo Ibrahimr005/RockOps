@@ -5,5 +5,6 @@ public enum EquipmentStatus {
     RENTED,
     IN_MAINTENANCE,
     AVAILABLE,
+    RUNNING,
     SCRAPED
 }

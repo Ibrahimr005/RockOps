@@ -19,7 +19,7 @@ const EquipmentMain = () => {
     const [equipmentBrands, setEquipmentBrands] = useState([]);
     const [sites, setSites] = useState([]);
     const [statusOptions] = useState([
-        "AVAILABLE", "RENTED", "IN_MAINTENANCE", "SOLD", "SCRAPPED"
+        "AVAILABLE", "RENTED", "IN_MAINTENANCE", "RUNNING", "SOLD", "SCRAPPED"
     ]);
     const [selectedType, setSelectedType] = useState("");
     const [selectedBrand, setSelectedBrand] = useState("");

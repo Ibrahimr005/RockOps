@@ -425,7 +425,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                     className={`inventory-tab ${activeTab === 'current' ? 'active' : ''}`}
                     onClick={() => handleTabChange('current')}
                 >
-                    Current Inventory
+                                                Consumed Material
                     <span className="inventory-tab-count">{consumables.filter(c => (!c.status || c.status === 'REGULAR' || c.status === 'IN_WAREHOUSE' || c.status === 'CONSUMED') && !c.resolved).length}</span>
                 </button>
                 <button
@@ -519,7 +519,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                             data={filteredConsumables}
                             columns={columns}
                             loading={loading}
-                            tableTitle={`${activeTab === 'current' ? 'Current Inventory' : 'Surplus Items'}`}
+                            tableTitle={`${activeTab === 'current' ? 'Consumed Material' : 'Surplus Items'}`}
                             showSearch={true}
                             showFilters={true}
                             filterableColumns={filterableColumns}

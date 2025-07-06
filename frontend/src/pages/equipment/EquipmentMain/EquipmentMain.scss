@@ -178,25 +178,25 @@ $status-colors: (
 // Toolbar section with search and filters
 .equipment-toolbar {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 8px;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
 
   .equipment-search-container {
     position: relative;
-    width: 25%;
-    align-self: flex-end;
+    width: 320px;
 
     .equipment-search-input {
       width: 100%;
-      padding: 8px 36px 8px 12px;
+      padding: 10px 40px 10px 16px;
       border: 1px solid var(--border-color);
       border-radius: 8px;
       font-size: 14px;
       color: var(--color-text-primary);
       background-color: var(--color-surface);
       transition: all 0.2s;
-      height: 40px;
+      height: 44px;
 
       &:focus {
         outline: none;
@@ -212,126 +212,131 @@ $status-colors: (
 
     .equipment-search-icon {
       position: absolute;
-      right: 10px;
+      right: 12px;
       top: 50%;
       transform: translateY(-50%);
-      width: 16px;
-      height: 16px;
+      width: 18px;
+      height: 18px;
       color: var(--color-text-tertiary);
       pointer-events: none;
     }
   }
-}
 
-// Actions bar with filters and buttons - Reduced margin
-.equipment-actions-bar {
-  @include flex-between;
-  margin-bottom: 12px; // Reduced from 24px
+  // Actions bar with filters and buttons
+  .equipment-actions-bar {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
 
-  .equipment-filter-section {
-    position: relative;
+    .equipment-filter-section {
+      position: relative;
 
-    .equipment-filter-toggle {
-      @include button-style;
-      background-color: rgba(var(--color-primary), 0.1);
-      color: var(--color-primary);
-      padding: 8px 14px; // Reduced from 10px 16px
-      font-size: 14px;
+      .equipment-filter-toggle {
+        @include button-style;
+        background-color: rgba(var(--color-primary), 0.1);
+        color: var(--color-primary);
+        padding: 10px 16px;
+        font-size: 14px;
+        height: 44px;
 
-      &:hover {
-        background-color: rgba(var(--color-primary), 0.2);
+        &:hover {
+          background-color: rgba(var(--color-primary), 0.2);
+        }
       }
-    }
 
-    .equipment-filters-panel {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      margin-top: 8px; // Reduced from 10px
-      background-color: var(--color-surface);
-      border-radius: 8px;
-      @include card-shadow;
-      z-index: 10;
-      min-width: 600px;
-      border: 1px solid var(--border-color);
+      .equipment-filters-panel {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 8px;
+        background-color: var(--color-surface);
+        border-radius: 8px;
+        @include card-shadow;
+        z-index: 10;
+        min-width: 700px;
+        border: 1px solid var(--border-color);
 
-      .equipment-filter-controls {
-        padding: 16px; // Reduced from 20px
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px; // Reduced from 16px
+        .equipment-filter-controls {
+          padding: 20px;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          align-items: end;
 
-        .equipment-filter-group {
-          flex: 1;
-          min-width: 150px;
+          .equipment-filter-group {
+            display: flex;
+            flex-direction: column;
 
-          label {
-            display: block;
-            font-size: 14px;
-            color: var(--color-text-secondary);
-            margin-bottom: 6px; // Reduced from 8px
-            font-weight: 500;
+            label {
+              font-size: 14px;
+              color: var(--color-text-secondary);
+              margin-bottom: 8px;
+              font-weight: 500;
+            }
+
+            select {
+              padding: 10px;
+              border: 1px solid var(--border-color);
+              border-radius: 6px;
+              font-size: 14px;
+              color: var(--color-text-primary);
+              height: 40px;
+
+              &:focus {
+                outline: none;
+                border-color: var(--color-primary);
+                box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.1);
+              }
+            }
           }
 
-          select {
-            width: 100%;
-            padding: 8px; // Reduced from 10px
+          .equipment-filter-reset {
+            @include button-style;
+            background-color: transparent;
             border: 1px solid var(--border-color);
-            border-radius: 6px;
+            color: var(--color-text-secondary);
+            padding: 10px 16px;
             font-size: 14px;
-            color: var(--color-text-primary);
+            height: 40px;
+            justify-self: end;
 
-            &:focus {
-              outline: none;
-              border-color: var(--color-primary);
-              box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.1);
+            &:hover {
+              background-color: var(--color-surface-hover);
+              color: var(--color-text-primary);
             }
           }
         }
-
-        .equipment-filter-reset {
-          @include button-style;
-          background-color: transparent;
-          border: 1px solid var(--border-color);
-          color: var(--color-text-secondary);
-          margin-left: auto;
-          padding: 8px 14px; // Reduced from 10px 16px
-          font-size: 14px;
-
-          &:hover {
-            background-color: var(--color-surface-hover);
-            color: var(--color-text-primary);
-          }
-        }
       }
     }
-  }
 
-  .equipment-actions-buttons {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
+    .equipment-actions-buttons {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
 
-    .equipment-add-button {
+      .equipment-add-button {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
+        padding: 10px 16px;
+        border-radius: 8px;
         background-color: var(--color-primary);
-        color: var(--text-hover);
+        color: white;
         border: none;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.2s ease;
+        height: 44px;
 
         &:hover {
-            background-color: var(--color-primary-dark);
+          background-color: var(--color-primary-dark);
+          transform: translateY(-1px);
         }
 
         svg {
-            font-size: 1rem;
+          font-size: 1rem;
         }
+      }
     }
   }
 }

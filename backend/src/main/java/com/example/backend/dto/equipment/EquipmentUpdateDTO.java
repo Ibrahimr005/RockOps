@@ -29,7 +29,10 @@ public class EquipmentUpdateDTO {
     private Double shipping;
     private Double customs;
     private Double taxes;
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
     private EquipmentStatus status;
     private String relatedDocuments;
     private Integer workedHours;

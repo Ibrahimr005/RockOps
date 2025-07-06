@@ -75,7 +75,7 @@ public class MaintenanceStep {
     private String notes;
     
     @Column(name = "is_final_step", nullable = false)
-    private boolean isFinalStep = false;
+    private boolean finalStep = false;
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FaTimes, FaUpload, FaExclamationCircle, FaInfoCircle, FaCheck, FaArrowRight, FaTrash } from "react-icons/fa";
+import { FaTimes, FaUpload, FaExclamationCircle, FaInfoCircle, FaCheck, FaArrowRight, FaTrash, FaPlus } from "react-icons/fa";
 import { equipmentService } from "../../../../../services/equipmentService.js";
 import { equipmentTypeService } from "../../../../../services/equipmentTypeService.js";
 import { equipmentBrandService } from "../../../../../services/equipmentBrandService.js";
@@ -118,6 +118,14 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
     });
     const [showValidationHint, setShowValidationHint] = useState(true);
     const [formTouched, setFormTouched] = useState(false);
+    
+    // Brand creation modal states
+    const [showNewBrandModal, setShowNewBrandModal] = useState(false);
+    const [newBrandFormData, setNewBrandFormData] = useState({
+        name: "",
+        description: ""
+    });
+    const [isCreatingBrand, setIsCreatingBrand] = useState(false);
     const confirmClearRef = useRef(null);
 
     // Define tabs with required fields based on database schema
@@ -849,9 +857,65 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
     };
 
     const handleNextTab = () => {
-        if (tabIndex < tabs.length - 1) {
-            setTabIndex(tabIndex + 1);
-            // Scroll to top will be handled by useEffect
+        if (validateTab(tabIndex)) {
+            const newTabIndex = Math.min(tabIndex + 1, tabs.length - 1);
+            setTabIndex(newTabIndex);
+        }
+    };
+
+    const handleNewBrandChange = (e) => {
+        const { name, value } = e.target;
+        setNewBrandFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleCreateNewBrand = async (e) => {
+        e.preventDefault();
+        
+        if (!newBrandFormData.name.trim()) {
+            showError("Please enter a brand name");
+            return;
+        }
+
+        setIsCreatingBrand(true);
+        try {
+            const response = await equipmentBrandService.createEquipmentBrand({
+                name: newBrandFormData.name.trim(),
+                description: newBrandFormData.description.trim()
+            });
+
+            // Add the new brand to the list and select it
+            const newBrand = response.data;
+            setEquipmentBrands(prev => [...prev, newBrand]);
+            setFormData(prev => ({ ...prev, brandId: newBrand.id }));
+            
+            // Close modal and reset
+            setShowNewBrandModal(false);
+            setNewBrandFormData({ name: "", description: "" });
+            
+            showSuccess(`Equipment brand "${newBrand.name}" has been added successfully`);
+            
+        } catch (error) {
+            console.error("Error creating brand:", error);
+            showError("Error creating brand: " + (error.response?.data?.message || error.message));
+        } finally {
+            setIsCreatingBrand(false);
+        }
+    };
+
+    const handleCloseBrandModal = () => {
+        setShowNewBrandModal(false);
+        setNewBrandFormData({ name: "", description: "" });
+    };
+
+    const handleBrandSelectChange = (e) => {
+        const value = e.target.value;
+        if (value === "CREATE_NEW") {
+            setShowNewBrandModal(true);
+        } else {
+            handleInputChange(e);
         }
     };
 
@@ -962,7 +1026,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         id="brandId"
                                         name="brandId"
                                         value={formData.brandId}
-                                        onChange={handleInputChange}
+                                        onChange={handleBrandSelectChange}
                                         className={!formData.brandId && showValidationHint ? "invalid-field" : ""}
                                         required
                                     >
@@ -972,6 +1036,9 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                                 {brand.name}
                                             </option>
                                         ))}
+                                        <option value="CREATE_NEW" style={{color: '#007bff', fontWeight: 'bold'}}>
+                                            + Add New Brand
+                                        </option>
                                     </select>
                                 </div>
                                 <div className="equipment-modal-form-group">
@@ -996,7 +1063,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         id="typeId"
                                         name="typeId"
                                         value={formData.typeId}
-                                        onChange={handleTypeChange}
+                                        onChange={handleTypeSelectChange}
                                         className={!formData.typeId && showValidationHint ? "invalid-field" : ""}
                                         required
                                     >
@@ -1006,6 +1073,9 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                                 {type.name}
                                             </option>
                                         ))}
+                                        <option value="CREATE_NEW" style={{color: '#007bff', fontWeight: 'bold'}}>
+                                            + Add New Equipment Type
+                                        </option>
                                     </select>
                                     {formData.typeId && isEquipmentTypeDrivable && (
                                         <div className="field-hint">
@@ -1033,6 +1103,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         value={formData.status}
                                         onChange={handleInputChange}
                                     >
+<<<<<<< Updated upstream
                                         {equipmentStatuses.length > 0 ? (
                                             equipmentStatuses.map(status => (
                                                 <option key={status.value} value={status.value}>
@@ -1049,6 +1120,14 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                                 <option value="SCRAPED">Scrapped</option>
                                             </>
                                         )}
+=======
+                                        <option value="AVAILABLE">Available</option>
+                                        <option value="RENTED">Rented</option>
+                                        <option value="IN_MAINTENANCE">In Maintenance</option>
+                                        <option value="RUNNING">Running</option>
+                                        <option value="SOLD">Sold</option>
+                                        <option value="SCRAPPED">Scrapped</option>
+>>>>>>> Stashed changes
                                     </select>
                                 </div>
                                 <div className="equipment-modal-form-group">
@@ -1470,6 +1549,171 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                     </div>
                 </form>
             </div>
+
+            {/* New Brand Creation Modal - Using same style as Brand Management */}
+            {showNewBrandModal && (
+                <div className="modal-overlay" onClick={handleCloseBrandModal}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Add Equipment Brand</h2>
+                            <button className="modal-close" onClick={handleCloseBrandModal}>
+                                &times;
+                            </button>
+                        </div>
+                        <form onSubmit={handleCreateNewBrand}>
+                            <div className="form-group">
+                                <label htmlFor="brandName">Name *</label>
+                                <input
+                                    type="text"
+                                    id="brandName"
+                                    name="name"
+                                    value={newBrandFormData.name}
+                                    onChange={handleNewBrandChange}
+                                    placeholder="Enter brand name"
+                                    required
+                                    disabled={isCreatingBrand}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="brandDescription">Description</label>
+                                <textarea
+                                    id="brandDescription"
+                                    name="description"
+                                    value={newBrandFormData.description}
+                                    onChange={handleNewBrandChange}
+                                    placeholder="Enter brand description (optional)"
+                                    rows="4"
+                                    disabled={isCreatingBrand}
+                                />
+                            </div>
+                            
+                            <div className="modal-actions">
+                                <button
+                                    type="button"
+                                    onClick={handleCloseBrandModal}
+                                    disabled={isCreatingBrand}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    className="save-button"
+                                    disabled={isCreatingBrand || !newBrandFormData.name.trim()}
+                                >
+                                    {isCreatingBrand ? 'Creating...' : 'Add Brand'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* New Equipment Type Creation Modal - Using same style as Equipment Type Management */}
+            {showNewTypeModal && (
+                <div className="modal-overlay" onClick={handleCloseTypeModal}>
+                    <div className="modal-content work-type-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Add Equipment Type</h2>
+                            <button className="modal-close" onClick={handleCloseTypeModal}>
+                                &times;
+                            </button>
+                        </div>
+                        <form onSubmit={handleCreateNewType}>
+                            <div className="form-group">
+                                <label htmlFor="typeName">Name *</label>
+                                <input
+                                    type="text"
+                                    id="typeName"
+                                    name="name"
+                                    value={newTypeFormData.name}
+                                    onChange={handleNewTypeChange}
+                                    placeholder="Enter equipment type name (e.g., Excavator, Bulldozer, Truck)"
+                                    required
+                                    disabled={isCreatingType}
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label htmlFor="typeDescription">Description</label>
+                                <textarea
+                                    id="typeDescription"
+                                    name="description"
+                                    value={newTypeFormData.description}
+                                    onChange={handleNewTypeChange}
+                                    placeholder="Enter a description of this equipment type..."
+                                    rows="4"
+                                    disabled={isCreatingType}
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label className="checkbox-label">
+                                    <input
+                                        type="checkbox"
+                                        id="typeDrivable"
+                                        name="drivable"
+                                        checked={newTypeFormData.drivable}
+                                        onChange={handleNewTypeChange}
+                                        disabled={isCreatingType}
+                                    />
+                                    <span className="checkbox-text">Requires Driver</span>
+                                </label>
+                                <small className="form-help-text">
+                                    Check this if equipment of this type requires a driver to operate (e.g., bulldozers, trucks). 
+                                    Uncheck for stationary equipment like generators or compressors.
+                                </small>
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>Supported Work Types</label>
+                                <div className="work-types-grid">
+                                    {workTypes.map(workType => (
+                                        <div key={workType.id} className="work-type-item">
+                                            <label className="checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedWorkTypesForNewType.includes(workType.id)}
+                                                    onChange={() => handleWorkTypeChangeForNewType(workType.id)}
+                                                    disabled={isCreatingType}
+                                                />
+                                                <span className="checkmark"></span>
+                                                <span className="work-type-name">{workType.name}</span>
+                                                {workType.description && (
+                                                    <span className="work-type-description">{workType.description}</span>
+                                                )}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                                {workTypes.length === 0 && (
+                                    <p className="no-work-types">No work types available. Please create work types first.</p>
+                                )}
+                                <small className="form-help-text">
+                                    Select which work types this equipment type can perform. This determines which work types are available when logging Sarky entries for equipment of this type.
+                                </small>
+                            </div>
+                            
+                            <div className="modal-actions">
+                                <button
+                                    type="button"
+                                    onClick={handleCloseTypeModal}
+                                    disabled={isCreatingType}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    className="save-button"
+                                    disabled={isCreatingType || !newTypeFormData.name.trim()}
+                                >
+                                    {isCreatingType ? 'Creating...' : 'Add Type'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

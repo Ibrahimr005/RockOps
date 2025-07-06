@@ -64,6 +64,17 @@ public class TransactionController {
                     request.getSentFirst()
             );
 
+            // Set additional fields
+            if (request.getDescription() != null) {
+                transaction.setDescription(request.getDescription());
+            }
+            if (request.getHandledBy() != null) {
+                transaction.setHandledBy(request.getHandledBy());
+            }
+            
+            // Save updated transaction
+            transaction = transactionRepository.save(transaction);
+
             // Convert to DTO and return
             TransactionDTO responseDTO = transactionMapperService.toDTO(transaction);
             return ResponseEntity.ok(responseDTO);
@@ -201,6 +212,77 @@ public class TransactionController {
             } else {
                 return ResponseEntity.notFound().build();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @PutMapping("/{id}/details")
+    public ResponseEntity<TransactionDTO> updateTransactionDetails(
+            @PathVariable UUID id,
+            @RequestBody Map<String, String> updates) {
+        try {
+            Transaction transaction = transactionRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
+
+            // Update description if provided
+            if (updates.containsKey("description")) {
+                transaction.setDescription(updates.get("description"));
+            }
+
+            // Update handledBy if provided
+            if (updates.containsKey("handledBy")) {
+                transaction.setHandledBy(updates.get("handledBy"));
+            }
+
+            // Update rejection reason if provided
+            if (updates.containsKey("rejectionReason")) {
+                transaction.setRejectionReason(updates.get("rejectionReason"));
+            }
+
+            // Update acceptance comment if provided
+            if (updates.containsKey("acceptanceComment")) {
+                transaction.setAcceptanceComment(updates.get("acceptanceComment"));
+            }
+
+            Transaction updatedTransaction = transactionRepository.save(transaction);
+            TransactionDTO responseDTO = transactionMapperService.toDTO(updatedTransaction);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @PatchMapping("/{transactionId}/resolve")
+    public ResponseEntity<TransactionDTO> markTransactionAsResolved(
+            @PathVariable UUID transactionId,
+            @RequestBody Map<String, String> request) {
+        try {
+            Transaction transaction = transactionRepository.findById(transactionId)
+                    .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
+
+            transaction.setStatus(TransactionStatus.RESOLVED);
+            transaction.setCompletedAt(LocalDateTime.now());
+            
+            if (request.containsKey("resolvedBy")) {
+                transaction.setApprovedBy(request.get("resolvedBy"));
+            }
+            
+            if (request.containsKey("resolutionComment")) {
+                transaction.setAcceptanceComment(request.get("resolutionComment"));
+            }
+
+            Transaction resolvedTransaction = transactionRepository.save(transaction);
+            TransactionDTO responseDTO = transactionMapperService.toDTO(resolvedTransaction);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);

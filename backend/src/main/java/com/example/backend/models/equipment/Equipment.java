@@ -78,8 +78,11 @@ public class Equipment {
     @Column(nullable = true)
     private double taxes;
 
+<<<<<<< Updated upstream
 
 
+=======
+>>>>>>> Stashed changes
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private EquipmentStatus status;

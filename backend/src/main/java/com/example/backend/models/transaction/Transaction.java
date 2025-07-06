@@ -38,7 +38,9 @@ public class Transaction {
     // Transaction meta information
     private String rejectionReason;
     private String acceptanceComment;
+    private String description;
     private String addedBy;
+    private String handledBy;
     private String approvedBy;
 
     // Party information
@@ -50,6 +52,7 @@ public class Transaction {
     private PartyType receiverType;
     private UUID receiverId;
 
+    @Column(unique = true)
     private Integer batchNumber;
     private UUID sentFirst;
 

@@ -34,7 +34,9 @@ public class TransactionDTO {
     
     private String rejectionReason;
     private String acceptanceComment;
+    private String description;
     private String addedBy;
+    private String handledBy;
     private String approvedBy;
     
     private Integer batchNumber;
