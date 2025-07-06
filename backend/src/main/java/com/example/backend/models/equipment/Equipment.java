@@ -78,8 +78,7 @@ public class Equipment {
     @Column(nullable = true)
     private double taxes;
 
-    @Column(nullable = false)
-    private String modelNumber;
+
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)

@@ -64,8 +64,6 @@ public class MaintenanceStepDto {
     
     private String notes;
     
-    private Boolean isFinalStep;
-    
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
     
@@ -79,6 +77,8 @@ public class MaintenanceStepDto {
     private Boolean isOverdue;
     private Long durationInHours;
     private Boolean needsFollowUp;
+    
+    private Boolean isFinalStep;
     
     // Related data
     private List<ContactLogDto> contactLogs;

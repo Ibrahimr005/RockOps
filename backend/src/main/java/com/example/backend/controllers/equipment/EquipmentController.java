@@ -3,6 +3,7 @@ package com.example.backend.controllers.equipment;
 import com.example.backend.dto.equipment.*;
 import com.example.backend.dto.hr.EmployeeSummaryDTO;
 import com.example.backend.models.equipment.Consumable;
+import com.example.backend.models.equipment.EquipmentStatus;
 import com.example.backend.models.warehouse.ItemStatus;
 import com.example.backend.services.equipment.ConsumablesService;
 import com.example.backend.services.equipment.EquipmentService;
@@ -20,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.LinkedHashMap;
+import java.util.Arrays;
 
 @RestController
 @RequestMapping("/api/equipment")
@@ -57,6 +59,36 @@ public class EquipmentController {
                 .map(ConsumableDetailDTO::fromConsumable)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(consumableDetails);
+    }
+
+    @GetMapping("/statuses")
+    public ResponseEntity<List<Map<String, String>>> getEquipmentStatuses() {
+        List<Map<String, String>> statusList = Arrays.stream(EquipmentStatus.values())
+                .map(status -> {
+                    Map<String, String> statusMap = new HashMap<>();
+                    statusMap.put("value", status.name());
+                    statusMap.put("label", formatStatusLabel(status.name()));
+                    return statusMap;
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(statusList);
+    }
+
+    private String formatStatusLabel(String statusName) {
+        switch (statusName) {
+            case "AVAILABLE":
+                return "Available";
+            case "RENTED":
+                return "Rented";
+            case "IN_MAINTENANCE":
+                return "In Maintenance";
+            case "SOLD":
+                return "Sold";
+            case "SCRAPED":
+                return "Scrapped";
+            default:
+                return statusName.replace("_", " ");
+        }
     }
 
     // POST endpoints - Using both DTO and Map approaches for backward compatibility

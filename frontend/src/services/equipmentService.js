@@ -188,6 +188,11 @@ export const equipmentService = {
         return apiClient.get(EQUIPMENT_ENDPOINTS.SARKY_ANALYTICS(equipmentId));
     },
 
+    // NEW: Get equipment statuses
+    getEquipmentStatuses: () => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.STATUSES);
+    },
+
     // Update createEquipment method
     createEquipment: (equipmentData) => {
         // Ensure brand is sent as an object with id

@@ -35,11 +35,7 @@ const SiteEquipmentTab = ({siteId}) => {
             accessor: 'equipmentType',
             sortable: true
         },
-        {
-            header: 'Model Number',
-            accessor: 'modelNumber',
-            sortable: true
-        },
+
         {
             header: 'Status',
             accessor: 'status',
@@ -94,7 +90,7 @@ const SiteEquipmentTab = ({siteId}) => {
                     conventionalId: `EQ-${String(index + 1).padStart(3, '0')}`,
                     equipmentID: item.id,
                     equipmentType: item.type?.name || '',
-                    modelNumber: item.modelNumber,
+    
                     status: item.status,
                     driverName: item.mainDriver ? `${item.mainDriver.firstName} ${item.mainDriver.lastName}` : "No Driver",
                     manufactureDate: item.manufactureYear,
@@ -204,7 +200,7 @@ const SiteEquipmentTab = ({siteId}) => {
         navigate(`/equipment/${row.equipmentID}`);
         setSnackbar({
             show: true,
-            message: `Navigating to equipment details: ${row.equipmentType} ${row.modelNumber}`,
+                            message: `Navigating to equipment details: ${row.equipmentType} ${row.model}`,
             type: 'info'
         });
     };
@@ -279,7 +275,7 @@ const SiteEquipmentTab = ({siteId}) => {
                                             const equipmentId = eqData.id || eq.id;
                                             // Try both possible data structures
                                             const equipmentType = eq.type?.name || eq.typeName || '';
-                                            const modelNumber = eqData.modelNumber || eq.modelNumber;
+                                            const model = eqData.model || eq.model;
                                             const status = eqData.status || eq.status;
 
                                             return (
@@ -294,7 +290,7 @@ const SiteEquipmentTab = ({siteId}) => {
                                                         className="assign-equipment-model"
                                                         data-label={t('common.model')}
                                                     >
-                                                        {modelNumber}
+                                                        {model}
                                                     </td>
                                                     <td data-label={t('common.status')}>
                                                 <span

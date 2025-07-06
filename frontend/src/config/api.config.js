@@ -30,6 +30,7 @@ export const EQUIPMENT_ENDPOINTS = {
     BRANDS: '/api/equipment/brands',
     BRAND_BY_ID: (id) => `/api/equipment/brands/${id}`,
     SARKY_ANALYTICS: (equipmentId) => `/api/equipment/${equipmentId}/sarky-analytics`,
+    STATUSES: '/api/equipment/statuses',
     // Transaction endpoints
     TRANSACTIONS: (equipmentId) => `/api/equipment/${equipmentId}/transactions`,
     TRANSACTIONS_INITIATED: (equipmentId) => `/api/equipment/${equipmentId}/transactions/initiated`,

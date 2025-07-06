@@ -29,7 +29,7 @@ public class EquipmentCreateDTO {
     private double shipping;
     private double customs;
     private double taxes;
-    private String modelNumber;
+
     private EquipmentStatus status;
     private String relatedDocuments;
     private Integer workedHours;

@@ -68,7 +68,7 @@ public class MaintenanceSystemTest {
                 .dollarPrice(32000.0)
                 .countryOfOrigin("USA")
                 .serialNumber("CAT-G001-2020-001")
-                .modelNumber("G3500-001")
+
                 .status(EquipmentStatus.AVAILABLE)
                 .workedHours(1200)
                 .build();
@@ -320,7 +320,7 @@ public class MaintenanceSystemTest {
                 .dollarPrice(50000.0)
                 .countryOfOrigin("Germany")
                 .serialNumber("LIE-C001-2019-001")
-                .modelNumber("LTM1100-001")
+
                 .status(EquipmentStatus.AVAILABLE)
                 .workedHours(800)
                 .build();
@@ -392,7 +392,7 @@ public class MaintenanceSystemTest {
                 .dollarPrice(38000.0)
                 .countryOfOrigin("Japan")
                 .serialNumber("KOM-E001-2021-001")
-                .modelNumber("PC200-001")
+
                 .status(EquipmentStatus.AVAILABLE)
                 .workedHours(500)
                 .build();
@@ -493,7 +493,7 @@ public class MaintenanceSystemTest {
                 .dollarPrice(25000.0)
                 .countryOfOrigin("USA")
                 .serialNumber("CAT-B001-2018-001")
-                .modelNumber("D6-001")
+
                 .status(EquipmentStatus.AVAILABLE)
                 .workedHours(1500)
                 .build();

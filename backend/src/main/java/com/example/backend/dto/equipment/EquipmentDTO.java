@@ -33,7 +33,7 @@ public class EquipmentDTO {
     private double shipping;
     private double customs;
     private double taxes;
-    private String modelNumber;
+
     private EquipmentStatus status;
     private String relatedDocuments;
     private Integer workedHours;
@@ -82,7 +82,7 @@ public class EquipmentDTO {
         dto.setShipping(equipment.getShipping());
         dto.setCustoms(equipment.getCustoms());
         dto.setTaxes(equipment.getTaxes());
-        dto.setModelNumber(equipment.getModelNumber());
+
         dto.setStatus(equipment.getStatus());
         dto.setRelatedDocuments(equipment.getRelatedDocuments());
         dto.setWorkedHours(equipment.getWorkedHours());

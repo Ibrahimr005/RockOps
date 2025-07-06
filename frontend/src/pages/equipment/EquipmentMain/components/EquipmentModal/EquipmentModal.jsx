@@ -67,7 +67,6 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         model: "",
         brandId: "",
         serialNumber: "",
-        modelNumber: "",
         typeId: "",
         siteId: "",
         mainDriverId: "",
@@ -96,6 +95,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
     const [equipmentBrands, setEquipmentBrands] = useState([]);
     const [sites, setSites] = useState([]);
     const [merchants, setMerchants] = useState([]);
+    const [equipmentStatuses, setEquipmentStatuses] = useState([]);
     const [previewImage, setPreviewImage] = useState(null);
     const [formData, setFormData] = useState(initialFormState);
     const [displayValues, setDisplayValues] = useState({
@@ -103,7 +103,10 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         dollarPrice: "",
         workedHours: "0",
         purchasedDate: "",
-        deliveredDate: ""
+        deliveredDate: "",
+        shipping: "",
+        customs: "",
+        taxes: ""
     });
     const [imageFile, setImageFile] = useState(null);
     const [tabIndex, setTabIndex] = useState(0);
@@ -122,7 +125,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         {
             id: 0,
             name: "Basic Information",
-            requiredFields: ['name', 'serialNumber', 'typeId', 'model', 'brandId', 'modelNumber', 'manufactureYear']
+            requiredFields: ['name', 'serialNumber', 'typeId', 'model', 'brandId', 'manufactureYear']
         },
         {
             id: 1,
@@ -211,7 +214,13 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         setDisplayValues({
             egpPrice: "",
             dollarPrice: "",
-            workedHours: "0"
+            workedHours: "0",
+            purchasedDate: "",
+            deliveredDate: "",
+            // Add these new fields
+            shipping: "",
+            customs: "",
+            taxes: ""
         });
         setImageFile(null);
         setPreviewImage(null);
@@ -324,6 +333,16 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                 showWarning("Could not fetch merchant data. Some features may be limited.");
             }
 
+            // Fetch equipment statuses
+            try {
+                const statusesResponse = await equipmentService.getEquipmentStatuses();
+                setEquipmentStatuses(statusesResponse.data);
+            } catch (error) {
+                console.error("Error fetching equipment statuses:", error);
+                setEquipmentStatuses([]);
+                showWarning("Could not fetch equipment status options. Default statuses will be used.");
+            }
+
             setLoading(false);
         } catch (error) {
             console.error("Error fetching form data:", error);
@@ -383,7 +402,6 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             model: equipmentToEdit.model || "",
             brandId: equipmentToEdit.brandId || "",
             serialNumber: equipmentToEdit.serialNumber || "",
-            modelNumber: equipmentToEdit.modelNumber || "",
             typeId: equipmentToEdit.typeId || "",
             siteId: equipmentToEdit.siteId || "",
             mainDriverId: equipmentToEdit.mainDriverId || "",
@@ -413,7 +431,10 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             dollarPrice: formatNumberWithCommas(equipmentToEdit.dollarPrice) || "",
             workedHours: formatNumberWithCommas(equipmentToEdit.workedHours) || "0",
             purchasedDate: formatDateForDisplay(equipmentToEdit.purchasedDate) || "",
-            deliveredDate: formatDateForDisplay(equipmentToEdit.deliveredDate) || ""
+            deliveredDate: formatDateForDisplay(equipmentToEdit.deliveredDate) || "",
+            shipping: formatNumberWithCommas(equipmentToEdit.shipping) || "",
+            customs: formatNumberWithCommas(equipmentToEdit.customs) || "",
+            taxes: formatNumberWithCommas(equipmentToEdit.taxes) || ""
         });
 
         // Set preview image if equipment has an image
@@ -491,14 +512,14 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        
+
         // Handle checkbox inputs
         if (type === 'checkbox') {
             setFormData(prev => ({
                 ...prev,
                 [name]: checked
             }));
-            
+
             setFormTouched(true);
             return;
         }
@@ -515,6 +536,17 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                 [name]: formatNumberWithCommas(numericValue)
             }));
         } else if (name === 'workedHours') {
+            const numericValue = parseNumberInput(value);
+            setFormData(prev => ({
+                ...prev,
+                [name]: numericValue
+            }));
+            setDisplayValues(prev => ({
+                ...prev,
+                [name]: formatNumberWithCommas(numericValue)
+            }));
+        } else if (name === 'shipping' || name === 'customs' || name === 'taxes') {
+            // Add thousand separator formatting for cost fields
             const numericValue = parseNumberInput(value);
             setFormData(prev => ({
                 ...prev,
@@ -542,7 +574,6 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
 
         setFormTouched(true);
     };
-
     const handleTypeChange = (e) => {
         const { name, value } = e.target;
         setFormData({
@@ -690,7 +721,6 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             formDataToSend.append('name', formData.name);
             formDataToSend.append('model', formData.model);
             formDataToSend.append('serialNumber', formData.serialNumber);
-            formDataToSend.append('modelNumber', formData.modelNumber);
             formDataToSend.append('purchasedDate', formData.purchasedDate);
             formDataToSend.append('deliveredDate', formData.deliveredDate);
             formDataToSend.append('egpPrice', formData.egpPrice);
@@ -992,21 +1022,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                 </div>
                             </div>
 
-                            <div className="equipment-modal-form-row">
-                                <div className="equipment-modal-form-group">
-                                    <label htmlFor="modelNumber" className="required-field">Model Number</label>
-                                    <input
-                                        type="text"
-                                        id="modelNumber"
-                                        name="modelNumber"
-                                        value={formData.modelNumber}
-                                        onChange={handleInputChange}
-                                        placeholder="Enter model number"
-                                        className={!formData.modelNumber && showValidationHint ? "invalid-field" : ""}
-                                        required
-                                    />
-                                </div>
-                            </div>
+
 
                             <div className="equipment-modal-form-row">
                                 <div className="equipment-modal-form-group">
@@ -1017,11 +1033,22 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         value={formData.status}
                                         onChange={handleInputChange}
                                     >
-                                        <option value="AVAILABLE">Available</option>
-                                        <option value="RENTED">Rented</option>
-                                        <option value="IN_MAINTENANCE">In Maintenance</option>
-                                        <option value="SOLD">Sold</option>
-                                        <option value="SCRAPPED">Scrapped</option>
+                                        {equipmentStatuses.length > 0 ? (
+                                            equipmentStatuses.map(status => (
+                                                <option key={status.value} value={status.value}>
+                                                    {status.label}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            // Fallback to hardcoded options if API fails
+                                            <>
+                                                <option value="AVAILABLE">Available</option>
+                                                <option value="RENTED">Rented</option>
+                                                <option value="IN_MAINTENANCE">In Maintenance</option>
+                                                <option value="SOLD">Sold</option>
+                                                <option value="SCRAPED">Scrapped</option>
+                                            </>
+                                        )}
                                     </select>
                                 </div>
                                 <div className="equipment-modal-form-group">
@@ -1108,7 +1135,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                             className={!formData.purchasedDate && showValidationHint ? "invalid-field" : ""}
                                             required
                                         />
-                                        <div className="date-display">{displayValues.purchasedDate || 'DD/MM/YYYY'}</div>
+                                        <div className="date-display">{displayValues.purchasedDate || 'dd/mm/yyyy'}</div>
                                     </div>
                                 </div>
                                 <div className="equipment-modal-form-group">
@@ -1123,7 +1150,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                             className={!formData.deliveredDate && showValidationHint ? "invalid-field" : ""}
                                             required
                                         />
-                                        <div className="date-display">{displayValues.deliveredDate || 'DD/MM/YYYY'}</div>
+                                        <div className="date-display">{displayValues.deliveredDate || 'dd/mm/yyyy'}</div>
                                     </div>
                                 </div>
                             </div>
@@ -1193,11 +1220,10 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                 <div className="equipment-modal-form-group">
                                     <label htmlFor="shipping" className="required-field">Shipping Cost (EGP)</label>
                                     <input
-                                        type="number"
-                                        step="0.01"
+                                        type="text"
                                         id="shipping"
                                         name="shipping"
-                                        value={formData.shipping}
+                                        value={displayValues.shipping}
                                         onChange={handleInputChange}
                                         placeholder="Enter shipping cost"
                                         className={!formData.shipping && showValidationHint ? "invalid-field" : ""}
@@ -1207,11 +1233,10 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                 <div className="equipment-modal-form-group">
                                     <label htmlFor="customs" className="required-field">Customs Cost (EGP)</label>
                                     <input
-                                        type="number"
-                                        step="0.01"
+                                        type="text"
                                         id="customs"
                                         name="customs"
-                                        value={formData.customs}
+                                        value={displayValues.customs}
                                         onChange={handleInputChange}
                                         placeholder="Enter customs cost"
                                         className={!formData.customs && showValidationHint ? "invalid-field" : ""}
@@ -1224,11 +1249,10 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                 <div className="equipment-modal-form-group">
                                     <label htmlFor="taxes" className="required-field">Taxes Cost (EGP)</label>
                                     <input
-                                        type="number"
-                                        step="0.01"
+                                        type="text"
                                         id="taxes"
                                         name="taxes"
-                                        value={formData.taxes}
+                                        value={displayValues.taxes}
                                         onChange={handleInputChange}
                                         placeholder="Enter taxes cost"
                                         className={!formData.taxes && showValidationHint ? "invalid-field" : ""}
