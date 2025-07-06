@@ -7,7 +7,7 @@ import WarehouseViewItemTypesTable from "../../warehouse/WarehouseItemTypes/Ware
 import WarehouseViewItemsCategoriesTable from "../../warehouse/WarehouseCategories/WarehouseViewItemsCategoriesTable";
 import WarehouseViewTransactionsTable from "../../warehouse/WarehouseViewTransactions/WarehouseViewTransactionsTable";
 import WarehouseRequestOrders from "../../warehouse/WarehouseRequestOrders/WarehouseRequestOrders";
-import IntroCard from "../../../components/common/IntroCard/ProcurementIntroCard.jsx";
+import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 import "./WarehouseDetails.scss";
 import warehouseImg from "../../../assets/imgs/warehouse1.jpg";
 

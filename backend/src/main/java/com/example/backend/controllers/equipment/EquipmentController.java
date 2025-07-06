@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import com.example.backend.models.equipment.EquipmentStatus;
 
 @RestController
 @RequestMapping("/api/equipment")
@@ -38,6 +40,20 @@ public class EquipmentController {
     @GetMapping
     public ResponseEntity<List<EquipmentDTO>> getAllEquipment() {
         return ResponseEntity.ok(equipmentService.getAllEquipment());
+    }
+
+    @GetMapping("/status-options")
+    public ResponseEntity<List<Map<String, String>>> getEquipmentStatusOptions() {
+        List<Map<String, String>> statusOptions = new ArrayList<>();
+        
+        for (EquipmentStatus status : EquipmentStatus.values()) {
+            Map<String, String> option = new HashMap<>();
+            option.put("value", status.name());
+            option.put("label", status.name().replace("_", " "));
+            statusOptions.add(option);
+        }
+        
+        return ResponseEntity.ok(statusOptions);
     }
 
     @GetMapping("/{id}")

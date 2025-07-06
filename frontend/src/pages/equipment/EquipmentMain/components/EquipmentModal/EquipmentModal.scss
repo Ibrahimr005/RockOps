@@ -338,7 +338,9 @@ $scrapped-color: #e74c3c;
     }
 
     &.invalid-field {
-      border-color: var(--color-danger);
+      border: 1.5px solid var(--color-danger-light, #ffb3b3);
+      box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.05);
+      transition: border 0.2s, background 0.2s;
     }
   }
 
