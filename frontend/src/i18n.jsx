@@ -151,7 +151,6 @@ const enTranslations = {
     equipment: {
         equipment: 'Equipment',
         equipmentType: 'Equipment Type',
-        modelNumber: 'Model Number',
         driverName: 'Driver Name',
         manufactureDate: 'Manufacture Date',
         purchaseDate: 'Purchase Date',
@@ -325,7 +324,6 @@ const arTranslations = {
     equipment: {
         equipment: 'معدات',
         equipmentType: 'نوع المعدات',
-        modelNumber: 'رقم الموديل',
         driverName: 'اسم السائق',
         manufactureDate: 'تاريخ التصنيع',
         purchaseDate: 'تاريخ الشراء',

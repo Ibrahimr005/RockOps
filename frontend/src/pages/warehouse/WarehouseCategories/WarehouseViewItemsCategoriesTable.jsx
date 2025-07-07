@@ -4,7 +4,7 @@ import ParentCategoriesTable from "./ParentCategoriesTable";
 import ChildCategoriesTable from "./ChildCategoriesTable";
 import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
-import ProcurementIntroCard from "../../../components/common/IntroCard/ProcurementIntroCard.jsx";
+import ProcurementIntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 import itemCategoryImg from "../../../assets/imgs/itemCategoryLight.png";
 import itemCategoryDarkImg from "../../../assets/imgs/itemCategoryDarky.png";
 

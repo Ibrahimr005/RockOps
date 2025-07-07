@@ -7,7 +7,7 @@ import "./EquipmentDetails.scss";
 import SarkyAttendance from "../SarkyAttendance/SarkyAttendance";
 import InSiteMaintenanceLog from "../InSiteMaintenanceLog/InSiteMaintenanceLog";
 import EquipmentConsumablesInventory from "../EquipmentConsumablesInventory/EquipmentConsumablesInventory ";
-import EquipmentDashboard from "./EquipmentDashboard/EquipmentDashboard";
+import EquipmentDashboard from "../EquipmentDashboard/EquipmentDashboard";
 import Modal from "react-modal";
 import MaintenanceTransactionModal from '../MaintenanceTransactionModal/MaintenanceTransactionModal';
 import MaintenanceAddModal from '../MaintenanceAddModal/MaintenanceAddModal';

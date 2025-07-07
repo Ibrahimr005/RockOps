@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTheme } from '../../../contexts/ThemeContext.jsx';
-import './ProcurementIntroCard.scss';
+import './IntroCard.scss';
 
 const IntroCard = ({
                        title,

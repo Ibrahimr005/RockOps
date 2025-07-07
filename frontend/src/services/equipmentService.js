@@ -10,6 +10,11 @@ export const equipmentService = {
         return apiClient.get(EQUIPMENT_ENDPOINTS.BASE);
     },
 
+    // Get equipment status options
+    getEquipmentStatusOptions: () => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.STATUS_OPTIONS);
+    },
+
     // Get equipment by ID
     getEquipmentById: (id) => {
         return apiClient.get(EQUIPMENT_ENDPOINTS.BY_ID(id));
