@@ -151,6 +151,11 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
 
     // 1. Add state for status options (to be fetched from backend)
     const [statusOptions, setStatusOptions] = useState([]);
+    
+    // Brand creation modal state
+    const [showBrandModal, setShowBrandModal] = useState(false);
+    const [newBrandData, setNewBrandData] = useState({ name: '', description: '' });
+    const [creatingBrand, setCreatingBrand] = useState(false);
 
     // Scroll to top whenever tab changes
     useEffect(() => {
@@ -822,6 +827,62 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         }
     };
 
+    // Brand creation functions
+    const handleBrandChange = (e) => {
+        const { value } = e.target;
+        if (value === 'add_new') {
+            setShowBrandModal(true);
+        } else {
+            handleInputChange(e);
+        }
+    };
+
+    const handleNewBrandInputChange = (e) => {
+        const { name, value } = e.target;
+        setNewBrandData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleCreateBrand = async (e) => {
+        e.preventDefault();
+        if (!newBrandData.name.trim()) {
+            showError('Brand name is required');
+            return;
+        }
+
+        setCreatingBrand(true);
+        try {
+            const response = await equipmentBrandService.createEquipmentBrand(newBrandData);
+            const newBrand = response.data;
+            
+            // Add the new brand to the list
+            setEquipmentBrands(prev => [...prev, newBrand]);
+            
+            // Automatically select the newly created brand
+            setFormData(prev => ({
+                ...prev,
+                brandId: newBrand.id
+            }));
+            
+            // Close the modal and reset form
+            setShowBrandModal(false);
+            setNewBrandData({ name: '', description: '' });
+            showSuccess(`Brand "${newBrand.name}" created successfully and selected`);
+        } catch (error) {
+            console.error('Error creating brand:', error);
+            showError(`Failed to create brand: ${error.response?.data?.message || error.message}`);
+        } finally {
+            setCreatingBrand(false);
+        }
+    };
+
+    const handleCancelBrandCreation = () => {
+        setShowBrandModal(false);
+        setNewBrandData({ name: '', description: '' });
+    };
+
     const currentEquipmentType = equipmentTypes.find(t => t.id === formData.typeId)?.name || '';
     const currentEquipmentTypeData = equipmentTypes.find(t => t.id === formData.typeId);
     const isEquipmentTypeDrivable = currentEquipmentTypeData?.drivable || false;
@@ -929,7 +990,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         id="brandId"
                                         name="brandId"
                                         value={formData.brandId}
-                                        onChange={handleInputChange}
+                                        onChange={handleBrandChange}
                                         className={!formData.brandId && showValidationHint ? "invalid-field" : ""}
                                         required
                                     >
@@ -939,6 +1000,9 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                                 {brand.name}
                                             </option>
                                         ))}
+                                        <option value="add_new" className="add-new-option">
+                                            + Add New Brand
+                                        </option>
                                     </select>
                                 </div>
                                 <div className="equipment-modal-form-group">
@@ -1420,6 +1484,70 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                     </div>
                 </form>
             </div>
+
+            {/* Brand Creation Modal */}
+            {showBrandModal && (
+                <div className="brand-modal-overlay" onClick={handleCancelBrandCreation}>
+                    <div className="brand-modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="brand-modal-header">
+                            <h3>Add New Equipment Brand</h3>
+                            <button 
+                                className="brand-modal-close" 
+                                onClick={handleCancelBrandCreation}
+                                disabled={creatingBrand}
+                            >
+                                <FaTimes />
+                            </button>
+                        </div>
+                        <form onSubmit={handleCreateBrand}>
+                            <div className="brand-modal-body">
+                                <div className="form-group">
+                                    <label htmlFor="brandName" className="required-field">Brand Name</label>
+                                    <input
+                                        type="text"
+                                        id="brandName"
+                                        name="name"
+                                        value={newBrandData.name}
+                                        onChange={handleNewBrandInputChange}
+                                        placeholder="Enter brand name"
+                                        required
+                                        disabled={creatingBrand}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label htmlFor="brandDescription">Description</label>
+                                    <textarea
+                                        id="brandDescription"
+                                        name="description"
+                                        value={newBrandData.description}
+                                        onChange={handleNewBrandInputChange}
+                                        placeholder="Enter brand description (optional)"
+                                        rows="3"
+                                        disabled={creatingBrand}
+                                    />
+                                </div>
+                            </div>
+                            <div className="brand-modal-footer">
+                                <button
+                                    type="button"
+                                    className="brand-modal-cancel"
+                                    onClick={handleCancelBrandCreation}
+                                    disabled={creatingBrand}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="brand-modal-submit"
+                                    disabled={creatingBrand || !newBrandData.name.trim()}
+                                >
+                                    {creatingBrand ? 'Creating...' : 'Create Brand'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

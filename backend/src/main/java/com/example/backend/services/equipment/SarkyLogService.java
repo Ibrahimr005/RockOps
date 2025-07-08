@@ -168,9 +168,24 @@ public class SarkyLogService {
                 "' is not authorized to operate equipment type '" + equipment.getType().getName() + "'");
         }
 
-        // Check for existing entries on the same date (still allow multiple entries per day)
+        // Check for existing entries on the same date for 24-hour validation
         List<SarkyLog> existingEntriesForDate = sarkyLogRepository.findByEquipmentIdAndDate(
                 equipment.getId(), sarkyLogDTO.getDate());
+
+        // Calculate total hours for the date
+        double totalHoursForDate = existingEntriesForDate.stream()
+                .mapToDouble(SarkyLog::getWorkedHours)
+                .sum();
+
+        // Check if adding this entry would exceed 24 hours
+        if (totalHoursForDate + sarkyLogDTO.getWorkedHours() > 24) {
+            throw new IllegalArgumentException(String.format(
+                "You cannot exceed 24 hours of work in one day. Current total for %s: %.1f hours. Trying to add: %.1f hours.",
+                sarkyLogDTO.getDate().toString(),
+                totalHoursForDate,
+                sarkyLogDTO.getWorkedHours()
+            ));
+        }
 
         // Log the multiple entries for this equipment and date for auditing purposes
         if (!existingEntriesForDate.isEmpty()) {
@@ -179,6 +194,11 @@ public class SarkyLogService {
                               ". Total entries for this date will be: " + (existingEntriesForDate.size() + 1));
         }
 
+        // Get current user for createdBy field
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + authentication.getName()));
+
         // Create new sarky log
         SarkyLog sarkyLog = new SarkyLog();
         sarkyLog.setEquipment(equipment);
@@ -186,6 +206,7 @@ public class SarkyLogService {
         sarkyLog.setWorkedHours(sarkyLogDTO.getWorkedHours());
         sarkyLog.setDate(sarkyLogDTO.getDate());
         sarkyLog.setDriver(driver);
+        sarkyLog.setCreatedBy(currentUser);
 
         // Handle file upload if provided using MinIO
         if (file != null && !file.isEmpty()) {
@@ -354,7 +375,8 @@ public class SarkyLogService {
         }
 
         // Find driver if changed
-        if (!sarkyLog.getDriver().getId().equals(sarkyLogDTO.getDriverId())) {
+        if (sarkyLogDTO.getDriverId() != null && 
+            (sarkyLog.getDriver() == null || !sarkyLog.getDriver().getId().equals(sarkyLogDTO.getDriverId()))) {
             Employee driver = employeeRepository.findById(sarkyLogDTO.getDriverId())
                     .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + sarkyLogDTO.getDriverId()));
             sarkyLog.setDriver(driver);
@@ -367,6 +389,26 @@ public class SarkyLogService {
             // Log the date change for auditing purposes
             System.out.println("Updating sarky entry date from " + sarkyLog.getDate() + 
                               " to " + sarkyLogDTO.getDate() + " for equipment " + sarkyLog.getEquipment().getName());
+        }
+
+        // Check for 24-hour validation on the target date
+        List<SarkyLog> existingEntriesForTargetDate = sarkyLogRepository.findByEquipmentIdAndDate(
+                sarkyLog.getEquipment().getId(), sarkyLogDTO.getDate());
+
+        // Calculate total hours for the target date, excluding the current entry being updated
+        double totalHoursForTargetDate = existingEntriesForTargetDate.stream()
+                .filter(entry -> !entry.getId().equals(id)) // Exclude the current entry
+                .mapToDouble(SarkyLog::getWorkedHours)
+                .sum();
+
+        // Check if updating this entry would exceed 24 hours
+        if (totalHoursForTargetDate + sarkyLogDTO.getWorkedHours() > 24) {
+            throw new IllegalArgumentException(String.format(
+                "You cannot exceed 24 hours of work in one day. Current total for %s: %.1f hours. Trying to set: %.1f hours.",
+                sarkyLogDTO.getDate().toString(),
+                totalHoursForTargetDate,
+                sarkyLogDTO.getWorkedHours()
+            ));
         }
 
         sarkyLog.setWorkedHours(sarkyLogDTO.getWorkedHours());

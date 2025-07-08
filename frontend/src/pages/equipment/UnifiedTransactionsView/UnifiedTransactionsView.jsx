@@ -531,6 +531,14 @@ const UnifiedTransactionsView = forwardRef(({
                                         <div className="info-value">{selectedTransaction.receiver}</div>
                                     </div>
                                 </div>
+                                {selectedTransaction.description && (
+                                    <div className="info-row">
+                                        <div className="info-col full-width">
+                                            <div className="info-label">Description</div>
+                                            <div className="info-value description-text">{selectedTransaction.description}</div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Purpose Selection - Keep existing logic */}

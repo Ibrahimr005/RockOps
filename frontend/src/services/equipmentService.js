@@ -230,6 +230,10 @@ export const equipmentService = {
             params.append('transactionDate', requestData.transactionDate);
         }
 
+        if (requestData.description) {
+            params.append('description', requestData.description);
+        }
+
         return apiClient.post(
             `${EQUIPMENT_ENDPOINTS.SEND_TRANSACTION(equipmentId)}?${params.toString()}`,
             requestData.items
@@ -237,7 +241,7 @@ export const equipmentService = {
     },
 
     // Create transaction with equipment as receiver
-    receiveTransaction: (equipmentId, senderId, senderType, batchNumber, purpose, items, transactionDate) => {
+    receiveTransaction: (equipmentId, senderId, senderType, batchNumber, purpose, items, transactionDate, description) => {
         const params = new URLSearchParams({
             senderId: senderId,
             senderType: senderType,
@@ -247,6 +251,10 @@ export const equipmentService = {
 
         if (transactionDate) {
             params.append('transactionDate', transactionDate);
+        }
+
+        if (description) {
+            params.append('description', description);
         }
 
         return apiClient.post(
@@ -287,6 +295,10 @@ export const equipmentService = {
 
         if (updateData.purpose) {
             params.append('purpose', updateData.purpose);
+        }
+
+        if (updateData.description) {
+            params.append('description', updateData.description);
         }
 
         return apiClient.put(

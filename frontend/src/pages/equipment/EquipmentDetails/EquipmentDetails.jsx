@@ -18,6 +18,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { useEquipmentPermissions } from "../../../utils/rbac";
 import UnifiedTransactionsView from "../UnifiedTransactionsView/UnifiedTransactionsView";
 import {sarkyService} from "../../../services/sarkyService";
+import EquipmentSarkyMatrix from '../EquipmentSarkyMatrix/EquipmentSarkyMatrix';
 
 // Set the app element for accessibility
 Modal.setAppElement('#root'); // Adjust this to match your root element ID
@@ -295,123 +296,137 @@ const EquipmentDetails = () => {
                         </div>
                     )}
 
+{/*                    {activeTab === "sarky" && (*/}
+{/*                        <div className="tab-panel">*/}
+{/*                            <div className="panel-header">*/}
+{/*                                <h2 className="panel-title">Sarky Management</h2>*/}
+{/*                                <div className="panel-actions">*/}
+{/*                                    <button*/}
+{/*                                        className="help-button"*/}
+{/*                                        onClick={() => {*/}
+{/*                                            alert(`Sarky Management Help:*/}
+{/*• Select month and year to view sarky records*/}
+{/*• Click "Generate Monthly Sarky" to create entries for the entire month*/}
+{/*• Fill in Work Type, Hours, and Driver for each day using inline editing*/}
+{/*• Click "Save" for individual entries or "Save All" for bulk saving*/}
+{/*• Green entries are completed, blue entries are drafts*/}
+{/*• Range entries (orange) are read-only and part of multi-day ranges`);*/}
+{/*                                        }}*/}
+{/*                                        title="Help & Instructions"*/}
+{/*                                    >*/}
+{/*                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">*/}
+{/*                                            <circle cx="12" cy="12" r="10"/>*/}
+{/*                                            <path d="M9,9a3,3,0,0,1,5.5-1.5"/>*/}
+{/*                                            <path d="M12,17.02v.01"/>*/}
+{/*                                        </svg>*/}
+{/*                                        Help*/}
+{/*                                    </button>*/}
+
+{/*                                    <button*/}
+{/*                                        className="export-button"*/}
+{/*                                        onClick={async () => {*/}
+{/*                                            try {*/}
+{/*                                                // Export sarky data for the current month*/}
+{/*                                                const month = new Date().getMonth();*/}
+{/*                                                const year = new Date().getFullYear();*/}
+
+{/*                                                const singleResponse = await sarkyService.getByEquipment(params.EquipmentID);*/}
+{/*                                                const rangeResponse = await sarkyService.getRangeByEquipment(params.EquipmentID);*/}
+
+{/*                                                let exportData = [];*/}
+
+{/*                                                // Process single entries*/}
+{/*                                                if (singleResponse.data) {*/}
+{/*                                                    singleResponse.data.forEach(sarky => {*/}
+{/*                                                        const date = new Date(sarky.date);*/}
+{/*                                                        if (date.getMonth() === month && date.getFullYear() === year) {*/}
+{/*                                                            exportData.push({*/}
+{/*                                                                date: sarky.date,*/}
+{/*                                                                type: 'Single Day',*/}
+{/*                                                                workType: sarky.workType?.name || 'Unknown',*/}
+{/*                                                                hours: sarky.workedHours,*/}
+{/*                                                                driver: sarky.driverName,*/}
+{/*                                                                status: 'Completed'*/}
+{/*                                                            });*/}
+{/*                                                        }*/}
+{/*                                                    });*/}
+{/*                                                }*/}
+
+{/*                                                // Process range entries*/}
+{/*                                                if (rangeResponse.data) {*/}
+{/*                                                    rangeResponse.data.forEach(range => {*/}
+{/*                                                        if (range.workEntries) {*/}
+{/*                                                            range.workEntries.forEach(entry => {*/}
+{/*                                                                const date = new Date(entry.date);*/}
+{/*                                                                if (date.getMonth() === month && date.getFullYear() === year) {*/}
+{/*                                                                    exportData.push({*/}
+{/*                                                                        date: entry.date,*/}
+{/*                                                                        type: 'Range Entry',*/}
+{/*                                                                        workType: entry.workType?.name || 'Unknown',*/}
+{/*                                                                        hours: entry.workedHours,*/}
+{/*                                                                        driver: entry.driverName,*/}
+{/*                                                                        status: range.status || 'Completed'*/}
+{/*                                                                    });*/}
+{/*                                                                }*/}
+{/*                                                            });*/}
+{/*                                                        }*/}
+{/*                                                    });*/}
+{/*                                                }*/}
+
+{/*                                                // Create CSV content*/}
+{/*                                                const csvContent = [*/}
+{/*                                                    ['Date', 'Type', 'Work Type', 'Hours', 'Driver', 'Status'],*/}
+{/*                                                    ...exportData.map(row => [*/}
+{/*                                                        row.date, row.type, row.workType, row.hours, row.driver, row.status*/}
+{/*                                                    ])*/}
+{/*                                                ].map(row => row.join(',')).join('\n');*/}
+
+{/*                                                // Download CSV*/}
+{/*                                                const blob = new Blob([csvContent], { type: 'text/csv' });*/}
+{/*                                                const url = window.URL.createObjectURL(blob);*/}
+{/*                                                const a = document.createElement('a');*/}
+{/*                                                a.href = url;*/}
+{/*                                                a.download = `sarky-data-${equipmentData?.name || 'equipment'}-${year}-${month + 1}.csv`;*/}
+{/*                                                a.click();*/}
+{/*                                                window.URL.revokeObjectURL(url);*/}
+
+{/*                                                showSuccess('Sarky data exported successfully');*/}
+{/*                                            } catch (error) {*/}
+{/*                                                console.error('Error exporting sarky data:', error);*/}
+{/*                                                showError('Failed to export sarky data');*/}
+{/*                                            }*/}
+{/*                                        }}*/}
+{/*                                        title="Export current month's data"*/}
+{/*                                    >*/}
+{/*                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">*/}
+{/*                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>*/}
+{/*                                            <polyline points="7,10 12,15 17,10"/>*/}
+{/*                                            <line x1="12" y1="15" x2="12" y2="3"/>*/}
+{/*                                        </svg>*/}
+{/*                                        Export*/}
+{/*                                    </button>*/}
+{/*                                </div>*/}
+{/*                            </div>*/}
+{/*                            <div className="tab-content-container">*/}
+{/*                                <SarkyAttendance*/}
+{/*                                    ref={sarkyAttendanceRef}*/}
+{/*                                    equipmentId={params.EquipmentID}*/}
+{/*                                    onSarkyAdded={refreshSarkyLog}*/}
+{/*                                    equipmentData={equipmentData}*/}
+{/*                                    onDataChange={handleSarkyDataChange}*/}
+{/*                                />*/}
+{/*                            </div>*/}
+{/*                        </div>*/}
+{/*                    )}*/}
                     {activeTab === "sarky" && (
                         <div className="tab-panel">
                             <div className="panel-header">
-                                <h2 className="panel-title">Sarky Management</h2>
-                                <div className="panel-actions">
-                                    <button
-                                        className="help-button"
-                                        onClick={() => {
-                                            alert(`Sarky Management Help:
-• Select month and year to view sarky records
-• Click "Generate Monthly Sarky" to create entries for the entire month
-• Fill in Work Type, Hours, and Driver for each day using inline editing
-• Click "Save" for individual entries or "Save All" for bulk saving
-• Green entries are completed, blue entries are drafts
-• Range entries (orange) are read-only and part of multi-day ranges`);
-                                        }}
-                                        title="Help & Instructions"
-                                    >
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <path d="M9,9a3,3,0,0,1,5.5-1.5"/>
-                                            <path d="M12,17.02v.01"/>
-                                        </svg>
-                                        Help
-                                    </button>
-
-                                    <button
-                                        className="export-button"
-                                        onClick={async () => {
-                                            try {
-                                                // Export sarky data for the current month
-                                                const month = new Date().getMonth();
-                                                const year = new Date().getFullYear();
-
-                                                const singleResponse = await sarkyService.getByEquipment(params.EquipmentID);
-                                                const rangeResponse = await sarkyService.getRangeByEquipment(params.EquipmentID);
-
-                                                let exportData = [];
-
-                                                // Process single entries
-                                                if (singleResponse.data) {
-                                                    singleResponse.data.forEach(sarky => {
-                                                        const date = new Date(sarky.date);
-                                                        if (date.getMonth() === month && date.getFullYear() === year) {
-                                                            exportData.push({
-                                                                date: sarky.date,
-                                                                type: 'Single Day',
-                                                                workType: sarky.workType?.name || 'Unknown',
-                                                                hours: sarky.workedHours,
-                                                                driver: sarky.driverName,
-                                                                status: 'Completed'
-                                                            });
-                                                        }
-                                                    });
-                                                }
-
-                                                // Process range entries
-                                                if (rangeResponse.data) {
-                                                    rangeResponse.data.forEach(range => {
-                                                        if (range.workEntries) {
-                                                            range.workEntries.forEach(entry => {
-                                                                const date = new Date(entry.date);
-                                                                if (date.getMonth() === month && date.getFullYear() === year) {
-                                                                    exportData.push({
-                                                                        date: entry.date,
-                                                                        type: 'Range Entry',
-                                                                        workType: entry.workType?.name || 'Unknown',
-                                                                        hours: entry.workedHours,
-                                                                        driver: entry.driverName,
-                                                                        status: range.status || 'Completed'
-                                                                    });
-                                                                }
-                                                            });
-                                                        }
-                                                    });
-                                                }
-
-                                                // Create CSV content
-                                                const csvContent = [
-                                                    ['Date', 'Type', 'Work Type', 'Hours', 'Driver', 'Status'],
-                                                    ...exportData.map(row => [
-                                                        row.date, row.type, row.workType, row.hours, row.driver, row.status
-                                                    ])
-                                                ].map(row => row.join(',')).join('\n');
-
-                                                // Download CSV
-                                                const blob = new Blob([csvContent], { type: 'text/csv' });
-                                                const url = window.URL.createObjectURL(blob);
-                                                const a = document.createElement('a');
-                                                a.href = url;
-                                                a.download = `sarky-data-${equipmentData?.name || 'equipment'}-${year}-${month + 1}.csv`;
-                                                a.click();
-                                                window.URL.revokeObjectURL(url);
-
-                                                showSuccess('Sarky data exported successfully');
-                                            } catch (error) {
-                                                console.error('Error exporting sarky data:', error);
-                                                showError('Failed to export sarky data');
-                                            }
-                                        }}
-                                        title="Export current month's data"
-                                    >
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                            <polyline points="7,10 12,15 17,10"/>
-                                            <line x1="12" y1="15" x2="12" y2="3"/>
-                                        </svg>
-                                        Export
-                                    </button>
-                                </div>
+                                <h2 className="panel-title">Daily Work Log</h2>
                             </div>
                             <div className="tab-content-container">
-                                <SarkyAttendance
+                                <EquipmentSarkyMatrix
                                     ref={sarkyAttendanceRef}
                                     equipmentId={params.EquipmentID}
-                                    onSarkyAdded={refreshSarkyLog}
-                                    equipmentData={equipmentData}
                                     onDataChange={handleSarkyDataChange}
                                 />
                             </div>

@@ -344,4 +344,22 @@
       }
     }
   }
+
+  // Description styles for transaction modals
+  .description-text {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    background: var(--color-surface-hover);
+    padding: 0.5rem;
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--color-primary);
+    margin-top: 0.25rem;
+  }
+
+  .full-width {
+    width: 100%;
+  }
 }

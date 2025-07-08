@@ -85,6 +85,7 @@ public class EquipmentTransactionController {
             @RequestParam int batchNumber,
             @RequestParam(required = false) LocalDateTime transactionDate,
             @RequestParam(required = false, defaultValue = "GENERAL") TransactionPurpose purpose,
+            @RequestParam(required = false) String description,
             @RequestBody List<Map<String, Object>> items,
             @AuthenticationPrincipal UserDetails userDetails) {
 
@@ -145,6 +146,7 @@ public class EquipmentTransactionController {
             @RequestParam int batchNumber,
             @RequestParam(required = false) LocalDateTime transactionDate,
             @RequestParam(required = false, defaultValue = "GENERAL") TransactionPurpose purpose,
+            @RequestParam(required = false) String description,
             @RequestBody List<Map<String, Object>> items,
             @AuthenticationPrincipal UserDetails userDetails) {
 
@@ -210,6 +212,7 @@ public class EquipmentTransactionController {
             @RequestParam int batchNumber,
             @RequestParam(required = false) LocalDateTime transactionDate,
             @RequestParam(required = false) TransactionPurpose purpose,
+            @RequestParam(required = false) String description,
             @RequestBody List<Map<String, Object>> items,
             @AuthenticationPrincipal UserDetails userDetails) {
 

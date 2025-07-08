@@ -5,8 +5,22 @@ import { workTypeService } from '../../../services/workTypeService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
-import { FaCalendarPlus, FaTools, FaClock, FaUser, FaEdit, FaTrash, FaSave } from 'react-icons/fa';
-import { BsCalendarPlus } from 'react-icons/bs';
+import {
+    FaCalendarPlus,
+    FaTools,
+    FaClock,
+    FaUser,
+    FaEdit,
+    FaSave,
+    FaQuestionCircle,
+    FaCopy,
+    FaPlus,
+    FaDownload,
+    FaCheck,
+    FaExclamationTriangle,
+    FaChevronDown,
+    FaChevronRight
+} from 'react-icons/fa';
 import './SarkyAttendance.scss';
 
 const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
@@ -26,11 +40,16 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [generatingSarky, setGeneratingSarky] = useState(false);
-    const [editingEntries, setEditingEntries] = useState({});
     const [savingAll, setSavingAll] = useState(false);
-    const [selectedDate, setSelectedDate] = useState(null); // For adding multiple entries to same day
-    const [validationInfo, setValidationInfo] = useState(null);
-    const [existingDates, setExistingDates] = useState([]);
+    const [showUserGuide, setShowUserGuide] = useState(false);
+    const [showBulkTools, setShowBulkTools] = useState(false);
+    const [viewMode, setViewMode] = useState('calendar'); // 'calendar' or 'matrix'
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
+    const [bulkDefaults, setBulkDefaults] = useState({
+        workTypeId: '',
+        workedHours: 8.0,
+        driverId: ''
+    });
 
     const months = [
         { value: 1, label: 'January' },
@@ -71,13 +90,11 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                 const response = await equipmentService.getEquipmentById(equipmentId);
                 setEquipmentData(response.data);
 
-                // Fetch validation info
-                const validationResponse = await sarkyService.getValidationInfo(equipmentId);
-                setValidationInfo(validationResponse.data);
-
-                // Fetch existing dates
-                const existingDatesResponse = await sarkyService.getExistingDates(equipmentId);
-                setExistingDates(existingDatesResponse.data);
+                // Set default driver
+                setBulkDefaults(prev => ({
+                    ...prev,
+                    driverId: response.data.mainDriverId || ''
+                }));
 
                 // Fetch drivers for this equipment type
                 if (response.data.typeId) {
@@ -87,10 +104,25 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                     // Fetch supported work types for this equipment type
                     const workTypesResponse = await equipmentService.getSupportedWorkTypesForEquipmentType(response.data.typeId);
                     setWorkTypes(workTypesResponse.data);
+
+                    // Set default work type
+                    if (workTypesResponse.data.length > 0) {
+                        setBulkDefaults(prev => ({
+                            ...prev,
+                            workTypeId: workTypesResponse.data[0].id
+                        }));
+                    }
                 } else {
                     // Fallback to all work types if no equipment type
                     const workTypesResponse = await workTypeService.getAll();
                     setWorkTypes(workTypesResponse.data);
+
+                    if (workTypesResponse.data.length > 0) {
+                        setBulkDefaults(prev => ({
+                            ...prev,
+                            workTypeId: workTypesResponse.data[0].id
+                        }));
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching equipment data:", error);
@@ -115,17 +147,9 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
             setLoading(true);
             setError(null);
 
-            // Add cache-busting timestamp to ensure fresh data
-            const timestamp = Date.now();
-            
             // Fetch single-day sarkies
             const singleResponse = await sarkyService.getByEquipment(equipmentId);
             const rangeResponse = await sarkyService.getRangeByEquipment(equipmentId);
-
-            console.log('=== SARKY DATA FETCH ===');
-            console.log('Single entries:', singleResponse.data?.length);
-            console.log('Range entries:', rangeResponse.data?.length);
-            console.log('========================');
 
             let monthlyEntries = [];
 
@@ -144,7 +168,8 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                             driverName: sarky.driverName,
                             type: 'single',
                             canEdit: permissions.canEdit,
-                            canDelete: permissions.canDelete
+                            canDelete: permissions.canDelete,
+                            isDraft: false
                         });
                     }
                 });
@@ -168,7 +193,8 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                                     type: 'range',
                                     rangeId: range.id,
                                     canEdit: false,
-                                    canDelete: false
+                                    canDelete: false,
+                                    isDraft: false
                                 });
                             }
                         });
@@ -184,8 +210,7 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                 }
                 return dateComparison;
             });
-            
-            console.log('Processed monthly entries:', monthlyEntries.length);
+
             setSarkyData(monthlyEntries);
         } catch (err) {
             console.error('Error fetching monthly sarky:', err);
@@ -195,97 +220,108 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
         }
     };
 
-    const generateMonthlySarky = async () => {
-        try {
-            setGeneratingSarky(true);
-            
-            // Get the number of days in the selected month
-            const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-            const generatedEntries = [];
-
-            // Generate entries for each day of the month
-            for (let day = 1; day <= daysInMonth; day++) {
-                const date = new Date(selectedYear, selectedMonth - 1, day);
-                const dateString = date.toISOString().split('T')[0];
-                
-                // Check if entry already exists
-                const existingEntry = sarkyData.find(entry => entry.date === dateString);
-                if (!existingEntry) {
-                    generatedEntries.push({
-                        id: `temp-${day}`, // Temporary ID for new entries
-                        date: dateString,
-                        workType: null,
-                        workTypeId: '',
-                        workedHours: 8.0, // Default hours
-                        driverId: equipmentData?.mainDriverId || '',
-                        driverName: equipmentData?.mainDriverName || '',
-                        type: 'draft',
-                        canEdit: permissions.canEdit,
-                        canDelete: permissions.canDelete,
-                        isNew: true
-                    });
-                }
-            }
-
-            // Combine existing entries with generated ones
-            const allEntries = [...sarkyData, ...generatedEntries];
-            allEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
-            setSarkyData(allEntries);
-            
-            showSuccess(`Generated ${generatedEntries.length} sarky entries for the month`);
-        } catch (err) {
-            console.error('Error generating monthly sarky:', err);
-            setError(err.message);
-        } finally {
-            setGeneratingSarky(false);
+    const generateBulkEntries = () => {
+        if (!dateRange.start || !dateRange.end) {
+            showError("Please select both start and end dates");
+            return;
         }
+
+        if (!bulkDefaults.workTypeId || !bulkDefaults.driverId) {
+            showError("Please select default work type and driver");
+            return;
+        }
+
+        const startDate = new Date(dateRange.start);
+        const endDate = new Date(dateRange.end);
+        const newEntries = [];
+
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const dateString = d.toISOString().split('T')[0];
+            const existingEntry = sarkyData.find(entry => entry.date === dateString);
+
+            if (!existingEntry) {
+                newEntries.push({
+                    id: `temp-${Date.now()}-${d.getTime()}`,
+                    date: dateString,
+                    workTypeId: bulkDefaults.workTypeId,
+                    workedHours: bulkDefaults.workedHours,
+                    driverId: bulkDefaults.driverId,
+                    driverName: drivers.find(d => d.id === bulkDefaults.driverId)?.fullName || '',
+                    workType: workTypes.find(wt => wt.id === bulkDefaults.workTypeId),
+                    type: 'draft',
+                    canEdit: permissions.canEdit,
+                    canDelete: permissions.canDelete,
+                    isNew: true,
+                    isDraft: true
+                });
+            }
+        }
+
+        if (newEntries.length === 0) {
+            showError("All selected dates already have entries");
+            return;
+        }
+
+        setSarkyData(prev => [...prev, ...newEntries].sort((a, b) => new Date(a.date) - new Date(b.date)));
+        setDateRange({ start: '', end: '' });
+        setShowBulkTools(false);
+        showSuccess(`Generated ${newEntries.length} work entries`);
     };
 
     const updateSarkyEntry = (entryId, field, value) => {
-        setSarkyData(prevData => 
-            prevData.map(entry => 
-                entry.id === entryId 
-                    ? { ...entry, [field]: value }
-                    : entry
-            )
+        setSarkyData(prevData =>
+            prevData.map(entry => {
+                if (entry.id === entryId) {
+                    const updatedEntry = { ...entry, [field]: value };
+
+                    // Update related fields when driver or work type changes
+                    if (field === 'driverId') {
+                        const driver = drivers.find(d => d.id === parseInt(value));
+                        updatedEntry.driverName = driver?.fullName || '';
+                    }
+
+                    if (field === 'workTypeId') {
+                        const workType = workTypes.find(wt => wt.id === parseInt(value));
+                        updatedEntry.workType = workType;
+                    }
+
+                    return updatedEntry;
+                }
+                return entry;
+            })
         );
     };
 
     // Helper function to extract meaningful error messages
     const getErrorMessage = (error) => {
-        // Check if it's a validation error from the backend
         if (error.response?.data?.message) {
             return error.response.data.message;
         }
-        
-        // Check if it's an IllegalArgumentException (our validation errors)
+
         if (error.response?.data && typeof error.response.data === 'string') {
             return error.response.data;
         }
-        
-        // Check for network/connection errors
+
         if (error.code === 'NETWORK_ERROR' || !error.response) {
             return "Network error. Please check your connection and try again.";
         }
-        
-        // Check for specific HTTP status codes
+
         if (error.response?.status === 400) {
             return error.response.data?.message || "Invalid data provided. Please check your inputs.";
         }
-        
+
         if (error.response?.status === 403) {
             return "You don't have permission to perform this action.";
         }
-        
+
         if (error.response?.status === 404) {
             return "The requested resource was not found.";
         }
-        
+
         if (error.response?.status >= 500) {
             return "Server error. Please try again later or contact support.";
         }
-        
-        // Default fallback with more helpful message
+
         return error.message || "An error occurred. Please try again.";
     };
 
@@ -297,7 +333,7 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
 
         try {
             setLoading(true);
-            
+
             const formData = new FormData();
             formData.append("workType", entry.workTypeId);
             formData.append("workedHours", entry.workedHours);
@@ -307,33 +343,37 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
             if (entry.isNew) {
                 // Create new entry
                 const response = await sarkyService.create(equipmentId, formData);
-                
+
                 // Update the entry with the real ID from the server
-                setSarkyData(prevData => 
-                    prevData.map(e => 
-                        e.id === entry.id 
-                            ? { 
-                                ...e, 
-                                id: response.data.id, 
+                setSarkyData(prevData =>
+                    prevData.map(e =>
+                        e.id === entry.id
+                            ? {
+                                ...e,
+                                id: response.data.id,
                                 type: 'single',
-                                isNew: false 
+                                isNew: false,
+                                isDraft: false
                             }
                             : e
                     )
                 );
-                
-                showSuccess("Sarky entry saved successfully");
-                
-                // Refresh validation info after successful save
-                const validationResponse = await sarkyService.getValidationInfo(equipmentId);
-                setValidationInfo(validationResponse.data);
-                const existingDatesResponse = await sarkyService.getExistingDates(equipmentId);
-                setExistingDates(existingDatesResponse.data);
+
+                showSuccess("Work entry saved successfully");
             } else {
                 // Update existing entry
                 await sarkyService.update(entry.id, formData);
-                
-                showSuccess("Sarky entry updated successfully");
+
+                // Update the entry to mark as not draft
+                setSarkyData(prevData =>
+                    prevData.map(e =>
+                        e.id === entry.id
+                            ? { ...e, isDraft: false }
+                            : e
+                    )
+                );
+
+                showSuccess("Work entry updated successfully");
             }
 
             // Notify dashboard to refresh
@@ -341,58 +381,17 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
         } catch (error) {
             console.error("Error saving sarky entry:", error);
             const errorMessage = getErrorMessage(error);
-            showError(`Failed to save sarky entry: ${errorMessage}`);
+            showError(`Failed to save work entry: ${errorMessage}`);
         } finally {
             setLoading(false);
         }
     };
 
-    const deleteSarkyEntry = async (entry) => {
-        if (!entry.canDelete) {
-            showError("This entry cannot be deleted");
-            return;
-        }
-
-        const [year, month, day] = entry.date.split('-').map(Number);
-        const displayDate = new Date(year, month - 1, day).toLocaleDateString();
-
-        if (!window.confirm(`Are you sure you want to delete the sarky entry for ${displayDate}?`)) {
-            return;
-        }
-
-        try {
-            if (entry.isNew) {
-                // Just remove from local state if it's a new entry
-                setSarkyData(prevData => prevData.filter(e => e.id !== entry.id));
-            } else {
-                // Delete from server
-                if (entry.type === 'single') {
-                    await sarkyService.delete(entry.id);
-                } else {
-                    await sarkyService.deleteRange(entry.rangeId);
-                }
-                
-                // Remove from local state
-                setSarkyData(prevData => prevData.filter(e => e.id !== entry.id));
-            }
-            
-            showSuccess("Sarky entry deleted successfully");
-            
-            // Notify dashboard to refresh
-            notifyDataChange();
-        } catch (error) {
-            console.error("Error deleting sarky entry:", error);
-            const errorMessage = getErrorMessage(error);
-            showError(`Failed to delete sarky entry: ${errorMessage}`);
-        }
-    };
-
     const saveAllEntries = async () => {
-        // Get all editable entries that have the required fields filled
-        const editableEntries = sarkyData.filter(entry => 
-            entry.canEdit && 
-            entry.workTypeId && 
-            entry.workedHours && 
+        const editableEntries = sarkyData.filter(entry =>
+            entry.canEdit &&
+            entry.workTypeId &&
+            entry.workedHours &&
             entry.driverId
         );
 
@@ -415,27 +414,33 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                     formData.append("driver", entry.driverId);
 
                     if (entry.isNew) {
-                        // Create new entry
                         const response = await sarkyService.create(equipmentId, formData);
-                        
-                        // Update the entry with the real ID from the server
-                        setSarkyData(prevData => 
-                            prevData.map(e => 
-                                e.id === entry.id 
-                                    ? { 
-                                        ...e, 
-                                        id: response.data.id, 
+
+                        setSarkyData(prevData =>
+                            prevData.map(e =>
+                                e.id === entry.id
+                                    ? {
+                                        ...e,
+                                        id: response.data.id,
                                         type: 'single',
-                                        isNew: false 
+                                        isNew: false,
+                                        isDraft: false
                                     }
                                     : e
                             )
                         );
                     } else {
-                        // Update existing entry
                         await sarkyService.update(entry.id, formData);
+
+                        setSarkyData(prevData =>
+                            prevData.map(e =>
+                                e.id === entry.id
+                                    ? { ...e, isDraft: false }
+                                    : e
+                            )
+                        );
                     }
-                    
+
                     successCount++;
                 } catch (error) {
                     console.error(`Error saving entry for ${entry.date}:`, error);
@@ -443,7 +448,6 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                 }
             }
 
-            // Show summary message
             if (successCount > 0 && errorCount === 0) {
                 showSuccess(`Successfully saved all ${successCount} entries`);
             } else if (successCount > 0 && errorCount > 0) {
@@ -452,10 +456,7 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                 showError(`Failed to save all ${errorCount} entries`);
             }
 
-            // Refresh data to get the latest state
             if (successCount > 0) {
-                fetchMonthlySarky();
-                // Notify dashboard to refresh
                 notifyDataChange();
             }
         } catch (error) {
@@ -467,39 +468,49 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
         }
     };
 
-    // Add new entry for a specific date (allows multiple entries per day)
-    const addEntryForDate = (dateString) => {
-        const existingEntriesForDate = sarkyData.filter(entry => entry.date === dateString);
-        const newEntryId = `temp-${dateString}-${Date.now()}`;
-        
+    const addSingleEntry = () => {
+        // Fix: Create date string without timezone conversion
+        const today = new Date();
+        const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
         const newEntry = {
-            id: newEntryId,
+            id: `temp-${Date.now()}`,
             date: dateString,
-            workType: null,
-            workTypeId: '',
-            workedHours: 8.0, // Default hours
-            driverId: equipmentData?.mainDriverId || '',
-            driverName: equipmentData?.mainDriverName || '',
+            workTypeId: bulkDefaults.workTypeId || (workTypes[0]?.id || ''),
+            workedHours: 8.0,
+            driverId: bulkDefaults.driverId || equipmentData?.mainDriverId || '',
+            driverName: drivers.find(d => d.id === (bulkDefaults.driverId || equipmentData?.mainDriverId))?.fullName || '',
+            workType: workTypes.find(wt => wt.id === (bulkDefaults.workTypeId || workTypes[0]?.id)),
             type: 'draft',
             canEdit: permissions.canEdit,
             canDelete: permissions.canDelete,
-            isNew: true
+            isNew: true,
+            isDraft: true
         };
 
-        setSarkyData(prevData => {
-            const updatedData = [...prevData, newEntry];
-            return updatedData.sort((a, b) => {
-                // Sort by date first, then by creation time for same dates
-                const dateComparison = new Date(a.date) - new Date(b.date);
-                if (dateComparison === 0) {
-                    // If same date, sort by ID to maintain consistent order
-                    return a.id.localeCompare(b.id);
-                }
-                return dateComparison;
-            });
-        });
+        setSarkyData(prev => [...prev, newEntry].sort((a, b) => new Date(a.date) - new Date(b.date)));
+        showSuccess("Added new work entry for today");
+    };
 
-        showSuccess(`Added new work entry for ${new Date(dateString).toLocaleDateString()}`);
+    const duplicateEntry = (entry) => {
+        // Fix: Create date string without timezone conversion
+        const today = new Date();
+        const dateString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+        const newEntry = {
+            ...entry,
+            id: `temp-${Date.now()}`,
+            date: dateString,
+            isNew: true,
+            isDraft: true
+        };
+        setSarkyData(prev => [...prev, newEntry].sort((a, b) => new Date(a.date) - new Date(b.date)));
+        showSuccess("Entry duplicated");
+    };
+
+    const removeEntry = (entryId) => {
+        setSarkyData(prev => prev.filter(entry => entry.id !== entryId));
+        showSuccess("Entry removed");
     };
 
     const formatDate = (dateString) => {
@@ -511,38 +522,16 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
         });
     };
 
-    const getTypeClass = (type) => {
-        switch (type) {
-            case 'single':
-                return 'single';
-            case 'range':
-                return 'range';
-            case 'draft':
-                return 'draft';
-            default:
-                return '';
-        }
-    };
-
-    const getTypeIcon = (type) => {
-        switch (type) {
-            case 'single':
-                return <FaTools className="type-icon single" />;
-            case 'range':
-                return <FaCalendarPlus className="type-icon range" />;
-            case 'draft':
-                return <FaEdit className="type-icon draft" />;
-            default:
-                return null;
-        }
+    const formatDateString = (date) => {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     };
 
     const getSarkySummary = () => {
         if (!sarkyData.length) return { completed: 0, draft: 0, total: 0, totalHours: 0 };
 
         const summary = {
-            completed: sarkyData.filter(s => s.type === 'single' || s.type === 'range').length,
-            draft: sarkyData.filter(s => s.type === 'draft').length,
+            completed: sarkyData.filter(s => !s.isDraft && (s.type === 'single' || s.type === 'range')).length,
+            draft: sarkyData.filter(s => s.isDraft || s.type === 'draft').length,
             totalHours: sarkyData.reduce((sum, s) => sum + (parseFloat(s.workedHours) || 0), 0)
         };
 
@@ -551,35 +540,132 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
     };
 
     const getSaveableEntriesCount = () => {
-        return sarkyData.filter(entry => 
-            entry.canEdit && 
-            entry.workTypeId && 
-            entry.workedHours && 
+        return sarkyData.filter(entry =>
+            entry.canEdit &&
+            entry.workTypeId &&
+            entry.workedHours &&
             entry.driverId
         ).length;
     };
 
-    // Group entries by date for better display
-    const getGroupedEntries = () => {
-        const grouped = {};
-        sarkyData.forEach(entry => {
-            if (!grouped[entry.date]) {
-                grouped[entry.date] = [];
-            }
-            grouped[entry.date].push(entry);
+    // Generate matrix data for grid view
+    const getMatrixData = () => {
+        const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+        const matrixData = [];
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(selectedYear, selectedMonth - 1, day);
+            const dateString = formatDateString(date);
+            const dayEntries = sarkyData.filter(entry => entry.date === dateString);
+
+            const rowData = {
+                date: dateString,
+                day,
+                dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                isWeekend: date.getDay() === 5 || date.getDay() === 6,
+                workTypes: {}
+            };
+
+            // Initialize all work types with 0 hours
+            workTypes.forEach(workType => {
+                rowData.workTypes[workType.id] = {
+                    hours: 0,
+                    entries: [],
+                    hasEntry: false
+                };
+            });
+
+            // Populate with actual entries
+            dayEntries.forEach(entry => {
+                if (entry.workTypeId && rowData.workTypes[entry.workTypeId]) {
+                    rowData.workTypes[entry.workTypeId].hours += parseFloat(entry.workedHours) || 0;
+                    rowData.workTypes[entry.workTypeId].entries.push(entry);
+                    rowData.workTypes[entry.workTypeId].hasEntry = true;
+                }
+            });
+
+            matrixData.push(rowData);
+        }
+
+        return matrixData;
+    };
+
+    // Add or update matrix entry
+    const updateMatrixEntry = (dateString, workTypeId, hours) => {
+        if (!hours || hours <= 0) {
+            // Remove entries for this date/worktype combination
+            setSarkyData(prev => prev.filter(entry =>
+                !(entry.date === dateString && entry.workTypeId === workTypeId)
+            ));
+            return;
+        }
+
+        const existingEntry = sarkyData.find(entry =>
+            entry.date === dateString && entry.workTypeId === workTypeId
+        );
+
+        if (existingEntry) {
+            // Update existing entry
+            updateSarkyEntry(existingEntry.id, 'workedHours', parseFloat(hours));
+        } else {
+            // Create new entry
+            const newEntry = {
+                id: `temp-${Date.now()}-${workTypeId}`,
+                date: dateString,
+                workTypeId: workTypeId,
+                workedHours: parseFloat(hours),
+                driverId: bulkDefaults.driverId || equipmentData?.mainDriverId || '',
+                driverName: drivers.find(d => d.id === (bulkDefaults.driverId || equipmentData?.mainDriverId))?.fullName || '',
+                workType: workTypes.find(wt => wt.id === workTypeId),
+                type: 'draft',
+                canEdit: permissions.canEdit,
+                canDelete: permissions.canDelete,
+                isNew: true,
+                isDraft: true
+            };
+            setSarkyData(prev => [...prev, newEntry].sort((a, b) => a.date.localeCompare(b.date)));
+        }
+    };
+
+    // Set driver for specific entries
+    const setDriverForEntries = (dateString, workTypeId, driverId) => {
+        const targetEntries = sarkyData.filter(entry =>
+            entry.date === dateString && entry.workTypeId === workTypeId
+        );
+
+        targetEntries.forEach(entry => {
+            updateSarkyEntry(entry.id, 'driverId', driverId);
         });
-        
-        // Sort dates
-        const sortedDates = Object.keys(grouped).sort((a, b) => new Date(a) - new Date(b));
-        return sortedDates.map(date => ({
-            date,
-            entries: grouped[date]
-        }));
+    };
+    const getDaysInMonth = () => {
+        const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+        const days = [];
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            // Fix: Create date in local timezone to avoid timezone issues
+            const date = new Date(selectedYear, selectedMonth - 1, day);
+            const dateString = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const entries = sarkyData.filter(entry => entry.date === dateString);
+
+            days.push({
+                day,
+                date: dateString,
+                dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                isWeekend: date.getDay() === 5 || date.getDay() === 6,
+                hasEntry: entries.length > 0,
+                isDraft: entries.some(e => e.isDraft || e.type === 'draft'),
+                isCompleted: entries.some(e => !e.isDraft && (e.type === 'single' || e.type === 'range')),
+                entryCount: entries.length
+            });
+        }
+
+        return days;
     };
 
     const summary = getSarkySummary();
     const saveableCount = getSaveableEntriesCount();
-    const groupedEntries = getGroupedEntries();
+    const calendarDays = getDaysInMonth();
+    const matrixData = getMatrixData();
 
     if (!equipmentData) {
         return <div className="loading">Loading equipment data...</div>;
@@ -589,7 +675,7 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
         return (
             <div className="loading-container">
                 <div className="loader"></div>
-                <p>Loading monthly sarky data...</p>
+                <p>Loading monthly work data...</p>
             </div>
         );
     }
@@ -605,153 +691,421 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
 
     return (
         <div className="sarky-attendance-container">
-            <div className="filters-container">
-                <div className="filter-group">
-                    <label>Equipment:</label>
-                    <input 
-                        type="text" 
-                        value={`${equipmentData.name} - ${equipmentData.typeName || 'Unknown Type'}`}
-                        disabled
-                        className="equipment-display"
-                    />
+            {/* User Guide Modal */}
+            {showUserGuide && (
+                <div className="user-guide-overlay">
+                    <div className="user-guide-modal">
+                        <div className="user-guide-header">
+                            <h2>Equipment Work Log - User Guide</h2>
+                            <button
+                                className="btn-close btn-close-danger"
+                                onClick={() => setShowUserGuide(false)}
+                                aria-label="Close user guide"
+                            >
+                            </button>
+                        </div>
+                        <div className="user-guide-content">
+                            <div className="guide-section">
+                                <h3><FaCalendarPlus /> Bulk Entry Workflow (Recommended)</h3>
+                                <ol>
+                                    <li><strong>Click "Bulk Add Days"</strong> to show the bulk entry tools</li>
+                                    <li><strong>Select Date Range:</strong> Choose start and end dates (e.g., July 1-15)</li>
+                                    <li><strong>Set Defaults:</strong> Choose common work type, hours, and driver</li>
+                                    <li><strong>Click "Generate Days"</strong> to create entries for all days in range</li>
+                                    <li><strong>Edit Individual Entries:</strong> Modify any entries that need different values</li>
+                                    <li><strong>Save All:</strong> Click "Save All Changes" to save everything at once</li>
+                                </ol>
+                            </div>
+
+                            <div className="guide-section">
+                                <h3><FaPlus /> Single Entry Method</h3>
+                                <ul>
+                                    <li><strong>Add Today:</strong> Click "Add Single Day" for quick today entry</li>
+                                    <li><strong>Calendar Click:</strong> Click any empty day in the calendar overview</li>
+                                    <li><strong>Duplicate:</strong> Use the copy button to duplicate similar entries</li>
+                                </ul>
+                            </div>
+
+                            <div className="guide-section">
+                                <h3><FaTools /> Understanding Status Colors</h3>
+                                <div className="status-examples">
+                                    <div className="status-item completed">
+                                        <FaCheck /> <strong>Green (Completed):</strong> Saved to database
+                                    </div>
+                                    <div className="status-item draft">
+                                        <FaExclamationTriangle /> <strong>Orange (Draft):</strong> Not saved yet, needs attention
+                                    </div>
+                                    <div className="status-item empty">
+                                        <span className="empty-indicator"></span> <strong>Gray (Empty):</strong> No work entry for this day
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="guide-section">
+                                <h3><FaClock /> Tips for Efficient Use</h3>
+                                <ul>
+                                    <li><strong>Weekly Batches:</strong> Process work logs weekly (e.g., Monday-Friday)</li>
+                                    <li><strong>Use Defaults:</strong> Set common work type and main driver as defaults</li>
+                                    <li><strong>Calendar Overview:</strong> Quickly see which days need attention</li>
+                                    <li><strong>Save Frequently:</strong> Use "Save All" after making changes</li>
+                                    <li><strong>Weekend Planning:</strong> Weekend days appear grayed out but can still have entries</li>
+                                </ul>
+                            </div>
+
+                            <div className="guide-section">
+                                <h3><FaUser /> Field Explanations</h3>
+                                <ul>
+                                    <li><strong>Work Type:</strong> Type of work performed (excavation, loading, etc.)</li>
+                                    <li><strong>Hours:</strong> Total hours worked (can be decimal, e.g., 8.5)</li>
+                                    <li><strong>Driver:</strong> Person operating the equipment that day</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Header Section */}
+            <div className="header-section">
+                <div className="equipment-info">
+                    <h1>Equipment Work Log</h1>
+                    <p className="equipment-details">
+                        {equipmentData.name} - {equipmentData.typeName || 'Unknown Type'}
+                    </p>
                 </div>
 
-                <div className="filter-group">
-                    <label>Month:</label>
-                    <select
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                    >
-                        {months.map(month => (
-                            <option key={month.value} value={month.value}>
-                                {month.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                <div className="header-controls">
+                    <div className="month-year-selector">
+                        <select
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                            className="month-select"
+                        >
+                            {months.map(month => (
+                                <option key={month.value} value={month.value}>
+                                    {month.label}
+                                </option>
+                            ))}
+                        </select>
+                        <select
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                            className="year-select"
+                        >
+                            {years.map(year => (
+                                <option key={year} value={year}>
+                                    {year}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
 
-                <div className="filter-group">
-                    <label>Year:</label>
-                    <select
-                        value={selectedYear}
-                        onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                    >
-                        {years.map(year => (
-                            <option key={year} value={year}>
-                                {year}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                {permissions.canCreate && (
                     <button
-                        className="generate-btn"
-                        onClick={generateMonthlySarky}
-                        disabled={generatingSarky}
+                        className="btn-primary btn-primary--small"
+                        onClick={() => setShowUserGuide(true)}
+                        title="Show User Guide"
                     >
-                        <BsCalendarPlus /> Generate Monthly Sarky
+                        <FaQuestionCircle />
                     </button>
-                )}
+                </div>
+            </div>
 
-                {permissions.canEdit && (
+            {/* Summary Cards */}
+            <div className="summary-section">
+                <div className="summary-card">
+                    <div className="summary-icon">
+                        <FaCalendarPlus />
+                    </div>
+                    <div className="summary-content">
+                        <div className="summary-label">Total Days</div>
+                        <div className="summary-value">{summary.total}</div>
+                    </div>
+                </div>
+
+                <div className="summary-card completed">
+                    <div className="summary-icon">
+                        <FaCheck />
+                    </div>
+                    <div className="summary-content">
+                        <div className="summary-label">Completed</div>
+                        <div className="summary-value">{summary.completed}</div>
+                    </div>
+                </div>
+
+                <div className="summary-card draft">
+                    <div className="summary-icon">
+                        <FaExclamationTriangle />
+                    </div>
+                    <div className="summary-content">
+                        <div className="summary-label">Draft</div>
+                        <div className="summary-value">{summary.draft}</div>
+                    </div>
+                </div>
+
+                <div className="summary-card">
+                    <div className="summary-icon">
+                        <FaClock />
+                    </div>
+                    <div className="summary-content">
+                        <div className="summary-label">Total Hours</div>
+                        <div className="summary-value">{summary.totalHours.toFixed(1)}h</div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Action Bar */}
+            <div className="admin-actions">
+                <div className="action-group">
+                    <div className="view-toggle">
+                        <button
+                            className={`btn-primary ${viewMode === 'calendar' ? '' : 'btn-primary--outline'}`}
+                            onClick={() => setViewMode('calendar')}
+                        >
+                            <FaCalendarPlus />
+                            Calendar View
+                        </button>
+                        <button
+                            className={`btn-primary ${viewMode === 'matrix' ? '' : 'btn-primary--outline'}`}
+                            onClick={() => setViewMode('matrix')}
+                        >
+                            <FaTools />
+                            Matrix View
+                        </button>
+                    </div>
+
                     <button
-                        className="save-all-btn"
+                        className="btn-primary"
+                        onClick={() => setShowBulkTools(!showBulkTools)}
+                    >
+                        {showBulkTools ? <FaChevronDown /> : <FaChevronRight />}
+                        Bulk Add Days
+                    </button>
+
+                    {viewMode === 'calendar' && (
+                        <button
+                            className="btn-primary btn-primary--outline"
+                            onClick={addSingleEntry}
+                            disabled={!permissions.canCreate}
+                        >
+                            <FaPlus />
+                            Add Single Day
+                        </button>
+                    )}
+                </div>
+
+                <div className="actions-right">
+                    <button
+                        className="btn-primary btn-primary--success"
                         onClick={saveAllEntries}
-                        disabled={savingAll || saveableCount === 0}
+                        disabled={savingAll || saveableCount === 0 || !permissions.canEdit}
                     >
-                        <FaSave /> {savingAll ? 'Saving All...' : `Save All (${saveableCount})`}
+                        <FaSave />
+                        {savingAll ? 'Saving...' : `Save All (${saveableCount})`}
                     </button>
-                )}
 
-                {permissions.canCreate && (
-                    <button
-                        className="quick-entry-btn"
-                        onClick={() => {
-                            const today = new Date().toISOString().split('T')[0];
-                            addEntryForDate(today);
-                        }}
-                        title="Add entry for today"
-                    >
-                        <FaCalendarPlus /> Quick Entry (Today)
+                    <button className="btn-primary btn-primary--outline">
+                        <FaDownload />
+                        Export
                     </button>
-                )}
+                </div>
             </div>
 
-            <div className="sarky-header">
-                <h2>Monthly Sarky: {equipmentData.name}</h2>
-                <h3>
-                    {months.find(m => m.value === selectedMonth)?.label} {selectedYear}
-                </h3>
-            </div>
+            {/* Bulk Tools Panel */}
+            {showBulkTools && (
+                <div className="bulk-tools-panel">
+                    <div className="bulk-tools-content">
+                        <div className="bulk-field">
+                            <label>From Date</label>
+                            <input
+                                type="date"
+                                value={dateRange.start}
+                                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                                className="bulk-input"
+                            />
+                        </div>
 
-            {sarkyData.length > 0 && (
-                <div className="sarky-summary">
-                    <div className="summary-item">
-                        <span className="label">Working Days:</span>
-                        <span className="value">{summary.total}</span>
-                    </div>
-                    <div className="summary-item completed">
-                        <span className="label">Completed:</span>
-                        <span className="value">{summary.completed}</span>
-                    </div>
-                    <div className="summary-item draft">
-                        <span className="label">Draft:</span>
-                        <span className="value">{summary.draft}</span>
-                    </div>
-                    <div className="summary-item">
-                        <span className="label">Total Hours:</span>
-                        <span className="value">{summary.totalHours.toFixed(1)}h</span>
-                    </div>
-                    <div className="summary-item">
-                        <span className="label">Completion Rate:</span>
-                        <span className="value">
-                            {summary.total > 0
-                                ? `${Math.round((summary.completed / summary.total) * 100)}%`
-                                : '0%'}
-                        </span>
+                        <div className="bulk-field">
+                            <label>To Date</label>
+                            <input
+                                type="date"
+                                value={dateRange.end}
+                                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                                className="bulk-input"
+                            />
+                        </div>
+
+                        <div className="bulk-field">
+                            <label>Default Work Type</label>
+                            <select
+                                value={bulkDefaults.workTypeId}
+                                onChange={(e) => setBulkDefaults(prev => ({ ...prev, workTypeId: parseInt(e.target.value) }))}
+                                className="bulk-input"
+                            >
+                                <option value="">Select Work Type</option>
+                                {workTypes.map(wt => (
+                                    <option key={wt.id} value={wt.id}>{wt.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="bulk-field">
+                            <label>Default Hours</label>
+                            <input
+                                type="number"
+                                value={bulkDefaults.workedHours}
+                                onChange={(e) => setBulkDefaults(prev => ({ ...prev, workedHours: parseFloat(e.target.value) }))}
+                                min="0.5"
+                                step="0.5"
+                                className="bulk-input"
+                            />
+                        </div>
+
+                        <div className="bulk-field">
+                            <label>Default Driver</label>
+                            <select
+                                value={bulkDefaults.driverId}
+                                onChange={(e) => setBulkDefaults(prev => ({ ...prev, driverId: parseInt(e.target.value) }))}
+                                className="bulk-input"
+                            >
+                                <option value="">Select Driver</option>
+                                {drivers.map(driver => (
+                                    <option key={driver.id} value={driver.id}>{driver.fullName}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <button
+                            className="btn-primary"
+                            onClick={generateBulkEntries}
+                            disabled={!dateRange.start || !dateRange.end || !bulkDefaults.workTypeId || !bulkDefaults.driverId}
+                        >
+                            Generate Days
+                        </button>
                     </div>
                 </div>
             )}
 
-            {validationInfo && (
-                <div className="sarky-validation-info">
-                    <h4>📋 Sarky Entry Guidelines</h4>
-                    <div className="validation-details">
-                        <div className="info-item">
-                            <span className="label">Latest Entry Date:</span>
-                            <span className="value">
-                                {validationInfo.latestDate ? 
-                                    new Date(validationInfo.latestDate).toLocaleDateString() : 
-                                    'No entries yet'
-                                }
-                            </span>
-                        </div>
-                        
-                        <div className="info-item">
-                            <span className="label">Dates with Existing Entries:</span>
-                            <span className="value">
-                                {existingDates.length > 0 ? `${existingDates.length} dates` : 'None'}
-                            </span>
-                        </div>
-                        
-                        <div className="guidelines">
-                            <p><strong>Entry Rules:</strong></p>
-                            <ul>
-                                <li>✅ You can add entries for ANY date</li>
-                                <li>✅ Multiple entries per day are allowed</li>
-                                <li>✅ Historical entries and date corrections are permitted</li>
-                                <li>📝 Date constraints have been removed for maximum flexibility</li>
-                            </ul>
-                        </div>
+            {/* Calendar Overview */}
+            <div className="calendar-overview">
+                <h3>Monthly Overview - {months.find(m => m.value === selectedMonth)?.label} {selectedYear}</h3>
+                <div className="calendar-grid">
+                    <div className="calendar-header">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                            <div key={day} className="calendar-day-header">{day}</div>
+                        ))}
+                    </div>
+                    <div className="calendar-body">
+                        {(() => {
+                            const firstDay = new Date(selectedYear, selectedMonth - 1, 1).getDay();
+                            const paddingDays = Array.from({ length: firstDay }, (_, i) => (
+                                <div key={`padding-${i}`} className="calendar-day empty"></div>
+                            ));
+
+                            return [
+                                ...paddingDays,
+                                ...calendarDays.map(day => (
+                                    <div
+                                        key={day.date}
+                                        className={`calendar-day ${
+                                            day.hasEntry
+                                                ? day.isDraft
+                                                    ? 'draft'
+                                                    : 'completed'
+                                                : day.isWeekend
+                                                    ? 'weekend'
+                                                    : 'available'
+                                        }`}
+                                        onClick={() => {
+                                            if (!day.hasEntry && permissions.canCreate) {
+                                                const newEntry = {
+                                                    id: `temp-${Date.now()}`,
+                                                    date: day.date,
+                                                    workTypeId: bulkDefaults.workTypeId || (workTypes[0]?.id || ''),
+                                                    workedHours: 8.0,
+                                                    driverId: bulkDefaults.driverId || equipmentData?.mainDriverId || '',
+                                                    driverName: drivers.find(d => d.id === (bulkDefaults.driverId || equipmentData?.mainDriverId))?.fullName || '',
+                                                    workType: workTypes.find(wt => wt.id === (bulkDefaults.workTypeId || workTypes[0]?.id)),
+                                                    type: 'draft',
+                                                    canEdit: permissions.canEdit,
+                                                    canDelete: permissions.canDelete,
+                                                    isNew: true,
+                                                    isDraft: true
+                                                };
+                                                setSarkyData(prev => [...prev, newEntry].sort((a, b) => new Date(a.date) - new Date(b.date)));
+                                                showSuccess(`Added work entry for ${formatDate(day.date)}`);
+                                            }
+                                        }}
+                                        title={day.hasEntry ? `${day.entryCount} entries` : 'Click to add entry'}
+                                    >
+                                        <div className="day-content">
+                                            <span className="day-number">{day.day}</span>
+                                            {day.entryCount > 0 && (
+                                                <span className="entry-count">{day.entryCount}</span>
+                                            )}
+                                            {day.hasEntry && (
+                                                <div className="day-entries">
+                                                    {sarkyData
+                                                        .filter(entry => entry.date === day.date)
+                                                        .slice(0, 2) // Show only first 2 entries
+                                                        .map((entry, index) => (
+                                                            <div
+                                                                key={entry.id}
+                                                                className={`entry-preview ${entry.isDraft || entry.type === 'draft' ? 'draft' : 'completed'}`}
+                                                                title={`${entry.workType?.name || 'Unknown'} - ${entry.workedHours}h`}
+                                                            >
+                                                                <span className="entry-text">
+                                                                    {entry.workType?.name?.substring(0, 8) || 'Unknown'}
+                                                                    {entry.workType?.name?.length > 8 ? '...' : ''}
+                                                                </span>
+                                                                <span className="entry-hours">{entry.workedHours}h</span>
+                                                            </div>
+                                                        ))
+                                                    }
+                                                    {day.entryCount > 2 && (
+                                                        <div className="more-entries">
+                                                            +{day.entryCount - 2} more
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            ];
+                        })()}
                     </div>
                 </div>
-            )}
+                <div className="calendar-legend">
+                    <div className="legend-item">
+                        <div className="legend-color completed"></div>
+                        <span>Completed</span>
+                    </div>
+                    <div className="legend-item">
+                        <div className="legend-color draft"></div>
+                        <span>Draft</span>
+                    </div>
+                    <div className="legend-item">
+                        <div className="legend-color empty"></div>
+                        <span>No Entry</span>
+                    </div>
+                </div>
+            </div>
 
-            {sarkyData.length > 0 ? (
-                <div className="sarky-table-container">
-                    <table className="sarky-table">
-                        <thead>
+            {/* Work Entries Table */}
+            <div className="entries-section">
+                <div className="entries-header">
+                    <h3>Work Entries</h3>
+                    {sarkyData.length > 0 && (
+                        <p className="entries-subtitle">
+                            {sarkyData.length} entries • {summary.completed} completed • {summary.draft} draft
+                        </p>
+                    )}
+                </div>
+
+                {sarkyData.length > 0 ? (
+                    <div className="entries-table-container">
+                        <table className="entries-table">
+                            <thead>
                             <tr>
                                 <th>Date</th>
                                 <th>Work Type</th>
@@ -760,125 +1114,134 @@ const SarkyAttendance = forwardRef(({ equipmentId, onDataChange }, ref) => {
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {groupedEntries.map(group => (
-                                <React.Fragment key={group.date}>
-                                    {group.entries.map((entry, index) => (
-                                        <tr key={entry.id} className={getTypeClass(entry.type)}>
-                                            <td className="date-cell">
-                                                <div className="date-group">
-                                                    <span className="date-text">{formatDate(entry.date)}</span>
-                                                    {group.entries.length > 1 && (
-                                                        <span className="entry-count">
-                                                            Entry {index + 1} of {group.entries.length}
-                                                        </span>
+                            </thead>
+                            <tbody>
+                            {sarkyData.map((entry) => (
+                                <tr
+                                    key={entry.id}
+                                    className={`entry-row ${entry.isDraft || entry.type === 'draft' ? 'draft' : 'completed'}`}
+                                >
+                                    <td className="date-cell">
+                                        <div className="date-info">
+                                            <span className="date-text">{formatDate(entry.date)}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {entry.canEdit ? (
+                                            <select
+                                                value={entry.workTypeId || ''}
+                                                onChange={(e) => updateSarkyEntry(entry.id, 'workTypeId', parseInt(e.target.value))}
+                                                className="table-select"
+                                            >
+                                                <option value="">Select Work Type</option>
+                                                {workTypes.map(wt => (
+                                                    <option key={wt.id} value={wt.id}>{wt.name}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <span>{entry.workType?.name || 'Unknown'}</span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        {entry.canEdit ? (
+                                            <input
+                                                type="number"
+                                                value={entry.workedHours || ''}
+                                                onChange={(e) => updateSarkyEntry(entry.id, 'workedHours', parseFloat(e.target.value))}
+                                                min="0.5"
+                                                step="0.5"
+                                                className="table-input hours-input"
+                                            />
+                                        ) : (
+                                            <span>{entry.workedHours}h</span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        {entry.canEdit ? (
+                                            <select
+                                                value={entry.driverId || ''}
+                                                onChange={(e) => updateSarkyEntry(entry.id, 'driverId', parseInt(e.target.value))}
+                                                className="table-select"
+                                            >
+                                                <option value="">Select Driver</option>
+                                                {drivers.map(driver => (
+                                                    <option key={driver.id} value={driver.id}>
+                                                        {driver.fullName}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <span>{entry.driverName}</span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        <div className="status-cell">
+                                                <span className={`status-badge ${entry.isDraft || entry.type === 'draft' ? 'inactive' : 'active'}`}>
+                                                    {entry.isDraft || entry.type === 'draft' ? (
+                                                        <>
+                                                            <FaExclamationTriangle />
+                                                            Draft
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FaCheck />
+                                                            Completed
+                                                        </>
                                                     )}
-                                                    {index === 0 && (
-                                                        <button
-                                                            className="add-entry-btn"
-                                                            onClick={() => addEntryForDate(entry.date)}
-                                                            title="Add another entry for this day"
-                                                        >
-                                                            <FaCalendarPlus />
-                                                        </button>
-                                                    )}
-                                                    {index === 0 && group.entries.length > 1 && (
-                                                        <span className="multiple-indicator">
-                                                            📋 {group.entries.length} entries
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td>
-                                                {entry.canEdit ? (
-                                                    <select
-                                                        value={entry.workTypeId || ''}
-                                                        onChange={(e) => updateSarkyEntry(entry.id, 'workTypeId', e.target.value)}
-                                                        className="inline-select"
-                                                    >
-                                                        <option value="">Select Work Type</option>
-                                                        {workTypes.map(wt => (
-                                                            <option key={wt.id} value={wt.id}>{wt.name}</option>
-                                                        ))}
-                                                    </select>
-                                                ) : (
-                                                    <span>{entry.workType?.name || 'Unknown'}</span>
-                                                )}
-                                            </td>
-                                            <td>
-                                                {entry.canEdit ? (
-                                                    <input
-                                                        type="number"
-                                                        value={entry.workedHours || ''}
-                                                        onChange={(e) => updateSarkyEntry(entry.id, 'workedHours', e.target.value)}
-                                                        min="0.5"
-                                                        step="0.5"
-                                                        className="inline-input"
-                                                    />
-                                                ) : (
-                                                    <span>{entry.workedHours}h</span>
-                                                )}
-                                            </td>
-                                            <td>
-                                                {entry.canEdit ? (
-                                                    <select
-                                                        value={entry.driverId || ''}
-                                                        onChange={(e) => updateSarkyEntry(entry.id, 'driverId', e.target.value)}
-                                                        className="inline-select"
-                                                    >
-                                                        <option value="">Select Driver</option>
-                                                        {drivers.map(driver => (
-                                                            <option key={driver.id} value={driver.id}>
-                                                                {driver.fullName}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                ) : (
-                                                    <span>{entry.driverName}</span>
-                                                )}
-                                            </td>
-                                            <td className="status-cell">
-                                                {getTypeIcon(entry.type)}
-                                                <span className="status-text">
-                                                    {entry.type === 'single' ? 'Completed' : 
-                                                     entry.type === 'range' ? 'Range Entry' : 'Draft'}
                                                 </span>
-                                            </td>
-                                            <td>
-                                                <div className="action-buttons">
-                                                    {entry.canEdit && (
-                                                        <button
-                                                            className="save-btn"
-                                                            onClick={() => saveSarkyEntry(entry)}
-                                                            disabled={!entry.workTypeId || !entry.workedHours || !entry.driverId}
-                                                        >
-                                                            <FaSave /> Save
-                                                        </button>
-                                                    )}
-                                                    {/* REMOVED DELETE BUTTON - Per requirement to remove delete functionality from UI */}
-                                                    {/* Backend deletion logic remains intact for data integrity */}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </React.Fragment>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div className="table-actions">
+                                            {entry.canEdit && (
+                                                <button
+                                                    className="btn-primary btn-primary--small"
+                                                    onClick={() => saveSarkyEntry(entry)}
+                                                    disabled={!entry.workTypeId || !entry.workedHours || !entry.driverId}
+                                                    title="Save Entry"
+                                                >
+                                                    <FaSave />
+                                                </button>
+                                            )}
+                                            <button
+                                                className="btn-primary btn-primary--small btn-primary--outline"
+                                                onClick={() => duplicateEntry(entry)}
+                                                title="Duplicate Entry"
+                                            >
+                                                <FaCopy />
+                                            </button>
+                                            {entry.canDelete && (
+                                                <button
+                                                    className="btn-close btn-close-sm"
+                                                    onClick={() => removeEntry(entry.id)}
+                                                    title="Remove Entry"
+                                                >
+                                                </button>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
                             ))}
-                        </tbody>
-                    </table>
-                </div>
-            ) : (
-                <div className="no-data-container">
-                    <p>No sarky records found for this month.</p>
-                    <button
-                        className="generate-btn"
-                        onClick={generateMonthlySarky}
-                        disabled={generatingSarky}
-                    >
-                        {generatingSarky ? 'Generating...' : 'Generate Monthly Sarky'}
-                    </button>
-                </div>
-            )}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="no-entries">
+                        <div className="no-entries-icon">
+                            <FaCalendarPlus />
+                        </div>
+                        <h3>No work entries yet</h3>
+                        <p>Start by adding work days using the "Bulk Add Days" feature above.</p>
+                        <button
+                            className="btn-primary"
+                            onClick={() => setShowBulkTools(true)}
+                        >
+                            <FaPlus />
+                            Add Work Days
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 });

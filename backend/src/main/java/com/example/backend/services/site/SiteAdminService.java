@@ -5,6 +5,7 @@ import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.repositories.finance.FixedAssetRepository;
 import com.example.backend.models.Partner;
 import com.example.backend.models.equipment.Equipment;
+import com.example.backend.models.equipment.EquipmentStatus;
 import com.example.backend.models.finance.FixedAssets;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.site.Site;
@@ -233,6 +234,10 @@ public class SiteAdminService
 
         // Assign equipment to site
         equipment.setSite(site);
+        
+     
+            equipment.setStatus(EquipmentStatus.RUNNING);
+        
 
         // If equipment has a main driver, assign them to the site
         if (equipment.getMainDriver() != null) {

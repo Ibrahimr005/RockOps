@@ -175,17 +175,26 @@ public class EquipmentService {
         equipment.setShipping(createDTO.getShipping());
         equipment.setCustoms(createDTO.getCustoms());
         equipment.setTaxes(createDTO.getTaxes());
-        equipment.setStatus(createDTO.getStatus() != null ? createDTO.getStatus() : equipment.getStatus());
-        equipment.setRelatedDocuments(createDTO.getRelatedDocuments());
-        equipment.setWorkedHours(createDTO.getWorkedHours());
-
         // Set relationships
         if (createDTO.getSiteId() != null) {
             Site site = siteRepository.findById(createDTO.getSiteId())
                     .orElseThrow(() -> new ResourceNotFoundException("Site not found with id: "
                             + createDTO.getSiteId()));
             equipment.setSite(site);
+            
+            // Set status to RUNNING when assigned to a site, unless already in maintenance or scrapped
+            if (createDTO.getStatus() == null || createDTO.getStatus() == EquipmentStatus.AVAILABLE) {
+                equipment.setStatus(EquipmentStatus.RUNNING);
+            } else {
+                equipment.setStatus(createDTO.getStatus());
+            }
+        } else {
+            // Set status from DTO or default to AVAILABLE
+            equipment.setStatus(createDTO.getStatus() != null ? createDTO.getStatus() : equipment.getStatus());
         }
+        
+        equipment.setRelatedDocuments(createDTO.getRelatedDocuments());
+        equipment.setWorkedHours(createDTO.getWorkedHours());
 
         // Validate driver assignment for drivable equipment types
         if (!equipmentType.isDrivable() && (createDTO.getMainDriverId() != null || createDTO.getSubDriverId() != null)) {
@@ -312,6 +321,7 @@ public class EquipmentService {
                 // Default to AVAILABLE status if invalid
             }
         }
+        // Note: Status will be set to RUNNING automatically if siteId is provided, unless explicitly set to IN_MAINTENANCE or SCRAPPED
         if (requestBody.get("relatedDocuments") != null)
             createDTO.setRelatedDocuments(requestBody.get("relatedDocuments").toString());
         if (requestBody.get("workedHours") != null)
@@ -390,17 +400,26 @@ public class EquipmentService {
         if (updateDTO.getShipping() != null) equipment.setShipping(updateDTO.getShipping());
         if (updateDTO.getCustoms() != null) equipment.setCustoms(updateDTO.getCustoms());
         if (updateDTO.getTaxes() != null) equipment.setTaxes(updateDTO.getTaxes());
-        if (updateDTO.getStatus() != null) equipment.setStatus(updateDTO.getStatus());
-        if (updateDTO.getRelatedDocuments() != null) equipment.setRelatedDocuments(updateDTO.getRelatedDocuments());
-        if (updateDTO.getWorkedHours() != null) equipment.setWorkedHours(updateDTO.getWorkedHours());
-
         // Update relationships if provided
         if (updateDTO.getSiteId() != null) {
             Site site = siteRepository.findById(updateDTO.getSiteId())
                     .orElseThrow(() -> new ResourceNotFoundException("Site not found with id: "
                             + updateDTO.getSiteId()));
             equipment.setSite(site);
+            
+            // Set status to RUNNING when assigned to a site, unless already in maintenance or scrapped
+            if (updateDTO.getStatus() == null || updateDTO.getStatus() == EquipmentStatus.AVAILABLE) {
+                equipment.setStatus(EquipmentStatus.RUNNING);
+            } else {
+                equipment.setStatus(updateDTO.getStatus());
+            }
+        } else {
+            // Set status from DTO if provided
+            if (updateDTO.getStatus() != null) equipment.setStatus(updateDTO.getStatus());
         }
+        
+        if (updateDTO.getRelatedDocuments() != null) equipment.setRelatedDocuments(updateDTO.getRelatedDocuments());
+        if (updateDTO.getWorkedHours() != null) equipment.setWorkedHours(updateDTO.getWorkedHours());
 
         // Update merchant relationship
         if (updateDTO.getPurchasedFrom() != null) {
@@ -543,6 +562,7 @@ public class EquipmentService {
                 // Skip status update if invalid
             }
         }
+        // Note: Status will be set to RUNNING automatically if siteId is provided, unless explicitly set to IN_MAINTENANCE or SCRAPPED
         if (requestBody.get("relatedDocuments") != null && !requestBody.get("relatedDocuments").toString().isEmpty())
             updateDTO.setRelatedDocuments(requestBody.get("relatedDocuments").toString());
         if (requestBody.get("workedHours") != null && !requestBody.get("workedHours").toString().isEmpty())
@@ -608,7 +628,7 @@ public class EquipmentService {
             try {
                 statusDTO.setStatus(EquipmentStatus.valueOf(requestBody.get("status").toString().toUpperCase()));
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid status. Allowed values: AVAILABLE, RENTED, IN_MAINTENANCE, SOLD, SCRAPPED");
+                throw new IllegalArgumentException("Invalid status. Allowed values: AVAILABLE, RUNNING, RENTED, IN_MAINTENANCE, SOLD, SCRAPPED");
             }
         } else {
             throw new IllegalArgumentException("Status is required");

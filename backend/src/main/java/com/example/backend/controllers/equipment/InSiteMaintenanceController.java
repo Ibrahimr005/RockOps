@@ -1,6 +1,7 @@
 package com.example.backend.controllers.equipment;
 
 import com.example.backend.models.*;
+import com.example.backend.models.PartyType;
 import com.example.backend.models.equipment.InSiteMaintenance;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.transaction.Transaction;
@@ -309,7 +310,8 @@ public class InSiteMaintenanceController {
                     userDetails.getUsername(),
                     batchNumber,
                     equipmentId, // Equipment is the receiver
-                    TransactionPurpose.MAINTENANCE // Specify maintenance purpose
+                    TransactionPurpose.MAINTENANCE
+                   // Specify maintenance purpose
             );
 
             // Link transaction to maintenance

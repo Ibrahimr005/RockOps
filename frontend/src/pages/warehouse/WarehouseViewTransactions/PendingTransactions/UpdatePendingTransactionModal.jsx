@@ -500,7 +500,8 @@ const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate,
                 items: items,
                 transactionDate: transactionData.transactionDate,
                 batchNumber: parseInt(transactionData.batchNumber),
-                username: username
+                username: username,
+                description: transactionData.description
             };
 
             console.log("Sending update payload:", payload);
@@ -874,6 +875,20 @@ const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate,
                             min="1"
                             placeholder="Enter batch number"
                             required
+                        />
+                    </div>
+
+                    {/* Description Field - Full Width */}
+                    <div className="form-group3 full-width">
+                        <label htmlFor="description">Description</label>
+                        <textarea
+                            id="description"
+                            name="description"
+                            value={updatedTransaction.description || ''}
+                            onChange={handleInputChange}
+                            placeholder="Enter transaction description (optional)"
+                            rows="3"
+                            className="description-textarea"
                         />
                     </div>
 

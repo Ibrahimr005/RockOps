@@ -41,5 +41,7 @@ public class TransactionDTO {
     private UUID sentFirst;
     private TransactionPurpose purpose;
     
+    private String description;
+    
     private List<TransactionItemDTO> items;
 } 
