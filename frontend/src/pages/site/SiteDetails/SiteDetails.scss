@@ -1127,6 +1127,11 @@
     font-weight: 500;
     text-transform: uppercase;
 
+    &.status-running {
+      background-color: rgba(76, 175, 80, 0.1);
+      color: #4CAF50;
+    }
+
     &.status-available {
       background-color: rgba(76, 175, 80, 0.1);
       color: #4CAF50;

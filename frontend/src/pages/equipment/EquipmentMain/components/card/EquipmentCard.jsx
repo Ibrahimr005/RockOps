@@ -33,6 +33,7 @@ const EquipmentCard = forwardRef((props, ref) => {
         if (!status) return "status-unknown";
 
         const statusLower = status.toLowerCase();
+        if (statusLower === "running") return "status-running";
         if (statusLower === "available") return "status-available";
         if (statusLower === "in_use" || statusLower === "in use" || statusLower === "rented") return "status-in-use";
         if (statusLower === "maintenance" || statusLower === "in_maintenance") return "status-maintenance";

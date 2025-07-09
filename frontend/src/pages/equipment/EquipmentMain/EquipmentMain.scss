@@ -21,6 +21,7 @@ $scrapped-color: var(--color-danger);
 // Status colors
 $status-colors: (
         "AVAILABLE": $available-color,
+        "RUNNING": $available-color,
         "RENTED": $rented-color,
         "IN_MAINTENANCE": $maintenance-color,
         "SOLD": $sold-color,

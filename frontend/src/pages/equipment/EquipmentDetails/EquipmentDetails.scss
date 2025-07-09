@@ -224,7 +224,7 @@
 }
 
 .tab-content {
-  padding: 1.5rem;
+  padding-top: 1.5rem;
 
 }
 
@@ -266,6 +266,7 @@
   border: 1px solid var(--border-color, #e2e8f0);
   overflow: hidden;
   min-height: 300px;
+  padding: 1.5rem;
 }
 
 /* Apply consistent styling to child components */
