@@ -33,7 +33,7 @@ const SiteWarehousesTab = ({siteId}) => {
     const workersDropdownRef = useRef(null);
     const {currentUser} = useAuth();
 
-    const isSiteAdmin = currentUser?.role === "SITE_ADMIN";
+    const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || "ADMIN";
 
     // Define columns for DataTable
     const columns = [

@@ -136,7 +136,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
         // Required fields
         if (!formData.firstName) newErrors.firstName = 'First name is required';
         if (!formData.lastName) newErrors.lastName = 'Last name is required';
-        if (!formData.email) newErrors.email = 'Email is required';
+        // if (!formData.email) newErrors.email = 'Email is required';
         if (!formData.jobPositionId) newErrors.jobPositionId = 'Job position is required';
         if (!formData.birthDate) newErrors.birthDate = 'Date of Birth is required';
         if (!formData.nationalIDNumber) newErrors.nationalIDNumber = 'National ID is required';
@@ -371,7 +371,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 <h3>Contact Information</h3>
 
                                 <div className="r4m-form-group">
-                                    <label>Email *</label>
+                                    <label>Email </label>
                                     <input
                                         type="email"
                                         name="email"

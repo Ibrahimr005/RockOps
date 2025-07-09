@@ -6,13 +6,11 @@
     height: 100%;
     width: 100%;
     background-color: var(--main-background-color);
-    padding: 1rem;
     overflow-y: auto;
     animation: fadeIn 0.3s ease-in-out;
     flex: 1;
     box-sizing: border-box;
     position: relative;
-    min-height: 100vh;
 }
 
 @keyframes fadeIn {
@@ -33,7 +31,7 @@
 /* Extra large screens (1920px and above) */
 @media (min-width: 1920px) {
     .hr-module-container {
-        padding: 2rem 4rem;
+        padding: 1rem;
         max-width: 1800px;
         margin: 0 auto;
     }
@@ -42,7 +40,6 @@
 /* Large desktop screens (1440px - 1919px) */
 @media (min-width: 1440px) and (max-width: 1919px) {
     .hr-module-container {
-        padding: 1.5rem 3rem;
         max-width: 1600px;
         margin: 0 auto;
     }
@@ -51,7 +48,6 @@
 /* Desktop screens (1200px - 1439px) */
 @media (min-width: 1200px) and (max-width: 1439px) {
     .hr-module-container {
-        padding: 1.5rem 2rem;
         max-width: 1400px;
         margin: 0 auto;
     }
