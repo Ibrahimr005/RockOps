@@ -27,7 +27,7 @@ import java.util.*;
 @Service
 public class SiteAdminService
 {
-    private final FixedAssetRepository fixedAssetRepository;
+//    private final FixedAssetRepository fixedAssetRepository;
     private SiteRepository siteRepository;
     private PartnerRepository partnerRepository;
     private EquipmentRepository equipmentRepository;
@@ -38,13 +38,13 @@ public class SiteAdminService
     private EntityManager entityManager;
 
     @Autowired
-    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetRepository fixedAssetRepository) {
+    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository) {
         this.siteRepository = siteRepository;
         this.partnerRepository = partnerRepository;
         this.equipmentRepository = equipmentRepository;
         this.employeeRepository = employeeRepository;
         this.warehouseRepository= warehouseRepository;
-        this.fixedAssetRepository = fixedAssetRepository;
+//        this.fixedAssetRepository = fixedAssetRepository;
     }
 
     @Transactional
@@ -357,21 +357,21 @@ public class SiteAdminService
         return warehouseRepository.save(warehouse);
     }
 
-    @Transactional
-    public FixedAssets assignFixedAssetToSite(UUID siteId, UUID fixedAssetId) {
-        Optional<FixedAssets> optionalFixedAssets = fixedAssetRepository.findById(fixedAssetId);
-        Optional<Site> optionalSite = siteRepository.findById(siteId);
-
-        if (optionalFixedAssets.isEmpty() || optionalSite.isEmpty()) {
-            throw new RuntimeException("Employee or Site not found");
-        }
-
-        FixedAssets fixedAssets = optionalFixedAssets.get();
-        Site site = optionalSite.get();
-
-        fixedAssets.setSite(site);
-        return fixedAssetRepository.save(fixedAssets);
-    }
+//    @Transactional
+//    public FixedAssets assignFixedAssetToSite(UUID siteId, UUID fixedAssetId) {
+//        Optional<FixedAssets> optionalFixedAssets = fixedAssetRepository.findById(fixedAssetId);
+//        Optional<Site> optionalSite = siteRepository.findById(siteId);
+//
+//        if (optionalFixedAssets.isEmpty() || optionalSite.isEmpty()) {
+//            throw new RuntimeException("Employee or Site not found");
+//        }
+//
+//        FixedAssets fixedAssets = optionalFixedAssets.get();
+//        Site site = optionalSite.get();
+//
+//        fixedAssets.setSite(site);
+//        return fixedAssetRepository.save(fixedAssets);
+//    }
 
     @Transactional
     public Warehouse addWarehouse(UUID siteId, Map<String, Object> requestBody) {
