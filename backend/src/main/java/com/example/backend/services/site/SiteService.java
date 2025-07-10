@@ -2,7 +2,7 @@ package com.example.backend.services.site;
 
 import com.example.backend.models.Partner;
 import com.example.backend.models.equipment.Equipment;
-import com.example.backend.models.finance.FixedAssets;
+import com.example.backend.models.finance.fixedAssets.FixedAssets;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.site.Site;
@@ -13,7 +13,6 @@ import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.*;

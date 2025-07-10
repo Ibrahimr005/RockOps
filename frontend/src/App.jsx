@@ -50,6 +50,7 @@ import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
 import GeneralLedger from "./pages/finance/GeneralLedger/GeneralLedger.jsx";
 import LoadingPage from "./components/common/LoadingPage/LoadingPage.jsx";
 import Payables from "./pages/finance/Payables/Payables.jsx";
+import FixedAssets from "./pages/finance/FixedAssets/FixedAssets.jsx";
 
 
 
@@ -161,6 +162,8 @@ function App() {
                                     {/* Finance Routes */}
                                     <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={allRoles}><GeneralLedger/></RoleRoute>} />
                                     <Route path="/finance/payables" element={<RoleRoute allowedRoles={allRoles}><Payables/></RoleRoute>} />
+                                    <Route path="/finance/fixed-assets" element={<RoleRoute allowedRoles={allRoles}><FixedAssets/></RoleRoute>} />
+
 
 
                                     {/* Generic Related Documents Route */}

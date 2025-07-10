@@ -396,28 +396,28 @@ const PaymentManagement = () => {
 
             {/* Quick Stats */}
             <div className="payment-stats">
-                <div className="stat-item">
+                <div className="payment-stat-item">
                     <FaMoneyBillWave className="stat-icon" />
                     <div className="stat-content">
                         <span className="stat-value">{payments.length}</span>
                         <span className="stat-label">Total Payments</span>
                     </div>
                 </div>
-                <div className="stat-item">
+                <div className="payment-stat-item">
                     <FaCheckCircle className="stat-icon" />
                     <div className="stat-content">
                         <span className="stat-value">${totalPayments.toLocaleString()}</span>
                         <span className="stat-label">Total Amount</span>
                     </div>
                 </div>
-                <div className="stat-item">
+                <div className="payment-stat-item">
                     <FaCalendarAlt className="stat-icon" />
                     <div className="stat-content">
                         <span className="stat-value">{paymentsThisMonth.length}</span>
                         <span className="stat-label">This Month</span>
                     </div>
                 </div>
-                <div className="stat-item">
+                <div className="payment-stat-item">
                     <FaCreditCard className="stat-icon" />
                     <div className="stat-content">
                         <span className="stat-value">${totalThisMonth.toLocaleString()}</span>

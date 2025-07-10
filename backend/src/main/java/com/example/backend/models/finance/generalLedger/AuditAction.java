@@ -1,0 +1,7 @@
+package com.example.backend.models.finance.generalLedger;
+
+public enum AuditAction {
+    CREATE,
+    UPDATE,
+    DELETE
+}

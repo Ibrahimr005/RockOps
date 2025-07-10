@@ -258,7 +258,7 @@ const SiteEmployeesTab = ({ siteId }) => {
                     {isSiteAdmin && (
                         <div className="btn-primary-container">
                             <button className="btn-primary" onClick={handleOpenModal}>
-                                Add Employee
+                                Assign Employee
                             </button>
                         </div>
                     )}

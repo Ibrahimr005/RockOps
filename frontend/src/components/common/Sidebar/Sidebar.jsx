@@ -314,6 +314,12 @@ const Sidebar = () => {
                     path: '/finance/payables',
                     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
                 },
+                {
+                    title: 'Fixed Assets',
+                    icon: <FaBuilding/>,
+                    path: '/finance/fixed-assets',
+                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
+                },
             ]
         },
         {

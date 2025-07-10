@@ -2,10 +2,10 @@ package com.example.backend.services.site;
 
 import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.repositories.equipment.EquipmentRepository;
-import com.example.backend.repositories.finance.FixedAssetRepository;
+import com.example.backend.repositories.finance.fixedAssets.FixedAssetsRepository;
 import com.example.backend.models.Partner;
 import com.example.backend.models.equipment.Equipment;
-import com.example.backend.models.finance.FixedAssets;
+import com.example.backend.models.finance.fixedAssets.FixedAssets;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.site.Site;
 import com.example.backend.models.site.SitePartner;
@@ -26,7 +26,7 @@ import java.util.*;
 @Service
 public class SiteAdminService
 {
-    private final FixedAssetRepository fixedAssetRepository;
+    private final FixedAssetsRepository fixedAssetRepository;
     private SiteRepository siteRepository;
     private PartnerRepository partnerRepository;
     private EquipmentRepository equipmentRepository;
@@ -37,7 +37,7 @@ public class SiteAdminService
     private EntityManager entityManager;
 
     @Autowired
-    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetRepository fixedAssetRepository) {
+    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetsRepository fixedAssetRepository) {
         this.siteRepository = siteRepository;
         this.partnerRepository = partnerRepository;
         this.equipmentRepository = equipmentRepository;
@@ -373,7 +373,7 @@ public class SiteAdminService
         // Create new warehouse
         Warehouse warehouse = new Warehouse();
         warehouse.setName((String) requestBody.get("name"));
-        warehouse.setCapacity((Integer) requestBody.get("capacity"));
+//        warehouse.setCapacity((Integer) requestBody.get("capacity"));
 
         if (requestBody.get("photoUrl") != null) {
             warehouse.setPhotoUrl((String) requestBody.get("photoUrl"));
