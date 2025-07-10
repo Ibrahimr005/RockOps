@@ -53,6 +53,9 @@ public class Transaction {
     private Integer batchNumber;
     private UUID sentFirst;
 
+    // Transaction description
+    private String description;
+
     // Transaction items - new relationship
     @OneToMany(mappedBy = "transaction", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnoreProperties({"transaction", "hibernateLazyInitializer", "handler"})

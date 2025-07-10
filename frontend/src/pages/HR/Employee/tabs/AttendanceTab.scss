@@ -1,66 +1,82 @@
-@import '../../../../styles/theme-variables.css';
+// AttendanceTab.scss - Using theme variables
 
 .attendance-tab {
-  padding: 0.5rem;
+  padding: 0;
+  background-color: var(--section-background-color);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
 
-  .attendance-header {
+  // Header Section
+  .attendance-tab-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.75rem;
 
     h3 {
-      margin: 0;
       color: var(--head-title-color);
-      font-size: 1.2rem;
+      font-size: 1.5rem;
+      font-weight: var(--bold-font-weight);
+      margin: 0;
     }
 
-    .employee-type {
+    .attendance-tab-contract-info {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 1.5rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border-color);
 
-      .type-label {
+      .attendance-tab-contract-label {
         color: var(--color-text-secondary);
-        font-size: 0.9rem;
+        font-size: 0.8rem;
+        font-weight: var(--thin-font-weight);
       }
 
-      .type-value {
-        color: var(--color-primary);
+      .attendance-tab-contract-value {
+        color: var(--color-text-primary);
         font-weight: var(--bold-font-weight);
+        font-size: 0.9rem;
+        text-transform: capitalize;
+        background-color: var(--color-surface-hover);
         padding: 0.25rem 0.75rem;
-        background-color: rgba(72, 128, 255, 0.1);
-        border-radius: 1rem;
-        font-size: 0.85rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color);
+        display: inline-block;
       }
-    }
 
-    @media (max-width: 576px) {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
+      .attendance-tab-schedule-info {
+        color: var(--color-text-tertiary);
+        font-size: 0.75rem;
+        font-family: 'Courier New', monospace;
+        padding-left: 1rem;
+        border-left: 1px solid var(--border-color);
+      }
     }
   }
 
-  .period-selector {
-    margin-bottom: 1.5rem;
+  // Period Selector
+  .attendance-tab-period-selector {
+    margin-bottom: 2rem;
 
-    .period-tabs {
+    .attendance-tab-period-tabs {
       display: flex;
-      border-bottom: 1px solid var(--border-color);
+      gap: 0.5rem;
       margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
 
-      .period-tab {
-        padding: 0.75rem 1.25rem;
+      .attendance-tab-period-tab {
         background: none;
         border: none;
-        border-bottom: 3px solid transparent;
+        padding: 0.75rem 1rem;
         color: var(--color-text-secondary);
         font-weight: var(--bold-font-weight);
         cursor: pointer;
+        border-bottom: 2px solid transparent;
         transition: all var(--transition-fast);
+        font-family: var(--font-family);
 
         &:hover {
           color: var(--color-primary);
@@ -73,312 +89,711 @@
       }
     }
 
-    .period-options {
-      .month-selector {
+    .attendance-tab-period-options {
+      .attendance-tab-month-selector {
         display: flex;
         gap: 1rem;
+        align-items: center;
 
-        .form-group {
-          flex: 1;
+        .attendance-tab-form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
 
           select {
-            width: 100%;
-            padding: 0.5rem 0.75rem;
+            padding: 0.5rem;
             border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-sm);
             background-color: var(--color-surface);
             color: var(--color-text-primary);
-            font-size: 0.9rem;
-            transition: border-color var(--transition-fast);
+            font-family: var(--font-family);
+            cursor: pointer;
 
             &:focus {
               outline: none;
               border-color: var(--color-primary);
+              box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
             }
           }
         }
       }
 
-      .date-range-selector {
+      .attendance-tab-date-range-selector {
         display: flex;
-        align-items: flex-end;
         gap: 1rem;
+        align-items: flex-end;
+        flex-wrap: wrap;
 
-        .form-group {
-          flex: 1;
+        .attendance-tab-form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
 
           label {
-            display: block;
-            margin-bottom: 0.25rem;
-            font-size: 0.85rem;
-            color: var(--color-text-secondary);
+            color: var(--label-color);
+            font-size: 0.8rem;
+            font-weight: var(--bold-font-weight);
           }
 
           input[type="date"] {
-            width: 100%;
-            padding: 0.5rem 0.75rem;
+            padding: 0.5rem;
             border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-sm);
             background-color: var(--color-surface);
             color: var(--color-text-primary);
-            font-size: 0.9rem;
-            transition: border-color var(--transition-fast);
+            font-family: var(--font-family);
 
             &:focus {
               outline: none;
               border-color: var(--color-primary);
+              box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
             }
           }
         }
 
-        .apply-btn {
+        .attendance-tab-apply-btn {
           padding: 0.5rem 1rem;
           background-color: var(--color-primary);
-          color: white;
+          color: var(--color-text-inverse);
           border: none;
-          border-radius: var(--radius-md);
+          border-radius: var(--radius-sm);
           font-weight: var(--bold-font-weight);
           cursor: pointer;
-          transition: background-color var(--transition-fast);
+          transition: all var(--transition-fast);
+          font-family: var(--font-family);
 
           &:hover {
-            background-color: var(--color-primary-dark);
-          }
-        }
-      }
-    }
-
-    @media (max-width: 768px) {
-      .period-options {
-        .month-selector,
-        .date-range-selector {
-          flex-direction: column;
-          gap: 0.5rem;
-
-          .apply-btn {
-            margin-top: 0.5rem;
+            background-color: var(--color-primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
           }
         }
       }
     }
   }
 
-  .attendance-metrics {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-
-    .metric-card {
-      display: flex;
-      align-items: center;
-      padding: 1.25rem;
-      background-color: var(--color-surface);
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-sm);
-      transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-
-      &:hover {
-        transform: translateY(-3px);
-        box-shadow: var(--shadow-md);
-      }
-
-      .metric-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 2.5rem;
-        height: 2.5rem;
-        border-radius: 50%;
-        background-color: rgba(72, 128, 255, 0.1);
-        color: var(--color-primary);
-        font-size: 1.2rem;
-        margin-right: 1rem;
-      }
-
-      .metric-content {
-        flex: 1;
-
-        .metric-title {
-          font-size: 0.9rem;
-          color: var(--color-text-secondary);
-          margin-bottom: 0.25rem;
-        }
-
-        .metric-value {
-          font-size: 1.5rem;
-          font-weight: var(--bold-font-weight);
-          color: var(--color-text-primary);
-          margin-bottom: 0.25rem;
-        }
-
-        .metric-details {
-          font-size: 0.8rem;
-          color: var(--color-text-tertiary);
-        }
-      }
-    }
-  }
-
-  .attendance-details {
-    margin-bottom: 1.5rem;
-
-    h4 {
-      margin: 0 0 1rem 0;
-      font-size: 1.1rem;
-      color: var(--head-title-color);
-    }
-
-    .table-container {
-      background-color: var(--color-surface);
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-sm);
-      overflow-x: auto;
-    }
-
-    .attendance-table {
-      width: 100%;
-      border-collapse: collapse;
-
-      th, td {
-        padding: 0.75rem 1rem;
-        text-align: left;
-        border-bottom: 1px solid var(--border-color);
-      }
-
-      th {
-        font-weight: var(--bold-font-weight);
-        color: var(--color-text-primary);
-        background-color: var(--color-surface-hover);
-      }
-
-      tr:last-child td {
-        border-bottom: none;
-      }
-
-      tr:hover {
-        background-color: var(--color-surface-hover);
-      }
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 0.25rem 0.5rem;
-      border-radius: 1rem;
-      font-size: 0.75rem;
-      font-weight: var(--bold-font-weight);
-      text-transform: uppercase;
-
-      &.present {
-        background-color: rgba(76, 175, 80, 0.1);
-        color: var(--color-success);
-      }
-
-      &.absent {
-        background-color: rgba(244, 67, 54, 0.1);
-        color: var(--color-danger);
-      }
-
-      &.late {
-        background-color: rgba(255, 152, 0, 0.1);
-        color: var(--color-warning);
-      }
-
-      &.half-day {
-        background-color: rgba(156, 39, 176, 0.1);
-        color: #9c27b0;
-      }
-
-      &.leave {
-        background-color: rgba(33, 150, 243, 0.1);
-        color: var(--color-info);
-      }
-
-      &.unknown {
-        background-color: rgba(158, 158, 158, 0.1);
-        color: #9e9e9e;
-      }
-    }
-
-    .no-records {
-      padding: 2rem;
-      text-align: center;
-      color: var(--color-text-tertiary);
-      font-style: italic;
-    }
-  }
-
-  .view-all-link {
-    text-align: center;
-    margin-top: 1rem;
-
-    a {
-      display: inline-block;
-      color: var(--color-primary);
-      text-decoration: none;
-      font-weight: var(--bold-font-weight);
-      transition: color var(--transition-fast);
-
-      &:hover {
-        color: var(--color-primary-dark);
-        text-decoration: underline;
-      }
-    }
-  }
-
-  .loading-container {
+  // Loading and Error States
+  .attendance-tab-loading-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 3rem 0;
+    padding: 3rem 2rem;
+    color: var(--color-text-secondary);
 
     .loader {
-      border: 4px solid rgba(72, 128, 255, 0.2);
-      border-top: 4px solid var(--color-primary);
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border-color);
+      border-top: 3px solid var(--color-primary);
       border-radius: 50%;
-      width: 2.5rem;
-      height: 2.5rem;
       animation: spin 1s linear infinite;
       margin-bottom: 1rem;
     }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
     p {
-      color: var(--color-text-secondary);
+      font-size: 1rem;
+      margin: 0;
     }
   }
 
-  .error-container {
-    background-color: rgba(244, 67, 54, 0.1);
-    border: 1px solid rgba(244, 67, 54, 0.2);
+  .attendance-tab-error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    background-color: var(--color-surface-hover);
     border-radius: var(--radius-md);
-    padding: 1.5rem;
-    text-align: center;
-    margin: 2rem 0;
+    border: 1px solid var(--color-danger);
 
     p {
       color: var(--color-danger);
-      margin: 0 0 1rem 0;
+      margin-bottom: 1rem;
+      text-align: center;
     }
 
     button {
-      background-color: var(--color-danger);
-      color: white;
+      padding: 0.5rem 1rem;
+      background-color: var(--color-primary);
+      color: var(--color-text-inverse);
       border: none;
       border-radius: var(--radius-sm);
-      padding: 0.5rem 1.5rem;
-      font-weight: var(--bold-font-weight);
       cursor: pointer;
-      transition: background-color var(--transition-fast);
+      font-family: var(--font-family);
 
       &:hover {
-        //background-color: darken(var(--color-danger), 10%);
+        background-color: var(--color-primary-hover);
       }
+    }
+  }
+
+  // No Records State
+  .attendance-tab-no-records {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--color-text-secondary);
+    background-color: var(--color-surface-hover);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--border-color);
+
+    p {
+      margin: 0;
+      font-size: 1rem;
+    }
+  }
+}
+
+// Attendance Metrics
+.attendance-tab-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+
+  .attendance-tab-metric-card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    &.overtime-card {
+      border-color: var(--color-warning);
+      background-color: rgba(255, 152, 0, 0.05);
+    }
+
+    .attendance-tab-metric-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background-color: var(--color-primary);
+      color: var(--color-text-inverse);
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .attendance-tab-metric-content {
+      flex: 1;
+
+      .attendance-tab-metric-title {
+        color: var(--color-text-secondary);
+        font-size: 0.8rem;
+        font-weight: var(--bold-font-weight);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+      }
+
+      .attendance-tab-metric-value {
+        color: var(--color-text-primary);
+        font-size: 1.75rem;
+        font-weight: var(--bold-font-weight);
+        line-height: 1;
+        margin-bottom: 0.25rem;
+      }
+
+      .attendance-tab-metric-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+
+        span {
+          color: var(--color-text-tertiary);
+          font-size: 0.8rem;
+        }
+
+        small {
+          color: var(--color-text-secondary);
+          font-size: 0.7rem;
+        }
+      }
+    }
+  }
+}
+
+// Attendance Details
+.attendance-tab-details {
+  h4 {
+    color: var(--head-title-color);
+    font-size: 1.1rem;
+    font-weight: var(--bold-font-weight);
+    margin: 0 0 1rem 0;
+  }
+
+  .attendance-tab-table-container {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-table);
+    border: 1px solid var(--table-border);
+  }
+
+  .attendance-tab-table-footer {
+    padding: 0.75rem 1rem;
+    background-color: var(--color-surface-hover);
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+
+    small {
+      color: var(--color-text-secondary);
+      font-size: 0.8rem;
+    }
+  }
+}
+
+// Attendance Table
+.attendance-tab-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-family);
+
+  thead {
+    background-color: var(--table-header-bg);
+
+    th {
+      padding: 1rem 0.75rem;
+      text-align: left;
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-primary);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--table-border);
+
+      &:hover {
+        background-color: var(--table-header-hover);
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid var(--table-border);
+      transition: background-color var(--transition-fast);
+
+      &:nth-child(even) {
+        background-color: var(--table-row-even);
+      }
+
+      &:hover {
+        background-color: var(--table-row-hover);
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    td {
+      padding: 0.75rem;
+      color: var(--color-text-primary);
+      font-size: 0.9rem;
+      vertical-align: middle;
+
+      &.attendance-tab-hours-cell {
+        font-family: 'Courier New', monospace;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-primary);
+      }
+
+      &.attendance-tab-overtime-cell {
+        font-family: 'Courier New', monospace;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-warning);
+      }
+
+      &.attendance-tab-notes-cell {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--color-text-tertiary);
+        font-style: italic;
+      }
+    }
+  }
+}
+
+// Status Badges
+.attendance-tab-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: var(--bold-font-weight);
+  text-transform: capitalize;
+  transition: all var(--transition-fast);
+
+  .status-icon {
+    font-size: 0.7rem;
+  }
+
+  .status-text {
+    font-size: 0.75rem;
+  }
+
+  // Status-specific colors
+  &.present {
+    background-color: rgba(76, 175, 80, 0.15);
+    color: var(--color-success);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+  }
+
+  &.absent {
+    background-color: rgba(244, 67, 54, 0.15);
+    color: var(--color-danger);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+  }
+
+  &.late {
+    background-color: rgba(255, 152, 0, 0.15);
+    color: var(--color-warning);
+    border: 1px solid rgba(255, 152, 0, 0.3);
+  }
+
+  &.half-day {
+    background-color: rgba(33, 150, 243, 0.15);
+    color: var(--color-info);
+    border: 1px solid rgba(33, 150, 243, 0.3);
+  }
+
+  &.leave {
+    background-color: rgba(156, 39, 176, 0.15);
+    color: #9c27b0;
+    border: 1px solid rgba(156, 39, 176, 0.3);
+  }
+
+  &.early-out {
+    background-color: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+  }
+
+  &.off {
+    background-color: rgba(158, 158, 158, 0.15);
+    color: var(--color-text-tertiary);
+    border: 1px solid rgba(158, 158, 158, 0.3);
+  }
+
+  &.unknown {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--border-color);
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+// View All Link
+.attendance-tab-view-all-link {
+  margin-top: 1.5rem;
+  text-align: center;
+
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: var(--bold-font-weight);
+    font-size: 0.9rem;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &:hover {
+      color: var(--color-primary-hover);
+      text-decoration: underline;
+    }
+
+    &:focus {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+  }
+}
+
+// Animations
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .attendance-tab {
+    .attendance-tab-header {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: flex-start;
+
+      .attendance-tab-contract-info {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        gap: 0.25rem;
+        padding: 0.25rem 0;
+        border-bottom: none;
+        border-left: 1px solid var(--border-color);
+        padding-left: 0.5rem;
+      }
+    }
+
+    .attendance-tab-period-selector {
+      .attendance-tab-period-tabs {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+
+        .attendance-tab-period-tab {
+          padding: 0.5rem 0.75rem;
+          font-size: 0.8rem;
+        }
+      }
+
+      .attendance-tab-period-options {
+        .attendance-tab-month-selector {
+          flex-direction: column;
+          gap: 0.5rem;
+          align-items: stretch;
+        }
+
+        .attendance-tab-date-range-selector {
+          flex-direction: column;
+          gap: 0.75rem;
+          align-items: stretch;
+
+          .attendance-tab-apply-btn {
+            width: 100%;
+          }
+        }
+      }
+    }
+
+    .attendance-tab-metrics {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+
+      .attendance-tab-metric-card {
+        padding: 1rem;
+        gap: 0.75rem;
+
+        .attendance-tab-metric-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 1rem;
+        }
+
+        .attendance-tab-metric-content {
+          .attendance-tab-metric-value {
+            font-size: 1.5rem;
+          }
+        }
+      }
+    }
+
+    .attendance-tab-table {
+      font-size: 0.8rem;
+
+      thead th {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.7rem;
+      }
+
+      tbody td {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+
+        &.attendance-tab-notes-cell {
+          max-width: 150px;
+        }
+      }
+    }
+
+    .attendance-tab-status-badge {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+
+      .status-icon {
+        font-size: 0.6rem;
+      }
+
+      .status-text {
+        font-size: 0.65rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .attendance-tab {
+    .attendance-tab-table {
+      // Hide less important columns on very small screens
+      .attendance-tab-notes-cell,
+      th:nth-child(8),
+      td:nth-child(8) {
+        display: none;
+      }
+
+      // Make overtime column smaller
+      .attendance-tab-overtime-cell {
+        font-size: 0.7rem;
+      }
+    }
+
+    .attendance-tab-metric-card {
+      .attendance-tab-metric-content {
+        .attendance-tab-metric-value {
+          font-size: 1.25rem;
+        }
+
+        .attendance-tab-metric-details {
+          span, small {
+            font-size: 0.7rem;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Dark Theme Specific Adjustments
+[data-theme="dark"] {
+  .attendance-tab {
+    .attendance-tab-metric-card {
+      &.overtime-card {
+        background-color: rgba(255, 152, 0, 0.1);
+      }
+
+      .attendance-tab-metric-icon {
+        background-color: var(--color-primary);
+      }
+    }
+
+    .attendance-tab-status-badge {
+      // Enhanced contrast for dark mode
+      &.present {
+        background-color: rgba(76, 175, 80, 0.2);
+        border-color: rgba(76, 175, 80, 0.4);
+      }
+
+      &.absent {
+        background-color: rgba(244, 67, 54, 0.2);
+        border-color: rgba(244, 67, 54, 0.4);
+      }
+
+      &.late {
+        background-color: rgba(255, 152, 0, 0.2);
+        border-color: rgba(255, 152, 0, 0.4);
+      }
+
+      &.half-day {
+        background-color: rgba(33, 150, 243, 0.2);
+        border-color: rgba(33, 150, 243, 0.4);
+      }
+
+      &.leave {
+        background-color: rgba(156, 39, 176, 0.2);
+        border-color: rgba(156, 39, 176, 0.4);
+      }
+
+      &.early-out {
+        background-color: rgba(255, 193, 7, 0.2);
+        border-color: rgba(255, 193, 7, 0.4);
+      }
+    }
+  }
+}
+
+// Print Styles
+@media print {
+  .attendance-tab {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+
+    .attendance-tab-period-selector,
+    .attendance-tab-view-all-link {
+      display: none !important;
+    }
+
+    .attendance-tab-table {
+      border: 1px solid black !important;
+
+      th, td {
+        border: 1px solid black !important;
+        background: white !important;
+        color: black !important;
+      }
+    }
+
+    .attendance-tab-status-badge {
+      background: white !important;
+      color: black !important;
+      border: 1px solid black !important;
+    }
+
+    .attendance-tab-metric-card {
+      background: white !important;
+      border: 1px solid black !important;
+      box-shadow: none !important;
+
+      .attendance-tab-metric-icon {
+        background: black !important;
+        color: white !important;
+      }
+    }
+  }
+}
+
+// High Contrast Mode
+@media (prefers-contrast: high) {
+  .attendance-tab {
+    .attendance-tab-table {
+      border: 2px solid var(--color-text-primary);
+
+      th, td {
+        border: 1px solid var(--color-text-primary);
+      }
+    }
+
+    .attendance-tab-status-badge {
+      border: 2px solid currentColor;
+      font-weight: var(--bold-font-weight);
+    }
+
+    .attendance-tab-metric-card {
+      border: 2px solid var(--border-color);
+    }
+  }
+}
+
+// Reduced Motion
+@media (prefers-reduced-motion: reduce) {
+  .attendance-tab {
+    * {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    .attendance-tab-metric-card:hover,
+    .attendance-tab-status-badge:hover {
+      transform: none !important;
     }
   }
 }

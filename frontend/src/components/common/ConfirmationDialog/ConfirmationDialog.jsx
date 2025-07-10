@@ -127,7 +127,7 @@ const ConfirmationDialog = ({
                     </button>
                     <button
                         type="button"
-                        className={`btn-primary confirmation-dialog-confirm confirmation-dialog-confirm--${type}`}
+                        className={`btn-primary2 confirmation-dialog-confirm confirmation-dialog-confirm--${type}`}
                         onClick={handleConfirm}
                         disabled={isLoading}
                     >

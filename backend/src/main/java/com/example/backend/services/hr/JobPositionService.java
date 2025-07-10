@@ -18,6 +18,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+
 @Service
 public class JobPositionService {
     private static final Logger logger = LoggerFactory.getLogger(JobPositionService.class);
@@ -71,6 +75,10 @@ public class JobPositionService {
                 dto.setShifts(jobPosition.getShifts());
                 dto.setWorkingHours(jobPosition.getWorkingHours());
                 dto.setVacations(jobPosition.getVacations());
+
+                // NEW: Set time fields for MONTHLY contracts
+                dto.setStartTime(jobPosition.getStartTime());
+                dto.setEndTime(jobPosition.getEndTime());
                 break;
         }
 
@@ -79,7 +87,6 @@ public class JobPositionService {
 
         return dto;
     }
-
     /**
      * Convert list of JobPosition entities to list of JobPositionDTOs
      */
@@ -96,6 +103,7 @@ public class JobPositionService {
     /**
      * Create a new job position from DTO
      */
+
     @Transactional
     public JobPositionDTO createJobPosition(JobPositionDTO jobPositionDTO) {
         // Find the department if a department name is provided
@@ -147,6 +155,11 @@ public class JobPositionService {
                 jobPosition.setShifts(jobPositionDTO.getShifts());
                 jobPosition.setWorkingHours(jobPositionDTO.getWorkingHours());
                 jobPosition.setVacations(jobPositionDTO.getVacations());
+
+                // NEW: Set time fields for MONTHLY contracts
+                jobPosition.setStartTime(jobPositionDTO.getStartTime());
+                jobPosition.setEndTime(jobPositionDTO.getEndTime());
+
                 // Set baseSalary for backward compatibility
                 jobPosition.setBaseSalary(jobPositionDTO.getBaseSalary());
                 break;
@@ -270,6 +283,14 @@ public class JobPositionService {
                     if (jobPositionDTO.getVacations() != null) {
                         existingJobPosition.setVacations(jobPositionDTO.getVacations());
                     }
+
+                    // NEW: Update time fields for MONTHLY contracts
+                    if (jobPositionDTO.getStartTime() != null) {
+                        existingJobPosition.setStartTime(jobPositionDTO.getStartTime());
+                    }
+                    if (jobPositionDTO.getEndTime() != null) {
+                        existingJobPosition.setEndTime(jobPositionDTO.getEndTime());
+                    }
                     break;
             }
         }
@@ -280,7 +301,6 @@ public class JobPositionService {
         // Convert back to DTO and return
         return convertToDTO(updatedJobPosition);
     }
-
     /**
      * Delete a job position by ID
      */
@@ -524,6 +544,28 @@ public class JobPositionService {
         }
         if (jobPositionMap.containsKey("vacations")) {
             jobPosition.setVacations((String) jobPositionMap.get("vacations"));
+        }
+
+        // NEW: Handle time fields
+        if (jobPositionMap.containsKey("startTime")) {
+            try {
+                Object startTimeObj = jobPositionMap.get("startTime");
+                if (startTimeObj instanceof String) {
+                    jobPosition.setStartTime(LocalTime.parse((String) startTimeObj));
+                }
+            } catch (DateTimeParseException e) {
+                throw new RuntimeException("Invalid start time format. Use HH:mm format");
+            }
+        }
+        if (jobPositionMap.containsKey("endTime")) {
+            try {
+                Object endTimeObj = jobPositionMap.get("endTime");
+                if (endTimeObj instanceof String) {
+                    jobPosition.setEndTime(LocalTime.parse((String) endTimeObj));
+                }
+            } catch (DateTimeParseException e) {
+                throw new RuntimeException("Invalid end time format. Use HH:mm format");
+            }
         }
     }
 }

@@ -230,17 +230,17 @@ const EmployeeDetails = () => {
                     </div>
 
                     <div className="employee-quick-stats">
-                        <div className="stat-item">
+                        <div className="emp-stat-item">
                             <span className="stat-label">Status</span>
                             <span className={`status-badge ${employee.status?.toLowerCase() || 'active'}`}>
                                 {employee.status || 'N/A'}
                             </span>
                         </div>
-                        <div className="stat-item">
+                        <div className="emp-stat-item">
                             <span className="stat-label">Employee ID</span>
                             <span className="stat-value">#{employee.id}</span>
                         </div>
-                        <div className="stat-item">
+                        <div className="emp-stat-item">
                             <span className="stat-label">Hire Date</span>
                             <span className="stat-value">
                                 {formatDate(employee.hireDate)}

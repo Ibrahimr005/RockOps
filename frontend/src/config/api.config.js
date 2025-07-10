@@ -9,6 +9,7 @@ export const EQUIPMENT_ENDPOINTS = {
     TYPE_BY_ID: (id) => `/api/equipment-types/${id}`,
     TYPE_BY_NAME: (name) => `/api/equipment-types/name/${name}`,
     TYPE_SUPPORTED_WORK_TYPES: (typeId) => `/api/equipment-types/${typeId}/supported-work-types`,
+    STATUS_OPTIONS: '/api/equipment/status-options',
     STATUS: (id) => `/api/equipment/status/${id}`,
     STATUS_DTO: (id) => `/api/equipment/status/dto/${id}`,
     BY_TYPE: (typeId) => `/api/equipment/type/${typeId}`,

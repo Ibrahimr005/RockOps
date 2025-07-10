@@ -214,7 +214,7 @@
 }
 
 .ImageContainer img {
-  width: 250px;
+  width: 2500px;
   height: 180px;
   border-radius: var(--radius-md);
   box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.2);
@@ -400,4 +400,23 @@ tab-button1.active{
   margin-bottom: 25px;
   margin-top: -10px;
   padding-left: 10px;
+}
+
+.WarehouseDetailsContainer {
+  .warehouse-intro-card {
+    .intro-card-left {
+      min-width: 230px !important; // Make container smaller
+      min-height: 190px !important; // Make container shorter
+      max-height: none !important; // Remove any height restrictions
+    }
+
+    .intro-card-image {
+      width: 210px !important; // Make image smaller
+      height: 170px !important; // Make image shorter
+      max-height: none !important; // Remove any max-height restrictions
+      min-height: 170px !important; // Ensure minimum height
+      object-fit: cover !important;
+      border-radius: 8px !important;
+    }
+  }
 }

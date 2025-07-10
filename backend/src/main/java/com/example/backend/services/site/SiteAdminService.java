@@ -6,6 +6,7 @@ import com.example.backend.repositories.finance.fixedAssets.FixedAssetsRepositor
 import com.example.backend.models.Partner;
 import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.finance.fixedAssets.FixedAssets;
+import com.example.backend.models.equipment.EquipmentStatus;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.site.Site;
 import com.example.backend.models.site.SitePartner;
@@ -26,7 +27,7 @@ import java.util.*;
 @Service
 public class SiteAdminService
 {
-    private final FixedAssetsRepository fixedAssetRepository;
+    private final FixedAssetRepository fixedAssetRepository;
     private SiteRepository siteRepository;
     private PartnerRepository partnerRepository;
     private EquipmentRepository equipmentRepository;
@@ -37,7 +38,7 @@ public class SiteAdminService
     private EntityManager entityManager;
 
     @Autowired
-    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetsRepository fixedAssetRepository) {
+    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetRepository fixedAssetRepository) {
         this.siteRepository = siteRepository;
         this.partnerRepository = partnerRepository;
         this.equipmentRepository = equipmentRepository;
@@ -233,6 +234,10 @@ public class SiteAdminService
 
         // Assign equipment to site
         equipment.setSite(site);
+
+
+            equipment.setStatus(EquipmentStatus.RUNNING);
+
 
         // If equipment has a main driver, assign them to the site
         if (equipment.getMainDriver() != null) {

@@ -223,18 +223,38 @@ public class AttendanceService {
                     attendance.setCheckIn(requestDTO.getCheckIn());
                     attendance.setCheckOut(requestDTO.getCheckOut());
 
-                    // Determine if late
+                    // Determine if late based on JobPosition's start time
                     if (requestDTO.getCheckIn() != null) {
-                        LocalTime expectedCheckIn = LocalTime.of(9, 0); // 9 AM default
-                        if (requestDTO.getCheckIn().isAfter(expectedCheckIn.plusMinutes(15))) {
+                        LocalTime expectedCheckIn = getExpectedStartTime(jobPosition);
+                        LocalTime lateThreshold = expectedCheckIn.plusMinutes(15); // 15 minutes grace period
+
+                        if (requestDTO.getCheckIn().isAfter(lateThreshold)) {
                             attendance.setStatus(Attendance.AttendanceStatus.LATE);
+                            log.info("Employee {} marked as LATE. Expected: {}, Actual: {}, Threshold: {}",
+                                    employee.getId(), expectedCheckIn, requestDTO.getCheckIn(), lateThreshold);
+                        }
+                    }
+
+                    // Calculate expected and actual working hours for monthly employees
+                    if (requestDTO.getCheckIn() != null && requestDTO.getCheckOut() != null) {
+                        double actualHours = calculateWorkingHours(requestDTO.getCheckIn(), requestDTO.getCheckOut());
+                        attendance.setHoursWorked(actualHours);
+
+                        // Set expected hours from job position
+                        Integer expectedHours = jobPosition.getWorkingHours();
+                        if (expectedHours != null) {
+                            attendance.setExpectedHours(expectedHours.doubleValue());
+
+                            // Calculate overtime for monthly employees if they work more than expected
+                            double overtime = actualHours - expectedHours;
+                            attendance.setOvertimeHours(overtime > 0 ? overtime : 0.0);
                         }
                     }
                 }
                 break;
 
             case HOURLY:
-                // For HOURLY, track hours worked
+                // For HOURLY, track hours worked with more precision
                 if (attendance.getStatus() == Attendance.AttendanceStatus.PRESENT) {
                     attendance.setHoursWorked(requestDTO.getHoursWorked());
 
@@ -244,18 +264,44 @@ public class AttendanceService {
                         attendance.setOvertimeHours(overtime > 0 ? overtime : 0.0);
                     }
 
-                    // Optionally track check-in/out for hourly as well
+                    // Track check-in/out for hourly workers
                     attendance.setCheckIn(requestDTO.getCheckIn());
                     attendance.setCheckOut(requestDTO.getCheckOut());
+
+                    // Check if hourly worker is late (they might have fixed schedules too)
+                    if (requestDTO.getCheckIn() != null) {
+                        LocalTime expectedCheckIn = getExpectedStartTime(jobPosition);
+                        LocalTime lateThreshold = expectedCheckIn.plusMinutes(15);
+
+                        if (requestDTO.getCheckIn().isAfter(lateThreshold)) {
+                            attendance.setStatus(Attendance.AttendanceStatus.LATE);
+                            log.info("Hourly employee {} marked as LATE. Expected: {}, Actual: {}",
+                                    employee.getId(), expectedCheckIn, requestDTO.getCheckIn());
+                        }
+                    }
                 }
                 break;
 
             case DAILY:
-                // For DAILY, simple status tracking
-                // Status is already set above, no additional fields needed
+                // For DAILY, simple status tracking with late detection
                 if (attendance.getStatus() == Attendance.AttendanceStatus.PRESENT) {
                     // Daily workers work full day if present
                     attendance.setHoursWorked(8.0); // Standard 8 hours
+
+                    // Check if daily worker is late
+                    if (requestDTO.getCheckIn() != null) {
+                        LocalTime expectedCheckIn = getExpectedStartTime(jobPosition);
+                        LocalTime lateThreshold = expectedCheckIn.plusMinutes(15);
+
+                        if (requestDTO.getCheckIn().isAfter(lateThreshold)) {
+                            attendance.setStatus(Attendance.AttendanceStatus.LATE);
+                            log.info("Daily employee {} marked as LATE. Expected: {}, Actual: {}",
+                                    employee.getId(), expectedCheckIn, requestDTO.getCheckIn());
+                        }
+                    }
+
+                    attendance.setCheckIn(requestDTO.getCheckIn());
+                    attendance.setCheckOut(requestDTO.getCheckOut());
                 }
                 break;
         }
@@ -270,6 +316,110 @@ public class AttendanceService {
         }
     }
 
+    /**
+     * Helper method to get the expected start time for an employee based on their job position
+     * Falls back to default times if job position doesn't have start time configured
+     */
+    private LocalTime getExpectedStartTime(JobPosition jobPosition) {
+        // Use the job position's start time if available
+        if (jobPosition.getStartTime() != null) {
+            return jobPosition.getStartTime();
+        }
+
+        // Fallback based on contract type and shift information
+        JobPosition.ContractType contractType = jobPosition.getContractType();
+        String shifts = jobPosition.getShifts();
+
+        if (shifts != null) {
+            switch (shifts.toLowerCase()) {
+                case "night shift":
+                    return LocalTime.of(22, 0); // 10:00 PM
+                case "early morning shift":
+                    return LocalTime.of(6, 0);  // 6:00 AM
+                case "evening shift":
+                    return LocalTime.of(14, 0); // 2:00 PM
+                case "day shift":
+                default:
+                    return LocalTime.of(9, 0);  // 9:00 AM
+            }
+        }
+
+        // Default fallback based on contract type
+        switch (contractType) {
+            case HOURLY:
+                return LocalTime.of(8, 0);  // 8:00 AM for hourly workers
+            case DAILY:
+                return LocalTime.of(7, 0);  // 7:00 AM for daily workers
+            case MONTHLY:
+            default:
+                return LocalTime.of(9, 0);  // 9:00 AM for monthly workers
+        }
+    }
+
+    /**
+     * Helper method to calculate working hours between check-in and check-out times
+     * Handles overnight shifts and break deductions
+     */
+    private double calculateWorkingHours(LocalTime checkIn, LocalTime checkOut) {
+        if (checkIn == null || checkOut == null) {
+            return 0.0;
+        }
+
+        long minutes;
+
+        // Handle overnight shifts (check-out is next day)
+        if (checkOut.isBefore(checkIn)) {
+            // Calculate time until midnight + time from midnight to check-out
+            minutes = java.time.Duration.between(checkIn, LocalTime.MAX).toMinutes() + 1 +
+                    java.time.Duration.between(LocalTime.MIN, checkOut).toMinutes();
+        } else {
+            // Normal same-day shift
+            minutes = java.time.Duration.between(checkIn, checkOut).toMinutes();
+        }
+
+        double hours = minutes / 60.0;
+
+        // Deduct standard break time for shifts longer than 6 hours
+        if (hours > 6.0) {
+            hours -= 1.0; // Deduct 1-hour break
+        } else if (hours > 4.0) {
+            hours -= 0.5; // Deduct 30-minute break
+        }
+
+        return Math.round(hours * 100.0) / 100.0; // Round to 2 decimal places
+    }
+
+    /**
+     * Helper method to determine if an employee should be marked as late
+     * Can be used for additional late-checking logic
+     */
+    private boolean isEmployeeLate(LocalTime checkIn, LocalTime expectedStartTime, int graceMinutes) {
+        if (checkIn == null || expectedStartTime == null) {
+            return false;
+        }
+
+        LocalTime lateThreshold = expectedStartTime.plusMinutes(graceMinutes);
+        return checkIn.isAfter(lateThreshold);
+    }
+
+    /**
+     * Enhanced method that also considers job position's break settings for hourly workers
+     */
+    private double calculateWorkingHoursWithBreaks(LocalTime checkIn, LocalTime checkOut, JobPosition jobPosition) {
+        double baseHours = calculateWorkingHours(checkIn, checkOut);
+
+        // For hourly workers with break tracking enabled
+        if (jobPosition.getContractType() == JobPosition.ContractType.HOURLY &&
+                Boolean.TRUE.equals(jobPosition.getTrackBreaks()) &&
+                jobPosition.getBreakDurationMinutes() != null) {
+
+            // Deduct configured break time
+            double breakHours = jobPosition.getBreakDurationMinutes() / 60.0;
+            baseHours = Math.max(0, baseHours - breakHours);
+        }
+
+        return Math.round(baseHours * 100.0) / 100.0;
+    }
     /**
      * Determine day type based on date
      */

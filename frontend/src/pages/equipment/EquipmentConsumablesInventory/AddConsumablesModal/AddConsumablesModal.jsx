@@ -35,6 +35,7 @@ const AddConsumablesModal = ({
         receiverType: "EQUIPMENT",
         receiverId: equipmentId,
         batchNumber: "",
+        description: "",
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -225,7 +226,8 @@ const AddConsumablesModal = ({
                 parseInt(newTransaction.batchNumber),
                 'CONSUMABLE',
                 itemsArray,
-                newTransaction.transactionDate
+                newTransaction.transactionDate,
+                newTransaction.description
             );
 
             console.log("Transaction created:", response.data);
@@ -316,6 +318,7 @@ const AddConsumablesModal = ({
                 receiverType: "EQUIPMENT",
                 receiverId: equipmentId,
                 batchNumber: "",
+                description: "",
             });
 
             // Set default site to equipment's site
@@ -389,6 +392,20 @@ const AddConsumablesModal = ({
                                 <span>{batchVerificationResult.message}</span>
                             </div>
                         )}
+                    </div>
+
+                    {/* Description Field - Full Width */}
+                    <div className="add-consumables-form-group add-consumables-full-width">
+                        <label htmlFor="description">Description</label>
+                        <textarea
+                            id="description"
+                            name="description"
+                            value={newTransaction.description || ''}
+                            onChange={handleInputChange}
+                            placeholder="Enter transaction description (optional)"
+                            rows="3"
+                            className="add-consumables-description-textarea"
+                        />
                     </div>
 
                     {/* Source and Destination */}

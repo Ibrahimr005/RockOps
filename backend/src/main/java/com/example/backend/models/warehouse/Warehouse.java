@@ -2,8 +2,7 @@ package com.example.backend.models.warehouse;
 
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.site.Site;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,12 +35,10 @@ public class Warehouse {
     private Site site;
 
     @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL)
-    @JsonManagedReference("warehouse-employee") // Add this annotation
+    @JsonIgnore // CHANGED from @JsonManagedReference to @JsonIgnore
     private List<Employee> employees;
 
     @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonBackReference // prevents infinite recursion in serialization
+    @JsonIgnore // CHANGED from @JsonManagedReference to @JsonIgnore
     private List<Item> items = new ArrayList<>();
-
-    // New relation to WarehouseTransaction
 }

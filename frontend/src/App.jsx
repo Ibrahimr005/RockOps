@@ -34,6 +34,8 @@ import RelatedDocuments from "./pages/RelatedDocuments/RelatedDocuments.jsx";
 import WarehousesList from "./pages/warehouse/WarehousesList/WarehousesList.jsx";
 import WarehouseDetails from "./pages/warehouse/WarehousesDetails/WarehouseDetails.jsx";
 import WarehouseInformation from "./pages/warehouse/WarehousesInformation/WarehouseInformation.jsx";
+import WarehouseViewItemCategoriesTable from "./pages/warehouse/WarehouseCategories/WarehouseViewItemsCategoriesTable.jsx";
+import WarehouseViewItemTypesTable from "./pages/warehouse/WarehouseItemTypes/WarehouseViewItemTypesTable.jsx";
 
 // ===================== Merchant & Procurement Components =====================
 import MerchantDetails from "./pages/merchant/MerchantDetails/MerchantDetails.jsx";
@@ -52,7 +54,7 @@ import LoadingPage from "./components/common/LoadingPage/LoadingPage.jsx";
 import Payables from "./pages/finance/Payables/Payables.jsx";
 import FixedAssets from "./pages/finance/FixedAssets/FixedAssets.jsx";
 
-
+import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ROLES } from './utils/roles';
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -69,9 +71,8 @@ const RoleRoute = ({allowedRoles, children, redirectPath = '/dashboard'}) => {
     return children;
 };
 
-const allRoles = ["ADMIN", "USER", "SITE_ADMIN", "PROCUREMENT", "WAREHOUSE_MANAGER", "SECRETARY", "EQUIPMENT_MANAGER", "HR_MANAGER", "HR_EMPLOYEE", "FINANCE_EMPLOYEE", "FINANCE_MANAGER"];
+const allRoles = Object.values(ROLES);
 
-const mostRoles = ["ADMIN", "USER", "SITE_ADMIN", "PROCUREMENT", "WAREHOUSE_MANAGER", "SECRETARY", "EQUIPMENT_MANAGER", "HR_MANAGER", "HR_EMPLOYEE"];
 
 
 // ===================== Layout Components =====================
@@ -104,11 +105,11 @@ function App() {
                                 <Route path="/" element={<AuthRedirect/>}/>
 
                                 <Route element={<MainLayout/>}>
-                                    <Route path="/admin" element={<RoleRoute allowedRoles={['ADMIN']}><AdminPage/></RoleRoute>}/>
+                                    <Route path="/admin" element={<RoleRoute allowedRoles={[ADMIN]}><AdminPage/></RoleRoute>}/>
 
                                     <Route path="/dashboard" element={<RoleRoute allowedRoles={allRoles}><DashboardPage/></RoleRoute>}/>
 
-                                    <Route path="/partners" element={<RoleRoute allowedRoles={["ADMIN", "SITE_ADMIN"]}><Partners/></RoleRoute>}/>
+                                    <Route path="/partners" element={<RoleRoute allowedRoles={[ADMIN, SITE_ADMIN]}><Partners/></RoleRoute>}/>
 
                                     {/* Site Management Routes */}
                                     <Route path="/sites" element={<RoleRoute allowedRoles={allRoles}><SitesLayout/></RoleRoute>}>
@@ -120,16 +121,18 @@ function App() {
                                     {/* Warehouse Management Routes */}
                                     <Route path="/warehouses" element={<RoleRoute allowedRoles={allRoles}><SitesLayout/></RoleRoute>}>
                                         <Route index element={<RoleRoute allowedRoles={allRoles}><WarehousesList/></RoleRoute>}/>
+                                        <Route path="item-categories" element={<RoleRoute allowedRoles={allRoles}><WarehouseViewItemCategoriesTable/></RoleRoute>}/>
+                                        <Route path="item-types" element={<RoleRoute allowedRoles={allRoles}><WarehouseViewItemTypesTable/></RoleRoute>}/>
                                         <Route path=":id" element={<WarehouseDetails/>}/>
                                         <Route path="warehouse-details/:id" element={<WarehouseInformation/>}/>
                                     </Route>
 
                                     {/* Merchant Routes */}
-                                    <Route path="/merchants" element={<RoleRoute allowedRoles={["ADMIN", "PROCUREMENT", "SITE_ADMIN", "WAREHOUSE_MANAGER"]}><ProcurementMerchants/></RoleRoute>}/>
-                                    <Route path="/merchants/:id" element={<RoleRoute allowedRoles={["ADMIN", "PROCUREMENT", "SITE_ADMIN"]}><MerchantDetails/></RoleRoute>}/>
+                                    <Route path="/merchants" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN, WAREHOUSE_MANAGER]}><ProcurementMerchants/></RoleRoute>}/>
+                                    <Route path="/merchants/:id" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN]}><MerchantDetails/></RoleRoute>}/>
 
                                     {/* Procurement Routes */}
-                                    <Route path="/procurement" element={<RoleRoute allowedRoles={["PROCUREMENT", "SITE_ADMIN", "ADMIN"]}><SitesLayout/></RoleRoute>}>
+                                    <Route path="/procurement" element={<RoleRoute allowedRoles={[PROCUREMENT, SITE_ADMIN, ADMIN]}><SitesLayout/></RoleRoute>}>
                                         <Route path="request-orders" element={<ProcurementRequestOrders/>}/>
                                         <Route path="request-orders/:id" element={<ProcurementRequestOrderDetails/>}/>
                                         <Route path="offers" element={<ProcurementOffers/>}/>
@@ -138,7 +141,7 @@ function App() {
                                     </Route>
 
                                     {/* HR Management Routes */}
-                                    <Route path="/hr" element={<RoleRoute allowedRoles={["HR_MANAGER", "HR_EMPLOYEE", "ADMIN"]}><HRLayout/></RoleRoute>}>
+                                    <Route path="/hr" element={<RoleRoute allowedRoles={[HR_MANAGER, HR_EMPLOYEE, ADMIN]}><HRLayout/></RoleRoute>}>
                                         <Route path="vacancies" element={<VacancyList/>}/>
                                         <Route path="positions" element={<PositionsList/>}/>
                                         <Route path="employees" element={<EmployeesList/>}/>

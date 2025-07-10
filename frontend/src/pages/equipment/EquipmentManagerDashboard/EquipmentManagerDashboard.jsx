@@ -18,6 +18,7 @@ const EquipmentManagerDashboard = () => {
     const [equipmentTypes, setEquipmentTypes] = useState([]);
     const [equipmentBrands, setEquipmentBrands] = useState([]);
     const [sites, setSites] = useState([]);
+    const [statusOptions, setStatusOptions] = useState([]);
     const [maintenanceData, setMaintenanceData] = useState({});
     const [sarkyData, setSarkyData] = useState({});
     const [error, setError] = useState(null);
@@ -77,6 +78,19 @@ const EquipmentManagerDashboard = () => {
         return [];
     };
 
+    const fetchStatusOptions = async () => {
+        try {
+            const response = await equipmentService.getEquipmentStatusOptions();
+            if (response.data) {
+                setStatusOptions(response.data);
+                return response.data;
+            }
+        } catch (error) {
+            console.error('Error fetching status options:', error);
+        }
+        return [];
+    };
+
     const fetchMaintenanceAnalytics = async (equipmentId) => {
         try {
             const response = await inSiteMaintenanceService.getAnalytics(equipmentId);
@@ -106,11 +120,12 @@ const EquipmentManagerDashboard = () => {
         setError(null);
         try {
             // Fetch basic data
-            const [equipmentData, typesData, brandsData, sitesData] = await Promise.all([
+            const [equipmentData, typesData, brandsData, sitesData, statusData] = await Promise.all([
                 fetchEquipment(),
                 fetchEquipmentTypes(),
                 fetchEquipmentBrands(),
-                fetchSites()
+                fetchSites(),
+                fetchStatusOptions()
             ]);
 
             // Only fetch analytics for equipment that exist
@@ -169,15 +184,31 @@ const EquipmentManagerDashboard = () => {
         return equipment.filter(eq => eq.typeId === selectedType);
     };
 
+    // Helper function to get color for status
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'RUNNING':
+                return '#10b981';
+            case 'AVAILABLE':
+                return '#27ae60';
+            case 'SOLD':
+                return '#ef4444';
+            case 'IN_MAINTENANCE':
+                return '#f59e0b';
+            case 'SCRAPPED':
+                return '#8b5cf6';
+            case 'RENTED':
+                return '#3060d0';
+            default:
+                return '#6b7280';
+        }
+    };
+
     // Calculate summary statistics
     const filteredEquipment = getFilteredEquipment();
     const totalEquipment = filteredEquipment.length;
     const activeEquipment = filteredEquipment.filter(eq => 
-        eq.status === 'SOLD' ||
-        eq.status === 'RENTED' ||
-        eq.status === 'IN_MAINTENANCE'||
-        eq.status === 'AVAILABLE'||
-        eq.status === 'SCRAPED'
+        statusOptions.some(status => status.value === eq.status)
     ).length;
     const inactiveEquipment = totalEquipment - activeEquipment;
     const totalMaintenanceEvents = Object.values(maintenanceData).reduce((sum, data) => 
@@ -190,10 +221,7 @@ const EquipmentManagerDashboard = () => {
         const typeEquipment = equipment.filter(eq => eq.typeId === type.id);
         const count = typeEquipment.length;
         const active = typeEquipment.filter(eq => 
-            eq.status === 'ACTIVE' || 
-            eq.status === 'OPERATIONAL' || 
-            eq.status === 'IN_USE'||
-            eq.status === 'AVAILABLE'
+            statusOptions.some(status => status.value === eq.status)
         ).length;
         
         return {
@@ -201,37 +229,18 @@ const EquipmentManagerDashboard = () => {
             count: count,
             active: active,
             inactive: count - active,
-            maintenance: typeEquipment.filter(eq => eq.status === 'MAINTENANCE').length
+            maintenance: typeEquipment.filter(eq => eq.status === 'IN_MAINTENANCE').length
         };
     }).filter(item => item.count > 0);
 
-    const statusData = [
-        {
-            name: 'Available',
-            value: equipment.filter(eq => eq.status === 'ACTIVE' || eq.status === 'OPERATIONAL' || eq.status === 'IN_USE'||eq.status === 'AVAILABLE' ).length,
-            color: '#10b981'
-        },
-        { 
-            name: 'Sold',
-            value: equipment.filter(eq => eq.status === 'INACTIVE' || eq.status === 'OFFLINE'|| eq.status==='SOLD').length,
-            color: '#ef4444' 
-        },
-        { 
-            name: 'In Maintenance', 
-            value: equipment.filter(eq => eq.status === 'MAINTENANCE' || eq.status === 'UNDER_MAINTENANCE' || eq.status === 'IN_MAINTENANCE').length,
-            color: '#f59e0b' 
-        },
-        { 
-            name: 'Scraped',
-            value: equipment.filter(eq => eq.status === 'OUT_OF_SERVICE' || eq.status === 'DAMAGED' || eq.status ==='SCRAPED').length,
-            color: '#8b5cf6' 
-        },
-        {
-            name: 'Rented',
-            value: equipment.filter(eq => eq.status === 'RENTED' ).length,
-            color: '#3060d0'
-        }
-    ].filter(item => item.value > 0);
+    const statusData = statusOptions.map(status => {
+        const count = equipment.filter(eq => eq.status === status.value).length;
+        return {
+            name: status.label,
+            value: count,
+            color: getStatusColor(status.value)
+        };
+    }).filter(item => item.value > 0);
 
     const brandData = equipmentBrands.map(brand => {
         const count = equipment.filter(eq => eq.brandId === brand.id).length;
@@ -248,10 +257,7 @@ const EquipmentManagerDashboard = () => {
     const siteData = getFilteredSites().map(site => {
         const siteEquipment = equipment.filter(eq => eq.siteId === site.id);
         const activeSiteEquipment = siteEquipment.filter(eq => 
-            eq.status === 'ACTIVE' || 
-            eq.status === 'OPERATIONAL' || 
-            eq.status === 'IN_USE'||
-            eq.status === 'AVAILABLE'
+            statusOptions.some(status => status.value === eq.status)
         );
         const maintenanceEvents = siteEquipment.reduce((sum, eq) => 
             sum + (maintenanceData[eq.id]?.totalMaintenanceEvents || 0), 0);

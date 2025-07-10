@@ -141,7 +141,7 @@ const UserStatsCard = ({ users }) => {
                             cx={centerX}
                             cy={centerY}
                             r={radius}
-                            fill="var(--section-background-color)"
+                            fill="var(--main-background-color)"
                             filter="url(#dropShadow)"
                         />
 

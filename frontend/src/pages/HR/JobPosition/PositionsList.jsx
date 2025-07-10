@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiClock } from 'react-icons/fi';
 import AddPositionForm from './components/AddPositionForm.jsx';
 import EditPositionForm from './components/EditPositionForm.jsx';
 import DataTable from '../../../components/common/DataTable/DataTable';
@@ -94,6 +94,47 @@ const PositionsList = () => {
         }
     };
 
+    // Helper function to format time range
+    const formatTimeRange = (startTime, endTime) => {
+        if (!startTime || !endTime) return null;
+
+        // Handle different time formats
+        const formatTime = (time) => {
+            if (!time) return '';
+            // If time is in HH:mm:ss format, extract HH:mm
+            if (time.includes(':')) {
+                const parts = time.split(':');
+                return `${parts[0]}:${parts[1]}`;
+            }
+            return time;
+        };
+
+        const formattedStart = formatTime(startTime);
+        const formattedEnd = formatTime(endTime);
+
+        return `${formattedStart} - ${formattedEnd}`;
+    };
+
+    // Helper function to calculate working hours from time range
+    const calculateWorkingHours = (startTime, endTime) => {
+        if (!startTime || !endTime) return null;
+
+        try {
+            const start = new Date(`1970-01-01T${startTime}`);
+            const end = new Date(`1970-01-01T${endTime}`);
+            let diffHours = (end - start) / (1000 * 60 * 60);
+
+            // Handle overnight shifts
+            if (diffHours < 0) {
+                diffHours += 24;
+            }
+
+            return Math.round(diffHours * 100) / 100;
+        } catch (error) {
+            return null;
+        }
+    };
+
     const columns = [
         {
             header: 'Position Name',
@@ -106,7 +147,7 @@ const PositionsList = () => {
             sortable: true
         },
         {
-            header: 'Type',
+            header: 'Contract Type',
             accessor: 'contractType',
             sortable: true,
             render: (row) => {
@@ -120,51 +161,105 @@ const PositionsList = () => {
         {
             header: 'Experience Level',
             accessor: 'experienceLevel',
-            sortable: true
-        },
-        {
-            header: 'Base Salary (Monthly)',
-            accessor: 'baseSalary',
-            sortable: true,
-            render: (row) => row.baseSalary ? `${Number(row.baseSalary).toLocaleString()}/month` : 'N/A'
-        },
-        {
-            header: 'Reporting To',
-            accessor: 'head',
-            sortable: true
-        },
-        {
-            header: 'Working Days',
-            accessor: 'workingDays',
             sortable: true,
             render: (row) => {
-                const daysPerMonth = row.workingDaysPerMonth;
-                const daysPerWeek = row.workingDaysPerWeek;
-                
-                if (daysPerMonth) {
-                    return (
-                        <div className="salary-info">
-                            <span className="salary-info__monthly">{daysPerMonth}</span>
-                            <span className="salary-info__period"> days/month</span>
-                        </div>
-                    );
-                } else if (daysPerWeek) {
-                    return (
-                        <div className="salary-info">
-                            <span className="salary-info__monthly">{daysPerWeek}</span>
-                            <span className="salary-info__period"> days/week</span>
-                        </div>
-                    );
-                } else {
-                    return <div className=".salary-info__period">N/A</div>;
+                if (!row.experienceLevel) return 'N/A';
+                return row.experienceLevel.replace('_', ' ').toLowerCase()
+                    .replace(/\b\w/g, l => l.toUpperCase());
+            }
+        },
+        {
+            header: 'Base Salary',
+            accessor: 'baseSalary',
+            sortable: true,
+            render: (row) => {
+                // Use calculated monthly salary if available, otherwise use base salary
+                const salary = row.calculatedMonthlySalary || row.monthlyBaseSalary || row.baseSalary;
+
+                if (!salary) return 'N/A';
+
+                const contractType = row.contractType || row.type;
+                let suffix = '';
+
+                switch (contractType) {
+                    case 'HOURLY':
+                        const hourlyRate = row.hourlyRate;
+                        return hourlyRate ? `$${Number(hourlyRate).toLocaleString()}/hr` : 'N/A';
+                    case 'DAILY':
+                        const dailyRate = row.dailyRate;
+                        return dailyRate ? `$${Number(dailyRate).toLocaleString()}/day` : 'N/A';
+                    case 'MONTHLY':
+                    default:
+                        return `$${Number(salary).toLocaleString()}/month`;
                 }
             }
         },
         {
-            header: 'Working Hours',
-            accessor: 'workingHours',
+            header: 'Working Schedule',
+            accessor: 'workingSchedule',
+            sortable: false,
+            render: (row) => {
+                const contractType = row.contractType || row.type;
+
+                switch (contractType) {
+                    case 'HOURLY':
+                        const daysPerWeek = row.workingDaysPerWeek;
+                        const hoursPerShift = row.hoursPerShift;
+                        return (
+                            <div className="schedule-info">
+                                {daysPerWeek && <div>{daysPerWeek} days/week</div>}
+                                {hoursPerShift && <div>{hoursPerShift}h/shift</div>}
+                            </div>
+                        );
+
+                    case 'DAILY':
+                        const daysPerMonth = row.workingDaysPerMonth;
+                        const includesWeekends = row.includesWeekends;
+                        return (
+                            <div className="schedule-info">
+                                {daysPerMonth && <div>{daysPerMonth} days/month</div>}
+                                {includesWeekends && <div className="schedule-badge">Weekends</div>}
+                            </div>
+                        );
+
+                    case 'MONTHLY':
+                        const timeRange = formatTimeRange(row.startTime, row.endTime);
+                        const workingHours = calculateWorkingHours(row.startTime, row.endTime) || row.workingHours;
+                        const monthlyDays = row.workingDaysPerMonth;
+
+                        return (
+                            <div className="schedule-info">
+                                {timeRange && (
+                                    <div className="time-range">
+                                        <FiClock className="time-icon" />
+                                        {timeRange}
+                                    </div>
+                                )}
+                                {workingHours && <div>{workingHours}h/day</div>}
+                                {monthlyDays && <div>{monthlyDays} days/month</div>}
+                            </div>
+                        );
+
+                    default:
+                        return 'N/A';
+                }
+            }
+        },
+        {
+            header: 'Reporting To',
+            accessor: 'head',
             sortable: true,
-            render: (row) => row.workingHours ? `${row.workingHours}h/day` : 'N/A'
+            render: (row) => row.head || 'N/A'
+        },
+        {
+            header: 'Status',
+            accessor: 'active',
+            sortable: true,
+            render: (row) => (
+                <span className={`status-badge ${row.active ? 'active' : 'inactive'}`}>
+                    {row.active ? 'Active' : 'Inactive'}
+                </span>
+            )
         }
     ];
 
@@ -191,7 +286,7 @@ const PositionsList = () => {
             <div className="departments-header">
                 <h1>Job Positions
                     <p className="employees-header__subtitle">
-                        Manage job positions with salary structures, requirements, and department assignments
+                        Manage job positions with salary structures, working schedules, and department assignments
                     </p>
                 </h1>
                 <button
@@ -229,7 +324,7 @@ const PositionsList = () => {
                 tableTitle="Job Positions"
                 showSearch={true}
                 showFilters={true}
-                filterableColumns={['department', 'contractType', 'experienceLevel']}
+                filterableColumns={['department', 'contractType', 'experienceLevel', 'active']}
                 defaultSortField="positionName"
                 defaultSortDirection="asc"
                 emptyMessage="No job positions found. Click 'Add Position' to create one."

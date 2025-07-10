@@ -211,10 +211,10 @@
   justify-content: center;
   gap: 0.5rem;
   border: none;
+  color: var(--color-text-inverse);
 
   // Default (warning) style
   background-color: var(--color-warning-light);
-  color: var(--color-text-inverse);
 
   &:hover:not(:disabled) {
     background-color: var(--color-warning);

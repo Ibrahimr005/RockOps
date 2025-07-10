@@ -7,7 +7,7 @@ import procurementImageDark from "../../../assets/imgs/pro_icon_dark.png";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx"
 import IncomingRequestOrders from './IncomingRequests/IncomingRequestOrders';
 import ApprovedRequestOrders from './ApprovedRequests/ApprovedRequestOrders';
-import ProcurementIntroCard from '../../../components/procurement/IntroCard/ProcurementIntroCard.jsx';
+import ProcurementIntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
 
 const ProcurementRequestOrders = ({ onEdit, onDelete }) => {

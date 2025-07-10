@@ -65,6 +65,7 @@ const enTranslations = {
         SITE_ADMIN: 'Site Admin',
         PROCUREMENT: 'Procurement',
         WAREHOUSE_MANAGER: 'Warehouse Manager',
+        WAREHOUSE_EMPLOYEE: 'Warehouse Employee',
         SECRETARY: 'Secretary',
         EQUIPMENT_MANAGER: 'Equipment Manager',
         HR_MANAGER: 'HR Manager',
@@ -150,7 +151,6 @@ const enTranslations = {
     equipment: {
         equipment: 'Equipment',
         equipmentType: 'Equipment Type',
-        modelNumber: 'Model Number',
         driverName: 'Driver Name',
         manufactureDate: 'Manufacture Date',
         purchaseDate: 'Purchase Date',
@@ -238,6 +238,7 @@ const arTranslations = {
         SITE_ADMIN: 'مدير الموقع',
         PROCUREMENT: 'المشتريات',
         WAREHOUSE_MANAGER: 'مدير المستودع',
+        WAREHOUSE_EMPLOYEE: 'موظف مستودع',
         SECRETARY: 'سكرتير',
         EQUIPMENT_MANAGER: 'مدير المعدات',
         HR_MANAGER: 'مدير الموارد البشرية',
@@ -323,7 +324,6 @@ const arTranslations = {
     equipment: {
         equipment: 'معدات',
         equipmentType: 'نوع المعدات',
-        modelNumber: 'رقم الموديل',
         driverName: 'اسم السائق',
         manufactureDate: 'تاريخ التصنيع',
         purchaseDate: 'تاريخ الشراء',

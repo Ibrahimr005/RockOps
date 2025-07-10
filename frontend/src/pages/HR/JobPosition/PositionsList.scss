@@ -9,3 +9,465 @@
         color: #374151;
     }
 }
+// TimeFields.scss - Additional styles for time-related components
+// Import this file in your AddPositionForm.scss
+
+// Time Section Styles
+.jp-time-section {
+    background-color: var(--color-surface-hover);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin: 1rem 0;
+    border: 1px solid var(--border-color);
+
+    h5 {
+        color: var(--head-title-color);
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+        margin: 0 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+}
+
+// Time Input Styles
+.jp-time-input {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    transition: all var(--transition-fast);
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    font-family: var(--font-family);
+    width: 100%;
+
+    &:hover {
+        border-color: var(--color-primary-light);
+    }
+
+    &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+    }
+
+    &:disabled {
+        background-color: var(--color-surface-hover);
+        cursor: not-allowed;
+        color: var(--color-text-secondary);
+        opacity: 0.7;
+    }
+
+    // Custom styling for time input
+    &::-webkit-calendar-picker-indicator {
+        background-color: var(--color-primary);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        filter: invert(1);
+    }
+
+    &::-webkit-datetime-edit-fields-wrapper {
+        padding: 0;
+    }
+
+    &::-webkit-datetime-edit-text {
+        color: var(--color-text-secondary);
+        padding: 0 0.25rem;
+    }
+
+    &::-webkit-datetime-edit-hour-field,
+    &::-webkit-datetime-edit-minute-field {
+        background-color: transparent;
+        color: var(--color-text-primary);
+        font-weight: var(--bold-font-weight);
+    }
+}
+
+// Time Preview Styles
+.jp-time-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    margin-top: 1rem;
+
+    .jp-time-label {
+        color: var(--color-text-secondary);
+        font-size: 0.9rem;
+        font-weight: var(--bold-font-weight);
+    }
+
+    .jp-time-value {
+        color: var(--color-primary);
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+        font-family: 'Courier New', monospace;
+    }
+}
+
+// Field Hint Styles
+.jp-field-hint {
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    font-style: italic;
+    display: block;
+}
+
+// Schedule Info Styles for PositionsList table
+.schedule-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+
+    .time-range {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--color-primary);
+        font-weight: var(--bold-font-weight);
+        font-family: 'Courier New', monospace;
+
+        .time-icon {
+            font-size: 0.8rem;
+            color: var(--color-primary);
+        }
+    }
+
+    .schedule-badge {
+        background-color: var(--color-primary);
+        color: var(--color-text-inverse);
+        padding: 0.2rem 0.5rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.75rem;
+        font-weight: var(--bold-font-weight);
+        display: inline-block;
+        width: fit-content;
+    }
+
+    > div {
+        color: var(--color-text-primary);
+
+        &:not(.time-range):not(.schedule-badge) {
+            color: var(--color-text-secondary);
+        }
+    }
+}
+
+// Status Badge Styles
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: var(--bold-font-weight);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &.active {
+        background-color: rgba(76, 175, 80, 0.1);
+        color: var(--color-success);
+        border: 1px solid var(--color-success);
+    }
+
+    &.inactive {
+        background-color: rgba(244, 67, 54, 0.1);
+        color: var(--color-danger);
+        border: 1px solid var(--color-danger);
+    }
+
+    &:hover {
+        opacity: 0.8;
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-sm);
+    }
+}
+
+// Enhanced Salary Preview with Time Information
+.jp-salary-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    background-color: var(--color-surface-hover);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+
+    .jp-salary-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        background-color: var(--color-surface);
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color);
+
+        .jp-salary-label {
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            font-weight: var(--bold-font-weight);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .jp-salary-value {
+            color: var(--color-primary);
+            font-size: 1.1rem;
+            font-weight: var(--bold-font-weight);
+            font-family: 'Courier New', monospace;
+        }
+    }
+}
+
+// Dark theme adjustments
+[data-theme="dark"] {
+    .jp-time-input {
+        background-color: var(--color-surface);
+        color: var(--color-text-primary);
+        border-color: var(--border-color);
+
+        &::-webkit-calendar-picker-indicator {
+            filter: invert(0.8);
+        }
+
+        &::-webkit-datetime-edit-hour-field,
+        &::-webkit-datetime-edit-minute-field {
+            color: var(--color-text-primary);
+        }
+
+        &::-webkit-datetime-edit-text {
+            color: var(--color-text-secondary);
+        }
+    }
+
+    .jp-time-preview {
+        background-color: var(--color-surface);
+        border-color: var(--border-color);
+    }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+    .jp-time-section {
+        padding: 0.75rem;
+        margin: 0.75rem 0;
+
+        h5 {
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+    }
+
+    .jp-time-input {
+        padding: 0.6rem;
+        font-size: 0.9rem;
+    }
+
+    .jp-time-preview {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.6rem;
+
+        .jp-time-label,
+        .jp-time-value {
+            font-size: 0.85rem;
+        }
+    }
+
+    .schedule-info {
+        font-size: 0.8rem;
+
+        .time-range {
+            gap: 0.25rem;
+
+            .time-icon {
+                font-size: 0.7rem;
+            }
+        }
+
+        .schedule-badge {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.4rem;
+        }
+    }
+
+    .jp-salary-preview {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding: 0.75rem;
+
+        .jp-salary-item {
+            padding: 0.6rem;
+
+            .jp-salary-label {
+                font-size: 0.8rem;
+            }
+
+            .jp-salary-value {
+                font-size: 1rem;
+            }
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .jp-time-section {
+        padding: 0.5rem;
+
+        .jp-form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .schedule-info {
+        font-size: 0.75rem;
+
+        .time-range {
+            font-size: 0.75rem;
+        }
+    }
+
+    .status-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+    }
+}
+
+// Accessibility Improvements
+.jp-time-input:focus,
+.jp-time-preview:focus-within {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+.schedule-info .time-range {
+    &:hover {
+        background-color: rgba(72, 128, 255, 0.1);
+        border-radius: var(--radius-sm);
+        padding: 0.25rem 0.5rem;
+        margin: -0.25rem -0.5rem;
+    }
+
+    &:focus {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+        border-radius: var(--radius-sm);
+    }
+}
+
+.status-badge:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+// High Contrast Mode Support
+@media (prefers-contrast: high) {
+    .jp-time-input {
+        border: 2px solid var(--color-text-primary);
+    }
+
+    .jp-time-preview,
+    .jp-salary-preview .jp-salary-item {
+        border: 2px solid var(--color-text-primary);
+    }
+
+    .schedule-info .schedule-badge,
+    .status-badge {
+        border: 2px solid currentColor;
+    }
+}
+
+// Reduced Motion Support
+@media (prefers-reduced-motion: reduce) {
+    .jp-time-input,
+    .jp-time-preview,
+    .schedule-info,
+    .status-badge {
+        transition: none;
+    }
+
+    .status-badge:hover {
+        transform: none;
+    }
+}
+
+// Print Styles
+@media print {
+    .jp-time-section,
+    .jp-time-preview,
+    .jp-salary-preview {
+        background: white !important;
+        color: black !important;
+        border-color: black !important;
+    }
+
+    .jp-time-input {
+        background: white !important;
+        color: black !important;
+        border-color: black !important;
+    }
+
+    .schedule-info {
+        .time-range,
+        .schedule-badge {
+            color: black !important;
+            background: white !important;
+            border: 1px solid black !important;
+        }
+    }
+
+    .status-badge {
+        background: white !important;
+        color: black !important;
+        border: 1px solid black !important;
+    }
+}
+
+// Animation for time changes
+@keyframes timeChange {
+    0% { background-color: rgba(72, 128, 255, 0.2); }
+    100% { background-color: transparent; }
+}
+
+.jp-time-value {
+    &.changed {
+        animation: timeChange 0.6s ease-out;
+    }
+}
+
+// Utility Classes
+.jp-time-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.jp-time-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: end;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.jp-time-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    font-weight: var(--bold-font-weight);
+    margin: 0 0.5rem;
+
+    &::before {
+        content: "—";
+        font-size: 1.2rem;
+    }
+}

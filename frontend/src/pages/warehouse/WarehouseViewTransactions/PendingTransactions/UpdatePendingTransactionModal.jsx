@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import "./WarehouseViewTransactions.scss";
-import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx"; // Import the Snackbar component
+import "../WarehouseViewTransactions.scss";
+import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx"; // Import the Snackbar component
 
 const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate, warehouseId }) => {
     const [updatedTransaction, setUpdatedTransaction] = useState(transaction || {});
@@ -500,7 +500,8 @@ const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate,
                 items: items,
                 transactionDate: transactionData.transactionDate,
                 batchNumber: parseInt(transactionData.batchNumber),
-                username: username
+                username: username,
+                description: transactionData.description
             };
 
             console.log("Sending update payload:", payload);
@@ -728,7 +729,7 @@ const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate,
             <div className="modal3">
                 <div className="modal-header3">
                     <h2>Update Transaction</h2>
-                    <button className="close-modal3" onClick={onClose}>
+                    <button className="btn-close" onClick={onClose}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M18 6L6 18M6 6l12 12"/>
                         </svg>
@@ -874,6 +875,20 @@ const UpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate,
                             min="1"
                             placeholder="Enter batch number"
                             required
+                        />
+                    </div>
+
+                    {/* Description Field - Full Width */}
+                    <div className="form-group3 full-width">
+                        <label htmlFor="description">Description</label>
+                        <textarea
+                            id="description"
+                            name="description"
+                            value={updatedTransaction.description || ''}
+                            onChange={handleInputChange}
+                            placeholder="Enter transaction description (optional)"
+                            rows="3"
+                            className="description-textarea"
                         />
                     </div>
 

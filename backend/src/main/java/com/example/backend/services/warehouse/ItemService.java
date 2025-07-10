@@ -68,25 +68,53 @@ public class ItemService {
             throw e; // Re-throw to see the full stack trace
         }
     }
+    public Item createItem(UUID itemTypeId, UUID warehouseId, int initialQuantity, String username, LocalDateTime createdAt) {
+        System.out.println("Service: Creating item with ItemTypeId: " + itemTypeId +
+                ", WarehouseId: " + warehouseId +
+                ", Quantity: " + initialQuantity +
+                ", Username: " + username +
+                ", CreatedAt: " + createdAt);
 
-    public Item createItem(UUID itemTypeId, UUID warehouseId, int initialQuantity, String username , LocalDateTime createdAt) {
-        ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                .orElseThrow(() -> new IllegalArgumentException("ItemType not found"));
+        try {
+            ItemType itemType = itemTypeRepository.findById(itemTypeId)
+                    .orElseThrow(() -> new IllegalArgumentException("ItemType not found with id: " + itemTypeId));
+            System.out.println("✅ Found ItemType: " + itemType.getName());
 
-        Warehouse warehouse = warehouseRepository.findById(warehouseId)
-                .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
+            Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                    .orElseThrow(() -> new IllegalArgumentException("Warehouse not found with id: " + warehouseId));
+            System.out.println("✅ Found Warehouse: " + warehouse.getName());
 
-        // Always create a new item instead of merging
-        Item newItem = new Item();
-        newItem.setItemType(itemType);
-        newItem.setWarehouse(warehouse);
-        newItem.setQuantity(initialQuantity);
-        newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
-        newItem.setCreatedAt(createdAt); // set createdAt here
-        newItem.setCreatedBy(username);
-        System.out.println("createdddatttt:" + newItem.getCreatedAt());
+            // Always create a new item instead of merging
+            Item newItem = new Item();
+            newItem.setItemType(itemType);
+            newItem.setWarehouse(warehouse);
+            newItem.setQuantity(initialQuantity);
+            newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
+            newItem.setCreatedAt(createdAt);
+            newItem.setCreatedBy(username);
 
-        return itemRepository.save(newItem);
+            System.out.println("✅ Created item object - about to save with:");
+            System.out.println("   - ItemType: " + newItem.getItemType().getName());
+            System.out.println("   - Warehouse: " + newItem.getWarehouse().getName());
+            System.out.println("   - Quantity: " + newItem.getQuantity());
+            System.out.println("   - Status: " + newItem.getItemStatus());
+            System.out.println("   - CreatedAt: " + newItem.getCreatedAt());
+            System.out.println("   - CreatedBy: " + newItem.getCreatedBy());
+
+            Item savedItem = itemRepository.save(newItem);
+            System.out.println("✅ Successfully saved item with ID: " + savedItem.getId());
+            return savedItem;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error in createItem service:");
+            System.err.println("   Error type: " + e.getClass().getSimpleName());
+            System.err.println("   Error message: " + e.getMessage());
+            System.err.println("   Stack trace:");
+            e.printStackTrace();
+
+            // Re-throw with more context
+            throw new RuntimeException("Failed to create item: " + e.getMessage(), e);
+        }
     }
 
     // CLEAN RESOLUTION METHOD - Updated with transaction status logic

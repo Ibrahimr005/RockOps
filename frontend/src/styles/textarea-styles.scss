@@ -1,0 +1,342 @@
+/* Textarea Styles */
+
+/* Base textarea styling */
+textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 100px;
+  transition: all var(--transition-fast) ease;
+  box-sizing: border-box;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.2);
+}
+
+textarea::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 1;
+}
+
+textarea:disabled {
+  background-color: var(--color-surface-secondary);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+textarea:read-only {
+  background-color: var(--color-surface-tertiary);
+  color: var(--color-text-primary);
+  cursor: default;
+}
+
+/* Textarea size variations */
+textarea.textarea-sm {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  min-height: 80px;
+}
+
+textarea.textarea-md {
+  padding: 0.75rem;
+  font-size: 1rem;
+  min-height: 100px;
+}
+
+textarea.textarea-lg {
+  padding: 1rem;
+  font-size: 1.125rem;
+  min-height: 120px;
+}
+
+/* Textarea height variations */
+textarea.textarea-xs {
+  min-height: 60px;
+}
+
+textarea.textarea-small {
+  min-height: 80px;
+}
+
+textarea.textarea-medium {
+  min-height: 100px;
+}
+
+textarea.textarea-large {
+  min-height: 150px;
+}
+
+textarea.textarea-xl {
+  min-height: 200px;
+}
+
+/* Textarea with fixed height (no resize) */
+textarea.textarea-fixed {
+  resize: none;
+}
+
+/* Textarea with horizontal resize */
+textarea.textarea-horizontal {
+  resize: horizontal;
+}
+
+/* Textarea with both horizontal and vertical resize */
+textarea.textarea-both {
+  resize: both;
+}
+
+/* Textarea states */
+textarea.textarea-error {
+  border-color: var(--color-danger);
+  background-color: rgba(244, 67, 54, 0.05);
+}
+
+textarea.textarea-error:focus {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
+}
+
+textarea.textarea-success {
+  border-color: var(--color-success);
+  background-color: rgba(76, 175, 80, 0.05);
+}
+
+textarea.textarea-success:focus {
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+textarea.textarea-warning {
+  border-color: var(--color-warning);
+  background-color: rgba(255, 152, 0, 0.05);
+}
+
+textarea.textarea-warning:focus {
+  border-color: var(--color-warning);
+  box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
+}
+
+/* Form group styling for textarea */
+.form-group textarea {
+  margin-top: 0.25rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--label-color);
+  font-weight: var(--bold-font-weight);
+  font-size: 0.875rem;
+}
+
+.form-group .form-help-text {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+.form-group .form-error-text {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-danger);
+  margin-top: 0.25rem;
+}
+
+/* Textarea with character counter */
+.textarea-with-counter {
+  position: relative;
+}
+
+.textarea-with-counter textarea {
+  padding-bottom: 2rem;
+}
+
+.textarea-counter {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.textarea-counter.counter-warning {
+  color: var(--color-warning);
+}
+
+.textarea-counter.counter-error {
+  color: var(--color-danger);
+}
+
+/* Textarea with floating label */
+.textarea-floating-label {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.textarea-floating-label textarea {
+  padding-top: 1.25rem;
+  padding-bottom: 0.5rem;
+}
+
+.textarea-floating-label label {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  transition: all var(--transition-fast) ease;
+  background-color: var(--color-surface);
+  padding: 0 0.25rem;
+  z-index: 1;
+}
+
+.textarea-floating-label textarea:focus + label,
+.textarea-floating-label textarea:not(:placeholder-shown) + label {
+  top: -0.5rem;
+  left: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-primary);
+}
+
+.textarea-floating-label textarea:focus + label {
+  color: var(--color-primary);
+}
+
+/* Textarea with icon */
+.textarea-with-icon {
+  position: relative;
+}
+
+.textarea-with-icon textarea {
+  padding-left: 2.5rem;
+}
+
+.textarea-icon {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.textarea-with-icon textarea:focus + .textarea-icon {
+  color: var(--color-primary);
+}
+
+/* Textarea in modal */
+.modal-body textarea {
+  width: 100%;
+  min-height: 120px;
+}
+
+/* Textarea in comments section */
+.comments-section textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: vertical;
+  transition: all var(--transition-fast) ease;
+}
+
+.comments-section textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.2);
+}
+
+/* Textarea with auto-resize */
+textarea.textarea-auto-resize {
+  overflow: hidden;
+  resize: none;
+}
+
+/* Responsive textarea */
+@media (max-width: 768px) {
+  textarea {
+    padding: 0.65rem;
+    font-size: 0.9rem;
+  }
+
+  textarea.textarea-sm {
+    padding: 0.5rem;
+    font-size: 0.825rem;
+  }
+
+  textarea.textarea-lg {
+    padding: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .textarea-with-counter textarea {
+    padding-bottom: 1.75rem;
+  }
+
+  .textarea-counter {
+    bottom: 0.4rem;
+    right: 0.65rem;
+  }
+}
+
+@media (max-width: 480px) {
+  textarea {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    min-height: 80px;
+  }
+
+  .textarea-floating-label textarea {
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .textarea-floating-label label {
+    top: 0.5rem;
+    left: 0.5rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] textarea {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.3);
+}
+
+[data-theme="dark"] textarea::placeholder {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] textarea:disabled {
+  background-color: var(--color-surface-secondary);
+  color: var(--color-text-muted);
+}

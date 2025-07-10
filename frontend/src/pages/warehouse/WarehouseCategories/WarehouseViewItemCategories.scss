@@ -1,5 +1,3 @@
-
-
 /* Header Styles */
 .header-container2 {
   display: flex;
@@ -377,8 +375,8 @@
   margin: 0;
 }
 
-/* Modal Styles */
-.modal-backdrop2 {
+/* Category Modal Styles */
+.category-modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
@@ -402,7 +400,7 @@
   }
 }
 
-.modal2 {
+.category-modal {
   width: 100%;
   max-width: 600px;
   background-color: var(--color-surface);
@@ -426,7 +424,7 @@
   }
 }
 
-.modal-header2 {
+.category-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -434,14 +432,14 @@
   border-bottom: 1px solid var(--border-color);
 }
 
-.modal-header2 h2 {
+.category-modal-header h2 {
   font-size: 18px;
   font-weight: 600;
   color: var(--color-text-primary);
   margin: 0;
 }
 
-.close-modal2 {
+.category-modal-close {
   background: none;
   border: none;
   width: 32px;
@@ -455,21 +453,30 @@
   transition: all 0.2s ease;
 }
 
-.close-modal2:hover {
+.category-modal-close:hover {
   background-color: var(--color-surface-hover);
   color: var(--color-text-primary);
 }
 
-.close-modal2 svg {
+.category-modal-close svg {
   width: 18px;
   height: 18px;
 }
 
+.category-modal-content {
+  overflow-y: auto;
+}
+
+.category-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
 /* Form Styles */
 form {
-  padding: 24px;
   overflow-y: auto;
-  margin-top: 1rem;
 }
 
 .form-row2 {
@@ -494,7 +501,7 @@ form {
 .form-group2 textarea {
   width: 100%;
   padding: 8px;
-  font-size: 13px;
+  font-size: 14px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   background-color: var(--color-surface-secondary); /* Changed from var(--color-surface) */
@@ -530,13 +537,6 @@ form {
 /* Also fix the label color for dark mode */
 [data-theme="dark"] .form-group2 label {
   color: #cccccc; /* Light color for labels in dark mode */
-}
-
-.modal-footer2 {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 8px;
 }
 
 .cancel-button2,
@@ -639,10 +639,6 @@ form {
   }
 }
 
-.category-table-container{
-  margin-bottom:45px;
-  margin-top:45px;
-}
 
 .section-description {
   font-size: 14px;
@@ -724,7 +720,7 @@ form {
 }
 
 /* Dark mode adjustments for modal shadow */
-[data-theme="dark"] .modal2 {
+[data-theme="dark"] .category-modal {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
@@ -777,6 +773,8 @@ form {
   border: 1px solid var(--color-info);
   border-radius: 6px;
   padding: 16px;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
 
   .category-icon {
     color: var(--color-info);
@@ -800,5 +798,15 @@ form {
       color: var(--color-text-secondary);
       font-size: 14px;
     }
+  }
+}
+
+.item-categories-intro-wrapper {
+  .intro-card-image {
+    width: 150px !important;
+    height: 120px !important;
+    max-width: 150px !important;
+    max-height: 120px !important;
+    margin-left:0.5rem;
   }
 }

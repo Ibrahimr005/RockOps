@@ -3,6 +3,8 @@ import {useTranslation} from 'react-i18next';
 import {FaTimes} from 'react-icons/fa';
 import './EditUserModal.css';
 
+import {ROLES} from '../../../utils/roles.js'
+
 const EditUserModal = ({user, mode = 'edit', onCancel, onSave}) => {
     const {t} = useTranslation();
     const [formData, setFormData] = useState({
@@ -77,19 +79,7 @@ const EditUserModal = ({user, mode = 'edit', onCancel, onSave}) => {
 
     // Get all role values from the translation keys
     const getRoleOptions = () => {
-        const roles = [
-            'ADMIN',
-            'USER',
-            'SITE_ADMIN',
-            'PROCUREMENT',
-            'WAREHOUSE_MANAGER',
-            'SECRETARY',
-            'EQUIPMENT_MANAGER',
-            'HR_MANAGER',
-            'HR_EMPLOYEE',
-            'FINANCE_EMPLOYEE',
-            'FINANCE_MANAGER',
-        ];
+        const roles = Object.values(ROLES);
 
         return roles.map(role => (
             <option key={role} value={role}>

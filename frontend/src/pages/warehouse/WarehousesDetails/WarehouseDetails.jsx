@@ -7,6 +7,7 @@ import WarehouseViewItemTypesTable from "../../warehouse/WarehouseItemTypes/Ware
 import WarehouseViewItemsCategoriesTable from "../../warehouse/WarehouseCategories/WarehouseViewItemsCategoriesTable";
 import WarehouseViewTransactionsTable from "../../warehouse/WarehouseViewTransactions/WarehouseViewTransactionsTable";
 import WarehouseRequestOrders from "../../warehouse/WarehouseRequestOrders/WarehouseRequestOrders";
+import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 import "./WarehouseDetails.scss";
 import warehouseImg from "../../../assets/imgs/warehouse1.jpg";
 
@@ -59,8 +60,12 @@ const WarehouseDetails = () => {
   const [activeTab, setActiveTab] = useState("items");
   const [userRole, setUserRole] = useState('');
 
-  // Store functions from child components
+// Store functions from child components
   const [addFunctions, setAddFunctions] = useState({});
+
+// ADD THESE NEW STATE VARIABLES:
+  const [restockItems, setRestockItems] = useState(null);
+  const [shouldOpenRestockModal, setShouldOpenRestockModal] = useState(false);
 
   useEffect(() => {
     const fetchWarehouseDetails = async () => {
@@ -124,6 +129,36 @@ const WarehouseDetails = () => {
     registerAddFunction('requestOrders', func);
   }, []);
 
+// ADD THIS NEW FUNCTION:
+  const handleRestockItems = useCallback((itemsToRestock) => {
+    console.log('Restock items requested:', itemsToRestock);
+
+    // Store the restock items
+    setRestockItems(itemsToRestock);
+
+    // Switch to request orders tab
+    setActiveTab("requestOrders");
+
+    // Trigger modal opening
+    setShouldOpenRestockModal(true);
+
+    // Reset the trigger after a delay
+    setTimeout(() => {
+      setShouldOpenRestockModal(false);
+    }, 500);
+  }, []);
+
+  // Function to get warehouse stats
+  const getWarehouseStats = () => {
+    if (!warehouseData) return [];
+
+    return [
+      { value: warehouseData.capacity?.toString() || "0", label: "Capacity" },
+      { value: warehouseData.employees?.length?.toString() || "0", label: "Employees" },
+      { value: warehouseData.site?.name || "No Site", label: "Site Location" }
+    ];
+  };
+
   if (!warehouseData) {
     return <div>Loading...</div>;
   }
@@ -131,7 +166,7 @@ const WarehouseDetails = () => {
   const getTabHeader = () => {
     switch (activeTab) {
       case "items":
-        return "Inventory Management";
+        return "Inventory";
       case "categories":
         return "Item Categories";
       case "types":
@@ -179,6 +214,7 @@ const WarehouseDetails = () => {
               <WarehouseViewItemsTable
                   warehouseId={id}
                   onAddButtonClick={handleItemsAddButtonClick}
+                  onRestockItems={handleRestockItems}  // ADD THIS LINE
               />
             </ErrorBoundary>
         );
@@ -215,6 +251,8 @@ const WarehouseDetails = () => {
               <WarehouseRequestOrders
                   warehouseId={id}
                   onAddButtonClick={handleRequestOrdersAddButtonClick}
+                  restockItems={restockItems}  // ADD THIS LINE
+                  shouldOpenRestockModal={shouldOpenRestockModal}  // ADD THIS LINE
               />
             </ErrorBoundary>
         );
@@ -224,6 +262,7 @@ const WarehouseDetails = () => {
               <WarehouseViewItemsTable
                   warehouseId={id}
                   onAddButtonClick={handleItemsAddButtonClick}
+                  onRestockItems={handleRestockItems}  // ADD THIS LINE
               />
             </ErrorBoundary>
         );
@@ -236,32 +275,18 @@ const WarehouseDetails = () => {
     navigate(`/warehouses/warehouse-details/${id}`);
   };
 
-
-
   return (
       <Fragment>
         <div className="WarehouseDetailsContainer">
-          <div className="warehouse-card">
-            <div className="left-side">
-              <img
-                  className="warehouse-image"
-                  src={warehouseData?.photoUrl || warehouseImg}
-                  alt="Warehouse"
-                  onError={(e) => {
-                    e.target.src = warehouseImg;
-                  }}
-              />
-            </div>
-            <div className="center-content">
-              <div className="label">WAREHOUSE NAME</div>
-              <div className="value">{warehouseData.name}</div>
-            </div>
-            <div className="right-side">
-              <button className="info-button" onClick={handleInfoClick}>
-                <FaInfoCircle />
-              </button>
-            </div>
-          </div>
+          <IntroCard
+              title={warehouseData.name}
+              label="WAREHOUSE MANAGEMENT"
+              lightModeImage={warehouseData?.photoUrl || warehouseImg}
+              darkModeImage={warehouseData?.photoUrl || warehouseImg}
+              stats={getWarehouseStats()}
+              onInfoClick={handleInfoClick}
+              className="warehouse-intro-card"
+          />
 
           {/* Updated tabs to include Request Orders */}
           <div className="new-tabs-container">
@@ -272,20 +297,6 @@ const WarehouseDetails = () => {
               >
                 Inventory
               </button>
-              <button
-                  className={`new-tab-button ${activeTab === "categories" ? "active" : ""}`}
-                  onClick={() => setActiveTab("categories")}
-              >
-                Categories
-              </button>
-              <button
-                  className={`new-tab-button ${activeTab === "types" ? "active" : ""}`}
-                  onClick={() => setActiveTab("types")}
-              >
-                Item Types
-              </button>
-
-
 
               {userRole === 'WAREHOUSE_MANAGER' && (
                   <button
@@ -320,20 +331,6 @@ const WarehouseDetails = () => {
               </div>
 
               {/* Footer with Add Button */}
-              {userRole === "WAREHOUSE_MANAGER" && (
-                  <div className="tab-content-footer">
-                    <button
-                        className="add-entity-button"
-                        onClick={handleAddButtonClick}
-                        title={getAddButtonText()}
-                    >
-                      <svg className="add-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 5v14M5 12h14" />
-                      </svg>
-                    </button>
-                  </div>
-              )}
-
             </div>
           </div>
         </div>

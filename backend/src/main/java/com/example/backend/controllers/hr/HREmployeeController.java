@@ -103,9 +103,35 @@ public class HREmployeeController {
             @RequestPart(value = "photo", required = false) MultipartFile photo,
             @RequestPart(value = "idFrontImage", required = false) MultipartFile idFrontImage,
             @RequestPart(value = "idBackImage", required = false) MultipartFile idBackImage) {
+        try {
+            // Process the photo file before passing to service - just like the addEmployee method
+            if (photo != null && !photo.isEmpty()) {
+                String fileName = minioService.uploadFile(photo);
+                String fileUrl = minioService.getFileUrl(fileName);
+                employeeData.setPhotoUrl(fileUrl); // ✅ sets full URL
+            }
 
-        Map<String, Object> updatedEmployee = hrEmployeeService.updateEmployee(id, employeeData, photo, idFrontImage, idBackImage);
-        return ResponseEntity.ok(updatedEmployee);
+            // Process ID front image
+            if (idFrontImage != null && !idFrontImage.isEmpty()) {
+                String fileName = minioService.uploadFile(idFrontImage);
+                String fileUrl = minioService.getFileUrl(fileName);
+                employeeData.setIdFrontImage(fileUrl); // ✅ sets full URL
+            }
+
+            // Process ID back image
+            if (idBackImage != null && !idBackImage.isEmpty()) {
+                String fileName = minioService.uploadFile(idBackImage);
+                String fileUrl = minioService.getFileUrl(fileName);
+                employeeData.setIdBackImage(fileUrl); // ✅ sets full URL
+            }
+
+            // Now pass the DTO with URLs to the service (and null MultipartFiles since we already processed them)
+            Map<String, Object> updatedEmployee = hrEmployeeService.updateEmployee(id, employeeData, null, null, null);
+            return ResponseEntity.ok(updatedEmployee);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 
     /**

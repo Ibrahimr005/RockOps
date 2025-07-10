@@ -91,19 +91,18 @@ public class OfferService {
             Merchant merchant = merchantRepository.findById(dto.getMerchantId())
                     .orElseThrow(() -> new RuntimeException("Merchant not found"));
 
-            // Create the offer item
-            OfferItem offerItem = OfferItem.builder()
-                    .quantity(dto.getQuantity())
-                    .unitPrice(dto.getUnitPrice())
-                    .totalPrice(dto.getTotalPrice())
-                    .currency(dto.getCurrency())
-                    .merchant(merchant)
-                    .offer(offer)
-                    .requestOrderItem(requestOrderItem)
-                    .estimatedDeliveryDays(dto.getEstimatedDeliveryDays())
-                    .deliveryNotes(dto.getDeliveryNotes())
-                    .comment(dto.getComment())
-                    .build();
+            // Create the offer item using setters
+            OfferItem offerItem = new OfferItem();
+            offerItem.setQuantity(dto.getQuantity());
+            offerItem.setUnitPrice(dto.getUnitPrice());
+            offerItem.setTotalPrice(dto.getTotalPrice());
+            offerItem.setCurrency(dto.getCurrency());
+            offerItem.setMerchant(merchant);
+            offerItem.setOffer(offer);
+            offerItem.setRequestOrderItem(requestOrderItem);
+            offerItem.setEstimatedDeliveryDays(dto.getEstimatedDeliveryDays());
+            offerItem.setDeliveryNotes(dto.getDeliveryNotes());
+            offerItem.setComment(dto.getComment());
 
             OfferItem savedItem = offerItemRepository.save(offerItem);
             savedItems.add(savedItem);
@@ -134,33 +133,26 @@ public class OfferService {
             Merchant merchant = merchantRepository.findById(dto.getMerchantId())
                     .orElseThrow(() -> new RuntimeException("Merchant not found"));
 
-            // Create the offer item
-            OfferItem offerItem = OfferItem.builder()
-                    .quantity(dto.getQuantity())
-                    .unitPrice(dto.getUnitPrice())
-                    .totalPrice(dto.getTotalPrice())
-                    .currency(dto.getCurrency())
-                    .merchant(merchant)
-                    .offer(offer)
-                    .requestOrderItem(requestOrderItem)
-                    .estimatedDeliveryDays(dto.getEstimatedDeliveryDays())
-                    .deliveryNotes(dto.getDeliveryNotes())
-                    .comment(dto.getComment())
-                    .build();
+            // Create OfferItem using simple setters
+            OfferItem offerItem = new OfferItem();
+            offerItem.setQuantity(dto.getQuantity());
+            offerItem.setUnitPrice(dto.getUnitPrice());
+            offerItem.setTotalPrice(dto.getTotalPrice());
+            offerItem.setCurrency(dto.getCurrency());
+            offerItem.setMerchant(merchant);
+            offerItem.setOffer(offer);
+            offerItem.setRequestOrderItem(requestOrderItem);
+            offerItem.setEstimatedDeliveryDays(dto.getEstimatedDeliveryDays());
+            offerItem.setDeliveryNotes(dto.getDeliveryNotes());
+            offerItem.setComment(dto.getComment());
 
             OfferItem savedItem = offerItemRepository.save(offerItem);
             savedItems.add(savedItem);
         }
 
-        // Update the offer's offerItems list
-        if (offer.getOfferItems() == null) {
-            offer.setOfferItems(new ArrayList<>());
-        }
-        offer.getOfferItems().addAll(savedItems);
-        offerRepository.save(offer);
-
         return savedItems;
     }
+
     @Transactional
     public Offer updateOfferStatus(UUID offerId, String status, String username, String rejectionReason) {
         Offer offer = offerRepository.findById(offerId)
@@ -349,10 +341,9 @@ public class OfferService {
         }
 
         // Check if there's already a retry in progress for this offer
-        // Assuming you have a method to find offers by original request order
         List<Offer> existingOffers = getOffersByRequestOrder(originalOffer.getRequestOrder().getId());
 
-        // Filter to find any offers that are retries of the current one (title contains original title + " (Retry)")
+        // Filter to find any offers that are retries of the current one
         boolean retryExists = existingOffers.stream()
                 .filter(offer -> !offer.getId().equals(offerId)) // Exclude the original offer
                 .filter(offer -> offer.getTitle().contains(originalOffer.getTitle() + " (Retry)"))
@@ -365,18 +356,17 @@ public class OfferService {
             throw new IllegalStateException("A retry for this offer is already in progress. Please complete or delete the existing retry before creating a new one.");
         }
 
-        // Create a new offer with the same request order and basic details
-        Offer newOffer = Offer.builder()
-                .title(originalOffer.getTitle() + " (Retry)")
-                .description(originalOffer.getDescription())
-                .createdAt(LocalDateTime.now())
-                .createdBy(username)
-                .status("INPROGRESS")
-                .validUntil(LocalDateTime.now().plusDays(7))
-                .notes(originalOffer.getNotes())
-                .requestOrder(originalOffer.getRequestOrder())
-                .offerItems(new ArrayList<>())
-                .build();
+        // Create a new offer using setters instead of builder
+        Offer newOffer = new Offer();
+        newOffer.setTitle(originalOffer.getTitle() + " (Retry)");
+        newOffer.setDescription(originalOffer.getDescription());
+        newOffer.setCreatedAt(LocalDateTime.now());
+        newOffer.setCreatedBy(username);
+        newOffer.setStatus("INPROGRESS");
+        newOffer.setValidUntil(LocalDateTime.now().plusDays(7));
+        newOffer.setNotes(originalOffer.getNotes());
+        newOffer.setRequestOrder(originalOffer.getRequestOrder());
+        newOffer.setOfferItems(new ArrayList<>());
 
         // Save the new offer first
         Offer savedOffer = offerRepository.save(newOffer);
@@ -384,19 +374,18 @@ public class OfferService {
         // Copy all the offer items from the original offer
         if (originalOffer.getOfferItems() != null && !originalOffer.getOfferItems().isEmpty()) {
             for (OfferItem originalItem : originalOffer.getOfferItems()) {
-                // Create a new offer item based on the original item
-                OfferItem newItem = OfferItem.builder()
-                        .quantity(originalItem.getQuantity())
-                        .unitPrice(originalItem.getUnitPrice())
-                        .totalPrice(originalItem.getTotalPrice())
-                        .currency(originalItem.getCurrency())
-                        .merchant(originalItem.getMerchant())
-                        .offer(savedOffer) // Link to the new offer
-                        .requestOrderItem(originalItem.getRequestOrderItem())
-                        .estimatedDeliveryDays(originalItem.getEstimatedDeliveryDays())
-                        .deliveryNotes(originalItem.getDeliveryNotes())
-                        .comment(originalItem.getComment())
-                        .build();
+                // Create a new offer item using setters instead of builder
+                OfferItem newItem = new OfferItem();
+                newItem.setQuantity(originalItem.getQuantity());
+                newItem.setUnitPrice(originalItem.getUnitPrice());
+                newItem.setTotalPrice(originalItem.getTotalPrice());
+                newItem.setCurrency(originalItem.getCurrency());
+                newItem.setMerchant(originalItem.getMerchant());
+                newItem.setOffer(savedOffer); // Link to the new offer
+                newItem.setRequestOrderItem(originalItem.getRequestOrderItem());
+                newItem.setEstimatedDeliveryDays(originalItem.getEstimatedDeliveryDays());
+                newItem.setDeliveryNotes(originalItem.getDeliveryNotes());
+                newItem.setComment(originalItem.getComment());
 
                 // Save the new item
                 OfferItem savedItem = offerItemRepository.save(newItem);

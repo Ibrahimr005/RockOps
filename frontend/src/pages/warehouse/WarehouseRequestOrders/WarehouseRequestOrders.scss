@@ -1,5 +1,3 @@
-
-
 /* Header Styles */
 .request-orders-header {
   margin-bottom: 24px;
@@ -82,9 +80,11 @@
 /* Action Button Styles */
 .request-action-buttons {
   display: flex;
-  gap: 4px;
-  justify-content: center;
+  gap: 8px;
   align-items: center;
+  justify-content: flex-start !important;
+  width: 100%;
+  text-align: left !important;
 }
 
 .request-approve-button,
@@ -225,94 +225,7 @@
   color: var(--color-text-secondary);
 }
 
-/* Responsive Styles */
-@media (max-width: 768px) {
-  .warehouse-request-orders-container {
-    padding: 16px;
-    margin-top: 2rem;
-  }
-
-  .request-orders-title {
-    font-size: 24px;
-  }
-
-  .request-section-title {
-    font-size: 20px;
-  }
-
-  .request-orders-section {
-    margin-bottom: 30px;
-    margin-top: 30px;
-  }
-
-  .request-orders-add-button {
-    bottom: 16px;
-    right: 16px;
-    width: 56px;
-    height: 56px;
-  }
-
-  .request-orders-plus-icon {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-// Warehouse Request Modal Styles
-// Modal backdrop
-.warehouse-request-modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--adv-table-filter);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(2px);
-}
-
-// Modal container
-.warehouse-request-modal {
-  width: 100%;
-  max-width: 700px;
-  background-color: var(--color-surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-}
-
-// Modal header
-.warehouse-request-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--border-color);
-
-  h2 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: var(--bold-font-weight);
-    color: var(--color-text-primary);
-  }
-}
-
-// Action button styles for the table
-.request-action-buttons {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: flex-start !important; // Force left alignment
-  width: 100%;
-  text-align: left !important;
-}
-
-// Also target the parent cell to ensure left alignment
+/* Also target the parent cell to ensure left alignment */
 .custom-table-actions-cell {
   text-align: left !important;
   padding-right: 20px;
@@ -377,412 +290,42 @@
   }
 }
 
-// Fix for actions column header alignment
+/* Fix for actions column header alignment */
 .custom-table-header-cell:last-child {
   text-align: left !important;
 }
 
-// Also ensure the actions column data cells are left-aligned
+/* Also ensure the actions column data cells are left-aligned */
 .custom-table-actions-cell {
   text-align: left !important;
   padding-right: 20px;
   white-space: nowrap;
 }
 
-.warehouse-request-close-modal {
-  background: transparent;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #6b7280;
-
-  [data-theme="dark"] & {
-    color: var(--color-text-secondary);
+/* Responsive design */
+@media (max-width: 768px) {
+  .request-orders-title {
+    font-size: 24px;
   }
 
-  svg {
+  .request-section-title {
+    font-size: 20px;
+  }
+
+  .request-orders-section {
+    margin-bottom: 30px;
+    margin-top: 30px;
+  }
+
+  .request-orders-add-button {
+    bottom: 16px;
+    right: 16px;
+    width: 56px;
+    height: 56px;
+  }
+
+  .request-orders-plus-icon {
     width: 20px;
     height: 20px;
   }
-
-  &:hover {
-    background-color: #f3f4f6;
-
-    [data-theme="dark"] & {
-      background-color: var(--color-surface-hover);
-    }
-  }
-}
-
-// Modal content
-.warehouse-request-modal-content {
-  padding: 24px;
-  overflow-y: auto;
-  max-height: calc(90vh - 64px);
-}
-
-// Form styles
-.warehouse-request-form {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-}
-
-.warehouse-request-form-section {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.warehouse-request-section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 12px;
-
-  [data-theme="dark"] & {
-    border-bottom-color: var(--border-color);
-  }
-
-  h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: #374151;
-
-    [data-theme="dark"] & {
-      color: var(--color-text-primary);
-    }
-  }
-}
-
-.warehouse-request-add-item-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  color: #3b82f6;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 6px 12px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
-
-  [data-theme="dark"] & {
-    color: var(--color-primary);
-  }
-
-  &:hover {
-    background-color: #eff6ff;
-
-    [data-theme="dark"] & {
-      background-color: rgba(72, 128, 255, 0.1);
-    }
-  }
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-}
-
-.warehouse-request-form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-
-  label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #374151;
-
-    [data-theme="dark"] & {
-      color: var(--color-text-primary);
-    }
-  }
-
-  input, select, textarea {
-    padding: 10px 16px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 14px;
-
-    [data-theme="dark"] & {
-      border-color: var(--border-color);
-      background-color: var(--section-background-color);
-      color: var(--color-text-primary);
-    }
-
-    &:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-
-      [data-theme="dark"] & {
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
-      }
-    }
-  }
-
-  textarea {
-    resize: vertical;
-    min-height: 100px;
-  }
-
-  select {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 36px;
-  }
-}
-
-// For two-column fields
-.warehouse-request-form-section:first-of-type {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-}
-
-.warehouse-request-form-field.warehouse-request-full-width {
-  grid-column: span 2;
-}
-
-// Item cards
-.warehouse-request-item-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
-  background-color: #f9fafb;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
-  [data-theme="dark"] & {
-    border-color: var(--border-color);
-    background-color: var(--color-surface);
-    box-shadow: var(--shadow-sm);
-  }
-}
-
-.warehouse-request-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #e5e7eb;
-
-  [data-theme="dark"] & {
-    border-bottom-color: var(--border-color);
-  }
-
-  span {
-    font-weight: 600;
-    font-size: 15px;
-    color: #374151;
-
-    [data-theme="dark"] & {
-      color: var(--color-text-primary);
-    }
-  }
-}
-
-.warehouse-request-remove-button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  color: #ef4444;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 6px 12px;
-  border-radius: 6px;
-  transition: background-color 0.2s;
-
-  [data-theme="dark"] & {
-    color: var(--color-danger);
-  }
-
-  &:hover {
-    background-color: #fee2e2;
-
-    [data-theme="dark"] & {
-      background-color: rgba(255, 82, 82, 0.1);
-    }
-  }
-
-  svg {
-    width: 14px;
-    height: 14px;
-  }
-}
-
-.warehouse-request-item-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 25px;
-  margin-bottom: 16px;
-}
-
-.warehouse-request-quantity-unit-container {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  position: relative;
-}
-
-.warehouse-request-quantity-input {
-  width: 100%;
-  padding-right: 60px; // Make room for the unit label
-}
-
-.warehouse-request-unit-label {
-  position: absolute;
-  right: 12px;
-  color: #6b7280;
-  font-size: 14px;
-  pointer-events: none; // Prevent the label from interfering with input
-  background-color: #f9fafb;
-  padding: 0 5px;
-  border-left: 1px solid #d1d5db;
-  height: 22px;
-  display: flex;
-  align-items: center;
-
-  [data-theme="dark"] & {
-    color: var(--color-text-secondary);
-    background-color: var(--color-surface);
-    border-left-color: var(--border-color);
-  }
-}
-
-// Footer with buttons
-.warehouse-request-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 12px;
-  padding-top: 20px;
-  border-top: 1px solid #e5e7eb;
-
-  [data-theme="dark"] & {
-    border-top-color: var(--border-color);
-  }
-}
-
-.warehouse-request-cancel-button,
-.warehouse-request-submit-button {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.warehouse-request-cancel-button {
-  background-color: white;
-  color: #4b5563;
-  border: 1px solid #d1d5db;
-
-  [data-theme="dark"] & {
-    background-color: var(--section-background-color);
-    color: var(--color-text-secondary);
-    border-color: var(--border-color);
-  }
-
-  &:hover {
-    background-color: #f3f4f6;
-
-    [data-theme="dark"] & {
-      background-color: var(--color-surface-hover);
-    }
-  }
-}
-
-.warehouse-request-submit-button {
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-
-  [data-theme="dark"] & {
-    background-color: var(--color-primary);
-  }
-
-  &:hover {
-    background-color: #2563eb;
-
-    [data-theme="dark"] & {
-      background-color: var(--color-primary-dark);
-    }
-  }
-
-  &:disabled {
-    background-color: #9ca3af;
-    cursor: not-allowed;
-
-    [data-theme="dark"] & {
-      background-color: var(--color-text-secondary);
-    }
-
-    &:hover {
-      background-color: #9ca3af;
-
-      [data-theme="dark"] & {
-        background-color: var(--color-text-secondary);
-      }
-    }
-  }
-}
-
-// Responsive design
-@media (max-width: 768px) {
-  .warehouse-request-modal {
-    max-width: 95%;
-    margin: 0 10px;
-  }
-
-  .warehouse-request-form-section:first-of-type {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-
-  .warehouse-request-form-field.warehouse-request-full-width {
-    grid-column: span 1;
-  }
-
-  .warehouse-request-item-fields {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .warehouse-request-modal-content {
-    padding: 16px;
-  }
-
-  .warehouse-request-modal-header {
-    padding: 12px 16px;
-  }
-}
-
-// Action button styles for the table (duplicate styles corrected)
-.request-action-buttons {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
 }
