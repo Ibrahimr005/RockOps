@@ -21,80 +21,7 @@
     margin: 0;
 }
 
-/* Status badges */
-.status-badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: var(--radius-sm);
-    font-size: 0.875rem;
-    font-weight: var(--bold-font-weight);
-    text-transform: uppercase;
-}
 
-.status-badge.open {
-    background-color: var(--color-success-light);
-    color: var(--text-hover);
-}
-
-.status-badge.closed {
-    background-color: var(--color-warning-light);
-    color: var(--color-text-dark);
-}
-
-
-.btn-secondary {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    background-color: var(--color-surface-hover);
-    color: var(--color-text-primary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-weight: var(--bold-font-weight);
-    transition: all var(--transition-fast);
-}
-
-.btn-secondary:hover {
-    background-color: var(--color-surface-tertiary);
-    border-color: var(--border-color-dark);
-}
-
-.btn-danger {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    background-color: var(--color-danger);
-    color: var(--text-hover);
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-weight: var(--bold-font-weight);
-    transition: background-color var(--transition-fast);
-}
-
-.btn-danger:hover {
-    background-color: var(--color-danger-hover);
-}
-
-.btn-warning {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    background-color: var(--color-warning);
-    color: var(--color-text-dark);
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-weight: var(--bold-font-weight);
-    transition: background-color var(--transition-fast);
-}
-
-.btn-warning:hover {
-    background-color: var(--color-warning-hover);
-}
 
 /* Modal Styles - Period Closing Specific */
 .period-modal-overlay {
@@ -114,7 +41,7 @@
 .period-modal-content {
     background-color: var(--section-background-color);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
+    /*box-shadow: var(--shadow-lg);*/
     width: 90%;
     max-width: 600px;
     max-height: 90vh;
@@ -197,7 +124,7 @@
 .period-form-control:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+    /*box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);*/
 }
 
 .period-form-actions {

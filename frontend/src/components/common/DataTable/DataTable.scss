@@ -1586,44 +1586,43 @@
 }
 /* Additional SCSS for Excel Export Button - Add to your existing DataTable.scss */
 
-/* Export Button Styles */
 .rockops-table__export-btn {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1.25rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border: 1px solid #10b981;
-  border-radius: 8px;
-  color: white;
+  background: var(--color-success-light);
+  border: 1px solid var(--color-success-hover);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-inverse);
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: var(--bold-font-weight);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast) ease;
   margin-right: 0.75rem;
 
   [data-theme="dark"] & {
-    background: linear-gradient(135deg, var(--color-success) 0%, #059669 100%);
-    border-color: var(--color-success);
+    background: var(--color-success);
+    border-color: var(--color-success-hover);
     color: var(--color-text-inverse);
   }
 
   svg {
     width: 18px;
     height: 18px;
-    transition: transform 0.2s ease;
+    transition: transform var(--transition-fast) ease;
   }
 
   &:hover:not(:disabled) {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    border-color: #059669;
+    background: var(--color-success-hover);
+    border-color: var(--color-success);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    box-shadow: var(--shadow-md);
 
     [data-theme="dark"] & {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-      border-color: #059669;
-      box-shadow: 0 4px 12px rgba(92, 188, 96, 0.3);
+      background: var(--color-success-hover);
+      border-color: var(--color-success);
+      box-shadow: var(--shadow-md);
     }
 
     svg {
@@ -1634,9 +1633,9 @@
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background: #d1d5db;
-    border-color: #d1d5db;
-    color: #6b7280;
+    background: var(--border-color-medium);
+    border-color: var(--border-color-medium);
+    color: var(--color-text-muted);
 
     [data-theme="dark"] & {
       background: var(--color-surface);
@@ -1732,42 +1731,5 @@
   }
 }
 
-.btn-primary {
 
 
-  [data-theme="dark"] & {
-
-  }
-
-  &:hover:not(:disabled) {
-
-
-    [data-theme="dark"] & {
-
-    }
-  }
-}
-
-.btn-secondary {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: 1px solid #10b981;
-
-  [data-theme="dark"] & {
-    background: linear-gradient(135deg, var(--color-success) 0%, #059669 100%);
-    color: var(--color-text-inverse);
-    border-color: var(--color-success);
-  }
-
-  &:hover:not(:disabled) {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    border-color: #059669;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-
-    [data-theme="dark"] & {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-      border-color: #059669;
-      box-shadow: 0 4px 12px rgba(92, 188, 96, 0.3);
-    }
-  }
-}

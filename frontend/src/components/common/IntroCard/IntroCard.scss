@@ -136,3 +136,109 @@
     gap: 16px;
   }
 }
+
+/* Additional styles for IntroCard icon support */
+.intro-card-icon {
+  transition: all var(--transition-normal) ease !important;
+  box-shadow: var(--shadow-sm);
+
+  &:hover {
+    transform: scale(1.08) translateY(-2px);
+    box-shadow: var(--shadow-md);
+
+    [data-theme="dark"] & {
+      box-shadow: 0 8px 25px rgba(72, 128, 255, 0.2);
+    }
+  }
+}
+
+/* Enhanced IntroCard styling */
+.intro-card {
+  &:hover {
+    .intro-card-icon {
+      transform: scale(1.05) translateY(-1px);
+    }
+
+    .intro-card-stat-value {
+      font-weight: var(--bold-font-weight);
+      transform: scale(1.02);
+    }
+
+    .intro-card-info-button {
+      background-color: var(--color-surface-hover);
+      transform: scale(1.1);
+    }
+  }
+}
+
+/* Ensure proper alignment for both images and icons */
+.intro-card-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5rem;
+
+  .intro-card-image {
+    transition: transform var(--transition-normal) ease;
+
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+}
+
+/* Enhanced stat items styling */
+.intro-card-stat-item {
+  transition: all var(--transition-fast) ease;
+
+  &:hover {
+    transform: translateY(-1px);
+
+    .intro-card-stat-value {
+      color: var(--color-primary) !important;
+    }
+  }
+}
+
+/* Improved info button styling */
+.intro-card-info-button {
+  transition: all var(--transition-fast) ease;
+  background-color: transparent;
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--color-surface-hover);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    transform: scale(1.1);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+    transition: all var(--transition-fast) ease;
+  }
+}
+
+/* Theme-specific enhancements */
+[data-theme="dark"] {
+  .intro-card-icon {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+    &:hover {
+      box-shadow: 0 8px 25px rgba(72, 128, 255, 0.15);
+    }
+  }
+
+  .intro-card-info-button {
+    border-color: var(--border-color);
+
+    &:hover {
+      background-color: var(--color-surface-hover);
+      border-color: var(--color-primary);
+    }
+  }
+}

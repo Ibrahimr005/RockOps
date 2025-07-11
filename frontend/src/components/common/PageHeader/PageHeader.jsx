@@ -1,10 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiInfo } from 'react-icons/fi';
+import "./PageHeader.scss"
 
 const PageHeader = ({
                         image,
                         imageAlt = "Page image",
+                        icon, // NEW: Accept icon component
+                        iconColor, // NEW: Icon color override
+                        iconSize = "3rem", // NEW: Icon size
                         label,
                         title,
                         stats = [],
@@ -19,11 +23,32 @@ const PageHeader = ({
     return (
         <div className={`page-header ${className}`}>
             <div className="page-header-left">
-                <img
-                    src={image}
-                    alt={imageAlt}
-                    className="page-header-image"
-                />
+                {/* Render either image or icon */}
+                {image ? (
+                    <img
+                        src={image}
+                        alt={imageAlt}
+                        className="page-header-image"
+                    />
+                ) : icon ? (
+                    <div
+                        className="page-header-icon"
+                        style={{
+                            color: iconColor || accentColor,
+                            fontSize: iconSize,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '4rem',
+                            height: '4rem',
+                            borderRadius: '12px',
+                            backgroundColor: `${iconColor || accentColor}15`,
+                            border: `2px solid ${iconColor || accentColor}25`
+                        }}
+                    >
+                        {icon}
+                    </div>
+                ) : null}
             </div>
 
             <div className="page-header-content">
@@ -36,12 +61,12 @@ const PageHeader = ({
                     <div className="page-header-stats">
                         {stats.map((stat, index) => (
                             <div key={index} className="page-header-stat-item">
-                <span
-                    className="page-header-stat-value"
-                    style={{ color: stat.color || accentColor }}
-                >
-                  {stat.value}
-                </span>
+                                <span
+                                    className="page-header-stat-value"
+                                    style={{ color: stat.color || accentColor }}
+                                >
+                                    {stat.value}
+                                </span>
                                 <span className="page-header-stat-label">{stat.label}</span>
                             </div>
                         ))}
