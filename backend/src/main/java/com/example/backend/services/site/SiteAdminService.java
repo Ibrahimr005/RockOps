@@ -33,18 +33,19 @@ public class SiteAdminService
     private EquipmentRepository equipmentRepository;
     private EmployeeRepository employeeRepository;
     private WarehouseRepository warehouseRepository;
+    private FixedAssetsRepository fixedAssetsRepository;
 
     @Autowired
     private EntityManager entityManager;
 
     @Autowired
-    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository) {
+    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetsRepository fixedAssetsRepository) {
         this.siteRepository = siteRepository;
         this.partnerRepository = partnerRepository;
         this.equipmentRepository = equipmentRepository;
         this.employeeRepository = employeeRepository;
         this.warehouseRepository= warehouseRepository;
-//        this.fixedAssetRepository = fixedAssetRepository;
+        this.fixedAssetsRepository = fixedAssetsRepository;
     }
 
     @Transactional
@@ -357,21 +358,23 @@ public class SiteAdminService
         return warehouseRepository.save(warehouse);
     }
 
-//    @Transactional
-//    public FixedAssets assignFixedAssetToSite(UUID siteId, UUID fixedAssetId) {
-//        Optional<FixedAssets> optionalFixedAssets = fixedAssetRepository.findById(fixedAssetId);
-//        Optional<Site> optionalSite = siteRepository.findById(siteId);
-//
-//        if (optionalFixedAssets.isEmpty() || optionalSite.isEmpty()) {
-//            throw new RuntimeException("Employee or Site not found");
-//        }
-//
-//        FixedAssets fixedAssets = optionalFixedAssets.get();
-//        Site site = optionalSite.get();
-//
-//        fixedAssets.setSite(site);
-//        return fixedAssetRepository.save(fixedAssets);
-//    }
+    @Transactional
+    public FixedAssets assignFixedAssetToSite(UUID siteId, UUID fixedAssetId) {
+        Site site = siteRepository.findById(siteId)
+                .orElseThrow(() -> new RuntimeException("❌ Site not found with ID: " + siteId));
+
+        FixedAssets fixedAsset = fixedAssetsRepository.findById(fixedAssetId)
+                .orElseThrow(() -> new RuntimeException("❌ Fixed Asset not found with ID: " + fixedAssetId));
+
+        if (fixedAsset.getSite() != null) {
+            throw new RuntimeException("Fixed Asset is already assigned to a site!");
+        }
+
+        // Assign fixed asset to site
+        fixedAsset.setSite(site);
+
+        return fixedAssetsRepository.save(fixedAsset);
+    }
 
     @Transactional
     public Warehouse addWarehouse(UUID siteId, Map<String, Object> requestBody) {

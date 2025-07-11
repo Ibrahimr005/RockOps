@@ -97,6 +97,12 @@ public class SiteController
         return ResponseEntity.ok(fixedAssetsList != null ? fixedAssetsList : Collections.emptyList()); // ✅ Ensure JSON format
     }
 
+    @GetMapping("/unassigned-fixedassets")
+    public ResponseEntity<?> getUnassignedFixedAssets() {
+        List<FixedAssets> unassignedFixedAssets = siteService.getUnassignedFixedAssets();
+        return ResponseEntity.ok(unassignedFixedAssets != null ? unassignedFixedAssets : Collections.emptyList());
+    }
+
     @GetMapping("/{siteId}/partners")
     public ResponseEntity<?> getSitePartners(@PathVariable UUID siteId) {
         Site site = siteService.getSiteById(siteId);

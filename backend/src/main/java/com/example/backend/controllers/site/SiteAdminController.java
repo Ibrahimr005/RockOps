@@ -153,12 +153,12 @@ public class SiteAdminController
         return ResponseEntity.ok(updatedWarehouse);
     }
 
-//    @PostMapping("/{siteId}/assign-fixedAsset/{fixedAssetId}")
-//    public ResponseEntity<FixedAssets> assignFixedAssetToSite(@PathVariable UUID siteId, @PathVariable UUID fixedAssetId)
-//    {
-//        FixedAssets updatedFixedAssets = siteAdminService.assignFixedAssetToSite(siteId, fixedAssetId);
-//        return ResponseEntity.ok(updatedFixedAssets);
-//    }
+    @PostMapping("/{siteId}/assign-fixedAsset/{fixedAssetId}")
+    public ResponseEntity<FixedAssets> assignFixedAssetToSite(@PathVariable UUID siteId, @PathVariable UUID fixedAssetId)
+    {
+        FixedAssets updatedFixedAssets = siteAdminService.assignFixedAssetToSite(siteId, fixedAssetId);
+        return ResponseEntity.ok(updatedFixedAssets);
+    }
 
     @PostMapping(value = "/{siteId}/assign-partner/{partnerId}", consumes = "application/json")
     public ResponseEntity<SitePartner> assignPartnerToSite(@PathVariable UUID siteId, @PathVariable Integer partnerId, @RequestBody Map<String, Double>  partnerPercentage)

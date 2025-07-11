@@ -49,4 +49,8 @@ public interface FixedAssetsRepository extends JpaRepository<FixedAssets, UUID> 
     List<FixedAssets> findAssetsDueForMaintenance(
             @Param("status") AssetStatus status,
             @Param("cutoffDate") LocalDate cutoffDate);
+
+    List<FixedAssets> findBySiteIsNull();
+
+    List<FixedAssets> findBySiteIsNullAndStatusNot(AssetStatus status);
 }

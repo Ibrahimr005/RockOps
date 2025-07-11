@@ -357,7 +357,7 @@ const AssetManagement = () => {
         {
             id: 'site',
             header: 'Site',
-            accessor: 'site.name',
+            accessor: 'siteName',
             minWidth: '120px',
             flexWeight: 1,
             render: (row, value) => value || 'N/A'
@@ -366,7 +366,7 @@ const AssetManagement = () => {
 
     const filterableColumns = [
         { accessor: 'status', header: 'Status', filterType: 'select' },
-        { accessor: 'site.name', header: 'Site', filterType: 'select' },
+        { accessor: 'siteName', header: 'Site', filterType: 'select' },
         { accessor: 'name', header: 'Asset Name', filterType: 'text' }
     ];
 
