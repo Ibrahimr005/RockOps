@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import './Partners.scss';
 import {FaEdit, FaTrashAlt, FaUsers} from "react-icons/fa";
 import DataTable from '../../components/common/DataTable/DataTable';
+import '../../styles/modal-styles.scss';
 
 const Partners = () => {
     const [partners, setPartners] = useState([]);
@@ -129,11 +130,6 @@ const Partners = () => {
         <div className="partner-table-container">
             <div className="departments-header">
                 <h2>{t('partners.title', 'Partners')}</h2>
-                {isAdmin && (
-                    <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-                        <FaUsers/> {t('partners.addButton', 'Add Partner')}
-                    </button>
-                )}
             </div>
 
             <DataTable
@@ -147,16 +143,20 @@ const Partners = () => {
                 actions={actions}
                 defaultItemsPerPage={10}
                 itemsPerPageOptions={[10, 25, 50, 100]}
+                showAddButton={isAdmin}
+                addButtonText={t('partners.addButton', 'Add Partner')}
+                addButtonIcon={<FaUsers />}
+                onAddClick={() => setShowAddModal(true)}
             />
 
             {showAddModal && (
-                <div className="modal-overlay">
-                    <div className="modal">
+                <div className="modal-backdrop">
+                    <div className="modal-container">
                         <div className="modal-header">
                             <h3>{t('partners.addTitle', 'Add New Partner')}</h3>
-                            <button className="close-btn" onClick={() => setShowAddModal(false)}>×</button>
+                            <button className="btn-close" onClick={() => setShowAddModal(false)}>×</button>
                         </div>
-                        <form onSubmit={handleAddPartner}>
+                        <form className="modal-body" onSubmit={handleAddPartner}>
                             <div className="form-group">
                                 <label htmlFor="firstName">{t('partners.firstName', 'First Name')}</label>
                                 <input
@@ -179,11 +179,11 @@ const Partners = () => {
                                     required
                                 />
                             </div>
-                            <div className="form-actions">
-                                <button type="button" className="cancel-btn" onClick={() => setShowAddModal(false)}>
+                            <div className="modal-footer">
+                                <button type="button" className="modal-btn-secondary" onClick={() => setShowAddModal(false)}>
                                     {t('common.cancel', 'Cancel')}
                                 </button>
-                                <button type="submit" className="submit-btn">
+                                <button type="submit" className="btn btn-success">
                                     {t('common.add', 'Add')}
                                 </button>
                             </div>

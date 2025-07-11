@@ -357,19 +357,42 @@ const EmployeesList = () => {
         try {
             setLoading(true);
 
+            console.log("Updated employee data being sent:", updatedEmployee);
+
             // Create FormData for multipart/form-data request
             const formData = new FormData();
 
-            // Add employee JSON data
-            formData.append('employeeData', JSON.stringify(updatedEmployee));
+            // Add employee data as a JSON blob with proper content type
+            formData.append("employeeData", new Blob([JSON.stringify(updatedEmployee)], {
+                type: "application/json"
+            }));
 
             // Add image files if provided
-            if (photoFile) formData.append('photo', photoFile);
-            if (idFrontFile) formData.append('idFrontImage', idFrontFile);
-            if (idBackFile) formData.append('idBackImage', idBackFile);
+            if (photoFile) {
+                formData.append('photo', photoFile);
+                console.log('Added photo file:', photoFile.name);
+            }
+
+            if (idFrontFile) {
+                formData.append('idFrontImage', idFrontFile);
+                console.log('Added ID front file:', idFrontFile.name);
+            }
+
+            if (idBackFile) {
+                formData.append('idBackImage', idBackFile);
+                console.log('Added ID back file:', idBackFile.name);
+            }
+
+            // Debug FormData contents
+            console.log("FormData contents for update:");
+            for (let pair of formData.entries()) {
+                console.log(pair[0], pair[1] instanceof Blob ? `Blob: ${pair[1].type}, size: ${pair[1].size}` : pair[1]);
+            }
 
             // Use HR employee service for update
             const response = await hrEmployeeService.employee.update(selectedEmployee.id, formData);
+
+            console.log('Employee updated successfully:', response.data);
 
             // Refresh the employee list
             await fetchEmployees();
@@ -381,9 +404,35 @@ const EmployeesList = () => {
 
         } catch (error) {
             console.error('Error updating employee:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to update employee';
+
+            // Enhanced error handling
+            let errorMessage = 'Failed to update employee';
+
+            if (error.response) {
+                // Server responded with an error
+                console.error('Server error:', error.response.status, error.response.data);
+
+                if (error.response.status === 415) {
+                    errorMessage = 'Invalid data format. Please check the form data.';
+                } else if (error.response.status === 400) {
+                    errorMessage = error.response.data?.message || 'Invalid request data';
+                } else if (error.response.status === 404) {
+                    errorMessage = 'Employee not found';
+                } else {
+                    errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
+                }
+            } else if (error.request) {
+                // Network error
+                console.error('Network error:', error.request);
+                errorMessage = 'Network error. Please check your connection.';
+            } else {
+                // Other error
+                console.error('Error:', error.message);
+                errorMessage = error.message || 'An unexpected error occurred';
+            }
+
             setError(`Failed to update employee: ${errorMessage}`);
-            showError('Failed to update employee. Please try again.');
+            showError(errorMessage);
         } finally {
             setLoading(false);
         }

@@ -1,7 +1,7 @@
 package com.example.backend.controllers.site;
 
 import com.example.backend.models.equipment.Equipment;
-import com.example.backend.models.finance.FixedAssets;
+import com.example.backend.models.finance.fixedAssets.FixedAssets;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.site.Site;
@@ -95,6 +95,12 @@ public class SiteController
 
         List<FixedAssets> fixedAssetsList = siteService.getSiteFixedAssets(siteId);
         return ResponseEntity.ok(fixedAssetsList != null ? fixedAssetsList : Collections.emptyList()); // ✅ Ensure JSON format
+    }
+
+    @GetMapping("/unassigned-fixedassets")
+    public ResponseEntity<?> getUnassignedFixedAssets() {
+        List<FixedAssets> unassignedFixedAssets = siteService.getUnassignedFixedAssets();
+        return ResponseEntity.ok(unassignedFixedAssets != null ? unassignedFixedAssets : Collections.emptyList());
     }
 
     @GetMapping("/{siteId}/partners")

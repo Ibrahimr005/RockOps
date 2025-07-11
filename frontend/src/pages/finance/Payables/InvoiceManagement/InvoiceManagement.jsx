@@ -410,33 +410,33 @@ const InvoiceManagement = () => {
                 </div>
             </div>
 
-            {/* Search Filter */}
-            <div className="invoice-filters">
-                <div className="invoice-filters__group invoice-filters__search">
-                    <label className="invoice-filters__label">Search:</label>
-                    <div className="invoice-filters__search-wrapper">
-                        <FaSearch className="invoice-filters__search-icon" />
-                        <input
-                            type="text"
-                            placeholder="Search by invoice number or vendor"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="invoice-filters__search-input"
-                        />
-                    </div>
-                </div>
-            </div>
+            {/*/!* Search Filter *!/*/}
+            {/*<div className="invoice-filters">*/}
+            {/*    <div className="invoice-filters__group invoice-filters__search">*/}
+            {/*        <label className="invoice-filters__label">Search:</label>*/}
+            {/*        <div className="invoice-filters__search-wrapper">*/}
+            {/*            <FaSearch className="invoice-filters__search-icon" />*/}
+            {/*            <input*/}
+            {/*                type="text"*/}
+            {/*                placeholder="Search by invoice number or vendor"*/}
+            {/*                value={searchTerm}*/}
+            {/*                onChange={(e) => setSearchTerm(e.target.value)}*/}
+            {/*                className="invoice-filters__search-input"*/}
+            {/*            />*/}
+            {/*        </div>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             {/* Quick Stats */}
             <div className="invoice-stats">
-                <div className="stat-item">
+                <div className="stat-item-invoice">
                     <FaFileInvoiceDollar className="stat-icon" />
                     <div className="stat-content">
                         <span className="stat-value">{invoices.length}</span>
                         <span className="stat-label">Total Invoices</span>
                     </div>
                 </div>
-                <div className="stat-item overdue">
+                <div className="stat-item-overdue">
                     <FaExclamationTriangle className="stat-icon" />
                     <div className="stat-content">
                         <span className="stat-value">
@@ -445,7 +445,7 @@ const InvoiceManagement = () => {
                         <span className="stat-label">Overdue</span>
                     </div>
                 </div>
-                <div className="stat-item pending">
+                <div className="stat-item-pending">
                     <FaClock className="stat-icon" />
                     <div className="stat-content">
                         <span className="stat-value">
@@ -463,7 +463,7 @@ const InvoiceManagement = () => {
                     columns={columns}
                     actions={actions}
                     loading={loading}
-                    showSearch={false}
+                    showSearch={true}
                     showFilters={true}
                     filterableColumns={filterableColumns}
                     defaultItemsPerPage={10}

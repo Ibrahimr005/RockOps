@@ -674,7 +674,7 @@
 
   // Status colors
   &.status-created,
-  &.status-pending {
+  &.status-pending{
     background: rgba(59, 130, 246, 0.1);
     color: var(--po-primary);
   }
@@ -695,7 +695,7 @@
   }
 
   &.status-finance_pending_review,
-  &.status-finance_in_progress {
+  &.status-finance_in_progress, &.status-badge--pending {
     background: rgba(8, 145, 178, 0.1);
     color: var(--po-info);
   }

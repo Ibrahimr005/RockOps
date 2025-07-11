@@ -54,8 +54,9 @@ import LoadingPage from "./components/common/LoadingPage/LoadingPage.jsx";
 import Payables from "./pages/finance/Payables/Payables.jsx";
 // ===================== Notifications =====================
 import Notifications from './pages/notification/Notifications.jsx';
+import FixedAssets from "./pages/finance/FixedAssets/FixedAssets.jsx";
 
-
+import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ROLES } from './utils/roles';
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -72,7 +73,7 @@ const RoleRoute = ({allowedRoles, children, redirectPath = '/dashboard'}) => {
     return children;
 };
 
-const allRoles = ["ADMIN", "USER", "SITE_ADMIN", "PROCUREMENT", "WAREHOUSE_MANAGER", "SECRETARY", "EQUIPMENT_MANAGER", "HR_MANAGER", "HR_EMPLOYEE", "FINANCE_EMPLOYEE", "FINANCE_MANAGER"];
+const allRoles = Object.values(ROLES);
 
 const mostRoles = ["ADMIN", "USER", "SITE_ADMIN", "PROCUREMENT", "WAREHOUSE_MANAGER", "SECRETARY", "EQUIPMENT_MANAGER", "HR_MANAGER", "HR_EMPLOYEE"];
 
@@ -107,11 +108,11 @@ function App() {
                                 <Route path="/" element={<AuthRedirect/>}/>
 
                                 <Route element={<MainLayout/>}>
-                                    <Route path="/admin" element={<RoleRoute allowedRoles={['ADMIN']}><AdminPage/></RoleRoute>}/>
+                                    <Route path="/admin" element={<RoleRoute allowedRoles={[ADMIN]}><AdminPage/></RoleRoute>}/>
 
                                     <Route path="/dashboard" element={<RoleRoute allowedRoles={allRoles}><DashboardPage/></RoleRoute>}/>
 
-                                    <Route path="/partners" element={<RoleRoute allowedRoles={["ADMIN", "SITE_ADMIN"]}><Partners/></RoleRoute>}/>
+                                    <Route path="/partners" element={<RoleRoute allowedRoles={[ADMIN, SITE_ADMIN]}><Partners/></RoleRoute>}/>
 
                                     {/* ===================== Notifications Route ===================== */}
                                     <Route path="/notifications" element={<RoleRoute allowedRoles={allRoles}><Notifications/></RoleRoute>}/>
@@ -133,8 +134,8 @@ function App() {
                                     </Route>
 
                                     {/* Merchant Routes */}
-                                    <Route path="/merchants" element={<RoleRoute allowedRoles={["ADMIN", "PROCUREMENT", "SITE_ADMIN", "WAREHOUSE_MANAGER"]}><ProcurementMerchants/></RoleRoute>}/>
-                                    <Route path="/merchants/:id" element={<RoleRoute allowedRoles={["ADMIN", "PROCUREMENT", "SITE_ADMIN"]}><MerchantDetails/></RoleRoute>}/>
+                                    <Route path="/merchants" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN, WAREHOUSE_MANAGER]}><ProcurementMerchants/></RoleRoute>}/>
+                                    <Route path="/merchants/:id" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN]}><MerchantDetails/></RoleRoute>}/>
 
                                     {/* Procurement Routes */}
                                     <Route path="/procurement" element={<RoleRoute allowedRoles={["PROCUREMENT", "SITE_ADMIN", "ADMIN"]}><SitesLayout/></RoleRoute>}>
@@ -146,7 +147,7 @@ function App() {
                                     </Route>
 
                                     {/* HR Management Routes */}
-                                    <Route path="/hr" element={<RoleRoute allowedRoles={["HR_MANAGER", "HR_EMPLOYEE", "ADMIN"]}><HRLayout/></RoleRoute>}>
+                                    <Route path="/hr" element={<RoleRoute allowedRoles={[HR_MANAGER, HR_EMPLOYEE, ADMIN]}><HRLayout/></RoleRoute>}>
                                         <Route path="vacancies" element={<VacancyList/>}/>
                                         <Route path="positions" element={<PositionsList/>}/>
                                         <Route path="employees" element={<EmployeesList/>}/>
@@ -170,6 +171,8 @@ function App() {
                                     {/* Finance Routes */}
                                     <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={allRoles}><GeneralLedger/></RoleRoute>} />
                                     <Route path="/finance/payables" element={<RoleRoute allowedRoles={allRoles}><Payables/></RoleRoute>} />
+                                    <Route path="/finance/fixed-assets" element={<RoleRoute allowedRoles={allRoles}><FixedAssets/></RoleRoute>} />
+
 
 
                                     {/* Generic Related Documents Route */}

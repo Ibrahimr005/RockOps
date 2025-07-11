@@ -57,6 +57,7 @@ public class TransactionMapperService {
                 .batchNumber(transaction.getBatchNumber())
                 .sentFirst(transaction.getSentFirst())
                 .purpose(transaction.getPurpose())
+                .description(transaction.getDescription())
                 .items(toItemDTOs(transaction.getItems()))
                 .build();
     }

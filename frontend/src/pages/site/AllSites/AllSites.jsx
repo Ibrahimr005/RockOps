@@ -39,7 +39,7 @@ const AllSites = () => {
     });
 
     const dropdownRef = useRef(null);
-    const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || "ADMIN";
+    const isSiteAdmin = currentUser?.role === "ADMIN";
 
     useEffect(() => {
         console.log("AllSites component mounted");

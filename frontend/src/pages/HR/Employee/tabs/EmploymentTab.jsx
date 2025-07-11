@@ -13,9 +13,9 @@ const EmploymentTab = ({ employee, formatDate, getPosition, getDepartment, getSi
             case 'HOURLY':
                 return `${employee.jobPosition.hoursPerShift} hours per shift, ${employee.jobPosition.workingDaysPerWeek} days per week`;
             case 'DAILY':
-                return `${employee.jobPosition.workingDaysPerMonth} days per month`;
+                return `${employee.jobPosition.workingDaysPerMonth} days per day`;
             case 'MONTHLY':
-                return `${employee.jobPosition.workingHours || 'Standard'} hours per month`;
+                return `${employee.jobPosition.workingHours || 'Standard'} hours per day`;
             default:
                 return 'Standard hours';
         }
@@ -62,7 +62,7 @@ const EmploymentTab = ({ employee, formatDate, getPosition, getDepartment, getSi
                     </div>
                     <div className="info-item">
                         <label>Experience Level</label>
-                        <p>{employee.jobPosition?.experienceLevel || 'Not specified'}</p>
+                        <p>{employee.jobPosition?.experienceLevel.replace('_',' ') || 'Not specified'}</p>
                     </div>
                 </div>
 

@@ -61,7 +61,8 @@ public class TransactionController {
                     request.getTransactionDate(),
                     request.getUsername(),
                     request.getBatchNumber(),
-                    request.getSentFirst()
+                    request.getSentFirst(),
+                    request.getDescription()
             );
 
             // Convert to DTO and return
@@ -161,7 +162,8 @@ public class TransactionController {
                     items,
                     request.getTransactionDate(),
                     request.getUsername(),
-                    request.getBatchNumber()
+                    request.getBatchNumber(),
+                    request.getDescription()
             );
 
             TransactionDTO responseDTO = transactionMapperService.toDTO(updatedTransaction);
@@ -223,6 +225,7 @@ public class TransactionController {
         int batchNumber = (int) request.get("batchNumber");
         UUID sentFirst = UUID.fromString((String) request.get("sentFirst"));
         LocalDateTime transactionDate = LocalDateTime.parse((String) request.get("transactionDate"));
+        String description = (String) request.get("description");
 
         // Extract the items array
         List<Map<String, Object>> itemsData = (List<Map<String, Object>>) request.get("items");
@@ -254,7 +257,8 @@ public class TransactionController {
                 items,
                 transactionDate,
                 username, batchNumber,
-                sentFirst
+                sentFirst,
+                description
         );
 
         return ResponseEntity.ok(transaction);

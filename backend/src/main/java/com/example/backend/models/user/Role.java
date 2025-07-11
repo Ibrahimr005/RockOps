@@ -14,4 +14,5 @@ public enum Role
     FINANCE_MANAGER,
     FINANCE_EMPLOYEE,
     ADMIN;
+
 }

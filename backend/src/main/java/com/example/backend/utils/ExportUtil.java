@@ -1,7 +1,7 @@
 package com.example.backend.utils;
 
-import com.example.backend.dto.finance.AuditLogResponseDTO;
-import com.example.backend.dto.finance.InvoiceResponseDTO;
+import com.example.backend.dto.finance.generalLedger.AuditLogResponseDTO;
+import com.example.backend.dto.finance.payables.InvoiceResponseDTO;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;

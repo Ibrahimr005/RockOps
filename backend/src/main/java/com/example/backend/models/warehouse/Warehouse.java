@@ -28,7 +28,7 @@ public class Warehouse {
     @Column(length = 500)
     private String photoUrl;
 
-    private int capacity;
+//    private int capacity;
 
     @ManyToOne
     @JoinColumn(name = "site_id", referencedColumnName = "id")

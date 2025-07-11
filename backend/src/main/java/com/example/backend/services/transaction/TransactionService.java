@@ -192,11 +192,11 @@ public class TransactionService {
             List<TransactionItem> items,
             LocalDateTime transactionDate,
             String username, int batchNumber,
-            UUID sentFirst) {
+            UUID sentFirst, String description) {
 
         Transaction transaction = createTransactionWithPurpose(
                 senderType, senderId, receiverType, receiverId,
-                items, transactionDate, username, batchNumber, sentFirst, null);
+                items, transactionDate, username, batchNumber, sentFirst, null, description);
 
         // After creating the transaction, attempt batch matching with specific sender/receiver IDs
         attemptBatchMatching(batchNumber, senderId, receiverId);
@@ -214,7 +214,7 @@ public class TransactionService {
 
         Transaction transaction = createTransactionWithPurpose(
                 senderType, senderId, receiverType, receiverId,
-                items, transactionDate, username, batchNumber, sentFirst, purpose);
+                items, transactionDate, username, batchNumber, sentFirst, purpose, null);
 
         // After creating the transaction, attempt batch matching with specific sender/receiver IDs
         attemptBatchMatching(batchNumber, senderId, receiverId);
@@ -232,7 +232,7 @@ public class TransactionService {
             List<TransactionItem> items,
             LocalDateTime transactionDate,
             String username, int batchNumber,
-            UUID sentFirst, TransactionPurpose purpose) {
+            UUID sentFirst, TransactionPurpose purpose, String description) {
 
         System.out.println("🚀 Starting createTransaction() with immediate inventory updates");
         System.out.println("Sender Type: " + senderType + ", Sender ID: " + senderId);
@@ -275,7 +275,7 @@ public class TransactionService {
 
         Transaction transaction = buildTransaction(
                 senderType, senderId, receiverType, receiverId,
-                transactionDate, username, batchNumber, sentFirst, purpose);
+                transactionDate, username, batchNumber, sentFirst, purpose, description);
 
         transaction.setItems(new ArrayList<>());
         for (TransactionItem item : items) {
@@ -1031,9 +1031,9 @@ public class TransactionService {
     public Transaction updateTransaction(
             UUID transactionId, PartyType senderType, UUID senderId,
             PartyType receiverType, UUID receiverId, List<TransactionItem> updatedItems,
-            LocalDateTime transactionDate, String username, int batchNumber) {
+            LocalDateTime transactionDate, String username, int batchNumber, String description) {
         return updateTransactionWithPurpose(transactionId, senderType, senderId, receiverType,
-                receiverId, updatedItems, transactionDate, username, batchNumber, null);
+                receiverId, updatedItems, transactionDate, username, batchNumber, null, description);
     }
 
     public Transaction updateEquipmentTransaction(
@@ -1041,13 +1041,13 @@ public class TransactionService {
             PartyType receiverType, UUID receiverId, List<TransactionItem> updatedItems,
             LocalDateTime transactionDate, String username, int batchNumber, TransactionPurpose purpose) {
         return updateTransactionWithPurpose(transactionId, senderType, senderId, receiverType,
-                receiverId, updatedItems, transactionDate, username, batchNumber, purpose);
+                receiverId, updatedItems, transactionDate, username, batchNumber, purpose, null);
     }
 
     private Transaction updateTransactionWithPurpose(
             UUID transactionId, PartyType senderType, UUID senderId,
             PartyType receiverType, UUID receiverId, List<TransactionItem> updatedItems,
-            LocalDateTime transactionDate, String username, int batchNumber, TransactionPurpose purpose) {
+            LocalDateTime transactionDate, String username, int batchNumber, TransactionPurpose purpose, String description) {
 
         System.out.println("🔄 Updating transaction with immediate inventory handling");
 
@@ -1079,6 +1079,10 @@ public class TransactionService {
 
         if (purpose != null) {
             transaction.setPurpose(purpose);
+        }
+
+        if (description != null) {
+            transaction.setDescription(description);
         }
 
         // 🚨 SAFE ITEM UPDATE: Update existing items instead of clearing
@@ -1396,7 +1400,7 @@ public class TransactionService {
 
     private Transaction buildTransaction(PartyType senderType, UUID senderId, PartyType receiverType,
                                          UUID receiverId, LocalDateTime transactionDate, String username,
-                                         int batchNumber, UUID sentFirst, TransactionPurpose purpose) {
+                                         int batchNumber, UUID sentFirst, TransactionPurpose purpose, String description) {
         Transaction.TransactionBuilder builder = Transaction.builder()
                 .createdAt(LocalDateTime.now())
                 .transactionDate(transactionDate)
@@ -1411,6 +1415,10 @@ public class TransactionService {
 
         if (purpose != null) {
             builder.purpose(purpose);
+        }
+
+        if (description != null) {
+            builder.description(description);
         }
 
         return builder.build();

@@ -305,7 +305,7 @@ const WorkTypeManagement = () => {
                     <div className="modal-content work-type-modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>{editingWorkType ? 'Edit Work Type' : 'Add Work Type'}</h2>
-                            <button className="modal-close" onClick={() => setShowModal(false)}>
+                            <button className="btn-close" onClick={() => setShowModal(false)}>
                                 &times;
                             </button>
                         </div>

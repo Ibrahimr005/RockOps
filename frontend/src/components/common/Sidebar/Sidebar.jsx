@@ -37,6 +37,7 @@ import {
     FaArrowLeft,
     FaBook,
 } from 'react-icons/fa';
+import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE } from '../../../utils/roles';
 
 import './Sidebar.css';
 import logoDarkImage from "../../../assets/logos/Logo-dark.png";
@@ -187,62 +188,62 @@ const Sidebar = () => {
             title: 'Admin',
             icon: <FaUser/>,
             path: '/admin',
-            roles: ['ADMIN']
+            roles: [ADMIN]
         },
         {
             title: 'Dashboard',
             icon: <FaChartLine/>,
             path: '/dashboard',
-            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE]
         },
         {
             title: 'Sites',
             icon: <FaMapMarkerAlt/>,
             path: '/sites',
-            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE]
         },
         {
             title: 'Partners',
             icon: <FaUsers/>,
             path: '/partners',
-            roles: ['ADMIN', 'SITE_ADMIN']
+            roles: [ADMIN, SITE_ADMIN]
         },
         {
             title: 'Equipment',
             icon: <FaTruck/>,
             path: '/equipment',
-            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE'],
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'Equipment List',
                     icon: <FaTruck/>,
                     path: '/equipment',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
+                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE]
                 },
                 {
                     title: 'Equipment Types',
                     icon: <FaTags/>,
                     path: '/equipment/type-management',
-                    roles: ['ADMIN', 'EQUIPMENT_MANAGER']
+                    roles: [ADMIN, EQUIPMENT_MANAGER]
                 },
                 {
                     title: 'Equipment Brands',
                     icon: <FaTags/>,
                     path: '/equipment/brand-management',
-                    roles: ['ADMIN', 'EQUIPMENT_MANAGER']
+                    roles: [ADMIN, EQUIPMENT_MANAGER]
                 },
                 {
                     title: 'Work Types',
                     icon: <FaListAlt/>,
                     path: '/equipment/work-type-management',
-                    roles: ['ADMIN', 'EQUIPMENT_MANAGER']
+                    roles: [ADMIN, EQUIPMENT_MANAGER]
                 },
                 {
                     title: 'Maintenance Types',
                     icon: <FaTools/>,
                     path: '/equipment/maintenance-type-management',
-                    roles: ['ADMIN', 'EQUIPMENT_MANAGER']
+                    roles: [ADMIN, EQUIPMENT_MANAGER]
                 }
             ]
         },
@@ -277,44 +278,44 @@ const Sidebar = () => {
             title: 'Merchants',
             icon: <FaStore/>,
             path: '/merchants',
-            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT']
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE]
         },
         {
             title: 'HR',
             icon: <FaUsers/>,
             path: '/hr',
-            roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
+            roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'Departments',
                     icon: <FaBuilding/>,
                     path: '/hr/departments',
-                    roles: ['USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
+                    roles: [USER, HR_MANAGER, HR_EMPLOYEE],
                 },
                 {
                     title: 'Employees',
                     icon: <FaIdCard/>,
                     path: '/hr/employees',
-                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
+                    roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
                 },
                 {
                     title: 'Vacancies',
                     icon: <FaBriefcase/>,
                     path: '/hr/vacancies',
-                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
+                    roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
                 },
                 {
                     title: 'Positions',
                     icon: <FaSitemap/>,
                     path: '/hr/positions',
-                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
+                    roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
                 },
                 {
                     title: 'Attendance',
                     icon: <FaTasks/>,
                     path: '/hr/attendance',
-                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE'],
+                    roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
                 },
             ]
         },
@@ -322,19 +323,25 @@ const Sidebar = () => {
             title: 'Finance',
             icon: <FaFileInvoiceDollar/>,
             path: '/finance',
-            roles: ['ADMIN', 'USER', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE', 'SITE_ADMIN'],
+            roles: [ADMIN, USER, FINANCE_MANAGER, FINANCE_EMPLOYEE, SITE_ADMIN],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'General Ledger',
                     icon: <FaBook/>,
                     path: '/finance/general-ledger',
-                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
+                    roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
                     title: 'Payables',
                     icon: <FaFileInvoiceDollar/>,
                     path: '/finance/payables',
+                    roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                },
+                {
+                    title: 'Fixed Assets',
+                    icon: <FaBuilding/>,
+                    path: '/finance/fixed-assets',
                     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
                 },
             ]
@@ -343,26 +350,26 @@ const Sidebar = () => {
             title: 'Procurement',
             icon: <FaShoppingCart/>,
             path: '/procurement',
-            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT'],
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'Request Orders',
                     icon: <FaFileContract/>,
                     path: '/procurement/request-orders',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT']
+                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
                 },
                 {
                     title: 'Offers',
                     icon: <FaFileInvoice/>,
                     path: '/procurement/offers',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT']
+                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
                 },
                 {
                     title: 'Purchase Orders',
                     icon: <FaFileInvoice/>,
                     path: '/procurement/purchase-orders',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT']
+                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT]
                 }
             ]
         },
@@ -370,13 +377,13 @@ const Sidebar = () => {
             title: 'Maintenance',
             icon: <FaTools/>,
             path: '/maintenance',
-            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'EQUIPMENT_MANAGER']
+            roles: [ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER]
         },
         {
             title: 'Secretary',
             icon: <FaClipboard/>,
             path: '/secretary',
-            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'SECRETARY']
+            roles: [ADMIN, USER, SITE_ADMIN, SECRETARY]
         },
         // {
         //     title: 'Equipment MT',
@@ -388,7 +395,7 @@ const Sidebar = () => {
             title: 'Settings',
             icon: <FaCog/>,
             path: '/settings',
-            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE']
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE]
         }
     ];
 
@@ -447,18 +454,11 @@ const Sidebar = () => {
                                     to={item.hasSubmenu ? '#' : item.path}
                                     className={() => {
                                         if (item.hasSubmenu) {
-                                            // Check if we're on the parent path or any of its submenu paths
                                             const isOnParentPath = location.pathname === item.path;
-                                            const isOnSubmenuPath = item.submenuItems && item.submenuItems.some(subItem =>
-                                                location.pathname === subItem.path ||
-                                                location.pathname.startsWith(subItem.path + '/')
-                                            );
-                                            return `menu-item ${(isOnParentPath || isOnSubmenuPath) ? 'active' : ''}`;
+                                            return `menu-item ${isOnParentPath ? 'active' : ''}`;
                                         } else {
-                                            // For non-submenu items, check exact match and path prefix
-                                            const isActive = location.pathname === item.path ||
-                                                location.pathname.startsWith(item.path + '/');
-                                            return `menu-item ${isActive ? 'active' : ''}`;
+                                            const isDirectActive = location.pathname === item.path;
+                                            return `menu-item ${isDirectActive ? 'active' : ''}`;
                                         }
                                     }}
                                     data-tooltip={t(item.title)}
@@ -503,28 +503,7 @@ const Sidebar = () => {
                                                     key={subItem.title}
                                                     to={subItem.path}
                                                     className={() => {
-                                                        const currentPath = location.pathname;
-
-                                                        // For exact matches
-                                                        if (currentPath === subItem.path) {
-                                                            return `submenu-item active`;
-                                                        }
-
-                                                        // For nested routes, we need to be smart about base paths
-                                                        let isActive = false;
-
-                                                        // Sort submenu items by path length (longest first) to check most specific paths first
-                                                        const sortedItems = [...item.submenuItems].sort((a, b) => b.path.length - a.path.length);
-
-                                                        // Find the most specific matching submenu item
-                                                        const mostSpecificMatch = sortedItems.find(sortedItem =>
-                                                            currentPath === sortedItem.path ||
-                                                            currentPath.startsWith(sortedItem.path + '/')
-                                                        );
-
-                                                        // This submenu item is active only if it's the most specific match
-                                                        isActive = mostSpecificMatch && mostSpecificMatch.path === subItem.path;
-
+                                                        const isActive = location.pathname === subItem.path;
                                                         return `submenu-item ${isActive ? 'active' : ''}`;
                                                     }}
                                                     onClick={() => {

@@ -26,6 +26,7 @@ const MaintenanceTransactionModal = ({
     const [filteredItemTypes, setFilteredItemTypes] = useState([]);
     const [transactionFormData, setTransactionFormData] = useState({
         senderId: '',
+        description: '',
         items: [{ itemTypeId: '', quantity: 1 }]
     });
 
@@ -268,7 +269,8 @@ const MaintenanceTransactionModal = ({
                         params: {
                             senderId: transactionFormData.senderId,
                             senderType: 'WAREHOUSE',
-                            batchNumber: batchNumber
+                            batchNumber: batchNumber,
+                            description: transactionFormData.description
                         }
                     }
                 );
@@ -398,6 +400,20 @@ const MaintenanceTransactionModal = ({
                                             ))}
                                         </select>
                                     </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Description</label>
+                                    <textarea
+                                        value={transactionFormData.description || ''}
+                                        onChange={(e) => setTransactionFormData({
+                                            ...transactionFormData,
+                                            description: e.target.value
+                                        })}
+                                        placeholder="Enter transaction description (optional)"
+                                        rows="3"
+                                        className="description-textarea"
+                                    />
                                 </div>
 
                                 <div className="form-section">

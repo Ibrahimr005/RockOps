@@ -2,7 +2,8 @@ package com.example.backend.services.site;
 
 import com.example.backend.models.Partner;
 import com.example.backend.models.equipment.Equipment;
-import com.example.backend.models.finance.FixedAssets;
+import com.example.backend.models.finance.fixedAssets.AssetStatus;
+import com.example.backend.models.finance.fixedAssets.FixedAssets;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.site.Site;
@@ -10,10 +11,10 @@ import com.example.backend.models.site.SitePartner;
 import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.repositories.PartnerRepository;
 import com.example.backend.repositories.equipment.EquipmentRepository;
+import com.example.backend.repositories.finance.fixedAssets.FixedAssetsRepository;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -25,14 +26,16 @@ public class SiteService
     private PartnerRepository partnerRepository;
     private EmployeeRepository employeeRepository;
     private EquipmentRepository equipmentRepository;
+    private FixedAssetsRepository fixedAssetsRepository;
 
     @Autowired
-    public SiteService(SiteRepository siteRepository, PartnerRepository partnerRepository, EmployeeRepository employeeRepository, EquipmentRepository equipmentRepository)
+    public SiteService(SiteRepository siteRepository, PartnerRepository partnerRepository, EmployeeRepository employeeRepository, EquipmentRepository equipmentRepository, FixedAssetsRepository fixedAssetsRepository)
     {
         this.siteRepository = siteRepository;
         this.partnerRepository = partnerRepository;
         this.employeeRepository = employeeRepository;
         this.equipmentRepository = equipmentRepository;
+        this.fixedAssetsRepository = fixedAssetsRepository;
     }
 
     public Site getSiteById(UUID id)
@@ -89,6 +92,11 @@ public class SiteService
             return new ArrayList<>(); // Return an empty list if the site does not exist
         }
         return site.getFixedAssets(); // Ensure this method is correctly mapped
+    }
+
+    public List<FixedAssets> getUnassignedFixedAssets() {
+        // You'll need to inject FixedAssetsRepository in your SiteService
+        return fixedAssetsRepository.findBySiteIsNullAndStatusNot(AssetStatus.DISPOSED);
     }
 
     public List<Map<String, Object>> getSitePartners(UUID siteId) {

@@ -14,8 +14,8 @@ export const hrEmployeeService = {
         create: (formData) => {
             return apiClient.post(HR_ENDPOINTS.EMPLOYEE.CREATE, formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+                    'Content-Type': 'multipart/form-data',
+                },
             });
         },
 
@@ -23,8 +23,8 @@ export const hrEmployeeService = {
         update: (id, formData) => {
             return apiClient.put(HR_ENDPOINTS.EMPLOYEE.UPDATE(id), formData, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
+                    'Content-Type': 'multipart/form-data',
+                },
             });
         },
 
@@ -46,4 +46,4 @@ export const hrEmployeeService = {
             return apiClient.get(HR_ENDPOINTS.DASHBOARD.EMPLOYEE_DISTRIBUTION);
         }
     }
-}; 
+};

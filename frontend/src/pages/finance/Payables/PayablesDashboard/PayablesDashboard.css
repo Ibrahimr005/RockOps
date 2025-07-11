@@ -26,6 +26,36 @@
     margin: 0;
 }
 
+/* Status Column Width Fix */
+.payables-dashboard .rockops-table__th:last-child,
+.payables-dashboard .rockops-table__cell:last-child {
+    width: auto !important;
+    white-space: nowrap;
+    min-width: fit-content;
+}
+
+/* Status badge styling */
+.payables-dashboard .payables-status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    white-space: nowrap;
+    min-width: fit-content;
+    text-align: center;
+}
+
+/* Additional targeting for specific status columns */
+.payables-dashboard .rockops-table__th[data-column="status"],
+.payables-dashboard .rockops-table__cell[data-column="status"] {
+    width: auto !important;
+    white-space: nowrap !important;
+    min-width: fit-content !important;
+}
+
 /* Aging Summary Grid */
 .aging-summary-grid {
     display: grid;
@@ -254,6 +284,12 @@
 
     .aging-bucket p {
         font-size: 1.25rem;
+    }
+
+    /* Status badge responsive adjustments */
+    .payables-dashboard .payables-status-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.6rem;
     }
 }
 
