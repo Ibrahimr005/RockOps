@@ -5,7 +5,7 @@ import com.example.backend.authentication.AuthenticationService;
 import com.example.backend.authentication.RegisterRequest;
 import com.example.backend.models.user.Role;
 import com.example.backend.models.user.User;
-import com.example.backend.repositories.UserRepository;
+import com.example.backend.repositories.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;

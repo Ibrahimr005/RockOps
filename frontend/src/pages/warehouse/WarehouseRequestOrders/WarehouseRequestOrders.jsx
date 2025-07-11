@@ -111,11 +111,7 @@ const WarehouseRequestOrders = ({ warehouseId, onAddButtonClick, restockItems, s
 
     return (
         <div className="warehouse-request-orders-container">
-            {/* Header with count and search */}
-            <div className="header-container4">
-                <div className="left-section4">
-                </div>
-            </div>
+
 
             {/* Tab navigation */}
             <div className="inventory-tabs">

@@ -8,7 +8,7 @@
 //import com.example.backend.models.finance.ChartOfAccount;
 //import com.example.backend.models.user.User;
 //import com.example.backend.repositories.finance.ChartOfAccountRepository;
-//import com.example.backend.repositories.UserRepository;
+//import com.example.backend.repositories.user.UserRepository;
 //import jakarta.transaction.Transactional;
 //import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.stereotype.Service;

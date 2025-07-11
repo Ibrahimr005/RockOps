@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import "./WarehouseViewTransactions.scss";
+import "../WarehouseViewTransactions.scss";
 import "./AcceptRejectModal.scss";
-import TransactionViewModal from "./TransactionViewModal.jsx";
-import DataTable from "../../../components/common/DataTable/DataTable.jsx";
-import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
+import TransactionViewModal from "../TransactionViewModal/TransactionViewModal.jsx";
+import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
+import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
 
-const IncomingTransactionsTable = ({ warehouseId }) => {
+const IncomingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, onTransactionUpdate }) => {
     const [loading, setLoading] = useState(false);
     const [pendingTransactions, setPendingTransactions] = useState([]);
     const [isAcceptModalOpen, setIsAcceptModalOpen] = useState(false);
@@ -48,7 +48,7 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
     const getItemMeasuringUnit = (item) => {
         // You might need to add measuringUnit to your backend response
         // For now, return null since it's not in your current data structure
-        return item?.measuringUnit || item?.itemType?.measuringUnit || null;
+        return item?.itemUnit || item?.itemType?.measuringUnit || null;
     };
 
     // Helper function to get item category
@@ -61,6 +61,16 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
     useEffect(() => {
         fetchPendingTransactions();
     }, [warehouseId]);
+
+    useEffect(() => {
+        fetchPendingTransactions();
+    }, [refreshTrigger]);
+
+    useEffect(() => {
+        if (onCountUpdate) {
+            onCountUpdate(pendingTransactions.length);
+        }
+    }, [pendingTransactions.length, onCountUpdate]);
 
     // Function to fetch pending transactions directly from backend
     const fetchPendingTransactions = async () => {
@@ -317,6 +327,11 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
                 fetchPendingTransactions();
                 setIsAcceptModalOpen(false);
                 showSnackbar("Transaction Accepted Successfully", "success");
+
+                // ADD THIS LINE:
+                if (onTransactionUpdate) {
+                    onTransactionUpdate();
+                }
             } else {
                 let errorMessage = "Failed to accept transaction";
                 let snackbarMessage = "Failed to accept transaction";
@@ -494,12 +509,9 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
         <div className="transaction-table-section">
             <div className="table-header-section">
                 <div className="left-section3">
-
                     <div className="item-count3">{pendingTransactions.length} incoming transactions</div>
                 </div>
             </div>
-
-
 
             {/* DataTable Component */}
             <DataTable
@@ -523,19 +535,23 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
                     transaction={viewTransaction}
                     isOpen={isViewModalOpen}
                     onClose={handleCloseViewModal}
-                    hideItemQuantities={true}
+                    hideItemQuantities={false}
+                    currentWarehouseId={warehouseId}
                 />
             )}
 
-            {/* Modal for accepting transaction with multiple items */}
+            {/* Modern Accept Transaction Modal */}
             {isAcceptModalOpen && selectedTransaction && (
-                <div className="modal-backdrop">
-                    <div className="flat-modal">
+                <div className="accept-transaction-modal-overlay" onClick={() => !processingAction && setIsAcceptModalOpen(false)}>
+                    <div className="accept-transaction-modal-container" onClick={(e) => e.stopPropagation()}>
                         {/* Header */}
-                        <div className="flat-modal-header">
-                            <h2>Accept Transaction</h2>
+                        <div className="accept-transaction-modal-header">
+                            <div className="accept-transaction-modal-header-content">
+                                <h2 className="accept-transaction-modal-title">Accept Transaction</h2>
+
+                            </div>
                             <button
-                                className="close-modal-btn"
+                                className="btn-close"
                                 onClick={() => setIsAcceptModalOpen(false)}
                                 disabled={processingAction}
                             >
@@ -546,174 +562,258 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
                         </div>
 
                         {/* Content */}
-                        <div className="flat-modal-content">
-                            {/* Transaction Info */}
-                            <div className="transaction-info-section">
-                                <div className="info-row">
-                                    <div className="info-col">
-                                        <div className="info-label">Batch Number</div>
-                                        <div className="info-value">{selectedTransaction.batchNumber || "N/A"}</div>
-                                    </div>
-                                    <div className="info-col">
-                                        <div className="info-label">Transaction Date</div>
-                                        <div className="info-value">
-                                            {selectedTransaction.transactionDate
-                                                ? new Date(selectedTransaction.transactionDate).toLocaleDateString("en-GB")
-                                                : "N/A"}
+                        <div className="accept-transaction-modal-content">
+                            {/* Transaction Overview */}
+                            <div className="accept-transaction-content-section">
+                                <h3 className="accept-transaction-section-title">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M9 11H1v3h8v3l8-5-8-5v3z"/>
+                                        <path d="M20 4v7a2 2 0 01-2 2H6"/>
+                                    </svg>
+                                    Transaction Overview
+                                </h3>
+                                <div className="accept-transaction-overview-grid">
+                                    <div className="accept-transaction-overview-item">
+                                        <div className="accept-transaction-overview-icon">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                                <polyline points="14,2 14,8 20,8"/>
+                                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                                <polyline points="10,9 9,9 8,9"/>
+                                            </svg>
+                                        </div>
+                                        <div className="accept-transaction-overview-content">
+                                            <span className="accept-transaction-label">Batch Number</span>
+                                            <span className="accept-transaction-value">#{selectedTransaction.batchNumber || "N/A"}</span>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="info-row">
-                                    <div className="info-col">
-                                        <div className="info-label">Sender</div>
-                                        <div className="info-value">{getEntityDisplayName(selectedTransaction.sender, selectedTransaction.senderType)}</div>
-                                    </div>
-                                    <div className="info-col">
-                                        <div className="info-label">Receiver</div>
-                                        <div className="info-value">{getEntityDisplayName(selectedTransaction.receiver, selectedTransaction.receiverType)}</div>
-                                    </div>
-                                </div>
-
-                                <div className="info-row">
-                                    <div className="info-col">
-                                        <div className="info-label">Created At</div>
-                                        <div className="info-value">
-                                            {selectedTransaction.createdAt
-                                                ? new Date(selectedTransaction.createdAt).toLocaleString('en-GB', {
-                                                    day: '2-digit',
-                                                    month: '2-digit',
-                                                    year: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                })
-                                                : "N/A"}
+                                    <div className="accept-transaction-overview-item">
+                                        <div className="accept-transaction-overview-icon">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                                <line x1="3" y1="10" x2="21" y2="10"/>
+                                            </svg>
+                                        </div>
+                                        <div className="accept-transaction-overview-content">
+                                            <span className="accept-transaction-label">Transaction Date</span>
+                                            <span className="accept-transaction-value">{formatDate(selectedTransaction.transactionDate)}</span>
                                         </div>
                                     </div>
-                                    <div className="info-col">
-                                        <div className="info-label">Added By</div>
-                                        <div className="info-value">{selectedTransaction.addedBy || "N/A"}</div>
+
+                                    <div className="accept-transaction-overview-item">
+                                        <div className="accept-transaction-overview-icon">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                                <circle cx="12" cy="7" r="4"/>
+                                            </svg>
+                                        </div>
+                                        <div className="accept-transaction-overview-content">
+                                            <span className="accept-transaction-label">From</span>
+                                            <span className="accept-transaction-value">{getEntityDisplayName(selectedTransaction.sender, selectedTransaction.senderType)}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="accept-transaction-overview-item">
+                                        <div className="accept-transaction-overview-icon">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                                <circle cx="12" cy="7" r="4"/>
+                                            </svg>
+                                        </div>
+                                        <div className="accept-transaction-overview-content">
+                                            <span className="accept-transaction-label">To</span>
+                                            <span className="accept-transaction-value">{getEntityDisplayName(selectedTransaction.receiver, selectedTransaction.receiverType)}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Transaction Items */}
-                            <div className="items-section">
-                                <h3>Transaction Items</h3>
+                            <div className="accept-transaction-content-section">
+                                <h3 className="accept-transaction-section-title">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                        <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
+                                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                                    </svg>
+                                    {/* Dynamic title based on transaction type */}
+                                    {selectedTransaction.receiverId === warehouseId ? (
+                                        "Items & Received Quantities"
+                                    ) : (
+                                        "Items & Sent Quantities"
+                                    )}
+                                </h3>
 
                                 {selectedTransaction.items && selectedTransaction.items.length > 0 ? (
-                                    selectedTransaction.items.map((item, index) => (
-                                        <div className="item-container" key={index}>
-                                            <div className="item-details">
-                                                <div className="item-name-block">
-                                                    <span className="item-number">{index + 1}.</span>
-                                                    <div className="item-name-wrapper">
-                                                        <div className="item-name">
-                                                            {getItemDisplayName(item)}
-                                                            {getItemMeasuringUnit(item) && (
-                                                                <span className="item-unit"> ({getItemMeasuringUnit(item)})</span>
-                                                            )}
-                                                        </div>
-                                                        <div className="item-category">
-                                                            {getItemCategory(item)}
-                                                        </div>
+                                    <div className="accept-transaction-items-grid">
+                                        {selectedTransaction.items.map((item, index) => (
+                                            <div key={index} className="accept-transaction-item-card">
+                                                <div className="accept-transaction-item-header">
+                                                    <div className="accept-transaction-item-icon-container">
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                                            <polyline points="3.27,6.96 12,12.01 20.73,6.96"/>
+                                                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                                                        </svg>
+                                                    </div>
+                                                    <div className="accept-transaction-item-info">
+                                                        <div className="accept-transaction-item-name">{getItemDisplayName(item)}</div>
+                                                        <div className="accept-transaction-item-category">{getItemCategory(item)}</div>
+                                                        {/* Show different info based on transaction type */}
+
+                                                    </div>
+                                                </div>
+
+                                                <div className="accept-transaction-quantity-section">
+                                                    {/* Dynamic label based on transaction type */}
+                                                    <div className="accept-transaction-quantity-label">
+                                                        {selectedTransaction.receiverId === warehouseId ? (
+                                                            // This warehouse is receiving
+                                                            <>Received Quantity {!itemsNotReceived[index] && <span className="required-asterisk">*</span>}</>
+                                                        ) : (
+                                                            // This warehouse is sending
+                                                            <>Sent Quantity {!itemsNotReceived[index] && <span className="required-asterisk">*</span>}</>
+                                                        )}
+                                                    </div>
+
+                                                    <div className={`accept-transaction-quantity-controls ${itemsNotReceived[index] ? 'disabled' : ''}`}>
+                                                        <button
+                                                            type="button"
+                                                            className="accept-transaction-quantity-btn decrement"
+                                                            onClick={() => {
+                                                                const current = parseInt(receivedQuantities[index]) || 0;
+                                                                handleItemQuantityChange(index, Math.max(0, current - 1));
+                                                            }}
+                                                            disabled={processingAction || itemsNotReceived[index] || (parseInt(receivedQuantities[index]) || 0) <= 0}
+                                                        >
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                <path d="M5 12h14"/>
+                                                            </svg>
+                                                        </button>
+
+                                                        <input
+                                                            type="number"
+                                                            className="accept-transaction-quantity-input"
+                                                            value={itemsNotReceived[index] ? "" : (receivedQuantities[index] || "")}
+                                                            onChange={(e) => handleItemQuantityChange(index, e.target.value)}
+                                                            placeholder={itemsNotReceived[index] ? "Not processed" : "0"}
+                                                            min="0"
+                                                            disabled={processingAction || itemsNotReceived[index]}
+                                                        />
+
+                                                        <button
+                                                            type="button"
+                                                            className="accept-transaction-quantity-btn increment"
+                                                            onClick={() => {
+                                                                const current = parseInt(receivedQuantities[index]) || 0;
+                                                                handleItemQuantityChange(index, current + 1);
+                                                            }}
+                                                            disabled={processingAction || itemsNotReceived[index]}
+                                                        >
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                <path d="M12 5v14M5 12h14"/>
+                                                            </svg>
+                                                        </button>
+
+                                                        <span className="accept-transaction-unit-label">
+                                                            {getItemMeasuringUnit(item) || 'units'}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="accept-transaction-not-received-section">
+                                                        <label className="accept-transaction-checkbox-label">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={itemsNotReceived[index] || false}
+                                                                onChange={(e) => handleItemNotReceivedChange(index, e.target.checked)}
+                                                                disabled={processingAction}
+                                                            />
+                                                            <span className="accept-transaction-checkmark"></span>
+                                                            {/* Dynamic checkbox text based on transaction type */}
+                                                            <span className="accept-transaction-checkbox-text">
+                                                                {selectedTransaction.receiverId === warehouseId ? (
+                                                                    "Item not received"
+                                                                ) : (
+                                                                    "Item not sent"
+                                                                )}
+                                                            </span>
+                                                        </label>
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            {/* Quantity Section */}
-                                            <div className="quantity-section">
-                                                <div className="quantity-label">
-                                                    Sent/Received Quantity {!itemsNotReceived[index] && <span className="required-mark">*</span>}
-                                                    {getItemMeasuringUnit(item) && (
-                                                        <span className="quantity-unit"> ({getItemMeasuringUnit(item)})</span>
-                                                    )}
-                                                </div>
-
-                                                <div className={`quantity-controls ${itemsNotReceived[index] ? 'disabled' : ''}`}>
-                                                    <button
-                                                        type="button"
-                                                        className="decrement-btn"
-                                                        onClick={() => {
-                                                            const current = parseInt(receivedQuantities[index]) || 0;
-                                                            handleItemQuantityChange(index, Math.max(0, current - 1));
-                                                        }}
-                                                        disabled={processingAction || itemsNotReceived[index] || (parseInt(receivedQuantities[index]) || 0) <= 0}
-                                                    >
-                                                        −
-                                                    </button>
-                                                    <input
-                                                        type="text"
-                                                        value={itemsNotReceived[index] ? "" : (receivedQuantities[index] || "")}
-                                                        onChange={(e) => handleItemQuantityChange(index, e.target.value)}
-                                                        placeholder={itemsNotReceived[index] ? "Not sent/received" : "Enter quantity"}
-                                                        required={!itemsNotReceived[index]}
-                                                        disabled={processingAction || itemsNotReceived[index]}
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        className="increment-btn"
-                                                        onClick={() => {
-                                                            const current = parseInt(receivedQuantities[index]) || 0;
-                                                            handleItemQuantityChange(index, current + 1);
-                                                        }}
-                                                        disabled={processingAction || itemsNotReceived[index]}
-                                                    >
-                                                        +
-                                                    </button>
-                                                </div>
-
-                                                {/* Checkbox below the quantity controls */}
-                                                <div className="item-not-received-section">
-                                                    <label className="item-not-received-checkbox">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={itemsNotReceived[index] || false}
-                                                            onChange={(e) => handleItemNotReceivedChange(index, e.target.checked)}
-                                                            disabled={processingAction}
-                                                        />
-                                                        <span className="checkbox-label">Item not sent/received</span>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))
+                                        ))}
+                                    </div>
                                 ) : (
-                                    <div className="no-items-message">No items found in this transaction</div>
+                                    <div className="accept-transaction-empty-state">
+                                        <div className="accept-transaction-empty-icon">
+                                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <path d="M8 12h8"/>
+                                            </svg>
+                                        </div>
+                                        <div className="accept-transaction-empty-content">
+                                            <p className="accept-transaction-empty-title">No items found</p>
+                                            <p className="accept-transaction-empty-description">This transaction doesn't contain any items.</p>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
 
-                            {/* Comments */}
-                            <div className="comments-section">
-                                <div className="comments-label">
-                                    Comments <span className="optional-text">(optional)</span>
+                            {/* Comments Section */}
+                            <div className="accept-transaction-content-section">
+                                <h3 className="accept-transaction-section-title">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                                    </svg>
+                                    Comments
+                                </h3>
+                                <div className="accept-transaction-comments-container">
+                                    <textarea
+                                        className="accept-transaction-comments-textarea"
+                                        value={comments}
+                                        onChange={(e) => setComments(e.target.value)}
+                                        placeholder={selectedTransaction.receiverId === warehouseId ?
+                                            "Add any comments about receiving these items (optional)..." :
+                                            "Add any comments about sending these items (optional)..."
+                                        }
+                                        disabled={processingAction}
+                                        rows={4}
+                                    />
                                 </div>
-                                <textarea
-                                    value={comments}
-                                    onChange={(e) => setComments(e.target.value)}
-                                    placeholder="Enter any additional comments about this transaction..."
-                                    disabled={processingAction}
-                                />
                             </div>
 
-                            {/* Error message */}
+                            {/* Error Section */}
                             {acceptError && (
-                                <div className="error-message">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <circle cx="12" cy="12" r="10" />
-                                        <line x1="12" y1="8" x2="12" y2="12" />
-                                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                                    </svg>
-                                    <span>{acceptError}</span>
+                                <div className="accept-transaction-error-section">
+                                    <div className="accept-transaction-error-container">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <line x1="12" y1="8" x2="12" y2="12" />
+                                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                                        </svg>
+                                        <span>{acceptError}</span>
+                                    </div>
                                 </div>
                             )}
                         </div>
 
                         {/* Footer */}
-                        <div className="modal-footer">
+                        <div className="accept-transaction-modal-footer">
                             <button
                                 type="button"
-                                className="accept-button"
+                                className="accept-transaction-cancel-btn"
+                                onClick={() => setIsAcceptModalOpen(false)}
+                                disabled={processingAction}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                className="accept-transaction-submit-btn"
                                 onClick={handleAcceptTransaction}
                                 disabled={processingAction || selectedTransaction.items?.some((_, index) => {
                                     if (itemsNotReceived[index]) return false;
@@ -722,7 +822,14 @@ const IncomingTransactionsTable = ({ warehouseId }) => {
                                         parseInt(receivedQuantities[index]) < 0;
                                 })}
                             >
-                                {processingAction ? "Processing..." : (
+                                {processingAction ? (
+                                    <>
+                                        <svg className="accept-transaction-loading-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M21 12a9 9 0 11-6.219-8.56"/>
+                                        </svg>
+                                        Processing...
+                                    </>
+                                ) : (
                                     <>
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                             <path d="M5 13l4 4L19 7" />

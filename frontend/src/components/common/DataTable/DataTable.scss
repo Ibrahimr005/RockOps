@@ -14,6 +14,15 @@
   max-width: 100%;
   overflow: hidden;
 
+  &.has-open-dropdown {
+    overflow: visible !important;
+  }
+
+  &.scrollable.has-open-dropdown {
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
   [data-theme="dark"] & {
     background-color: var(--section-background-color);
     border-color: var(--border-color);
@@ -560,7 +569,7 @@
   position: absolute;
   top: 100%;
   right: 0;
-  z-index: 1000;
+  z-index: 9999;
   background-color: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -574,6 +583,14 @@
     border-color: var(--border-color);
     box-shadow: var(--shadow-md);
   }
+}
+
+.rockops-table__actions.dropdown-open {
+  z-index: 10000;
+}
+
+.rockops-table__actions.dropdown-open .rockops-table__actions-dropdown {
+  z-index: 10001;
 }
 
 .rockops-table__action-item {
@@ -1789,4 +1806,42 @@
       box-shadow: 0 4px 12px rgba(92, 188, 96, 0.3);
     }
   }
+}
+.rockops-table__cell--actions {
+  position: relative;
+  z-index: 5;
+  overflow: visible !important;
+}
+
+.rockops-table__actions {
+  position: relative;
+  z-index: 10;
+}
+/* MAKE DROPDOWN APPEAR ON TOP OF OTHER BUTTONS */
+.rockops-table__actions-dropdown {
+  z-index: 999999 !important;
+  position: absolute !important;
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="dark"] .rockops-table__actions-dropdown {
+  background: var(--section-background-color) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Make sure the dropdown container has higher z-index */
+.rockops-table__actions.dropdown-open {
+  z-index: 999999 !important;
+  position: relative !important;
+}
+
+/* Lower z-index for all other elements in the actions cell */
+.rockops-table__cell--actions .rockops-table__actions:not(.dropdown-open) {
+  z-index: 1 !important;
+}
+
+.rockops-table__action-button {
+  z-index: 1 !important;
 }

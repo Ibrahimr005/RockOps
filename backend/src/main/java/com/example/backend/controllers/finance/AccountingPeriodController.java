@@ -3,7 +3,7 @@ package com.example.backend.controllers.finance;
 import com.example.backend.dto.finance.AccountingPeriodRequestDTO;
 import com.example.backend.dto.finance.AccountingPeriodResponseDTO;
 import com.example.backend.models.user.User;
-import com.example.backend.repositories.UserRepository;
+import com.example.backend.repositories.user.UserRepository;
 import com.example.backend.services.finance.AccountingPeriodService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

@@ -1,16 +1,11 @@
 import React, {useState, useEffect} from "react";
 import "./WarehouseViewTransactions.scss";
 import PendingTransactionsTable from "./PendingTransactions/PendingTransactionsTable.jsx";
-import ValidatedTransactionsTable from "./ValidatedTransactionsTable";
-import IncomingTransactionsTable from "./IncomingTransactionsTable";
+import ValidatedTransactionsTable from "./ValidatedTransactions/ValidatedTransactionsTable.jsx";
+import IncomingTransactionsTable from "./IncomingTransactions/IncomingTransactionsTable.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2"; // Import the Snackbar component
 
 const WarehouseViewTransactionsTable = ({ warehouseId, onAddButtonClick }) => {
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [allTransactions, setAllTransactions] = useState([]);
-  const [pendingTransactions, setPendingTransactions] = useState([]);
-
   // Tab state
   const [activeTab, setActiveTab] = useState("pending");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -22,12 +17,12 @@ const WarehouseViewTransactionsTable = ({ warehouseId, onAddButtonClick }) => {
     text: ''
   });
 
-  // Tab configuration
-  const tabs = [
-    { id: "pending", label: "Pending Transactions", component: PendingTransactionsTable },
-    { id: "incoming", label: "Incoming Transactions", component: IncomingTransactionsTable },
-    { id: "validated", label: "Validated Transactions", component: ValidatedTransactionsTable }
-  ];
+  // Badge counts from child components
+  const [badgeCounts, setBadgeCounts] = useState({
+    pending: 0,
+    incoming: 0,
+    validated: 0
+  });
 
   // Function to show snackbar
   const showSnackbar = (type, text) => {
@@ -50,95 +45,35 @@ const WarehouseViewTransactionsTable = ({ warehouseId, onAddButtonClick }) => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  useEffect(() => {
-    fetchTransactions();
-  }, [warehouseId]);
-
-  // Process and categorize transactions after data is loaded
-  useEffect(() => {
-    if (allTransactions.length > 0) {
-      const pending = allTransactions.filter(
-          transaction =>
-              transaction.status === "PENDING" &&
-              transaction.receiverId === warehouseId
-      );
-
-      setPendingTransactions(pending);
-    }
-  }, [allTransactions, warehouseId]);
-
-  const fetchTransactions = async () => {
-    if (!warehouseId) {
-      console.error("Warehouse ID is not available");
-      return;
-    }
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8080/api/v1/transactions/warehouse/${warehouseId}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const updatedData = await Promise.all(
-            data.map(async (transaction) => {
-              const sender = await fetchEntitiesByType(transaction.senderType);
-              const receiver = await fetchEntitiesByType(transaction.receiverType);
-              return {
-                ...transaction,
-                sender: sender.find(item => item.id === transaction.senderId),
-                receiver: receiver.find(item => item.id === transaction.receiverId)
-              };
-            })
-        );
-        setAllTransactions(updatedData);
-      } else {
-        console.error("Failed to fetch transactions, status:", response.status);
-      }
-    } catch (error) {
-      console.error("Failed to fetch transactions:", error);
-    } finally {
-      setLoading(false);
-    }
+  // Function to update badge counts from child components
+  const updateBadgeCount = (tabType, count) => {
+    setBadgeCounts(prev => ({
+      ...prev,
+      [tabType]: count
+    }));
   };
 
-  const fetchEntitiesByType = async (entityType) => {
-    if (!entityType) return [];
-
-    try {
-      const token = localStorage.getItem("token");
-      let endpoint;
-
-      if (entityType === "WAREHOUSE") {
-        endpoint = `http://localhost:8080/api/v1/warehouses`;
-      } else if (entityType === "SITE") {
-        endpoint = `http://localhost:8080/api/v1/sites`;
-      } else if (entityType === "EQUIPMENT") {
-        endpoint = `http://localhost:8080/api/equipment`;
-      } else {
-        endpoint = `http://localhost:8080/api/v1/${entityType.toLowerCase()}s`;
-      }
-
-      const response = await fetch(endpoint, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data;
-      } else {
-        console.error(`Failed to fetch ${entityType}, status:`, response.status);
-        return [];
-      }
-    } catch (error) {
-      console.error(`Failed to fetch ${entityType}:`, error);
-      return [];
+  // Tab configuration with dynamic badge counts from child components
+  const tabs = [
+    {
+      id: "pending",
+      label: "Pending Transactions",
+      component: PendingTransactionsTable,
+      count: badgeCounts.pending
+    },
+    {
+      id: "incoming",
+      label: "Incoming Transactions",
+      component: IncomingTransactionsTable,
+      count: badgeCounts.incoming
+    },
+    {
+      id: "validated",
+      label: "Validated Transactions",
+      component: ValidatedTransactionsTable,
+      count: badgeCounts.validated
     }
-  };
+  ];
 
   // Render the active tab content
   const renderActiveTabContent = () => {
@@ -146,7 +81,14 @@ const WarehouseViewTransactionsTable = ({ warehouseId, onAddButtonClick }) => {
     if (!activeTabConfig) return null;
 
     const TabComponent = activeTabConfig.component;
-    return <TabComponent warehouseId={warehouseId} refreshTrigger={refreshTrigger} />;
+    return (
+        <TabComponent
+            warehouseId={warehouseId}
+            refreshTrigger={refreshTrigger}
+            onCountUpdate={(count) => updateBadgeCount(activeTab, count)}
+            onTransactionUpdate={triggerRefresh}
+        />
+    );
   };
 
   return (
@@ -160,10 +102,23 @@ const WarehouseViewTransactionsTable = ({ warehouseId, onAddButtonClick }) => {
             duration={4000}
         />
 
-        {/* Header with count and search */}
-        <div className="header-container4">
-          <div className="left-section4">
-          </div>
+        {/* Hidden components to get badge counts */}
+        <div style={{ display: 'none' }}>
+          <PendingTransactionsTable
+              warehouseId={warehouseId}
+              refreshTrigger={refreshTrigger}
+              onCountUpdate={(count) => updateBadgeCount('pending', count)}
+          />
+          <IncomingTransactionsTable
+              warehouseId={warehouseId}
+              refreshTrigger={refreshTrigger}
+              onCountUpdate={(count) => updateBadgeCount('incoming', count)}
+          />
+          <ValidatedTransactionsTable
+              warehouseId={warehouseId}
+              refreshTrigger={refreshTrigger}
+              onCountUpdate={(count) => updateBadgeCount('validated', count)}
+          />
         </div>
 
         {/* Tab navigation */}
@@ -175,6 +130,11 @@ const WarehouseViewTransactionsTable = ({ warehouseId, onAddButtonClick }) => {
                   onClick={() => setActiveTab(tab.id)}
               >
                 {tab.label}
+                {tab.count > 0 && (
+                    <span className="tab-badge">
+                        {tab.count}
+                    </span>
+                )}
               </button>
           ))}
         </div>

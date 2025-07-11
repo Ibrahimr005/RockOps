@@ -447,8 +447,7 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
         setCurrentEditId(null);
         setShowAddModal(true);
 
-        // Show success message
-        onShowSnackbar(`Restock modal opened with ${restockItems.length} low stock items`, 'success');
+
     };
 
     // Modal and form handlers
@@ -659,6 +658,12 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
         <div className="pending-request-orders-container">
             {/* Pending Orders Section */}
             <div className="request-orders-section">
+                <div className="table-header-section">
+                    <div className="left-section3">
+                        <div className="item-count3">{pendingOrders.length} pending request orders</div>
+                    </div>
+                </div>
+
                 <div className="request-orders-table-card">
                     <DataTable
                         data={pendingOrders}

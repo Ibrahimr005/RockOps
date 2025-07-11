@@ -1,10 +1,12 @@
 package com.example.backend.services.warehouse;
 
-
+import com.example.backend.models.notification.NotificationType;
 import com.example.backend.models.warehouse.ItemCategory;
 import com.example.backend.repositories.warehouse.ItemCategoryRepository;
+import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +20,10 @@ public class ItemCategoryService {
     @Autowired
     private ItemCategoryRepository itemCategoryRepository;
 
-    // Add a new ItemCategory with optional parent category
+    // Make NotificationService optional to avoid startup errors
+    @Autowired(required = false)
+    private NotificationService notificationService;
+
     public ItemCategory addItemCategory(Map<String, Object> requestBody) {
         String categoryName = (String) requestBody.get("name");
         String categoryDescription = (String) requestBody.get("description");
@@ -44,12 +49,37 @@ public class ItemCategoryService {
             ItemCategory parentCategory = itemCategoryRepository.findById(parentCategoryId)
                     .orElseThrow(() -> new RuntimeException("Parent category not found with ID: " + parentCategoryId));
             itemCategory.setParentCategory(parentCategory);
-        }
-        else{
+        } else {
             itemCategory.setParentCategory(null);
         }
 
-        return itemCategoryRepository.save(itemCategory);
+        // Save the category
+        ItemCategory savedCategory = itemCategoryRepository.save(itemCategory);
+
+        // Send notification to warehouse users (AUTO USER DETECTION)
+        try {
+            if (notificationService != null) {
+                String broadcastTitle = "New Category Available";
+                String broadcastMessage = String.format(
+                        "A new category '%s' has been added to the system%s",
+                        categoryName,
+                        parentCategoryId != null ? " as a subcategory" : ""
+                );
+
+                notificationService.sendNotificationToWarehouseUsers(
+                        broadcastTitle,
+                        broadcastMessage,
+                        NotificationType.INFO,
+                        "/warehouses/item-categories",
+                        "ItemCategory"
+                );
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send category creation notification: " + e.getMessage());
+            // Don't fail the operation if notification fails
+        }
+
+        return savedCategory;
     }
 
     // Get all categories
@@ -73,8 +103,6 @@ public class ItemCategoryService {
             return new ArrayList<>();
         }
     }
-
-
 
     // Get only child categories (categories that have a parent or don't have any parent or child)
     public List<ItemCategory> getChildCategories() {
@@ -118,6 +146,9 @@ public class ItemCategoryService {
         ItemCategory itemCategory = itemCategoryRepository.findById(itemCategoryId)
                 .orElseThrow(() -> new RuntimeException("ItemCategory not found with ID: " + itemCategoryId));
 
+        // Store category name for notification
+        String categoryName = itemCategory.getName();
+
         // Check for child categories
         if (!itemCategory.getChildCategories().isEmpty()) {
             throw new RuntimeException("CHILD_CATEGORIES_EXIST");
@@ -131,12 +162,39 @@ public class ItemCategoryService {
         // If no dependencies, proceed with deletion
         itemCategoryRepository.delete(itemCategory);
         System.out.println("Item category deleted successfully");
+
+        // Send notification to warehouse users (AUTO USER DETECTION)
+        try {
+            if (notificationService != null) {
+                String broadcastTitle = "Category Removed";
+                String broadcastMessage = String.format(
+                        "Category '%s' has been removed from the system",
+                        categoryName
+                );
+
+                notificationService.sendNotificationToWarehouseUsers(
+                        broadcastTitle,
+                        broadcastMessage,
+                        NotificationType.WARNING,
+                        "/warehouses/item-categories",
+                        "ItemCategory"
+                );
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send category deletion notification: " + e.getMessage());
+            // Don't fail the operation if notification fails
+        }
     }
+
     // Update an existing ItemCategory
     public ItemCategory updateItemCategory(UUID itemCategoryId, Map<String, Object> requestBody) {
         // Fetch the item category to be updated
         ItemCategory itemCategory = itemCategoryRepository.findById(itemCategoryId)
                 .orElseThrow(() -> new RuntimeException("ItemCategory not found with ID: " + itemCategoryId));
+
+        // Store old values for notification
+        String oldCategoryName = itemCategory.getName();
+        String oldCategoryDescription = itemCategory.getDescription();
 
         // Get the new values for the category
         String newCategoryName = (String) requestBody.get("name");
@@ -172,7 +230,42 @@ public class ItemCategoryService {
         }
 
         // Save the updated category
-        return itemCategoryRepository.save(itemCategory);
+        ItemCategory updatedCategory = itemCategoryRepository.save(itemCategory);
+
+        // Send notification to warehouse users (AUTO USER DETECTION)
+        try {
+            if (notificationService != null) {
+                String broadcastTitle = "Category Updated";
+                String broadcastMessage;
+
+                // Check if name changed
+                if (!oldCategoryName.equals(newCategoryName)) {
+                    broadcastMessage = String.format(
+                            "Category '%s' has been renamed to '%s'",
+                            oldCategoryName,
+                            newCategoryName
+                    );
+                } else {
+                    broadcastMessage = String.format(
+                            "Category '%s' has been updated",
+                            newCategoryName
+                    );
+                }
+
+                notificationService.sendNotificationToWarehouseUsers(
+                        broadcastTitle,
+                        broadcastMessage,
+                        NotificationType.INFO,
+                        "/warehouses/item-categories",
+                        "ItemCategory"
+                );
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Failed to send category update notification: " + e.getMessage());
+            // Don't fail the operation if notification fails
+        }
+
+        return updatedCategory;
     }
 
     // Helper method to check if potentialChild is in the hierarchy of parent

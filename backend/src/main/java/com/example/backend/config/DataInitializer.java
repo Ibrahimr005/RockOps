@@ -9,7 +9,7 @@ import com.example.backend.models.equipment.EquipmentType;
 import com.example.backend.repositories.hr.DepartmentRepository;
 import com.example.backend.repositories.hr.JobPositionRepository;
 import com.example.backend.repositories.equipment.EquipmentTypeRepository;
-import com.example.backend.repositories.UserRepository;
+import com.example.backend.repositories.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;

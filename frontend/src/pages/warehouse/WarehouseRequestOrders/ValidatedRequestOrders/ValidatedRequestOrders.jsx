@@ -155,6 +155,11 @@ const ValidatedRequestOrders = ({ warehouseId, refreshTrigger, onShowSnackbar, u
         <div className="validated-request-orders-container">
             {/* Validated Orders Section */}
             <div className="request-orders-section">
+                <div className="table-header-section">
+                    <div className="left-section3">
+                        <div className="item-count3">{validatedOrders.length} validated request orders</div>
+                    </div>
+                </div>
 
 
                 <div className="request-orders-table-card">

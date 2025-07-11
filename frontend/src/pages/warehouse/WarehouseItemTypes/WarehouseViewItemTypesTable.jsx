@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
-import ProcurementIntroCard from "../../../components/common/IntroCard/ProcurementIntroCard.jsx";
+import ProcurementIntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 import "./WarehouseViewItemTypesTable.scss";
 
 // Import your item types images (you'll need to add these to your assets)

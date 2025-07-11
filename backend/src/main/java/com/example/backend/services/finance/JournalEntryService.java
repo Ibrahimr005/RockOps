@@ -10,7 +10,7 @@ import com.example.backend.models.finance.JournalEntry;
 import com.example.backend.models.finance.JournalEntryLine;
 import com.example.backend.models.finance.JournalEntryStatus;
 import com.example.backend.repositories.finance.JournalEntryRepository;
-import com.example.backend.repositories.UserRepository;
+import com.example.backend.repositories.user.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

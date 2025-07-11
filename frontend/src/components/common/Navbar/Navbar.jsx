@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext.jsx';
 import { useLanguage } from '../../../contexts/LanguageContext.jsx';
 import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import { useTranslation } from 'react-i18next';
-import { FaSignOutAlt, FaBars, FaTimes, FaMoon, FaSun, FaArrowLeft } from 'react-icons/fa';
+import { FaSignOutAlt, FaBars, FaTimes, FaMoon, FaSun, FaArrowLeft, FaBell } from 'react-icons/fa';
 import logoImage from '../../../assets/logos/Logo.png';
 import logoDarkImage from '../../../assets/logos/Logo-dark.png';
 import './Navbar.css';
 
 const Navbar = () => {
-    const { currentUser, logout } = useAuth();
+    const { currentUser, logout, token } = useAuth();
     const { language, switchLanguage } = useLanguage();
     const { theme, toggleTheme } = useTheme();
     const { t } = useTranslation();
@@ -20,25 +20,182 @@ const Navbar = () => {
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [navigationHistory, setNavigationHistory] = useState(['/login']);
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
+    const [connectionStatus, setConnectionStatus] = useState('disconnected');
 
-    // Get the appropriate logo based on theme
+    const stompClientRef = useRef(null);
 
     // Always show the back button
     const showBackButton = true;
 
+    // Initialize WebSocket connection for real-time notification count
+    useEffect(() => {
+        if (currentUser && token) {
+            fetchUnreadCount();
+            connectWebSocket();
+        }
+
+        return () => {
+            disconnectWebSocket();
+        };
+    }, [currentUser, token]);
+
     // Track navigation history to avoid going back to login
     useEffect(() => {
         setNavigationHistory(prev => {
-            // Only add if it's different from the last page
             const lastPage = prev[prev.length - 1];
             if (lastPage !== location.pathname) {
                 const newHistory = [...prev, location.pathname];
-                // Keep only last 10 entries to prevent memory issues
                 return newHistory.slice(-10);
             }
             return prev;
         });
     }, [location.pathname]);
+
+    // Fetch initial unread count
+    const fetchUnreadCount = async () => {
+        try {
+            const response = await fetch('http://localhost:8080/api/notifications/unread/count', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('📊 Initial unread count fetched:', data);
+                setUnreadNotifications(data.unreadCount || data.count || 0);
+            }
+        } catch (error) {
+            console.error('Failed to fetch unread count:', error);
+        }
+    };
+
+    // Connect to WebSocket for real-time updates
+    const connectWebSocket = async () => {
+        if (stompClientRef.current?.connected) {
+            return;
+        }
+
+        setConnectionStatus('connecting');
+
+        try {
+            const { Client } = await import('@stomp/stompjs');
+
+            const stompClient = new Client({
+                brokerURL: 'ws://localhost:8080/ws-native',
+                connectHeaders: {
+                    'Authorization': `Bearer ${token}`
+                },
+                debug: () => {}, // Silent debug for navbar
+                reconnectDelay: 5000,
+                heartbeatIncoming: 4000,
+                heartbeatOutgoing: 4000,
+            });
+
+            stompClient.onConnect = (frame) => {
+                console.log('🔗 Navbar WebSocket Connected');
+                setConnectionStatus('connected');
+
+                // 🎯 ONLY Subscribe to unread count updates (server-side calculated)
+                stompClient.subscribe('/user/queue/unread-count', (message) => {
+                    const response = JSON.parse(message.body);
+                    console.log('📊 Navbar received unread count update:', response);
+
+                    // Handle different response formats
+                    let newCount = 0;
+                    if (response.data !== undefined) {
+                        newCount = response.data;
+                    } else if (response.unreadCount !== undefined) {
+                        newCount = response.unreadCount;
+                    } else if (response.count !== undefined) {
+                        newCount = response.count;
+                    }
+
+                    console.log('🔔 Setting unread notifications to:', newCount);
+                    setUnreadNotifications(newCount);
+                });
+
+                // 🔔 Subscribe to new notifications ONLY for immediate visual feedback (no counting)
+                stompClient.subscribe('/user/queue/notifications', (message) => {
+                    const notification = JSON.parse(message.body);
+                    console.log('🔔 Navbar received new notification (refreshing count):', notification.title);
+
+                    // Just refresh the count from server instead of manual increment
+                    setTimeout(() => {
+                        fetchUnreadCount();
+                    }, 100);
+                });
+
+                // 📢 Subscribe to broadcast notifications ONLY for immediate visual feedback (no counting)
+                stompClient.subscribe('/topic/notifications', (message) => {
+                    const notification = JSON.parse(message.body);
+                    console.log('📢 Navbar received broadcast notification (refreshing count):', notification.title);
+
+                    // Just refresh the count from server instead of manual increment
+                    setTimeout(() => {
+                        fetchUnreadCount();
+                    }, 100);
+                });
+
+                // 🗑️ OPERATIONS: Subscribe to operation responses for immediate count refresh
+                stompClient.subscribe('/user/queue/responses', (message) => {
+                    const response = JSON.parse(message.body);
+                    console.log('📬 Navbar received operation response:', response);
+
+                    // Refresh count from server after any operation
+                    if (response.type === 'SUCCESS') {
+                        setTimeout(() => {
+                            fetchUnreadCount();
+                        }, 100);
+                    }
+                });
+
+                // 🔐 Authenticate with the server
+                stompClient.publish({
+                    destination: '/app/authenticate',
+                    body: JSON.stringify({
+                        token: token,
+                        userId: currentUser.id,
+                        sessionId: Date.now().toString()
+                    })
+                });
+
+                console.log('✅ Navbar WebSocket subscriptions established');
+            };
+
+            stompClient.onStompError = (frame) => {
+                console.error('❌ Navbar WebSocket STOMP Error:', frame);
+                setConnectionStatus('disconnected');
+            };
+
+            stompClient.onDisconnect = () => {
+                console.log('📴 Navbar WebSocket Disconnected');
+                setConnectionStatus('disconnected');
+            };
+
+            stompClient.onWebSocketError = (error) => {
+                console.error('❌ Navbar WebSocket Error:', error);
+                setConnectionStatus('disconnected');
+            };
+
+            stompClient.activate();
+            stompClientRef.current = stompClient;
+
+        } catch (error) {
+            console.error('Failed to connect WebSocket in navbar:', error);
+            setConnectionStatus('disconnected');
+        }
+    };
+
+    const disconnectWebSocket = () => {
+        if (stompClientRef.current) {
+            stompClientRef.current.deactivate();
+            stompClientRef.current = null;
+        }
+        setConnectionStatus('disconnected');
+    };
 
     const toggleLanguageDropdown = () => {
         setShowLanguageDropdown(!showLanguageDropdown);
@@ -50,13 +207,13 @@ const Navbar = () => {
     };
 
     const handleLogout = () => {
+        disconnectWebSocket();
         logout();
         navigate('/login');
     };
 
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
-        // Close language dropdown when toggling mobile menu
         if (!mobileMenuOpen) {
             setShowLanguageDropdown(false);
         }
@@ -84,12 +241,22 @@ const Navbar = () => {
         navigate(-1);
     };
 
+    // Handle notification click
+    const handleNotificationClick = () => {
+        navigate('/notifications');
+        // Don't reset count here - let the notifications page handle read status
+    };
+
+    // Debug logging for count changes
+    useEffect(() => {
+        console.log('🔔 Unread notifications count changed to:', unreadNotifications);
+    }, [unreadNotifications]);
+
     return (
         <nav className="admin-navbar">
             <div className="navbar-content">
                 <div className="navbar-left">
                     {/* Logo container - moved from sidebar */}
-
                 </div>
 
                 {/* Mobile menu button */}
@@ -132,12 +299,20 @@ const Navbar = () => {
                         </div>
                     </div>
 
-                    <div className="notification-icon">
-                        <span className="notification-badge">1</span>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12.0001 22C13.1001 22 14.0001 21.1 14.0001 20H10.0001C10.0001 21.1 10.8901 22 12.0001 22ZM18.0001 16V11C18.0001 7.93 16.3601 5.36 13.5001 4.68V4C13.5001 3.17 12.8301 2.5 12.0001 2.5C11.1701 2.5 10.5001 3.17 10.5001 4V4.68C7.63005 5.36 6.00005 7.92 6.00005 11V16L4.71005 17.29C4.08005 17.92 4.52005 19 5.41005 19H18.5801C19.4701 19 19.9201 17.92 19.2901 17.29L18.0001 16Z" fill="currentColor"/>
-                        </svg>
-                    </div>
+                    <button
+                        className={`notification-icon ${connectionStatus === 'connected' ? 'connected' : 'disconnected'}`}
+                        onClick={handleNotificationClick}
+                        title={`View Notifications (${connectionStatus === 'connected' ? 'Connected' : 'Disconnected'})`}
+                    >
+                        {unreadNotifications > 0 && (
+                            <span className="notification-badge">
+                                {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                            </span>
+                        )}
+                        <FaBell size={20} />
+                        {/* Small connection indicator */}
+                        <span className={`connection-dot ${connectionStatus}`}></span>
+                    </button>
 
                     <div className="user-profile">
                         <img

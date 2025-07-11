@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from "react";
 import "../WarehouseViewTransactions.scss";
-import UpdatePendingTransactionModal from "./UpdatePendingTransactionModal.jsx";
-import TransactionViewModal from "../TransactionViewModal.jsx";
+import TransactionViewModal from "../TransactionViewModal/TransactionViewModal.jsx";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx";
 import { FaPlus } from 'react-icons/fa';
+import ConfirmationDialog from "../../../../components/common/ConfirmationDialog/ConfirmationDialog";
 import "./PendingTransactions.scss"
 
-const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
+const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, onTransactionUpdate }) => {
     const [loading, setLoading] = useState(false);
     const [pendingTransactions, setPendingTransactions] = useState([]);
-    const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-    const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [viewTransaction, setViewTransaction] = useState(null);
 
-    // Transaction Creation Modal State
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    // Unified Transaction Modal State (for both create and update)
+    const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState("create"); // "create" or "update"
+    const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [items, setItems] = useState([]);
     const [allItemTypes, setAllItemTypes] = useState([]);
     const [senderOptions, setSenderOptions] = useState([]);
@@ -40,10 +40,10 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
     });
 
     const entityTypes = ["WAREHOUSE", "EQUIPMENT"];
-    // NEW: Category filtering states
+    // Category filtering states
     const [parentCategories, setParentCategories] = useState([]);
-    const [childCategoriesByItem, setChildCategoriesByItem] = useState({}); // Store child categories per item
-    const [showFilters, setShowFilters] = useState({}); // Track which items have filters expanded
+    const [childCategoriesByItem, setChildCategoriesByItem] = useState({});
+    const [showFilters, setShowFilters] = useState({});
 
     // Snackbar state
     const [snackbar, setSnackbar] = useState({
@@ -68,27 +68,29 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
             isOpen: false
         });
     };
+    // Confirmation dialog state
+    const [confirmDialog, setConfirmDialog] = useState({
+        isVisible: false,
+        transactionId: null,
+        isDeleting: false
+    });
 
-    // Fetch transactions when component mounts or warehouseId changes
-// Update your existing useEffect
+    // Fetch data when component mounts or warehouseId changes
     useEffect(() => {
         fetchPendingTransactions();
         fetchItems();
         fetchAllItemTypes();
         fetchWarehouseDetails();
         fetchAllSites();
-        fetchParentCategories(); // ADD THIS LINE
+        fetchParentCategories();
     }, [warehouseId, refreshTrigger]);
 
-    // NEW: Toggle filters with animation
+    // Toggle filters with animation
     const toggleFilters = (index) => {
         if (showFilters[index]) {
-            // If currently showing, start collapse animation
             const filterElement = document.querySelector(`[data-filter-index="${index}"]`);
             if (filterElement) {
                 filterElement.classList.add('collapsing');
-
-                // Wait for animation to finish, then hide
                 setTimeout(() => {
                     setShowFilters(prev => ({
                         ...prev,
@@ -97,7 +99,6 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                 }, 300);
             }
         } else {
-            // If currently hidden, show immediately
             setShowFilters(prev => ({
                 ...prev,
                 [index]: true
@@ -110,17 +111,14 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
         const updateSenderOptions = async () => {
             if (newTransaction.senderType && selectedSenderSite && transactionRole === "receiver") {
                 let senderData = await fetchEntitiesByTypeAndSite(newTransaction.senderType, selectedSenderSite);
-
                 if (newTransaction.senderType === "WAREHOUSE") {
                     senderData = senderData.filter((entity) => entity.id !== warehouseId);
                 }
-
                 setSenderOptions(senderData);
             } else {
                 setSenderOptions([]);
             }
         };
-
         updateSenderOptions();
     }, [newTransaction.senderType, selectedSenderSite, warehouseId, transactionRole]);
 
@@ -129,23 +127,20 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
         const updateReceiverOptions = async () => {
             if (newTransaction.receiverType && selectedReceiverSite && transactionRole === "sender") {
                 let receiverData = await fetchEntitiesByTypeAndSite(newTransaction.receiverType, selectedReceiverSite);
-
                 if (newTransaction.receiverType === "WAREHOUSE") {
                     receiverData = receiverData.filter((entity) => entity.id !== warehouseId);
                 }
-
                 setReceiverOptions(receiverData);
             } else {
                 setReceiverOptions([]);
             }
         };
-
         updateReceiverOptions();
     }, [newTransaction.receiverType, selectedReceiverSite, warehouseId, transactionRole]);
 
-
+    // Reset form when modal opens
     useEffect(() => {
-        if (isCreateModalOpen) {
+        if (isTransactionModalOpen && modalMode === "create") {
             setTransactionRole("sender");
             setNewTransaction({
                 transactionDate: "",
@@ -158,11 +153,10 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
             });
             setSelectedSenderSite("");
             setSelectedReceiverSite("");
-            // Clear category states
             setChildCategoriesByItem({});
             setShowFilters({});
         }
-    }, [isCreateModalOpen, warehouseId]);
+    }, [isTransactionModalOpen, modalMode, warehouseId]);
 
     // Update transaction data when role changes
     useEffect(() => {
@@ -189,6 +183,59 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
         }
     }, [transactionRole, warehouseId]);
 
+    // Format date-time for input fields
+    const formatDateTimeForInput = (dateTimeString) => {
+        if (!dateTimeString) return "";
+        const date = new Date(dateTimeString);
+        return date.toISOString().slice(0, 16);
+    };
+
+    // Initialize form for update mode
+    const initializeUpdateForm = async (transaction) => {
+        console.log("🔍 Initializing update form with transaction:", transaction);
+
+        // Format items correctly based on actual API structure
+        const formattedItems = (transaction.items || []).map(item => ({
+            itemType: {
+                id: item.itemTypeId || "",
+                name: item.itemTypeName || "",
+                measuringUnit: ""
+            },
+            quantity: item.quantity || 1,
+            parentCategoryId: "",
+            itemCategoryId: ""
+        }));
+
+        setNewTransaction({
+            ...transaction,
+            senderType: transaction.senderType || "",
+            senderId: transaction.senderId || "",
+            receiverType: transaction.receiverType || "",
+            receiverId: transaction.receiverId || "",
+            items: formattedItems,
+            transactionDate: formatDateTimeForInput(transaction.transactionDate),
+            batchNumber: transaction.batchNumber || ""
+        });
+
+        // Determine transaction role and pre-populate sites
+        if (transaction.senderId === warehouseId) {
+            setTransactionRole("sender");
+            if (transaction.receiver?.site) {
+                setSelectedReceiverSite(transaction.receiver.site.id);
+                const entities = await fetchEntitiesByTypeAndSite(transaction.receiver.site.id, transaction.receiverType);
+                setReceiverOptions(entities);
+            }
+        } else if (transaction.receiverId === warehouseId) {
+            setTransactionRole("receiver");
+            if (transaction.sender?.site) {
+                setSelectedSenderSite(transaction.sender.site.id);
+                const entities = await fetchEntitiesByTypeAndSite(transaction.sender.site.id, transaction.senderType);
+                setSenderOptions(entities);
+            }
+        }
+    };
+
+    // Fetch all required data
     const fetchAllSites = async () => {
         try {
             const token = localStorage.getItem("token");
@@ -197,12 +244,9 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                     "Authorization": `Bearer ${token}`
                 }
             });
-
             if (response.ok) {
                 const data = await response.json();
                 setAllSites(data);
-            } else {
-                console.error("Failed to fetch sites, status:", response.status);
             }
         } catch (error) {
             console.error("Failed to fetch sites:", error);
@@ -212,21 +256,18 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
     const fetchWarehouseDetails = async () => {
         try {
             const token = localStorage.getItem("token");
-
             const response = await fetch(`http://localhost:8080/api/v1/warehouses/${warehouseId}`, {
                 headers: {
                     "Authorization": `Bearer ${token}`
                 }
             });
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+            if (response.ok) {
+                const data = await response.json();
+                setWarehouseData({
+                    name: data.name || "",
+                    id: data.id || "",
+                });
             }
-
-            const data = await response.json();
-            setWarehouseData({
-                name: data.name || "",
-                id: data.id || "",
-            });
         } catch (error) {
             console.error("Error fetching warehouse details:", error);
         }
@@ -292,7 +333,6 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log(`${entityType} for site ${siteId}:`, data);
                 return data;
             } else {
                 console.error(`Failed to fetch ${entityType} for site ${siteId}, status:`, response.status);
@@ -304,7 +344,6 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
         }
     };
 
-    // Function to fetch pending transactions directly from backend
     const fetchPendingTransactions = async () => {
         if (!warehouseId) {
             console.error("Warehouse ID is not available");
@@ -314,7 +353,6 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
         setLoading(true);
         try {
             const token = localStorage.getItem("token");
-            // Fetch all transactions for this warehouse
             const response = await fetch(`http://localhost:8080/api/v1/transactions/warehouse/${warehouseId}`, {
                 headers: {
                     "Authorization": `Bearer ${token}`
@@ -322,13 +360,12 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
             });
             if (response.ok) {
                 const data = await response.json();
-                // Filter for only pending transactions where this warehouse is the sentFirst (initiator)
                 const pendingData = await Promise.all(
                     data
                         .filter(transaction =>
                             transaction.status === "PENDING" &&
                             (transaction.receiverId === warehouseId || transaction.senderId === warehouseId) &&
-                            transaction.sentFirst === warehouseId // Filter for transactions where current warehouse is the initiator
+                            transaction.sentFirst === warehouseId
                         )
                         .map(async (transaction) => {
                             const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
@@ -353,7 +390,6 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
         }
     };
 
-    // Helper function to fetch entity details
     const fetchEntityDetails = async (entityType, entityId) => {
         if (!entityType || !entityId) return null;
 
@@ -361,7 +397,6 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
             const token = localStorage.getItem("token");
             let endpoint;
 
-            // Handle different entity types
             if (entityType === "WAREHOUSE") {
                 endpoint = `http://localhost:8080/api/v1/warehouses/${entityId}`;
             } else if (entityType === "SITE") {
@@ -369,7 +404,6 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
             } else if (entityType === "EQUIPMENT") {
                 endpoint = `http://localhost:8080/api/equipment/${entityId}`;
             } else {
-                // Fallback for other entity types using lowercase pluralization
                 endpoint = `http://localhost:8080/api/v1/${entityType.toLowerCase()}s/${entityId}`;
             }
 
@@ -390,43 +424,107 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
         }
     };
 
-    // Function to handle opening the update modal
-    const handleOpenUpdateModal = (transaction) => {
-        setSelectedTransaction(transaction);
-        setIsUpdateModalOpen(true);
+    const fetchParentCategories = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('http://localhost:8080/api/v1/itemCategories/parents', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setParentCategories(data);
+            }
+        } catch (error) {
+            console.error('Error fetching parent categories:', error);
+        }
     };
 
-    // Function to handle opening the view modal
+    const fetchChildCategories = async (parentCategoryId, itemIndex) => {
+        if (!parentCategoryId) {
+            setChildCategoriesByItem(prev => ({
+                ...prev,
+                [itemIndex]: []
+            }));
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:8080/api/v1/itemCategories/children/${parentCategoryId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setChildCategoriesByItem(prev => ({
+                    ...prev,
+                    [itemIndex]: data
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching child categories:', error);
+            setChildCategoriesByItem(prev => ({
+                ...prev,
+                [itemIndex]: []
+            }));
+        }
+    };
+
+    // Modal handlers
     const handleOpenViewModal = (transaction) => {
         setViewTransaction(transaction);
+        console.log("transactionnn: " + JSON.stringify(transaction, null, 2));
         setIsViewModalOpen(true);
     };
 
-    // Function to handle update transaction
-    const handleUpdateTransaction = async () => {
-        console.log("🔄 Refreshing transactions after update");
-        await fetchPendingTransactions();
-        showSnackbar("Transaction successfully updated", "success");
-    };
-
-    // Function to close the update modal
-    const handleCloseUpdateModal = () => {
-        setIsUpdateModalOpen(false);
-        setSelectedTransaction(null);
-    };
-
-    // Function to close the view modal
     const handleCloseViewModal = () => {
         setIsViewModalOpen(false);
         setViewTransaction(null);
     };
 
-    // Handle add button click from DataTable
     const handleAddTransaction = () => {
-        setIsCreateModalOpen(true);
+        setModalMode("create");
+        setSelectedTransaction(null);
+        setIsTransactionModalOpen(true);
     };
 
-    // Handle input change for transaction form
+    const handleUpdateTransaction = async (transaction) => {
+        setModalMode("update");
+        setSelectedTransaction(transaction);
+        await initializeUpdateForm(transaction);
+        setIsTransactionModalOpen(true);
+    };
+
+    const handleCloseTransactionModal = () => {
+        setIsTransactionModalOpen(false);
+        setSelectedTransaction(null);
+        setModalMode("create");
+        // Reset form
+        setNewTransaction({
+            transactionDate: "",
+            items: [{ itemType: { id: "" }, quantity: "1", parentCategoryId: "", itemCategoryId: "" }],
+            senderType: "WAREHOUSE",
+            senderId: warehouseId,
+            receiverType: "",
+            receiverId: "",
+            batchNumber: "",
+        });
+        setSelectedSenderSite("");
+        setSelectedReceiverSite("");
+        setChildCategoriesByItem({});
+        setShowFilters({});
+    };
+
+    // Form handlers
     const handleInputChange = (e) => {
         const {name, value} = e.target;
         setNewTransaction({
@@ -435,19 +533,16 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
         });
     };
 
-// Enhanced handleItemChange with category filtering
     const handleItemChange = (index, field, value) => {
         const updatedItems = [...newTransaction.items];
 
         if (field === 'parentCategoryId') {
-            // Reset child category and item type when parent changes
             updatedItems[index] = {
                 ...updatedItems[index],
                 parentCategoryId: value,
                 itemCategoryId: '',
                 itemType: { id: '' }
             };
-            // Fetch child categories for this item
             if (value) {
                 fetchChildCategories(value, index);
             } else {
@@ -457,7 +552,6 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                 }));
             }
         } else if (field === 'itemCategoryId') {
-            // Reset item type when child category changes
             updatedItems[index] = {
                 ...updatedItems[index],
                 itemCategoryId: value,
@@ -469,7 +563,6 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                 itemType: { id: value }
             };
         } else if (field === 'quantity') {
-            // Your existing quantity validation logic here
             if (transactionRole === "sender" && value && updatedItems[index].itemType.id) {
                 const warehouseItemsOfType = items.filter(warehouseItem =>
                     warehouseItem.itemStatus === "IN_WAREHOUSE" &&
@@ -527,11 +620,10 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
             items: updatedItems
         });
 
-        // Clean up child categories and filter states for removed item
+        // Clean up child categories and filter states
         setChildCategoriesByItem(prev => {
             const newChildCategories = { ...prev };
             delete newChildCategories[index];
-            // Reindex remaining items
             const reindexed = {};
             Object.keys(newChildCategories).forEach(key => {
                 const oldIndex = parseInt(key);
@@ -544,11 +636,9 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
             return reindexed;
         });
 
-        // Clean up filter states
         setShowFilters(prev => {
             const newShowFilters = { ...prev };
             delete newShowFilters[index];
-            // Reindex remaining items
             const reindexed = {};
             Object.keys(newShowFilters).forEach(key => {
                 const oldIndex = parseInt(key);
@@ -600,7 +690,7 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
         setTransactionRole(e.target.value);
     };
 
-    // NEW: Get filtered item types for a specific item
+    // Helper functions
     const getFilteredItemTypes = (itemIndex) => {
         const item = newTransaction.items[itemIndex];
         if (!item) return [];
@@ -616,17 +706,13 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
             baseItemTypes = aggregatedItems.map(aggItem => aggItem.itemType);
         }
 
-        // Apply category filtering
         let filteredTypes = baseItemTypes;
 
-        // If child category is selected, filter by child category (most specific)
         if (item.itemCategoryId) {
             filteredTypes = filteredTypes.filter(itemType =>
                 itemType.itemCategory?.id === item.itemCategoryId
             );
-        }
-        // If only parent category is selected, show all item types under that parent
-        else if (item.parentCategoryId) {
+        } else if (item.parentCategoryId) {
             filteredTypes = filteredTypes.filter(itemType =>
                 itemType.itemCategory?.parentCategory?.id === item.parentCategoryId
             );
@@ -635,7 +721,6 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
         return filteredTypes;
     };
 
-// Update your existing getAvailableItemTypes function
     const getAvailableItemTypes = (currentIndex) => {
         const selectedItemTypeIds = newTransaction.items
             .filter((_, idx) => idx !== currentIndex && !!_.itemType.id)
@@ -661,117 +746,42 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
 
     const renderItemOptions = (currentIndex) => {
         const availableItems = getAvailableItemTypes(currentIndex);
+        const currentItem = newTransaction.items[currentIndex];
 
         if (transactionRole === "receiver") {
-            return availableItems.map((itemType) => (
-                <option key={itemType.id} value={itemType.id}>
-                    {itemType.name}
-                </option>
-            ));
-
+            return (
+                <>
+                    {/* Show current item type even if not in available list (for update mode) */}
+                    {modalMode === "update" && currentItem?.itemType?.id && currentItem?.itemType?.name &&
+                        !availableItems.find(itemType => itemType.id === currentItem.itemType.id) && (
+                            <option value={currentItem.itemType.id}>
+                                {currentItem.itemType.name} (current)
+                            </option>
+                        )}
+                    {availableItems.map((itemType) => (
+                        <option key={itemType.id} value={itemType.id}>
+                            {itemType.name}
+                        </option>
+                    ))}
+                </>
+            );
         } else {
-            return availableItems.map((aggregatedItem) => (
-                <option key={aggregatedItem.itemType.id} value={aggregatedItem.itemType.id}>
-                    {aggregatedItem.itemType.name} {aggregatedItem.itemType.measuringUnit ? `(${aggregatedItem.itemType.measuringUnit})` : ""} ({aggregatedItem.quantity} available)
-                </option>
-            ));
-        }
-    };
-
-    const handleCreateTransaction = async (e) => {
-        e.preventDefault();
-
-        // Validate items
-        for (const item of newTransaction.items) {
-            if (!item.itemType.id || !item.quantity) {
-                showSnackbar('Please complete all item fields', 'error');
-                return;
-            }
-
-            // Check if the warehouse is the sender and verify inventory
-            if (transactionRole === "sender") {
-                const warehouseItemsOfType = items.filter(warehouseItem =>
-                    warehouseItem.itemStatus === "IN_WAREHOUSE" &&
-                    warehouseItem.itemType.id === item.itemType.id
-                );
-
-                if (warehouseItemsOfType.length === 0) {
-                    showSnackbar('Item not found in the warehouse inventory or not available (IN_WAREHOUSE status)', 'error');
-                    return;
-                }
-
-                const aggregatedItems = aggregateWarehouseItems(warehouseItemsOfType);
-                const aggregatedItem = aggregatedItems.find(aggItem => aggItem.itemType.id === item.itemType.id);
-
-                if (!aggregatedItem) {
-                    showSnackbar('Item not found in the warehouse inventory', 'error');
-                    return;
-                }
-
-                const totalAvailableQuantity = aggregatedItem.quantity;
-                const itemTypeName = aggregatedItem.itemType.name;
-
-                if (totalAvailableQuantity < parseInt(item.quantity)) {
-                    showSnackbar(`Not enough quantity available for ${itemTypeName}. Only ${totalAvailableQuantity} items in stock.`, 'error');
-                    return;
-                }
-            }
-        }
-
-        let username = "system";
-        const userInfoString = localStorage.getItem('userInfo');
-
-        if (userInfoString) {
-            try {
-                const userInfo = JSON.parse(userInfoString);
-                if (userInfo.username) {
-                    username = userInfo.username;
-                }
-            } catch (error) {
-                console.error("Error parsing user info:", error);
-            }
-        }
-
-        const transactionData = {
-            transactionDate: newTransaction.transactionDate,
-            senderType: newTransaction.senderType,
-            senderId: newTransaction.senderId.toString(),
-            receiverType: newTransaction.receiverType,
-            receiverId: newTransaction.receiverId.toString(),
-            username: username,
-            batchNumber: parseInt(newTransaction.batchNumber),
-            sentFirst: warehouseId,
-            items: newTransaction.items.map(item => ({
-                itemTypeId: item.itemType.id,
-                quantity: parseInt(item.quantity)
-            }))
-        };
-
-        console.log("Creating transaction:", JSON.stringify(transactionData));
-
-        try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/transactions/create`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(transactionData),
-            });
-
-            if (response.ok) {
-                await fetchPendingTransactions();
-                setIsCreateModalOpen(false);
-                showSnackbar('Transaction created successfully!', 'success');
-            } else {
-                const errorText = await response.text();
-                console.error("Failed to create transaction:", response.status, errorText);
-                showSnackbar('Failed to create transaction. Please try again.', 'error');
-            }
-        } catch (error) {
-            console.error("Error creating transaction:", error);
-            showSnackbar('Failed to create transaction. Please check your connection.', 'error');
+            return (
+                <>
+                    {/* Show current item type even if not in available list (for update mode) */}
+                    {modalMode === "update" && currentItem?.itemType?.id && currentItem?.itemType?.name &&
+                        !availableItems.find(aggItem => aggItem.itemType.id === currentItem.itemType.id) && (
+                            <option value={currentItem.itemType.id}>
+                                {currentItem.itemType.name} (current)
+                            </option>
+                        )}
+                    {availableItems.map((aggregatedItem) => (
+                        <option key={aggregatedItem.itemType.id} value={aggregatedItem.itemType.id}>
+                            {aggregatedItem.itemType.name} {aggregatedItem.itemType.measuringUnit ? `(${aggregatedItem.itemType.measuringUnit})` : ""} ({aggregatedItem.quantity} available)
+                        </option>
+                    ))}
+                </>
+            );
         }
     };
 
@@ -799,7 +809,132 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
         return Object.values(aggregated);
     };
 
-    // Format date helper function
+    const validateTransactionForm = () => {
+        // Validate items
+        for (const item of newTransaction.items) {
+            if (!item.itemType.id || !item.quantity) {
+                showSnackbar('Please complete all item fields', 'error');
+                return false;
+            }
+
+            if (transactionRole === "sender") {
+                const warehouseItemsOfType = items.filter(warehouseItem =>
+                    warehouseItem.itemStatus === "IN_WAREHOUSE" &&
+                    warehouseItem.itemType.id === item.itemType.id
+                );
+
+                if (warehouseItemsOfType.length === 0) {
+                    showSnackbar('Item not found in the warehouse inventory or not available (IN_WAREHOUSE status)', 'error');
+                    return false;
+                }
+
+                const aggregatedItems = aggregateWarehouseItems(warehouseItemsOfType);
+                const aggregatedItem = aggregatedItems.find(aggItem => aggItem.itemType.id === item.itemType.id);
+
+                if (!aggregatedItem) {
+                    showSnackbar('Item not found in the warehouse inventory', 'error');
+                    return false;
+                }
+
+                const totalAvailableQuantity = aggregatedItem.quantity;
+                const itemTypeName = aggregatedItem.itemType.name;
+
+                if (totalAvailableQuantity < parseInt(item.quantity)) {
+                    showSnackbar(`Not enough quantity available for ${itemTypeName}. Only ${totalAvailableQuantity} items in stock.`, 'error');
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    };
+
+    const handleSubmitTransaction = async (e) => {
+        e.preventDefault();
+
+        if (!validateTransactionForm()) {
+            return;
+        }
+
+        let username = "system";
+        const userInfoString = localStorage.getItem('userInfo');
+        if (userInfoString) {
+            try {
+                const userInfo = JSON.parse(userInfoString);
+                if (userInfo.username) {
+                    username = userInfo.username;
+                }
+            } catch (error) {
+                console.error("Error parsing user info:", error);
+            }
+        }
+
+        const transactionData = {
+            transactionDate: newTransaction.transactionDate,
+            senderType: newTransaction.senderType,
+            senderId: newTransaction.senderId.toString(),
+            receiverType: newTransaction.receiverType,
+            receiverId: newTransaction.receiverId.toString(),
+            username: username,
+            batchNumber: parseInt(newTransaction.batchNumber),
+            sentFirst: warehouseId,
+            items: newTransaction.items.map(item => ({
+                itemTypeId: item.itemType.id,
+                quantity: parseInt(item.quantity)
+            }))
+        };
+
+        try {
+            const token = localStorage.getItem("token");
+            let response;
+
+            if (modalMode === "create") {
+                console.log("Creating transaction:", JSON.stringify(transactionData));
+                response = await fetch(`http://localhost:8080/api/v1/transactions/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(transactionData),
+                });
+            } else {
+                // Update mode
+                console.log("Updating transaction:", JSON.stringify(transactionData));
+                response = await fetch(`http://localhost:8080/api/v1/transactions/${selectedTransaction.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(transactionData),
+                });
+            }
+
+            if (response.ok) {
+                await fetchPendingTransactions();
+                handleCloseTransactionModal();
+                showSnackbar(
+                    modalMode === "create" ? 'Transaction created successfully!' : 'Transaction updated successfully!',
+                    'success'
+                );
+
+                // ADD THIS:
+                if (onTransactionUpdate) {
+                    onTransactionUpdate();
+                }
+            } else {
+                const errorText = await response.text();
+                console.error(`Failed to ${modalMode} transaction:`, response.status, errorText);
+                showSnackbar(`Failed to ${modalMode} transaction. Please try again.`, 'error');
+            }
+        } catch (error) {
+            console.error(`Error ${modalMode === "create" ? "creating" : "updating"} transaction:`, error);
+            showSnackbar(`Failed to ${modalMode} transaction. Please check your connection.`, 'error');
+        }
+    };
+
+    // Format date helper functions
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
         return new Date(dateString).toLocaleDateString('en-GB');
@@ -858,66 +993,6 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
             render: (row) => formatDate(row.transactionDate)
         }
     ];
-    // NEW: Fetch parent categories
-    const fetchParentCategories = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/itemCategories/parents', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to load parent categories');
-            }
-
-            const data = await response.json();
-            setParentCategories(data);
-        } catch (error) {
-            console.error('Error fetching parent categories:', error);
-        }
-    };
-
-// NEW: Fetch child categories for a specific parent
-    const fetchChildCategories = async (parentCategoryId, itemIndex) => {
-        if (!parentCategoryId) {
-            setChildCategoriesByItem(prev => ({
-                ...prev,
-                [itemIndex]: []
-            }));
-            return;
-        }
-
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/itemCategories/children/${parentCategoryId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to load child categories');
-            }
-
-            const data = await response.json();
-            setChildCategoriesByItem(prev => ({
-                ...prev,
-                [itemIndex]: data
-            }));
-        } catch (error) {
-            console.error('Error fetching child categories:', error);
-            setChildCategoriesByItem(prev => ({
-                ...prev,
-                [itemIndex]: []
-            }));
-        }
-    };
 
     // Filterable columns for DataTable
     const filterableColumns = [
@@ -958,7 +1033,7 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
         }
     ];
 
-    // Actions array for DataTable - Using the DataTable's action button system
+    // Actions array for DataTable
     const actions = [
         {
             label: 'View',
@@ -980,7 +1055,7 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                 </svg>
             ),
             className: 'edit',
-            onClick: (row) => handleOpenUpdateModal(row)
+            onClick: (row) => handleUpdateTransaction(row)
         },
         {
             label: 'Delete',
@@ -992,9 +1067,83 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                 </svg>
             ),
             className: 'delete',
-            //onClick: (row) => onDelete(row.id)
+            onClick: (row) => handleDeleteTransaction(row.id)
         }
     ];
+
+// Show delete confirmation dialog
+    const handleDeleteTransaction = (transactionId) => {
+        setConfirmDialog({
+            isVisible: true,
+            transactionId: transactionId,
+            isDeleting: false
+        });
+    };
+
+// Actual delete function after confirmation
+    const handleConfirmDelete = async () => {
+        setConfirmDialog(prev => ({ ...prev, isDeleting: true }));
+
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`http://localhost:8080/api/v1/transactions/${confirmDialog.transactionId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                // Success - show message and refresh the table
+                showSnackbar('Transaction deleted successfully!', 'success');
+                // Refresh the pending transactions table
+                await fetchPendingTransactions();
+                // Close dialog
+                setConfirmDialog({
+                    isVisible: false,
+                    transactionId: null,
+                    isDeleting: false
+                });
+
+                // ADD THIS:
+                if (onTransactionUpdate) {
+                    onTransactionUpdate();
+                }
+            } else {
+                // Error - show error message
+                showSnackbar(`Failed to delete transaction: ${result.message || 'Unknown error'}`, 'error');
+                setConfirmDialog(prev => ({ ...prev, isDeleting: false }));
+            }
+
+        } catch (error) {
+            console.error('Delete transaction error:', error);
+            showSnackbar('An error occurred while deleting the transaction. Please try again.', 'error');
+            setConfirmDialog(prev => ({ ...prev, isDeleting: false }));
+        }
+    };
+    // ADD THIS - Report count to parent
+    useEffect(() => {
+        if (onCountUpdate) {
+            onCountUpdate(pendingTransactions.length);
+        }
+    }, [pendingTransactions.length, onCountUpdate]);
+
+// ADD THIS - Listen to refreshTrigger changes
+    useEffect(() => {
+        fetchPendingTransactions();
+    }, [refreshTrigger]);
+
+// Cancel delete function
+    const handleCancelDelete = () => {
+        setConfirmDialog({
+            isVisible: false,
+            transactionId: null,
+            isDeleting: false
+        });
+    };
 
     return (
         <div className="transaction-table-section">
@@ -1024,39 +1173,31 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                 onAddClick={handleAddTransaction}
             />
 
-            {/* View Transaction Modal - Show quantities for pending transactions since they can be edited */}
+            {/* View Transaction Modal */}
             {isViewModalOpen && viewTransaction && (
                 <TransactionViewModal
                     transaction={viewTransaction}
                     isOpen={isViewModalOpen}
                     onClose={handleCloseViewModal}
                     hideItemQuantities={false}
+                    currentWarehouseId={warehouseId} // Add this line
                 />
             )}
 
-            {/* Update Transaction Modal */}
-            {isUpdateModalOpen && selectedTransaction && (
-                <UpdatePendingTransactionModal
-                    transaction={selectedTransaction}
-                    isOpen={isUpdateModalOpen}
-                    onClose={handleCloseUpdateModal}
-                    onUpdate={handleUpdateTransaction}
-                    warehouseId={warehouseId}
-                />
-            )}
-
-            {/* Modal for Creating Transaction */}
-            {isCreateModalOpen && (
+            {/* Unified Transaction Modal (Create/Update) */}
+            {isTransactionModalOpen && (
                 <div className="modal-backdrop3">
                     <div className="modal3">
                         <div className="modal-header3">
-                            <h2>Create New Transaction</h2>
-                            <button className="btn-close" onClick={() => setIsCreateModalOpen(false)}>
-
+                            <h2>{modalMode === "create" ? "Create New Transaction" : "Update Transaction"}</h2>
+                            <button className="btn-close" onClick={handleCloseTransactionModal}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M18 6L6 18M6 6l12 12"/>
+                                </svg>
                             </button>
                         </div>
 
-                        <form className="form-transaction" onSubmit={handleCreateTransaction}>
+                        <form className="form-transaction" onSubmit={handleSubmitTransaction}>
                             {/* Warehouse Role Selection - Full Width */}
                             <div className="form-group3 full-width">
                                 <label>Warehouse Role <span style={{ color: 'red' }}>*</span></label>
@@ -1168,8 +1309,8 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                                                             ))}
                                                         </select>
                                                         <span className="form-helper-text">
-                            Choose a parent category to filter item types
-                        </span>
+                                                            Choose a parent category to filter item types
+                                                        </span>
                                                     </div>
 
                                                     <div className="form-group3">
@@ -1187,14 +1328,14 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                                                             ))}
                                                         </select>
                                                         <span className="form-helper-text">
-                            {!item.parentCategoryId ? (
-                                "Select a parent category first"
-                            ) : (childCategoriesByItem[index] || []).length === 0 ? (
-                                "No child categories found for the selected parent category"
-                            ) : (
-                                "Optional - leave empty to show all from parent"
-                            )}
-                        </span>
+                                                            {!item.parentCategoryId ? (
+                                                                "Select a parent category first"
+                                                            ) : (childCategoriesByItem[index] || []).length === 0 ? (
+                                                                "No child categories found for the selected parent category"
+                                                            ) : (
+                                                                "Optional - leave empty to show all from parent"
+                                                            )}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1235,18 +1376,18 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                                                     />
                                                     {item.itemType.id && (
                                                         <span className="ro-unit-label">
-                            {(() => {
-                                let unit = '';
-                                if (transactionRole === "receiver") {
-                                    const itemType = allItemTypes.find(it => it.id === item.itemType.id);
-                                    unit = itemType?.measuringUnit || '';
-                                } else {
-                                    const warehouseItem = items.find(it => it.itemType.id === item.itemType.id);
-                                    unit = warehouseItem?.itemType?.measuringUnit || '';
-                                }
-                                return unit;
-                            })()}
-                        </span>
+                                                            {(() => {
+                                                                let unit = '';
+                                                                if (transactionRole === "receiver") {
+                                                                    const itemType = allItemTypes.find(it => it.id === item.itemType.id);
+                                                                    unit = itemType?.measuringUnit || '';
+                                                                } else {
+                                                                    const warehouseItem = items.find(it => it.itemType.id === item.itemType.id);
+                                                                    unit = warehouseItem?.itemType?.measuringUnit || '';
+                                                                }
+                                                                return unit;
+                                                            })()}
+                                                        </span>
                                                     )}
                                                 </div>
                                             </div>
@@ -1303,7 +1444,7 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                                         </div>
                                     </div>
 
-                                    {/* Entity Type Selection (only shown after site is selected) */}
+                                    {/* Entity Type Selection */}
                                     {selectedReceiverSite && (
                                         <div className="form-group3 full-width">
                                             <label htmlFor="receiverType">Destination Type <span style={{ color: 'red' }}>*</span></label>
@@ -1324,7 +1465,7 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                                         </div>
                                     )}
 
-                                    {/* Entity Selection (only shown after type is selected) */}
+                                    {/* Entity Selection */}
                                     {selectedReceiverSite && newTransaction.receiverType && (
                                         <div className="form-group3 full-width">
                                             <label htmlFor="receiverId">
@@ -1398,7 +1539,7 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                                         </div>
                                     </div>
 
-                                    {/* Entity Type Selection (only shown after site is selected) */}
+                                    {/* Entity Type Selection */}
                                     {selectedSenderSite && (
                                         <div className="form-group3 full-width">
                                             <label htmlFor="senderType">Source Type <span style={{ color: 'red' }}>*</span></label>
@@ -1419,7 +1560,7 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                                         </div>
                                     )}
 
-                                    {/* Entity Selection (only shown after type is selected) */}
+                                    {/* Entity Selection */}
                                     {selectedSenderSite && newTransaction.senderType && (
                                         <div className="form-group3 full-width">
                                             <label htmlFor="senderId">
@@ -1443,7 +1584,7 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                                                         if (newTransaction.senderType === "EQUIPMENT") {
                                                             displayName = entity.equipment ? entity.equipment.fullModelName : "No model name available";
                                                             entityId = entity.equipment ? entity.equipment.id : entity.id;
-                                                        } else{
+                                                        } else {
                                                             displayName = entity.name;
                                                             entityId = entity.id;
                                                         }
@@ -1464,12 +1605,30 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger }) => {
                             )}
 
                             <div className="modal-footer3">
-                                <button type="submit" className="btn-primary">Create Transaction</button>
+                                <button type="button" className="cancel-button3" onClick={handleCloseTransactionModal}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-primary">
+                                    {modalMode === "create" ? "Create Transaction" : "Update Transaction"}
+                                </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
+
+            <ConfirmationDialog
+                isVisible={confirmDialog.isVisible}
+                type="delete"
+                title="Delete Transaction"
+                message="Are you sure you want to delete this transaction? This action cannot be undone and will revert any inventory changes."
+                confirmText="Delete Transaction"
+                cancelText="Cancel"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+                isLoading={confirmDialog.isDeleting}
+                size="large"
+            />
 
             <Snackbar
                 show={snackbar.isOpen}

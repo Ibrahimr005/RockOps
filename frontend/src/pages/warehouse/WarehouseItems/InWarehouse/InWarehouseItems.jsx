@@ -32,6 +32,9 @@ const InWarehouseItems = ({
     const [childCategories, setChildCategories] = useState([]);
     const [itemTypes, setItemTypes] = useState([]);
 
+    // NEW: Filter toggle state
+    const [showFilters, setShowFilters] = useState(false);
+
     // Helper function to aggregate items by type
     const aggregateItemsByType = (items) => {
         const aggregated = {};
@@ -134,6 +137,25 @@ const InWarehouseItems = ({
         fetchParentCategories();
     }, []);
 
+    // NEW: Toggle filters with animation
+    const toggleFilters = () => {
+        if (showFilters) {
+            // If currently showing, start collapse animation
+            const filterElement = document.querySelector('.add-item-collapsible-filters');
+            if (filterElement) {
+                filterElement.classList.add('collapsing');
+
+                // Wait for animation to finish, then hide
+                setTimeout(() => {
+                    setShowFilters(false);
+                }, 300); // Match the animation duration
+            }
+        } else {
+            // If currently hidden, show immediately (slideDown animation will play)
+            setShowFilters(true);
+        }
+    };
+
     // Modal handlers
     const handleOpenAddItemModal = () => {
         setAddItemData({
@@ -144,17 +166,17 @@ const InWarehouseItems = ({
             createdAt: new Date().toISOString().split('T')[0]
         });
         setChildCategories([]);
+        setShowFilters(false); // Reset filter state
         setIsAddItemModalOpen(true);
     };
 
-    // ADD THIS NEW FUNCTION:
     const handleRestockButtonClick = () => {
         if (onRestockItems) {
             // Calculate items that need restocking with exact quantities
             const itemsToRestock = lowStockItems.map(item => {
                 const currentQuantity = item.quantity || 0;
                 const minQuantity = item.itemType?.minQuantity || 0;
-                const quantityNeeded = Math.max(0, minQuantity - currentQuantity ); // Add 5 extra for buffer
+                const quantityNeeded = Math.max(0, minQuantity - currentQuantity);
 
                 return {
                     itemTypeId: item.itemType.id,
@@ -445,8 +467,8 @@ const InWarehouseItems = ({
                     <div className="warning-actions">
                         <button
                             className="restock-button"
-                            onClick={handleRestockButtonClick}           // CHANGED
-                            title="Create request order for low stock items"  // CHANGED
+                            onClick={handleRestockButtonClick}
+                            title="Create request order for low stock items"
                         >
                             Restock Items
                         </button>
@@ -493,8 +515,8 @@ const InWarehouseItems = ({
                     </svg>
                 }
                 exportFileName={`${warehouseData?.name || 'warehouse'}_inventory_items`}
-                exportAllData={false} // Export filtered data only
-                excludeColumnsFromExport={[]} // Don't exclude any columns
+                exportAllData={false}
+                excludeColumnsFromExport={[]}
                 customExportHeaders={{
                     'itemType.itemCategory.name': 'Category',
                     'itemType.name': 'Item Name',
@@ -502,15 +524,12 @@ const InWarehouseItems = ({
                     'itemType.measuringUnit': 'Unit of Measure'
                 }}
                 onExportStart={() => {
-                    // Optional: Show loading state
                     console.log('Starting export...');
                 }}
                 onExportComplete={(info) => {
-                    // Optional: Show success message
                     showSnackbar(`Successfully exported ${info.rowCount} items to ${info.filename}`, "success");
                 }}
                 onExportError={(error) => {
-                    // Optional: Show error message
                     showSnackbar("Failed to export items", "error");
                     console.error('Export error:', error);
                 }}
@@ -531,61 +550,84 @@ const InWarehouseItems = ({
 
                         <div className="add-item-modal-body">
                             <form onSubmit={handleAddItemSubmit} className="add-item-form">
-                                <div className="add-item-form-group">
-                                    <label htmlFor="parentCategoryId">Parent Category</label>
-                                    <select
-                                        id="parentCategoryId"
-                                        name="parentCategoryId"
-                                        value={addItemData.parentCategoryId}
-                                        onChange={handleAddItemInputChange}
-                                    >
-                                        <option value="">Select Parent Category</option>
-                                        {parentCategories.map((category) => (
-                                            <option key={category.id} value={category.id}>
-                                                {category.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <span className="form-helper-text">
-                                        Choose a parent category to filter item types, or optionally select a child category for more specific filtering
-                                    </span>
+                                {/* NEW: Filter Toggle Section */}
+                                <div className="add-item-filter-section">
+                                    <div className="add-item-filter-header">
+                                        <button
+                                            type="button"
+                                            className={`add-item-filter-toggle ${showFilters ? 'active' : ''}`}
+                                            onClick={toggleFilters}
+                                        >
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M22 3H2l8 9.46V19l4 2V12.46L22 3z"/>
+                                            </svg>
+                                            {showFilters ? 'Hide Category Filters' : 'Filter by Category'}
+                                        </button>
+                                    </div>
+
+                                    {/* COLLAPSIBLE FILTERS */}
+                                    {showFilters && (
+                                        <div className="add-item-collapsible-filters">
+                                            <div className="add-item-filters-header">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <path d="M22 3H2l8 9.46V19l4 2V12.46L22 3z"/>
+                                                </svg>
+                                                <h4>Category Filters</h4>
+                                            </div>
+
+                                            <div className="add-item-filters-content">
+                                                <div className="add-item-form-group">
+                                                    <label htmlFor="parentCategoryId">Parent Category</label>
+                                                    <select
+                                                        id="parentCategoryId"
+                                                        name="parentCategoryId"
+                                                        value={addItemData.parentCategoryId}
+                                                        onChange={handleAddItemInputChange}
+                                                    >
+                                                        <option value="">All Categories</option>
+                                                        {parentCategories.map((category) => (
+                                                            <option key={category.id} value={category.id}>
+                                                                {category.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <span className="form-helper-text">
+                                                        Choose a parent category to filter item types
+                                                    </span>
+                                                </div>
+
+                                                <div className="add-item-form-group">
+                                                    <label htmlFor="itemCategoryId">Child Category</label>
+                                                    <select
+                                                        id="itemCategoryId"
+                                                        name="itemCategoryId"
+                                                        value={addItemData.itemCategoryId}
+                                                        onChange={handleAddItemInputChange}
+                                                        disabled={!addItemData.parentCategoryId}
+                                                    >
+                                                        <option value="">All child categories</option>
+                                                        {childCategories.map((category) => (
+                                                            <option key={category.id} value={category.id}>
+                                                                {category.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <span className="form-helper-text">
+                                                        {!addItemData.parentCategoryId ? (
+                                                            "Select a parent category first"
+                                                        ) : childCategories.length === 0 ? (
+                                                            "No child categories found for the selected parent category"
+                                                        ) : (
+                                                            "Optional - leave empty to show all from parent"
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
-                                <div className="add-item-form-group">
-                                    <label htmlFor="itemCategoryId">Child Category <span className="optional-label">(Optional)</span></label>
-                                    <select
-                                        id="itemCategoryId"
-                                        name="itemCategoryId"
-                                        value={addItemData.itemCategoryId}
-                                        onChange={handleAddItemInputChange}
-                                        disabled={!addItemData.parentCategoryId}
-                                    >
-                                        <option value="">
-                                            {!addItemData.parentCategoryId ? "Select Parent Category First" : "All child categories (optional)"}
-                                        </option>
-                                        {childCategories.map((category) => (
-                                            <option key={category.id} value={category.id}>
-                                                {category.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    {addItemData.parentCategoryId && childCategories.length === 0 && (
-                                        <span className="form-helper-text">
-                                            No child categories found for the selected parent category
-                                        </span>
-                                    )}
-                                    {!addItemData.parentCategoryId && (
-                                        <span className="form-helper-text">
-                                            Select a parent category first to see child categories
-                                        </span>
-                                    )}
-                                    {addItemData.parentCategoryId && childCategories.length > 0 && (
-                                        <span className="form-helper-text">
-                                            Leave empty to show all item types from parent category, or select for more specific filtering
-                                        </span>
-                                    )}
-                                </div>
-
+                                {/* MAIN FORM FIELDS */}
                                 <div className="add-item-form-group">
                                     <label htmlFor="itemTypeId">Item Type <span style={{ color: 'red' }}>*</span></label>
                                     <select
@@ -609,7 +651,7 @@ const InWarehouseItems = ({
                                     )}
                                     {!addItemData.parentCategoryId && (
                                         <span className="form-helper-text">
-                                            Showing all item types - select a parent category to filter
+                                            Showing all item types - use filters above to narrow down options
                                         </span>
                                     )}
                                     {addItemData.parentCategoryId && !addItemData.itemCategoryId && (
@@ -695,15 +737,11 @@ const InWarehouseItems = ({
                             <div className="header-content">
                                 <div className="item-info">
                                     <h2 className="item-name">{selectedItem.itemType?.name}</h2>
-                                    <span className="item-category">{selectedItem.itemType?.itemCategory?.name}</span>
+                                    <span className="item-category-top">{selectedItem.itemType?.itemCategory?.name}</span>
                                 </div>
                                 <div className="summary-stats">
-                                    <div className="stat-item">
-                                        <span className="stat-value">{selectedItem.quantity}</span>
-                                        <span className="stat-label">{selectedItem.itemType?.measuringUnit}</span>
-                                    </div>
-                                    <div className="stat-divider"></div>
-                                    <div className="stat-item">
+
+                                    <div className="stat-item-top">
                                         <span className="stat-value">{transactionDetails.length}</span>
                                         <span className="stat-label">Entries</span>
                                     </div>

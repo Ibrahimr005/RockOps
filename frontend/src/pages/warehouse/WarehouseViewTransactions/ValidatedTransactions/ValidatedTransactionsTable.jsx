@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import "./WarehouseViewTransactions.scss";
-import TransactionViewModal from "./TransactionViewModal.jsx"; // Add this import
-import DataTable from "../../../components/common/DataTable/DataTable.jsx";
-import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx";
+import "../WarehouseViewTransactions.scss";
+import TransactionViewModal from "../TransactionViewModal/TransactionViewModal.jsx"; // Add this import
+import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
+import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx";
 
-const ValidatedTransactionsTable = ({ warehouseId }) => {
+const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, onTransactionUpdate }) => {
     const [loading, setLoading] = useState(false);
     const [validatedTransactions, setValidatedTransactions] = useState([]);
     const [modalInfo, setModalInfo] = useState(null);
@@ -65,13 +65,24 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
                             const processedSender = processEntityData(tx.senderType, sender);
                             const processedReceiver = processEntityData(tx.receiverType, receiver);
 
+                            // Preserve all original transaction data and only add processed sender/receiver
                             return {
-                                ...tx,
+                                ...tx, // Keep all original transaction properties
                                 sender: processedSender,
-                                receiver: processedReceiver
+                                receiver: processedReceiver,
+                                // Explicitly preserve important properties that might be getting lost
+                                items: tx.items || [],
+                                quantity: tx.quantity,
+                                receivedQuantity: tx.receivedQuantity,
+                                sentFirst: tx.sentFirst,
+                                senderId: tx.senderId,
+                                receiverId: tx.receiverId
                             };
                         })
                 );
+
+                // Debug: Log the processed data to see what's being passed to the modal
+                console.log('Validated transactions data:', validatedData);
                 setValidatedTransactions(validatedData);
             } else {
                 showSnackbar("Failed to fetch validated transactions", "error");
@@ -142,6 +153,18 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
         }
     };
 
+    // ADD THIS - Report count to parent
+    useEffect(() => {
+        if (onCountUpdate) {
+            onCountUpdate(validatedTransactions.length);
+        }
+    }, [validatedTransactions.length, onCountUpdate]);
+
+// ADD THIS - Listen to refreshTrigger changes
+    useEffect(() => {
+        fetchValidatedTransactions();
+    }, [refreshTrigger]);
+
     const handleInfoClick = (event, transaction) => {
         event.stopPropagation();
 
@@ -163,6 +186,13 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
 
     // Function to handle opening the view modal
     const handleOpenViewModal = (transaction) => {
+        // Debug: Log the transaction data being passed to the modal
+        console.log('Opening modal with transaction:', transaction);
+        console.log('Current warehouse ID:', warehouseId);
+        console.log('Transaction senderId:', transaction.senderId);
+        console.log('Transaction sentFirst:', transaction.sentFirst);
+        console.log('Transaction items:', transaction.items);
+
         setViewTransaction(transaction);
         setIsViewModalOpen(true);
     };
@@ -341,7 +371,8 @@ const ValidatedTransactionsTable = ({ warehouseId }) => {
                     transaction={viewTransaction}
                     isOpen={isViewModalOpen}
                     onClose={handleCloseViewModal}
-                    hideItemQuantities={true}
+                    hideItemQuantities={false}
+                    currentWarehouseId={warehouseId} // Add this line
                 />
             )}
 

@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import "./ProcurementMerchants.scss"
 import merchantsImage from "../../../assets/imgs/pro_icon.png";
-import DataTable from '../../../components/common/DataTable/DataTable'; // Adjust path as needed
+import merchantsImagedark from "../../../assets/imgs/pro_icon_dark.png";
+import DataTable from '../../../components/common/DataTable/DataTable.jsx'; // Adjust path as needed
 import Snackbar from '../../../components/common/Snackbar/Snackbar.jsx'
-import MerchantModal from './MerchantModal'; // Import the new wizard component
+import MerchantModal from './MerchantModal.jsx'; // Import the new wizard component
+import IntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
 
 const ProcurementMerchants = () => {
     const [merchants, setMerchants] = useState([]);
@@ -384,47 +386,31 @@ const ProcurementMerchants = () => {
         navigate(`/merchants/${merchant.id}`);
     };
 
+    const handleInfoClick = () => {
+        // Add info click functionality here if needed
+        console.log("Info button clicked");
+    };
+
+    // Get merchant stats for IntroCard
+    const getMerchantStats = () => {
+        return [
+            { value: merchants.length.toString(), label: "Total Merchants" }
+        ];
+    };
+
     return (
         <div className="procurement-merchants-container">
-            {/* Intro Card with centered title and search bar */}
-            <div className="procurement-intro-card">
-                <div className="procurement-intro-left">
-                    <img
-                        src={merchantsImage}
-                        alt="Merchants"
-                        className="procurement-intro-image"
-                    />
-                </div>
+            {/* Updated IntroCard */}
+            <IntroCard
+                title="Merchants"
+                label="PROCUREMENT CENTER"
+                lightModeImage={merchantsImage}
+                darkModeImage={merchantsImagedark}
+                stats={getMerchantStats()}
+                onInfoClick={handleInfoClick}
 
-                <div className="procurement-intro-content">
-                    <div className="procurement-intro-header">
-                        <span className="procurement-label">PROCUREMENT CENTER</span>
-                        <h2 className="procurement-intro-title">Merchants</h2>
-                    </div>
+            />
 
-                    <div className="procurement-stats">
-                        <div className="procurement-stat-item">
-                            <span className="procurement-stat-value">{merchants.length}</span>
-                            <span className="procurement-stat-label">Total Merchants</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="procurement-intro-right">
-                    <button className="procurement-info-button">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10" />
-                            <line x1="12" y1="16" x2="12" y2="12" />
-                            <line x1="12" y1="8" x2="12.01" y2="8" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            {/* Description */}
-            <div className="procurement-requests-section-description">
-                (Vendors, suppliers, and business partners that provide products or services)
-            </div>
 
             {/* DataTable */}
             <div className="procurement-merchants-table-container">
@@ -443,18 +429,14 @@ const ProcurementMerchants = () => {
                     defaultSortDirection="asc"
                     emptyMessage="No merchants found"
                     className="procurement-merchants-datatable"
+                    // DataTable's built-in add button
+                    showAddButton={userRole === 'PROCUREMENT'}
+                    addButtonText="Add Merchant"
+                    addButtonIcon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>}
+                    onAddClick={handleOpenModal}
                 />
-
-                {userRole === 'PROCUREMENT' && (
-                    <div className="procurement-merchants-add-button-container">
-                        <button className="procurement-merchants-add-button"
-                                onClick={handleOpenModal}>
-                            <svg className="plus-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M12 5v14M5 12h14" />
-                            </svg>
-                        </button>
-                    </div>
-                )}
             </div>
 
             {/* Multi-Step Merchant Modal Wizard */}

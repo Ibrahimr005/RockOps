@@ -6,7 +6,7 @@ import com.example.backend.dto.finance.JournalEntryResponseDTO;
 import com.example.backend.models.finance.JournalEntryStatus;
 import com.example.backend.models.user.User;
 import com.example.backend.repositories.finance.JournalEntryRepository;
-import com.example.backend.repositories.UserRepository;
+import com.example.backend.repositories.user.UserRepository;
 import com.example.backend.services.finance.JournalEntryService;
 import com.example.backend.services.MinioService;
 import com.fasterxml.jackson.databind.DeserializationFeature;

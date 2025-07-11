@@ -119,7 +119,7 @@ const ConfirmationDialog = ({
                 <div className="confirmation-dialog-actions">
                     <button
                         type="button"
-                        className="btn-secondary confirmation-dialog-cancel"
+                        className="btn-secondary2 confirmation-dialog-cancel"
                         onClick={handleCancel}
                         disabled={isLoading}
                     >

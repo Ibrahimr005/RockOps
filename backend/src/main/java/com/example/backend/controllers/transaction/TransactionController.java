@@ -318,4 +318,48 @@ public class TransactionController {
                     .body(null);
         }
     }
+
+    @DeleteMapping("/{transactionId}")
+    public ResponseEntity<Map<String, Object>> deleteTransaction(@PathVariable UUID transactionId) {
+
+        try {
+            System.out.println("🗑️ DELETE /transactions/" + transactionId + " - Request received");
+
+            // Call the service method to delete the transaction
+            transactionService.deleteTransaction(transactionId);
+
+            // Create success response
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Transaction deleted successfully");
+            response.put("transactionId", transactionId);
+            response.put("deletedAt", LocalDateTime.now());
+
+            System.out.println("✅ Transaction deleted successfully: " + transactionId);
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Delete failed - Invalid request: " + e.getMessage());
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Invalid Request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("transactionId", transactionId);
+
+            return ResponseEntity.badRequest().body(errorResponse);
+
+        } catch (Exception e) {
+            System.err.println("❌ Delete failed - Server error: " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Server Error");
+            errorResponse.put("message", "An unexpected error occurred while deleting the transaction");
+            errorResponse.put("transactionId", transactionId);
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
 }

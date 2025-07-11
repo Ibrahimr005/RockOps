@@ -657,7 +657,10 @@ const DataTable = ({
             )}
 
             {/* Table Wrapper - Always full-width */}
-            <div ref={wrapperRef} className="rockops-table__wrapper full-width">
+            <div
+                ref={wrapperRef}
+                className={`rockops-table__wrapper full-width ${activeActionRow !== null ? 'has-open-dropdown' : ''}`}
+            >
                 {loading ? (
                     <div className="rockops-table__loading">
                         <div className="rockops-table__spinner"></div>
@@ -775,7 +778,7 @@ const DataTable = ({
                                             >
                                                 {actions.length > 2 ? (
                                                     // Dropdown menu for 3+ actions
-                                                    <div className="rockops-table__actions">
+                                                    <div className={`rockops-table__actions ${activeActionRow === rowIndex ? 'dropdown-open' : ''}`}>
                                                         <button
                                                             className="rockops-table__action-toggle"
                                                             onClick={(e) => toggleActionsMenu(e, rowIndex)}
