@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiInfo } from 'react-icons/fi';
-import "./PageHeader.scss"
+// import "./PageHeader.scss"
 
 const PageHeader = ({
                         image,

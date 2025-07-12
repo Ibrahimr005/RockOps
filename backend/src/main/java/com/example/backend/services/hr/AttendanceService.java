@@ -4,8 +4,10 @@ import com.example.backend.dto.hr.*;
 import com.example.backend.models.hr.Attendance;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.hr.JobPosition;
+import com.example.backend.models.notification.NotificationType;
 import com.example.backend.repositories.hr.AttendanceRepository;
 import com.example.backend.repositories.hr.EmployeeRepository;
+import com.example.backend.services.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final EmployeeRepository employeeRepository;
+    private final NotificationService notificationService;
 
     /**
      * Generate monthly attendance sheet for a site
@@ -33,53 +36,78 @@ public class AttendanceService {
     public List<EmployeeMonthlyAttendanceDTO> generateMonthlyAttendanceSheet(UUID siteId, int year, int month) {
         log.info("Generating monthly attendance sheet for site: {} for {}/{}", siteId, month, year);
 
-        // Get all active employees for the site
-        List<Employee> employees = employeeRepository.findBySiteId(siteId).stream()
-                .filter(emp -> "ACTIVE".equalsIgnoreCase(emp.getStatus()))
-                .collect(Collectors.toList());
+        try {
+            // Get all active employees for the site
+            List<Employee> employees = employeeRepository.findBySiteId(siteId).stream()
+                    .filter(emp -> "ACTIVE".equalsIgnoreCase(emp.getStatus()))
+                    .collect(Collectors.toList());
 
-        YearMonth yearMonth = YearMonth.of(year, month);
-        LocalDate startDate = yearMonth.atDay(1);
-        LocalDate endDate = yearMonth.atEndOfMonth();
+            YearMonth yearMonth = YearMonth.of(year, month);
+            LocalDate startDate = yearMonth.atDay(1);
+            LocalDate endDate = yearMonth.atEndOfMonth();
 
-        List<EmployeeMonthlyAttendanceDTO> monthlySheets = new ArrayList<>();
+            List<EmployeeMonthlyAttendanceDTO> monthlySheets = new ArrayList<>();
 
-        for (Employee employee : employees) {
-            // Get existing attendance records for the month
-            List<Attendance> existingAttendance = attendanceRepository.findByEmployeeIdAndDateRange(
-                    employee.getId(), startDate, endDate
-            );
+            for (Employee employee : employees) {
+                // Get existing attendance records for the month
+                List<Attendance> existingAttendance = attendanceRepository.findByEmployeeIdAndDateRange(
+                        employee.getId(), startDate, endDate
+                );
 
-            // Create attendance map for quick lookup
-            Map<LocalDate, Attendance> attendanceMap = existingAttendance.stream()
-                    .collect(Collectors.toMap(Attendance::getDate, a -> a));
+                // Create attendance map for quick lookup
+                Map<LocalDate, Attendance> attendanceMap = existingAttendance.stream()
+                        .collect(Collectors.toMap(Attendance::getDate, a -> a));
 
-            // Generate or update attendance for each day
-            List<DailyAttendanceDTO> dailyAttendance = new ArrayList<>();
-            LocalDate currentDate = startDate;
+                // Generate or update attendance for each day
+                List<DailyAttendanceDTO> dailyAttendance = new ArrayList<>();
+                LocalDate currentDate = startDate;
 
-            while (!currentDate.isAfter(endDate)) {
-                Attendance attendance = attendanceMap.get(currentDate);
+                while (!currentDate.isAfter(endDate)) {
+                    Attendance attendance = attendanceMap.get(currentDate);
 
-                if (attendance == null && employee.getJobPosition() != null) {
-                    // Create new attendance record based on contract type
-                    attendance = createDefaultAttendance(employee, currentDate);
-                    attendance = attendanceRepository.save(attendance);
+                    if (attendance == null && employee.getJobPosition() != null) {
+                        // Create new attendance record based on contract type
+                        attendance = createDefaultAttendance(employee, currentDate);
+                        attendance = attendanceRepository.save(attendance);
+                    }
+
+                    if (attendance != null) {
+                        dailyAttendance.add(convertToDailyDTO(attendance));
+                    }
+
+                    currentDate = currentDate.plusDays(1);
                 }
 
-                if (attendance != null) {
-                    dailyAttendance.add(convertToDailyDTO(attendance));
-                }
-
-                currentDate = currentDate.plusDays(1);
+                // Create monthly DTO
+                EmployeeMonthlyAttendanceDTO monthlyDTO = buildMonthlyAttendanceDTO(employee, dailyAttendance, yearMonth);
+                monthlySheets.add(monthlyDTO);
             }
 
-            // Create monthly DTO
-            EmployeeMonthlyAttendanceDTO monthlyDTO = buildMonthlyAttendanceDTO(employee, dailyAttendance, yearMonth);
-            monthlySheets.add(monthlyDTO);
-        }
+            // Send notification to HR users about sheet generation
+            notificationService.sendNotificationToHRUsers(
+                    "Monthly Attendance Sheet Generated",
+                    "Monthly attendance sheet has been generated for " + yearMonth.getMonth() + " " + year,
+                    NotificationType.INFO,
+                    "/attendance/monthly?year=" + year + "&month=" + month + "&siteId=" + siteId,
+                    "attendance-sheet-" + siteId + "-" + year + "-" + month
+            );
 
-        return monthlySheets;
+            return monthlySheets;
+
+        } catch (Exception e) {
+            log.error("Error generating monthly attendance sheet", e);
+
+            // Send error notification to HR users
+            notificationService.sendNotificationToHRUsers(
+                    "Attendance Sheet Generation Failed",
+                    "Failed to generate monthly attendance sheet for " + month + "/" + year + ": " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/attendance/monthly",
+                    "attendance-error-" + siteId + "-" + year + "-" + month
+            );
+
+            throw e;
+        }
     }
 
     /**
@@ -122,27 +150,107 @@ public class AttendanceService {
     public AttendanceResponseDTO updateAttendance(AttendanceRequestDTO requestDTO) {
         log.info("Updating attendance for employee: {} on date: {}", requestDTO.getEmployeeId(), requestDTO.getDate());
 
-        // Find the employee
-        Employee employee = employeeRepository.findById(requestDTO.getEmployeeId())
-                .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + requestDTO.getEmployeeId()));
+        try {
+            // Find the employee
+            Employee employee = employeeRepository.findById(requestDTO.getEmployeeId())
+                    .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + requestDTO.getEmployeeId()));
 
-        // Find or create attendance record
-        Attendance attendance = attendanceRepository.findByEmployeeIdAndDate(
-                requestDTO.getEmployeeId(), requestDTO.getDate()
-        ).orElseGet(() -> {
-            Attendance newAttendance = new Attendance();
-            newAttendance.setEmployee(employee);
-            newAttendance.setDate(requestDTO.getDate());
-            newAttendance.setDayType(determineDayType(requestDTO.getDate()));
-            return newAttendance;
-        });
+            // Find or create attendance record
+            Attendance attendance = attendanceRepository.findByEmployeeIdAndDate(
+                    requestDTO.getEmployeeId(), requestDTO.getDate()
+            ).orElseGet(() -> {
+                Attendance newAttendance = new Attendance();
+                newAttendance.setEmployee(employee);
+                newAttendance.setDate(requestDTO.getDate());
+                newAttendance.setDayType(determineDayType(requestDTO.getDate()));
+                return newAttendance;
+            });
 
-        // Update attendance based on contract type
-        updateAttendanceByContractType(attendance, requestDTO, employee);
+            Attendance.AttendanceStatus oldStatus = attendance.getStatus();
 
-        // Save and return
-        Attendance savedAttendance = attendanceRepository.save(attendance);
-        return convertToResponseDTO(savedAttendance);
+            // Update attendance based on contract type
+            updateAttendanceByContractType(attendance, requestDTO, employee);
+
+            // Save and return
+            Attendance savedAttendance = attendanceRepository.save(attendance);
+
+            // Send notifications for significant status changes
+            sendAttendanceNotifications(employee, savedAttendance, oldStatus);
+
+            return convertToResponseDTO(savedAttendance);
+
+        } catch (Exception e) {
+            log.error("Error updating attendance", e);
+
+            // Send error notification to HR users
+            notificationService.sendNotificationToHRUsers(
+                    "Attendance Update Failed",
+                    "Failed to update attendance for employee: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/attendance",
+                    "attendance-error-" + requestDTO.getEmployeeId()
+            );
+
+            throw e;
+        }
+    }
+
+    /**
+     * Send notifications for attendance status changes
+     */
+    private void sendAttendanceNotifications(Employee employee, Attendance attendance, Attendance.AttendanceStatus oldStatus) {
+        String employeeName = employee.getFullName();
+        String date = attendance.getDate().toString();
+
+        // Notify HR for significant status changes
+        if (oldStatus != attendance.getStatus()) {
+            switch (attendance.getStatus()) {
+                case ABSENT:
+                    if (oldStatus == Attendance.AttendanceStatus.PRESENT || oldStatus == null) {
+                        notificationService.sendNotificationToHRUsers(
+                                "Employee Marked Absent",
+                                employeeName + " has been marked as absent on " + date,
+                                NotificationType.WARNING,
+                                "/attendance/employee/" + employee.getId(),
+                                "absent-" + employee.getId() + "-" + date
+                        );
+                    }
+                    break;
+
+                case LATE:
+                    notificationService.sendNotificationToHRUsers(
+                            "Employee Late",
+                            employeeName + " arrived late on " + date,
+                            NotificationType.WARNING,
+                            "/attendance/employee/" + employee.getId(),
+                            "late-" + employee.getId() + "-" + date
+                    );
+                    break;
+
+                case ON_LEAVE:
+                    if (attendance.getLeaveApproved() == null || !attendance.getLeaveApproved()) {
+                        notificationService.sendNotificationToHRUsers(
+                                "Leave Approval Required",
+                                employeeName + " has requested leave on " + date + " - approval needed",
+                                NotificationType.INFO,
+                                "/attendance/leave-requests",
+                                "leave-request-" + employee.getId() + "-" + date
+                        );
+                    }
+                    break;
+            }
+        }
+
+        // Check for overtime and notify
+        if (attendance.getOvertimeHours() != null && attendance.getOvertimeHours() > 0) {
+            notificationService.sendNotificationToHRUsers(
+                    "Overtime Recorded",
+                    employeeName + " worked " + attendance.getOvertimeHours() + " hours overtime on " + date,
+                    NotificationType.INFO,
+                    "/attendance/overtime",
+                    "overtime-" + employee.getId() + "-" + date
+            );
+        }
     }
 
     /**
@@ -150,10 +258,10 @@ public class AttendanceService {
      */
     @Transactional
     public List<AttendanceResponseDTO> bulkUpdateAttendance(BulkAttendanceDTO bulkDTO) {
-        log.info("Bulk updating attendance for {} employees",
-                bulkDTO.getAttendanceRecords().size());
+        log.info("Bulk updating attendance for {} employees", bulkDTO.getAttendanceRecords().size());
 
         List<AttendanceResponseDTO> responses = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
 
         for (AttendanceRequestDTO record : bulkDTO.getAttendanceRecords()) {
             try {
@@ -173,9 +281,27 @@ public class AttendanceService {
                 responses.add(response);
             } catch (Exception e) {
                 log.error("Error updating attendance for employee: {}", record.getEmployeeId(), e);
-                // You might want to continue processing other records or throw the exception
-                // For now, we'll continue and log the error
+                errors.add("Employee " + record.getEmployeeId() + ": " + e.getMessage());
             }
+        }
+
+        // Send notification about bulk update results
+        if (!errors.isEmpty()) {
+            notificationService.sendNotificationToHRUsers(
+                    "Bulk Attendance Update Completed with Errors",
+                    "Bulk attendance update completed. " + responses.size() + " successful, " + errors.size() + " errors occurred.",
+                    NotificationType.WARNING,
+                    "/attendance/bulk-update",
+                    "bulk-update-" + System.currentTimeMillis()
+            );
+        } else {
+            notificationService.sendNotificationToHRUsers(
+                    "Bulk Attendance Update Completed",
+                    "Successfully updated attendance for " + responses.size() + " employees",
+                    NotificationType.SUCCESS,
+                    "/attendance",
+                    "bulk-update-success-" + System.currentTimeMillis()
+            );
         }
 
         return responses;
@@ -420,6 +546,7 @@ public class AttendanceService {
 
         return Math.round(baseHours * 100.0) / 100.0;
     }
+
     /**
      * Determine day type based on date
      */
@@ -528,7 +655,32 @@ public class AttendanceService {
     @Transactional
     public void deleteAttendance(UUID attendanceId) {
         log.info("Deleting attendance record: {}", attendanceId);
-        attendanceRepository.deleteById(attendanceId);
+
+        try {
+            attendanceRepository.deleteById(attendanceId);
+
+            // Send notification about deletion
+            notificationService.sendNotificationToHRUsers(
+                    "Attendance Record Deleted",
+                    "An attendance record has been deleted",
+                    NotificationType.INFO,
+                    "/attendance",
+                    "attendance-deleted-" + attendanceId
+            );
+
+        } catch (Exception e) {
+            log.error("Error deleting attendance record", e);
+
+            notificationService.sendNotificationToHRUsers(
+                    "Attendance Deletion Failed",
+                    "Failed to delete attendance record: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/attendance",
+                    "attendance-delete-error-" + attendanceId
+            );
+
+            throw e;
+        }
     }
 
     /**
