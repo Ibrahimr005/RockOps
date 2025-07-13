@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './JournalEntries.css';
-import { useAuth } from "../../../../Contexts/AuthContext";
+import { useAuth } from "../../../../contexts/AuthContext";
 import { FaBook, FaSearch, FaFilter, FaPlus, FaCheck, FaTimes, FaEye, FaEdit, FaTrash } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaCalendarAlt, FaLock, FaLockOpen, FaCheck, FaExclamationTriangle, FaPlus } from 'react-icons/fa';
-import { useAuth } from "../../../../Contexts/AuthContext";
+import { useAuth } from "../../../../contexts/AuthContext";
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import './PeriodClosing.css';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
