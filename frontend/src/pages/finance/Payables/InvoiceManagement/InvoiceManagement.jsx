@@ -14,7 +14,7 @@ import {
 } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
-import { useAuth } from "../../../../Contexts/AuthContext";
+import { useAuth } from "../../../../contexts/AuthContext";
 import './InvoiceManagement.css';
 
 const InvoiceManagement = () => {
