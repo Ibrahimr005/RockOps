@@ -60,23 +60,19 @@ const GeneralLedger = () => {
                 setStats([
                     {
                         value: data.totalJournalEntries || '0',
-                        label: 'Total Entries',
-                        color: '#4880ff'
+                        label: 'Total Entries'
                     },
                     {
                         value: data.pendingEntries || '0',
-                        label: 'Pending Approval',
-                        color: '#ff9800'
+                        label: 'Pending Approval'
                     },
                     {
                         value: data.currentPeriodStatus || 'Open',
-                        label: 'Current Period',
-                        color: '#4caf50'
+                        label: 'Current Period'
                     },
                     {
                         value: `$${data.currentBalance || '0'}`,
-                        label: 'Period Balance',
-                        color: '#6366f1'
+                        label: 'Period Balance'
                     }
                 ]);
             } else {
@@ -84,23 +80,19 @@ const GeneralLedger = () => {
                 setStats([
                     {
                         value: '156',
-                        label: 'Total Entries',
-                        color: '#4880ff'
+                        label: 'Total Entries'
                     },
                     {
                         value: '8',
-                        label: 'Pending Approval',
-                        color: '#ff9800'
+                        label: 'Pending Approval'
                     },
                     {
                         value: 'Open',
-                        label: 'Current Period',
-                        color: '#4caf50'
+                        label: 'Current Period'
                     },
                     {
                         value: '$248,750',
-                        label: 'Period Balance',
-                        color: '#6366f1'
+                        label: 'Period Balance'
                     }
                 ]);
             }
@@ -110,23 +102,19 @@ const GeneralLedger = () => {
             setStats([
                 {
                     value: '--',
-                    label: 'Total Entries',
-                    color: '#4880ff'
+                    label: 'Total Entries'
                 },
                 {
                     value: '--',
-                    label: 'Pending Approval',
-                    color: '#ff9800'
+                    label: 'Pending Approval'
                 },
                 {
                     value: 'Unknown',
-                    label: 'Current Period',
-                    color: '#6b7280'
+                    label: 'Current Period'
                 },
                 {
                     value: '--',
-                    label: 'Period Balance',
-                    color: '#6366f1'
+                    label: 'Period Balance'
                 }
             ]);
         } finally {
@@ -156,33 +144,32 @@ const GeneralLedger = () => {
             {/* Enhanced IntroCard with Icon */}
             <IntroCard
                 icon={<FaFileInvoiceDollar />}
-                iconColor="#4880ff"
-                iconSize="3rem"
                 label="FINANCE MANAGEMENT"
                 title="General Ledger"
                 stats={loading ? [] : stats}
                 onInfoClick={handleInfoClick}
-                className="general-ledger-intro"
             />
-<div className="gl-content-container">        {/* Tab Navigation */}
-            <div className="tabs-header">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-                        onClick={() => setActiveTab(tab.id)}
-                    >
-                        {/*{tab.icon}*/}
-                        <span>{tab.label}</span>
-                    </button>
-                ))}
-            </div>
 
-            {/* Tab Content */}
-            <div className="gl-content">
-                {renderTabContent()}
+            <div className="gl-content-container">
+                {/* Tab Navigation */}
+                <div className="tabs-header">
+                    {tabs.map(tab => (
+                        <button
+                            key={tab.id}
+                            className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+                            onClick={() => setActiveTab(tab.id)}
+                        >
+                            {/*{tab.icon}*/}
+                            <span>{tab.label}</span>
+                        </button>
+                    ))}
+                </div>
+
+                {/* Tab Content */}
+                <div className="gl-content">
+                    {renderTabContent()}
+                </div>
             </div>
-        </div>
         </div>
     );
 };

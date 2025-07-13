@@ -115,7 +115,7 @@ const AttendanceMonthlyView = ({ monthlyData, onAttendanceUpdate, loading, month
                     <div className="employee-info-header">Employee</div>
                     <div className="days-header">
                         {monthDays.map(day => (
-                            <div key={day} className={`day-header ${getDayAbbr(day) === 'Sun' || getDayAbbr(day) === 'Sat' ? 'weekend' : ''}`}>
+                            <div key={day} className={`day-header ${getDayAbbr(day) === 'Fri' || getDayAbbr(day) === 'Sat' ? 'weekend' : ''}`}>
                                 <div className="day-number">{day}</div>
                                 <div className="day-name">{getDayAbbr(day)}</div>
                             </div>

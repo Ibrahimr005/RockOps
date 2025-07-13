@@ -8,7 +8,6 @@ import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx"
 import IncomingRequestOrders from './IncomingRequests/IncomingRequestOrders';
 import ApprovedRequestOrders from './ApprovedRequests/ApprovedRequestOrders';
 import ProcurementIntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
-import PageHeader from '../../../components/common/PageHeader/PageHeader';
 
 const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
     const { theme } = useTheme(); // Use the same theme context as Sidebar

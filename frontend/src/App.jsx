@@ -75,7 +75,6 @@ const RoleRoute = ({allowedRoles, children, redirectPath = '/dashboard'}) => {
 
 const allRoles = Object.values(ROLES);
 
-const mostRoles = ["ADMIN", "USER", "SITE_ADMIN", "PROCUREMENT", "WAREHOUSE_MANAGER", "SECRETARY", "EQUIPMENT_MANAGER", "HR_MANAGER", "HR_EMPLOYEE"];
 
 
 // ===================== Layout Components =====================
@@ -138,7 +137,7 @@ function App() {
                                     <Route path="/merchants/:id" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN]}><MerchantDetails/></RoleRoute>}/>
 
                                     {/* Procurement Routes */}
-                                    <Route path="/procurement" element={<RoleRoute allowedRoles={["PROCUREMENT", "SITE_ADMIN", "ADMIN"]}><SitesLayout/></RoleRoute>}>
+                                    <Route path="/procurement" element={<RoleRoute allowedRoles={[PROCUREMENT, SITE_ADMIN, ADMIN]}><SitesLayout/></RoleRoute>}>
                                         <Route path="request-orders" element={<ProcurementRequestOrders/>}/>
                                         <Route path="request-orders/:id" element={<ProcurementRequestOrderDetails/>}/>
                                         <Route path="offers" element={<ProcurementOffers/>}/>

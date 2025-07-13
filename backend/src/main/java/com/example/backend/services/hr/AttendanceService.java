@@ -69,6 +69,8 @@ public class AttendanceService {
                         // Create new attendance record based on contract type
                         attendance = createDefaultAttendance(employee, currentDate);
                         attendance = attendanceRepository.save(attendance);
+                        // Send notification to HR users about sheet generation
+
                     }
 
                     if (attendance != null) {
@@ -83,14 +85,7 @@ public class AttendanceService {
                 monthlySheets.add(monthlyDTO);
             }
 
-            // Send notification to HR users about sheet generation
-            notificationService.sendNotificationToHRUsers(
-                    "Monthly Attendance Sheet Generated",
-                    "Monthly attendance sheet has been generated for " + yearMonth.getMonth() + " " + year,
-                    NotificationType.INFO,
-                    "/attendance/monthly?year=" + year + "&month=" + month + "&siteId=" + siteId,
-                    "attendance-sheet-" + siteId + "-" + year + "-" + month
-            );
+
 
             return monthlySheets;
 
@@ -123,7 +118,7 @@ public class AttendanceService {
                 .build();
 
         // Determine if it's a working day
-        boolean isWeekend = (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY);
+        boolean isWeekend = (dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.FRIDAY);
 
         if (isWeekend) {
             attendance.setDayType(Attendance.DayType.WEEKEND);
