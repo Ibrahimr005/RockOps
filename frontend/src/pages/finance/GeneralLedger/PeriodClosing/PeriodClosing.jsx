@@ -24,55 +24,12 @@ const PeriodClosing = () => {
         endDate: ''
     });
 
-    const isFinanceManager = currentUser?.role === "FINANCE_MANAGER";
+    const isFinanceManager = currentUser?.role === "FINANCE_MANAGER" || "ADMIN";
     const { showError, showSuccess } = useSnackbar();
 
     useEffect(() => {
         fetchAccountingPeriods();
     }, []);
-
-    // const fetchAccountingPeriods = async () => {
-    //     try {
-    //         setLoading(true);
-    //         const token = localStorage.getItem('token');
-    //
-    //         if (!token) {
-    //             throw new Error('No authentication token found');
-    //         }
-    //
-    //         const response = await fetch('http://localhost:8080/api/v1/accounting-periods', {
-    //             headers: {
-    //                 'Authorization': `Bearer ${token}`,
-    //                 'Content-Type': 'application/json'
-    //             }
-    //         });
-    //
-    //         if (!response.ok) {
-    //             throw new Error(`HTTP error! Status: ${response.status}`);
-    //         }
-    //
-    //         const data = await response.json();
-    //         console.log("Fetched periods raw data:", data);
-    //
-    //         // Ensure data is an array
-    //         const periodsArray = Array.isArray(data) ? data : [];
-    //         setAccountingPeriods(periodsArray);
-    //
-    //         // Debug the data structure
-    //         if (periodsArray.length > 0) {
-    //             console.log("First period object:", periodsArray[0]);
-    //             console.log("First period keys:", Object.keys(periodsArray[0]));
-    //         }
-    //
-    //         setError(null);
-    //     } catch (err) {
-    //         setError('Error: ' + err.message);
-    //         console.error("Error fetching accounting periods:", err);
-    //         setAccountingPeriods([]); // Set empty array on error
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
 
     const handleTogglePeriod = (periodId, currentlyClosed) => {
         console.log(`Toggling period ${periodId}, currently closed: ${currentlyClosed}`);
@@ -254,6 +211,11 @@ const PeriodClosing = () => {
         }
     };
 
+    // Handle add button click from DataTable
+    const handleAddPeriod = () => {
+        setShowAddModal(true);
+    };
+
 // Replace your columns configuration with this:
     const columns = [
         {
@@ -335,14 +297,7 @@ const PeriodClosing = () => {
 
     return (
         <div className="period-closing-container">
-            <div className="pc-header">
-                <h2>Accounting Periods</h2>
-                {isFinanceManager && (
-                    <button className="btn-primary" onClick={() => setShowAddModal(true)}>
-                        <FaPlus /> New Period
-                    </button>
-                )}
-            </div>
+            {/* Removed custom header with add button */}
 
             {error && (
                 <div className="error-banner">
@@ -362,6 +317,23 @@ const PeriodClosing = () => {
                 defaultSortDirection="desc"
                 tableTitle="Accounting Periods"
                 emptyMessage="No accounting periods found"
+                // Add button configuration - only show if user is finance manager
+                showAddButton={isFinanceManager}
+                addButtonText="New Period"
+                addButtonIcon={<FaPlus />}
+                onAddClick={handleAddPeriod}
+
+                // Export configuration
+                showExportButton={true}
+                exportButtonText="Export Periods"
+                exportFileName="accounting_periods"
+                customExportHeaders={{
+                    name: 'Period Name',
+                    startDate: 'Start Date',
+                    endDate: 'End Date',
+                    status: 'Status'
+                }}
+                excludeColumnsFromExport={['closed']} // Don't export the normalized closed field
             />
 
             {/* Add Period Modal */}
