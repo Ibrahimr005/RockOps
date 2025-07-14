@@ -14,14 +14,15 @@ public interface InSiteMaintenanceRepository extends JpaRepository<InSiteMainten
 
     // Find maintenance records by equipment ID with related transactions loaded
     @Query("SELECT DISTINCT m FROM InSiteMaintenance m " +
-           "LEFT JOIN FETCH m.relatedTransactions t " +
-           "LEFT JOIN FETCH t.items i " +
-           "LEFT JOIN FETCH i.itemType " +
+           "LEFT JOIN FETCH m.relatedTransactions " +
            "WHERE m.equipment.id = :equipmentId " +
            "ORDER BY m.maintenanceDate DESC")
     List<InSiteMaintenance> findByEquipmentIdWithTransactions(@Param("equipmentId") UUID equipmentId);
 
     // Original method for backward compatibility
-    List<InSiteMaintenance> findByEquipmentId(UUID equipmentId);
+    List<InSiteMaintenance> findByEquipmentIdOrderByMaintenanceDateDesc(UUID equipmentId);
 
-    }
+    // Find top 10 maintenance records by equipment ID ordered by maintenance date desc
+    List<InSiteMaintenance> findTop10ByEquipmentIdOrderByMaintenanceDateDesc(UUID equipmentId);
+
+}

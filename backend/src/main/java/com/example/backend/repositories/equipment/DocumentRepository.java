@@ -24,4 +24,17 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
 
     // Combined filters
     List<Document> findByEntityTypeAndTypeOrderByUploadDateDesc(EntityType entityType, String type);
+    
+    // Sarky-specific query methods
+    List<Document> findByEntityTypeAndEntityIdAndIsSarkyDocumentTrueOrderByUploadDateDesc(EntityType entityType, UUID entityId);
+    
+    List<Document> findByEntityTypeAndEntityIdAndSarkyMonthAndSarkyYearOrderByUploadDateDesc(
+        EntityType entityType, UUID entityId, Integer sarkyMonth, Integer sarkyYear);
+    
+    List<Document> findByIsSarkyDocumentTrueOrderByUploadDateDesc();
+    
+    List<Document> findBySarkyMonthAndSarkyYearOrderByUploadDateDesc(Integer sarkyMonth, Integer sarkyYear);
+    
+    List<Document> findByEntityTypeAndSarkyMonthAndSarkyYearOrderByUploadDateDesc(
+        EntityType entityType, Integer sarkyMonth, Integer sarkyYear);
 }

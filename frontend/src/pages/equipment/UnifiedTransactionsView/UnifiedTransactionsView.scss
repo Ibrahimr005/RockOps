@@ -362,4 +362,133 @@
   .full-width {
     width: 100%;
   }
+
+  // NEW: Maintenance Integration Styling
+  .maintenance-status-section {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(var(--color-success-rgb), 0.05);
+    border: 1px solid rgba(var(--color-success-rgb), 0.2);
+    border-radius: 6px;
+
+    .status-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+
+      .status-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(var(--color-success-rgb), 0.1);
+        border-radius: 6px;
+        color: var(--color-success);
+        flex-shrink: 0;
+
+        svg {
+          width: 18px;
+          height: 18px;
+        }
+      }
+
+      .status-content {
+        flex: 1;
+
+        h4 {
+          margin: 0 0 0.25rem 0;
+          color: var(--color-text-primary);
+          font-size: 0.875rem;
+          font-weight: 600;
+        }
+
+        p {
+          margin: 0;
+          color: var(--color-text-secondary);
+          font-size: 0.8rem;
+          line-height: 1.4;
+        }
+      }
+
+      .change-btn {
+        padding: 0.5rem 1rem;
+        background: transparent;
+        border: 1px solid var(--color-border);
+        border-radius: 4px;
+        color: var(--color-text-secondary);
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover:not(:disabled) {
+          background: var(--color-surface-hover);
+          border-color: var(--color-text-secondary);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  // Purpose-specific styling enhancements
+  .purpose-section {
+    select {
+      &:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.1);
+      }
+    }
+  }
+
+  // Enhanced purpose tags with better visual distinction
+  .purpose-tag {
+    &.maintenance {
+      background: rgba(var(--color-warning-rgb), 0.1);
+      color: var(--color-warning);
+      border: 1px solid rgba(var(--color-warning-rgb), 0.2);
+      position: relative;
+
+      &::before {
+        content: '🔧';
+        margin-right: 0.25rem;
+        font-size: 0.8em;
+      }
+    }
+
+    &.consumable {
+      background: rgba(var(--color-info-rgb), 0.1);
+      color: var(--color-info);
+      border: 1px solid rgba(var(--color-info-rgb), 0.2);
+      position: relative;
+
+      &::before {
+        content: '📦';
+        margin-right: 0.25rem;
+        font-size: 0.8em;
+      }
+    }
+  }
+
+  // Responsive adjustments for maintenance integration
+  @media (max-width: 768px) {
+    .maintenance-status-section {
+      .status-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+
+        .status-icon {
+          align-self: flex-start;
+        }
+
+        .change-btn {
+          align-self: stretch;
+        }
+      }
+    }
+  }
 }

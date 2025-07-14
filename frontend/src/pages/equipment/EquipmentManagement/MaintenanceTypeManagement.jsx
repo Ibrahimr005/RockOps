@@ -175,21 +175,6 @@ const MaintenanceTypeManagement = () => {
 
     return (
         <div className="equipment-types-container">
-            <div className="equipment-types-header">
-                <div className="header-left">
-                    <h1>Maintenance Types</h1>
-                    <p className="header-subtitle">Manage maintenance types that can be performed on equipment</p>
-                </div>
-                {permissions.canCreate && (
-                    <button 
-                        className="btn btn-primary"
-                        onClick={() => handleOpenModal()}
-                    >
-                        <FaPlus /> Add Maintenance Type
-                    </button>
-                )}
-            </div>
-
             <DataTable
                 data={maintenanceTypes}
                 columns={columns}
@@ -199,7 +184,11 @@ const MaintenanceTypeManagement = () => {
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}
-                emptyStateMessage="No maintenance types found. Create your first maintenance type to get started."
+                emptyMessage="No maintenance types found. Create your first maintenance type to get started."
+                showAddButton={permissions.canCreate}
+                addButtonText="Add Maintenance Type"
+                addButtonIcon={<FaPlus />}
+                onAddClick={() => handleOpenModal()}
             />
 
             {/* Modal for adding/editing maintenance types */}
@@ -208,7 +197,7 @@ const MaintenanceTypeManagement = () => {
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>{editingMaintenanceType ? 'Edit Maintenance Type' : 'Add Maintenance Type'}</h2>
-                            <button className="modal-close" onClick={() => setShowModal(false)}>
+                            <button className="btn-close" onClick={() => setShowModal(false)}>
                                 &times;
                             </button>
                         </div>
@@ -264,7 +253,7 @@ const MaintenanceTypeManagement = () => {
                                 >
                                     Cancel
                                 </button>
-                                <button type="submit" className="save-button">
+                                <button type="submit" className="btn-primary">
                                     {editingMaintenanceType ? 'Update' : 'Create'} Maintenance Type
                                 </button>
                             </div>

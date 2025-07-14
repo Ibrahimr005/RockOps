@@ -160,27 +160,19 @@ const EquipmentBrandManagement = () => {
 
     return (
         <div className="equipment-types-container">
-            <div className="equipment-types-header">
-                <h1>Equipment Brands</h1>
-                {permissions.canCreate && (
-                    <button
-                        className="btn btn-primary"
-                        onClick={() => handleOpenModal()}
-                    >
-                        <FaPlus /> Add Equipment Brand
-                    </button>
-                )}
-            </div>
-
             <DataTable
                 data={brands}
                 columns={columns}
                 loading={loading}
                 actions={actions}
-                tableTitle="Equipment Brands List"
+                tableTitle="Equipment Brands"
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={columns}
+                showAddButton={permissions.canCreate}
+                addButtonText="Add Equipment Brand"
+                addButtonIcon={<FaPlus />}
+                onAddClick={() => handleOpenModal()}
             />
 
             {/* Modal for adding/editing equipment brands */}
@@ -219,13 +211,13 @@ const EquipmentBrandManagement = () => {
                             <div className="form-actions">
                                 <button
                                     type="button"
-                                    className="cancel-button"
+                                    className="btn-primary--outline"
                                     onClick={() => setShowModal(false)}
                                 >
                                     Cancel
                                 </button>
                                 {(permissions.canCreate || permissions.canEdit) && (
-                                    <button type="submit" className="submit-button">
+                                    <button type="submit" className="btn-primary">
                                         {editingBrand ? 'Update' : 'Add'} Brand
                                     </button>
                                 )}

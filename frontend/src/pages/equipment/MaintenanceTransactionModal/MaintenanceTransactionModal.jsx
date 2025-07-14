@@ -315,7 +315,7 @@ const MaintenanceTransactionModal = ({
             <div className="maintenance-transaction-modal">
                 <div className="maintenance-transaction-modal-header">
                     <h2>Add Transaction to Maintenance</h2>
-                    <button className="close-button" onClick={onClose}>×</button>
+                    <button className="btn-close" onClick={onClose} aria-label="Close"></button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="transaction-form">
@@ -492,7 +492,7 @@ const MaintenanceTransactionModal = ({
                     <div className="form-actions">
                         <button
                             type="button"
-                            className="cancel-button"
+                            className="btn-primary--outline"
                             onClick={onClose}
                             disabled={isLoading}
                         >
@@ -500,7 +500,7 @@ const MaintenanceTransactionModal = ({
                         </button>
                         <button
                             type="submit"
-                            className="submit-button"
+                            className="btn-primary"
                             disabled={isLoading || (!batchVerificationResult?.found && !showTransactionForm)}
                         >
                             {isLoading ? 'Processing...' : 'Add Transaction'}

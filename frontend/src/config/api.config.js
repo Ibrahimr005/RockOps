@@ -38,7 +38,11 @@ export const EQUIPMENT_ENDPOINTS = {
     RECEIVE_TRANSACTION: (equipmentId) => `/api/equipment/${equipmentId}/receive-transaction`,
     ACCEPT_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept`,
     REJECT_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/reject`,
-    UPDATE_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}`
+    UPDATE_TRANSACTION: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}`,
+    // Maintenance integration endpoints
+    MAINTENANCE_SEARCH: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/search`,
+    MAINTENANCE_FOR_LINKING: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/for-linking`,
+    ACCEPT_TRANSACTION_WITH_MAINTENANCE: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept-with-maintenance`
 };
 
 // Consumable Resolution endpoints
@@ -198,7 +202,16 @@ export const DOCUMENT_ENDPOINTS = {
     BY_ID: (id) => `/api/v1/documents/${id}`,
     BY_ENTITY: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents`,
     CREATE: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents`,
-    DELETE: (id) => `/api/v1/documents/${id}`
+    UPDATE: (id) => `/api/v1/documents/${id}`,
+    DELETE: (id) => `/api/v1/documents/${id}`,
+    
+    // Sarky-specific document endpoints
+    BY_SARKY_MONTH: (entityType, entityId, month, year) => `/api/v1/${entityType}/${entityId}/documents/sarky?month=${month}&year=${year}`,
+    CREATE_SARKY: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents/sarky`,
+    ALL_SARKY: (entityType, entityId) => `/api/v1/${entityType}/${entityId}/documents/sarky/all`,
+    ASSIGN_SARKY: (id) => `/api/v1/documents/${id}/assign-sarky`,
+    REMOVE_SARKY: (id) => `/api/v1/documents/${id}/remove-sarky`,
+    SARKY_TYPES: '/api/v1/documents/sarky/types'
 };
 
 // Partner module endpoints

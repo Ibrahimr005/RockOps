@@ -105,6 +105,10 @@ public class Equipment {
     @JsonBackReference
     private List<Consumable> consumables = new ArrayList<>();
 
+    @OneToMany(mappedBy = "equipment", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonBackReference("equipment-maintenance")
+    private List<InSiteMaintenance> maintenanceRecords = new ArrayList<>();
+
 
 
 

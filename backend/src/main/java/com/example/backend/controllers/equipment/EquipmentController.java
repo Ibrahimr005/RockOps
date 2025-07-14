@@ -78,11 +78,34 @@ public class EquipmentController {
     // POST endpoints - Using both DTO and Map approaches for backward compatibility
 
     @PostMapping
-    public ResponseEntity<EquipmentDTO> addEquipment(
+    public ResponseEntity<?> addEquipment(
             @RequestParam(value = "file", required = false) MultipartFile file,
-            @RequestParam Map<String, Object> requestBody) throws Exception {
-        EquipmentDTO savedEquipment = equipmentService.createEquipment(requestBody, file);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedEquipment);
+            @RequestParam Map<String, Object> requestBody) {
+        try {
+            System.out.println("=== CONTROLLER: Received equipment creation request ===");
+            System.out.println("Request Body Keys: " + requestBody.keySet());
+            if (file != null) {
+                System.out.println("File received: " + file.getOriginalFilename() + " (" + file.getSize() + " bytes)");
+            }
+            
+            EquipmentDTO savedEquipment = equipmentService.createEquipment(requestBody, file);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedEquipment);
+        } catch (IllegalArgumentException e) {
+            System.err.println("CONTROLLER ERROR (Bad Request): " + e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Bad Request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("status", 400);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        } catch (Exception e) {
+            System.err.println("CONTROLLER ERROR (Internal Server Error): " + e.getMessage());
+            e.printStackTrace();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Internal Server Error");
+            errorResponse.put("message", "Failed to create equipment: " + e.getMessage());
+            errorResponse.put("status", 500);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
     @PostMapping("/dto")

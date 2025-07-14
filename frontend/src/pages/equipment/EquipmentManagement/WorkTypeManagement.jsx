@@ -276,27 +276,19 @@ const WorkTypeManagement = () => {
 
     return (
         <div className="equipment-types-container">
-            <div className="equipment-types-header">
-                <h1>Work Types</h1>
-                {permissions.canCreate && (
-                    <button
-                        className="btn btn-primary"
-                        onClick={() => handleOpenModal()}
-                    >
-                        <FaPlus /> Add Work Type
-                    </button>
-                )}
-            </div>
-
             <DataTable
                 data={workTypes}
                 columns={columns}
                 loading={loading}
                 actions={actions}
-                tableTitle="Work Types List"
+                tableTitle="Work Types"
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={columns}
+                showAddButton={permissions.canCreate}
+                addButtonText="Add Work Type"
+                addButtonIcon={<FaPlus />}
+                onAddClick={() => handleOpenModal()}
             />
 
             {/* Modal for adding/editing work types */}
@@ -381,7 +373,7 @@ const WorkTypeManagement = () => {
                                 <button type="button" onClick={() => setShowModal(false)}>
                                     Cancel
                                 </button>
-                                <button type="submit" className="save-button">
+                                <button type="submit" className="btn-primary">
                                     {editingWorkType ? 'Update' : 'Add'}
                                 </button>
                             </div>
