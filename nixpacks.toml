@@ -1,12 +1,3 @@
-[phases.setup]
-nixPkgs = ["maven", "jdk"]
-
-[phases.build]
-dependsOn = ["setup"]
-cmds = ["cd backend && mvn clean package -DskipTests"]
-
-[start]
-cmd = "cd backend && java -jar target/backend-0.0.1-SNAPSHOT.jar"
-
-[variables]
-MAVEN_OPTS = "-Xmx1024m"
+[build]
+dockerfile = "backend/Dockerfile"
+context = "backend"
