@@ -1,0 +1,12 @@
+[phases.build]
+dependsOn = ["install"]
+cmds = ["cd backend && mvn clean package -DskipTests"]
+
+[phases.install]
+cmds = ["cd backend"]
+
+[start]
+cmd = "cd backend && java -jar target/backend-0.0.1-SNAPSHOT.jar"
+
+[variables]
+MAVEN_OPTS = "-Xmx1024m"
