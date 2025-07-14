@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaHistory, FaFileExport, FaUser, FaCalendarAlt } from 'react-icons/fa';
-import { useAuth } from "../../../../Contexts/AuthContext";
+import { FaHistory, FaUser, FaCalendarAlt } from 'react-icons/fa';
+import { useAuth } from "../../../../contexts/AuthContext";
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import './AuditTrail.css';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
@@ -17,6 +17,26 @@ const AuditTrail = () => {
     useEffect(() => {
         fetchAuditLogs();
     }, []);
+
+    const formatDateTime = (dateTime) => {
+        if (!dateTime) return '';
+
+        const date = new Date(dateTime);
+
+        // Check if date is valid
+        if (isNaN(date.getTime())) return dateTime;
+
+        // Format as: Jul 9, 2025, 1:32:40 PM
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+    };
 
     const fetchAuditLogs = async () => {
         try {
@@ -46,44 +66,36 @@ const AuditTrail = () => {
         }
     };
 
-    const handleExport = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/audit-logs/export', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+    // Custom export formatter for timestamp to ensure proper Excel formatting
+    const exportDateFormatter = (value) => {
+        if (!value) return '';
 
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const date = new Date(value);
 
-            const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = downloadUrl;
-            a.download = `audit_logs_${new Date().toISOString().split('T')[0]}.xlsx`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            showSuccess('Audit logs exported successfully');
-        } catch (err) {
-            showError('Error: ' + err.message);
-            console.error("Error exporting audit logs:", err);
-        }
-    };
+        // Check if date is valid
+        if (isNaN(date.getTime())) return value;
 
-    const formatDateTime = (dateTime) => {
-        return new Date(dateTime).toLocaleString();
+        // For Excel export, use a clear format: YYYY-MM-DD HH:MM:SS
+        return date.toLocaleString('en-CA', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        }).replace(',', '');
     };
 
     const columns = [
         {
             id: 'timestamp',
             header: 'Date & Time',
-            accessor: 'timestamp',
+            accessor: 'timestamp', // Keep using original timestamp for sorting
             sortable: true,
-            width: '180px',
-            cell: (row) => formatDateTime(row.timestamp)
+            width: '200px',
+            render: (row, value) => formatDateTime(value), // Use render instead of cell
+            exportFormatter: exportDateFormatter // Custom formatter for export
         },
         {
             id: 'user',
@@ -111,6 +123,7 @@ const AuditTrail = () => {
                 </span>
             )
         },
+        // Uncomment if you want to include details in the table
         // {
         //     id: 'details',
         //     header: 'Details',
@@ -123,28 +136,37 @@ const AuditTrail = () => {
     const filterableColumns = [
         {
             accessor: 'entityType',
-            type: 'select',
-            options: entityTypes
+            header: 'Entity Type',
+            filterType: 'select'
         },
         {
             accessor: 'action',
-            type: 'select',
-            options: ['CREATE', 'UPDATE', 'DELETE', 'APPROVE', 'REJECT']
+            header: 'Action',
+            filterType: 'select'
         },
         {
-            accessor: 'timestamp',
-            type: 'dateRange'
+            accessor: 'username',
+            header: 'User',
+            filterType: 'text'
         }
     ];
 
+    // Export event handlers
+    const handleExportStart = () => {
+        console.log('Export started...');
+    };
+
+    const handleExportComplete = (exportInfo) => {
+        showSuccess(`Audit logs exported successfully! ${exportInfo.rowCount} records exported to ${exportInfo.filename}`);
+    };
+
+    const handleExportError = (error) => {
+        showError('Failed to export audit logs: ' + error.message);
+    };
+
     return (
         <div className="audit-trail-container">
-            <div className="at-header">
-                <h2>Audit Trail</h2>
-                <button className="btn-secondary" onClick={handleExport}>
-                    <FaFileExport /> Export to Excel
-                </button>
-            </div>
+
 
             <DataTable
                 data={auditRecords}
@@ -153,10 +175,27 @@ const AuditTrail = () => {
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}
-                defaultSortField="timestamp"
+                defaultSortField="timestamp" // Sort by the timestamp field
                 defaultSortDirection="desc"
                 tableTitle="Audit Trail"
                 emptyMessage="No audit records found"
+                // Export configuration
+                showExportButton={true}
+                exportButtonText="Export to Excel"
+                exportFileName="audit_logs"
+                exportAllData={false} // Export filtered/sorted data
+                customExportHeaders={{
+                    timestamp: 'Date & Time',
+                    username: 'User',
+                    entityType: 'Entity Type',
+                    action: 'Action'
+                }}
+                onExportStart={handleExportStart}
+                onExportComplete={handleExportComplete}
+                onExportError={handleExportError}
+                // Pagination
+                itemsPerPageOptions={[10, 25, 50, 100]}
+                defaultItemsPerPage={25}
             />
         </div>
     );
