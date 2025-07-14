@@ -159,7 +159,7 @@ const GeneralLedger = () => {
                             className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
                             onClick={() => setActiveTab(tab.id)}
                         >
-                            {/*{tab.icon}*/}
+                            {tab.icon}
                             <span>{tab.label}</span>
                         </button>
                     ))}
