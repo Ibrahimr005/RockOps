@@ -37,11 +37,11 @@ const Payables = () => {
 
     return (
         <div className="payables-container">
-            <div className="payables-tabs">
+            <div className="tabs">
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
-                        className={`payables-tab ${activeTab === tab.id ? 'active' : ''}`}
+                        className={`tab ${activeTab === tab.id ? 'active' : ''}`}
                         onClick={() => setActiveTab(tab.id)}
                     >
                         {tab.icon}

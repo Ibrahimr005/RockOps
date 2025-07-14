@@ -14,17 +14,16 @@
     }
   }
 
-  .tab-button {
-    padding: 1rem 1.5rem;
-    background: none;
-    border: none;
-    border-bottom: 3px solid transparent;
+  .tab-button,.tab {
+    padding: 16px 24px;
+    font-size:1rem;
     font-weight: 500;
     color: var(--color-text-secondary);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
     cursor: pointer;
-    transition: all var(--transition-normal);
-    white-space: nowrap;
-    flex-shrink: 0;
+    transition: all var(--transition-fast);
 
     @media (max-width: 768px) {
       padding: 0.75rem 1rem;
