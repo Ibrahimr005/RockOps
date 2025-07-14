@@ -225,6 +225,7 @@
 
 .tab-content {
   padding-top: 1.5rem;
+  overflow: visible;
 
 }
 
@@ -237,6 +238,36 @@
   margin-bottom: 1.25rem;
   position: relative;
   min-height: 400px; /* Ensure consistent minimum height */
+  overflow: visible;
+
+  .sarky-matrix-container {
+    position: relative;
+    z-index: 1;
+    
+    // Create a proper scrolling container for sticky positioning
+    height: calc(100vh - 140px); // Account for navbar (70px) and some padding
+    overflow-y: auto;
+    
+    // Custom scrollbar styling
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: var(--color-surface-hover);
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: var(--color-text-secondary);
+      border-radius: 4px;
+      
+      &:hover {
+        background: var(--color-text-primary);
+      }
+    }
+  }
+
 }
 
 /* Standardized Panel Header */

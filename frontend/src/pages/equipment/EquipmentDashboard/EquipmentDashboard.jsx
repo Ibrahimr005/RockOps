@@ -41,7 +41,7 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                 // Fetch work hours (sarky) data
                 axiosInstance.get(`http://localhost:8080/api/v1/equipment/${equipmentId}/sarky`),
                 // Fetch maintenance data (using same endpoint as InSiteMaintenanceLog)
-                axiosInstance.get(`http://localhost:8080/api/v1/maintenance/equipment/${equipmentId}`)
+                axiosInstance.get(`http://localhost:8080/api/equipment/${equipmentId}/maintenance`)
             ]);
 
             // Process consumables data
@@ -232,7 +232,7 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                 <AlertTriangle size={48} className="error-icon" />
                 <h3>Unable to Load Dashboard</h3>
                 <p>{error}</p>
-                <button onClick={fetchDashboardData} className="rockops-btn rockops-btn--primary">
+                <button onClick={fetchDashboardData} className="btn-primary">
                     <Activity size={16} />
                     Retry
                 </button>

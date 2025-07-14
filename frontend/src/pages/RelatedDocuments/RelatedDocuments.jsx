@@ -25,6 +25,13 @@ import {
 } from 'lucide-react';
 import { documentService } from '../../services/documentService';
 import { useSnackbar } from '../../contexts/SnackbarContext';
+import { 
+    GENERAL_DOCUMENT_TYPES, 
+    SARKY_DOCUMENT_TYPES, 
+    getMonthLabel,
+    MONTH_OPTIONS,
+    generateYearOptions 
+} from '../../constants/documentTypes';
 import './RelatedDocuments.scss';
 
 const RelatedDocuments = () => {
@@ -48,27 +55,19 @@ const RelatedDocuments = () => {
         file: null
     });
 
+    // Sarky document filtering state
+    const [showSarkyFilter, setShowSarkyFilter] = useState(false);
+    const [sarkyFilterActive, setSarkyFilterActive] = useState(false);
+    const [showPromoteModal, setShowPromoteModal] = useState(false);
+    const [documentToPromote, setDocumentToPromote] = useState(null);
+    const [promoteMonth, setPromoteMonth] = useState(new Date().getMonth() + 1);
+    const [promoteYear, setPromoteYear] = useState(new Date().getFullYear());
+
     // Get document types based on entity type
     const documentTypes = useMemo(() => {
         switch (entityType?.toLowerCase()) {
             case 'equipment':
-                return [
-                    { value: 'SHIPPING_INVOICE', label: 'Shipping Invoice', icon: FileText, color: '#4f46e5' },
-                    { value: 'SHIPPING_RECEIPT', label: 'Shipping Receipt', icon: FileText, color: '#059669' },
-                    { value: 'BILL_OF_LADING', label: 'Bill of Lading', icon: FileText, color: '#dc2626' },
-                    { value: 'CUSTOMS_DECLARATION', label: 'Customs Declaration', icon: FileText, color: '#ea580c' },
-                    { value: 'CUSTOMS_INVOICE', label: 'Customs Invoice', icon: FileText, color: '#7c2d12' },
-                    { value: 'CUSTOMS_CLEARANCE', label: 'Customs Clearance', icon: CheckCircle, color: '#059669' },
-                    { value: 'TAX_CERTIFICATE', label: 'Tax Certificate', icon: FileText, color: '#7c3aed' },
-                    { value: 'TAX_INVOICE', label: 'Tax Invoice', icon: FileText, color: '#be123c' },
-                    { value: 'TAX_RECEIPT', label: 'Tax Receipt', icon: FileText, color: '#0369a1' },
-                    { value: 'PURCHASE_INVOICE', label: 'Purchase Invoice', icon: FileText, color: '#0891b2' },
-                    { value: 'WARRANTY', label: 'Warranty Document', icon: FileText, color: '#16a34a' },
-                    { value: 'MANUAL', label: 'User Manual', icon: File, color: '#9333ea' },
-                    { value: 'MAINTENANCE_RECORD', label: 'Maintenance Record', icon: FileText, color: '#c2410c' },
-                    { value: 'INSURANCE', label: 'Insurance Document', icon: FileText, color: '#0d9488' },
-                    { value: 'OTHER', label: 'Other', icon: File, color: '#6b7280' }
-                ];
+                return GENERAL_DOCUMENT_TYPES;
             case 'site':
                 return [
                     { value: 'LEASE_AGREEMENT', label: 'Lease Agreement', icon: FileText, color: '#4f46e5' },
@@ -191,12 +190,21 @@ const RelatedDocuments = () => {
 
         setLoading(true);
         try {
-            showSnackbar('Edit functionality will be implemented soon', 'info');
+            // Update document via backend API
+            await documentService.update(selectedDocument.id, {
+                name: selectedDocument.name,
+                type: selectedDocument.type
+            });
+            
+            showSnackbar('Document updated successfully (Note: File cannot be changed, only name and type)', 'success');
             setShowEditModal(false);
             setSelectedDocument(null);
+            
+            // Reload documents to get updated data from backend
+            loadDocuments();
         } catch (error) {
             console.error('Error updating document:', error);
-            showSnackbar('Failed to update document', 'error');
+            showSnackbar('Failed to update document: ' + (error.response?.data?.message || error.message), 'error');
         } finally {
             setLoading(false);
         }
@@ -232,10 +240,11 @@ const RelatedDocuments = () => {
     };
 
     const formatFileSize = (bytes) => {
-        if (!bytes) return 'Unknown';
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        if (!bytes || bytes === 0 || isNaN(bytes)) return 'Unknown';
+        const numBytes = Number(bytes);
+        if (numBytes < 1024) return numBytes + ' B';
+        if (numBytes < 1024 * 1024) return (numBytes / 1024).toFixed(1) + ' KB';
+        return (numBytes / (1024 * 1024)).toFixed(1) + ' MB';
     };
 
     const formatDate = (dateString) => {
@@ -243,11 +252,83 @@ const RelatedDocuments = () => {
         return new Date(dateString).toLocaleDateString();
     };
 
-    const handleDownload = (document) => {
-        if (document.url) {
-            window.open(document.url, '_blank');
-        } else {
-            showSnackbar('Document URL not available', 'warning');
+    const handleDownload = async (doc) => {
+        try {
+            if (doc.url) {
+                // Create a temporary anchor element to trigger download
+                const link = document.createElement('a');
+                link.href = doc.url;
+                link.download = doc.name || 'document';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                // Fetch document details to get URL
+                const response = await documentService.view(doc.id);
+                const docData = response.data;
+                if (docData.url) {
+                    const link = document.createElement('a');
+                    link.href = docData.url;
+                    link.download = docData.name || 'document';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    showSnackbar('Download URL not available', 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Error downloading document:', error);
+            showSnackbar('Failed to download document', 'error');
+        }
+    };
+
+    // Handle promoting a document to sarky month
+    const handlePromoteToSarky = (document) => {
+        setDocumentToPromote(document);
+        setShowPromoteModal(true);
+    };
+
+    // Confirm promotion to sarky month
+    const confirmPromoteToSarky = async () => {
+        if (!documentToPromote) return;
+
+        setLoading(true);
+        try {
+            console.log('Assigning document to sarky month:', {
+                documentId: documentToPromote.id,
+                month: promoteMonth,
+                year: promoteYear
+            });
+            
+            await documentService.assignToSarkyMonth(documentToPromote.id, promoteMonth, promoteYear);
+            showSnackbar(`Document assigned to ${getMonthLabel(promoteMonth)} ${promoteYear}`, 'success');
+            setShowPromoteModal(false);
+            setDocumentToPromote(null);
+            loadDocuments();
+        } catch (error) {
+            console.error('Error promoting document:', error);
+            showSnackbar('Failed to assign document to month: ' + (error.response?.data?.message || error.message), 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handle removing sarky assignment
+    const handleRemoveSarkyAssignment = async (documentId) => {
+        if (!window.confirm('Remove this document from monthly assignment?')) return;
+
+        setLoading(true);
+        try {
+            console.log('Removing sarky assignment for document:', documentId);
+            await documentService.removeSarkyAssignment(documentId);
+            showSnackbar('Monthly assignment removed', 'success');
+            loadDocuments();
+        } catch (error) {
+            console.error('Error removing sarky assignment:', error);
+            showSnackbar('Failed to remove monthly assignment: ' + (error.response?.data?.message || error.message), 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -260,7 +341,11 @@ const RelatedDocuments = () => {
 
             const matchesType = filterType === 'all' || doc.type === filterType;
 
-            return matchesSearch && matchesType;
+            // Sarky filter logic
+            const matchesSarkyFilter = !sarkyFilterActive || 
+                (sarkyFilterActive && doc.isSarkyDocument);
+
+            return matchesSearch && matchesType && matchesSarkyFilter;
         });
 
         // Sort documents
@@ -271,7 +356,7 @@ const RelatedDocuments = () => {
                 case 'type':
                     return a.type.localeCompare(b.type);
                 case 'size':
-                    return (b.size || 0) - (a.size || 0);
+                    return (b.fileSize || b.size || 0) - (a.fileSize || a.size || 0);
                 case 'date':
                 default:
                     return new Date(b.dateUploaded) - new Date(a.dateUploaded);
@@ -279,7 +364,7 @@ const RelatedDocuments = () => {
         });
 
         return filtered;
-    }, [documents, searchTerm, filterType, sortBy]);
+    }, [documents, searchTerm, filterType, sortBy, sarkyFilterActive]);
 
     const getUniqueDocumentTypes = () => {
         const types = documents.map(doc => doc.type);
@@ -304,7 +389,7 @@ const RelatedDocuments = () => {
                 </div>
                 <div className="rockops-documents-header-actions">
                     <button
-                        className="rockops-btn rockops-btn--primary"
+                        className="btn-primary"
                         onClick={() => setShowUploadModal(true)}
                         disabled={loading}
                     >
@@ -356,6 +441,19 @@ const RelatedDocuments = () => {
                             <option value="size">Sort by Size</option>
                         </select>
                     </div>
+
+                    {/* Sarky Filter Toggle (only for equipment) */}
+                    {entityType?.toLowerCase() === 'equipment' && (
+                        <div className="rockops-documents-sarky-filter">
+                            <button
+                                className={`rockops-documents-sarky-btn ${sarkyFilterActive ? 'active' : ''}`}
+                                onClick={() => setSarkyFilterActive(!sarkyFilterActive)}
+                                title={sarkyFilterActive ? 'Show all documents' : 'Show only monthly sarky documents'}
+                            >
+                                📅 Monthly Only
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="rockops-documents-view-controls">
@@ -391,7 +489,7 @@ const RelatedDocuments = () => {
                                 <h3>No documents found</h3>
                                 <p>Upload your first document to get started</p>
                                 <button
-                                    className="rockops-btn rockops-btn--primary"
+                                    className="btn-primary"
                                     onClick={() => setShowUploadModal(true)}
                                 >
                                     <Upload size={16} />
@@ -438,6 +536,28 @@ const RelatedDocuments = () => {
                                                 >
                                                     <Eye size={16} />
                                                 </button>
+                                                
+                                                {/* Sarky promotion/demotion for equipment documents */}
+                                                {entityType?.toLowerCase() === 'equipment' && (
+                                                    document.isSarkyDocument ? (
+                                                        <button
+                                                            className="rockops-documents-action-btn sarky-assigned"
+                                                            onClick={() => handleRemoveSarkyAssignment(document.id)}
+                                                            title={`Remove from ${getMonthLabel(document.sarkyMonth)} ${document.sarkyYear}`}
+                                                        >
+                                                            📌
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            className="rockops-documents-action-btn promote"
+                                                            onClick={() => handlePromoteToSarky(document)}
+                                                            title="Assign to month"
+                                                        >
+                                                            📅
+                                                        </button>
+                                                    )
+                                                )}
+                                                
                                                 <button
                                                     className="rockops-documents-action-btn edit"
                                                     onClick={() => {
@@ -462,9 +582,17 @@ const RelatedDocuments = () => {
                                             <span className="rockops-documents-card-type" style={{ color: typeConfig.color }}>
                                                 {typeConfig.label}
                                             </span>
+                                            
+                                            {/* Sarky assignment indicator */}
+                                            {document.isSarkyDocument && document.sarkyMonth && document.sarkyYear && (
+                                                <span className="rockops-documents-sarky-badge">
+                                                    📅 {getMonthLabel(document.sarkyMonth)} {document.sarkyYear}
+                                                </span>
+                                            )}
+                                            
                                             <div className="rockops-documents-card-info">
                                                 <span className="rockops-documents-card-size">
-                                                    {formatFileSize(document.size)}
+                                                    {formatFileSize(document.fileSize || document.size)}
                                                 </span>
                                                 <span className="rockops-documents-card-date">
                                                     <Calendar size={12} />
@@ -496,7 +624,7 @@ const RelatedDocuments = () => {
                                 Upload New Document
                             </h2>
                             <button
-                                className="rockops-documents-modal-close"
+                                className="btn-close"
                                 onClick={() => {
                                     setShowUploadModal(false);
                                     setUploadData({ name: '', type: '', file: null });
@@ -575,7 +703,7 @@ const RelatedDocuments = () => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="rockops-btn rockops-btn--primary"
+                                    className="btn-primary"
                                     disabled={loading}
                                 >
                                     {loading ? 'Uploading...' : 'Upload Document'}
@@ -596,7 +724,7 @@ const RelatedDocuments = () => {
                                 Edit Document
                             </h2>
                             <button
-                                className="rockops-documents-modal-close"
+                                className="btn-close"
                                 onClick={() => {
                                     setShowEditModal(false);
                                     setSelectedDocument(null);
@@ -607,6 +735,12 @@ const RelatedDocuments = () => {
                         </div>
 
                         <form onSubmit={handleEdit} className="rockops-documents-modal-form">
+                            <div className="rockops-documents-form-group">
+                                <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '16px' }}>
+                                    <strong>Note:</strong> You can only edit the document name and type. The file itself cannot be changed.
+                                </p>
+                            </div>
+                            
                             <div className="rockops-documents-form-group">
                                 <label htmlFor="editDocumentName">Document Name *</label>
                                 <input
@@ -655,6 +789,87 @@ const RelatedDocuments = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Promote to Sarky Modal */}
+            {showPromoteModal && documentToPromote && (
+                <div className="rockops-documents-modal-overlay">
+                    <div className="rockops-documents-modal">
+                        <div className="rockops-documents-modal-header">
+                            <h2>
+                                📅 Assign to Monthly Sarky
+                            </h2>
+                            <button
+                                className="btn-close"
+                                onClick={() => {
+                                    setShowPromoteModal(false);
+                                    setDocumentToPromote(null);
+                                }}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="rockops-documents-modal-form">
+                            <div className="rockops-documents-form-group">
+                                <p>
+                                    Assign "<strong>{documentToPromote.name}</strong>" to a specific month for sarky documentation.
+                                </p>
+                            </div>
+
+                            <div className="rockops-documents-form-group">
+                                <label htmlFor="promoteMonth">Month</label>
+                                <select
+                                    id="promoteMonth"
+                                    value={promoteMonth}
+                                    onChange={(e) => setPromoteMonth(parseInt(e.target.value))}
+                                >
+                                    {MONTH_OPTIONS.map(month => (
+                                        <option key={month.value} value={month.value}>
+                                            {month.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="rockops-documents-form-group">
+                                <label htmlFor="promoteYear">Year</label>
+                                <select
+                                    id="promoteYear"
+                                    value={promoteYear}
+                                    onChange={(e) => setPromoteYear(parseInt(e.target.value))}
+                                >
+                                    {generateYearOptions(2, 1).map(year => (
+                                        <option key={year.value} value={year.value}>
+                                            {year.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="rockops-documents-modal-actions">
+                                <button
+                                    type="button"
+                                    className="rockops-btn rockops-btn--outline"
+                                    onClick={() => {
+                                        setShowPromoteModal(false);
+                                        setDocumentToPromote(null);
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn-primary"
+                                    onClick={confirmPromoteToSarky}
+                                    disabled={loading}
+                                >
+                                    {loading ? 'Assigning...' : 'Assign to Month'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

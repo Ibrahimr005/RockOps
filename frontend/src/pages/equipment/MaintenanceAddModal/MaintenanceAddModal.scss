@@ -475,3 +475,189 @@
     font-weight: bold;
   }
 }
+
+/* ====================================
+   MAINTENANCE TYPE CREATION MODAL
+   ==================================== */
+
+// Modal Styles - matching MaintenanceTypeManagement exactly
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 1rem;
+}
+
+.modal-content {
+  background-color: var(--section-background-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalFadeIn 0.3s;
+
+  @keyframes modalFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+
+  h2 {
+    margin: 0;
+    color: var(--head-title-color);
+    font-weight: var(--bold-font-weight);
+    font-size: 1.25rem;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer !important;
+    color: var(--color-text-tertiary);
+    transition: color var(--transition-fast);
+
+    &:hover {
+      color: var(--color-danger);
+    }
+  }
+}
+
+form {
+  padding: 1.5rem;
+
+  .form-group {
+    margin-bottom: 1.25rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--label-color);
+      font-weight: var(--bold-font-weight);
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background-color: var(--color-surface);
+      color: var(--color-text-primary);
+      transition: border-color var(--transition-fast);
+
+      &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.2);
+      }
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    // Checkbox styles
+    .checkbox-label {
+      display: flex !important;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem !important;
+      cursor: pointer;
+
+      input[type="checkbox"] {
+        width: auto !important;
+        margin: 0;
+        cursor: pointer;
+      }
+
+      .checkbox-text {
+        color: var(--color-text-primary);
+        font-weight: var(--bold-font-weight);
+      }
+    }
+
+    .form-help-text {
+      display: block;
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+      margin-top: 0.25rem;
+      font-style: italic;
+    }
+  }
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+
+  button {
+    padding: 0.6rem 1.25rem !important;
+    border-radius: var(--radius-sm) !important;
+    font-weight: var(--bold-font-weight) !important;
+    cursor: pointer !important;
+    transition: all var(--transition-fast) !important;
+    min-width: auto !important;
+    max-width: none !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    font-size: inherit !important;
+    line-height: normal !important;
+
+    &:first-child {
+      background-color: transparent !important;
+      border: 1px solid var(--border-color) !important;
+      color: var(--color-text-secondary) !important;
+
+      &:hover {
+        background-color: var(--color-surface-hover) !important;
+      }
+    }
+
+    &.save-button {
+      background-color: var(--color-primary) !important;
+      border: 1px solid var(--color-primary) !important;
+      color: var(--color-text-inverse) !important;
+
+      &:hover {
+        background-color: var(--color-primary-dark) !important;
+      }
+    }
+  }
+}
+
+/* Add new option styling */
+.add-new-option {
+  font-style: italic;
+  color: var(--color-primary) !important;
+  font-weight: var(--bold-font-weight) !important;
+  border-top: 1px solid var(--border-color) !important;
+  margin-top: 4px !important;
+  padding-top: 8px !important;
+}

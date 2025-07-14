@@ -1,0 +1,698 @@
+// SarkyDocumentModal.scss - Unique styles to avoid conflicts with other components
+.sarky-document-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.sarky-document-modal {
+  background: var(--section-background-color);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 1200px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 1px solid var(--border-color);
+
+  .sarky-modal-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-hover) 100%);
+    position: relative;
+
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      text-align: center;
+    }
+
+    .sarky-modal-close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: bold;
+
+      &:hover {
+        background: var(--color-danger);
+        color: white;
+        transform: scale(1.1);
+      }
+    }
+  }
+
+  .sarky-modal-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--color-surface);
+    gap: 20px;
+
+    .sarky-modal-search-filter {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex: 1;
+
+      .sarky-modal-search-input {
+        flex: 2;
+        min-width: 250px;
+        padding: 10px 16px;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+
+        &:focus {
+          outline: none;
+          border-color: var(--color-primary);
+        }
+
+        &::placeholder {
+          color: var(--color-text-secondary);
+        }
+      }
+
+      .sarky-modal-filter-select {
+        padding: 10px 16px;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+        font-size: 14px;
+        max-width: 180px;
+        cursor: pointer;
+        transition: border-color 0.3s ease;
+
+        &:focus {
+          outline: none;
+          border-color: var(--color-primary);
+        }
+      }
+    }
+
+    .sarky-modal-upload-btn {
+      padding: 12px 24px;
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      &:hover {
+        background: var(--color-primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(var(--color-primary-rgb, 72, 128, 255), 0.3);
+      }
+
+      &:disabled {
+        background: var(--color-text-tertiary);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+    }
+  }
+
+  .sarky-modal-upload-section {
+    padding: 32px;
+    border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-hover) 100%);
+
+    .sarky-modal-file-drop-zone {
+      border: 3px dashed var(--border-color);
+      border-radius: 20px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      background: var(--color-surface);
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.6s ease;
+      }
+
+      &:hover, &.drag-active {
+        border-color: var(--color-primary);
+        background: rgba(var(--color-primary-rgb, 72, 128, 255), 0.05);
+        transform: scale(1.02);
+
+        &::before {
+          left: 100%;
+        }
+
+        .sarky-modal-drop-icon {
+          transform: scale(1.2);
+          color: var(--color-primary);
+        }
+      }
+
+      .sarky-modal-drop-icon {
+        font-size: 48px;
+        color: var(--color-text-secondary);
+        margin-bottom: 16px;
+        transition: all 0.3s ease;
+      }
+
+      h3 {
+        margin: 0 0 8px 0;
+        color: var(--color-text-primary);
+        font-weight: 600;
+        font-size: 1.2rem;
+      }
+
+      p {
+        margin: 0;
+        color: var(--color-text-secondary);
+        font-size: 0.95rem;
+      }
+
+      input[type="file"] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+      }
+    }
+
+    .sarky-modal-upload-form {
+      .sarky-modal-form-group {
+        margin-bottom: 20px;
+
+        label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: 600;
+          color: var(--color-text-primary);
+          font-size: 14px;
+        }
+
+        select, input[type="text"] {
+          width: 100%;
+          padding: 12px 16px;
+          border: 2px solid var(--border-color);
+          border-radius: 8px;
+          background: var(--color-surface);
+          color: var(--color-text-primary);
+          font-size: 14px;
+          transition: border-color 0.3s ease;
+
+          &:focus {
+            outline: none;
+            border-color: var(--color-primary);
+          }
+
+          &:disabled {
+            background: var(--color-surface-hover);
+            color: var(--color-text-secondary);
+            cursor: not-allowed;
+          }
+        }
+
+        .sarky-modal-checkbox-group {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+          }
+
+          label {
+            margin: 0;
+            font-weight: 500;
+            cursor: pointer;
+          }
+        }
+      }
+
+      .sarky-modal-upload-submit-btn {
+        width: 100%;
+        padding: 14px 24px;
+        background: var(--color-success);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 15px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+          transition: left 0.6s ease;
+        }
+
+        &:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(var(--color-success-rgb, 16, 185, 129), 0.4);
+
+          &::before {
+            left: 100%;
+          }
+        }
+
+        &:disabled {
+          background: var(--color-text-tertiary);
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+      }
+    }
+  }
+
+  .sarky-modal-documents-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: var(--color-surface-hover);
+      border-radius: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: linear-gradient(to bottom, var(--color-primary-light), var(--color-primary));
+      border-radius: 6px;
+
+      &:hover {
+        background: linear-gradient(to bottom, var(--color-primary), var(--color-primary-dark));
+      }
+    }
+  }
+
+  .sarky-modal-loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--color-text-secondary);
+
+    .sarky-modal-loader {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--color-surface-hover);
+      border-top: 3px solid var(--color-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 1rem;
+    }
+  }
+
+  .sarky-modal-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--color-text-secondary);
+    min-height: 200px;
+    position: relative;
+    z-index: 1;
+
+    .sarky-modal-empty-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      opacity: 0.6;
+    }
+
+    h3 {
+      margin: 0 0 8px 0;
+      color: var(--color-text-primary);
+      font-weight: 600;
+      font-size: 1.25rem;
+    }
+
+    p {
+      margin: 0;
+      max-width: 400px;
+      line-height: 1.5;
+    }
+  }
+
+  .sarky-modal-documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+  }
+
+  .sarky-modal-document-card {
+    background: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--color-primary);
+
+      &::before {
+        transform: scaleX(1);
+      }
+
+      .sarky-modal-document-actions {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .sarky-modal-document-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(var(--color-primary-rgb, 72, 128, 255), 0.1);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 24px;
+    }
+
+    .sarky-modal-document-content {
+      flex: 1;
+    }
+
+    .sarky-modal-document-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      gap: 16px;
+
+      .sarky-modal-document-title {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        flex: 1;
+      }
+
+      .sarky-modal-document-actions {
+        display: flex;
+        gap: 6px;
+        opacity: 1;
+        transform: translateY(0);
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+    }
+
+    .sarky-modal-action-btn {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border-color);
+      background: var(--color-surface);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--color-text-secondary);
+      font-size: 14px;
+      z-index: 10;
+
+      &:hover {
+        transform: scale(1.1);
+        box-shadow: var(--shadow-sm);
+      }
+
+      &.sarky-modal-view-btn:hover {
+        background: var(--color-info);
+        color: white;
+        border-color: var(--color-info);
+      }
+
+
+
+      &.sarky-modal-unassign-btn:hover {
+        background: var(--color-warning);
+        color: white;
+        border-color: var(--color-warning);
+      }
+
+      &.sarky-modal-delete-btn:hover {
+        background: var(--color-danger);
+        color: white;
+        border-color: var(--color-danger);
+      }
+    }
+
+    .sarky-modal-document-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .sarky-modal-document-type-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border: 1px solid;
+        width: fit-content;
+      }
+
+      .sarky-modal-document-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 13px;
+        color: var(--color-text-secondary);
+
+        .sarky-modal-detail-item {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+
+          .sarky-modal-detail-icon {
+            font-size: 12px;
+          }
+        }
+      }
+    }
+  }
+
+  .sarky-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 32px;
+    border-top: 1px solid var(--border-color);
+    background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-hover) 100%);
+
+    .sarky-modal-footer-info {
+      color: var(--color-text-secondary);
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .sarky-modal-close-footer-btn {
+      padding: 12px 24px;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      font-size: 15px;
+
+      &:hover {
+        background: var(--color-surface-hover);
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(var(--color-primary-rgb, 72, 128, 255), 0.15);
+      }
+    }
+  }
+}
+
+// Document Viewer Modal
+
+
+// Animations
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .sarky-document-modal {
+    margin: 10px;
+    max-height: calc(100vh - 20px);
+
+    .sarky-modal-header {
+      padding: 20px;
+
+      h2 {
+        font-size: 1.3rem;
+      }
+    }
+
+    .sarky-modal-controls {
+      padding: 16px 20px;
+      flex-direction: column;
+      gap: 16px;
+
+      .sarky-modal-search-filter {
+        width: 100%;
+        
+        .sarky-modal-search-input {
+          max-width: none;
+        }
+      }
+    }
+
+    .sarky-modal-upload-section {
+      padding: 20px;
+
+      .sarky-modal-file-drop-zone {
+        padding: 32px 16px;
+      }
+    }
+
+    .sarky-modal-documents-container {
+      padding: 16px;
+    }
+
+    .sarky-modal-footer {
+      padding: 16px 20px;
+      flex-direction: column;
+      gap: 12px;
+    }
+  }
+}

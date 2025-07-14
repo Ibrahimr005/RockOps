@@ -1,4 +1,5 @@
 import React, {forwardRef, useEffect, useImperativeHandle, useState} from 'react';
+import { FaPlus } from 'react-icons/fa';
 import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
 import { equipmentService } from '../../../services/equipmentService';
 import { transactionService } from '../../../services/transactionService';
@@ -287,13 +288,16 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
             accessor: 'history',
             render: (row) => (
                 <button
-                    className="history-button"
+                    className="rockops-table__action-button view"
                     title="View History"
                     onClick={() => showConsumableHistory(row)}
                 >
+
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
                     </svg>
+
                 </button>
             )
         }] : []),
@@ -303,7 +307,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
             accessor: 'transaction',
             render: (row) => (
                 <button
-                    className="transaction-view-button"
+                    className="btn-primary--ghost"
                     title="View Transaction"
                     onClick={() => showTransactionDetails(row)}
                 >
@@ -320,7 +324,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
             accessor: 'actions',
             render: (row) => (
                 <button
-                    className="resolve-button"
+                    className="btn-primary--warning"
                     title="Resolve Surplus"
                     onClick={() => openResolutionModal(row)}
                 >
@@ -425,7 +429,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                     className={`inventory-tab ${activeTab === 'current' ? 'active' : ''}`}
                     onClick={() => handleTabChange('current')}
                 >
-                    Current Inventory
+                    Consumed Material
                     <span className="inventory-tab-count">{consumables.filter(c => (!c.status || c.status === 'REGULAR' || c.status === 'IN_WAREHOUSE' || c.status === 'CONSUMED') && !c.resolved).length}</span>
                 </button>
                 <button
@@ -519,25 +523,21 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                             data={filteredConsumables}
                             columns={columns}
                             loading={loading}
-                            tableTitle={`${activeTab === 'current' ? 'Current Inventory' : 'Surplus Items'}`}
+                            tableTitle={`${activeTab === 'current' ? 'Consumed Material' : 'Surplus Items'}`}
                             showSearch={true}
                             showFilters={true}
                             filterableColumns={filterableColumns}
                             itemsPerPageOptions={[5, 10, 15, 20]}
                             defaultItemsPerPage={5}
                             emptyMessage="No consumables found"
+                            showAddButton={permissions.canCreate && activeTab === 'current'}
+                            addButtonText="Add Consumable"
+                            addButtonIcon={<FaPlus />}
+                            onAddClick={onAddClick}
                         />
                     )
                 )}
             </div>
-
-            {permissions.canCreate && (
-                <button className="add-button2" onClick={onAddClick}>
-                    <svg className="plus-icon2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 5v14M5 12h14"/>
-                    </svg>
-                </button>
-            )}
 
             {/* History Modal */}
             <EquipmentConsumablesHistoryModal
@@ -561,13 +561,10 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                         <div className="resolution-modal-header">
                             <h2>Resolve Consumable Discrepancy</h2>
                             <button
-                                className="close-modal-button"
+                                className="btn-close"
                                 onClick={() => setIsResolutionModalOpen(false)}
-                            >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M18 6L6 18M6 6l12 12" />
-                                </svg>
-                            </button>
+                                aria-label="Close"
+                            ></button>
                         </div>
 
                         <div className="resolution-modal-body">
@@ -669,14 +666,14 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                                 <div className="resolution-modal-footer">
                                     <button
                                         type="button"
-                                        className="cancel-button"
+                                        className="btn-primary--outline"
                                         onClick={() => setIsResolutionModalOpen(false)}
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        className="resolve-submit-button"
+                                        className="btn-primary"
                                         disabled={
                                             !resolutionData.resolutionType || 
                                             !resolutionData.notes ||
