@@ -1,25 +1,17 @@
-# Use OpenJDK 23 (keeping your original version)
+# Use OpenJDK 23
 FROM openjdk:23-jdk-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy Maven files first (for better caching)
-COPY pom.xml .
-COPY mvnw .
-COPY .mvn .mvn
+# Copy all files from backend directory (Railway context is already backend/)
+COPY . .
 
-# Make Maven wrapper executable
-RUN chmod +x mvnw
-
-# Download dependencies (this layer will be cached)
-RUN ./mvnw dependency:go-offline -B
-
-# Copy source code
-COPY src ./src
+# Make Maven wrapper executable (if it exists)
+RUN if [ -f mvnw ]; then chmod +x mvnw; fi
 
 # Build the application
-RUN ./mvnw clean package -DskipTests
+RUN if [ -f mvnw ]; then ./mvnw clean package -DskipTests; else mvn clean package -DskipTests; fi
 
 # Set environment
 ENV SPRING_PROFILES_ACTIVE=prod
@@ -27,5 +19,5 @@ ENV SPRING_PROFILES_ACTIVE=prod
 # Expose port
 EXPOSE 8080
 
-# Run the application (using your original command structure)
+# Run the application
 ENTRYPOINT ["java", "-jar", "target/backend-0.0.1-SNAPSHOT.jar"]
