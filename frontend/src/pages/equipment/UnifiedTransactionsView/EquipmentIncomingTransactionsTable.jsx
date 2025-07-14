@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../../warehouse/WarehouseViewTransactions/WarehouseViewTransactions.scss";
-import "../../warehouse/WarehouseViewTransactions/AcceptRejectModal.scss";
-import TransactionViewModal from "../../warehouse/WarehouseViewTransactions/TransactionViewModal.jsx";
+import "../../warehouse/WarehouseViewTransactions/IncomingTransactions/AcceptRejectModal.scss";
+import TransactionViewModal from "../../warehouse/WarehouseViewTransactions/TransactionViewModal/TransactionViewModal.jsx";
 import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import { useSnackbar } from "../../../contexts/SnackbarContext";
