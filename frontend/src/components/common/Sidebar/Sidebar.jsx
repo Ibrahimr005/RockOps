@@ -327,16 +327,22 @@ const Sidebar = () => {
             hasSubmenu: true,
             submenuItems: [
                 {
-                title: 'General Ledger',
-                icon: <FaBook/>,
-                path: '/finance/general-ledger',
-                roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                    title: 'General Ledger',
+                    icon: <FaBook/>,
+                    path: '/finance/general-ledger',
+                    roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
                     title: 'Payables',
                     icon: <FaFileInvoiceDollar/>,
                     path: '/finance/payables',
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                },
+                {
+                    title: 'Fixed Assets',
+                    icon: <FaBuilding/>,
+                    path: '/finance/fixed-assets',
+                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
                 },
             ]
         },

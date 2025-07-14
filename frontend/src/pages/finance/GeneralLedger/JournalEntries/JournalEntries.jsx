@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './JournalEntries.css';
 import { useAuth } from "../../../../Contexts/AuthContext";
-import { FaBook, FaSearch, FaFilter, FaPlus, FaCheck, FaTimes, FaEye } from 'react-icons/fa';
+import { FaBook, FaSearch, FaFilter, FaPlus, FaCheck, FaTimes, FaEye, FaEdit, FaTrash } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 
@@ -14,13 +14,12 @@ const JournalEntries = () => {
     const { currentUser } = useAuth();
     const { showError, showSuccess } = useSnackbar();
 
-    // Filter states
+    // Filter states - simplified since DataTable handles filtering
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [dateFilter, setDateFilter] = useState({
         startDate: '',
         endDate: ''
     });
-    const [searchTerm, setSearchTerm] = useState('');
 
     // Modal states
     const [showAddModal, setShowAddModal] = useState(false);
@@ -399,33 +398,11 @@ const JournalEntries = () => {
         }
     };
 
-    const getStatusClass = (status) => {
-        switch (status) {
-            case 'APPROVED':
-                return 'status-approved';
-            case 'REJECTED':
-                return 'status-rejected';
-            default:
-                return 'status-pending';
-        }
-    };
-
-    // Safe filtering with null checks
-    const filteredEntries = journalEntries.filter(entry => {
-        if (!entry) return false;
-
-        const refNumber = entry.referenceNumber || '';
-        const description = entry.description || '';
-        const searchLower = searchTerm.toLowerCase();
-
-        return refNumber.toLowerCase().includes(searchLower) ||
-            description.toLowerCase().includes(searchLower);
-    });
-
+    // Define columns for DataTable
     const columns = [
         {
             id: 'entryDate',
-            header: 'Date',
+            header: 'DATE',
             accessor: 'entryDate',
             sortable: true,
             width: '120px',
@@ -439,91 +416,76 @@ const JournalEntries = () => {
         },
         {
             id: 'referenceNumber',
-            header: 'Reference',
+            header: 'REFERENCE',
             accessor: 'referenceNumber',
             sortable: true,
-            width: '120px'
+            width: '150px'
         },
         {
             id: 'description',
-            header: 'Description',
+            header: 'DESCRIPTION',
             accessor: 'description',
             sortable: true,
-            minWidth: '200px'
+            minWidth: '200px',
+            flexWeight: 2
         },
-        // {
-        //     id: 'amount',
-        //     header: 'Amount',
-        //     accessor: 'amount',
-        //     sortable: true,
-        //     width: '120px',
-        //     render: (row) => {
-        //         try {
-        //             const amount = parseFloat(row.amount) || 0;
-        //             return `$${amount.toFixed(2)}`;
-        //         } catch (e) {
-        //             return '$0.00';
-        //         }
-        //     }
-        // },
+        {
+            id: 'createdBy',
+            header: 'CREATED BY',
+            accessor: 'createdBy',
+            sortable: true,
+            width: '150px'
+        },
         {
             id: 'status',
-            header: 'Status',
+            header: 'STATUS',
             accessor: 'status',
             sortable: true,
             width: '120px',
             render: (row) => (
-                <span className={`journal-status-badge journal-status-badge--${(row.status || 'pending').toLowerCase()}`}>
+                <span className={`status-badge status-badge--${(row.status || 'pending').toLowerCase()}`}>
                     {row.status || 'PENDING'}
                 </span>
             )
         }
     ];
 
-    // Fixed actions - use text instead of icon for the View button
+    // Define actions for DataTable
     const actions = [
         {
-            icon: <span>View</span>,
-            label: 'View',
+            label: 'View Details',
+            icon: <FaEye />,
             onClick: (row) => handleOpenDetailModal(row),
-            className: 'journal-action-button'
+            className: 'journal-action-view'
         }
     ];
 
-    if (loading) {
-        return (
-            <div className="journal-entries-container">
-                <div className="loading-container">Loading journal entries...</div>
-            </div>
-        );
+    // Add approval/rejection actions for finance managers on pending entries
+    if (isFinanceManager) {
+        // We'll handle the approval logic within the detail modal
+        // since we need to check if the current user created the entry
     }
 
-    if (error && error.includes('Cannot read properties')) {
-        return (
-            <div className="journal-entries-container">
-                <div className="error-container">
-                    <h3>Component Error</h3>
-                    <p>There was an error loading the Journal Entries component.</p>
-                    <p>Error: {error}</p>
-                    <button onClick={() => {
-                        setError(null);
-                        fetchJournalEntries();
-                    }}>
-                        Retry
-                    </button>
-                </div>
-            </div>
-        );
-    }
+    // Define filterable columns for DataTable search/filter functionality
+    const filterableColumns = [
+        { header: 'Reference', accessor: 'referenceNumber', filterType: 'text' },
+        { header: 'Description', accessor: 'description', filterType: 'text' },
+        { header: 'Created By', accessor: 'createdBy', filterType: 'text' },
+        { header: 'Status', accessor: 'status', filterType: 'select' }
+    ];
+
+    // Calculate total amount for each entry (sum of debits or credits)
+    const enrichedJournalEntries = journalEntries.map(entry => ({
+        ...entry,
+        totalAmount: entry.entryLines ?
+            entry.entryLines.reduce((total, line) => total + (parseFloat(line.amount) || 0), 0) / 2 : 0
+    }));
 
     return (
         <div className="journal-entries-container">
-            <div className="journal-header">
-                <h1 className="journal-header__title">Journal Entries</h1>
-                <button onClick={handleOpenAddModal} className="journal-header__add-button">
-                    <FaPlus /> Add Entry
-                </button>
-            </div>
+            {/* Custom header with external filters */}
+
+
 
             {error && (
                 <div className="error-banner">
@@ -532,69 +494,32 @@ const JournalEntries = () => {
                 </div>
             )}
 
-            <div className="journal-filters">
-                <div className="journal-filters__group journal-filters__search">
-                    <label className="journal-filters__label">Search:</label>
-                    <div className="journal-filters__search-wrapper">
-                        <FaSearch className="journal-filters__search-icon" />
-                        <input
-                            type="text"
-                            placeholder="Search by reference or description"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="journal-filters__search-input"
-                        />
-                    </div>
-                </div>
-
-                <div className="journal-filters__group">
-                    <label className="journal-filters__label">Status:</label>
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="journal-filters__select"
-                    >
-                        <option value="ALL">All</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="APPROVED">Approved</option>
-                        <option value="REJECTED">Rejected</option>
-                    </select>
-                </div>
-
-                <div className="journal-filters__group">
-                    <label className="journal-filters__label">Date Range:</label>
-                    <div className="journal-filters__date-range">
-                        <input
-                            type="date"
-                            value={dateFilter.startDate}
-                            onChange={(e) => setDateFilter({...dateFilter, startDate: e.target.value})}
-                            className="journal-filters__date-input"
-                        />
-                        <span>-</span>
-                        <input
-                            type="date"
-                            value={dateFilter.endDate}
-                            onChange={(e) => setDateFilter({...dateFilter, endDate: e.target.value})}
-                            className="journal-filters__date-input"
-                        />
-                    </div>
-                </div>
-            </div>
-
+            {/* DataTable with proper integration */}
             <DataTable
-                data={filteredEntries}
+                data={enrichedJournalEntries}
                 columns={columns}
                 actions={actions}
                 loading={loading}
-                showSearch={false}
-                showFilters={false}
+                tableTitle="Journal Entries" // We're using custom header above
+                showSearch={true}
+                showFilters={true}
+                filterableColumns={filterableColumns}
                 defaultSortField="entryDate"
                 defaultSortDirection="desc"
-                tableTitle="Journal Entries"
                 emptyMessage="No journal entries found"
+                showAddButton={true}
+                addButtonText="Add Entry"
+                addButtonIcon={<FaPlus />}
+                onAddClick={handleOpenAddModal}
+                showExportButton={true}
+                exportFileName="journal_entries"
+                exportButtonText="Export Excel"
+                itemsPerPageOptions={[10, 25, 50, 100]}
+                defaultItemsPerPage={25}
+                className="journal-data-table"
             />
 
-            {/* Add Journal Entry Modal */}
+            {/* Add Journal Entry Modal - Keep existing modal implementation */}
             {showAddModal && (
                 <div className="journal-modal-overlay">
                     <div className="journal-modal-content">
@@ -767,7 +692,7 @@ const JournalEntries = () => {
                 </div>
             )}
 
-            {/* Journal Entry Detail Modal */}
+            {/* Journal Entry Detail Modal - Enhanced with approval actions */}
             {showDetailModal && selectedEntry && (
                 <div className="journal-modal-overlay">
                     <div className="journal-modal-content">
@@ -780,7 +705,7 @@ const JournalEntries = () => {
                             <div className="journal-detail-container">
                                 <div className="journal-detail-header">
                                     <div className="journal-detail-status">
-                                        <span className={`journal-status-badge journal-status-badge--${(selectedEntry.status || 'pending').toLowerCase()}`}>
+                                        <span className={`status-badge status-badge--${(selectedEntry.status || 'pending').toLowerCase()}`}>
                                             {selectedEntry.status || 'PENDING'}
                                         </span>
                                     </div>

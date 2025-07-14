@@ -239,16 +239,6 @@ const AdminPage = () => {
                         )}
 
                         {/* Action buttons */}
-                        <div className="admin-actions">
-                            <button
-                                className="btn btn-primary"
-                                onClick={handleAddUser}
-                            >
-                                <FaUserPlus /> {t('admin.addUser')}
-                            </button>
-                        </div>
-
-                        {/* DataTable implementation */}
                         <DataTable
                             data={users}
                             columns={columns}
@@ -263,6 +253,10 @@ const AdminPage = () => {
                             actionsColumnWidth="120px"
                             itemsPerPageOptions={[10, 25, 50, 100]}
                             defaultItemsPerPage={10}
+                            showAddButton={true}
+                            addButtonText={t('admin.addUser')}
+                            addButtonIcon={<FaUserPlus />}
+                            onAddClick={handleAddUser}
                         />
                     </div>
                 </main>

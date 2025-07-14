@@ -12,16 +12,7 @@
 
 /* Request Orders Section Styles */
 .request-orders-section {
-  margin-bottom: 45px;
-  margin-top: 45px;
-
-  &:first-child {
-    margin-top: 0;
-  }
-
-  &:last-child {
-    margin-bottom: 0;
-  }
+  padding:24px;
 }
 
 .request-section-title {
@@ -312,10 +303,7 @@
     font-size: 20px;
   }
 
-  .request-orders-section {
-    margin-bottom: 30px;
-    margin-top: 30px;
-  }
+
 
   .request-orders-add-button {
     bottom: 16px;

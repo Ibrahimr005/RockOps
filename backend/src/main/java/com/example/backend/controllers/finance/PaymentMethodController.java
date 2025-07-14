@@ -1,6 +1,6 @@
 //package com.example.backend.controllers.finance;
 //
-//import com.example.backend.dto.finance.PaymentMethodDTO;
+//import com.example.backend.dto.finance.payables.PaymentMethodDTO;
 //import com.example.backend.services.finance.PaymentMethodService;
 //import jakarta.validation.Valid;
 //import org.springframework.beans.factory.annotation.Autowired;

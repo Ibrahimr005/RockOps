@@ -1,0 +1,560 @@
+/* AssetManagement.css */
+.asset-management {
+    width: 100%;
+}
+
+/* Status Badge Styles */
+.asset-management__status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: inline-block;
+}
+
+.asset-management__status-active {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+[data-theme="dark"] .asset-management__status-active {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+}
+
+.asset-management__status-inactive {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+[data-theme="dark"] .asset-management__status-inactive {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.asset-management__status-disposed {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+[data-theme="dark"] .asset-management__status-disposed {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.asset-management__status-maintenance {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+[data-theme="dark"] .asset-management__status-maintenance {
+    background-color: rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+}
+
+.asset-management__status-unknown {
+    background-color: #f1f5f9;
+    color: #475569;
+}
+
+[data-theme="dark"] .asset-management__status-unknown {
+    background-color: rgba(71, 85, 105, 0.2);
+    color: #94a3b8;
+}
+
+/* Modal Styles */
+.asset-management__modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.asset-management__modal-content {
+    background: var(--section-background-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+}
+
+.asset-management__modal-header {
+    padding: 1.5rem 1.5rem 0 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.asset-management__modal-title {
+    margin: 0 0 1rem 0;
+    color: var(--color-text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.asset-management__modal-close {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.asset-management__modal-close:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+}
+
+.asset-management__modal-body {
+    padding: 1.5rem;
+}
+
+/* Form Styles */
+.asset-management__form {
+    width: 100%;
+}
+
+.asset-management__form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.asset-management__form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.asset-management__form-group--full {
+    grid-column: 1 / -1;
+}
+
+.asset-management__form-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.asset-management__form-input,
+.asset-management__form-select,
+.asset-management__form-textarea {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--section-background-color);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.asset-management__form-input:focus,
+.asset-management__form-select:focus,
+.asset-management__form-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.asset-management__form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.asset-management__form-select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+}
+
+.asset-management__modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding: 0 1.5rem 1.5rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 1rem;
+}
+
+/* Button Styles */
+.asset-management__btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.asset-management__btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.asset-management__btn--primary {
+    background: var(--color-primary);
+    color: white;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.asset-management__btn--primary:hover:not(:disabled) {
+    background: var(--color-primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.asset-management__btn--secondary {
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.asset-management__btn--secondary:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+    border-color: var(--color-text-secondary);
+    transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .asset-management__modal-content {
+        width: 95%;
+        margin: 1rem;
+    }
+
+    .asset-management__modal-header,
+    .asset-management__modal-body,
+    .asset-management__modal-actions {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .asset-management__modal-actions {
+        flex-direction: column;
+    }
+
+    .asset-management__btn {
+        justify-content: center;
+    }
+
+    .asset-management__form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Asset Details Modal Styles */
+.asset-management__modal-content--large {
+    max-width: 900px;
+    min-height: 600px;
+    width: 90%;
+}
+
+.asset-management__details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    padding: 16px 0;
+}
+
+.asset-management__details-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.asset-management__details-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+}
+
+.asset-management__details-section-title svg {
+    color: #4a5568;
+}
+
+.asset-management__details-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.asset-management__details-row:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.asset-management__details-label {
+    font-weight: 600;
+    color: #4a5568;
+    min-width: 140px;
+    flex-shrink: 0;
+}
+
+.asset-management__details-value {
+    color: #2d3748;
+    text-align: right;
+    word-break: break-word;
+    flex: 1;
+    margin-left: 12px;
+}
+
+/* Status badges */
+.asset-management__status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.asset-management__status-active {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.asset-management__status-inactive {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+.asset-management__status-maintenance {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.asset-management__status-disposed {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.asset-management__status-unknown {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+/* Modal overlay and content */
+.asset-management__modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.asset-management__modal-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.asset-management__modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.asset-management__modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.asset-management__modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    color: #6b7280;
+    transition: all 0.2s;
+}
+
+.asset-management__modal-close:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.asset-management__modal-body {
+    padding: 24px;
+}
+
+.asset-management__modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.asset-management__btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid;
+    min-width: 100px;
+}
+
+.asset-management__btn--primary {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.asset-management__btn--primary:hover:not(:disabled) {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+.asset-management__btn--secondary {
+    background: white;
+    color: #6b7280;
+    border-color: #d1d5db;
+}
+
+.asset-management__btn--secondary:hover:not(:disabled) {
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+.asset-management__btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Form styles */
+.asset-management__form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+}
+
+.asset-management__form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.asset-management__form-group--full {
+    grid-column: 1 / -1;
+}
+
+.asset-management__form-label {
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.asset-management__form-input,
+.asset-management__form-select,
+.asset-management__form-textarea {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.asset-management__form-input:focus,
+.asset-management__form-select:focus,
+.asset-management__form-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.asset-management__form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .asset-management__modal-content--large {
+        width: 95%;
+        max-width: none;
+        margin: 10px;
+    }
+
+    .asset-management__details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .asset-management__details-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .asset-management__details-label {
+        min-width: auto;
+        margin-bottom: 4px;
+    }
+
+    .asset-management__details-value {
+        text-align: left;
+        margin-left: 0;
+    }
+
+    .asset-management__form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .asset-management__modal-actions {
+        flex-direction: column;
+    }
+
+    .asset-management__btn {
+        width: 100%;
+    }
+}
+

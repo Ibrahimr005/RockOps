@@ -1,7 +1,9 @@
 package com.example.backend.services.hr;
 
 import com.example.backend.models.hr.Department;
+import com.example.backend.models.notification.NotificationType;
 import com.example.backend.repositories.hr.DepartmentRepository;
+import com.example.backend.services.notification.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,9 @@ public class DepartmentService {
     @Autowired
     private DepartmentRepository departmentRepository;
 
+    @Autowired
+    private NotificationService notificationService;
+
     /**
      * Get all departments as Map objects
      */
@@ -34,6 +39,16 @@ public class DepartmentService {
                     .collect(Collectors.toList());
         } catch (Exception e) {
             logger.error("Error in getAllDepartmentsAsMap: ", e);
+
+            // Send error notification to HR users
+            notificationService.sendNotificationToHRUsers(
+                    "Department Fetch Error",
+                    "Failed to retrieve departments: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/departments",
+                    "department-fetch-error-" + System.currentTimeMillis()
+            );
+
             throw new RuntimeException("Failed to fetch departments: " + e.getMessage());
         }
     }
@@ -51,6 +66,15 @@ public class DepartmentService {
             return null;
         } catch (Exception e) {
             logger.error("Error in getDepartmentByIdAsMap: ", e);
+
+            notificationService.sendNotificationToHRUsers(
+                    "Department Retrieval Error",
+                    "Failed to fetch department: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/departments/" + id,
+                    "department-get-error-" + id
+            );
+
             throw new RuntimeException("Failed to fetch department: " + e.getMessage());
         }
     }
@@ -88,13 +112,51 @@ public class DepartmentService {
             Department savedDepartment = departmentRepository.save(department);
             logger.info("Successfully created department with id: {}", savedDepartment.getId());
 
+            // Send notification about new department creation
+            notificationService.sendNotificationToHRUsers(
+                    "New Department Created",
+                    "Department '" + name + "' has been successfully created",
+                    NotificationType.SUCCESS,
+                    "/departments/" + savedDepartment.getId(),
+                    "new-department-" + savedDepartment.getId()
+            );
+
+            // If it's a strategic department, send additional notification
+            if (isStrategicDepartment(name)) {
+                notificationService.sendNotificationToHRUsers(
+                        "Strategic Department Added",
+                        "🏢 Strategic department '" + name + "' has been added to the organization",
+                        NotificationType.INFO,
+                        "/departments/" + savedDepartment.getId(),
+                        "strategic-dept-" + savedDepartment.getId()
+                );
+            }
+
             return convertDepartmentToMap(savedDepartment);
 
         } catch (IllegalArgumentException e) {
             logger.warn("Validation error: {}", e.getMessage());
+
+            notificationService.sendNotificationToHRUsers(
+                    "Department Creation Failed",
+                    "Failed to create department: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/departments",
+                    "dept-creation-error-" + System.currentTimeMillis()
+            );
+
             throw e;
         } catch (Exception e) {
             logger.error("Error creating department: ", e);
+
+            notificationService.sendNotificationToHRUsers(
+                    "Department Creation Error",
+                    "Unexpected error creating department: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/departments",
+                    "dept-creation-error-" + System.currentTimeMillis()
+            );
+
             throw new RuntimeException("Failed to create department: " + e.getMessage());
         }
     }
@@ -109,6 +171,9 @@ public class DepartmentService {
 
             Department existingDepartment = departmentRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Department not found with id: " + id));
+
+            String oldName = existingDepartment.getName();
+            String oldDescription = existingDepartment.getDescription();
 
             // Validate name if provided
             if (departmentData.get("name") != null) {
@@ -136,13 +201,64 @@ public class DepartmentService {
             Department updatedDepartment = departmentRepository.save(existingDepartment);
             logger.info("Successfully updated department: {}", updatedDepartment.getName());
 
+            // Send notification about department update
+            StringBuilder updateMessage = new StringBuilder("Department updated: ");
+            if (!oldName.equals(updatedDepartment.getName())) {
+                updateMessage.append("Name changed from '").append(oldName).append("' to '").append(updatedDepartment.getName()).append("'");
+            } else {
+                updateMessage.append("'").append(updatedDepartment.getName()).append("' information updated");
+            }
+
+            notificationService.sendNotificationToHRUsers(
+                    "Department Updated",
+                    updateMessage.toString(),
+                    NotificationType.INFO,
+                    "/departments/" + updatedDepartment.getId(),
+                    "dept-updated-" + updatedDepartment.getId()
+            );
+
+            // If the department name changed, notify affected job positions
+            if (!oldName.equals(updatedDepartment.getName())) {
+                int jobPositionCount = updatedDepartment.getJobPositions() != null ?
+                        updatedDepartment.getJobPositions().size() : 0;
+
+                if (jobPositionCount > 0) {
+                    notificationService.sendNotificationToHRUsers(
+                            "Department Rename Impact",
+                            "Department rename from '" + oldName + "' to '" + updatedDepartment.getName() +
+                                    "' affects " + jobPositionCount + " job position(s)",
+                            NotificationType.WARNING,
+                            "/departments/" + updatedDepartment.getId(),
+                            "dept-rename-impact-" + updatedDepartment.getId()
+                    );
+                }
+            }
+
             return convertDepartmentToMap(updatedDepartment);
 
         } catch (IllegalArgumentException e) {
             logger.warn("Validation error: {}", e.getMessage());
+
+            notificationService.sendNotificationToHRUsers(
+                    "Department Update Failed",
+                    "Failed to update department: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/departments/" + id,
+                    "dept-update-error-" + id
+            );
+
             throw e;
         } catch (Exception e) {
             logger.error("Error updating department: ", e);
+
+            notificationService.sendNotificationToHRUsers(
+                    "Department Update Error",
+                    "Unexpected error updating department: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/departments/" + id,
+                    "dept-update-error-" + id
+            );
+
             throw new RuntimeException("Failed to update department: " + e.getMessage());
         }
     }
@@ -158,23 +274,78 @@ public class DepartmentService {
             Department department = departmentRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Department not found with id: " + id));
 
+            String departmentName = department.getName();
+
             // Check if department has job positions
             long jobPositionCount = departmentRepository.countJobPositionsByDepartmentId(id);
             if (jobPositionCount > 0) {
-                throw new IllegalStateException("Cannot delete department with existing job positions. " +
-                        "Please reassign or delete the " + jobPositionCount + " job position(s) first.");
+                String errorMessage = "Cannot delete department with existing job positions. " +
+                        "Please reassign or delete the " + jobPositionCount + " job position(s) first.";
+
+                notificationService.sendNotificationToHRUsers(
+                        "Department Deletion Blocked",
+                        "Cannot delete '" + departmentName + "': " + jobPositionCount + " job positions must be handled first",
+                        NotificationType.WARNING,
+                        "/departments/" + id,
+                        "dept-delete-blocked-" + id
+                );
+
+                throw new IllegalStateException(errorMessage);
             }
 
             departmentRepository.delete(department);
-            logger.info("Successfully deleted department");
+            logger.info("Successfully deleted department: {}", departmentName);
 
+            // Send notification about department deletion
+            notificationService.sendNotificationToHRUsers(
+                    "Department Deleted",
+                    "Department '" + departmentName + "' has been successfully deleted",
+                    NotificationType.WARNING,
+                    "/departments",
+                    "dept-deleted-" + id
+            );
+
+            // If it was a strategic department, send additional notification
+            if (isStrategicDepartment(departmentName)) {
+                notificationService.sendNotificationToHRUsers(
+                        "Strategic Department Removed",
+                        "⚠️ Strategic department '" + departmentName + "' has been removed from the organization",
+                        NotificationType.ERROR,
+                        "/departments",
+                        "strategic-dept-deleted-" + id
+                );
+            }
+
+        } catch (IllegalStateException e) {
+            // This is a business rule violation, not a system error
+            throw e;
         } catch (Exception e) {
             logger.error("Error deleting department: ", e);
-            if (e instanceof IllegalStateException) {
-                throw e;
-            }
+
+            notificationService.sendNotificationToHRUsers(
+                    "Department Deletion Error",
+                    "Failed to delete department: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/departments/" + id,
+                    "dept-delete-error-" + id
+            );
+
             throw new RuntimeException("Failed to delete department: " + e.getMessage());
         }
+    }
+
+    /**
+     * Check if a department is considered strategic
+     */
+    private boolean isStrategicDepartment(String departmentName) {
+        String name = departmentName.toLowerCase();
+        return name.contains("executive") ||
+                name.contains("management") ||
+                name.contains("strategy") ||
+                name.contains("board") ||
+                name.contains("ceo") ||
+                name.contains("cto") ||
+                name.contains("cfo");
     }
 
     /**
@@ -221,6 +392,15 @@ public class DepartmentService {
             return departments;
         } catch (Exception e) {
             logger.error("Error in getAllDepartments: ", e);
+
+            notificationService.sendNotificationToHRUsers(
+                    "Department Fetch Error",
+                    "Failed to retrieve departments: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/departments",
+                    "department-fetch-error-" + System.currentTimeMillis()
+            );
+
             throw new RuntimeException("Failed to fetch departments: " + e.getMessage());
         }
     }
@@ -263,13 +443,41 @@ public class DepartmentService {
 
             Department saved = departmentRepository.save(department);
             logger.info("Successfully created department with id: {}", saved.getId());
+
+            // Send notification about new department creation
+            notificationService.sendNotificationToHRUsers(
+                    "New Department Created",
+                    "Department '" + saved.getName() + "' has been successfully created",
+                    NotificationType.SUCCESS,
+                    "/departments/" + saved.getId(),
+                    "new-department-" + saved.getId()
+            );
+
             return saved;
 
         } catch (IllegalArgumentException e) {
             logger.warn("Validation error: {}", e.getMessage());
+
+            notificationService.sendNotificationToHRUsers(
+                    "Department Creation Failed",
+                    "Failed to create department: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/departments",
+                    "dept-creation-error-" + System.currentTimeMillis()
+            );
+
             throw e;
         } catch (Exception e) {
             logger.error("Error creating department: ", e);
+
+            notificationService.sendNotificationToHRUsers(
+                    "Department Creation Error",
+                    "Unexpected error creating department: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/departments",
+                    "dept-creation-error-" + System.currentTimeMillis()
+            );
+
             throw new RuntimeException("Failed to create department: " + e.getMessage());
         }
     }
@@ -280,6 +488,8 @@ public class DepartmentService {
 
             Department existingDepartment = departmentRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Department not found with id: " + id));
+
+            String oldName = existingDepartment.getName();
 
             // Validate
             if (departmentDetails.getName() == null || departmentDetails.getName().trim().isEmpty()) {
@@ -295,13 +505,51 @@ public class DepartmentService {
 
             Department updated = departmentRepository.save(existingDepartment);
             logger.info("Successfully updated department: {}", updated.getName());
+
+            // Send notification about department update
+            if (!oldName.equals(updated.getName())) {
+                notificationService.sendNotificationToHRUsers(
+                        "Department Renamed",
+                        "Department renamed from '" + oldName + "' to '" + updated.getName() + "'",
+                        NotificationType.INFO,
+                        "/departments/" + updated.getId(),
+                        "dept-renamed-" + updated.getId()
+                );
+            } else {
+                notificationService.sendNotificationToHRUsers(
+                        "Department Updated",
+                        "Department '" + updated.getName() + "' information has been updated",
+                        NotificationType.INFO,
+                        "/departments/" + updated.getId(),
+                        "dept-updated-" + updated.getId()
+                );
+            }
+
             return updated;
 
         } catch (IllegalArgumentException e) {
             logger.warn("Validation error: {}", e.getMessage());
+
+            notificationService.sendNotificationToHRUsers(
+                    "Department Update Failed",
+                    "Failed to update department: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/departments/" + id,
+                    "dept-update-error-" + id
+            );
+
             throw e;
         } catch (Exception e) {
             logger.error("Error updating department: ", e);
+
+            notificationService.sendNotificationToHRUsers(
+                    "Department Update Error",
+                    "Unexpected error updating department: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/departments/" + id,
+                    "dept-update-error-" + id
+            );
+
             throw new RuntimeException("Failed to update department: " + e.getMessage());
         }
     }

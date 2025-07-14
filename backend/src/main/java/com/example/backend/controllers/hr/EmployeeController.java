@@ -146,6 +146,7 @@ public class EmployeeController {
             employeeData.put("phoneNumber", emp.getPhoneNumber());
             employeeData.put("address", emp.getAddress());
             employeeData.put("city", emp.getCity());
+            employeeData.put("country", emp.getCountry());
 
             // Personal details
             employeeData.put("birthDate", emp.getBirthDate());

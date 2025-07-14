@@ -9,7 +9,7 @@ import './InSiteMaintenanceLog.scss';
 import MaintenanceTransactionModal from '../MaintenanceTransactionModal/MaintenanceTransactionModal';
 import MaintenanceAddModal from '../MaintenanceAddModal/MaintenanceAddModal';
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
-import TransactionViewModal from '../../warehouse/WarehouseViewTransactions/TransactionViewModal.jsx';
+import TransactionViewModal from '../../warehouse/WarehouseViewTransactions/TransactionViewModal/TransactionViewModal.jsx';
 
 const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, onAddTransactionClick, showAddButton = true, showHeader = true }, ref) => {
     const [maintenanceRecords, setMaintenanceRecords] = useState([]);

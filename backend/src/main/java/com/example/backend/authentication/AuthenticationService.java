@@ -2,7 +2,7 @@ package com.example.backend.authentication;
 
 import com.example.backend.config.JwtService;
 import com.example.backend.models.user.User;
-import com.example.backend.repositories.UserRepository;
+import com.example.backend.repositories.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

@@ -42,7 +42,7 @@ import MerchantDetails from "./pages/merchant/MerchantDetails/MerchantDetails.js
 import ProcurementOffers from "./pages/procurement/ProcurementOffers/ProcurementOffers.jsx";
 import ProcurementRequestOrderDetails
     from "./pages/procurement/ProcurementRequestOrderDetails/ProcurementRequestOrderDetails.jsx";
-import ProcurementMerchants from "./pages/procurement/ProcurementMerchants/ProcurementMerchants.jsx";
+import ProcurementMerchants from "./pages/merchant/MerchantList/ProcurementMerchants.jsx";
 import ProcurementRequestOrders from "./pages/procurement/ProcurementRequestOrders/ProcurementRequestOrders.jsx";
 import PurchaseOrders from "./pages/procurement/ProcurementPurchaseOrders/ProcurementPurchaseOrders/PurchaseOrders.jsx";
 import PurchaseOrderDetails
@@ -52,6 +52,9 @@ import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
 import GeneralLedger from "./pages/finance/GeneralLedger/GeneralLedger.jsx";
 import LoadingPage from "./components/common/LoadingPage/LoadingPage.jsx";
 import Payables from "./pages/finance/Payables/Payables.jsx";
+// ===================== Notifications =====================
+import Notifications from './pages/notification/Notifications.jsx';
+import FixedAssets from "./pages/finance/FixedAssets/FixedAssets.jsx";
 
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ROLES } from './utils/roles';
 
@@ -110,6 +113,9 @@ function App() {
 
                                     <Route path="/partners" element={<RoleRoute allowedRoles={[ADMIN, SITE_ADMIN]}><Partners/></RoleRoute>}/>
 
+                                    {/* ===================== Notifications Route ===================== */}
+                                    <Route path="/notifications" element={<RoleRoute allowedRoles={allRoles}><Notifications/></RoleRoute>}/>
+
                                     {/* Site Management Routes */}
                                     <Route path="/sites" element={<RoleRoute allowedRoles={allRoles}><SitesLayout/></RoleRoute>}>
                                         <Route index element={<RoleRoute allowedRoles={allRoles}><AllSites/></RoleRoute>}/>
@@ -164,6 +170,8 @@ function App() {
                                     {/* Finance Routes */}
                                     <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={allRoles}><GeneralLedger/></RoleRoute>} />
                                     <Route path="/finance/payables" element={<RoleRoute allowedRoles={allRoles}><Payables/></RoleRoute>} />
+                                    <Route path="/finance/fixed-assets" element={<RoleRoute allowedRoles={allRoles}><FixedAssets/></RoleRoute>} />
+
 
 
                                     {/* Generic Related Documents Route */}

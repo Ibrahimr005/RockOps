@@ -2,11 +2,11 @@ package com.example.backend.services.site;
 
 import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.repositories.equipment.EquipmentRepository;
-import com.example.backend.repositories.finance.FixedAssetRepository;
+import com.example.backend.repositories.finance.fixedAssets.FixedAssetsRepository;
 import com.example.backend.models.Partner;
 import com.example.backend.models.equipment.Equipment;
+import com.example.backend.models.finance.fixedAssets.FixedAssets;
 import com.example.backend.models.equipment.EquipmentStatus;
-import com.example.backend.models.finance.FixedAssets;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.site.Site;
 import com.example.backend.models.site.SitePartner;
@@ -27,24 +27,25 @@ import java.util.*;
 @Service
 public class SiteAdminService
 {
-    private final FixedAssetRepository fixedAssetRepository;
+//    private final FixedAssetRepository fixedAssetRepository;
     private SiteRepository siteRepository;
     private PartnerRepository partnerRepository;
     private EquipmentRepository equipmentRepository;
     private EmployeeRepository employeeRepository;
     private WarehouseRepository warehouseRepository;
+    private FixedAssetsRepository fixedAssetsRepository;
 
     @Autowired
     private EntityManager entityManager;
 
     @Autowired
-    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetRepository fixedAssetRepository) {
+    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetsRepository fixedAssetsRepository) {
         this.siteRepository = siteRepository;
         this.partnerRepository = partnerRepository;
         this.equipmentRepository = equipmentRepository;
         this.employeeRepository = employeeRepository;
         this.warehouseRepository= warehouseRepository;
-        this.fixedAssetRepository = fixedAssetRepository;
+        this.fixedAssetsRepository = fixedAssetsRepository;
     }
 
     @Transactional
@@ -234,10 +235,10 @@ public class SiteAdminService
 
         // Assign equipment to site
         equipment.setSite(site);
-        
-     
+
+
             equipment.setStatus(EquipmentStatus.RUNNING);
-        
+
 
         // If equipment has a main driver, assign them to the site
         if (equipment.getMainDriver() != null) {
@@ -359,18 +360,20 @@ public class SiteAdminService
 
     @Transactional
     public FixedAssets assignFixedAssetToSite(UUID siteId, UUID fixedAssetId) {
-        Optional<FixedAssets> optionalFixedAssets = fixedAssetRepository.findById(fixedAssetId);
-        Optional<Site> optionalSite = siteRepository.findById(siteId);
+        Site site = siteRepository.findById(siteId)
+                .orElseThrow(() -> new RuntimeException("❌ Site not found with ID: " + siteId));
 
-        if (optionalFixedAssets.isEmpty() || optionalSite.isEmpty()) {
-            throw new RuntimeException("Employee or Site not found");
+        FixedAssets fixedAsset = fixedAssetsRepository.findById(fixedAssetId)
+                .orElseThrow(() -> new RuntimeException("❌ Fixed Asset not found with ID: " + fixedAssetId));
+
+        if (fixedAsset.getSite() != null) {
+            throw new RuntimeException("Fixed Asset is already assigned to a site!");
         }
 
-        FixedAssets fixedAssets = optionalFixedAssets.get();
-        Site site = optionalSite.get();
+        // Assign fixed asset to site
+        fixedAsset.setSite(site);
 
-        fixedAssets.setSite(site);
-        return fixedAssetRepository.save(fixedAssets);
+        return fixedAssetsRepository.save(fixedAsset);
     }
 
     @Transactional
@@ -378,7 +381,7 @@ public class SiteAdminService
         // Create new warehouse
         Warehouse warehouse = new Warehouse();
         warehouse.setName((String) requestBody.get("name"));
-        warehouse.setCapacity((Integer) requestBody.get("capacity"));
+//        warehouse.setCapacity((Integer) requestBody.get("capacity"));
 
         if (requestBody.get("photoUrl") != null) {
             warehouse.setPhotoUrl((String) requestBody.get("photoUrl"));

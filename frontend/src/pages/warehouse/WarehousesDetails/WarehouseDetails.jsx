@@ -288,51 +288,72 @@ const WarehouseDetails = () => {
               className="warehouse-intro-card"
           />
 
-          {/* Updated tabs to include Request Orders */}
-          <div className="new-tabs-container">
-            <div className="new-tabs-header">
-              <button
-                  className={`new-tab-button ${activeTab === "items" ? "active" : ""}`}
-                  onClick={() => setActiveTab("items")}
-              >
-                Inventory
-              </button>
+          {/* Show tabs only for warehouse managers */}
+          {userRole === 'WAREHOUSE_MANAGER' && (
+              <div className="new-tabs-container">
+                <div className="new-tabs-header">
+                  <button
+                      className={`new-tab-button ${activeTab === "items" ? "active" : ""}`}
+                      onClick={() => setActiveTab("items")}
+                  >
+                    Inventory
+                  </button>
 
-              {userRole === 'WAREHOUSE_MANAGER' && (
                   <button
                       className={`new-tab-button ${activeTab === "transactions" ? "active" : ""}`}
                       onClick={() => setActiveTab("transactions")}
                   >
                     Transactions
                   </button>
-              )}
 
-              {userRole === 'WAREHOUSE_MANAGER' && (
                   <button
                       className={`new-tab-button ${activeTab === "requestOrders" ? "active" : ""}`}
                       onClick={() => setActiveTab("requestOrders")}
                   >
                     Request Orders
                   </button>
-              )}
-            </div>
+                </div>
 
-            {/* Unified container for all tab content */}
-            <div className="unified-tab-content-container">
-              {/* Dynamic Header */}
-              <div className="tab-content-header">
-                <h2 className="tab-title">{getTabHeader()}</h2>
-                <div className="tab-header-line"></div>
+                {/* Unified container for all tab content */}
+                <div className="unified-tab-content-container">
+                  {/* Dynamic Header */}
+                  <div className="tab-content-header">
+                    <h2 className="tab-title">{getTabHeader()}</h2>
+                    <div className="tab-header-line"></div>
+                  </div>
+
+                  {/* Tab Content */}
+                  <div className="tab-content-body">
+                    {renderTabContent()}
+                  </div>
+                </div>
               </div>
+          )}
 
-              {/* Tab Content */}
-              <div className="tab-content-body">
-                {renderTabContent()}
+          {/* For non-warehouse managers, show inventory with same structure but no top tabs */}
+          {userRole !== 'WAREHOUSE_MANAGER' && (
+              <div className="new-tabs-container">
+                {/* Unified container for content - same structure as with tabs */}
+                <div className="unified-tab-content-container">
+                  {/* Static Header - always shows "Inventory" */}
+                  <div className="tab-content-header">
+                    <h2 className="tab-title">Inventory</h2>
+                    <div className="tab-header-line"></div>
+                  </div>
+
+                  {/* Tab Content */}
+                  <div className="tab-content-body">
+                    <ErrorBoundary>
+                      <WarehouseViewItemsTable
+                          warehouseId={id}
+                          onAddButtonClick={handleItemsAddButtonClick}
+                          onRestockItems={handleRestockItems}
+                      />
+                    </ErrorBoundary>
+                  </div>
+                </div>
               </div>
-
-              {/* Footer with Add Button */}
-            </div>
-          </div>
+          )}
         </div>
       </Fragment>
   );

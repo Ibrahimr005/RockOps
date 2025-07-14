@@ -19,7 +19,7 @@ const SiteFixedAssetsTab = ({siteId}) => {
         type: 'success'
     });
 
-    const isSiteAdmin = currentUser?.role === "SITE_ADMIN";
+    const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || "ADMIN";
 
     // Define columns for DataTable
     const columns = [
@@ -34,13 +34,23 @@ const SiteFixedAssetsTab = ({siteId}) => {
             sortable: true
         },
         {
-            header: 'Creation Date',
-            accessor: 'creationDate',
+            header: 'Purchase Date',
+            accessor: 'purchaseDate',
             sortable: true
         },
         {
-            header: 'Area/Quantity',
-            accessor: 'areaQuantity',
+            header: 'Cost',
+            accessor: 'cost',
+            sortable: true
+        },
+        {
+            header: 'Status',
+            accessor: 'status',
+            sortable: true
+        },
+        {
+            header: 'Description',
+            accessor: 'description',
             sortable: true
         }
     ];
@@ -59,8 +69,10 @@ const SiteFixedAssetsTab = ({siteId}) => {
                     conventionalId: `FA-${String(index + 1).padStart(3, "0")}`,
                     assetID: asset.id,
                     assetName: asset.name,
-                    creationDate: asset.creationDate.split("T")[0],
-                    areaQuantity: `${asset.area} m²`,
+                    purchaseDate: asset.purchaseDate,
+                    cost: asset.cost ? `$${asset.cost.toLocaleString()}` : 'N/A',
+                    status: asset.status || 'N/A',
+                    description: asset.description || 'N/A',
                 }));
 
                 setAssetsData(transformedData);
@@ -169,14 +181,14 @@ const SiteFixedAssetsTab = ({siteId}) => {
                 )}
             </div>
 
-            <div className="assets-stats">
-                {Object.entries(assetCounts).map(([assetName, count]) => (
-                    <div className="stat-card" key={assetName}>
-                        <div className="stat-title">{assetName}</div>
-                        <div className="stat-value">{count}</div>
-                    </div>
-                ))}
-            </div>
+            {/*<div className="assets-stats">*/}
+            {/*    {Object.entries(assetCounts).map(([assetName, count]) => (*/}
+            {/*        <div className="stat-card" key={assetName}>*/}
+            {/*            <div className="stat-title">{assetName}</div>*/}
+            {/*            <div className="stat-value">{count}</div>*/}
+            {/*        </div>*/}
+            {/*    ))}*/}
+            {/*</div>*/}
 
             {/* Updated Modal JSX - Replace the existing modal section in your component */}
             {showModal && (
@@ -204,7 +216,8 @@ const SiteFixedAssetsTab = ({siteId}) => {
                                         <tr>
                                             <th>{t('common.name')}</th>
                                             <th>{t('site.creationDate')}</th>
-                                            <th>{t('fixedAssets.areaOrQuantity')}</th>
+                                            <th>Description</th>
+                                            <th>status</th>
                                             <th>{t('common.action')}</th>
                                         </tr>
                                         </thead>
@@ -213,10 +226,13 @@ const SiteFixedAssetsTab = ({siteId}) => {
                                             <tr key={ep.id}>
                                                 <td>{ep.name}</td>
                                                 <td className="assign-fixed-asset-creation-date">
-                                                    {ep.creationDate}
+                                                    {ep.purchaseDate || ep.depreciationStartDate}
                                                 </td>
                                                 <td className="assign-fixed-asset-area">
-                                                    {ep.area} m²
+                                                    {ep.description || 'N/A'}
+                                                </td>
+                                                <td className="assign-fixed-asset-area">
+                                                    {ep.status || 'N/A'}
                                                 </td>
                                                 <td>
                                                     <button

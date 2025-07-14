@@ -4,9 +4,11 @@ import com.example.backend.dto.hr.JobPositionDTO;
 import com.example.backend.models.hr.Department;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.hr.JobPosition;
+import com.example.backend.models.notification.NotificationType;
 import com.example.backend.repositories.hr.DepartmentRepository;
 import com.example.backend.repositories.hr.JobPositionRepository;
 import com.example.backend.repositories.site.SiteRepository;
+import com.example.backend.services.notification.NotificationService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +36,9 @@ public class JobPositionService {
 
     @Autowired
     private SiteRepository siteRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     /**
      * Convert JobPosition entity to JobPositionDTO
@@ -76,7 +81,7 @@ public class JobPositionService {
                 dto.setWorkingHours(jobPosition.getWorkingHours());
                 dto.setVacations(jobPosition.getVacations());
 
-                // NEW: Set time fields for MONTHLY contracts
+                // Set time fields for MONTHLY contracts
                 dto.setStartTime(jobPosition.getStartTime());
                 dto.setEndTime(jobPosition.getEndTime());
                 break;
@@ -87,6 +92,7 @@ public class JobPositionService {
 
         return dto;
     }
+
     /**
      * Convert list of JobPosition entities to list of JobPositionDTOs
      */
@@ -103,73 +109,123 @@ public class JobPositionService {
     /**
      * Create a new job position from DTO
      */
-
     @Transactional
     public JobPositionDTO createJobPosition(JobPositionDTO jobPositionDTO) {
-        // Find the department if a department name is provided
-        Department department = null;
-        if (jobPositionDTO.getDepartment() != null) {
-            department = departmentRepository.findByName(jobPositionDTO.getDepartment())
-                    .orElseThrow(() -> new RuntimeException("Department not found: " + jobPositionDTO.getDepartment()));
+        try {
+            // Find the department if a department name is provided
+            Department department = null;
+            if (jobPositionDTO.getDepartment() != null) {
+                department = departmentRepository.findByName(jobPositionDTO.getDepartment())
+                        .orElseThrow(() -> new RuntimeException("Department not found: " + jobPositionDTO.getDepartment()));
+            }
+
+            // Set active to true by default if not provided
+            if (jobPositionDTO.getActive() == null) {
+                jobPositionDTO.setActive(true);
+            }
+
+            // Create new job position
+            JobPosition jobPosition = new JobPosition();
+
+            // Set basic fields from DTO
+            jobPosition.setPositionName(jobPositionDTO.getPositionName());
+            jobPosition.setDepartment(department);
+            jobPosition.setHead(jobPositionDTO.getHead());
+            jobPosition.setProbationPeriod(jobPositionDTO.getProbationPeriod());
+            jobPosition.setContractType(jobPositionDTO.getContractType());
+            jobPosition.setExperienceLevel(jobPositionDTO.getExperienceLevel());
+            jobPosition.setActive(jobPositionDTO.getActive());
+
+            // Set contract type specific fields
+            switch (jobPositionDTO.getContractType()) {
+                case HOURLY:
+                    jobPosition.setWorkingDaysPerWeek(jobPositionDTO.getWorkingDaysPerWeek());
+                    jobPosition.setHoursPerShift(jobPositionDTO.getHoursPerShift());
+                    jobPosition.setHourlyRate(jobPositionDTO.getHourlyRate());
+                    jobPosition.setOvertimeMultiplier(jobPositionDTO.getOvertimeMultiplier());
+                    jobPosition.setTrackBreaks(jobPositionDTO.getTrackBreaks());
+                    jobPosition.setBreakDurationMinutes(jobPositionDTO.getBreakDurationMinutes());
+                    // Set baseSalary for backward compatibility
+                    jobPosition.setBaseSalary(jobPositionDTO.getBaseSalary());
+                    break;
+                case DAILY:
+                    jobPosition.setDailyRate(jobPositionDTO.getDailyRate());
+                    jobPosition.setWorkingDaysPerMonth(jobPositionDTO.getWorkingDaysPerMonth());
+                    jobPosition.setIncludesWeekends(jobPositionDTO.getIncludesWeekends());
+                    // Set baseSalary for backward compatibility
+                    jobPosition.setBaseSalary(jobPositionDTO.getBaseSalary());
+                    break;
+                case MONTHLY:
+                    jobPosition.setMonthlyBaseSalary(jobPositionDTO.getMonthlyBaseSalary());
+                    jobPosition.setWorkingDaysPerMonth(jobPositionDTO.getWorkingDaysPerMonth());
+                    jobPosition.setShifts(jobPositionDTO.getShifts());
+                    jobPosition.setWorkingHours(jobPositionDTO.getWorkingHours());
+                    jobPosition.setVacations(jobPositionDTO.getVacations());
+
+                    // Set time fields for MONTHLY contracts
+                    jobPosition.setStartTime(jobPositionDTO.getStartTime());
+                    jobPosition.setEndTime(jobPositionDTO.getEndTime());
+
+                    // Set baseSalary for backward compatibility
+                    jobPosition.setBaseSalary(jobPositionDTO.getBaseSalary());
+                    break;
+            }
+
+            // Save the entity
+            JobPosition savedJobPosition = jobPositionRepository.save(jobPosition);
+
+            // Send notifications about new job position
+            String departmentName = department != null ? department.getName() : "General";
+
+            notificationService.sendNotificationToHRUsers(
+                    "New Job Position Created",
+                    "Job position '" + savedJobPosition.getPositionName() + "' has been created in " + departmentName + " department",
+                    NotificationType.SUCCESS,
+                    "/job-positions/" + savedJobPosition.getId(),
+                    "new-job-position-" + savedJobPosition.getId()
+            );
+
+            // Send department-specific notification if applicable
+            if (department != null) {
+                // Check if it's a leadership position
+                if (isLeadershipPosition(savedJobPosition.getPositionName())) {
+                    notificationService.sendNotificationToHRUsers(
+                            "Leadership Position Created",
+                            "🎯 Leadership position '" + savedJobPosition.getPositionName() + "' created in " + departmentName,
+                            NotificationType.INFO,
+                            "/job-positions/" + savedJobPosition.getId(),
+                            "leadership-position-" + savedJobPosition.getId()
+                    );
+                }
+
+                // Check if it's a driver position (auto-created by equipment)
+                if (savedJobPosition.getPositionName().toLowerCase().contains("driver")) {
+                    notificationService.sendNotificationToHRUsers(
+                            "Driver Position Available",
+                            "New driver position '" + savedJobPosition.getPositionName() + "' is now available for recruitment",
+                            NotificationType.INFO,
+                            "/job-positions/" + savedJobPosition.getId(),
+                            "driver-position-" + savedJobPosition.getId()
+                    );
+                }
+            }
+
+            // Convert back to DTO and return
+            return convertToDTO(savedJobPosition);
+
+        } catch (Exception e) {
+            logger.error("Error creating job position", e);
+
+            notificationService.sendNotificationToHRUsers(
+                    "Job Position Creation Failed",
+                    "Failed to create job position: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/job-positions",
+                    "job-position-error-" + System.currentTimeMillis()
+            );
+
+            throw e;
         }
-
-        // Set active to true by default if not provided
-        if (jobPositionDTO.getActive() == null) {
-            jobPositionDTO.setActive(true);
-        }
-
-        // Create new job position
-        JobPosition jobPosition = new JobPosition();
-
-        // Set basic fields from DTO
-        jobPosition.setPositionName(jobPositionDTO.getPositionName());
-        jobPosition.setDepartment(department);
-        jobPosition.setHead(jobPositionDTO.getHead());
-        jobPosition.setProbationPeriod(jobPositionDTO.getProbationPeriod());
-        jobPosition.setContractType(jobPositionDTO.getContractType());
-        jobPosition.setExperienceLevel(jobPositionDTO.getExperienceLevel());
-        jobPosition.setActive(jobPositionDTO.getActive());
-
-        // Set contract type specific fields
-        switch (jobPositionDTO.getContractType()) {
-            case HOURLY:
-                jobPosition.setWorkingDaysPerWeek(jobPositionDTO.getWorkingDaysPerWeek());
-                jobPosition.setHoursPerShift(jobPositionDTO.getHoursPerShift());
-                jobPosition.setHourlyRate(jobPositionDTO.getHourlyRate());
-                jobPosition.setOvertimeMultiplier(jobPositionDTO.getOvertimeMultiplier());
-                jobPosition.setTrackBreaks(jobPositionDTO.getTrackBreaks());
-                jobPosition.setBreakDurationMinutes(jobPositionDTO.getBreakDurationMinutes());
-                // Set baseSalary for backward compatibility
-                jobPosition.setBaseSalary(jobPositionDTO.getBaseSalary());
-                break;
-            case DAILY:
-                jobPosition.setDailyRate(jobPositionDTO.getDailyRate());
-                jobPosition.setWorkingDaysPerMonth(jobPositionDTO.getWorkingDaysPerMonth());
-                jobPosition.setIncludesWeekends(jobPositionDTO.getIncludesWeekends());
-                // Set baseSalary for backward compatibility
-                jobPosition.setBaseSalary(jobPositionDTO.getBaseSalary());
-                break;
-            case MONTHLY:
-                jobPosition.setMonthlyBaseSalary(jobPositionDTO.getMonthlyBaseSalary());
-                jobPosition.setWorkingDaysPerMonth(jobPositionDTO.getWorkingDaysPerMonth());
-                jobPosition.setShifts(jobPositionDTO.getShifts());
-                jobPosition.setWorkingHours(jobPositionDTO.getWorkingHours());
-                jobPosition.setVacations(jobPositionDTO.getVacations());
-
-                // NEW: Set time fields for MONTHLY contracts
-                jobPosition.setStartTime(jobPositionDTO.getStartTime());
-                jobPosition.setEndTime(jobPositionDTO.getEndTime());
-
-                // Set baseSalary for backward compatibility
-                jobPosition.setBaseSalary(jobPositionDTO.getBaseSalary());
-                break;
-        }
-
-        // Save the entity
-        JobPosition savedJobPosition = jobPositionRepository.save(jobPosition);
-
-        // Convert back to DTO and return
-        return convertToDTO(savedJobPosition);
     }
 
     /**
@@ -198,118 +254,262 @@ public class JobPositionService {
      */
     @Transactional
     public JobPositionDTO updateJobPosition(UUID id, JobPositionDTO jobPositionDTO) {
-        // Find the existing job position
-        JobPosition existingJobPosition = jobPositionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Job position not found with id: " + id));
+        try {
+            // Find the existing job position
+            JobPosition existingJobPosition = jobPositionRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Job position not found with id: " + id));
 
-        // Update department if provided
-        if (jobPositionDTO.getDepartment() != null) {
-            Department department = departmentRepository.findByName(jobPositionDTO.getDepartment())
-                    .orElseThrow(() -> new RuntimeException("Department not found: " + jobPositionDTO.getDepartment()));
-            existingJobPosition.setDepartment(department);
+            String oldPositionName = existingJobPosition.getPositionName();
+            String oldDepartmentName = existingJobPosition.getDepartment() != null ?
+                    existingJobPosition.getDepartment().getName() : null;
+            Boolean oldActiveStatus = existingJobPosition.getActive();
+
+            // Update department if provided
+            if (jobPositionDTO.getDepartment() != null) {
+                Department department = departmentRepository.findByName(jobPositionDTO.getDepartment())
+                        .orElseThrow(() -> new RuntimeException("Department not found: " + jobPositionDTO.getDepartment()));
+                existingJobPosition.setDepartment(department);
+            }
+
+            // Update basic fields if provided
+            if (jobPositionDTO.getPositionName() != null) {
+                existingJobPosition.setPositionName(jobPositionDTO.getPositionName());
+            }
+            if (jobPositionDTO.getHead() != null) {
+                existingJobPosition.setHead(jobPositionDTO.getHead());
+            }
+            if (jobPositionDTO.getProbationPeriod() != null) {
+                existingJobPosition.setProbationPeriod(jobPositionDTO.getProbationPeriod());
+            }
+            if (jobPositionDTO.getContractType() != null) {
+                existingJobPosition.setContractType(jobPositionDTO.getContractType());
+            }
+            if (jobPositionDTO.getExperienceLevel() != null) {
+                existingJobPosition.setExperienceLevel(jobPositionDTO.getExperienceLevel());
+            }
+            if (jobPositionDTO.getActive() != null) {
+                existingJobPosition.setActive(jobPositionDTO.getActive());
+            }
+            // Update baseSalary for backward compatibility
+            if (jobPositionDTO.getBaseSalary() != null) {
+                existingJobPosition.setBaseSalary(jobPositionDTO.getBaseSalary());
+            }
+
+            // Update contract type specific fields
+            if (jobPositionDTO.getContractType() != null) {
+                switch (jobPositionDTO.getContractType()) {
+                    case HOURLY:
+                        if (jobPositionDTO.getWorkingDaysPerWeek() != null) {
+                            existingJobPosition.setWorkingDaysPerWeek(jobPositionDTO.getWorkingDaysPerWeek());
+                        }
+                        if (jobPositionDTO.getHoursPerShift() != null) {
+                            existingJobPosition.setHoursPerShift(jobPositionDTO.getHoursPerShift());
+                        }
+                        if (jobPositionDTO.getHourlyRate() != null) {
+                            existingJobPosition.setHourlyRate(jobPositionDTO.getHourlyRate());
+                        }
+                        if (jobPositionDTO.getOvertimeMultiplier() != null) {
+                            existingJobPosition.setOvertimeMultiplier(jobPositionDTO.getOvertimeMultiplier());
+                        }
+                        if (jobPositionDTO.getTrackBreaks() != null) {
+                            existingJobPosition.setTrackBreaks(jobPositionDTO.getTrackBreaks());
+                        }
+                        if (jobPositionDTO.getBreakDurationMinutes() != null) {
+                            existingJobPosition.setBreakDurationMinutes(jobPositionDTO.getBreakDurationMinutes());
+                        }
+                        break;
+                    case DAILY:
+                        if (jobPositionDTO.getDailyRate() != null) {
+                            existingJobPosition.setDailyRate(jobPositionDTO.getDailyRate());
+                        }
+                        if (jobPositionDTO.getWorkingDaysPerMonth() != null) {
+                            existingJobPosition.setWorkingDaysPerMonth(jobPositionDTO.getWorkingDaysPerMonth());
+                        }
+                        if (jobPositionDTO.getIncludesWeekends() != null) {
+                            existingJobPosition.setIncludesWeekends(jobPositionDTO.getIncludesWeekends());
+                        }
+                        break;
+                    case MONTHLY:
+                        if (jobPositionDTO.getMonthlyBaseSalary() != null) {
+                            existingJobPosition.setMonthlyBaseSalary(jobPositionDTO.getMonthlyBaseSalary());
+                        }
+                        if (jobPositionDTO.getWorkingDaysPerMonth() != null) {
+                            existingJobPosition.setWorkingDaysPerMonth(jobPositionDTO.getWorkingDaysPerMonth());
+                        }
+                        if (jobPositionDTO.getShifts() != null) {
+                            existingJobPosition.setShifts(jobPositionDTO.getShifts());
+                        }
+                        if (jobPositionDTO.getWorkingHours() != null) {
+                            existingJobPosition.setWorkingHours(jobPositionDTO.getWorkingHours());
+                        }
+                        if (jobPositionDTO.getVacations() != null) {
+                            existingJobPosition.setVacations(jobPositionDTO.getVacations());
+                        }
+
+                        // Update time fields for MONTHLY contracts
+                        if (jobPositionDTO.getStartTime() != null) {
+                            existingJobPosition.setStartTime(jobPositionDTO.getStartTime());
+                        }
+                        if (jobPositionDTO.getEndTime() != null) {
+                            existingJobPosition.setEndTime(jobPositionDTO.getEndTime());
+                        }
+                        break;
+                }
+            }
+
+            // Save the updated entity
+            JobPosition updatedJobPosition = jobPositionRepository.save(existingJobPosition);
+
+            // Send notifications about significant changes
+            sendJobPositionUpdateNotifications(updatedJobPosition, oldPositionName, oldDepartmentName, oldActiveStatus);
+
+            // Convert back to DTO and return
+            return convertToDTO(updatedJobPosition);
+
+        } catch (Exception e) {
+            logger.error("Error updating job position", e);
+
+            notificationService.sendNotificationToHRUsers(
+                    "Job Position Update Failed",
+                    "Failed to update job position: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/job-positions/" + id,
+                    "job-position-update-error-" + id
+            );
+
+            throw e;
+        }
+    }
+
+    /**
+     * Send notifications for job position updates
+     */
+    private void sendJobPositionUpdateNotifications(JobPosition jobPosition, String oldPositionName,
+                                                    String oldDepartmentName, Boolean oldActiveStatus) {
+        String currentDepartmentName = jobPosition.getDepartment() != null ?
+                jobPosition.getDepartment().getName() : "General";
+
+        // Position name change
+        if (!jobPosition.getPositionName().equals(oldPositionName)) {
+            notificationService.sendNotificationToHRUsers(
+                    "Job Position Renamed",
+                    "Job position renamed from '" + oldPositionName + "' to '" + jobPosition.getPositionName() + "'",
+                    NotificationType.INFO,
+                    "/job-positions/" + jobPosition.getId(),
+                    "position-renamed-" + jobPosition.getId()
+            );
         }
 
-        // Update basic fields if provided
-        if (jobPositionDTO.getPositionName() != null) {
-            existingJobPosition.setPositionName(jobPositionDTO.getPositionName());
-        }
-        if (jobPositionDTO.getHead() != null) {
-            existingJobPosition.setHead(jobPositionDTO.getHead());
-        }
-        if (jobPositionDTO.getProbationPeriod() != null) {
-            existingJobPosition.setProbationPeriod(jobPositionDTO.getProbationPeriod());
-        }
-        if (jobPositionDTO.getContractType() != null) {
-            existingJobPosition.setContractType(jobPositionDTO.getContractType());
-        }
-        if (jobPositionDTO.getExperienceLevel() != null) {
-            existingJobPosition.setExperienceLevel(jobPositionDTO.getExperienceLevel());
-        }
-        if (jobPositionDTO.getActive() != null) {
-            existingJobPosition.setActive(jobPositionDTO.getActive());
-        }
-        // Update baseSalary for backward compatibility
-        if (jobPositionDTO.getBaseSalary() != null) {
-            existingJobPosition.setBaseSalary(jobPositionDTO.getBaseSalary());
+        // Department change
+        if (!currentDepartmentName.equals(oldDepartmentName)) {
+            notificationService.sendNotificationToHRUsers(
+                    "Job Position Department Changed",
+                    "'" + jobPosition.getPositionName() + "' moved from " + oldDepartmentName + " to " + currentDepartmentName,
+                    NotificationType.INFO,
+                    "/job-positions/" + jobPosition.getId(),
+                    "position-dept-change-" + jobPosition.getId()
+            );
         }
 
-        // Update contract type specific fields
-        if (jobPositionDTO.getContractType() != null) {
-            switch (jobPositionDTO.getContractType()) {
-                case HOURLY:
-                    if (jobPositionDTO.getWorkingDaysPerWeek() != null) {
-                        existingJobPosition.setWorkingDaysPerWeek(jobPositionDTO.getWorkingDaysPerWeek());
-                    }
-                    if (jobPositionDTO.getHoursPerShift() != null) {
-                        existingJobPosition.setHoursPerShift(jobPositionDTO.getHoursPerShift());
-                    }
-                    if (jobPositionDTO.getHourlyRate() != null) {
-                        existingJobPosition.setHourlyRate(jobPositionDTO.getHourlyRate());
-                    }
-                    if (jobPositionDTO.getOvertimeMultiplier() != null) {
-                        existingJobPosition.setOvertimeMultiplier(jobPositionDTO.getOvertimeMultiplier());
-                    }
-                    if (jobPositionDTO.getTrackBreaks() != null) {
-                        existingJobPosition.setTrackBreaks(jobPositionDTO.getTrackBreaks());
-                    }
-                    if (jobPositionDTO.getBreakDurationMinutes() != null) {
-                        existingJobPosition.setBreakDurationMinutes(jobPositionDTO.getBreakDurationMinutes());
-                    }
-                    break;
-                case DAILY:
-                    if (jobPositionDTO.getDailyRate() != null) {
-                        existingJobPosition.setDailyRate(jobPositionDTO.getDailyRate());
-                    }
-                    if (jobPositionDTO.getWorkingDaysPerMonth() != null) {
-                        existingJobPosition.setWorkingDaysPerMonth(jobPositionDTO.getWorkingDaysPerMonth());
-                    }
-                    if (jobPositionDTO.getIncludesWeekends() != null) {
-                        existingJobPosition.setIncludesWeekends(jobPositionDTO.getIncludesWeekends());
-                    }
-                    break;
-                case MONTHLY:
-                    if (jobPositionDTO.getMonthlyBaseSalary() != null) {
-                        existingJobPosition.setMonthlyBaseSalary(jobPositionDTO.getMonthlyBaseSalary());
-                    }
-                    if (jobPositionDTO.getWorkingDaysPerMonth() != null) {
-                        existingJobPosition.setWorkingDaysPerMonth(jobPositionDTO.getWorkingDaysPerMonth());
-                    }
-                    if (jobPositionDTO.getShifts() != null) {
-                        existingJobPosition.setShifts(jobPositionDTO.getShifts());
-                    }
-                    if (jobPositionDTO.getWorkingHours() != null) {
-                        existingJobPosition.setWorkingHours(jobPositionDTO.getWorkingHours());
-                    }
-                    if (jobPositionDTO.getVacations() != null) {
-                        existingJobPosition.setVacations(jobPositionDTO.getVacations());
-                    }
+        // Active status change
+        if (!jobPosition.getActive().equals(oldActiveStatus)) {
+            if (jobPosition.getActive()) {
+                notificationService.sendNotificationToHRUsers(
+                        "Job Position Activated",
+                        "Job position '" + jobPosition.getPositionName() + "' has been activated and is now available for hiring",
+                        NotificationType.SUCCESS,
+                        "/job-positions/" + jobPosition.getId(),
+                        "position-activated-" + jobPosition.getId()
+                );
+            } else {
+                notificationService.sendNotificationToHRUsers(
+                        "Job Position Deactivated",
+                        "Job position '" + jobPosition.getPositionName() + "' has been deactivated",
+                        NotificationType.WARNING,
+                        "/job-positions/" + jobPosition.getId(),
+                        "position-deactivated-" + jobPosition.getId()
+                );
 
-                    // NEW: Update time fields for MONTHLY contracts
-                    if (jobPositionDTO.getStartTime() != null) {
-                        existingJobPosition.setStartTime(jobPositionDTO.getStartTime());
-                    }
-                    if (jobPositionDTO.getEndTime() != null) {
-                        existingJobPosition.setEndTime(jobPositionDTO.getEndTime());
-                    }
-                    break;
+                // Check if there are employees in this position
+                int employeeCount = jobPosition.getEmployees() != null ? jobPosition.getEmployees().size() : 0;
+                if (employeeCount > 0) {
+                    notificationService.sendNotificationToHRUsers(
+                            "Deactivated Position Has Employees",
+                            "⚠️ Deactivated position '" + jobPosition.getPositionName() + "' still has " + employeeCount + " employee(s) assigned",
+                            NotificationType.WARNING,
+                            "/job-positions/" + jobPosition.getId() + "/employees",
+                            "deactivated-with-employees-" + jobPosition.getId()
+                    );
+                }
             }
         }
-
-        // Save the updated entity
-        JobPosition updatedJobPosition = jobPositionRepository.save(existingJobPosition);
-
-        // Convert back to DTO and return
-        return convertToDTO(updatedJobPosition);
     }
+
+    /**
+     * Check if a position is a leadership position
+     */
+    private boolean isLeadershipPosition(String positionName) {
+        String name = positionName.toLowerCase();
+        return name.contains("manager") || name.contains("director") || name.contains("supervisor") ||
+                name.contains("lead") || name.contains("head") || name.contains("chief") ||
+                name.contains("president") || name.contains("vice") || name.contains("senior");
+    }
+
     /**
      * Delete a job position by ID
      */
     @Transactional
     public void deleteJobPosition(UUID id) {
-        if (!jobPositionRepository.existsById(id)) {
-            throw new RuntimeException("Job position not found with id: " + id);
+        try {
+            if (!jobPositionRepository.existsById(id)) {
+                throw new RuntimeException("Job position not found with id: " + id);
+            }
+
+            JobPosition jobPosition = jobPositionRepository.findById(id).get();
+            String positionName = jobPosition.getPositionName();
+            String departmentName = jobPosition.getDepartment() != null ?
+                    jobPosition.getDepartment().getName() : "General";
+
+            // Check if there are employees assigned to this position
+            int employeeCount = jobPosition.getEmployees() != null ? jobPosition.getEmployees().size() : 0;
+
+            if (employeeCount > 0) {
+                notificationService.sendNotificationToHRUsers(
+                        "Job Position Deletion Blocked",
+                        "Cannot delete '" + positionName + "': " + employeeCount + " employee(s) are assigned to this position",
+                        NotificationType.ERROR,
+                        "/job-positions/" + id,
+                        "delete-blocked-" + id
+                );
+                throw new IllegalStateException("Cannot delete job position with assigned employees. Please reassign employees first.");
+            }
+
+            jobPositionRepository.deleteById(id);
+
+            // Send notification about deletion
+            notificationService.sendNotificationToHRUsers(
+                    "Job Position Deleted",
+                    "Job position '" + positionName + "' from " + departmentName + " has been deleted",
+                    NotificationType.WARNING,
+                    "/job-positions",
+                    "position-deleted-" + id
+            );
+
+        } catch (IllegalStateException e) {
+            throw e; // Re-throw business rule violations
+        } catch (Exception e) {
+            logger.error("Error deleting job position", e);
+
+            notificationService.sendNotificationToHRUsers(
+                    "Job Position Deletion Failed",
+                    "Failed to delete job position: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/job-positions/" + id,
+                    "delete-error-" + id
+            );
+
+            throw e;
         }
-        jobPositionRepository.deleteById(id);
     }
 
     /**
@@ -407,7 +607,21 @@ public class JobPositionService {
             }
         }
 
-        return jobPositionRepository.save(jobPosition);
+        JobPosition savedJobPosition = jobPositionRepository.save(jobPosition);
+
+        // Send notification about creation
+        String departmentName = savedJobPosition.getDepartment() != null ?
+                savedJobPosition.getDepartment().getName() : "General";
+
+        notificationService.sendNotificationToHRUsers(
+                "New Job Position Created",
+                "Job position '" + savedJobPosition.getPositionName() + "' has been created in " + departmentName + " department",
+                NotificationType.SUCCESS,
+                "/job-positions/" + savedJobPosition.getId(),
+                "new-job-position-" + savedJobPosition.getId()
+        );
+
+        return savedJobPosition;
     }
 
     private void setHourlyFields(JobPosition jobPosition, Map<String, Object> jobPositionMap) {
@@ -546,7 +760,7 @@ public class JobPositionService {
             jobPosition.setVacations((String) jobPositionMap.get("vacations"));
         }
 
-        // NEW: Handle time fields
+        // Handle time fields
         if (jobPositionMap.containsKey("startTime")) {
             try {
                 Object startTimeObj = jobPositionMap.get("startTime");

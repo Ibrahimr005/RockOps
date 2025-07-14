@@ -113,10 +113,10 @@ const Login = () => {
                     </button>
                 </form>
 
-                <div className="rockops-login__signup">
-                    <span>Don't have an account? </span>
-                    <a href="/register" className="rockops-login__signup-link">Create Account</a>
-                </div>
+                {/*<div className="rockops-login__signup">*/}
+                {/*    <span>Don't have an account? </span>*/}
+                {/*    <a href="/register" className="rockops-login__signup-link">Create Account</a>*/}
+                {/*</div>*/}
             </div>
         </div>
     );

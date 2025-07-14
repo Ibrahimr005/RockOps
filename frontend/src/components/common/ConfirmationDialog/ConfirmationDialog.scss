@@ -175,27 +175,35 @@
 
 .confirmation-dialog-cancel {
   padding: 0.75rem 1.5rem;
-  background: var(--section-background-color);
-  color: var(--color-text-medium);
-  border: 1px solid var(--border-color-medium);
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: var(--bold-font-weight);
   cursor: pointer;
   transition: all var(--transition-fast) ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border: none;
+  color: var(--color-text-inverse);
+
+  // Neutral grey/black styling matching confirm button design
+  background-color: var(--color-text-medium);
 
   &:hover:not(:disabled) {
-    background: var(--color-surface-hover);
-    border-color: var(--border-color-dark);
-    color: var(--color-text-primary);
+    background-color: var(--color-text-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
   }
 
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
+
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
   }
 }
 

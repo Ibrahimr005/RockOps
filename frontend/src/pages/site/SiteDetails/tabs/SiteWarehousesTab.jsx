@@ -33,7 +33,7 @@ const SiteWarehousesTab = ({siteId}) => {
     const workersDropdownRef = useRef(null);
     const {currentUser} = useAuth();
 
-    const isSiteAdmin = currentUser?.role === "SITE_ADMIN";
+    const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || "ADMIN";
 
     // Define columns for DataTable
     const columns = [
@@ -43,10 +43,15 @@ const SiteWarehousesTab = ({siteId}) => {
             sortable: true
         },
         {
-            header: 'Capacity',
-            accessor: 'capacity',
+            header: 'Name',
+            accessor: 'name',
             sortable: true
         },
+        // {
+        //     header: 'Capacity',
+        //     accessor: 'capacity',
+        //     sortable: true
+        // },
         {
             header: 'Manager',
             accessor: 'manager',
@@ -105,8 +110,9 @@ const SiteWarehousesTab = ({siteId}) => {
             if (Array.isArray(data)) {
                 const transformedData = data.map((item, index) => ({
                     conventionalId: `WH-${String(index + 1).padStart(3, '0')}`,
+                    name:item.name,
                     warehouseID: item.id,
-                    capacity: `${item.capacity} m²`,
+                    // capacity: `${item.capacity} m²`,
                     manager: findManagerName(item),
                 }));
 
@@ -249,7 +255,7 @@ const SiteWarehousesTab = ({siteId}) => {
 
         const warehouseData = {
             name: formElements.name.value,
-            capacity: parseInt(formElements.capacity.value, 10),
+            // capacity: parseInt(formElements.capacity.value, 10),
         };
 
         const employees = [];
@@ -402,10 +408,10 @@ const SiteWarehousesTab = ({siteId}) => {
                                                     <input type="text" name="name" required />
                                                 </div>
 
-                                                <div className="add-warehouse-form-group">
-                                                    <label>Warehouse Capacity (m²)</label>
-                                                    <input type="number" name="capacity" required min="1" />
-                                                </div>
+                                                {/*<div className="add-warehouse-form-group">*/}
+                                                {/*    <label>Warehouse Capacity (m²)</label>*/}
+                                                {/*    <input type="number" name="capacity" required min="1" />*/}
+                                                {/*</div>                       */}
 
                                                 <div className="add-warehouse-form-group">
                                                     <label>Warehouse Manager</label>

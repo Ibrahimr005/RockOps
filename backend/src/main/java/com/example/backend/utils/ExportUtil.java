@@ -1,7 +1,7 @@
 package com.example.backend.utils;
 
-import com.example.backend.dto.finance.AuditLogResponseDTO;
-import com.example.backend.dto.finance.InvoiceResponseDTO;
+import com.example.backend.dto.finance.generalLedger.AuditLogResponseDTO;
+import com.example.backend.dto.finance.payables.InvoiceResponseDTO;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
@@ -16,8 +16,7 @@ import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
-//import com.itextpdf.layout.property.UnitValue;
-//import com.itextpdf.layout.property.TextAlignment;
+
 
 @Component
 public class ExportUtil {
@@ -368,207 +367,207 @@ public class ExportUtil {
                 .mapToDouble(invoice -> invoice.getRemainingBalance().doubleValue())
                 .sum();
     }
-//
-//    // Helper method to add aging category to PDF
-//    private void addAgingCategoryToPDF(StringBuilder html, String categoryName, List<InvoiceResponseDTO> invoices) {
-//        if (invoices.isEmpty()) {
-//            return;
-//        }
-//
-//        html.append("  <div class='category-section'>\n")
-//                .append("    <h3>").append(categoryName).append(" (").append(invoices.size()).append(" invoices)</h3>\n")
-//                .append("    <table class='invoice-table'>\n")
-//                .append("      <thead>\n")
-//                .append("        <tr>\n")
-//                .append("          <th>Invoice #</th>\n")
-//                .append("          <th>Vendor</th>\n")
-//                .append("          <th>Total Amount</th>\n")
-//                .append("          <th>Remaining</th>\n")
-//                .append("          <th>Due Date</th>\n")
-//                .append("          <th>Days Overdue</th>\n")
-//                .append("        </tr>\n")
-//                .append("      </thead>\n")
-//                .append("      <tbody>\n");
-//
-//        for (InvoiceResponseDTO invoice : invoices) {
-//            long daysOverdue = java.time.temporal.ChronoUnit.DAYS.between(
-//                    invoice.getDueDate(), java.time.LocalDate.now());
-//
-//            html.append("        <tr>\n")
-//                    .append("          <td>").append(escapeHtml(invoice.getInvoiceNumber())).append("</td>\n")
-//                    .append("          <td>").append(escapeHtml(invoice.getVendorName())).append("</td>\n")
-//                    .append("          <td>$").append(String.format("%.2f", invoice.getTotalAmount())).append("</td>\n")
-//                    .append("          <td>$").append(String.format("%.2f", invoice.getRemainingBalance())).append("</td>\n")
-//                    .append("          <td>").append(invoice.getDueDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))).append("</td>\n")
-//                    .append("          <td>").append(daysOverdue > 0 ? daysOverdue : "Not due").append("</td>\n")
-//                    .append("        </tr>\n");
-//        }
-//
-//        html.append("      </tbody>\n")
-//                .append("    </table>\n")
-//                .append("  </div>\n");
-//    }
-//
-//    // PDF styles
-//    private String getPDFStyles() {
-//        return """
-//        body {
-//            font-family: Arial, sans-serif;
-//            margin: 20px;
-//            color: #333;
-//        }
-//        .header {
-//            text-align: center;
-//            border-bottom: 2px solid #4CAF50;
-//            padding-bottom: 20px;
-//            margin-bottom: 30px;
-//        }
-//        .header h1 {
-//            color: #4CAF50;
-//            margin: 0;
-//            font-size: 28px;
-//        }
-//        .report-date {
-//            color: #666;
-//            margin: 10px 0 0 0;
-//        }
-//        .summary {
-//            margin-bottom: 30px;
-//        }
-//        .summary h2 {
-//            color: #333;
-//            border-bottom: 1px solid #ddd;
-//            padding-bottom: 5px;
-//        }
-//        .summary-table {
-//            width: 100%;
-//            border-collapse: collapse;
-//            margin-top: 10px;
-//        }
-//        .summary-table th,
-//        .summary-table td {
-//            border: 1px solid #ddd;
-//            padding: 8px;
-//            text-align: left;
-//        }
-//        .summary-table th {
-//            background-color: #f5f5f5;
-//            font-weight: bold;
-//        }
-//        .category-section {
-//            margin-bottom: 40px;
-//            page-break-inside: avoid;
-//        }
-//        .category-section h3 {
-//            color: #4CAF50;
-//            border-bottom: 1px solid #4CAF50;
-//            padding-bottom: 5px;
-//        }
-//        .invoice-table {
-//            width: 100%;
-//            border-collapse: collapse;
-//            margin-top: 10px;
-//            font-size: 12px;
-//        }
-//        .invoice-table th,
-//        .invoice-table td {
-//            border: 1px solid #ddd;
-//            padding: 6px;
-//            text-align: left;
-//        }
-//        .invoice-table th {
-//            background-color: #f9f9f9;
-//            font-weight: bold;
-//        }
-//        .invoice-table tbody tr:nth-child(even) {
-//            background-color: #f8f8f8;
-//        }
-//        .status-pending { color: #ff9800; font-weight: bold; }
-//        .status-partially_paid { color: #2196F3; font-weight: bold; }
-//        .status-fully_paid { color: #4CAF50; font-weight: bold; }
-//        .status-overdue { color: #f44336; font-weight: bold; }
-//        .status-cancelled { color: #9E9E9E; font-weight: bold; }
-//        @media print {
-//            body { margin: 0; }
-//            .category-section { page-break-inside: avoid; }
-//        }
-//        """;
-//    }
-//
-//    // Basic HTML to PDF converter (placeholder)
-//    private byte[] convertHtmlToPdf(String html) {
-//        try {
-//            // Basic PDF structure - for production use OpenPDF or iText
-//            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//
-//            String pdfContent = "%PDF-1.4\n" +
-//                    "1 0 obj\n" +
-//                    "<<\n" +
-//                    "/Type /Catalog\n" +
-//                    "/Pages 2 0 R\n" +
-//                    ">>\n" +
-//                    "endobj\n" +
-//                    "2 0 obj\n" +
-//                    "<<\n" +
-//                    "/Type /Pages\n" +
-//                    "/Kids [3 0 R]\n" +
-//                    "/Count 1\n" +
-//                    ">>\n" +
-//                    "endobj\n" +
-//                    "3 0 obj\n" +
-//                    "<<\n" +
-//                    "/Type /Page\n" +
-//                    "/Parent 2 0 R\n" +
-//                    "/MediaBox [0 0 612 792]\n" +
-//                    "/Contents 4 0 R\n" +
-//                    ">>\n" +
-//                    "endobj\n" +
-//                    "4 0 obj\n" +
-//                    "<<\n" +
-//                    "/Length 150\n" +
-//                    ">>\n" +
-//                    "stream\n" +
-//                    "BT\n" +
-//                    "/F1 12 Tf\n" +
-//                    "72 720 Td\n" +
-//                    "(Aging Report Generated - PDF Export Available) Tj\n" +
-//                    "0 -20 Td\n" +
-//                    "(See HTML version for detailed formatting) Tj\n" +
-//                    "ET\n" +
-//                    "endstream\n" +
-//                    "endobj\n" +
-//                    "xref\n" +
-//                    "0 5\n" +
-//                    "0000000000 65535 f \n" +
-//                    "0000000010 00000 n \n" +
-//                    "0000000079 00000 n \n" +
-//                    "0000000173 00000 n \n" +
-//                    "0000000301 00000 n \n" +
-//                    "trailer\n" +
-//                    "<<\n" +
-//                    "/Size 5\n" +
-//                    "/Root 1 0 R\n" +
-//                    ">>\n" +
-//                    "startxref\n" +
-//                    "500\n" +
-//                    "%%EOF";
-//
-//            baos.write(pdfContent.getBytes("UTF-8"));
-//            return baos.toByteArray();
-//        } catch (Exception e) {
-//            throw new RuntimeException("Failed to generate PDF", e);
-//        }
-//    }
-//
-//    // Helper method for HTML escaping
-//    private String escapeHtml(String text) {
-//        if (text == null) return "";
-//        return text.replace("&", "&amp;")
-//                .replace("<", "&lt;")
-//                .replace(">", "&gt;")
-//                .replace("\"", "&quot;")
-//                .replace("'", "&#39;");
-//    }
+////
+////    // Helper method to add aging category to PDF
+////    private void addAgingCategoryToPDF(StringBuilder html, String categoryName, List<InvoiceResponseDTO> invoices) {
+////        if (invoices.isEmpty()) {
+////            return;
+////        }
+////
+////        html.append("  <div class='category-section'>\n")
+////                .append("    <h3>").append(categoryName).append(" (").append(invoices.size()).append(" invoices)</h3>\n")
+////                .append("    <table class='invoice-table'>\n")
+////                .append("      <thead>\n")
+////                .append("        <tr>\n")
+////                .append("          <th>Invoice #</th>\n")
+////                .append("          <th>Vendor</th>\n")
+////                .append("          <th>Total Amount</th>\n")
+////                .append("          <th>Remaining</th>\n")
+////                .append("          <th>Due Date</th>\n")
+////                .append("          <th>Days Overdue</th>\n")
+////                .append("        </tr>\n")
+////                .append("      </thead>\n")
+////                .append("      <tbody>\n");
+////
+////        for (InvoiceResponseDTO invoice : invoices) {
+////            long daysOverdue = java.time.temporal.ChronoUnit.DAYS.between(
+////                    invoice.getDueDate(), java.time.LocalDate.now());
+////
+////            html.append("        <tr>\n")
+////                    .append("          <td>").append(escapeHtml(invoice.getInvoiceNumber())).append("</td>\n")
+////                    .append("          <td>").append(escapeHtml(invoice.getVendorName())).append("</td>\n")
+////                    .append("          <td>$").append(String.format("%.2f", invoice.getTotalAmount())).append("</td>\n")
+////                    .append("          <td>$").append(String.format("%.2f", invoice.getRemainingBalance())).append("</td>\n")
+////                    .append("          <td>").append(invoice.getDueDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))).append("</td>\n")
+////                    .append("          <td>").append(daysOverdue > 0 ? daysOverdue : "Not due").append("</td>\n")
+////                    .append("        </tr>\n");
+////        }
+////
+////        html.append("      </tbody>\n")
+////                .append("    </table>\n")
+////                .append("  </div>\n");
+////    }
+////
+////    // PDF styles
+////    private String getPDFStyles() {
+////        return """
+////        body {
+////            font-family: Arial, sans-serif;
+////            margin: 20px;
+////            color: #333;
+////        }
+////        .header {
+////            text-align: center;
+////            border-bottom: 2px solid #4CAF50;
+////            padding-bottom: 20px;
+////            margin-bottom: 30px;
+////        }
+////        .header h1 {
+////            color: #4CAF50;
+////            margin: 0;
+////            font-size: 28px;
+////        }
+////        .report-date {
+////            color: #666;
+////            margin: 10px 0 0 0;
+////        }
+////        .summary {
+////            margin-bottom: 30px;
+////        }
+////        .summary h2 {
+////            color: #333;
+////            border-bottom: 1px solid #ddd;
+////            padding-bottom: 5px;
+////        }
+////        .summary-table {
+////            width: 100%;
+////            border-collapse: collapse;
+////            margin-top: 10px;
+////        }
+////        .summary-table th,
+////        .summary-table td {
+////            border: 1px solid #ddd;
+////            padding: 8px;
+////            text-align: left;
+////        }
+////        .summary-table th {
+////            background-color: #f5f5f5;
+////            font-weight: bold;
+////        }
+////        .category-section {
+////            margin-bottom: 40px;
+////            page-break-inside: avoid;
+////        }
+////        .category-section h3 {
+////            color: #4CAF50;
+////            border-bottom: 1px solid #4CAF50;
+////            padding-bottom: 5px;
+////        }
+////        .invoice-table {
+////            width: 100%;
+////            border-collapse: collapse;
+////            margin-top: 10px;
+////            font-size: 12px;
+////        }
+////        .invoice-table th,
+////        .invoice-table td {
+////            border: 1px solid #ddd;
+////            padding: 6px;
+////            text-align: left;
+////        }
+////        .invoice-table th {
+////            background-color: #f9f9f9;
+////            font-weight: bold;
+////        }
+////        .invoice-table tbody tr:nth-child(even) {
+////            background-color: #f8f8f8;
+////        }
+////        .status-pending { color: #ff9800; font-weight: bold; }
+////        .status-partially_paid { color: #2196F3; font-weight: bold; }
+////        .status-fully_paid { color: #4CAF50; font-weight: bold; }
+////        .status-overdue { color: #f44336; font-weight: bold; }
+////        .status-cancelled { color: #9E9E9E; font-weight: bold; }
+////        @media print {
+////            body { margin: 0; }
+////            .category-section { page-break-inside: avoid; }
+////        }
+////        """;
+////    }
+////
+////    // Basic HTML to PDF converter (placeholder)
+////    private byte[] convertHtmlToPdf(String html) {
+////        try {
+////            // Basic PDF structure - for production use OpenPDF or iText
+////            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+////
+////            String pdfContent = "%PDF-1.4\n" +
+////                    "1 0 obj\n" +
+////                    "<<\n" +
+////                    "/Type /Catalog\n" +
+////                    "/Pages 2 0 R\n" +
+////                    ">>\n" +
+////                    "endobj\n" +
+////                    "2 0 obj\n" +
+////                    "<<\n" +
+////                    "/Type /Pages\n" +
+////                    "/Kids [3 0 R]\n" +
+////                    "/Count 1\n" +
+////                    ">>\n" +
+////                    "endobj\n" +
+////                    "3 0 obj\n" +
+////                    "<<\n" +
+////                    "/Type /Page\n" +
+////                    "/Parent 2 0 R\n" +
+////                    "/MediaBox [0 0 612 792]\n" +
+////                    "/Contents 4 0 R\n" +
+////                    ">>\n" +
+////                    "endobj\n" +
+////                    "4 0 obj\n" +
+////                    "<<\n" +
+////                    "/Length 150\n" +
+////                    ">>\n" +
+////                    "stream\n" +
+////                    "BT\n" +
+////                    "/F1 12 Tf\n" +
+////                    "72 720 Td\n" +
+////                    "(Aging Report Generated - PDF Export Available) Tj\n" +
+////                    "0 -20 Td\n" +
+////                    "(See HTML version for detailed formatting) Tj\n" +
+////                    "ET\n" +
+////                    "endstream\n" +
+////                    "endobj\n" +
+////                    "xref\n" +
+////                    "0 5\n" +
+////                    "0000000000 65535 f \n" +
+////                    "0000000010 00000 n \n" +
+////                    "0000000079 00000 n \n" +
+////                    "0000000173 00000 n \n" +
+////                    "0000000301 00000 n \n" +
+////                    "trailer\n" +
+////                    "<<\n" +
+////                    "/Size 5\n" +
+////                    "/Root 1 0 R\n" +
+////                    ">>\n" +
+////                    "startxref\n" +
+////                    "500\n" +
+////                    "%%EOF";
+////
+////            baos.write(pdfContent.getBytes("UTF-8"));
+////            return baos.toByteArray();
+////        } catch (Exception e) {
+////            throw new RuntimeException("Failed to generate PDF", e);
+////        }
+////    }
+////
+////    // Helper method for HTML escaping
+////    private String escapeHtml(String text) {
+////        if (text == null) return "";
+////        return text.replace("&", "&amp;")
+////                .replace("<", "&lt;")
+////                .replace(">", "&gt;")
+////                .replace("\"", "&quot;")
+////                .replace("'", "&#39;");
+////    }
 
 
 }

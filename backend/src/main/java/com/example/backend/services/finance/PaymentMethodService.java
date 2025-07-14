@@ -1,6 +1,6 @@
 //package com.example.backend.services.finance;
 //
-//import com.example.backend.dto.finance.PaymentMethodDTO;
+//import com.example.backend.dto.finance.payables.PaymentMethodDTO;
 //import com.example.backend.repositories.finance.PaymentMethodRepository;
 //import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.stereotype.Service;
