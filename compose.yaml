@@ -1,55 +1,46 @@
 version: '3.8'
 
 services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DATABASE_URL=jdbc:postgresql://postgres:5432/rockOpsDB?user=postgres&password=1234
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_PUBLIC_URL=http://localhost:9002
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET_NAME=rockops
+      - CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+    depends_on:
+      - postgres
+      - minio
   postgres:
     image: postgres:latest
-    container_name: RockOpsDBContainer-dev
-    restart: always
     ports:
-      - "5432:5432"
+      - "5433:5432"  # Using 5433 to avoid conflict with your local postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1234
       POSTGRES_DB: rockOpsDB
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - postgres_data_local:/var/lib/postgresql/data
 
   minio:
     image: minio/minio:latest
-    container_name: minio-dev
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9002:9000"  # Using 9002 to avoid conflict
+      - "9003:9001"
     environment:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin
     command: server /data --console-address ":9001"
     volumes:
-      - minio_data:/data
-    restart: always
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-
-  minio-setup:
-    image: minio/mc:latest
-    container_name: minio-setup-dev
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      echo 'Setting up MinIO...';
-      sleep 5;
-      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
-      /usr/bin/mc mb myminio/rockops --ignore-existing;
-      /usr/bin/mc anonymous set public myminio/rockops;
-      echo '✅ MinIO bucket created with public access!';
-      "
-    restart: "no"
+      - minio_data_local:/data
 
 volumes:
-  pg_data:
-  minio_data:
+  postgres_data_local:
+  minio_data_local:
