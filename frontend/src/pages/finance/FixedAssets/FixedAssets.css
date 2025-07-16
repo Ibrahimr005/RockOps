@@ -3,8 +3,8 @@
 .fixed-assets-container {
     width: 100%;
     padding: 1rem;
-    min-height: 100vh;
-    background-color: var(--background-color);
+    background-color: var(--section-background-color);
+    border-radius: var(--radius-md);
 }
 
 .fixed-assets-tabs {
@@ -87,9 +87,8 @@
 }
 
 .fixed-assets-content {
-    background: var(--section-background-color);
     border-radius: 0 0 10px 10px;
-    box-shadow: var(--shadow-md);
+    /*box-shadow: var(--shadow-md);*/
     min-height: 600px;
     padding: 2rem;
 

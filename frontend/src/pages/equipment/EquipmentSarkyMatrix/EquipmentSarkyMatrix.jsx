@@ -5,7 +5,96 @@ import { workTypeService } from '../../../services/workTypeService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
+import { documentService } from '../../../services/documentService';
+import { getMonthLabel } from '../../../constants/documentTypes';
+import SarkyDocumentModal from './SarkyDocumentModal';
 import './EquipmentSarkyMatrix.scss';
+
+// Driver Dropdown Component
+const DriverDropdown = ({
+                            cellDriverId,
+                            selectedDriver,
+                            driverName,
+                            isMainDriver,
+                            drivers,
+                            isBlocked,
+                            onDriverChange,
+                            dateKey,
+                            workTypeId,
+                            onDropdownStateChange
+                        }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    // Create unique dropdown ID for this cell
+    const dropdownId = `${dateKey}-${workTypeId}`;
+
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen]);
+
+    // Handle dropdown state changes for z-index management
+    useEffect(() => {
+        if (onDropdownStateChange) {
+            onDropdownStateChange(dropdownId, dateKey, isOpen);
+        }
+    }, [isOpen, dropdownId, dateKey, onDropdownStateChange]);
+
+    const handleDriverSelect = (driverId) => {
+        onDriverChange(driverId);
+        setIsOpen(false);
+    };
+
+    const handleToggleDropdown = (e) => {
+        e.stopPropagation();
+        setIsOpen(!isOpen);
+    };
+
+    if (isBlocked) return null;
+
+    return (
+        <div className="driver-dropdown-wrapper" ref={dropdownRef}>
+            <div
+                className={`driver-indicator ${!isMainDriver ? 'custom-driver' : ''}`}
+                title={isMainDriver ? `Main driver: ${driverName} (click to change)` : `Custom driver: ${driverName} (click to change)`}
+                onClick={handleToggleDropdown}
+            >
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+            </div>
+
+            {isOpen && (
+                <div className="driver-dropdown">
+                    <div className="dropdown-header">Select Driver</div>
+                    <div className="current-driver-info">Current: {driverName}</div>
+                    {drivers.map(driver => (
+                        <div
+                            key={driver.id}
+                            className={`driver-option ${driver.id === cellDriverId ? 'selected' : ''} ${driver.id === selectedDriver ? 'default' : ''}`}
+                            onClick={() => handleDriverSelect(driver.id)}
+                        >
+                            <span>{driver.fullName}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => {
     const { showSuccess, showError } = useSnackbar();
@@ -19,11 +108,11 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
     const [equipmentData, setEquipmentData] = useState(null);
     const [workTypes, setWorkTypes] = useState([]);
     const [drivers, setDrivers] = useState([]);
-    
+
     // GLOBAL MATRIX DATA - preserves data across all view modes
     const [globalMatrixData, setGlobalMatrixData] = useState({});
     const [globalDeletedEntries, setGlobalDeletedEntries] = useState([]); // Track deleted entries
-    
+
     const [selectedDriver, setSelectedDriver] = useState('');
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -34,10 +123,22 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
     const [focusedCell, setFocusedCell] = useState(null);
     const [copiedValue, setCopiedValue] = useState(null);
 
-    // File attachment state
-    const [showFileModal, setShowFileModal] = useState(false);
-    const [selectedTimeRange, setSelectedTimeRange] = useState(null);
+    // Z-index management for dropdowns
+    const [activeDropdownRow, setActiveDropdownRow] = useState(null);
+    const [openDropdownId, setOpenDropdownId] = useState(null);
+
+    // Legacy file attachment state (kept for compatibility)
     const [timeRangeFiles, setTimeRangeFiles] = useState({});
+
+    // Document management state
+    const [monthlyDocuments, setMonthlyDocuments] = useState([]);
+    const [showSarkyDocumentModal, setShowSarkyDocumentModal] = useState(false);
+    const [documentLoading, setDocumentLoading] = useState(false);
+    const [documentCounts, setDocumentCounts] = useState({});
+
+    // Sticky header state
+    const [isHeaderStuck, setIsHeaderStuck] = useState(false);
+    const stickyHeaderRef = useRef(null);
 
     // Grid refs for keyboard navigation
     const gridRef = useRef({});
@@ -47,7 +148,29 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         refreshData: () => fetchExistingEntries()
     }));
 
+    // Intersection Observer for sticky header
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsHeaderStuck(!entry.isIntersecting);
+            },
+            {
+                root: null,
+                rootMargin: `-${70}px 0px 0px 0px`, // Account for navbar height
+                threshold: 0
+            }
+        );
 
+        if (stickyHeaderRef.current) {
+            observer.observe(stickyHeaderRef.current);
+        }
+
+        return () => {
+            if (stickyHeaderRef.current) {
+                observer.unobserve(stickyHeaderRef.current);
+            }
+        };
+    }, []);
 
     // Get date range based on view mode
     const getDateRange = () => {
@@ -91,7 +214,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         date.setHours(0, 0, 0, 0);
-        
+
         return date > today || !permissions.canEdit;
     };
 
@@ -100,7 +223,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         date.setHours(0, 0, 0, 0);
-        
+
         if (date > today) {
             return "Cannot add work for future dates";
         }
@@ -109,6 +232,13 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         }
         return "";
     };
+
+    // Load monthly documents when month/year changes
+    useEffect(() => {
+        if (equipmentId) {
+            loadMonthlyDocuments();
+        }
+    }, [selectedMonth, selectedYear, equipmentId]);
 
     // Fetch equipment data and related info
     useEffect(() => {
@@ -161,7 +291,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
     const fetchExistingEntries = async () => {
         try {
             setLoading(true);
-            
+
             // Fetch a broader range to preserve data across views
             const yearStart = new Date(selectedYear, 0, 1);
             const yearEnd = new Date(selectedYear, 11, 31);
@@ -315,7 +445,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                 numValue = 0;
             }
         }
-        
+
         console.log(`🔄 UpdateCell called:`, {
             dateKey,
             workType: workTypes.find(wt => wt.id === workTypeId)?.name,
@@ -361,7 +491,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
             const existingCell = prevDateData[workTypeId] || {};
             const isNewCell = !existingCell.hasOwnProperty('hours') || existingCell.hours === undefined;
             const newDriverId = driverId !== null ? driverId : (existingCell.driverId || selectedDriver);
-            
+
             const updatedCell = {
                 hours: numValue,
                 driverId: newDriverId,
@@ -372,7 +502,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                 isExisting: existingCell.isExisting || false,
                 entryId: existingCell.entryId || null
             };
-            
+
             console.log(`💾 Cell updated:`, {
                 dateKey,
                 workType: workTypes.find(wt => wt.id === workTypeId)?.name,
@@ -381,7 +511,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                 updatedCell,
                 isNewCell
             });
-            
+
             return {
                 ...prev,
                 [dateKey]: {
@@ -483,7 +613,10 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
 
     const handleSaveAll = useCallback(async () => {
         console.log('🚀 Save All Changes triggered');
-        
+
+        // Store current scroll position
+        const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+
         if (!hasChanges) {
             showError('No changes to save');
             return;
@@ -491,38 +624,38 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
 
         const entriesToSave = [];
         const entriesToDelete = [...globalDeletedEntries];
-        
+
         // Get all dates from globalMatrixData (not just current view) to save any pending changes
         const allDateKeys = Object.keys(globalMatrixData);
-        
+
         console.log(`🔍 Scanning ${allDateKeys.length} dates for changes...`);
 
         // Collect all entries that have hours > 0 or have been modified
         let totalScanned = 0;
         let entriesWithHours = 0;
-        
+
         allDateKeys.forEach(dateKey => {
             if (!globalMatrixData[dateKey]) return; // Skip if no data for this date
-            
+
             workTypes.forEach(workType => {
                 totalScanned++;
                 const cellData = globalMatrixData[dateKey][workType.id];
-                
+
                 if (!cellData) return; // Skip if no cell data
-                
+
                 if (cellData.hours > 0) {
                     entriesWithHours++;
                 }
-                
+
                 // Entry needs saving if:
                 // 1. It has hours > 0 AND (is new OR has changed hours OR has changed driver)
                 // 2. It's an existing entry that changed to 0 hours (should be deleted)
-                
+
                 const hasHoursChanged = cellData.hours !== cellData.originalValue;
-                const hasDriverChanged = cellData.isExisting && 
+                const hasDriverChanged = cellData.isExisting &&
                     (cellData.driverId !== cellData.originalDriverId);
                 const isNewEntry = !cellData.isExisting || !cellData.entryId;
-                
+
                 // Debug logging for all entries (both new and existing)
                 if (cellData.hours > 0) {
                     console.log(`📝 Entry analysis:`, {
@@ -540,7 +673,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                         willSave: isNewEntry || hasHoursChanged || hasDriverChanged
                     });
                 }
-                
+
                 if (cellData.hours > 0 && (isNewEntry || hasHoursChanged || hasDriverChanged)) {
                     console.log(`➕ Adding to save queue:`, {
                         date: dateKey,
@@ -564,7 +697,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                 }
             });
         });
-        
+
         console.log(`📊 Scan complete:`, {
             totalScanned,
             entriesWithHours,
@@ -581,6 +714,21 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
 
         if (entriesToSave.length === 0 && entriesToDelete.length === 0) {
             showError('No entries to save or delete');
+            return;
+        }
+
+        // Validate that all entries have drivers selected
+        const entriesWithoutDrivers = entriesToSave.filter(entry => !entry.driverId || entry.driverId === '');
+        if (entriesWithoutDrivers.length > 0) {
+            const invalidEntries = entriesWithoutDrivers.map(entry => {
+                const workTypeName = workTypes.find(wt => wt.id === entry.workTypeId)?.name || 'Unknown Work Type';
+                const formattedDate = new Date(entry.date).toLocaleDateString();
+                return `${formattedDate} - ${workTypeName}`;
+            });
+
+            showError(
+                `❌ Cannot save entries without drivers selected:\n\n${invalidEntries.join('\n')}\n\nPlease select a driver for each entry before saving.`
+            );
             return;
         }
 
@@ -624,7 +772,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                         driverId: entry.driverId,
                         isUpdate: entry.isUpdate
                     });
-                    
+
                     // Debug FormData contents
                     console.log('📋 FormData contents:');
                     for (let [key, value] of formData.entries()) {
@@ -657,6 +805,11 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                 setGlobalDeletedEntries([]);
                 await fetchExistingEntries();
                 if (onDataChange) onDataChange();
+
+                // Restore scroll position after save
+                setTimeout(() => {
+                    window.scrollTo(0, scrollPosition);
+                }, 100);
             } else if ((successCount > 0 || deletedCount > 0) && failedEntries.length > 0) {
                 showError(
                     `Processed ${successCount} saves and ${deletedCount} deletions, but ${failedEntries.length} operations failed:\n` +
@@ -734,12 +887,6 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         }
     };
 
-    // Handle file attachment for time ranges
-    const handleTimeRangeClick = (timeRange) => {
-        setSelectedTimeRange(timeRange);
-        setShowFileModal(true);
-    };
-
     const handleDeleteEntry = (dateKey, workTypeId) => {
         const cellData = globalMatrixData[dateKey]?.[workTypeId];
         if (cellData) {
@@ -752,6 +899,48 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
             showSuccess('Entry marked for deletion');
         }
     };
+
+    // Handle dropdown state changes for z-index management
+    const handleDropdownStateChange = useCallback((dropdownId, dateKey, isOpen) => {
+        if (isOpen) {
+            setActiveDropdownRow(dateKey);
+            setOpenDropdownId(dropdownId);
+        } else {
+            // Only clear if this is the currently open dropdown
+            if (openDropdownId === dropdownId) {
+                setActiveDropdownRow(null);
+                setOpenDropdownId(null);
+            }
+        }
+    }, [openDropdownId]);
+
+    // Load documents for current month
+    const loadMonthlyDocuments = async () => {
+        if (!equipmentId) return;
+
+        setDocumentLoading(true);
+        try {
+            const response = await documentService.getBySarkyMonth('equipment', equipmentId, selectedMonth, selectedYear);
+            setMonthlyDocuments(response.data || []);
+
+            // Update document count for current month/year
+            const monthKey = `${selectedMonth}-${selectedYear}`;
+            setDocumentCounts(prev => ({
+                ...prev,
+                [monthKey]: response.data?.length || 0
+            }));
+        } catch (error) {
+            console.error('Error loading monthly documents:', error);
+            // Don't show error for documents as it might not be critical
+        } finally {
+            setDocumentLoading(false);
+        }
+    };
+
+    // Handle document changes (called from modal)
+    const handleDocumentsChange = useCallback(() => {
+        loadMonthlyDocuments();
+    }, [loadMonthlyDocuments]);
 
     const calculateTotals = () => {
         const totals = {
@@ -780,6 +969,19 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         return totals;
     };
 
+    // Check if there are validation errors
+    const hasValidationErrors = () => {
+        if (!hasChanges) return false;
+
+        const allDateKeys = Object.keys(globalMatrixData);
+        return allDateKeys.some(dateKey => {
+            return workTypes.some(workType => {
+                const cellData = globalMatrixData[dateKey]?.[workType.id];
+                return cellData?.hours > 0 && (!cellData.driverId || cellData.driverId === '');
+            });
+        });
+    };
+
     if (!equipmentData || loading) {
         return (
             <div className="sarky-matrix-loading">
@@ -795,8 +997,11 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
 
     return (
         <div className="sarky-matrix-container">
-            {/* Header */}
-            <div className="matrix-header">
+            {/* Sticky Header */}
+            <div 
+                ref={stickyHeaderRef}
+                className={`matrix-header-sticky ${isHeaderStuck ? 'stuck' : ''}`}
+            >
                 <div className="header-info">
                     <h2>Work Entry Matrix</h2>
                     <p>{equipmentData.name} - {equipmentData.typeName || 'Equipment'}</p>
@@ -844,19 +1049,20 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                                 return <option key={year} value={year}>{year}</option>;
                             })}
                         </select>
-                        
-                        {/* File attachment button for time ranges */}
-                        <button 
+
+                        {/* Monthly documents button */}
+                        <button
                             className="time-range-files-btn"
-                            onClick={() => handleTimeRangeClick(`${selectedMonth}/${selectedYear}`)}
-                            title="Attach files to this time period"
+                            onClick={() => setShowSarkyDocumentModal(true)}
+                            title={`Documents for ${getMonthLabel(selectedMonth)} ${selectedYear}`}
+                            disabled={documentLoading}
                         >
-                            📎 Files ({Object.keys(timeRangeFiles).length})
+                            📎 Files ({documentLoading ? '...' : monthlyDocuments.length})
                         </button>
                     </div>
 
                     <div className="driver-selector">
-                        <label>Default Driver:</label>
+                        <label>Default Driver (for new entries):</label>
                         <select
                             value={selectedDriver}
                             onChange={(e) => setSelectedDriver(e.target.value)}
@@ -868,6 +1074,23 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                                 </option>
                             ))}
                         </select>
+                    </div>
+
+                    <div className="header-actions">
+                        <div className="changes-indicator">
+                            {hasChanges && <span className="unsaved-changes">● Unsaved changes</span>}
+                            {hasValidationErrors() && (
+                                <span className="validation-errors">⚠️ Driver selection required</span>
+                            )}
+                        </div>
+                        <button
+                            className={`btn-save ${hasValidationErrors() ? 'has-validation-errors' : ''}`}
+                            onClick={handleSaveAll}
+                            disabled={!hasChanges || saving || !permissions.canEdit || hasValidationErrors()}
+                            title={hasValidationErrors() ? 'Please select drivers for all entries before saving' : ''}
+                        >
+                            {saving ? 'Saving...' : 'Save All Changes (Ctrl+S)'}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -890,6 +1113,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                         {workTypes.map(workType => (
                             <th key={workType.id} className="worktype-header">
                                 {workType.name}
+                                <span className="unit-label">(Hours)</span>
                             </th>
                         ))}
                         <th className="add-worktype-header">
@@ -911,8 +1135,16 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                         const isBlocked = isCellBlocked(new Date(date));
                         const blockedMessage = getBlockedCellMessage(new Date(date));
 
+                        // Add z-index class for dropdown management
+                        const isActiveDropdownRow = activeDropdownRow === dateKey;
+                        const rowClasses = [
+                            isWeekend ? 'weekend' : '',
+                            isBlocked ? 'blocked' : '',
+                            isActiveDropdownRow ? 'active-dropdown-row' : ''
+                        ].filter(Boolean).join(' ');
+
                         return (
-                            <tr key={dateKey} className={`${isWeekend ? 'weekend' : ''} ${isBlocked ? 'blocked' : ''}`}>
+                            <tr key={dateKey} className={rowClasses}>
                                 <td className="date-cell">
                                     <div className="date-info">
                                         <span className="date-day">{date.getDate()}</span>
@@ -925,9 +1157,9 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                                     const cellData = currentViewData[dateKey]?.[workType.id];
                                     const hasValue = cellData?.hours > 0;
                                     const cellDriverId = cellData?.driverId || selectedDriver;
-                                    const isDefaultDriver = cellDriverId === selectedDriver;
+                                    const isMainDriver = cellDriverId === equipmentData?.mainDriverId;
                                     const driverName = drivers.find(d => d.id === cellDriverId)?.fullName || 'Unknown';
-                                    
+                                    const hasInvalidDriver = hasValue && (!cellDriverId || cellDriverId === '');
 
 
                                     return (
@@ -945,109 +1177,69 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                                                     onFocus={() => setFocusedCell({ date: dateKey, workType: workType.id })}
                                                     placeholder="0"
                                                     disabled={isBlocked}
-                                                    className={`hours-input ${hasValue ? 'has-value' : ''} ${cellData?.isExisting ? 'existing' : ''} ${isBlocked ? 'blocked' : ''}`}
-                                                    title={blockedMessage || `Enter hours for ${workType.name}`}
+                                                    className={`hours-input ${hasValue ? 'has-value' : ''} ${cellData?.isExisting ? 'existing' : ''} ${isBlocked ? 'blocked' : ''} ${hasInvalidDriver ? 'invalid-driver' : ''}`}
+                                                    title={blockedMessage || (hasInvalidDriver ? `Driver required for ${workType.name}` : `Enter hours for ${workType.name}`)}
                                                 />
-                                                {hasValue && (
-                                                    <div
-                                                        className={`driver-indicator ${!isDefaultDriver ? 'custom-driver' : ''}`}
-                                                        title={isDefaultDriver ? "Click to override default driver" : `Driver: ${driverName} (click to change)`}
-                                                        onClick={(e) => {
-                                                            if (!isBlocked && hasValue) {
-                                                                e.stopPropagation();
-                                                                const indicator = e.currentTarget;
 
-                                                                // Check if dropdown already exists
-                                                                const existingDropdown = document.querySelector('.driver-dropdown');
-                                                                if (existingDropdown) {
-                                                                    existingDropdown.remove();
+                                                {/* Action buttons container for better alignment */}
+                                                {hasValue && !isBlocked && (
+                                                    <div className="cell-actions">
+                                                        {hasInvalidDriver && (
+                                                            <div className="driver-required-warning" title="Driver selection required">
+                                                                ⚠️
+                                                            </div>
+                                                        )}
+                                                        <DriverDropdown
+                                                            cellDriverId={cellDriverId}
+                                                            selectedDriver={selectedDriver}
+                                                            driverName={driverName}
+                                                            isMainDriver={isMainDriver}
+                                                            drivers={drivers}
+                                                            isBlocked={isBlocked}
+                                                            dateKey={dateKey}
+                                                            workTypeId={workType.id}
+                                                            onDriverChange={(driverId) => updateCell(dateKey, workType.id, cellData.hours, driverId)}
+                                                            onDropdownStateChange={handleDropdownStateChange}
+                                                        />
+
+                                                        <button
+                                                            className="delete-entry-btn enhanced-delete"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (!permissions?.canEdit) {
+                                                                    showError('You do not have permission to delete entries');
+                                                                    return;
                                                                 }
 
-                                                                const dropdown = document.createElement('div');
-                                                                dropdown.className = 'driver-dropdown';
+                                                                // Enhanced delete with visual feedback
+                                                                const button = e.currentTarget;
+                                                                button.classList.add('deleting');
 
-                                                                // Add header
-                                                                const header = document.createElement('div');
-                                                                header.className = 'dropdown-header';
-                                                                header.textContent = 'Select Driver';
-                                                                dropdown.appendChild(header);
-
-                                                                // Add current driver info
-                                                                const currentInfo = document.createElement('div');
-                                                                currentInfo.className = 'current-driver-info';
-                                                                currentInfo.textContent = `Current: ${driverName}`;
-                                                                dropdown.appendChild(currentInfo);
-
-                                                                // Add driver options
-                                                                drivers.forEach(driver => {
-                                                                    const option = document.createElement('div');
-                                                                    option.className = 'driver-option';
-                                                                    if (driver.id === cellDriverId) {
-                                                                        option.classList.add('selected');
-                                                                    }
-                                                                    if (driver.id === selectedDriver && !isDefaultDriver) {
-                                                                        option.classList.add('default');
-                                                                    }
-
-                                                                    option.textContent = driver.fullName;
-                                                                    if (driver.id === selectedDriver && !isDefaultDriver) {
-                                                                        option.textContent += ' (Default)';
-                                                                    }
-
-                                                                    option.addEventListener('click', (e) => {
-                                                                        e.stopPropagation();
-                                                                        updateCell(dateKey, workType.id, cellData.hours, driver.id);
-                                                                        dropdown.remove();
-                                                                    });
-
-                                                                    dropdown.appendChild(option);
-                                                                });
-
-                                                                // Position and add dropdown
-                                                                indicator.appendChild(dropdown);
-
-                                                                // Close dropdown when clicking outside
-                                                                const closeDropdown = (e) => {
-                                                                    if (!dropdown.contains(e.target) && !indicator.contains(e.target)) {
-                                                                        dropdown.remove();
-                                                                        document.removeEventListener('click', closeDropdown);
-                                                                    }
-                                                                };
-
+                                                                // Slight delay for visual feedback
                                                                 setTimeout(() => {
-                                                                    document.addEventListener('click', closeDropdown);
-                                                                }, 100);
-                                                            }
-                                                        }}
-                                                    >
-                                                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                                                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                                                        </svg>
+                                                                    handleDeleteEntry(dateKey, workType.id);
+                                                                    showSuccess('Entry deleted');
+                                                                }, 150);
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                const button = e.currentTarget;
+                                                                button.classList.add('delete-hover');
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                const button = e.currentTarget;
+                                                                button.classList.remove('delete-hover');
+                                                            }}
+                                                            title="Delete entry (or use Ctrl+Delete)"
+                                                            type="button"
+                                                            disabled={!permissions?.canEdit}
+                                                        >
+                                                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                                            </svg>
+                                                        </button>
                                                     </div>
                                                 )}
-                                                
-                                                {/* Delete button for cells with values */}
-                                                {hasValue && !isBlocked && (
-                                                    <button
-                                                        className="delete-entry-btn"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (!permissions?.canEdit) {
-                                                                showError('You do not have permission to delete entries');
-                                                                return;
-                                                            }
-                                                            handleDeleteEntry(dateKey, workType.id);
-                                                        }}
-                                                        title="Delete this entry"
-                                                        type="button"
-                                                        disabled={!permissions?.canEdit}
-                                                    >
-                                                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
-                                                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                                                        </svg>
-                                                    </button>
-                                                )}
-                                                
+
                                                 {/* Blocked cell overlay */}
                                                 {isBlocked && (
                                                     <div className="blocked-overlay" title={blockedMessage}>
@@ -1081,20 +1273,6 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                 </table>
             </div>
 
-            {/* Actions */}
-            <div className="matrix-actions">
-                <div className="changes-indicator">
-                    {hasChanges && <span className="unsaved-changes">● Unsaved changes</span>}
-                </div>
-                <button
-                    className="btn-save"
-                    onClick={handleSaveAll}
-                    disabled={!hasChanges || saving || !permissions.canEdit}
-                >
-                    {saving ? 'Saving...' : 'Save All Changes (Ctrl+S)'}
-                </button>
-            </div>
-
             {/* Add Work Type Modal */}
             {showAddWorkType && (
                 <div className="modal-overlay" onClick={() => setShowAddWorkType(false)}>
@@ -1119,18 +1297,16 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                 </div>
             )}
 
-            {/* File Attachment Modal */}
-            {showFileModal && (
-                <div className="modal-overlay" onClick={() => setShowFileModal(false)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <h3>File Attachments for {selectedTimeRange}</h3>
-                        <p>Attach files to this time period (feature coming soon)</p>
-                        <div className="modal-actions">
-                            <button onClick={() => setShowFileModal(false)}>Close</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Sarky Document Modal */}
+            <SarkyDocumentModal
+                isOpen={showSarkyDocumentModal}
+                onClose={() => setShowSarkyDocumentModal(false)}
+                equipmentId={equipmentId}
+                equipmentName={equipmentData?.name || 'Equipment'}
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+                onDocumentsChange={handleDocumentsChange}
+            />
         </div>
     );
 });

@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -127,6 +128,33 @@ public class DocumentService {
     }
 
     /**
+     * Update a document (name and type only)
+     */
+    @Transactional
+    public DocumentDTO updateDocument(UUID id, String name, String type) {
+        Document document = documentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + id));
+
+        // Update only the name and type (file cannot be changed)
+        if (name != null && !name.trim().isEmpty()) {
+            document.setName(name.trim());
+        }
+        if (type != null && !type.trim().isEmpty()) {
+            document.setType(type.trim());
+        }
+
+        // Update the timestamp
+        document.setUpdatedAt(java.time.LocalDateTime.now());
+
+        // Save the updated document
+        Document updatedDocument = documentRepository.save(document);
+
+        // Convert to DTO and return
+        String entityName = getEntityName(document.getEntityType(), document.getEntityId());
+        return convertToDTO(updatedDocument, entityName);
+    }
+
+    /**
      * Delete a document
      */
     @Transactional
@@ -147,6 +175,148 @@ public class DocumentService {
         }
 
         documentRepository.delete(document);
+    }
+
+    /**
+     * Get documents by sarky month and year for a specific entity
+     */
+    public List<DocumentDTO> getSarkyDocumentsByMonth(EntityType entityType, UUID entityId, Integer month, Integer year) {
+        try {
+            // Verify that the entity exists
+            String entityName = verifyEntityExists(entityType, entityId);
+
+            return documentRepository.findByEntityTypeAndEntityIdAndSarkyMonthAndSarkyYearOrderByUploadDateDesc(entityType, entityId, month, year).stream()
+                    .map(doc -> convertToDTO(doc, entityName))
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            System.err.println("Database error in getSarkyDocumentsByMonth: " + e.getMessage());
+            e.printStackTrace();
+            // Return empty list if database error (e.g., columns don't exist yet)
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * Create a sarky document with automatic sarky assignment
+     */
+    @Transactional
+    public DocumentDTO createSarkyDocument(EntityType entityType, UUID entityId, String name, String type, MultipartFile file, Integer month, Integer year) throws Exception {
+        // Verify that the entity exists and get its name
+        String entityName = verifyEntityExists(entityType, entityId);
+
+        // Get the currently authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new ResourceNotFoundException("No authenticated user found");
+        }
+
+        User currentUser = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + authentication.getName()));
+
+        // Create new sarky document
+        Document document = new Document();
+        document.setEntityType(entityType);
+        document.setEntityId(entityId);
+        document.setName(name);
+        document.setType(type);
+        document.setUploadDate(LocalDate.now());
+        document.setFileSize(file.getSize());
+        document.setUploadedBy(currentUser);
+        
+        // Set sarky-specific fields
+        document.setIsSarkyDocument(true);
+        document.setSarkyMonth(month);
+        document.setSarkyYear(year);
+
+        // Save document first to get the ID
+        Document savedDocument = documentRepository.save(document);
+
+        // Upload file to MinIO with sarky subfolder structure
+        try {
+            String bucketName = entityType.name().toLowerCase() + "-" + entityId.toString();
+            minioService.createBucketIfNotExists(bucketName);
+
+            // Create sarky-specific file path: sarky/year/month/filename
+            String fileName = String.format("sarky/%d/%d/%s-%s", year, month, name, savedDocument.getId().toString());
+            minioService.uploadFile(bucketName, file, fileName);
+
+            String fileUrl = minioService.getFileUrl(bucketName, fileName);
+            savedDocument.setFileUrl(fileUrl);
+
+            savedDocument = documentRepository.save(savedDocument);
+        } catch (Exception e) {
+            System.err.println("Error uploading sarky file to MinIO: " + e.getMessage());
+            throw e;
+        }
+
+        return convertToDTO(savedDocument, entityName);
+    }
+
+    /**
+     * Assign existing document to sarky month
+     */
+    @Transactional
+    public DocumentDTO assignToSarkyMonth(UUID documentId, Integer month, Integer year) {
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + documentId));
+
+        document.setIsSarkyDocument(true);
+        document.setSarkyMonth(month);
+        document.setSarkyYear(year);
+
+        Document savedDocument = documentRepository.save(document);
+        String entityName = getEntityName(document.getEntityType(), document.getEntityId());
+        
+        return convertToDTO(savedDocument, entityName);
+    }
+
+    /**
+     * Remove sarky assignment from document
+     */
+    @Transactional
+    public DocumentDTO removeSarkyAssignment(UUID documentId) {
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + documentId));
+
+        document.setIsSarkyDocument(false);
+        document.setSarkyMonth(null);
+        document.setSarkyYear(null);
+
+        Document savedDocument = documentRepository.save(document);
+        String entityName = getEntityName(document.getEntityType(), document.getEntityId());
+        
+        return convertToDTO(savedDocument, entityName);
+    }
+
+    /**
+     * Get all sarky documents for an entity
+     */
+    public List<DocumentDTO> getAllSarkyDocuments(EntityType entityType, UUID entityId) {
+        String entityName = verifyEntityExists(entityType, entityId);
+
+        return documentRepository.findByEntityTypeAndEntityIdAndIsSarkyDocumentTrueOrderByUploadDateDesc(entityType, entityId).stream()
+                .map(doc -> convertToDTO(doc, entityName))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get sarky document types (static list)
+     */
+    public List<String> getSarkyDocumentTypes() {
+        return List.of(
+            "DAILY_REPORT",
+            "WEEKLY_SUMMARY", 
+            "TIMESHEET",
+            "FUEL_LOG",
+            "MAINTENANCE_LOG",
+            "INSPECTION_REPORT",
+            "WORK_ORDER",
+            "INCIDENT_REPORT",
+            "PARTS_REQUEST",
+            "OPERATOR_NOTES",
+            "SHIFT_HANDOVER",
+            "PERFORMANCE_METRICS"
+        );
     }
 
     /**
@@ -184,6 +354,11 @@ public class DocumentService {
         if (document.getUploadedBy() != null) {
             dto.setUploadedBy(document.getUploadedBy().getFirstName() + " " + document.getUploadedBy().getLastName());
         }
+
+        // Set sarky-specific fields
+        dto.setSarkyMonth(document.getSarkyMonth());
+        dto.setSarkyYear(document.getSarkyYear());
+        dto.setIsSarkyDocument(document.getIsSarkyDocument());
 
         return dto;
     }

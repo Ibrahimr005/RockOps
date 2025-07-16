@@ -13,7 +13,7 @@ const AddConsumablesModal = ({
     equipmentData, 
     onTransactionAdded 
 }) => {
-    const { showSuccess, showError } = useSnackbar();
+    const { showSuccess, showError, showWarning, showInfo } = useSnackbar();
     
     // Format current date and time to ISO format for datetime-local input
     const formatDateForInput = (date) => {
@@ -59,12 +59,9 @@ const AddConsumablesModal = ({
             [name]: value,
         });
 
-        // Automatically verify batch number when it changes
+        // Clear batch verification when batch number changes
         if (name === 'batchNumber') {
             setBatchVerificationResult(null);
-            if (value) {
-                verifyBatchNumber(value);
-            }
         }
     };
 
@@ -133,76 +130,63 @@ const AddConsumablesModal = ({
         ));
     };
 
-    // Verify batch number function
+    // Verify batch number function with enhanced feedback
     const verifyBatchNumber = async (batchNumber = null) => {
         const batchToVerify = batchNumber || newTransaction.batchNumber;
 
         if (!batchToVerify) {
-            showError("Please enter a batch number to verify");
             return;
         }
 
         setIsVerifyingBatch(true);
+        showInfo("Checking batch number...");
+        
         try {
-            const response = await transactionService.getByBatchNumber(batchToVerify);
+            const response = await equipmentService.checkBatchExists(equipmentId, batchToVerify);
 
-            if (response.data && response.data.id) {
-                let transactionStatus = response.data.status;
-                let isPendingTransaction = transactionStatus === "PENDING";
-
-                if (!isPendingTransaction) {
-                    setBatchVerificationResult({
-                        found: true,
-                        error: true,
-                        transaction: response.data,
-                        message: `Transaction found but it's already ${transactionStatus}. Only PENDING transactions can be linked.`
-                    });
-                } else {
-                    setBatchVerificationResult({
-                        found: true,
-                        transaction: response.data,
-                        message: "Transaction found! It will be linked to this consumable record."
-                    });
-                }
+            if (response.data.exists) {
+                setBatchVerificationResult({ 
+                    exists: true, 
+                    transaction: response.data.transaction 
+                });
+                showError(`Batch #${batchToVerify} already exists! Cannot create duplicate transaction.`);
+            } else {
+                setBatchVerificationResult({ exists: false });
+                showSuccess(`Batch #${batchToVerify} is available for use.`);
             }
         } catch (error) {
-            console.error("Error verifying batch number:", error);
-
-            if (error.response && error.response.status === 404) {
-                setBatchVerificationResult({
-                    found: false,
-                    message: "No transaction found with this batch number. You can proceed with creating a new transaction."
-                });
-            } else {
-                setBatchVerificationResult({
-                    found: false,
-                    error: true,
-                    message: "Error verifying batch number: " + (error.response?.data?.message || error.message)
-                });
-            }
+            console.error('Error verifying batch:', error);
+            showError("Failed to verify batch number. Please try again.");
+            setBatchVerificationResult(null);
         } finally {
             setIsVerifyingBatch(false);
         }
     };
 
-    // Submit transaction form
+    // Submit transaction form with enhanced validation
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        // Prevent submission if batch exists
+        if (batchVerificationResult?.exists) {
+            showError("Cannot proceed with existing batch number. Please choose a different batch number.");
+            return;
+        }
+        
+        if (isVerifyingBatch) {
+            showWarning("Please wait for batch verification to complete.");
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
-            if (batchVerificationResult && batchVerificationResult.found) {
-                showError("Cannot add transaction: This batch number is already in use.");
-                setIsSubmitting(false);
-                return;
-            }
+            showInfo("Creating transaction...");
 
             // Validate items
             for (const item of newTransaction.items) {
                 if (!item.itemType.id || !item.quantity) {
-                    alert("Please complete all item fields");
-                    setIsSubmitting(false);
-                    return;
+                    throw new Error("Please complete all item fields");
                 }
             }
 
@@ -210,14 +194,6 @@ const AddConsumablesModal = ({
                 itemTypeId: item.itemType.id,
                 quantity: parseInt(item.quantity)
             }));
-
-            let transactionDateParam = '';
-            if (newTransaction.transactionDate) {
-                const formattedDate = new Date(newTransaction.transactionDate)
-                    .toISOString()
-                    .split('.')[0];
-                transactionDateParam = `&transactionDate=${encodeURIComponent(formattedDate)}`;
-            }
 
             const response = await equipmentService.receiveTransaction(
                 equipmentId,
@@ -239,10 +215,10 @@ const AddConsumablesModal = ({
 
             // Close modal and show success
             onClose();
-            showSuccess("Transaction Request Sent Successfully");
+            showSuccess("Transaction created successfully!");
 
         } catch (error) {
-            showError("Error submitting form: " + (error.response?.data?.message || error.message));
+            showError("Failed to create transaction. Please try again.");
             console.error("Error:", error);
         } finally {
             setIsSubmitting(false);
@@ -307,6 +283,17 @@ const AddConsumablesModal = ({
         }
     }, [newTransaction.senderId]);
 
+    // Debounced batch verification effect
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (newTransaction.batchNumber) {
+                verifyBatchNumber(newTransaction.batchNumber);
+            }
+        }, 500);
+        
+        return () => clearTimeout(timeoutId);
+    }, [newTransaction.batchNumber, equipmentId]);
+
     // Reset form when modal is opened and set default site
     useEffect(() => {
         if (isOpen) {
@@ -338,11 +325,7 @@ const AddConsumablesModal = ({
             <div className="add-consumables-modal">
                 <div className="add-consumables-modal-header">
                     <h2>Add Consumables Transaction</h2>
-                    <button className="add-consumables-close-modal" onClick={onClose}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M18 6L6 18M6 6l12 12"/>
-                        </svg>
-                    </button>
+                    <button className="btn-close" onClick={onClose} aria-label="Close"></button>
                 </div>
 
                 <form className="add-consumables-form-transaction" onSubmit={handleSubmit}>
@@ -371,27 +354,15 @@ const AddConsumablesModal = ({
                                 onChange={handleInputChange}
                                 min="1"
                                 placeholder="Enter batch number"
+                                className={batchVerificationResult?.exists ? 'error' : ''}
                                 required
                             />
-                        </div>
-                        {batchVerificationResult && (
-                            <div className={`add-consumables-batch-verification-result ${batchVerificationResult.found && !batchVerificationResult.error ? 'add-consumables-success' : 'add-consumables-warning'}`}>
-                                <div className="add-consumables-verification-icon">
-                                    {batchVerificationResult.found && !batchVerificationResult.error ? (
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                                            <path d="M22 4L12 14.01l-3-3"/>
-                                        </svg>
-                                    ) : (
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <path d="M12 8v4M12 16h.01"/>
-                                        </svg>
-                                    )}
+                            {isVerifyingBatch && (
+                                <div className="batch-checking-indicator">
+                                    <span>Checking...</span>
                                 </div>
-                                <span>{batchVerificationResult.message}</span>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
 
                     {/* Description Field - Full Width */}
@@ -523,8 +494,12 @@ const AddConsumablesModal = ({
                     </div>
 
                     <div className="add-consumables-modal-footer">
-                        <button type="submit" className="add-consumables-submit-button" disabled={isSubmitting}>
-                            {isSubmitting ? "Processing..." : "Request Consumables"}
+                        <button 
+                            type="submit" 
+                            className="btn-primary" 
+                            disabled={batchVerificationResult?.exists || isVerifyingBatch || isSubmitting}
+                        >
+                            {isVerifyingBatch ? "Verifying..." : isSubmitting ? "Creating..." : "Create Transaction"}
                         </button>
                     </div>
                 </form>

@@ -1,6 +1,6 @@
 // InSiteMaintenanceLog.jsx
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { FaEdit, FaTrash, FaEye } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaPlus } from 'react-icons/fa';
 import { inSiteMaintenanceService } from '../../../services/inSiteMaintenanceService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -383,29 +383,21 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                         showSearch={true}
                         showFilters={true}
                         filterableColumns={filterableColumns}
-                        emptyStateMessage={
+                        emptyMessage={
                             searchTerm 
                                 ? `No maintenance records found matching "${searchTerm}". Try different search terms or clear the search to see all records.`
                                 : "No maintenance records found. Create your first maintenance record using the Add button."
                         }
+                        showAddButton={showAddButton && permissions.canCreate}
+                        addButtonText="Add Maintenance"
+                        addButtonIcon={<FaPlus />}
+                        onAddClick={() => {
+                            showInfo("Opening maintenance creation form...");
+                            onAddMaintenanceClick();
+                        }}
                     />
                 ) }
             </div>
-
-            {showAddButton && permissions.canCreate && (
-                <button 
-                    className="r4m-add-maintenance-button" 
-                    onClick={() => {
-                        showInfo("Opening maintenance creation form...");
-                        onAddMaintenanceClick();
-                    }}
-                    title="Add new maintenance record"
-                >
-                    <svg className="r4m-plus-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 5v14M5 12h14" />
-                    </svg>
-                </button>
-            )}
 
             {/* Maintenance Transaction Modal */}
             {isMaintenanceTransactionModalOpen && (

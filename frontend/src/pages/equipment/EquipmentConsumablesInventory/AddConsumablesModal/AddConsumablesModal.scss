@@ -146,6 +146,42 @@
 
     .add-consumables-batch-input-group {
       position: relative;
+      
+      input.error {
+        border-color: var(--color-error);
+        background-color: rgba(244, 67, 54, 0.05);
+        
+        &:focus {
+          border-color: var(--color-error);
+          box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
+        }
+      }
+      
+      .batch-checking-indicator {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8rem;
+        color: var(--color-text-secondary);
+        
+        span {
+          font-style: italic;
+        }
+        
+        &::before {
+          content: '';
+          width: 12px;
+          height: 12px;
+          border: 2px solid var(--color-primary);
+          border-top: 2px solid transparent;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+      }
     }
 
     .add-consumables-batch-verification-result {
@@ -359,6 +395,12 @@
       }
     }
   }
+}
+
+// Animations
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 // Dark theme adjustments for Add Consumables Modal

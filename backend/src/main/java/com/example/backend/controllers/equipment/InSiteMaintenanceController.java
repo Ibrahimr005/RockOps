@@ -44,7 +44,14 @@ public class InSiteMaintenanceController {
     // Get all maintenance records for equipment
     @GetMapping
     public ResponseEntity<List<InSiteMaintenance>> getAllMaintenanceRecords(@PathVariable UUID equipmentId) {
-        return ResponseEntity.ok(maintenanceService.getMaintenanceByEquipmentId(equipmentId));
+        try {
+            List<InSiteMaintenance> maintenanceRecords = maintenanceService.getMaintenanceByEquipmentId(equipmentId);
+            return ResponseEntity.ok(maintenanceRecords);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Error fetching maintenance records for equipment " + equipmentId + ": " + e.getMessage());
+            return ResponseEntity.status(500).body(null);
+        }
     }
 
     // Get all employees that can be technicians

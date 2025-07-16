@@ -41,14 +41,14 @@ const FixedAssets = () => {
 
     return (
         <div className="fixed-assets-container">
-            <div className="fixed-assets-tabs">
+            <div className="tabs-header">
                 {tabs.map(tab => (
                     <button
                         key={tab.id}
-                        className={`fixed-assets-tab ${activeTab === tab.id ? 'active' : ''}`}
+                        className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
                         onClick={() => setActiveTab(tab.id)}
                     >
-                        {tab.icon}
+                        {/*{tab.icon}*/}
                         <span>{tab.label}</span>
                     </button>
                 ))}

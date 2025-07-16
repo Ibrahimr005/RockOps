@@ -1,8 +1,9 @@
 @import '../../../styles/theme-variables.css';
 
 .sarky-matrix-container {
+  // CSS custom property for navbar height - matches Navbar.css
+  --navbar-height: 70px;
   background: var(--main-background-color);
-  min-height: 100vh;
   padding: 0;
 
   // Loading state
@@ -29,14 +30,27 @@
     }
   }
 
-  // Header section
-  .matrix-header {
+  // Sticky Header section - Proper sticky positioning within scrolling container
+  .matrix-header-sticky {
     background: var(--section-background-color);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 24px;
     margin-bottom: 20px;
     box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 0; // Stick to top of scrolling container
+    z-index: 1000; // High z-index to stay above everything
+    backdrop-filter: blur(8px);
+    
+    // Smooth transition when sticking/unsticking
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+    
+    // Enhanced shadow when sticky for better visual separation
+    &.stuck {
+      box-shadow: var(--shadow-md);
+      transform: translateZ(0); // Force hardware acceleration
+    }
 
     .header-info {
       margin-bottom: 20px;
@@ -154,8 +168,77 @@
           }
         }
       }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-left: auto;
+
+        .changes-indicator {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+
+          .unsaved-changes {
+            color: var(--color-warning);
+            font-weight: var(--bold-font-weight);
+            font-size: 13px;
+          }
+
+          .validation-errors {
+            color: var(--color-warning);
+            font-weight: var(--bold-font-weight);
+            font-size: 12px;
+            animation: pulseWarning 2s infinite;
+          }
+        }
+
+        .btn-save {
+          padding: 10px 20px;
+          border: none;
+          border-radius: var(--radius-md);
+          background: var(--color-primary);
+          color: var(--text-hover);
+          font-weight: var(--bold-font-weight);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          box-shadow: var(--shadow-sm);
+          white-space: nowrap;
+          font-size: 14px;
+
+          &:hover:not(:disabled) {
+            background: var(--color-primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+          }
+
+          &:disabled {
+            background: var(--color-surface-disabled);
+            color: var(--color-text-disabled);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+          }
+
+          &.has-validation-errors {
+            background: var(--color-warning-light, #fff3cd);
+            color: var(--color-warning-dark, #856404);
+            border-color: var(--color-warning, #ffc107);
+            cursor: not-allowed;
+
+            &:hover {
+              background: var(--color-warning-light, #fff3cd);
+              transform: none;
+              box-shadow: none;
+            }
+          }
+        }
+      }
     }
   }
+
+
 
   // Quick tips
   .quick-tips {
@@ -217,6 +300,14 @@
             min-width: 100px;
             max-width: 150px;
             word-wrap: break-word;
+
+            .unit-label {
+              display: block;
+              font-size: 11px;
+              font-weight: normal;
+              color: var(--color-text-secondary);
+              margin-top: 2px;
+            }
           }
 
           &.add-worktype-header {
@@ -233,10 +324,6 @@
       tbody {
         tr {
           border-bottom: 1px solid var(--table-border);
-
-          &.weekend {
-            background: var(--color-surface-hover);
-          }
 
           &.blocked {
             background: var(--color-error-light);
@@ -288,12 +375,57 @@
             align-items: center;
             justify-content: center;
 
-            &:hover .delete-entry-btn {
-              opacity: 0.8;
+            &:hover {
+              .cell-actions {
+                .delete-entry-btn.enhanced-delete {
+                  opacity: 0.9;
+                  transform: scale(1.05);
+                }
+
+                .driver-indicator {
+                  transform: scale(1.1);
+                  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+                }
+              }
             }
 
-            .delete-entry-btn:hover {
+            .delete-entry-btn.enhanced-delete:hover {
               opacity: 1 !important;
+              transform: scale(1.2) !important;
+            }
+
+            // Action buttons container for better alignment
+            .cell-actions {
+              position: absolute;
+              top: -14px;
+              right: -14px;
+              display: flex;
+              gap: 4px;
+              z-index: inherit; // Inherit from parent to work with row z-index management
+              align-items: center;
+
+              // Smooth entrance animation
+              animation: actionsSlideIn 0.2s ease-out;
+
+              // Optional: Add a subtle background for grouping
+              &::before {
+                content: '';
+                position: absolute;
+                top: -2px;
+                left: -2px;
+                right: -2px;
+                bottom: -2px;
+                background: rgba(255, 255, 255, 0.9);
+                border-radius: 12px;
+                z-index: -1;
+                opacity: 0;
+                transition: opacity 0.2s ease;
+                backdrop-filter: blur(4px);
+              }
+
+              &:hover::before {
+                opacity: 1;
+              }
             }
 
             .hours-input {
@@ -331,6 +463,13 @@
                 opacity: 0.6;
               }
 
+              &.invalid-driver {
+                background: var(--color-warning-light, #fff3cd);
+                border-color: var(--color-warning, #ffc107);
+                border-width: 2px;
+                animation: pulseWarning 2s infinite;
+              }
+
               &:disabled {
                 background: var(--color-surface-disabled);
                 color: var(--color-text-disabled);
@@ -339,12 +478,9 @@
             }
 
             .driver-indicator {
-              position: absolute;
-              top: -8px;
-              right: -8px;
-              width: 20px;
-              height: 20px;
-              background: var(--color-primary);
+              width: 22px;
+              height: 22px;
+              background: var(--color-primary); // Blue for main driver
               color: var(--text-hover);
               border-radius: 50%;
               display: flex;
@@ -352,31 +488,44 @@
               justify-content: center;
               cursor: pointer;
               font-size: 10px;
-              transition: all var(--transition-fast);
-              z-index: 3;
+              transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+              border: 2px solid var(--color-surface);
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+              position: relative;
+              z-index: 1; // Ensure it stays below dropdown content
 
               &:hover {
-                transform: scale(1.1);
-                box-shadow: var(--shadow-md);
+                transform: scale(1.15);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+              }
+
+              &:active {
+                transform: scale(1.05);
               }
 
               &.custom-driver {
-                background: var(--color-warning);
+                background: var(--color-warning, #ff9800); // Yellow for custom driver (not main driver)
+
+                &:hover {
+                  background: var(--color-warning-dark, #f57c00);
+                }
               }
 
               svg {
                 width: 12px;
                 height: 12px;
+                transition: transform var(--transition-fast);
+              }
+
+              &:hover svg {
+                transform: rotate(10deg);
               }
             }
 
             .delete-entry-btn {
-              position: absolute;
-              bottom: -6px;
-              right: -6px;
-              width: 20px;
-              height: 20px;
-              background: var(--color-error);
+              width: 22px;
+              height: 22px;
+              background: rgba(244, 67, 54, 0.85);
               color: white;
               border: none;
               border-radius: 50%;
@@ -384,26 +533,109 @@
               align-items: center;
               justify-content: center;
               cursor: pointer;
-              font-size: 10px;
-              transition: all var(--transition-fast);
-              z-index: 4;
+              font-size: 12px;
+              transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
               opacity: 0;
+              backdrop-filter: blur(2px);
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+              border: 2px solid var(--color-surface);
 
-              &:hover:not(:disabled) {
-                transform: scale(1.15);
-                box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4);
-                opacity: 1 !important;
+              &.enhanced-delete {
+                &:hover:not(:disabled),
+                &.delete-hover {
+                  transform: scale(1.2);
+                  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.5);
+                  opacity: 1 !important;
+                  background: #f44336;
+                }
+
+                &.deleting {
+                  background: #d32f2f;
+                  transform: scale(0.9);
+                  opacity: 0.9;
+                  animation: deleteAnimation 0.15s ease-out;
+                }
+
+                &:active {
+                  transform: scale(0.85);
+                }
               }
 
               &:disabled {
                 background: var(--color-text-disabled);
                 cursor: not-allowed;
-                opacity: 0.3;
+                opacity: 0.2;
+                transform: none;
+                box-shadow: none;
               }
 
               svg {
                 width: 12px;
                 height: 12px;
+                transition: transform 0.2s ease;
+              }
+
+              &:hover:not(:disabled) svg {
+                transform: rotate(5deg);
+              }
+            }
+
+            // Animation for delete feedback
+            @keyframes deleteAnimation {
+              0% { transform: scale(1.2); }
+              50% { transform: scale(0.8); }
+              100% { transform: scale(0.9); }
+            }
+
+            // Animation for dropdown
+            @keyframes dropdownSlideIn {
+              0% {
+                opacity: 0;
+                transform: translateY(-10px) scale(0.95);
+              }
+              100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+              }
+            }
+
+            // Animation for action buttons
+            @keyframes actionsSlideIn {
+              0% {
+                opacity: 0;
+                transform: translateY(-5px) scale(0.8);
+              }
+              100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+              }
+            }
+
+            // Animation for invalid driver warning
+            @keyframes pulseWarning {
+              0%, 100% {
+                border-color: var(--color-warning, #ffc107);
+                box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4);
+              }
+              50% {
+                border-color: var(--color-warning-dark, #e0a800);
+                box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.2);
+              }
+            }
+
+            .driver-required-warning {
+              font-size: 16px;
+              color: var(--color-warning, #ffc107);
+              animation: bounce 1.5s infinite;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 20px;
+              height: 20px;
+
+              &:hover {
+                transform: scale(1.2);
               }
             }
 
@@ -492,7 +724,32 @@
     }
   }
 
-  // Driver dropdown
+  // Z-index management for table rows and dropdowns
+  tbody tr {
+    position: relative;
+    z-index: 1;
+
+    // When a dropdown is active in this row, elevate it above all other content
+    &.active-dropdown-row {
+      position: relative;
+      z-index: 1000;
+    }
+
+    // Reset z-index for other rows when a dropdown is open
+    &:not(.active-dropdown-row) {
+      z-index: 1;
+    }
+  }
+
+  // Driver dropdown wrapper and dropdown
+  .driver-dropdown-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: inherit;
+  }
+
   .driver-dropdown {
     position: absolute;
     top: 100%;
@@ -500,89 +757,94 @@
     background: var(--color-surface);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
-    z-index: 1000;
+    box-shadow: var(--shadow-xl);
+    z-index: 9999; // Maximum z-index for dropdown content
     min-width: 180px;
+    max-width: 220px;
     max-height: 200px;
     overflow-y: auto;
+    margin-top: 4px;
+    animation: dropdownSlideIn 0.15s ease-out;
+    transform-origin: top right;
+
+    // Ensure dropdown is always visible and clickable
+    pointer-events: auto;
+
+    // Add backdrop filter for better visibility on complex backgrounds
+    backdrop-filter: blur(8px);
+
+    // Ensure it can't be covered by other elements
+    isolation: isolate;
+
+    // Responsive positioning adjustments
+    @media (max-width: 768px) {
+      right: auto;
+      left: 0;
+      min-width: 160px;
+      transform-origin: top left;
+    }
 
     .dropdown-header {
-      padding: 8px 12px;
+      padding: 10px 14px;
       background: var(--color-surface-hover);
       font-weight: var(--bold-font-weight);
-      font-size: 12px;
+      font-size: 13px;
       color: var(--color-text-secondary);
       border-bottom: 1px solid var(--border-color);
+      border-top-left-radius: var(--radius-md);
+      border-top-right-radius: var(--radius-md);
     }
 
     .current-driver-info {
-      padding: 8px 12px;
+      padding: 8px 14px;
       font-size: 12px;
       color: var(--color-text-secondary);
       border-bottom: 1px solid var(--border-color);
+      background: var(--color-info-light);
     }
 
     .driver-option {
-      padding: 8px 12px;
+      padding: 10px 14px;
       cursor: pointer;
       font-size: 14px;
       color: var(--color-text-primary);
-      transition: background-color var(--transition-fast);
+      transition: all var(--transition-fast);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
 
       &:hover {
         background: var(--color-surface-hover);
+        transform: translateX(2px);
       }
 
       &.selected {
         background: var(--color-primary-light);
         color: var(--color-primary);
         font-weight: var(--bold-font-weight);
+        position: relative;
+
+        &::after {
+          content: '✓';
+          font-size: 16px;
+          color: var(--color-primary);
+        }
       }
 
       &.default {
         font-style: italic;
-      }
-    }
-  }
 
-  // Actions section
-  .matrix-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 0;
-
-    .changes-indicator {
-      .unsaved-changes {
-        color: var(--color-warning);
-        font-weight: var(--bold-font-weight);
-        font-size: 14px;
-      }
-    }
-
-    .btn-save {
-      padding: 12px 24px;
-      border: none;
-      border-radius: var(--radius-md);
-      background: var(--color-primary);
-      color: var(--text-hover);
-      font-weight: var(--bold-font-weight);
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      box-shadow: var(--shadow-sm);
-
-      &:hover:not(:disabled) {
-        background: var(--color-primary-dark);
-        transform: translateY(-1px);
-        box-shadow: var(--shadow-md);
+        &:not(.selected)::after {
+          content: '(Default)';
+          font-size: 11px;
+          color: var(--color-text-secondary);
+          font-style: normal;
+        }
       }
 
-      &:disabled {
-        background: var(--color-surface-disabled);
-        color: var(--color-text-disabled);
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
+      &:last-child {
+        border-bottom-left-radius: var(--radius-md);
+        border-bottom-right-radius: var(--radius-md);
       }
     }
   }
@@ -681,7 +943,7 @@
 
   // Responsive design
   @media (max-width: 768px) {
-    .matrix-header {
+    .matrix-header-sticky {
       .header-controls {
         flex-direction: column;
         gap: 16px;
@@ -692,6 +954,22 @@
         .driver-selector {
           width: 100%;
           justify-content: center;
+        }
+
+        .header-actions {
+          margin-left: 0;
+          flex-direction: column;
+          gap: 12px;
+          align-items: center;
+
+          .changes-indicator {
+            text-align: center;
+          }
+
+          .btn-save {
+            width: 100%;
+            padding: 12px 20px;
+          }
         }
       }
     }
@@ -720,12 +998,6 @@
           }
         }
       }
-    }
-
-    .matrix-actions {
-      flex-direction: column;
-      gap: 12px;
-      text-align: center;
     }
   }
 }

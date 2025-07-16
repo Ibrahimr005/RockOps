@@ -329,5 +329,45 @@ export const equipmentService = {
             `${EQUIPMENT_ENDPOINTS.RECEIVE_TRANSACTION(equipmentId)}?${params.toString()}`,
             items
         );
+    },
+
+    // ========================================
+    // MAINTENANCE INTEGRATION METHODS
+    // Enhanced transaction acceptance with maintenance linking
+    // ========================================
+
+    // Search maintenance records for linking
+    searchMaintenanceRecords: (equipmentId, searchCriteria) => {
+        const params = new URLSearchParams();
+        
+        if (searchCriteria.startDate) params.append('startDate', searchCriteria.startDate);
+        if (searchCriteria.endDate) params.append('endDate', searchCriteria.endDate);
+        if (searchCriteria.technicianId) params.append('technicianId', searchCriteria.technicianId);
+        if (searchCriteria.maintenanceTypeId) params.append('maintenanceTypeId', searchCriteria.maintenanceTypeId);
+        if (searchCriteria.status) params.append('status', searchCriteria.status);
+        if (searchCriteria.description) params.append('description', searchCriteria.description);
+        if (searchCriteria.hasLinkedTransactions !== undefined) {
+            params.append('hasLinkedTransactions', searchCriteria.hasLinkedTransactions.toString());
+        }
+
+        return apiClient.get(`${EQUIPMENT_ENDPOINTS.MAINTENANCE_SEARCH(equipmentId)}?${params.toString()}`);
+    },
+
+    // Get maintenance records suitable for linking
+    getMaintenanceRecordsForLinking: (equipmentId) => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.MAINTENANCE_FOR_LINKING(equipmentId));
+    },
+
+    // Accept transaction with maintenance integration
+    acceptTransactionWithMaintenance: (equipmentId, transactionId, acceptanceData) => {
+        return apiClient.post(
+            EQUIPMENT_ENDPOINTS.ACCEPT_TRANSACTION_WITH_MAINTENANCE(equipmentId, transactionId),
+            acceptanceData
+        );
+    },
+
+    // Check if batch number exists for equipment
+    checkBatchExists: (equipmentId, batchNumber) => {
+        return apiClient.get(`/api/equipment/${equipmentId}/transactions/batch/${batchNumber}/exists`);
     }
 };

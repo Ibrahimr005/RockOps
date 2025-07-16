@@ -7,6 +7,7 @@ const IntroCard = ({
                        label = "PROCUREMENT CENTER",
                        lightModeImage,
                        darkModeImage,
+                       icon, // New icon prop
                        stats = [],
                        onInfoClick,
                        className = ""
@@ -28,12 +29,22 @@ const IntroCard = ({
 
             <div className="intro-card-left">
                 <div className="intro-card-image-container">
-                    <img
-                        src={currentImage}
-                        alt={title}
-                        className="intro-card-image"
-                    />
-                    <div className="intro-card-image-glow"></div>
+                    {/* Render image if available, otherwise fall back to icon */}
+                    {(lightModeImage || darkModeImage) ? (
+                        <>
+                            <img
+                                src={currentImage}
+                                alt={title}
+                                className="intro-card-image"
+                            />
+                            <div className="intro-card-image-glow"></div>
+                        </>
+                    ) : icon ? (
+                        <div className="intro-card-icon">
+                            {icon}
+                            <div className="intro-card-icon-glow"></div>
+                        </div>
+                    ) : null}
                 </div>
             </div>
 

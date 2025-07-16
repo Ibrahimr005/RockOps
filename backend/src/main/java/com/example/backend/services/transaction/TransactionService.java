@@ -1444,6 +1444,48 @@ public class TransactionService {
         }
     }
 
+    /**
+     * Enhanced transaction acceptance with maintenance handling
+     */
+    public Transaction acceptTransactionWithMaintenanceHandling(
+            UUID transactionId,
+            Map<UUID, Integer> receivedQuantities,
+            Map<UUID, Boolean> itemsNotReceived,
+            String username,
+            String acceptanceComment,
+            TransactionPurpose purpose,
+            com.example.backend.dto.equipment.MaintenanceLinkingRequest maintenanceRequest) {
+
+        // First, accept the transaction normally
+        Transaction acceptedTransaction = acceptTransactionWithPurpose(
+                transactionId, receivedQuantities, itemsNotReceived,
+                username, acceptanceComment, purpose);
+
+        // If maintenance request is provided and transaction is MAINTENANCE purpose, handle it
+        if (maintenanceRequest != null && purpose == TransactionPurpose.MAINTENANCE) {
+            handleMaintenanceLinking(acceptedTransaction, maintenanceRequest);
+        }
+
+        return acceptedTransaction;
+    }
+
+    /**
+     * Handle maintenance linking based on the request type
+     */
+    private void handleMaintenanceLinking(Transaction transaction,
+                                        com.example.backend.dto.equipment.MaintenanceLinkingRequest maintenanceRequest) {
+
+        // This would typically be handled by the MaintenanceIntegrationService
+        // For now, we'll just set the purpose to ensure it's properly marked
+        if (transaction.getPurpose() != TransactionPurpose.MAINTENANCE) {
+            transaction.setPurpose(TransactionPurpose.MAINTENANCE);
+            transactionRepository.save(transaction);
+        }
+
+        // Note: The actual maintenance linking will be handled by the controller
+        // using the MaintenanceIntegrationService to avoid circular dependencies
+    }
+
     // ADD THESE METHODS TO YOUR TransactionService CLASS
 
     /**
