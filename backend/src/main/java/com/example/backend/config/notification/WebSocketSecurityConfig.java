@@ -77,15 +77,12 @@ public class WebSocketSecurityConfig implements WebSocketMessageBrokerConfigurer
                                     }
                                 }
                             } catch (Exception e) {
-                                System.out.println("WebSocket authentication error: " + e.getMessage());
                                 throw new IllegalArgumentException("Authentication failed: " + e.getMessage());
                             }
                         } else {
-                            System.out.println("WebSocket authentication failed: No Bearer token");
                             throw new IllegalArgumentException("Missing or invalid Authorization header");
                         }
                     } else {
-                        System.out.println("WebSocket authentication failed: No Authorization header");
                         throw new IllegalArgumentException("Missing Authorization header");
                     }
                 }

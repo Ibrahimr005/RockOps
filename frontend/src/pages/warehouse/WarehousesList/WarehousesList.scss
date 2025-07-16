@@ -24,31 +24,11 @@
   color: var(--head-title-color);
 }
 
-.warehouse-list-add-button {
-  background-color: var(--color-primary);
-  color: var(--color-text-inverse);
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 10px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 
-.warehouse-list-add-button:hover {
-  background-color: var(--color-primary-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
 
-.warehouse-list-add-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
+
+
+
 
 /* Grid Layout */
 .warehouse-list-grid {
@@ -161,7 +141,7 @@
 /* Action Buttons */
 .warehouse-list-card-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   margin-top: 20px;
   gap: 10px;
@@ -579,5 +559,577 @@
   .warehouse-modal-content {
     width: 95%;
     max-height: 90vh;
+  }
+}
+
+/* Add these styles to your existing WarehousesList.scss file */
+
+/* Header Actions for Assignment Button */
+.warehouse-list-header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.warehouse-list-assign-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+
+  &:hover {
+    background: linear-gradient(135deg, #4338ca 0%, #5b21b6 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  }
+
+  svg {
+    font-size: 1rem;
+  }
+}
+/* Simplified Assignment Modal Styles */
+.warehouse-list-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.warehouse-list-modal-content {
+  background: var(--section-background-color);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 700px;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+}
+
+/* Assignment Modal Specific Styles */
+.warehouse-list-assignment-modal {
+  max-width: 850px;
+
+  .warehouse-list-modal-header {
+    background: var(--main-background-color);
+    color: var(--color-text-primary);
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+
+      svg {
+        font-size: 1.125rem;
+        color: var(--color-text-secondary);
+      }
+    }
+
+    .warehouse-list-modal-close-button {
+      color: var(--color-text-secondary);
+      background: transparent;
+      border: none;
+      padding: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+
+      &:hover {
+        background: var(--color-surface-hover);
+        color: var(--color-text-primary);
+      }
+    }
+  }
+
+  .warehouse-list-modal-body {
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+    background: var(--main-background-color);
+  }
+}
+
+/* Assignment Container */
+.warehouse-list-assignment-container {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.warehouse-list-assignment-section {
+  background: var(--section-background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 24px;
+
+  h3 {
+    margin: 0 0 20px 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+  }
+}
+
+/* Selected Warehouse Display */
+.warehouse-list-selected-warehouse {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background: var(--color-surface);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.warehouse-list-selected-warehouse-image {
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+.warehouse-list-selected-warehouse-details {
+  flex: 1;
+
+  h4 {
+    margin: 0 0 6px 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  p {
+    margin: 0 0 4px 0;
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+  }
+}
+
+/* Form Elements */
+.warehouse-list-form-select {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+
+  &:disabled {
+    background: var(--color-surface-hover);
+    color: var(--color-text-secondary);
+    cursor: not-allowed;
+  }
+}
+
+/* Assignment Input Group */
+.warehouse-list-assignment-input-group {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+
+  .warehouse-list-form-select {
+    flex: 1;
+  }
+}
+
+.warehouse-list-assignment-add-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 12px 16px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-dark);
+  }
+
+  &:disabled {
+    background: var(--color-surface-hover);
+    color: var(--color-text-secondary);
+    cursor: not-allowed;
+  }
+
+  svg {
+    font-size: 0.875rem;
+  }
+}
+
+/* Assignment Info Messages */
+.warehouse-list-assignment-info {
+  padding: 16px 0;
+
+  p {
+    margin: 0;
+    margin-left:1rem;
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+  }
+}
+
+/* Assigned Employees List */
+.warehouse-list-assigned-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.warehouse-list-assigned-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+}
+
+.warehouse-list-assigned-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.warehouse-list-assigned-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.warehouse-list-employee-initials {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.warehouse-list-assigned-details {
+  flex: 1;
+
+  h4 {
+    margin: 0 0 4px 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  p {
+    margin: 0 0 2px 0;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+
+  .warehouse-list-assignment-date {
+    font-size: 0.875rem;
+    margin-top: 4px;
+  }
+}
+
+.warehouse-list-assigned-remove-button {
+  padding: 10px;
+  background: var(--color-danger);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: var(--color-danger-dark);
+  }
+
+  &:disabled {
+    background: var(--color-surface-hover);
+    color: var(--color-text-secondary);
+    cursor: not-allowed;
+  }
+
+  svg {
+    font-size: 1rem;
+  }
+}
+
+/* No Assignments State */
+.warehouse-list-no-assignments {
+  text-align: center;
+  padding: 40px 24px;
+  color: var(--color-text-secondary);
+
+  .warehouse-list-no-assignments-icon {
+    margin-bottom: 16px;
+    color: var(--color-text-tertiary);
+  }
+
+  h4 {
+    margin: 0 0 12px 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  p {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  .warehouse-list-assignment-hint {
+    margin-top: 12px;
+    font-size: 0.875rem;
+    color: var(--color-text-tertiary);
+  }
+}
+
+/* Assignment Footer */
+.warehouse-list-assignment-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.warehouse-list-assignment-footer .btn-primary {
+  padding: 12px 24px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  width: auto !important;
+  flex: none !important;
+
+  &:hover {
+    background: var(--color-primary-dark);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.warehouse-list-form-cancel-button {
+  padding: 10px 20px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  width: auto;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--color-primary-dark);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* Loading States */
+.warehouse-list-assignment-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 20px;
+
+  .warehouse-list-assignment-loading {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border-color);
+    border-top: 2px solid var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-color);
+  border-top: 2px solid var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .warehouse-list-assignment-modal {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .warehouse-list-assignment-container {
+    padding: 16px;
+    gap: 20px;
+  }
+
+  .warehouse-list-assignment-section {
+    padding: 16px;
+
+    h3 {
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+    }
+  }
+
+  .warehouse-list-assignment-input-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+
+    .warehouse-list-assignment-add-button {
+      padding: 12px 16px;
+    }
+  }
+
+  .warehouse-list-assigned-item {
+    padding: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+
+    .warehouse-list-assigned-info {
+      width: 100%;
+    }
+
+    .warehouse-list-assigned-remove-button {
+      align-self: flex-end;
+    }
+  }
+
+  .warehouse-list-selected-warehouse {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .warehouse-list-modal-header {
+    padding: 16px 20px;
+
+    h2 {
+      font-size: 1.125rem;
+    }
+  }
+}
+
+/* Dark Theme Support */
+[data-theme="dark"] {
+  .warehouse-list-modal-overlay {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  .warehouse-list-assignment-section {
+    background: var(--section-background-color);
+    border-color: var(--border-color);
+  }
+
+  .warehouse-list-assigned-item {
+    background: var(--section-background-color);
+    border-color: var(--border-color);
+
+    &:hover {
+      background: var(--color-surface-hover);
+    }
+  }
+
+  .warehouse-list-no-assignments {
+    background: var(--section-background-color);
+  }
+
+  .warehouse-list-form-select {
+    background: var(--color-surface);
+    border-color: var(--border-color);
+    color: var(--color-text-primary);
+
+    &:focus {
+      border-color: var(--color-primary);
+    }
+
+    &:disabled {
+      background: var(--color-surface-hover);
+      color: var(--color-text-secondary);
+    }
   }
 }

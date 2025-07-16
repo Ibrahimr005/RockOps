@@ -152,11 +152,16 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
                 batchNumber: "",
             });
             setSelectedSenderSite("");
-            setSelectedReceiverSite("");
+            // Set default receiver site to warehouse's site when opening modal
+            if (warehouseData.site?.id) {
+                setSelectedReceiverSite(warehouseData.site.id);
+            } else {
+                setSelectedReceiverSite("");
+            }
             setChildCategoriesByItem({});
             setShowFilters({});
         }
-    }, [isTransactionModalOpen, modalMode, warehouseId]);
+    }, [isTransactionModalOpen, modalMode, warehouseId, warehouseData.site?.id]);
 
     // Update transaction data when role changes
     useEffect(() => {
@@ -169,7 +174,12 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
                 receiverId: "",
             }));
             setSelectedSenderSite("");
-            setSelectedReceiverSite("");
+            // Set default receiver site to warehouse's site
+            if (warehouseData.site?.id) {
+                setSelectedReceiverSite(warehouseData.site.id);
+            } else {
+                setSelectedReceiverSite("");
+            }
         } else if (transactionRole === "receiver") {
             setNewTransaction(prev => ({
                 ...prev,
@@ -178,10 +188,15 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
                 receiverType: "WAREHOUSE",
                 receiverId: warehouseId,
             }));
-            setSelectedSenderSite("");
+            // Set default sender site to warehouse's site
+            if (warehouseData.site?.id) {
+                setSelectedSenderSite(warehouseData.site.id);
+            } else {
+                setSelectedSenderSite("");
+            }
             setSelectedReceiverSite("");
         }
-    }, [transactionRole, warehouseId]);
+    }, [transactionRole, warehouseId, warehouseData.site?.id]);
 
     // Format date-time for input fields
     const formatDateTimeForInput = (dateTimeString) => {
@@ -266,6 +281,7 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
                 setWarehouseData({
                     name: data.name || "",
                     id: data.id || "",
+                    site: data.site || null  // ADD THIS LINE to store the site
                 });
             }
         } catch (error) {

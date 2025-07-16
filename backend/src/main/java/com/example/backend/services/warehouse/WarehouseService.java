@@ -25,35 +25,57 @@ public class WarehouseService {
 
 
     public List<Map<String, Object>> getAllWarehouses() {
-        List<Warehouse> warehouses = warehouseRepository.findAll();
-        List<Map<String, Object>> warehouseList = new ArrayList<>();
+        try {
+            List<Warehouse> warehouses = warehouseRepository.findAll();
+            List<Map<String, Object>> warehouseList = new ArrayList<>();
 
-        for (Warehouse warehouse : warehouses) {
-            Map<String, Object> warehouseData = new HashMap<>();
-            warehouseData.put("id", warehouse.getId());
-            warehouseData.put("name", warehouse.getName());
+            for (Warehouse warehouse : warehouses) {
+                Map<String, Object> warehouseData = new HashMap<>();
+                warehouseData.put("id", warehouse.getId());
+                warehouseData.put("name", warehouse.getName());
+                warehouseData.put("photoUrl", warehouse.getPhotoUrl());
 
-            // Add site details
-            if (warehouse.getSite() != null) {
-                Map<String, Object> siteDetails = new HashMap<>();
-                siteDetails.put("id", warehouse.getSite().getId());
-                siteDetails.put("name", warehouse.getSite().getName());
-                warehouseData.put("site", siteDetails);
+                // Add site details safely
+                if (warehouse.getSite() != null) {
+                    Map<String, Object> siteDetails = new HashMap<>();
+                    siteDetails.put("id", warehouse.getSite().getId());
+                    siteDetails.put("name", warehouse.getSite().getName());
+                    warehouseData.put("site", siteDetails);
+                } else {
+                    warehouseData.put("site", null);
+                }
+
+                // Add employees safely (avoid circular references)
+                List<Map<String, Object>> employeesList = new ArrayList<>();
+                if (warehouse.getEmployees() != null) {
+                    for (Employee employee : warehouse.getEmployees()) {
+                        Map<String, Object> employeeData = new HashMap<>();
+                        employeeData.put("id", employee.getId());
+                        employeeData.put("firstName", employee.getFirstName());
+                        employeeData.put("lastName", employee.getLastName());
+
+                        if (employee.getJobPosition() != null) {
+                            Map<String, Object> jobPosition = new HashMap<>();
+                            jobPosition.put("positionName", employee.getJobPosition().getPositionName());
+                            employeeData.put("jobPosition", jobPosition);
+                        }
+
+                        employeesList.add(employeeData);
+                    }
+                }
+                warehouseData.put("employees", employeesList);
+
+                warehouseList.add(warehouseData);
             }
 
-            // Add employees
-            List<Map<String, Object>> employeesList = new ArrayList<>();
-            for (Employee employee : warehouse.getEmployees()) {
-                Map<String, Object> employeeData = new HashMap<>();
-                employeeData.put("id", employee.getId());
+            System.out.println("Successfully processed " + warehouseList.size() + " warehouses");
+            return warehouseList;
 
-                employeesList.add(employeeData);
-            }
-            warehouseData.put("employees", employeesList);
-
-            warehouseList.add(warehouseData);
+        } catch (Exception e) {
+            System.err.println("Error in getAllWarehouses: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to fetch warehouses", e);
         }
-        return warehouseList;
     }
 
     public Warehouse getWarehouseById(UUID id) {

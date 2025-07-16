@@ -5,7 +5,7 @@ import InWarehouseItems from "./InWarehouse/InWarehouseItems.jsx";
 import DiscrepancyItems from "./DiscrepancyItems/DiscrepancyItems.jsx";
 import ResolutionHistory from "./ResolutionHistory/ResolutionHistory.jsx";
 
-const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems }) => {
+const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems,onDiscrepancyCountChange }) => {
   // Shared states
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -66,6 +66,20 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
       setLoading(false);
     }
   };
+
+  const getDiscrepancyCounts = () => {
+    const missingCount = tableData.filter(item => item.itemStatus === 'MISSING' && !item.resolved).length;
+    const excessCount = tableData.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved).length;
+    return { missingCount, excessCount, totalDiscrepancies: missingCount + excessCount };
+  };
+
+// Add this useEffect to notify parent component about discrepancy counts
+  useEffect(() => {
+    if (onDiscrepancyCountChange) {
+      const counts = getDiscrepancyCounts();
+      onDiscrepancyCountChange(counts);
+    }
+  }, [tableData, onDiscrepancyCountChange]);
 
   // Fetch warehouse details
   const fetchWarehouseDetails = async () => {

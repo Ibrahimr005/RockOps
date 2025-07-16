@@ -72,7 +72,8 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
         }
     }, [onAddButtonClick]);
 
-    // Fetch item types - updated to use global endpoint
+
+
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
@@ -91,7 +92,10 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
                     throw new Error("Failed to fetch data");
 
                 const data = await response.json();
-                console.log("Data fetched:", data);
+
+                // SIMPLE CONSOLE LOG OF ENTIRE RESPONSE
+                console.log("Complete API Response:", JSON.stringify(data, null, 2));
+
                 setTableData(data);
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -244,18 +248,31 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
         setDeleteLoading(false);
     };
 
-    // Define table columns for DataTable
+
+// Updated columns array with parent category column added before the category column
     const columns = [
         {
-            header: 'ITEM CATEGORY',
+            header: 'PARENT CATEGORY',
+            accessor: 'itemCategory.parentCategory.name',
+            sortable: true,
+            width: '200px',
+            minWidth: '150px',
+            render: (row) => (
+                <span className="parent-category-tag">
+                {row.itemCategory?.parentCategory?.name || "No Parent"}
+            </span>
+            )
+        },
+        {
+            header: 'CHILD CATEGORY',
             accessor: 'itemCategory.name',
             sortable: true,
-            width: '250px',
+            width: '200px',
             minWidth: '150px',
             render: (row) => (
                 <span className="category-tag">
-                    {row.itemCategory ? row.itemCategory.name : "No Category"}
-                </span>
+                {row.itemCategory ? row.itemCategory.name : "No Category"}
+            </span>
             )
         },
         {
@@ -269,7 +286,7 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
             header: 'MIN QUANTITY',
             accessor: 'minQuantity',
             sortable: true,
-            width: '220px',
+            width: '150px',
             minWidth: '120px',
             align: 'left'
         },
@@ -277,7 +294,7 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
             header: 'UNIT',
             accessor: 'measuringUnit',
             sortable: true,
-            width: '210px',
+            width: '120px',
             minWidth: '100px',
             align: 'left'
         },
@@ -285,15 +302,20 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
             header: 'SERIAL NUMBER',
             accessor: 'serialNumber',
             sortable: true,
-            width: '230px',
+            width: '180px',
             minWidth: '130px'
         }
     ];
 
-    // Filterable columns for DataTable
+// Updated filterable columns with parent category filter
     const filterableColumns = [
         {
-            header: 'ITEM CATEGORY',
+            header: 'PARENT CATEGORY',
+            accessor: 'itemCategory.parent.name',
+            filterType: 'select'
+        },
+        {
+            header: 'CHILD CATEGORY',
             accessor: 'itemCategory.name',
             filterType: 'select'
         },

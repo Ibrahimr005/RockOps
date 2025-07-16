@@ -59,13 +59,46 @@ const WarehouseDetails = () => {
   const [warehouseData, setWarehouseData] = useState(null);
   const [activeTab, setActiveTab] = useState("items");
   const [userRole, setUserRole] = useState('');
-
-// Store functions from child components
+  const [discrepancyCounts, setDiscrepancyCounts] = useState({
+    missingCount: 0,
+    excessCount: 0,
+    totalDiscrepancies: 0
+  });
+  const [incomingTransactionsCount, setIncomingTransactionsCount] = useState(0);
   const [addFunctions, setAddFunctions] = useState({});
-
-// ADD THESE NEW STATE VARIABLES:
   const [restockItems, setRestockItems] = useState(null);
   const [shouldOpenRestockModal, setShouldOpenRestockModal] = useState(false);
+
+  // Function to fetch incoming transactions count directly - MOVED TO TOP
+  const fetchIncomingTransactionsCount = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8080/api/v1/transactions/warehouse/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Filter for incoming transactions (same logic as IncomingTransactionsTable)
+        const incomingCount = data.filter(transaction =>
+            transaction.status === "PENDING" &&
+            (transaction.receiverId === id || transaction.senderId === id) &&
+            transaction.sentFirst !== id
+        ).length;
+
+        setIncomingTransactionsCount(incomingCount);
+      }
+    } catch (error) {
+      console.error("Failed to fetch incoming transactions count:", error);
+    }
+  }, [id]);
 
   useEffect(() => {
     const fetchWarehouseDetails = async () => {
@@ -92,13 +125,16 @@ const WarehouseDetails = () => {
         setWarehouseData(data);
         console.log("warehouse:", JSON.stringify(data, null, 2));
 
+        // Fetch incoming transactions count immediately after warehouse data is loaded
+        fetchIncomingTransactionsCount();
+
       } catch (error) {
         console.error("Error fetching warehouse details:", error);
       }
     };
 
     fetchWarehouseDetails();
-  }, [id]);
+  }, [id, fetchIncomingTransactionsCount]);
 
   // FIXED: Simplified registration function
   const registerAddFunction = useCallback((tabName, func) => {
@@ -106,6 +142,14 @@ const WarehouseDetails = () => {
       ...prev,
       [tabName]: func
     }));
+  }, []);
+
+  const handleIncomingTransactionsCountChange = useCallback((count) => {
+    setIncomingTransactionsCount(count);
+  }, []);
+
+  const handleDiscrepancyCountChange = useCallback((counts) => {
+    setDiscrepancyCounts(counts);
   }, []);
 
   // Create individual callback functions for each tab - FIXED dependencies
@@ -129,7 +173,6 @@ const WarehouseDetails = () => {
     registerAddFunction('requestOrders', func);
   }, []);
 
-// ADD THIS NEW FUNCTION:
   const handleRestockItems = useCallback((itemsToRestock) => {
     console.log('Restock items requested:', itemsToRestock);
 
@@ -214,7 +257,8 @@ const WarehouseDetails = () => {
               <WarehouseViewItemsTable
                   warehouseId={id}
                   onAddButtonClick={handleItemsAddButtonClick}
-                  onRestockItems={handleRestockItems}  // ADD THIS LINE
+                  onRestockItems={handleRestockItems}
+                  onDiscrepancyCountChange={handleDiscrepancyCountChange}
               />
             </ErrorBoundary>
         );
@@ -242,6 +286,7 @@ const WarehouseDetails = () => {
               <WarehouseViewTransactionsTable
                   warehouseId={id}
                   onAddButtonClick={handleTransactionsAddButtonClick}
+                  onIncomingTransactionsCountChange={handleIncomingTransactionsCountChange}
               />
             </ErrorBoundary>
         );
@@ -251,8 +296,8 @@ const WarehouseDetails = () => {
               <WarehouseRequestOrders
                   warehouseId={id}
                   onAddButtonClick={handleRequestOrdersAddButtonClick}
-                  restockItems={restockItems}  // ADD THIS LINE
-                  shouldOpenRestockModal={shouldOpenRestockModal}  // ADD THIS LINE
+                  restockItems={restockItems}
+                  shouldOpenRestockModal={shouldOpenRestockModal}
               />
             </ErrorBoundary>
         );
@@ -262,7 +307,7 @@ const WarehouseDetails = () => {
               <WarehouseViewItemsTable
                   warehouseId={id}
                   onAddButtonClick={handleItemsAddButtonClick}
-                  onRestockItems={handleRestockItems}  // ADD THIS LINE
+                  onRestockItems={handleRestockItems}
               />
             </ErrorBoundary>
         );
@@ -297,6 +342,9 @@ const WarehouseDetails = () => {
                       onClick={() => setActiveTab("items")}
                   >
                     Inventory
+                    {discrepancyCounts.totalDiscrepancies > 0 && (
+                        <span className="notification-dot"></span>
+                    )}
                   </button>
 
                   <button
@@ -304,6 +352,9 @@ const WarehouseDetails = () => {
                       onClick={() => setActiveTab("transactions")}
                   >
                     Transactions
+                    {incomingTransactionsCount > 0 && (
+                        <span className="notification-dot"></span>
+                    )}
                   </button>
 
                   <button
@@ -333,21 +384,24 @@ const WarehouseDetails = () => {
           {/* For non-warehouse managers, show inventory with same structure but no top tabs */}
           {userRole !== 'WAREHOUSE_MANAGER' && (
               <div className="new-tabs-container">
-                {/* Unified container for content - same structure as with tabs */}
                 <div className="unified-tab-content-container">
-                  {/* Static Header - always shows "Inventory" */}
                   <div className="tab-content-header">
-                    <h2 className="tab-title">Inventory</h2>
+                    <h2 className="tab-title">
+                      Inventory
+                      {discrepancyCounts.totalDiscrepancies > 0 && (
+                          <span className="notification-dot-title"></span>
+                      )}
+                    </h2>
                     <div className="tab-header-line"></div>
                   </div>
 
-                  {/* Tab Content */}
                   <div className="tab-content-body">
                     <ErrorBoundary>
                       <WarehouseViewItemsTable
                           warehouseId={id}
                           onAddButtonClick={handleItemsAddButtonClick}
                           onRestockItems={handleRestockItems}
+                          onDiscrepancyCountChange={handleDiscrepancyCountChange}
                       />
                     </ErrorBoundary>
                   </div>

@@ -13,7 +13,7 @@ const ConfirmationDialog = ({
                                 onCancel,
                                 isLoading = false,
                                 showIcon = true,
-                                size = 'medium' // 'small', 'medium', 'large'
+                                size = 'large' // 'small', 'medium', 'large'
                             }) => {
     if (!isVisible) return null;
 
