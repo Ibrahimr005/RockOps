@@ -436,12 +436,12 @@
 }
 
 .journal-balance-status.balanced {
-    background-color: var(--color-success-light);
+    /*background-color: var(--color-success-light);*/
     color: var(--color-success);
 }
 
 .journal-balance-status.unbalanced {
-    background-color: var(--color-danger-light);
+    /*background-color: var(--color-danger-light);*/
     color: var(--color-danger);
 }
 
