@@ -20,11 +20,7 @@ export default defineConfig({
 
   css: {
     devSourcemap: true, // Enable CSS source maps
-    preprocessorOptions: {
-      scss: {
-        additionalData: `@import "@/styles/variables.scss";`
-      }
-    }
+
   },
 
   build: {
@@ -82,7 +78,7 @@ export default defineConfig({
   // Configure dev server for SPA routing during development
   server: {
     historyApiFallback: true,
-    port: 3000,
+    port: 5173,
     open: true,
     cors: true,
     proxy: {
