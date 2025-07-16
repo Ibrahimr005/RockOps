@@ -97,6 +97,24 @@ public class MinioService {
         return fileName;
     }
 
+    // Upload file with custom path/name
+    public String uploadFile(MultipartFile file, String objectName) throws Exception {
+        if (!minioEnabled) {
+            System.out.println("⚠️ MinIO is disabled, file upload skipped");
+            return "dummy-" + objectName + "-" + System.currentTimeMillis();
+        }
+        
+        minioClient.putObject(
+                PutObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(objectName)
+                        .stream(file.getInputStream(), file.getSize(), -1)
+                        .contentType(file.getContentType())
+                        .build()
+        );
+        return objectName;
+    }
+
     // Download file
     public InputStream downloadFile(String fileName) throws Exception {
         if (!minioEnabled) {
@@ -170,6 +188,279 @@ public class MinioService {
         setBucketPublicReadPolicy(bucketName);
     }
 
+    //Equipment Methods
+
+    public void createEquipmentBucket(UUID equipmentId) throws Exception {
+        if (!minioEnabled) {
+            System.out.println("⚠️ MinIO is disabled, skipping equipment bucket creation");
+            return;
+        }
+        
+        String bucketName = "equipment-" + equipmentId.toString();
+        boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+
+        if (!found) {
+            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+            System.out.println("✅ Equipment bucket created: " + bucketName);
+        } else {
+            System.out.println("✅ Equipment bucket already exists: " + bucketName);
+        }
+
+        // Always ensure the bucket has public read policy
+        setBucketPublicReadPolicy(bucketName);
+    }
+
+    public String uploadEquipmentFile(UUID equipmentId, MultipartFile file, String fileName) throws Exception {
+        if (!minioEnabled) {
+            System.out.println("⚠️ MinIO is disabled, equipment file upload skipped");
+            return "dummy-equipment-" + equipmentId + "-" + fileName + "-" + System.currentTimeMillis();
+        }
+        
+        String equipmentBucket = "equipment-" + equipmentId.toString();
+        // Ensure bucket exists before uploading
+        createEquipmentBucket(equipmentId);
+
+        minioClient.putObject(
+                PutObjectArgs.builder()
+                        .bucket(equipmentBucket)
+                        .object(fileName)
+                        .stream(file.getInputStream(), file.getSize(), -1)
+                        .contentType(file.getContentType())
+                        .build()
+        );
+
+        return fileName;
+    }
+
+    public String getEquipmentMainPhoto(UUID equipmentId) throws Exception {
+        if (!minioEnabled) {
+            return "https://via.placeholder.com/300x200?text=Equipment+Photo+Disabled";
+        }
+        
+        String equipmentBucket = "equipment-" + equipmentId.toString();
+
+        // List objects in the bucket to find the "main image"
+        Iterable<Result<Item>> results = minioClient.listObjects(
+                ListObjectsArgs.builder().bucket(equipmentBucket).build()
+        );
+
+        for (Result<Item> result : results) {
+            Item item = result.get();
+            if (item.objectName().contains("Main_Image")) {
+                // Return simple public URL like working photos
+                return minioPublicUrl + "/" + equipmentBucket + "/" + item.objectName();
+            }
+        }
+
+        throw new Exception("Main image not found for equipment: " + equipmentId);
+    }
+
+    public void deleteEquipmentFile(UUID equipmentId, String fileName) throws Exception {
+        if (!minioEnabled) {
+            System.out.println("⚠️ MinIO is disabled, equipment file deletion skipped");
+            return;
+        }
+        
+        String equipmentBucket = "equipment-" + equipmentId.toString();
+
+        // List all objects in the bucket
+        Iterable<Result<Item>> results = minioClient.listObjects(
+                ListObjectsArgs.builder().bucket(equipmentBucket).build()
+        );
+
+        String matchingFileName = null;
+
+        // Find the file that contains the given fileName
+        for (Result<Item> result : results) {
+            String objectName = result.get().objectName();
+            if (objectName.contains(fileName)) {
+                matchingFileName = objectName;
+                break; // Stop searching once we find a match
+            }
+        }
+
+        if (matchingFileName != null) {
+            // Delete the found file
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(equipmentBucket)
+                            .object(matchingFileName)
+                            .build()
+            );
+            System.out.println("File " + matchingFileName + " deleted successfully from bucket " + equipmentBucket);
+        } else {
+            System.out.println("File " + fileName + " not found in bucket " + equipmentBucket);
+        }
+    }
+
+    public String getEquipmentFileUrl(UUID equipmentId, String documentPath) throws Exception {
+        if (!minioEnabled) {
+            return "https://via.placeholder.com/300x200?text=Equipment+File+Disabled";
+        }
+        
+        String equipmentBucket = "equipment-" + equipmentId.toString();
+        return minioPublicUrl + "/" + equipmentBucket + "/" + documentPath;
+    }
+
+    // GENERIC DOCUMENT METHODS
+
+    /**
+     * Upload a file to any bucket
+     */
+    public void uploadFile(String bucketName, MultipartFile file, String fileName) throws Exception {
+        if (!minioEnabled) {
+            System.out.println("⚠️ MinIO is disabled, file upload skipped for bucket: " + bucketName);
+            return;
+        }
+        
+        // Ensure bucket exists
+        createBucketIfNotExists(bucketName);
+
+        // Upload file
+        minioClient.putObject(
+                PutObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(fileName)
+                        .stream(file.getInputStream(), file.getSize(), -1)
+                        .contentType(file.getContentType())
+                        .build()
+        );
+
+        System.out.println("File uploaded: " + fileName + " to bucket: " + bucketName);
+    }
+
+    /**
+     * Get a file URL from any bucket
+     */
+    public String getFileUrl(String bucketName, String fileName) throws Exception {
+        if (!minioEnabled) {
+            return "https://via.placeholder.com/300x200?text=File+Storage+Disabled";
+        }
+        return minioPublicUrl + "/" + bucketName + "/" + fileName;
+    }
+
+    /**
+     * Delete a file from any bucket
+     */
+    public void deleteFile(String bucketName, String fileName) throws Exception {
+        if (!minioEnabled) {
+            System.out.println("⚠️ MinIO is disabled, file deletion skipped for bucket: " + bucketName);
+            return;
+        }
+        
+        // First check if the file exists
+        Iterable<Result<Item>> results = minioClient.listObjects(
+                ListObjectsArgs.builder().bucket(bucketName).build()
+        );
+
+        String matchingFileName = null;
+
+        // Find the file that contains the given fileName
+        for (Result<Item> result : results) {
+            String objectName = result.get().objectName();
+            if (objectName.contains(fileName)) {
+                matchingFileName = objectName;
+                break; // Stop searching once we find a match
+            }
+        }
+
+        if (matchingFileName != null) {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(matchingFileName)
+                            .build()
+            );
+
+            System.out.println("File deleted: " + matchingFileName + " from bucket: " + bucketName);
+        } else {
+            System.out.println("File not found: " + fileName + " in bucket: " + bucketName);
+        }
+    }
+
+    /**
+     * List all files in a bucket
+     */
+    public Iterable<Result<Item>> listFiles(String bucketName) throws Exception {
+        if (!minioEnabled) {
+            throw new Exception("MinIO is disabled, cannot list files");
+        }
+        
+        boolean bucketExists = minioClient.bucketExists(
+                BucketExistsArgs.builder().bucket(bucketName).build()
+        );
+
+        if (!bucketExists) {
+            throw new Exception("Bucket does not exist: " + bucketName);
+        }
+
+        return minioClient.listObjects(
+                ListObjectsArgs.builder().bucket(bucketName).build()
+        );
+    }
+
+    /**
+     * Create a bucket for any entity type
+     */
+    public void createEntityBucket(String entityType, UUID entityId) throws Exception {
+        if (!minioEnabled) {
+            System.out.println("⚠️ MinIO is disabled, skipping entity bucket creation");
+            return;
+        }
+        
+        String bucketName = entityType.toLowerCase() + "-" + entityId.toString();
+        boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+
+        if (!found) {
+            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+            System.out.println("✅ Entity bucket created: " + bucketName);
+        } else {
+            System.out.println("✅ Entity bucket already exists: " + bucketName);
+        }
+
+        // Always ensure the bucket has public read policy
+        setBucketPublicReadPolicy(bucketName);
+    }
+
+    /**
+     * Upload a file for any entity
+     */
+    public String uploadEntityFile(String entityType, UUID entityId, MultipartFile file, String fileName) throws Exception {
+        if (!minioEnabled) {
+            System.out.println("⚠️ MinIO is disabled, entity file upload skipped");
+            return "dummy-entity-" + entityType + "-" + entityId + "-" + fileName + "-" + System.currentTimeMillis();
+        }
+        
+        String bucketName = entityType.toLowerCase() + "-" + entityId.toString();
+        uploadFile(bucketName, file, fileName);
+        return fileName;
+    }
+
+    /**
+     * Get file URL for any entity
+     */
+    public String getEntityFileUrl(String entityType, UUID entityId, String fileName) throws Exception {
+        if (!minioEnabled) {
+            return "https://via.placeholder.com/300x200?text=Entity+File+Disabled";
+        }
+        
+        String bucketName = entityType.toLowerCase() + "-" + entityId.toString();
+        return minioPublicUrl + "/" + bucketName + "/" + fileName;
+    }
+
+    /**
+     * Delete a file for any entity
+     */
+    public void deleteEntityFile(String entityType, UUID entityId, String fileName) throws Exception {
+        if (!minioEnabled) {
+            System.out.println("⚠️ MinIO is disabled, entity file deletion skipped");
+            return;
+        }
+        
+        String bucketName = entityType.toLowerCase() + "-" + entityId.toString();
+        deleteFile(bucketName, fileName);
+    }
+
     // Get presigned URL for uploading
     public String getPresignedUploadUrl(String fileName) throws Exception {
         if (!minioEnabled) {
@@ -200,7 +491,7 @@ public class MinioService {
         );
     }
 
-    // List all files in bucket
+    // List all files in default bucket
     public Iterable<Result<Item>> listFiles() throws Exception {
         if (!minioEnabled) {
             throw new Exception("MinIO is disabled, cannot list files");
@@ -208,7 +499,7 @@ public class MinioService {
         return minioClient.listObjects(ListObjectsArgs.builder().bucket(bucketName).build());
     }
 
-    // Delete file
+    // Delete file from default bucket
     public void deleteFile(String fileName) throws Exception {
         if (!minioEnabled) {
             System.out.println("⚠️ MinIO is disabled, file deletion skipped");
