@@ -1,15 +1,20 @@
 package com.example.backend.controllers.warehouse;
 
 
+import com.example.backend.dto.warehouse.WarehouseAssignmentDTO;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.warehouse.Warehouse;
+import com.example.backend.models.warehouse.WarehouseEmployee;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
+import com.example.backend.services.warehouse.WarehouseEmployeeService;
 import com.example.backend.services.warehouse.WarehouseService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @CrossOrigin(origins = "http://localhost:3000")
@@ -21,6 +26,10 @@ public class WarehouseController {
     private WarehouseService warehouseService;
     @Autowired
     private WarehouseRepository warehouseRepository;
+
+    @Autowired
+    private WarehouseEmployeeService warehouseEmployeeService;
+
 
 
 
@@ -90,11 +99,49 @@ public class WarehouseController {
     }
 
     @GetMapping("/site/{siteId}")
-    public ResponseEntity<List<Warehouse>> getWarehousesBySite(@PathVariable UUID siteId) {
-        List<Warehouse> warehouses = warehouseService.getWarehousesBySite(siteId);
-        return ResponseEntity.ok(warehouses);
+    public ResponseEntity<List<Map<String, Object>>> getWarehousesBySite(@PathVariable UUID siteId) {
+        try {
+            List<Warehouse> warehouses = warehouseService.getWarehousesBySite(siteId);
+
+            List<Map<String, Object>> result = warehouses.stream()
+                    .map(warehouse -> {
+                        Map<String, Object> warehouseData = new HashMap<>();
+                        warehouseData.put("id", warehouse.getId());
+                        warehouseData.put("name", warehouse.getName());
+                        warehouseData.put("photoUrl", warehouse.getPhotoUrl());
+                        return warehouseData;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.ok(Collections.emptyList());
+        }
     }
 
+    @GetMapping("/{warehouseId}/assigned-users")
+    public ResponseEntity<List<WarehouseEmployee>> getAssignedEmployeesWithDetails(@PathVariable UUID warehouseId) {
+        try {
+            List<WarehouseEmployee> assignments = warehouseEmployeeService.getEmployeeAssignmentsForWarehouse(warehouseId);
+            return ResponseEntity.ok(assignments);
+        } catch (Exception e) {
+            System.err.println("Error fetching assigned employees: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/{warehouseId}/assigned-users-dto")
+    public ResponseEntity<List<WarehouseAssignmentDTO>> getAssignedEmployeesAsDTO(@PathVariable UUID warehouseId) {
+        try {
+            List<WarehouseAssignmentDTO> assignments = warehouseEmployeeService.getEmployeeAssignmentDTOsForWarehouse(warehouseId);
+            return ResponseEntity.ok(assignments);
+        } catch (Exception e) {
+            System.err.println("Error fetching assigned employees as DTO: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 
 
 

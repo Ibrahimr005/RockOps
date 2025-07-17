@@ -77,105 +77,71 @@
   position: relative;
 }
 
-/* Table Structure */
-//.table-container {
-//  display: table;
-//  width: auto;
-//  border-collapse: collapse;
-//  table-layout: auto; /* This is key - allows columns to size based on content */
-//}
 
-/* Table Header Styles */
-.table-header-row {
-  display: table-row;
-  background-color: var(--color-surface-hover);
-  border-bottom: 1px solid var(--border-color);
-  font-weight: var(--bold-font-weight);
-  color: var(--color-text-secondary);
-  font-size: 8px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
 
-.table-header-cell {
-  display: table-cell;
-  padding: 16px 8px;
-  font-size: 10px;
-  white-space: nowrap;
-  vertical-align: middle;
-  overflow: visible;
-}
 
-.table-header-cell:not(:last-child),
-.table-cell:not(:last-child) {
-  padding-right: 100px; /* Add some spacing between columns */
-}
 
-/* Table Body Styles */
-.table-body {
-  display: table-row-group;
-  height: auto; /* Ensures the table body grows based on its content */
-  max-height: none; /* Remove max-height to avoid restriction */
-  overflow-y: visible; /* Ensures the content is visible */
-}
 
-.table-row {
-  display: table-row;
-  border-bottom: 1px solid var(--border-color);
-  transition: all var(--transition-fast);
-}
-
-.table-row:last-child {
-  border-bottom: none;
-}
-
-.table-row:hover {
-  background-color: var(--color-surface-hover);
-}
-
-.table-cell {
-  display: table-cell;
-  padding: 16px 8px;
-  font-size: 14px;
-  vertical-align: middle;
-  overflow: visible; /* Make sure content overflows if it's too long */
-  white-space: nowrap; /* Prevent wrapping */
-  color: var(--color-text-primary);
-}
-
-/* Cell Width Settings - will adjust dynamically based on content */
-.id-cell,
-.name-cell,
-.category-cell,
-.quantity-cell,
-.unit-cell,
-.serial-cell,
-.status-cell,
-.actions-cell,
-.comment-cell{
-  white-space: nowrap; /* Prevents text wrapping */
-  padding: 16px 12px; /* Give a bit more horizontal padding */
-  font-size:12px;
-}
-
-.table-cell.actions-cell {
-  padding-right: 25px !important; /* Reduce the padding for better alignment */
-}
-
-.table-cell.category-cell{
-  padding-left : 15px !important;
-}
 
 /* Category and Status Styles */
+/* Professional Grey Shades Category Tags */
+
+.parent-category-tag {
+  display: inline-block;
+  padding: 5px 12px;
+  background-color: #e5e7eb; /* Light grey for light mode */
+  color: #374151; /* Dark text */
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: -0.5rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #d1d5db;
+    transform: translateY(-1px);
+  }
+
+  /* Dark mode */
+  [data-theme="dark"] & {
+    background-color: #374151; /* Dark grey for dark mode */
+    color: white;
+    border-color: #374151;
+
+    &:hover {
+      background-color: #1f2937;
+    }
+  }
+}
+
 .category-tag {
   display: inline-block;
-  padding: 6px 12px;
-  background-color: #81d4fa; /* Nice light blue */
-  color: var(--color-text-inverse);
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
+  padding: 5px 12px;
+  background-color: #e5e7eb; /* Light grey for light mode */
+  color: #374151; /* Dark text */
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
   margin-left: -0.5rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #d1d5db;
+    transform: translateY(-1px);
+  }
+
+  /* Dark mode */
+  [data-theme="dark"] & {
+    background-color: #374151; /* Dark grey for dark mode */
+    color: white;
+    border-color: #374151;
+
+    &:hover {
+      background-color: #1f2937;
+    }
+  }
 }
 
 .status-tag {

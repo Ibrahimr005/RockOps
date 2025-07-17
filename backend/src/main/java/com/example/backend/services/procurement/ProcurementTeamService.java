@@ -291,6 +291,36 @@ public class ProcurementTeamService {
         }
     }
 
+    public void deleteMerchant(UUID id) {
+        try {
+            System.out.println("Attempting to delete merchant with ID: " + id);
+
+            // Validate ID
+            if (id == null) {
+                throw new RuntimeException("Merchant ID cannot be null");
+            }
+
+            // Check if merchant exists
+            Merchant merchant = merchantRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Merchant not found with ID: " + id));
+
+            System.out.println("Found merchant to delete: " + merchant.getName());
+
+            // Delete the merchant
+            merchantRepository.delete(merchant);
+
+            System.out.println("Successfully deleted merchant with ID: " + id);
+
+        } catch (RuntimeException e) {
+            System.err.println("Business logic error: " + e.getMessage());
+            throw e; // Re-throw runtime exceptions as-is
+        } catch (Exception e) {
+            System.err.println("Unexpected error deleting merchant: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to delete merchant due to unexpected error: " + e.getMessage(), e);
+        }
+    }
+
 
 
 

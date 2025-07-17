@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./WarehousesList.scss";
-import warehouseImg from "../../../assets/imgs/warehouse1.jpg"; // Default warehouse image
-import { FaWarehouse, FaTimes } from 'react-icons/fa'; // Added FaTimes for remove icons
+import warehouseImg from "../../../assets/imgs/warehouse1.jpg";
+import { FaWarehouse, FaTimes, FaUserCog, FaPlus } from 'react-icons/fa';
 import { useAuth } from "../../../contexts/AuthContext";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
+import Snackbar from "../../../components/common/Snackbar/Snackbar";
+import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog";
 
 const WarehousesList = () => {
     const [warehouses, setWarehouses] = useState([]);
@@ -13,80 +15,185 @@ const WarehousesList = () => {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
 
-    // Modal states and data
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [sites, setSites] = useState([]);
-    const [managers, setManagers] = useState([]);
-    const [workers, setWorkers] = useState([]);
-    const [formData, setFormData] = useState({
-        id: "",
-        name: "",
-        siteId: "",
-        managerId: "",
-        workerIds: [], // Changed from workerId to workerIds array
-        photo: null
-    });
-    const [previewImage, setPreviewImage] = useState(null);
-    const [editingWarehouse, setEditingWarehouse] = useState(null);
-    const [selectedWorker, setSelectedWorker] = useState(""); // New state for the worker select
+    // Assignment modal states
+    const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+    const [warehouseEmployees, setWarehouseEmployees] = useState([]);
+    const [selectedEmployee, setSelectedEmployee] = useState("");
+    const [assignedEmployees, setAssignedEmployees] = useState([]);
+    const [selectedWarehouse, setSelectedWarehouse] = useState(null);
     const [totalItemsMap, setTotalItemsMap] = useState({});
+    const [assignmentLoading, setAssignmentLoading] = useState(false);
 
+    // Pending changes tracking
+    const [pendingAssignments, setPendingAssignments] = useState([]);
+    const [pendingUnassignments, setPendingUnassignments] = useState([]);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
+    // Snackbar state
+    const [snackbar, setSnackbar] = useState({
+        show: false,
+        type: 'success',
+        message: ''
+    });
 
-    // Fetch warehouses on initial load
-    useEffect(() => {
-        fetchWarehouses();
-    }, []);
+    // Confirmation dialog state
+    const [confirmDialog, setConfirmDialog] = useState({
+        isVisible: false,
+        type: 'warning',
+        title: '',
+        message: '',
+        onConfirm: null
+    });
 
-    // Fetch related data when modal opens
-    useEffect(() => {
-        if (showAddModal || showEditModal) {
-            fetchSites();
-            fetchManagers();
-            fetchWorkers();
+    // Check if current user is warehouse manager
+    const isWarehouseManager = currentUser?.role === 'WAREHOUSE_MANAGER';
+
+    // Snackbar helper functions
+    const showSnackbar = (type, message) => {
+        setSnackbar({ show: true, type, message });
+    };
+
+    const hideSnackbar = () => {
+        setSnackbar(prev => ({ ...prev, show: false }));
+    };
+
+    // Confirmation dialog helper functions
+    const showConfirmDialog = (type, title, message, onConfirm) => {
+        setConfirmDialog({
+            isVisible: true,
+            type,
+            title,
+            message,
+            onConfirm
+        });
+    };
+
+    const hideConfirmDialog = () => {
+        setConfirmDialog(prev => ({ ...prev, isVisible: false }));
+    };
+
+    // API functions for actual assignment/unassignment
+    const assignEmployeeToWarehouseAPI = async (employeeId, warehouseId) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:8080/api/v1/warehouseEmployees/${employeeId}/assign-warehouse`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ warehouseId })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to assign employee");
         }
-    }, [showAddModal, showEditModal]);
 
-    // Set form data when editing warehouse
+        return await response.json();
+    };
+
+    const unassignEmployeeFromWarehouseAPI = async (employeeId, warehouseId) => {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:8080/api/v1/warehouseEmployees/${employeeId}/unassign-warehouse`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ warehouseId })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to unassign employee");
+        }
+
+        return await response.json();
+    };
+
+    // Fetch warehouses on initial load - wait for currentUser to be available
     useEffect(() => {
-        if (editingWarehouse) {
-            // Find manager ID if it exists
-            const manager = editingWarehouse.employees?.find(
-                emp => emp.jobPosition?.positionName?.toLowerCase() === "warehouse manager"
-            );
+        console.log("Current user in useEffect:", currentUser);
+        if (currentUser && currentUser.role) {
+            fetchWarehouses();
+        }
+    }, [currentUser]);
 
-            const managerId = manager?.id || "";
+    // Fetch warehouse employees when assignment modal opens
+    useEffect(() => {
+        if (showAssignmentModal) {
+            fetchWarehouseEmployees();
+        }
+    }, [showAssignmentModal]);
 
-            // Find all worker IDs if they exist
-            const warehouseWorkers = editingWarehouse.employees?.filter(
-                emp => emp.jobPosition?.positionName?.toLowerCase() === "warehouse worker"
-            ) || [];
+    // Fetch assigned employees when warehouse is selected
+    useEffect(() => {
+        if (selectedWarehouse && showAssignmentModal) {
+            fetchWarehouseAssignedEmployees(selectedWarehouse.id);
+        }
+    }, [selectedWarehouse, showAssignmentModal]);
 
-            const workerIds = warehouseWorkers.map(worker => worker.id) || [];
+    // Replace the fetchAndFilterWarehousesForEmployee function in your WarehousesList.jsx
 
-            setFormData({
-                id: editingWarehouse.id,
-                name: editingWarehouse.name || "",
-                siteId: editingWarehouse.site?.id || "",
-                managerId: managerId,
-                workerIds: workerIds, // Store array of worker IDs
-                photo: null
+    const fetchAndFilterWarehousesForEmployee = async (allWarehouses) => {
+        try {
+            const token = localStorage.getItem('token');
+            console.log("Filtering warehouses for employee:", currentUser.username);
+            console.log("Total warehouses available:", allWarehouses.length);
+
+            // Get all warehouse assignments for this user
+            const response = await fetch(`http://localhost:8080/api/v1/warehouseEmployees/by-username/${currentUser.username}/assignments`, {
+                headers: { "Authorization": `Bearer ${token}` },
             });
 
-            // Set preview image if warehouse has photo
-            if (editingWarehouse.photoUrl) {
-                setPreviewImage(editingWarehouse.photoUrl);
-            } else {
-                setPreviewImage(null);
+            if (!response.ok) {
+                console.log("No assignments found for user or API error, showing empty list");
+                setWarehouses([]);
+                return;
             }
+
+            const assignments = await response.json();
+            console.log("Found assignments:", assignments);
+
+            if (!Array.isArray(assignments) || assignments.length === 0) {
+                console.log("No assignments array or empty assignments");
+                setWarehouses([]);
+                return;
+            }
+
+            // Extract warehouse IDs from assignments
+            const assignedWarehouseIds = assignments
+                .map(assignment => assignment.warehouse?.id)
+                .filter(Boolean); // Remove null/undefined values
+
+            console.log("Assigned warehouse IDs:", assignedWarehouseIds);
+
+            // Filter warehouses to only show assigned ones
+            const assignedWarehouses = allWarehouses.filter(warehouse =>
+                assignedWarehouseIds.includes(warehouse.id)
+            );
+
+            setWarehouses(assignedWarehouses);
+            console.log(`Warehouse employee can see ${assignedWarehouses.length} out of ${allWarehouses.length} warehouses`);
+            console.log("Visible warehouses:", assignedWarehouses.map(w => w.name));
+
+        } catch (error) {
+            console.error("Error filtering warehouses for employee:", error);
+            // If filtering fails, show empty list for security
+            setWarehouses([]);
         }
-    }, [editingWarehouse]);
+    };
+
+// Also update the fetchWarehouses function to add better debugging:
 
     const fetchWarehouses = async () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
+
+            console.log("Fetching warehouses for user role:", currentUser?.role);
+
+            // Always fetch from the main warehouses endpoint
             const response = await fetch("http://localhost:8080/api/v1/warehouses", {
                 method: 'GET',
                 headers: {
@@ -100,8 +207,20 @@ const WarehousesList = () => {
             }
 
             const data = await response.json();
-            setWarehouses(data);
-            console.log("warehouse:", JSON.stringify(data, null, 2));
+            console.log("Fetched warehouse data:", data);
+
+            // If user is a warehouse employee, filter warehouses on frontend
+            if (currentUser?.role === 'WAREHOUSE_EMPLOYEE') {
+                console.log("User is WAREHOUSE_EMPLOYEE, filtering warehouses");
+                // Get user's assigned warehouses via separate API call
+                await fetchAndFilterWarehousesForEmployee(data);
+            } else {
+                // For other roles, show all warehouses
+                console.log("User is not WAREHOUSE_EMPLOYEE, showing all warehouses");
+                setWarehouses(data);
+                console.log("Fetched all warehouses for role:", currentUser?.role);
+            }
+
             setError(null);
         } catch (error) {
             console.error("Error fetching warehouses:", error);
@@ -109,6 +228,270 @@ const WarehousesList = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+
+
+    const fetchWarehouseEmployees = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch("http://localhost:8080/api/v1/warehouseEmployees/warehouse-employees", {
+                headers: { "Authorization": `Bearer ${token}` },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch warehouse employees: ${response.status}`);
+            }
+
+            // Add response text debugging
+            const responseText = await response.text();
+            console.log("Raw response:", responseText);
+
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error("JSON Parse Error:", parseError);
+                console.error("Response text:", responseText);
+                throw new Error("Invalid JSON response from server");
+            }
+
+            setWarehouseEmployees(data);
+            console.log("Successfully fetched warehouse employees:", data.length);
+        } catch (error) {
+            console.error("Error fetching warehouse employees:", error);
+            setWarehouseEmployees([]);
+            showSnackbar('error', `Failed to load warehouse employees: ${error.message}`);
+        }
+    };
+
+    const fetchWarehouseAssignedEmployees = async (warehouseId) => {
+        try {
+            setAssignmentLoading(true);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:8080/api/v1/warehouses/${warehouseId}/assigned-users-dto`, {
+                headers: { "Authorization": `Bearer ${token}` },
+            });
+
+            if (!response.ok) throw new Error("Failed to fetch assigned employees");
+            const data = await response.json();
+
+            if (!Array.isArray(data)) {
+                setAssignedEmployees([]);
+                return;
+            }
+
+            if (data.length === 0) {
+                setAssignedEmployees([]);
+                return;
+            }
+
+            const employees = data.map((dto) => ({
+                id: dto.userId,
+                firstName: dto.firstName,
+                lastName: dto.lastName,
+                username: dto.username,
+                role: dto.role,
+                assignedAt: dto.assignedAt,
+                assignedBy: dto.assignedBy,
+                assignmentId: dto.assignmentId
+            }));
+
+            setAssignedEmployees(employees);
+        } catch (error) {
+            console.error("Error fetching assigned employees:", error);
+            setAssignedEmployees([]);
+        } finally {
+            setAssignmentLoading(false);
+        }
+    };
+
+    const handleOpenAssignmentModal = (warehouse) => {
+        setSelectedWarehouse(warehouse);
+        setShowAssignmentModal(true);
+        setSelectedEmployee("");
+        setAssignedEmployees([]);
+        setAssignmentLoading(false);
+        setPendingAssignments([]);
+        setPendingUnassignments([]);
+        setHasUnsavedChanges(false);
+
+        // Debug log
+        console.log('Opening assignment modal for:', warehouse.name);
+    };
+
+    const handleCloseAssignmentModal = () => {
+        if (hasUnsavedChanges) {
+            showConfirmDialog(
+                'warning',
+                'Unsaved Changes',
+                'You have unsaved changes. Are you sure you want to close without applying them?',
+                () => {
+                    setShowAssignmentModal(false);
+                    setSelectedWarehouse(null);
+                    setSelectedEmployee("");
+                    setAssignedEmployees([]);
+                    setAssignmentLoading(false);
+                    setPendingAssignments([]);
+                    setPendingUnassignments([]);
+                    setHasUnsavedChanges(false);
+                    hideConfirmDialog();
+                }
+            );
+            return;
+        }
+
+        setShowAssignmentModal(false);
+        setSelectedWarehouse(null);
+        setSelectedEmployee("");
+        setAssignedEmployees([]);
+        setAssignmentLoading(false);
+        setPendingAssignments([]);
+        setPendingUnassignments([]);
+        setHasUnsavedChanges(false);
+    };
+
+    const handleApplyChanges = async () => {
+        if (!hasUnsavedChanges) {
+            setShowAssignmentModal(false);
+            setSelectedWarehouse(null);
+            setSelectedEmployee("");
+            setAssignedEmployees([]);
+            setAssignmentLoading(false);
+            setPendingAssignments([]);
+            setPendingUnassignments([]);
+            setHasUnsavedChanges(false);
+            return;
+        }
+
+        try {
+            setAssignmentLoading(true);
+
+            // Process all pending assignments
+            for (const employeeId of pendingAssignments) {
+                await assignEmployeeToWarehouseAPI(employeeId, selectedWarehouse.id);
+            }
+
+            // Process all pending unassignments
+            for (const employeeId of pendingUnassignments) {
+                await unassignEmployeeFromWarehouseAPI(employeeId, selectedWarehouse.id);
+            }
+
+            // Refresh data
+            await fetchWarehouseAssignedEmployees(selectedWarehouse.id);
+            await fetchWarehouseEmployees();
+
+            // Show success message
+            const totalChanges = pendingAssignments.length + pendingUnassignments.length;
+            showSnackbar('success', `Successfully applied ${totalChanges} change${totalChanges !== 1 ? 's' : ''} to ${selectedWarehouse.name}`);
+
+            // Close modal
+            setShowAssignmentModal(false);
+            setSelectedWarehouse(null);
+            setSelectedEmployee("");
+            setAssignedEmployees([]);
+            setAssignmentLoading(false);
+            setPendingAssignments([]);
+            setPendingUnassignments([]);
+            setHasUnsavedChanges(false);
+
+        } catch (error) {
+            console.error("Error applying changes:", error);
+            showSnackbar('error', `Failed to apply changes: ${error.message}`);
+        } finally {
+            setAssignmentLoading(false);
+        }
+    };
+
+    const handleEmployeeSelect = (e) => {
+        const employeeId = e.target.value;
+        setSelectedEmployee(employeeId);
+    };
+
+    // Handle employee assignment - ONLY UI changes, NO API calls
+    const handleAssignEmployee = () => {
+        if (!selectedEmployee || !selectedWarehouse) {
+            return;
+        }
+
+        const employeeToAssign = warehouseEmployees.find(emp => emp.id === selectedEmployee);
+        if (!employeeToAssign) {
+            return;
+        }
+
+        // Create temporary assignment for UI display only
+        const tempAssignment = {
+            id: employeeToAssign.id,
+            firstName: employeeToAssign.firstName,
+            lastName: employeeToAssign.lastName,
+            username: employeeToAssign.username,
+            role: employeeToAssign.role,
+            assignedAt: new Date().toISOString(),
+            assignedBy: currentUser?.username || 'Unknown',
+            assignmentId: `temp-${Date.now()}`,
+            isPending: true
+        };
+
+        // Update UI state only
+        setPendingAssignments(prev => [...prev, selectedEmployee]);
+        setAssignedEmployees(prev => [...prev, tempAssignment]);
+        setHasUnsavedChanges(true);
+        setSelectedEmployee("");
+
+    };
+
+    // Handle employee unassignment - remove from UI immediately
+    const handleUnassignEmployee = (employeeId) => {
+        if (!selectedWarehouse) {
+            return;
+        }
+
+        const employeeToRemove = assignedEmployees.find(emp => emp.id === employeeId);
+
+        // Check if this employee is in pending assignments (newly added this session)
+        if (pendingAssignments.includes(employeeId)) {
+            setPendingAssignments(prev => prev.filter(id => id !== employeeId));
+            setAssignedEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+
+            const stillHasAssignments = pendingAssignments.filter(id => id !== employeeId).length > 0;
+            const stillHasUnassignments = pendingUnassignments.length > 0;
+            setHasUnsavedChanges(stillHasAssignments || stillHasUnassignments);
+
+
+            return;
+        }
+
+        // Add to pending unassignments and remove from UI
+        setPendingUnassignments(prev => [...prev, employeeId]);
+        setAssignedEmployees(prev => prev.filter(emp => emp.id !== employeeId));
+        setHasUnsavedChanges(true);
+
+
+    };
+
+    const getAvailableEmployeesForAssignment = () => {
+        if (!selectedWarehouse) return [];
+
+        // Debug logs
+        console.log('=== ASSIGNMENT DEBUG ===');
+        console.log('Selected Warehouse:', selectedWarehouse.name);
+        console.log('All Warehouse Employees:', warehouseEmployees.length);
+        console.log('Assigned to Current Warehouse:', assignedEmployees.length);
+        console.log('Assigned Employee IDs:', assignedEmployees.map(emp => emp.id));
+
+        // For multi-warehouse assignment: Only filter out employees assigned to THIS specific warehouse
+        const assignedToCurrentWarehouseIds = assignedEmployees.map(emp => emp.id);
+
+        // Return all warehouse employees who are NOT already assigned to this specific warehouse
+        const availableEmployees = warehouseEmployees.filter(emp =>
+            !assignedToCurrentWarehouseIds.includes(emp.id)
+        );
+
+        console.log('Available Employees for Assignment:', availableEmployees.length);
+        console.log('Available Employee Names:', availableEmployees.map(emp => `${emp.firstName} ${emp.lastName}`));
+        console.log('=== END DEBUG ===');
+
+        return availableEmployees;
     };
 
     const fetchTotalItemsInWarehouse = async (warehouseId) => {
@@ -127,32 +510,21 @@ const WarehousesList = () => {
             }
 
             const items = await response.json();
-
-            // Filter items with status 'IN_WAREHOUSE'
             const inWarehouseItems = items.filter(item => item.itemStatus === 'IN_WAREHOUSE');
-
-            // Calculate total items based on the quantity field
             const total = inWarehouseItems.reduce((sum, item) => sum + item.quantity, 0);
 
-            // Update the total items map for the specific warehouse
             setTotalItemsMap(prevState => ({
                 ...prevState,
                 [warehouseId]: total
             }));
         } catch (err) {
-            setError(err.message);
             console.error('Error fetching items:', err);
-        } finally {
-            setLoading(false);
         }
     };
 
-
     useEffect(() => {
         if (warehouses.length > 0) {
-            // Fetch total items for each warehouse once
             warehouses.forEach(warehouse => {
-                // Call only if we haven't already fetched for this warehouse
                 if (!(warehouse.id in totalItemsMap)) {
                     fetchTotalItemsInWarehouse(warehouse.id);
                 }
@@ -160,119 +532,23 @@ const WarehousesList = () => {
         }
     }, [warehouses, totalItemsMap]);
 
-    const fetchSites = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            const response = await fetch("http://localhost:8080/api/v1/site", {
-                headers: { "Authorization": `Bearer ${token}` },
-            });
-
-            if (!response.ok) throw new Error("Failed to fetch sites");
-            const data = await response.json();
-            setSites(data);
-        } catch (error) {
-            console.error("Error fetching sites:", error);
-        }
-    };
-
-    const fetchManagers = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            const response = await fetch("http://localhost:8080/api/v1/employees/warehouse-managers", {
-                headers: { "Authorization": `Bearer ${token}` },
-            });
-
-            if (!response.ok) throw new Error("Failed to fetch managers");
-            const data = await response.json();
-            setManagers(data);
-        } catch (error) {
-            console.error("Error fetching managers:", error);
-        }
-    };
-
-    const fetchWorkers = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            const response = await fetch("http://localhost:8080/api/v1/employees/warehouse-workers", {
-                headers: { "Authorization": `Bearer ${token}` },
-            });
-
-            if (!response.ok) throw new Error("Failed to fetch workers");
-            const data = await response.json();
-            setWorkers(data);
-        } catch (error) {
-            console.error("Error fetching workers:", error);
-        }
-    };
-
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setFormData({ ...formData, photo: file });
-            setPreviewImage(URL.createObjectURL(file));
-        }
-    };
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-    };
-
-    // New function to handle warehouse worker selection
-    const handleWorkerSelect = (e) => {
-        const workerId = e.target.value;
-        if (workerId) {
-            setSelectedWorker(workerId);
-        }
-    };
-
-    // New function to add a worker to the selected workers array
-    const handleAddWorker = () => {
-        if (selectedWorker && !formData.workerIds.includes(selectedWorker)) {
-            setFormData({
-                ...formData,
-                workerIds: [...formData.workerIds, selectedWorker]
-            });
-            setSelectedWorker(""); // Reset selected worker
-        }
-    };
-
-    // New function to remove a worker from the selected workers array
-    const handleRemoveWorker = (workerId) => {
-        setFormData({
-            ...formData,
-            workerIds: formData.workerIds.filter(id => id !== workerId)
-        });
-    };
-
-    // Helper function to get worker name by ID
-    const getWorkerName = (workerId) => {
-        const worker = workers.find(w => w.id === workerId);
-        return worker ? `${worker.firstName} ${worker.lastName}` : "Unknown Worker";
-    };
-
-
-
-
-
-
     if (loading) return <LoadingPage/>;
     if (error) return <div className="warehouse-list-error">{error}</div>;
 
-
+    // Debug: Show current user info temporarily
+    if (process.env.NODE_ENV === 'development') {
+        console.log("Current user object:", JSON.stringify(currentUser, null, 2));
+    }
 
     return (
         <div className="warehouse-list-container">
             <div className="departments-header">
                 <h1 className="warehouse-list-title">Warehouses</h1>
-
             </div>
 
             <div className="warehouse-list-grid">
                 {warehouses.length > 0 ? (
                     warehouses.map((warehouse) => {
-
-
                         const manager = warehouse.employees?.find(
                             (emp) => emp.jobPosition?.positionName?.toLowerCase() === "warehouse manager"
                         );
@@ -313,23 +589,30 @@ const WarehousesList = () => {
                                                     : "Not Assigned"}
                                             </p>
                                         </div>
-
                                     </div>
 
                                     <div className="warehouse-list-card-actions">
-
-
-
-
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 navigate(`/warehouses/warehouse-details/${warehouse.id}`);
                                             }}
-                                            className="warehouse-list-view-button"
+                                            className="btn-primary"
                                         >
                                             View Details
                                         </button>
+
+                                        {isWarehouseManager && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleOpenAssignmentModal(warehouse);
+                                                }}
+                                                className="btn-primary"
+                                            >
+                                                Assign Employees
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -340,149 +623,157 @@ const WarehousesList = () => {
                         <div className="warehouse-list-empty-icon">
                             <FaWarehouse size={50} />
                         </div>
-                        <p>No warehouses found. </p>
+                        <p>No warehouses found.</p>
                     </div>
                 )}
             </div>
 
-            {/* Add Warehouse Modal */}
-            {showAddModal && (
-                <div className="warehouse-modal-overlay">
-                    <div className="warehouse-modal-content">
-                        <div className="warehouse-modal-header">
-                            <h2>Add New Warehouse</h2>
-                            <button className="warehouse-modal-close-button" onClick={handleCloseModals}>×</button>
+            {/* Warehouse Assignment Modal */}
+            {showAssignmentModal && (
+                <div className="warehouse-list-modal-overlay">
+                    <div className="warehouse-list-modal-content warehouse-list-assignment-modal">
+                        <div className="warehouse-list-modal-header">
+                            <h2>
+                                <FaUserCog />
+                                Assign Employees to {selectedWarehouse?.name}
+                            </h2>
+                            <button className="warehouse-list-modal-close-button" onClick={handleCloseAssignmentModal}>×</button>
                         </div>
 
-                        <div className="warehouse-modal-body">
-                            <div className="warehouse-form-container">
-                                <div className="warehouse-form-card">
-                                    <div className="warehouse-form-profile-section">
-                                        <label htmlFor="warehouseImageUpload" className="warehouse-form-image-label">
-                                            {previewImage ? (
-                                                <img src={previewImage} alt="Warehouse" className="warehouse-form-image" />
-                                            ) : (
-                                                <div className="warehouse-form-image-placeholder"></div>
-                                            )}
-                                            <span className="warehouse-form-upload-text">Upload Photo</span>
-                                        </label>
-                                        <input
-                                            type="file"
-                                            id="warehouseImageUpload"
-                                            name="photo"
-                                            accept="image/*"
-                                            onChange={handleFileChange}
-                                            style={{ display: "none" }}
+                        <div className="warehouse-list-modal-body">
+                            <div className="warehouse-list-assignment-container">
+                                {/* Warehouse Info Display */}
+                                <div className="warehouse-list-assignment-section">
+                                    <h3>Selected Warehouse</h3>
+                                    <div className="warehouse-list-selected-warehouse">
+                                        <img
+                                            src={selectedWarehouse?.photoUrl || warehouseImg}
+                                            alt={selectedWarehouse?.name}
+                                            className="warehouse-list-selected-warehouse-image"
                                         />
+                                        <div className="warehouse-list-selected-warehouse-details">
+                                            <h4>{selectedWarehouse?.name}</h4>
+                                            <p>Site: {selectedWarehouse?.site?.name || "Not Assigned"}</p>
+                                            <p>Total Items: {totalItemsMap[selectedWarehouse?.id] || "0"}</p>
+                                        </div>
                                     </div>
+                                </div>
 
-                                    <div className="warehouse-form-fields-section">
-                                        <form onSubmit={handleAddWarehouse}>
-                                            <div className="warehouse-form-grid">
-                                                <div className="warehouse-form-group">
-                                                    <label className="warehouse-form-label">Warehouse Name</label>
-                                                    <input
-                                                        type="text"
-                                                        name="name"
-                                                        value={formData.name}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                        className="warehouse-form-input"
-                                                        placeholder="Enter warehouse name"
-                                                    />
-                                                </div>
+                                {/* Employee Assignment Section */}
+                                <div className="warehouse-list-assignment-section">
+                                    <h3>Assign New Employee</h3>
+                                    <div className="warehouse-list-assignment-input-group">
+                                        <select
+                                            value={selectedEmployee}
+                                            onChange={handleEmployeeSelect}
+                                            className="warehouse-list-form-select"
+                                            disabled={assignmentLoading}
+                                        >
+                                            <option value="">Choose an employee to assign...</option>
+                                            {getAvailableEmployeesForAssignment().map(employee => (
+                                                <option key={employee.id} value={employee.id}>
+                                                    {employee.firstName} {employee.lastName}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            onClick={handleAssignEmployee}
+                                            disabled={!selectedEmployee || assignmentLoading}
+                                            className="warehouse-list-assignment-add-button"
+                                        >
+                                            {assignmentLoading ? (
+                                                <>
+                                                    <div className="warehouse-list-assignment-loading"></div>
+                                                    Assigning...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FaPlus />
+                                                    Assign
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                    {warehouseEmployees.length === 0 && (
+                                        <div className="warehouse-list-assignment-info">
+                                            <p>No warehouse employees found. Please create warehouse employee accounts first.</p>
+                                        </div>
+                                    )}
+                                    {getAvailableEmployeesForAssignment().length === 0 && warehouseEmployees.length > 0 && (
+                                        <div className="warehouse-list-assignment-info">
+                                            <p>All available employees are already assigned to this warehouse.</p>
+                                        </div>
+                                    )}
+                                </div>
 
-                                                <div className="warehouse-form-group">
-                                                    <label className="warehouse-form-label">Site</label>
-                                                    <select
-                                                        name="siteId"
-                                                        value={formData.siteId}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                        className="warehouse-form-select"
+                                {/* Currently Assigned Employees */}
+                                <div className="warehouse-list-assignment-section">
+                                    <h3>Currently Assigned Employees</h3>
+                                    {assignmentLoading && assignedEmployees.length === 0 ? (
+                                        <div className="warehouse-list-assignment-loading">
+                                            <div className="loading-spinner"></div>
+                                            <p>Loading assigned employees...</p>
+                                        </div>
+                                    ) : (
+                                        <div className="warehouse-list-assigned-list">
+                                            {assignedEmployees.length > 0 ? (
+                                                assignedEmployees.map(employee => (
+                                                    <div
+                                                        key={employee.id}
+                                                        className={`warehouse-list-assigned-item ${
+                                                            employee.isPending ? 'pending-assignment' : ''
+                                                        }`}
                                                     >
-                                                        <option value="">Select a Site</option>
-                                                        {sites.map(site => (
-                                                            <option key={site.id} value={site.id}>{site.name}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                <div className="warehouse-form-group">
-                                                    <label className="warehouse-form-label">Warehouse Manager</label>
-                                                    <select
-                                                        name="managerId"
-                                                        value={formData.managerId}
-                                                        onChange={handleInputChange}
-                                                        className="warehouse-form-select"
-                                                    >
-                                                        <option value="">Select a Manager</option>
-                                                        {managers.map(manager => (
-                                                            <option key={manager.id} value={manager.id}>
-                                                                {manager.firstName} {manager.lastName}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                <div className="warehouse-form-group">
-                                                    <label className="warehouse-form-label">Warehouse Workers</label>
-                                                    <div className="warehouse-form-worker-selector">
-                                                        <div className="warehouse-form-worker-input-group">
-                                                            <select
-                                                                value={selectedWorker}
-                                                                onChange={handleWorkerSelect}
-                                                                className="warehouse-form-select"
-                                                            >
-                                                                <option value="">Select a Worker</option>
-                                                                {workers
-                                                                    .filter(worker => !formData.workerIds.includes(worker.id))
-                                                                    .map(worker => (
-                                                                        <option key={worker.id} value={worker.id}>
-                                                                            {worker.firstName} {worker.lastName}
-                                                                        </option>
-                                                                    ))
-                                                                }
-                                                            </select>
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleAddWorker}
-                                                                disabled={!selectedWorker}
-                                                                className="warehouse-form-worker-add-button"
-                                                            >
-                                                                Add
-                                                            </button>
+                                                        <div className="warehouse-list-assigned-info">
+                                                            <div className="warehouse-list-assigned-avatar">
+                                                                <span className="warehouse-list-employee-initials">
+                                                                    {employee.firstName?.charAt(0)}{employee.lastName?.charAt(0)}
+                                                                </span>
+                                                            </div>
+                                                            <div className="warehouse-list-assigned-details">
+                                                                <h4>{employee.firstName} {employee.lastName}</h4>
+                                                                <p className="warehouse-list-assignment-date">
+                                                                    Assigned on: {employee.assignedAt ? new Date(employee.assignedAt).toLocaleDateString() : 'No date available'}
+                                                                </p>
+                                                                <p className="warehouse-list-assignment-by">
+                                                                    Assigned by: {employee.assignedBy || 'Unknown user'}
+                                                                </p>
+                                                            </div>
                                                         </div>
-
-                                                        {/* Display selected workers */}
-                                                        <div className="warehouse-form-selected-workers">
-                                                            {formData.workerIds.length > 0 ? (
-                                                                formData.workerIds.map((workerId) => (
-                                                                    <div key={workerId} className="warehouse-form-selected-worker">
-                                                                        <span>{getWorkerName(workerId)}</span>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleRemoveWorker(workerId)}
-                                                                            className="warehouse-form-worker-remove-button"
-                                                                        >
-                                                                            <FaTimes />
-                                                                        </button>
-                                                                    </div>
-                                                                ))
-                                                            ) : (
-                                                                <p className="warehouse-form-no-workers">No workers selected</p>
-                                                            )}
-                                                        </div>
+                                                        <button
+                                                            onClick={() => handleUnassignEmployee(employee.id)}
+                                                            className="warehouse-list-assigned-remove-button"
+                                                            title="Unassign employee"
+                                                            disabled={assignmentLoading}
+                                                        >
+                                                            <FaTimes />
+                                                        </button>
                                                     </div>
+                                                ))
+                                            ) : (
+                                                <div className="warehouse-list-no-assignments">
+                                                    <div className="warehouse-list-no-assignments-icon">
+                                                        <FaUserCog size={48} />
+                                                    </div>
+                                                    <h4>No Employees Assigned</h4>
+                                                    <p>No employees are currently assigned to {selectedWarehouse?.name}</p>
+                                                    <p className="warehouse-list-assignment-hint">
+                                                        Use the section above to assign employees to this warehouse.
+                                                    </p>
                                                 </div>
-                                            </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
 
-                                            <div className="warehouse-form-button-group">
-                                                <button type="submit" className="warehouse-form-add-button">Add Warehouse</button>
-                                                <button type="button" className="warehouse-form-cancel-button" onClick={handleCloseModals}>Cancel</button>
-                                            </div>
-                                        </form>
-                                    </div>
+                                <div className="warehouse-list-assignment-footer">
+                                    <button
+                                        className={`btn-primary ${hasUnsavedChanges ? 'has-changes' : ''}`}
+                                        onClick={handleApplyChanges}
+                                        disabled={assignmentLoading}
+                                    >
+                                        {assignmentLoading ? 'Applying...' : 'Apply'}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -490,157 +781,26 @@ const WarehousesList = () => {
                 </div>
             )}
 
-            {/* Edit Warehouse Modal */}
-            {showEditModal && (
-                <div className="warehouse-modal-overlay">
-                    <div className="warehouse-modal-content">
-                        <div className="warehouse-modal-header">
-                            <h2>Edit Warehouse</h2>
-                            <button className="warehouse-modal-close-button" onClick={handleCloseModals}>×</button>
-                        </div>
+            {/* Snackbar */}
+            <Snackbar
+                show={snackbar.show}
+                type={snackbar.type}
+                message={snackbar.message}
+                onClose={hideSnackbar}
+                duration={3000}
+            />
 
-                        <div className="warehouse-modal-body">
-                            <div className="warehouse-form-container">
-                                <div className="warehouse-form-card">
-                                    <div className="warehouse-form-profile-section">
-                                        <label htmlFor="warehouseEditImageUpload" className="warehouse-form-image-label">
-                                            {previewImage ? (
-                                                <img src={previewImage} alt="Warehouse" className="warehouse-form-image" />
-                                            ) : (
-                                                <div className="warehouse-form-image-placeholder"></div>
-                                            )}
-                                            <span className="warehouse-form-upload-text">Upload Photo</span>
-                                        </label>
-                                        <input
-                                            type="file"
-                                            id="warehouseEditImageUpload"
-                                            name="photo"
-                                            accept="image/*"
-                                            onChange={handleFileChange}
-                                            style={{ display: "none" }}
-                                        />
-                                    </div>
-
-                                    <div className="warehouse-form-fields-section">
-                                        <form onSubmit={handleUpdateWarehouse}>
-                                            <div className="warehouse-form-grid">
-                                                <div className="warehouse-form-group">
-                                                    <label className="warehouse-form-label">Warehouse Name</label>
-                                                    <input
-                                                        type="text"
-                                                        name="name"
-                                                        value={formData.name}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                        className="warehouse-form-input"
-                                                        placeholder="Enter warehouse name"
-                                                    />
-                                                </div>
-
-                                                <div className="warehouse-form-group">
-                                                    <label className="warehouse-form-label">Site</label>
-                                                    <select
-                                                        name="siteId"
-                                                        value={formData.siteId}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                        className="warehouse-form-select"
-                                                    >
-                                                        <option value="">Select a Site</option>
-                                                        {sites.map(site => (
-                                                            <option key={site.id} value={site.id}>{site.name}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                <div className="warehouse-form-group">
-                                                    <label className="warehouse-form-label">Warehouse Manager</label>
-                                                    <select
-                                                        name="managerId"
-                                                        value={formData.managerId}
-                                                        onChange={handleInputChange}
-                                                        className="warehouse-form-select"
-                                                    >
-                                                        <option value="">Select a Manager</option>
-                                                        {managers.map(manager => (
-                                                            <option key={manager.id} value={manager.id}>
-                                                                {manager.firstName} {manager.lastName}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-
-                                                </div>
-
-                                                <div className="warehouse-form-group">
-                                                    <label className="warehouse-form-label">Warehouse Workers</label>
-                                                    <div className="warehouse-form-worker-selector">
-                                                        <div className="warehouse-form-worker-input-group">
-                                                            <select
-                                                                value={selectedWorker}
-                                                                onChange={handleWorkerSelect}
-                                                                className="warehouse-form-select"
-                                                            >
-                                                                <option value="">Select a Worker</option>
-                                                                {workers
-                                                                    .filter(worker => !formData.workerIds.includes(worker.id))
-                                                                    .map(worker => (
-                                                                        <option key={worker.id} value={worker.id}>
-                                                                            {worker.firstName} {worker.lastName}
-                                                                        </option>
-                                                                    ))
-                                                                }
-                                                            </select>
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleAddWorker}
-                                                                disabled={!selectedWorker}
-                                                                className="warehouse-form-worker-add-button"
-                                                            >
-                                                                Add
-                                                            </button>
-                                                        </div>
-
-                                                        {/* Display selected workers with a header */}
-                                                        <div className="warehouse-form-selected-workers">
-                                                            {formData.workerIds.length > 0 && (
-                                                                <div className="warehouse-form-workers-header">
-                                                                    <p>Current assigned workers:</p>
-                                                                </div>
-                                                            )}
-
-                                                            {formData.workerIds.length > 0 ? (
-                                                                formData.workerIds.map((workerId) => (
-                                                                    <div key={workerId} className="warehouse-form-selected-worker">
-                                                                        <span>{getWorkerName(workerId)}</span>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleRemoveWorker(workerId)}
-                                                                            className="warehouse-form-worker-remove-button"
-                                                                        >
-                                                                            <FaTimes />
-                                                                        </button>
-                                                                    </div>
-                                                                ))
-                                                            ) : (
-                                                                <p className="warehouse-form-no-workers">No workers selected</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="warehouse-form-button-group">
-                                                <button type="submit" className="warehouse-form-add-button">Update Warehouse</button>
-                                                <button type="button" className="warehouse-form-cancel-button" onClick={handleCloseModals}>Cancel</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={confirmDialog.isVisible}
+                type={confirmDialog.type}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={hideConfirmDialog}
+                confirmText="Yes, Close"
+                cancelText="Stay Here"
+            />
         </div>
     );
 };

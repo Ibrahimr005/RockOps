@@ -5,7 +5,13 @@ import TransactionViewModal from "../TransactionViewModal/TransactionViewModal.j
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
 
-const IncomingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, onTransactionUpdate }) => {
+const IncomingTransactionsTable = ({
+                                       warehouseId,
+                                       refreshTrigger,
+                                       onCountUpdate,
+                                       lastSeenTimestamp,  // Add this line
+                                       onTransactionUpdate
+                                   }) => {
     const [loading, setLoading] = useState(false);
     const [pendingTransactions, setPendingTransactions] = useState([]);
     const [isAcceptModalOpen, setIsAcceptModalOpen] = useState(false);
@@ -68,7 +74,7 @@ const IncomingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate,
 
     useEffect(() => {
         if (onCountUpdate) {
-            onCountUpdate(pendingTransactions.length);
+            onCountUpdate(pendingTransactions.length, pendingTransactions);
         }
     }, [pendingTransactions.length, onCountUpdate]);
 

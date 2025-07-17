@@ -34,7 +34,7 @@ const Partners = () => {
             });
 
             if (!response.ok) {
-                throw new Error(t('partners.fetchError', 'Failed to fetch partners'));
+                throw new Error(t('partners.fetchError', 'Unable to load partners'));
             }
 
             const data = await response.json();
