@@ -15,10 +15,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("api/v1/site")
@@ -67,12 +65,23 @@ public class SiteController
     public ResponseEntity<?> getSiteWarehouses(@PathVariable UUID siteId) {
         Site site = siteService.getSiteById(siteId);
         if (site == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList()); // ✅ Always return JSON
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
         }
 
-        List<Warehouse> warehouseList = siteService.getSiteWarehouses(siteId);
-        return ResponseEntity.ok(warehouseList != null ? warehouseList : Collections.emptyList()); // ✅ Ensure JSON format
+        List<Warehouse> warehouses = siteService.getSiteWarehouses(siteId);
 
+        // Return only the fields we need for the frontend
+        List<Map<String, Object>> simplifiedWarehouses = warehouses.stream()
+                .map(warehouse -> {
+                    Map<String, Object> warehouseData = new HashMap<>();
+                    warehouseData.put("id", warehouse.getId());
+                    warehouseData.put("name", warehouse.getName());
+                    warehouseData.put("photoUrl", warehouse.getPhotoUrl());
+                    return warehouseData;
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(simplifiedWarehouses);
     }
 
     @GetMapping("/{siteId}/merchants")

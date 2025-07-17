@@ -94,6 +94,9 @@
     }
   }
 }
+.rockops-table__wrapper:hover {
+  overflow: visible !important;
+}
 
 .rockops-table {
   width: 100%;
@@ -475,42 +478,45 @@
     }
   }
 
-  // Tooltip on hover
+  // Tooltip on hover - SIMPLIFIED VERSION
   &[title]:hover:before {
     content: attr(title);
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
+    position: fixed !important; // Use fixed positioning to avoid clipping
+    bottom: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) translateY(-100%) !important;
     background-color: #1f2937;
     color: white;
-    padding: 4px 8px;
+    padding: 6px 10px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 12px;
     white-space: nowrap;
-    margin-bottom: 6px;
-    opacity: 0.9;
+    margin-bottom: 8px;
+    opacity: 0.95;
     pointer-events: none;
-    z-index: 20000;
+    z-index: 2147483647 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.2s ease-in-out;
 
     [data-theme="dark"] & {
       background-color: var(--color-text-primary);
       color: var(--color-text-inverse);
+      box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
     }
   }
 
   &[title]:hover:after {
     content: '';
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 4px;
+    position: fixed !important; // Use fixed positioning
+    bottom: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) translateY(-100%) !important;
+    border-width: 5px;
     border-style: solid;
     border-color: #1f2937 transparent transparent transparent;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
     pointer-events: none;
-    z-index: 20000000;
+    z-index: 2147483647 !important;
 
     [data-theme="dark"] & {
       border-color: var(--color-text-primary) transparent transparent transparent;
@@ -1811,6 +1817,10 @@
   position: relative;
   z-index: 5;
   overflow: visible !important;
+
+  &:hover {
+    z-index: 100000 !important;
+  }
 }
 
 .rockops-table__actions {

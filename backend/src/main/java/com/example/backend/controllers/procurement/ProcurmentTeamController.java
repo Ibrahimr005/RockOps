@@ -41,5 +41,19 @@ public class ProcurmentTeamController {
         }
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteMerchant(@PathVariable UUID id) {
+        try {
+            procurementTeamService.deleteMerchant(id);
+            return ResponseEntity.ok(Map.of("message", "Merchant deleted successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Not Found", "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Server Error", "message", e.getMessage()));
+        }
+    }
+
 
 }

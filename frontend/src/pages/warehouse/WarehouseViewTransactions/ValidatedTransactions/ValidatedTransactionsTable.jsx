@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from "react";
 import "../WarehouseViewTransactions.scss";
-import TransactionViewModal from "../TransactionViewModal/TransactionViewModal.jsx"; // Add this import
+import TransactionViewModal from "../TransactionViewModal/TransactionViewModal.jsx";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx";
 
-const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, onTransactionUpdate }) => {
+const ValidatedTransactionsTable = ({
+                                        warehouseId,
+                                        refreshTrigger,
+                                        onCountUpdate,
+                                        lastSeenTimestamp,  // Add this line
+                                        onTransactionUpdate
+                                    }) => {
     const [loading, setLoading] = useState(false);
     const [validatedTransactions, setValidatedTransactions] = useState([]);
     const [modalInfo, setModalInfo] = useState(null);
-    const [isViewModalOpen, setIsViewModalOpen] = useState(false); // Add this state
-    const [viewTransaction, setViewTransaction] = useState(null); // Add this state
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [viewTransaction, setViewTransaction] = useState(null);
 
-    // Snackbar state for potential future use
+    // Snackbar state
     const [snackbar, setSnackbar] = useState({
         isOpen: false,
         message: "",
@@ -81,7 +87,6 @@ const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate
                         })
                 );
 
-                // Debug: Log the processed data to see what's being passed to the modal
                 console.log('Validated transactions data:', validatedData);
                 setValidatedTransactions(validatedData);
             } else {
@@ -153,14 +158,14 @@ const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate
         }
     };
 
-    // ADD THIS - Report count to parent
+    // Report count to parent
     useEffect(() => {
         if (onCountUpdate) {
-            onCountUpdate(validatedTransactions.length);
+            onCountUpdate(validatedTransactions.length, validatedTransactions);
         }
     }, [validatedTransactions.length, onCountUpdate]);
 
-// ADD THIS - Listen to refreshTrigger changes
+    // Listen to refreshTrigger changes
     useEffect(() => {
         fetchValidatedTransactions();
     }, [refreshTrigger]);
@@ -186,7 +191,6 @@ const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate
 
     // Function to handle opening the view modal
     const handleOpenViewModal = (transaction) => {
-        // Debug: Log the transaction data being passed to the modal
         console.log('Opening modal with transaction:', transaction);
         console.log('Current warehouse ID:', warehouseId);
         console.log('Transaction senderId:', transaction.senderId);
@@ -238,16 +242,16 @@ const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate
         return entity.name || entity.equipment?.fullModelName || "N/A";
     };
 
-    // Define table columns for DataTable
+    // Define table columns for DataTable with export formatters
     const columns = [
-
         {
             header: 'SENDER',
             accessor: 'sender',
             sortable: true,
             width: '200px',
             minWidth: '150px',
-            render: (row) => getEntityDisplayName(row.sender, row.senderType)
+            render: (row) => getEntityDisplayName(row.sender, row.senderType),
+            exportFormatter: (value, row) => getEntityDisplayName(row.sender, row.senderType)
         },
         {
             header: 'RECEIVER',
@@ -255,7 +259,8 @@ const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate
             sortable: true,
             width: '200px',
             minWidth: '150px',
-            render: (row) => getEntityDisplayName(row.receiver, row.receiverType)
+            render: (row) => getEntityDisplayName(row.receiver, row.receiverType),
+            exportFormatter: (value, row) => getEntityDisplayName(row.receiver, row.receiverType)
         },
         {
             header: 'BATCH NUMBER',
@@ -271,9 +276,9 @@ const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate
             sortable: true,
             width: '200px',
             minWidth: '150px',
-            render: (row) => formatDate(row.transactionDate)
+            render: (row) => formatDate(row.transactionDate),
+            exportFormatter: (value, row) => formatDate(row.transactionDate)
         },
-
         {
             header: 'STATUS',
             accessor: 'status',
@@ -285,16 +290,14 @@ const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate
                     <span className={`status-badge3 ${row.status.toLowerCase()}`}>
                         {row.status}
                     </span>
-
-
                 </div>
-            )
+            ),
+            exportFormatter: (value) => value // Just export the raw status value
         }
     ];
 
     // Filterable columns for DataTable
     const filterableColumns = [
-
         {
             header: 'SENDER',
             accessor: 'sender',
@@ -315,7 +318,6 @@ const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate
             accessor: 'transactionDate',
             filterType: 'text'
         },
-
         {
             header: 'STATUS',
             accessor: 'status',
@@ -323,7 +325,7 @@ const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate
         }
     ];
 
-    // Actions array for DataTable - Add View button
+    // Actions array for DataTable
     const actions = [
         {
             label: 'View',
@@ -338,18 +340,29 @@ const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate
         }
     ];
 
+    // 🎯 Excel export event handlers
+    const handleExportStart = () => {
+        showSnackbar("Starting export...", "info");
+    };
+
+    const handleExportComplete = (exportInfo) => {
+        showSnackbar(`Successfully exported ${exportInfo.rowCount} transactions to ${exportInfo.filename}`, "success");
+    };
+
+    const handleExportError = (error) => {
+        console.error('Export error:', error);
+        showSnackbar("Failed to export data. Please try again.", "error");
+    };
+
     return (
         <div className="transaction-table-section">
             <div className="table-header-section">
                 <div className="left-section3">
-
                     <div className="item-count3">{validatedTransactions.length} validated transactions</div>
                 </div>
             </div>
 
-
-
-            {/* DataTable Component */}
+            {/* 🎯 DataTable Component with Excel Export */}
             <DataTable
                 data={validatedTransactions}
                 columns={columns}
@@ -363,6 +376,23 @@ const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate
                 itemsPerPageOptions={[5, 10, 15, 20]}
                 defaultItemsPerPage={10}
                 actionsColumnWidth="150px"
+
+                // Excel Export Configuration
+                showExportButton={true}
+                exportButtonText="Export Transactions"
+                exportFileName="validated_transactions"
+                exportAllData={false}
+                excludeColumnsFromExport={[]}
+                customExportHeaders={{
+                    'sender': 'Sender',
+                    'receiver': 'Receiver',
+                    'batchNumber': 'Batch Number',
+                    'transactionDate': 'Transaction Date',
+                    'status': 'Status'
+                }}
+                onExportStart={handleExportStart}
+                onExportComplete={handleExportComplete}
+                onExportError={handleExportError}
             />
 
             {/* View Transaction Modal */}
@@ -372,7 +402,7 @@ const ValidatedTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate
                     isOpen={isViewModalOpen}
                     onClose={handleCloseViewModal}
                     hideItemQuantities={false}
-                    currentWarehouseId={warehouseId} // Add this line
+                    currentWarehouseId={warehouseId}
                 />
             )}
 

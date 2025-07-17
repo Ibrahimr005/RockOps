@@ -7,4 +7,26 @@ export default defineConfig({
   css: {
     devSourcemap: true, // Enable CSS source maps
   },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false, // Disable sourcemaps in production for better performance
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+        }
+      }
+    }
+  },
+  // Configure dev server for SPA routing during development
+  server: {
+    historyApiFallback: true,
+  },
+  // Configure preview server for SPA routing
+  preview: {
+    port: 4173,
+    host: true,
+  }
 })

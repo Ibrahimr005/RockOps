@@ -7,6 +7,7 @@ import DataTable from '../../../components/common/DataTable/DataTable.jsx'; // A
 import Snackbar from '../../../components/common/Snackbar/Snackbar.jsx'
 import MerchantModal from './MerchantModal.jsx'; // Import the new wizard component
 import IntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx'; // Add this import
 
 const ProcurementMerchants = () => {
     const [merchants, setMerchants] = useState([]);
@@ -22,6 +23,11 @@ const ProcurementMerchants = () => {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarType, setSnackbarType] = useState("success");
     const [userRole, setUserRole] = useState('');
+
+    // Add confirmation dialog states
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [merchantToDelete, setMerchantToDelete] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Form data for adding a new merchant
     const [formData, setFormData] = useState({
@@ -118,12 +124,57 @@ const ProcurementMerchants = () => {
         setShowAddModal(true);
     };
 
+    // Updated onDelete function to show confirmation dialog
     const onDelete = (merchant) => {
-        console.log("Deleting merchant with id:", merchant.id);
-        // Implement delete logic here
-        if (window.confirm(`Are you sure you want to delete ${merchant.name}?`)) {
-            // Add delete API call here
+        console.log("Attempting to delete merchant:", merchant);
+        setMerchantToDelete(merchant);
+        setShowDeleteDialog(true);
+    };
+
+    // Handle confirmed deletion
+    const handleConfirmDelete = async () => {
+        if (!merchantToDelete) return;
+
+        setDeleteLoading(true);
+        const token = localStorage.getItem('token');
+
+        try {
+            const response = await fetch(`http://localhost:8080/api/v1/procurement/${merchantToDelete.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete merchant');
+            }
+
+            // Remove merchant from the list
+            setMerchants(merchants.filter(m => m.id !== merchantToDelete.id));
+
+            // Show success message
+            setSnackbarMessage(`Merchant "${merchantToDelete.name}" successfully deleted`);
+            setSnackbarType("success");
+            setShowSnackbar(true);
+
+        } catch (error) {
+            console.error('Error deleting merchant:', error);
+            setSnackbarMessage("Failed to delete merchant. Please try again.");
+            setSnackbarType("error");
+            setShowSnackbar(true);
+        } finally {
+            setDeleteLoading(false);
+            setShowDeleteDialog(false);
+            setMerchantToDelete(null);
         }
+    };
+
+    // Handle cancel deletion
+    const handleCancelDelete = () => {
+        setShowDeleteDialog(false);
+        setMerchantToDelete(null);
+        setDeleteLoading(false);
     };
 
     const handleOpenModal = () => {
@@ -408,9 +459,7 @@ const ProcurementMerchants = () => {
                 darkModeImage={merchantsImagedark}
                 stats={getMerchantStats()}
                 onInfoClick={handleInfoClick}
-
             />
-
 
             {/* DataTable */}
             <div className="procurement-merchants-table-container">
@@ -451,6 +500,21 @@ const ProcurementMerchants = () => {
                 handleCloseModals={handleCloseModals}
                 handleAddMerchant={handleAddMerchant}
                 handleUpdateMerchant={handleUpdateMerchant}
+            />
+
+            {/* Confirmation Dialog for Delete */}
+            <ConfirmationDialog
+                isVisible={showDeleteDialog}
+                type="delete"
+                title="Delete Merchant"
+                message={`Are you sure you want to delete "${merchantToDelete?.name}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
+                isLoading={deleteLoading}
+                showIcon={true}
+                size="large"
             />
 
             {/* Snackbar */}
