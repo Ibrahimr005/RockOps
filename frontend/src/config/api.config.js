@@ -1,5 +1,5 @@
 // src/config/api.config.js
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';  // Removed /api
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ;  // Removed /api
 
 // Equipment module endpoints
 export const EQUIPMENT_ENDPOINTS = {
