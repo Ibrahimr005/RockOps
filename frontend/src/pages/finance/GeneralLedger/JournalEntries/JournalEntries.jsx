@@ -511,7 +511,7 @@ const JournalEntries = () => {
                 addButtonText="Add Entry"
                 addButtonIcon={<FaPlus />}
                 onAddClick={handleOpenAddModal}
-                showExportButton={true}
+                showExportButton={false}
                 exportFileName="journal_entries"
                 exportButtonText="Export Excel"
                 itemsPerPageOptions={[10, 25, 50, 100]}
