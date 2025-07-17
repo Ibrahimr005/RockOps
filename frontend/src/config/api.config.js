@@ -1,6 +1,5 @@
 // src/config/api.config.js
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ;  // Removed /api
-
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 // Equipment module endpoints
 export const EQUIPMENT_ENDPOINTS = {
     BASE: '/api/equipment',
@@ -225,7 +224,8 @@ export const PARTNER_ENDPOINTS = {
 export const AUTH_ENDPOINTS = {
     BASE: '/api/v1/auth',
     REGISTER: '/api/v1/auth/register',
-    LOGIN: '/api/v1/auth/login'
+    LOGIN: '/api/v1/auth/login',
+    AUTHENTICATE: '/api/v1/auth/authenticate'
 };
 
 // Item Category module endpoints

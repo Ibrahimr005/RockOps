@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { loginService } from '../services/loginService';
 
 // Create the context
 const AuthContext = createContext(null);
@@ -13,55 +14,21 @@ export const AuthProvider = ({ children }) => {
 
     // Function to check if token is expired
     const isTokenExpired = (token) => {
-        if (!token) return true;
-
-        try {
-            // Get the payload part of the JWT
-            const payload = token.split('.')[1];
-            // Decode the base64
-            const decodedPayload = JSON.parse(atob(payload));
-
-            // Check if exp field exists
-            if (!decodedPayload.exp) return false;
-
-            // Compare expiration time with current time
-            // exp is in seconds, Date.now() is in milliseconds
-            return decodedPayload.exp * 1000 < Date.now();
-        } catch (error) {
-            console.error('Error checking token expiration:', error);
-            return true; // If there's an error, consider the token expired
-        }
+        return loginService.isTokenExpired(token);
     };
 
     // Function to handle login
     const login = async (username, password) => {
         try {
-            const response = await fetch('http://localhost:8080/api/v1/auth/authenticate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || t('auth.loginFailed'));
-            }
-
-            const userData = await response.json();
+            const userData = await loginService.authenticate(username, password);
             const { token: jwtToken, role, firstName, lastName, username: userName } = userData;
 
-            // Save token to localStorage
-            localStorage.setItem('token', jwtToken);
-
-            // Save user info to localStorage for persistence
-            const userInfo = { role, firstName, lastName, username: userName };
-            localStorage.setItem('userInfo', JSON.stringify(userInfo));
+            // Save user session using login service
+            loginService.saveUserSession(userData);
 
             // Update state
             setToken(jwtToken);
-            setCurrentUser(userInfo);
+            setCurrentUser({ role, firstName, lastName, username: userName });
             setIsAuthenticated(true);
             setLoading(false);
 
@@ -69,23 +36,30 @@ export const AuthProvider = ({ children }) => {
             return userData;
         } catch (error) {
             console.error('Login error:', error);
-            throw error;
+            throw error; // loginService already handles error formatting
         }
     };
 
     // Function to handle logout
-    const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('userInfo');
-        setToken(null);
-        setCurrentUser(null);
-        setIsAuthenticated(false);
+    const logout = async () => {
+        try {
+            // Call backend logout endpoint if available
+            await loginService.logout();
+        } catch (error) {
+            console.warn('Backend logout failed, continuing with local logout:', error);
+        } finally {
+            // Always clear local storage and state using login service
+            loginService.clearUserSession();
+            setToken(null);
+            setCurrentUser(null);
+            setIsAuthenticated(false);
+        }
     };
 
     // Initialize auth state from localStorage on mount
     useEffect(() => {
-        const storedToken = localStorage.getItem('token');
-        const storedUserInfo = localStorage.getItem('userInfo');
+        const storedToken = loginService.getStoredToken();
+        const storedUserInfo = loginService.getStoredUserInfo();
 
         if (storedToken) {
             if (isTokenExpired(storedToken)) {
@@ -96,12 +70,7 @@ export const AuthProvider = ({ children }) => {
                 setToken(storedToken);
 
                 if (storedUserInfo) {
-                    try {
-                        const userInfo = JSON.parse(storedUserInfo);
-                        setCurrentUser(userInfo);
-                    } catch (e) {
-                        console.error('Error parsing stored user info:', e);
-                    }
+                    setCurrentUser(storedUserInfo);
                 }
 
                 setIsAuthenticated(true);
