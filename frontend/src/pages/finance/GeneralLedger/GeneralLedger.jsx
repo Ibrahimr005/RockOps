@@ -143,7 +143,7 @@ const GeneralLedger = () => {
         <div className="general-ledger-container">
             {/* Enhanced IntroCard with Icon */}
             <IntroCard
-                icon={<FaFileInvoiceDollar />}
+                icon={<FaBook />}
                 label="FINANCE MANAGEMENT"
                 title="General Ledger"
                 stats={loading ? [] : stats}

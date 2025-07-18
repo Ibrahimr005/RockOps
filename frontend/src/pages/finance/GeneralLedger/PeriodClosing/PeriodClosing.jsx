@@ -324,7 +324,7 @@ const PeriodClosing = () => {
                 onAddClick={handleAddPeriod}
 
                 // Export configuration
-                showExportButton={true}
+                showExportButton={false}
                 exportButtonText="Export Periods"
                 exportFileName="accounting_periods"
                 customExportHeaders={{

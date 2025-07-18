@@ -2,7 +2,7 @@ import React, {useEffect, useState} from "react";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import {useTranslation} from 'react-i18next';
 import {useAuth} from "../../../../contexts/AuthContext.jsx";
-import { FaTrash, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import {FaTrash, FaEdit, FaSave, FaTimes, FaPlus} from 'react-icons/fa';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 
 const SitePartnersTab = ({siteId}) => {
@@ -319,16 +319,16 @@ const SitePartnersTab = ({siteId}) => {
 
     return (
         <div className="site-partners-tab">
-            <div className="departments-header">
-                <h3>Site Partners Report</h3>
-                {isSiteAdmin && (
-                    <div className="btn-primary-container">
-                        <button className="assign-button" onClick={handleOpenModal}>
-                            Assign Partner
-                        </button>
-                    </div>
-                )}
-            </div>
+            {/*<div className="departments-header">*/}
+            {/*    <h3>Site Partners Report</h3>*/}
+            {/*    {isSiteAdmin && (*/}
+            {/*        <div className="btn-primary-container">*/}
+            {/*            <button className="assign-button" onClick={handleOpenModal}>*/}
+            {/*                Assign Partner*/}
+            {/*            </button>*/}
+            {/*        </div>*/}
+            {/*    )}*/}
+            {/*</div>*/}
 
             {/* Updated Assign Partner Modal JSX - Replace the existing modal section in your component */}
             {showModal && (
@@ -437,6 +437,13 @@ const SitePartnersTab = ({siteId}) => {
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10}
                         tableTitle="Partners List"
+                        showAddButton={isSiteAdmin}
+                        addButtonText="Assign Partner"
+                        addButtonIcon={<FaPlus />}
+                        onAddClick={handleOpenModal}
+                        addButtonProps={{
+                            className: 'assign-button',
+                        }}
                     />
                 </div>
             )}
