@@ -4,6 +4,7 @@ import {useTranslation} from 'react-i18next';
 import {useAuth} from "../../../../contexts/AuthContext.jsx";
 import {FaTrash, FaEdit, FaSave, FaTimes, FaPlus} from 'react-icons/fa';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
+import { siteService } from "../../../../services/siteService.js";
 
 const SitePartnersTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -110,26 +111,9 @@ const SitePartnersTab = ({siteId}) => {
 
     const fetchPartners = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/site/${siteId}/partners`, {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            if (!response.ok) {
-                const text = await response.text();
-                try {
-                    const json = JSON.parse(text);
-                    throw new Error(json.message || `HTTP error! Status: ${response.status}`);
-                } catch (err) {
-                    throw new Error(`No Partners found for this site.`);
-                }
-            }
-
-            const data = await response.json();
+            setLoading(true);
+            const response = await siteService.getSitePartners(siteId);
+            const data = response.data;
 
             if (Array.isArray(data)) {
                 const transformedData = data.map((item, index) => ({
@@ -145,11 +129,11 @@ const SitePartnersTab = ({siteId}) => {
             } else {
                 setPartnersData([]);
             }
-
             setLoading(false);
         } catch (err) {
-            setError(err.message);
-            showError(err.message);
+            console.error('Error fetching partners:', err);
+            setError(err.message || 'No Partners found for this site.');
+            showError(err.message || 'No Partners found for this site.');
             setPartnersData([]);
             setLoading(false);
         }
@@ -171,18 +155,8 @@ const SitePartnersTab = ({siteId}) => {
 
     const fetchAvailablePartners = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/site/${siteId}/unassigned-partners`, {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            if (!response.ok) throw new Error("Failed to fetch partners.");
-
-            const data = await response.json();
+            const response = await siteService.getUnassignedPartners(siteId);
+            const data = response.data;
             const unassignedPartners = data.filter(eq => !eq.site);
             setAvailablePartners(unassignedPartners);
         } catch (err) {
@@ -194,22 +168,8 @@ const SitePartnersTab = ({siteId}) => {
 
     const handleAssignPartner = async (partnerId) => {
         try {
-            const token = localStorage.getItem("token");
             const percentageValue = partnerPercentages[partnerId];
-
-            const response = await fetch(`http://localhost:8080/siteadmin/${siteId}/assign-partner/${partnerId}`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({percentage: parseFloat(percentageValue)}),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(errorData);
-            }
+            await siteService.assignPartner(siteId, partnerId, parseFloat(percentageValue));
 
             setShowModal(false);
             await fetchPartners();
@@ -222,36 +182,7 @@ const SitePartnersTab = ({siteId}) => {
 
     const handleUpdatePartner = async (partnerId, newPercentage) => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/siteadmin/${siteId}/update-partner-percentage/${partnerId}`, {
-                method: "PUT",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ percentage: parseFloat(newPercentage) }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                let errorMessage;
-                try {
-                    // Try to parse as JSON
-                    const jsonError = JSON.parse(errorData);
-                    errorMessage = jsonError.message || jsonError.error || errorData;
-                } catch {
-                    // If not JSON, use the raw error text
-                    errorMessage = errorData;
-                }
-
-                // Check for specific error messages and provide user-friendly versions
-                if (errorMessage.includes("Rock4Mining")) {
-                    throw new Error("Cannot modify the default Rock4Mining partner's percentage directly");
-                } else if (errorMessage.includes("Cannot increase partner percentage")) {
-                    throw new Error("Not enough percentage available to increase. Please reduce other partners first");
-                }
-                throw new Error(errorMessage);
-            }
+            await siteService.updatePartnerPercentage(siteId, partnerId, parseFloat(newPercentage));
 
             await fetchPartners();
             setEditingPartner(null);
@@ -259,11 +190,11 @@ const SitePartnersTab = ({siteId}) => {
             showSuccess("Partner percentage successfully updated");
         } catch (err) {
             console.error("Error updating partner percentage:", err);
-            if (err.message.includes("Rock4Mining")) {
+            if (err.message && err.message.includes("Rock4Mining")) {
                 showError("Cannot modify the default partner's percentage. Please adjust other partners instead");
-            } else if (err.message.includes("Cannot increase partner percentage")) {
+            } else if (err.message && err.message.includes("Cannot increase partner percentage")) {
                 showError("Not enough percentage available. Please reduce other partners first");
-            } else if (err.message.includes("Server Error")) {
+            } else if (err.message && err.message.includes("Server Error")) {
                 showError("Unable to update partner percentage. Please check if the percentage is available");
             } else {
                 showError(err.message || "Unable to update partner percentage");
@@ -273,41 +204,14 @@ const SitePartnersTab = ({siteId}) => {
 
     const handleRemovePartner = async (partnerId) => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/siteadmin/${siteId}/remove-partner/${partnerId}`, {
-                method: "DELETE",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                let errorMessage;
-                try {
-                    // Try to parse as JSON
-                    const jsonError = JSON.parse(errorData);
-                    errorMessage = jsonError.message || jsonError.error || errorData;
-                } catch {
-                    // If not JSON, use the raw error text
-                    errorMessage = errorData;
-                }
-
-                // Check for specific error messages and provide user-friendly versions
-                if (errorMessage.includes("Rock4Mining")) {
-                    throw new Error("The default Rock4Mining partner cannot be removed from the site");
-                }
-                throw new Error(errorMessage);
-            }
-
+            await siteService.removePartner(siteId, partnerId);
             await fetchPartners();
             showSuccess("Partner successfully removed from the site");
         } catch (err) {
             console.error("Error removing partner:", err);
-            if (err.message.includes("Rock4Mining")) {
+            if (err.message && err.message.includes("Rock4Mining")) {
                 showError("This partner cannot be removed as they are the default partner for the site");
-            } else if (err.message.includes("Server Error")) {
+            } else if (err.message && err.message.includes("Server Error")) {
                 showError("Unable to remove partner. The partner might be the default partner or have active assignments.");
             } else {
                 showError(err.message || "Unable to remove partner from the site");
@@ -319,17 +223,6 @@ const SitePartnersTab = ({siteId}) => {
 
     return (
         <div className="site-partners-tab">
-            {/*<div className="departments-header">*/}
-            {/*    <h3>Site Partners Report</h3>*/}
-            {/*    {isSiteAdmin && (*/}
-            {/*        <div className="btn-primary-container">*/}
-            {/*            <button className="assign-button" onClick={handleOpenModal}>*/}
-            {/*                Assign Partner*/}
-            {/*            </button>*/}
-            {/*        </div>*/}
-            {/*    )}*/}
-            {/*</div>*/}
-
             {/* Updated Assign Partner Modal JSX - Replace the existing modal section in your component */}
             {showModal && (
                 <div className="assign-partner-modal-overlay">
