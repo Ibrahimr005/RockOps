@@ -13,6 +13,7 @@ import com.example.backend.models.site.SitePartner;
 import com.example.backend.models.site.SitePartnerId;
 import com.example.backend.repositories.*;
 import com.example.backend.repositories.hr.EmployeeRepository;
+import com.example.backend.repositories.site.SitePartnerRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
 import jakarta.annotation.PostConstruct;
@@ -34,68 +35,129 @@ public class SiteAdminService
     private EmployeeRepository employeeRepository;
     private WarehouseRepository warehouseRepository;
     private FixedAssetsRepository fixedAssetsRepository;
+    private SitePartnerRepository sitePartnerRepository;
 
     @Autowired
     private EntityManager entityManager;
 
     @Autowired
-    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetsRepository fixedAssetsRepository) {
+    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetsRepository fixedAssetsRepository, SitePartnerRepository sitePartnerRepository) {
         this.siteRepository = siteRepository;
         this.partnerRepository = partnerRepository;
         this.equipmentRepository = equipmentRepository;
         this.employeeRepository = employeeRepository;
         this.warehouseRepository= warehouseRepository;
         this.fixedAssetsRepository = fixedAssetsRepository;
+        this.sitePartnerRepository = sitePartnerRepository;
     }
+
 
     @Transactional
     public Site addSite(Map<String, Object> siteData) {
-        Site site = new Site();
-        site.setName((String) siteData.get("name"));
-        site.setPhysicalAddress((String) siteData.get("physicalAddress"));
-        site.setCompanyAddress((String) siteData.get("companyAddress"));
+        try {
+            System.out.println("=== Creating new site ===");
 
-        if (siteData.get("photoUrl") != null) {
-            site.setPhotoUrl((String) siteData.get("photoUrl"));
+            // Create site entity
+            Site site = new Site();
+            site.setName((String) siteData.get("name"));
+            site.setPhysicalAddress((String) siteData.get("physicalAddress"));
+            site.setCompanyAddress((String) siteData.get("companyAddress"));
+            // Don't initialize sitePartners collection to avoid cascade issues
+
+            if (siteData.get("photoUrl") != null) {
+                site.setPhotoUrl((String) siteData.get("photoUrl"));
+            }
+
+            if (siteData.get("creationDate") != null) {
+                site.setCreationDate(LocalDate.parse((String) siteData.get("creationDate")));
+            }
+
+            // Save site first
+            Site savedSite = siteRepository.save(site);
+            System.out.println("Site saved with ID: " + savedSite.getId());
+
+            // Create default partner assignment using direct repository save
+            createDefaultPartnerAssignment(savedSite.getId());
+
+            System.out.println("=== Site creation completed ===");
+            return savedSite;
+
+        } catch (Exception e) {
+            System.err.println("ERROR in addSite: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to create site: " + e.getMessage(), e);
         }
+    }
 
-        if (siteData.get("creationDate") != null) {
-            site.setCreationDate(LocalDate.parse((String) siteData.get("creationDate")));
+    // Helper method to create default assignment
+    private void createDefaultPartnerAssignment(UUID siteId) {
+        try {
+            System.out.println("Creating default partner assignment");
+
+            // Get default partner
+            Partner defaultPartner = ensureDefaultPartnerExists();
+            System.out.println("Default partner ID: " + defaultPartner.getId());
+
+            // Check if assignment already exists
+            SitePartnerId assignmentId = new SitePartnerId(siteId, defaultPartner.getId());
+            if (sitePartnerRepository.existsById(assignmentId)) {
+                System.out.println("Assignment already exists, skipping");
+                return;
+            }
+
+            // Use native query to insert directly (avoids Hibernate session conflicts)
+            String sql = "INSERT INTO site_partner (site_id, partner_id, percentage) VALUES (?1, ?2, ?3)";
+
+            int rowsAffected = entityManager.createNativeQuery(sql)
+                    .setParameter(1, siteId)
+                    .setParameter(2, defaultPartner.getId())
+                    .setParameter(3, 100.0)
+                    .executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("Default assignment created successfully");
+            } else {
+                System.out.println("No rows affected - assignment may already exist");
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error creating default assignment: " + e.getMessage());
+            e.printStackTrace();
+            // Don't throw here to avoid breaking site creation
         }
+    }
 
-        // Initialize the sitePartners list
-        site.setSitePartners(new ArrayList<>());
+    // Alternative helper method using repository (if native query doesn't work)
+    private void createDefaultPartnerAssignmentAlternative(UUID siteId) {
+        try {
+            System.out.println("Creating default assignment using repository");
 
-        // Save site first to generate ID
-        Site savedSite = siteRepository.save(site);
+            Partner defaultPartner = ensureDefaultPartnerExists();
 
-        // Find default Rock4Mining partner
-        System.out.println("11111");
-        Partner defaultPartner = partnerRepository.findByFirstName("Rock4Mining")
-                .orElseThrow(() -> new RuntimeException("Default partner Rock4Mining not found"));
+            // Create minimal entities to avoid session conflicts
+            Site siteRef = new Site();
+            siteRef.setId(siteId);
 
-        System.out.println("22222");
+            Partner partnerRef = new Partner();
+            partnerRef.setId(defaultPartner.getId());
 
-        // Create default partner assignment with 100%
-        SitePartnerId id = new SitePartnerId(savedSite.getId(), defaultPartner.getId());
-        SitePartner sitePartner = new SitePartner();
-        sitePartner.setId(id);
-        sitePartner.setSite(savedSite);
-        sitePartner.setPartner(defaultPartner);
-        sitePartner.setPercentage(100.0);
+            SitePartnerId assignmentId = new SitePartnerId(siteId, defaultPartner.getId());
 
-        System.out.println("33333");
+            if (!sitePartnerRepository.existsById(assignmentId)) {
+                SitePartner assignment = new SitePartner();
+                assignment.setId(assignmentId);
+                assignment.setSite(siteRef);  // Use reference entity
+                assignment.setPartner(partnerRef);  // Use reference entity
+                assignment.setPercentage(100.0);
 
-// Save the SitePartner by persisting it through EntityManager
-        entityManager.persist(sitePartner);
-        entityManager.flush();
-        System.out.println("44444");
+                sitePartnerRepository.save(assignment);
+                System.out.println("Default assignment created");
+            }
 
-// Add to the list AFTER persisting
-        savedSite.getSitePartners().add(sitePartner);
-
-// Return the site without saving again
-        return savedSite;
+        } catch (Exception e) {
+            System.err.println("Error in alternative assignment creation: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
 
@@ -423,176 +485,280 @@ public class SiteAdminService
         return savedWarehouse;
     }
 
+    // PRODUCTION-READY VERSION - USE THIS ONE
+    // Replace your entire assignPartnerToSite method with this:
     @Transactional
     public SitePartner assignPartnerToSite(UUID siteId, Integer partnerId, Double percentage) {
-        Site site = siteRepository.findById(siteId)
-                .orElseThrow(() -> new RuntimeException("❌ Site not found with ID: " + siteId));
+        // Input validation
+        if (siteId == null || partnerId == null || percentage == null || percentage <= 0 || percentage > 100) {
+            throw new IllegalArgumentException("Invalid input parameters");
+        }
 
-        Partner partner = partnerRepository.findById(partnerId)
-                .orElseThrow(() -> new RuntimeException("❌ Partner not found with ID: " + partnerId));
+        try {
+            System.out.println("=== Starting partner assignment (Pure SQL) ===");
+            System.out.println("Site ID: " + siteId + ", Partner ID: " + partnerId + ", Percentage: " + percentage);
 
-        // Validate percentage
+            // Step 1: Verify site exists
+            Long siteCount = (Long) entityManager.createNativeQuery("SELECT COUNT(*) FROM site WHERE id = ?1")
+                    .setParameter(1, siteId)
+                    .getSingleResult();
+
+            if (siteCount == 0) {
+                throw new RuntimeException("Site not found: " + siteId);
+            }
+
+            // Step 2: Verify partner exists
+            Long partnerCount = (Long) entityManager.createNativeQuery("SELECT COUNT(*) FROM partner WHERE id = ?1")
+                    .setParameter(1, partnerId)
+                    .getSingleResult();
+
+            if (partnerCount == 0) {
+                throw new RuntimeException("Partner not found: " + partnerId);
+            }
+
+            // Step 3: Check if assignment already exists
+            Long existingCount = (Long) entityManager.createNativeQuery(
+                            "SELECT COUNT(*) FROM site_partner WHERE site_id = ?1 AND partner_id = ?2")
+                    .setParameter(1, siteId)
+                    .setParameter(2, partnerId)
+                    .getSingleResult();
+
+            if (existingCount > 0) {
+                throw new RuntimeException("Partner is already assigned to this site");
+            }
+
+            // Step 4: Get default partner ID (Rock4Mining)
+            Integer defaultPartnerId;
+            try {
+                Object result = entityManager.createNativeQuery(
+                                "SELECT id FROM partner WHERE first_name = 'Rock4Mining' LIMIT 1")
+                        .getSingleResult();
+                defaultPartnerId = ((Number) result).intValue();
+            } catch (Exception e) {
+                throw new RuntimeException("Default partner Rock4Mining not found");
+            }
+
+            System.out.println("Default partner ID: " + defaultPartnerId);
+
+            // Step 5: Get default partner's current percentage
+            Object percentageResult = entityManager.createNativeQuery(
+                            "SELECT percentage FROM site_partner WHERE site_id = ?1 AND partner_id = ?2")
+                    .setParameter(1, siteId)
+                    .setParameter(2, defaultPartnerId)
+                    .getSingleResult();
+
+            Double availablePercentage = ((Number) percentageResult).doubleValue();
+            System.out.println("Available percentage: " + availablePercentage);
+
+            // Step 6: Validate percentage availability
+            if (percentage > availablePercentage) {
+                throw new RuntimeException(String.format(
+                        "Cannot assign %.2f%% to partner. Only %.2f%% is available.",
+                        percentage, availablePercentage));
+            }
+
+            // Step 7: Update default partner's percentage
+            int updatedRows = entityManager.createNativeQuery(
+                            "UPDATE site_partner SET percentage = ?1 WHERE site_id = ?2 AND partner_id = ?3")
+                    .setParameter(1, availablePercentage - percentage)
+                    .setParameter(2, siteId)
+                    .setParameter(3, defaultPartnerId)
+                    .executeUpdate();
+
+            if (updatedRows == 0) {
+                throw new RuntimeException("Failed to update default partner percentage");
+            }
+
+            System.out.println("Updated default partner percentage to: " + (availablePercentage - percentage));
+
+            // Step 8: Insert new partner assignment
+            int insertedRows = entityManager.createNativeQuery(
+                            "INSERT INTO site_partner (site_id, partner_id, percentage) VALUES (?1, ?2, ?3)")
+                    .setParameter(1, siteId)
+                    .setParameter(2, partnerId)
+                    .setParameter(3, percentage)
+                    .executeUpdate();
+
+            if (insertedRows == 0) {
+                throw new RuntimeException("Failed to create partner assignment");
+            }
+
+            System.out.println("Partner assignment created successfully");
+
+            // Step 9: Verify by querying the database
+            Long verificationCount = (Long) entityManager.createNativeQuery(
+                            "SELECT COUNT(*) FROM site_partner WHERE site_id = ?1 AND partner_id = ?2")
+                    .setParameter(1, siteId)
+                    .setParameter(2, partnerId)
+                    .getSingleResult();
+
+            if (verificationCount == 0) {
+                throw new RuntimeException("Assignment verification failed");
+            }
+
+            // Step 10: Create response object (minimal, no Hibernate entities)
+            SitePartnerId responseId = new SitePartnerId(siteId, partnerId);
+            SitePartner response = new SitePartner();
+            response.setId(responseId);
+            response.setPercentage(percentage);
+
+            System.out.println("=== Partner assignment completed successfully ===");
+            return response;
+
+        } catch (Exception e) {
+            System.err.println("ERROR in assignPartnerToSite: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to assign partner: " + e.getMessage(), e);
+        }
+    }
+
+    // Helper method to validate inputs
+    private void validateAssignmentInputs(UUID siteId, Integer partnerId, Double percentage) {
+        if (siteId == null) {
+            throw new IllegalArgumentException("Site ID cannot be null");
+        }
+        if (partnerId == null) {
+            throw new IllegalArgumentException("Partner ID cannot be null");
+        }
         if (percentage == null || percentage <= 0 || percentage > 100) {
-            throw new RuntimeException("Percentage must be between 0 and 100");
+            throw new IllegalArgumentException("Percentage must be between 0 and 100");
+        }
+    }
+
+    // Improved helper method
+    private Partner ensureDefaultPartnerExists() {
+        Optional<Partner> existingPartner = partnerRepository.findByFirstName("Rock4Mining");
+
+        if (existingPartner.isPresent()) {
+            return existingPartner.get();
         }
 
-        SitePartnerId id = new SitePartnerId(site.getId(), partner.getId());
+        // Create new default partner
+        System.out.println("Creating default Rock4Mining partner");
+        Partner defaultPartner = new Partner();
+        defaultPartner.setFirstName("Rock4Mining");
+        defaultPartner.setLastName("");
 
-        // Check if already assigned
-        boolean alreadyAssigned = site.getSitePartners().stream()
-                .anyMatch(sp -> sp.getId().getPartnerId() == partner.getId());
-        if (alreadyAssigned) {
-            throw new RuntimeException("Partner is already assigned to this site!");
-        }
-
-        // Find the default Rock4Mining partner
-        Partner defaultPartner = partnerRepository.findByFirstName("Rock4Mining")
-                .orElseThrow(() -> new RuntimeException("Default partner Rock4Mining not found"));
-
-        // Find the default partner's site assignment
-        SitePartner defaultSitePartner = site.getSitePartners().stream()
-                .filter(sp -> sp.getPartner().getId() == defaultPartner.getId())
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Default partner assignment not found"));
-
-        // Calculate remaining percentage
-        Double currentDefaultPercentage = defaultSitePartner.getPercentage();
-        if (percentage > currentDefaultPercentage) {
-            throw new RuntimeException("Cannot assign " + percentage + "% to new partner. Only " +
-                    currentDefaultPercentage + "% is available.");
-        }
-
-        // Reduce default partner's percentage
-        defaultSitePartner.setPercentage(currentDefaultPercentage - percentage);
-
-        // Create new partner assignment
-        SitePartner sitePartner = new SitePartner();
-        sitePartner.setId(id);
-        sitePartner.setSite(site);
-        sitePartner.setPartner(partner);
-        sitePartner.setPercentage(percentage);
-
-        site.getSitePartners().add(sitePartner);
-
-        // Save via the site (because cascade should save the SitePartner)
-        siteRepository.save(site);
-
-        return sitePartner;
+        return partnerRepository.save(defaultPartner);
     }
 
     @Transactional
     public SitePartner updatePartnerPercentage(UUID siteId, Integer partnerId, Double newPercentage) {
-        Site site = siteRepository.findById(siteId)
-                .orElseThrow(() -> new RuntimeException("❌ Site not found with ID: " + siteId));
+        validateAssignmentInputs(siteId, partnerId, newPercentage);
 
-        Partner partner = partnerRepository.findById(partnerId)
-                .orElseThrow(() -> new RuntimeException("❌ Partner not found with ID: " + partnerId));
+        try {
+            System.out.println("=== Updating partner percentage ===");
 
-        // Validate percentage
-        if (newPercentage == null || newPercentage <= 0 || newPercentage > 100) {
-            throw new RuntimeException("Percentage must be between 0 and 100");
+            // Find the partner assignment
+            SitePartner sitePartner = sitePartnerRepository
+                    .findBySiteIdAndPartnerId(siteId, partnerId)
+                    .orElseThrow(() -> new RuntimeException("Partner assignment not found"));
+
+            // Check if this is the default partner
+            Partner defaultPartner = ensureDefaultPartnerExists();
+            if (partnerId.equals(defaultPartner.getId())) {
+                throw new RuntimeException("Cannot directly update the default partner's percentage");
+            }
+
+            Double oldPercentage = sitePartner.getPercentage();
+            Double percentageDifference = newPercentage - oldPercentage;
+
+            // Find default partner assignment
+            SitePartner defaultAssignment = sitePartnerRepository
+                    .findBySiteIdAndPartnerId(siteId, defaultPartner.getId())
+                    .orElseThrow(() -> new RuntimeException("Default partner assignment not found"));
+
+            Double availableFromDefault = defaultAssignment.getPercentage();
+
+            if (percentageDifference > 0 && percentageDifference > availableFromDefault) {
+                throw new RuntimeException(String.format(
+                        "Cannot increase by %.2f%%. Only %.2f%% available.",
+                        percentageDifference, availableFromDefault));
+            }
+
+            // Update percentages
+            sitePartner.setPercentage(newPercentage);
+            defaultAssignment.setPercentage(availableFromDefault - percentageDifference);
+
+            // Save both assignments
+            sitePartnerRepository.save(defaultAssignment);
+            SitePartner updated = sitePartnerRepository.save(sitePartner);
+
+            System.out.println("Partner percentage updated successfully");
+            return updated;
+
+        } catch (Exception e) {
+            System.err.println("ERROR updating partner percentage: " + e.getMessage());
+            throw new RuntimeException("Failed to update percentage: " + e.getMessage(), e);
         }
-
-        SitePartnerId id = new SitePartnerId(site.getId(), partner.getId());
-
-        // Find the specific SitePartner association
-        SitePartner sitePartner = site.getSitePartners().stream()
-                .filter(sp -> sp.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("❌ Partner is not assigned to this site!"));
-
-        // Check if this is the default Rock4Mining partner - if so, we shouldn't directly change it
-        Partner defaultPartner = partnerRepository.findByFirstName("Rock4Mining")
-                .orElseThrow(() -> new RuntimeException("Default partner Rock4Mining not found"));
-
-        if (partner.getId() == defaultPartner.getId()) {
-            throw new RuntimeException("Cannot directly update the default partner's percentage. Please modify other partners instead.");
-        }
-
-        // Get the current percentage of this partner
-        Double oldPercentage = sitePartner.getPercentage();
-        Double percentageDifference = newPercentage - oldPercentage;
-
-        // Find the default partner's site assignment
-        SitePartner defaultSitePartner = site.getSitePartners().stream()
-                .filter(sp -> sp.getPartner().getId() == defaultPartner.getId())
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Default partner assignment not found"));
-
-        // Calculate if there's enough percentage available
-        Double currentDefaultPercentage = defaultSitePartner.getPercentage();
-        if (percentageDifference > 0 && percentageDifference > currentDefaultPercentage) {
-            throw new RuntimeException("Cannot increase partner percentage by " + percentageDifference +
-                    "%. Only " + currentDefaultPercentage + "% is available from default partner.");
-        }
-
-        // Update the percentage
-        sitePartner.setPercentage(newPercentage);
-
-        // Adjust the default partner's percentage (subtract if increasing, add if decreasing)
-        defaultSitePartner.setPercentage(currentDefaultPercentage - percentageDifference);
-
-        // Save via the site (because SitePartner should be cascaded)
-        siteRepository.save(site);
-
-        return sitePartner;
     }
 
     @Transactional
     public void removePartnerFromSite(UUID siteId, Integer partnerId) {
-        // Fetch the Site
-        Site site = siteRepository.findById(siteId)
-                .orElseThrow(() -> new RuntimeException("❌ Site not found with ID: " + siteId));
+        try {
+            System.out.println("=== Removing partner from site ===");
 
-        // Fetch the Partner
-        Partner partner = partnerRepository.findById(partnerId)
-                .orElseThrow(() -> new RuntimeException("❌ Partner not found with ID: " + partnerId));
+            // Find the partner assignment
+            SitePartner sitePartner = sitePartnerRepository
+                    .findBySiteIdAndPartnerId(siteId, partnerId)
+                    .orElseThrow(() -> new RuntimeException("Partner assignment not found"));
 
-        // Don't allow removing the default partner
-        Partner defaultPartner = partnerRepository.findByFirstName("Rock4Mining")
-                .orElseThrow(() -> new RuntimeException("Default partner Rock4Mining not found"));
+            // Check if this is the default partner
+            Partner defaultPartner = ensureDefaultPartnerExists();
+            if (partnerId.equals(defaultPartner.getId())) {
+                throw new RuntimeException("Cannot remove the default Rock4Mining partner");
+            }
 
-        if (partner.getId() == defaultPartner.getId()) {
-            throw new RuntimeException("Cannot remove the default Rock4Mining partner from a site");
+            Double percentageToRecover = sitePartner.getPercentage();
+
+            // Find default partner assignment
+            SitePartner defaultAssignment = sitePartnerRepository
+                    .findBySiteIdAndPartnerId(siteId, defaultPartner.getId())
+                    .orElseThrow(() -> new RuntimeException("Default partner assignment not found"));
+
+            // Add percentage back to default partner
+            defaultAssignment.setPercentage(defaultAssignment.getPercentage() + percentageToRecover);
+            sitePartnerRepository.save(defaultAssignment);
+
+            // Remove the partner assignment
+            sitePartnerRepository.delete(sitePartner);
+
+            System.out.println("Partner removed successfully");
+
+        } catch (Exception e) {
+            System.err.println("ERROR removing partner: " + e.getMessage());
+            throw new RuntimeException("Failed to remove partner: " + e.getMessage(), e);
         }
-
-        // Create the SitePartnerId
-        SitePartnerId id = new SitePartnerId(site.getId(), partner.getId());
-
-        // Find the specific SitePartner
-        SitePartner sitePartner = site.getSitePartners().stream()
-                .filter(sp -> sp.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("❌ Partner is not assigned to this site!"));
-
-        // Get the percentage of the partner being removed
-        Double percentageToRecover = sitePartner.getPercentage();
-
-        // Find the default partner's site assignment
-        SitePartner defaultSitePartner = site.getSitePartners().stream()
-                .filter(sp -> sp.getPartner().getId() == defaultPartner.getId())
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Default partner assignment not found"));
-
-        // Add the removed partner's percentage back to the default partner
-        defaultSitePartner.setPercentage(defaultSitePartner.getPercentage() + percentageToRecover);
-
-        // Remove the SitePartner from the site's list
-        site.getSitePartners().remove(sitePartner);
-
-        // Save the site to apply the change (cascade should handle deleting SitePartner)
-        siteRepository.save(site);
     }
 
+    // Helper methods
+//    private void validateAssignmentInputs(UUID siteId, Integer partnerId, Double percentage) {
+//        if (siteId == null) {
+//            throw new IllegalArgumentException("Site ID cannot be null");
+//        }
+//        if (partnerId == null) {
+//            throw new IllegalArgumentException("Partner ID cannot be null");
+//        }
+//        if (percentage == null || percentage <= 0 || percentage > 100) {
+//            throw new IllegalArgumentException("Percentage must be between 0 and 100");
+//        }
+//    }
+
+//    private Partner ensureDefaultPartnerExists() {
+//        return partnerRepository.findByFirstName("Rock4Mining")
+//                .orElseGet(() -> {
+//                    System.out.println("Creating default Rock4Mining partner");
+//                    Partner defaultPartner = Partner.builder()
+//                            .firstName("Rock4Mining")
+//                            .lastName("")
+//                            .build();
+//                    return partnerRepository.save(defaultPartner);
+//                });
+//    }
+
     @PostConstruct
-    public void ensureDefaultPartnerExists() {
-        // Check if Rock4Mining partner exists, if not create it
-        if (partnerRepository.findByFirstName("Rock4Mining").isEmpty()) {
-            Partner defaultPartner = new Partner();
-            defaultPartner.setFirstName("Rock4Mining");
-            defaultPartner.setLastName("");
-            partnerRepository.save(defaultPartner);
-        }
+    public void initializeDefaultPartner() {
+        ensureDefaultPartnerExists();
     }
 
 
