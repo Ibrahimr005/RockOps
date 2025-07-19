@@ -3,6 +3,7 @@ import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import {useTranslation} from 'react-i18next';
 import {useAuth} from "../../../../contexts/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
+import { FaPlus } from 'react-icons/fa';
 import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import { siteService } from "../../../../services/siteService";
 
@@ -323,16 +324,16 @@ const SiteWarehousesTab = ({siteId}) => {
                 onClose={handleCloseSnackbar}
                 duration={3000}
             />
-            <div className="departments-header">
-                <h3>{t('site.siteWarehousesReport')}</h3>
-                {isSiteAdmin && (
-                    <div className="btn-primary-container">
-                        <button className="assign-button" onClick={handleOpenAddModal}>
-                            Add Warehouse
-                        </button>
-                    </div>
-                )}
-            </div>
+            {/*<div className="departments-header">*/}
+            {/*    <h3>{t('site.siteWarehousesReport')}</h3>*/}
+            {/*    {isSiteAdmin && (*/}
+            {/*        <div className="btn-primary-container">*/}
+            {/*            <button className="assign-button" onClick={handleOpenAddModal}>*/}
+            {/*                Add Warehouse*/}
+            {/*            </button>*/}
+            {/*        </div>*/}
+            {/*    )}*/}
+            {/*</div>*/}
 
             {error ? (
                 <div className="error-container">{error}</div>
@@ -350,6 +351,13 @@ const SiteWarehousesTab = ({siteId}) => {
                         tableTitle="Warehouses List"
                         onRowClick={handleRowClick}
                         rowClassName="clickable-row"
+                        showAddButton={isSiteAdmin}
+                        addButtonText="Add Warehouse"
+                        addButtonIcon={<FaPlus />}
+                        onAddClick={handleOpenAddModal}
+                        addButtonProps={{
+                            className: 'assign-button',
+                        }}
                     />
                 </div>
             )}

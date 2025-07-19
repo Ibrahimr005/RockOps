@@ -6,6 +6,7 @@ import './Partners.scss';
 import {FaEdit, FaTrashAlt, FaUsers} from "react-icons/fa";
 import DataTable from '../../components/common/DataTable/DataTable';
 import '../../styles/modal-styles.scss';
+import { partnerService } from '../../services/partnerService.js';
 
 const Partners = () => {
     const [partners, setPartners] = useState([]);
@@ -14,7 +15,7 @@ const Partners = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const [newPartner, setNewPartner] = useState({ firstName: '', lastName: '' });
 
-    const { currentUser, token } = useAuth();
+    const { currentUser } = useAuth();
     const { t } = useTranslation();
 
     // Check if user is admin
@@ -22,26 +23,17 @@ const Partners = () => {
 
     useEffect(() => {
         fetchPartners();
-    }, [token]);
+    }, []);
 
     const fetchPartners = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://localhost:8080/api/v1/partner/getallpartners', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(t('partners.fetchError', 'Unable to load partners'));
-            }
-
-            const data = await response.json();
-            setPartners(data);
+            const response = await partnerService.getAll();
+            setPartners(response.data);
             setLoading(false);
         } catch (err) {
-            setError(err.message);
+            console.error('Error fetching partners:', err);
+            setError(err.message || t('partners.fetchError', 'Unable to load partners'));
             setLoading(false);
         }
     };
@@ -50,28 +42,15 @@ const Partners = () => {
         e.preventDefault();
 
         try {
-            const response = await fetch('http://localhost:8080/api/v1/partner/add', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: new URLSearchParams({
-                    firstName: newPartner.firstName,
-                    lastName: newPartner.lastName
-                })
-            });
+            const response = await partnerService.add(newPartner.firstName, newPartner.lastName);
+            const addedPartner = response.data;
 
-            if (!response.ok) {
-                throw new Error(t('partners.addError', 'Failed to add partner'));
-            }
-
-            const addedPartner = await response.json();
             setPartners([...partners, addedPartner]);
             setNewPartner({ firstName: '', lastName: '' });
             setShowAddModal(false);
         } catch (err) {
-            setError(err.message);
+            console.error('Error adding partner:', err);
+            setError(err.message || t('partners.addError', 'Failed to add partner'));
         }
     };
 

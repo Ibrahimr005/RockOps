@@ -4,6 +4,7 @@ import {useTranslation} from 'react-i18next';
 import {useAuth} from "../../../../contexts/AuthContext";
 import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import { siteService } from "../../../../services/siteService";
+import {FaPlus} from "react-icons/fa";
 
 const SiteFixedAssetsTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -170,16 +171,16 @@ const SiteFixedAssetsTab = ({siteId}) => {
                 onClose={handleCloseSnackbar}
                 duration={3000}
             />
-            <div className="departments-header">
-                <h3>{t('site.siteFixedAssetsReport')}</h3>
-                {isSiteAdmin && (
-                    <div className="btn-primary-container">
-                        <button className="assign-button" onClick={handleOpenModal}>
-                            {t('site.assignFixedAsset')}
-                        </button>
-                    </div>
-                )}
-            </div>
+            {/*<div className="departments-header">*/}
+            {/*    <h3>{t('site.siteFixedAssetsReport')}</h3>*/}
+            {/*    {isSiteAdmin && (*/}
+            {/*        <div className="btn-primary-container">*/}
+            {/*            <button className="assign-button" onClick={handleOpenModal}>*/}
+            {/*                {t('site.assignFixedAsset')}*/}
+            {/*            </button>*/}
+            {/*        </div>*/}
+            {/*    )}*/}
+            {/*</div>*/}
 
             {/*<div className="assets-stats">*/}
             {/*    {Object.entries(assetCounts).map(([assetName, count]) => (*/}
@@ -267,6 +268,13 @@ const SiteFixedAssetsTab = ({siteId}) => {
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10}
                         tableTitle="Fixed Assets List"
+                        showAddButton={isSiteAdmin}
+                        addButtonText={t('site.assignFixedAsset')}
+                        addButtonIcon={<FaPlus />}
+                        onAddClick={handleOpenModal}
+                        addButtonProps={{
+                            className: 'assign-button',
+                        }}
                     />
                 </div>
             )}

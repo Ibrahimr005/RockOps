@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from "../../../../contexts/AuthContext.jsx";
 import { siteService } from "../../../../services/siteService";
 import { useNavigate } from "react-router-dom";
+import { FaPlus } from 'react-icons/fa';
 import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import "../SiteDetails.scss";
 
@@ -252,18 +253,18 @@ const SiteEmployeesTab = ({ siteId }) => {
                 onClose={handleCloseSnackbar}
                 duration={3000}
             />
-            <div className="tab-header">
-                <div className="departments-header">
-                    <h3>{t('site.siteEmployeesReport')}</h3>
-                    {isSiteAdmin && (
-                        <div className="btn-primary-container">
-                            <button className="btn-primary" onClick={handleOpenModal}>
-                                Assign Employee
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
+            {/*<div className="tab-header">*/}
+            {/*    <div className="departments-header">*/}
+            {/*        <h3>{t('site.siteEmployeesReport')}</h3>*/}
+            {/*        {isSiteAdmin && (*/}
+            {/*            <div className="btn-primary-container">*/}
+            {/*                <button className="btn-primary" onClick={handleOpenModal}>*/}
+            {/*                    Assign Employee*/}
+            {/*                </button>*/}
+            {/*            </div>*/}
+            {/*        )}*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             {error ? (
                 <div className="error-message">
@@ -284,6 +285,13 @@ const SiteEmployeesTab = ({ siteId }) => {
                         tableTitle="Employees List"
                         onRowClick={handleRowClick}
                         rowClassName="clickable-row"
+                        showAddButton={isSiteAdmin}
+                        addButtonText="Assign Employee"
+                        addButtonIcon={<FaPlus />}
+                        onAddClick={handleOpenModal}
+                        addButtonProps={{
+                            className: 'assign-button',
+                        }}
                     />
                 </div>
             )}
