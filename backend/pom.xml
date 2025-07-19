@@ -27,7 +27,7 @@
         <url/>
     </scm>
     <properties>
-        <java.version>23</java.version>
+        <java.version>21</java.version>
         <spring-modulith.version>1.3.5</spring-modulith.version>
     </properties>
     <dependencies>
@@ -166,27 +166,28 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
-<!--            <plugin>-->
-<!--                <groupId>io.github.deweyjose</groupId>-->
-<!--                <artifactId>graphqlcodegen-maven-plugin</artifactId>-->
-<!--                <version>1.61.5</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>dgs-codegen</id>-->
-<!--                        <goals>-->
-<!--                            <goal>generate</goal>-->
-<!--                        </goals>-->
-<!--                        <configuration>-->
-<!--                            <schemaPaths>-->
-<!--                                <param>src/main/resources/graphql-client</param>-->
-<!--                            </schemaPaths>-->
-<!--                            <packageName>com.example.backend.codegen</packageName>-->
-<!--                            <addGeneratedAnnotation>true</addGeneratedAnnotation>-->
-<!--                            <disableDatesInGeneratedAnnotation>true</disableDatesInGeneratedAnnotation>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
+            <plugin>
+                <groupId>io.github.deweyjose</groupId>
+                <artifactId>graphqlcodegen-maven-plugin</artifactId>
+                <version>1.61.5</version>
+                <executions>
+                    <execution>
+                        <id>dgs-codegen</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <skip>true</skip>
+                            <schemaPaths>
+                                <param>src/main/resources/graphql-client</param>
+                            </schemaPaths>
+                            <packageName>com.example.backend.codegen</packageName>
+                            <addGeneratedAnnotation>true</addGeneratedAnnotation>
+                            <disableDatesInGeneratedAnnotation>true</disableDatesInGeneratedAnnotation>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>

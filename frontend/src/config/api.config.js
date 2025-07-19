@@ -1,5 +1,6 @@
 // src/config/api.config.js
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
 // Equipment module endpoints
 export const EQUIPMENT_ENDPOINTS = {
     BASE: '/api/equipment',

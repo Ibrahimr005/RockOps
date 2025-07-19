@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -14,33 +12,45 @@ services:
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       - MINIO_BUCKET_NAME=rockops
-      - CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+      - CORS_ALLOWED_ORIGINS=https://rock-ops.vercel.app,http://localhost:5173
+      - PORT=8080
     depends_on:
       - postgres
       - minio
+    networks:
+      - rockops-network
+
   postgres:
     image: postgres:latest
     ports:
-      - "5433:5432"  # Using 5433 to avoid conflict with your local postgres
+      - "5433:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1234
       POSTGRES_DB: rockOpsDB
     volumes:
-      - postgres_data_local:/var/lib/postgresql/data
+      - postgres_data_test:/var/lib/postgresql/data
+    networks:
+      - rockops-network
 
   minio:
     image: minio/minio:latest
     ports:
-      - "9002:9000"  # Using 9002 to avoid conflict
+      - "9002:9000"
       - "9003:9001"
     environment:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin
     command: server /data --console-address ":9001"
     volumes:
-      - minio_data_local:/data
+      - minio_data_test:/data
+    networks:
+      - rockops-network
+
+networks:
+  rockops-network:
+    driver: bridge
 
 volumes:
-  postgres_data_local:
-  minio_data_local:
+  postgres_data_test:
+  minio_data_test: 

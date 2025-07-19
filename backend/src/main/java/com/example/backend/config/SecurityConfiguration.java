@@ -37,6 +37,7 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll() 
                         .requestMatchers("/api/v1/admin/**").hasAuthority(Role.ADMIN.name())
                         .requestMatchers("/ws/**").permitAll()  // Allow WebSocket endpoint
                         .requestMatchers("/ws-native/**").permitAll()  // Allow native WebSocket endpoint
