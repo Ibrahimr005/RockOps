@@ -183,7 +183,7 @@ const Partners = () => {
                                 <button type="button" className="modal-btn-secondary" onClick={() => setShowAddModal(false)}>
                                     {t('common.cancel', 'Cancel')}
                                 </button>
-                                <button type="submit" className="btn btn-success">
+                                <button type="submit" className="btn-primary">
                                     {t('common.add', 'Add')}
                                 </button>
                             </div>
