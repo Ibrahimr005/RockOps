@@ -4,6 +4,7 @@ import DataTable from '../../components/common/DataTable/DataTable';
 import UserStatsCard from './components/UserStatsCard';
 import EditUserModal from './components/EditUserModal';
 import { FaEdit, FaTrash, FaUserPlus } from 'react-icons/fa';
+import { adminService } from '../../services/adminService';
 import './AdminPage.css';
 
 const AdminPage = () => {
@@ -24,22 +25,8 @@ const AdminPage = () => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:8080/api/v1/admin/users', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                throw new Error(`${t('common.error')}: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            setUsers(data);
+            const response = await adminService.getUsers();
+            setUsers(response.data);
             setError(null);
         } catch (err) {
             setError(`${t('common.error')}: ${err.message}`);
@@ -55,17 +42,7 @@ const AdminPage = () => {
         }
 
         try {
-            const response = await fetch(`http://localhost:8080/api/v1/admin/users/${userId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(t('common.error'));
-            }
-
+            await adminService.deleteUser(userId);
             // Remove user from state
             setUsers(users.filter(user => user.id !== userId));
             setError(null);
@@ -98,18 +75,7 @@ const AdminPage = () => {
     const updateUser = async (updatedUserData) => {
         try {
             // For updating role only (as per your controller)
-            const roleUpdateResponse = await fetch(`http://localhost:8080/api/v1/admin/users/${editingUser.id}/role`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ role: updatedUserData.role })
-            });
-
-            if (!roleUpdateResponse.ok) {
-                throw new Error(`${t('common.error')}: Role update failed`);
-            }
+            await adminService.updateUserRole(editingUser.id, { role: updatedUserData.role });
 
             // Update user in state
             const updatedUser = {
@@ -133,20 +99,7 @@ const AdminPage = () => {
 
     const createUser = async (newUserData) => {
         try {
-            // Use the admin/users endpoint
-            const response = await fetch('http://localhost:8080/api/v1/admin/users', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(newUserData)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || t('common.error'));
-            }
+            await adminService.createUser(newUserData);
 
             // Refresh user list to include the new user
             await fetchUsers();

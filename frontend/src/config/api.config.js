@@ -228,6 +228,16 @@ export const AUTH_ENDPOINTS = {
     AUTHENTICATE: '/api/v1/auth/authenticate'
 };
 
+// Admin module endpoints
+export const ADMIN_ENDPOINTS = {
+    BASE: '/api/v1/admin',
+    USERS: '/api/v1/admin/users',
+    USER_BY_ID: (id) => `/api/v1/admin/users/${id}`,
+    UPDATE_USER_ROLE: (id) => `/api/v1/admin/users/${id}/role`,
+    CREATE_USER: '/api/v1/admin/users',
+    DELETE_USER: (id) => `/api/v1/admin/users/${id}`
+};
+
 // Item Category module endpoints
 export const ITEM_CATEGORY_ENDPOINTS = {
     BASE: '/api/v1/itemCategories',
