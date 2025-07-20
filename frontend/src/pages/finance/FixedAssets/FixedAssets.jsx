@@ -3,6 +3,7 @@ import { FaBuilding, FaCalculator, FaTrash, FaChartLine, FaCog } from 'react-ico
 import './FixedAssets.css';
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
+import { financeService } from '../../../services/financeService.js';
 
 // Import your components
 import AssetManagement from './AssetManagement/AssetManagement.jsx';
@@ -33,81 +34,68 @@ const FixedAssets = () => {
     const fetchFixedAssetsStats = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
 
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
+            console.log('=== FETCHING FIXED ASSETS STATS ===');
 
-            // Use the same endpoints as FixedAssetsDashboard
+            // Use financeService instead of manual fetch calls
             const [assetsResponse, disposalsResponse] = await Promise.all([
-                // 1. Get all assets
-                fetch('http://localhost:8080/api/v1/fixed-assets', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                // 2. Get all disposals
-                fetch('http://localhost:8080/api/v1/fixed-assets/disposals', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                })
+                financeService.fixedAssets.getAll(),
+                financeService.fixedAssets.getAllDisposals()
             ]);
 
-            if (!assetsResponse.ok) {
-                throw new Error('Failed to fetch assets');
-            }
+            console.log('Raw assets response:', assetsResponse);
+            console.log('Raw disposals response:', disposalsResponse);
 
-            const assets = await assetsResponse.json();
-            const disposals = disposalsResponse.ok ? await disposalsResponse.json() : [];
+            // Extract data from Axios responses
+            const assets = assetsResponse.data || assetsResponse;
+            const disposals = disposalsResponse.data || disposalsResponse;
+
+            console.log('Extracted assets:', assets);
+            console.log('Extracted disposals:', disposals);
+
+            // Ensure we have arrays
+            const assetsArray = Array.isArray(assets) ? assets : [];
+            const disposalsArray = Array.isArray(disposals) ? disposals : [];
 
             // Calculate basic metrics
-            const totalAssets = assets.length;
-            const activeAssets = assets.filter(asset => asset.status === 'ACTIVE').length;
+            const totalAssets = assetsArray.length;
+            const activeAssets = assetsArray.filter(asset => asset.status === 'ACTIVE').length;
+
+            console.log('Calculated metrics:', {
+                totalAssets,
+                activeAssets,
+                disposalsCount: disposalsArray.length
+            });
 
             // Calculate total value and monthly depreciation for active assets
             let totalValue = 0;
             let monthlyDepreciation = 0;
 
             // Process active assets to get their current values and depreciation
-            const activeAssetPromises = assets
-                .filter(asset => asset.status === 'ACTIVE')
-                .slice(0, 50) // Limit to first 50 for performance
-                .map(async (asset) => {
+            const activeAssetsList = assetsArray.filter(asset => asset.status === 'ACTIVE').slice(0, 50); // Limit for performance
+
+            const assetCalculations = await Promise.all(
+                activeAssetsList.map(async (asset) => {
                     try {
                         const [bookValueResponse, monthlyDepResponse] = await Promise.all([
-                            fetch(`http://localhost:8080/api/v1/fixed-assets/${asset.id}/book-value`, {
-                                headers: {
-                                    'Authorization': `Bearer ${token}`,
-                                    'Content-Type': 'application/json'
-                                }
-                            }),
-                            fetch(`http://localhost:8080/api/v1/fixed-assets/${asset.id}/depreciation/monthly`, {
-                                headers: {
-                                    'Authorization': `Bearer ${token}`,
-                                    'Content-Type': 'application/json'
-                                }
-                            })
+                            financeService.fixedAssets.getBookValue(asset.id),
+                            financeService.fixedAssets.getMonthlyDepreciation(asset.id)
                         ]);
 
-                        const bookValue = bookValueResponse.ok ? await bookValueResponse.json() : 0;
-                        const monthlyDep = monthlyDepResponse.ok ? await monthlyDepResponse.json() : 0;
+                        // Extract data from responses
+                        const bookValue = bookValueResponse.data || bookValueResponse || 0;
+                        const monthlyDep = monthlyDepResponse.data || monthlyDepResponse || 0;
 
                         return {
-                            bookValue: bookValue || 0,
-                            monthlyDep: monthlyDep || 0
+                            bookValue: parseFloat(bookValue) || 0,
+                            monthlyDep: parseFloat(monthlyDep) || 0
                         };
                     } catch (error) {
                         console.error(`Error fetching data for asset ${asset.id}:`, error);
                         return { bookValue: 0, monthlyDep: 0 };
                     }
-                });
-
-            // Wait for all asset calculations to complete
-            const assetCalculations = await Promise.all(activeAssetPromises);
+                })
+            );
 
             // Sum up the values
             totalValue = assetCalculations.reduce((sum, calc) => sum + calc.bookValue, 0);
@@ -122,6 +110,11 @@ const FixedAssets = () => {
                 totalValue += avgBookValue * remainingActiveAssets;
                 monthlyDepreciation += avgMonthlyDep * remainingActiveAssets;
             }
+
+            console.log('Final calculations:', {
+                totalValue,
+                monthlyDepreciation
+            });
 
             // Format the data for the IntroCard
             setStats([
@@ -145,7 +138,7 @@ const FixedAssets = () => {
 
         } catch (err) {
             console.error("Error fetching fixed assets stats:", err);
-            showError('Failed to load fixed assets statistics');
+            showError('Failed to load fixed assets statistics: ' + err.message);
 
             // Set error state stats
             setStats([

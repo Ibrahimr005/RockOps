@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaEdit, FaTrash, FaEye, FaPlus, FaCalculator, FaTimes, FaCalendarAlt, FaDollarSign, FaBarcode, FaInfoCircle } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
+import { financeService } from '../../../../services/financeService.js';
 import './AssetManagement.css';
 
 const AssetManagement = () => {
@@ -32,38 +33,33 @@ const AssetManagement = () => {
     const fetchAssets = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:8080/api/v1/fixed-assets`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch assets');
-            }
+            console.log('=== FETCHING ASSETS ===');
 
-            const assetsData = await response.json();
+            const response = await financeService.fixedAssets.getAll();
+
+            console.log('Raw assets response:', response);
+
+            // Extract data from Axios response
+            const assetsData = response.data || response;
+
+            console.log('Extracted assets data:', assetsData);
+
+            // Ensure we have an array
+            const assetsArray = Array.isArray(assetsData) ? assetsData : [];
 
             // For each asset, get its current book value
             const assetsWithBookValue = await Promise.all(
-                assetsData.map(async (asset) => {
+                assetsArray.map(async (asset) => {
                     try {
-                        const bookValueResponse = await fetch(
-                            `http://localhost:8080/api/v1/fixed-assets/${asset.id}/book-value`,
-                            {
-                                headers: {
-                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                    'Content-Type': 'application/json'
-                                }
-                            }
-                        );
+                        const bookValueResponse = await financeService.fixedAssets.getBookValue(asset.id);
 
-                        const bookValue = bookValueResponse.ok ? await bookValueResponse.json() : 0;
+                        // Extract book value from response
+                        const bookValue = bookValueResponse.data || bookValueResponse || 0;
 
                         return {
                             ...asset,
-                            currentBookValue: bookValue
+                            currentBookValue: parseFloat(bookValue) || 0
                         };
                     } catch (error) {
                         console.error(`Error fetching book value for asset ${asset.id}:`, error);
@@ -75,10 +71,12 @@ const AssetManagement = () => {
                 })
             );
 
+            console.log('Assets with book values:', assetsWithBookValue);
+
             setAssets(assetsWithBookValue);
         } catch (error) {
             console.error('Error fetching assets:', error);
-            showError('Failed to load assets');
+            showError('Failed to load assets: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -86,35 +84,35 @@ const AssetManagement = () => {
 
     const fetchAssetDetails = async (assetId) => {
         try {
+            console.log('=== FETCHING ASSET DETAILS ===', assetId);
+
             const [assetResponse, monthlyDepResponse, accumulatedDepResponse] = await Promise.all([
-                fetch(`http://localhost:8080/api/v1/fixed-assets/${assetId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch(`http://localhost:8080/api/v1/fixed-assets/${assetId}/depreciation/monthly`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch(`http://localhost:8080/api/v1/fixed-assets/${assetId}/depreciation/accumulated`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                })
+                financeService.fixedAssets.getById(assetId),
+                financeService.fixedAssets.getMonthlyDepreciation(assetId),
+                financeService.fixedAssets.getAccumulatedDepreciation(assetId)
             ]);
 
-            const assetData = assetResponse.ok ? await assetResponse.json() : null;
-            const monthlyDep = monthlyDepResponse.ok ? await monthlyDepResponse.json() : 0;
-            const accumulatedDep = accumulatedDepResponse.ok ? await accumulatedDepResponse.json() : 0;
+            console.log('Raw asset detail responses:', {
+                assetResponse,
+                monthlyDepResponse,
+                accumulatedDepResponse
+            });
+
+            // Extract data from responses
+            const assetData = assetResponse.data || assetResponse;
+            const monthlyDep = monthlyDepResponse.data || monthlyDepResponse || 0;
+            const accumulatedDep = accumulatedDepResponse.data || accumulatedDepResponse || 0;
+
+            console.log('Extracted asset details:', {
+                assetData,
+                monthlyDep,
+                accumulatedDep
+            });
 
             return {
                 ...assetData,
-                monthlyDepreciation: monthlyDep,
-                accumulatedDepreciation: accumulatedDep
+                monthlyDepreciation: parseFloat(monthlyDep) || 0,
+                accumulatedDepreciation: parseFloat(accumulatedDep) || 0
             };
         } catch (error) {
             console.error('Error fetching asset details:', error);
@@ -197,26 +195,22 @@ const AssetManagement = () => {
                 status: formData.status
             };
 
-            const url = selectedAsset
-                ? `http://localhost:8080/api/v1/fixed-assets/${selectedAsset.id}`
-                : `http://localhost:8080/api/v1/fixed-assets`;
+            console.log('=== SAVING ASSET ===');
+            console.log('Request data:', requestData);
 
-            const method = selectedAsset ? 'PUT' : 'POST';
-
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestData)
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to ${selectedAsset ? 'update' : 'create'} asset`);
+            let response;
+            if (selectedAsset) {
+                // Update existing asset
+                response = await financeService.fixedAssets.update(selectedAsset.id, requestData);
+            } else {
+                // Create new asset
+                response = await financeService.fixedAssets.create(requestData);
             }
 
-            const savedAsset = await response.json();
+            console.log('Save response:', response);
+
+            // Extract saved asset from response
+            const savedAsset = response.data || response;
 
             if (selectedAsset) {
                 setAssets(prev => prev.map(asset =>
@@ -233,7 +227,7 @@ const AssetManagement = () => {
             resetForm();
         } catch (error) {
             console.error('Error saving asset:', error);
-            showError(`Failed to ${selectedAsset ? 'update' : 'create'} asset`);
+            showError(`Failed to ${selectedAsset ? 'update' : 'create'} asset: ` + error.message);
         } finally {
             setFormLoading(false);
         }
@@ -245,58 +239,43 @@ const AssetManagement = () => {
         }
 
         try {
-            const response = await fetch(`http://localhost:8080/api/v1/fixed-assets/${asset.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            console.log('=== DELETING ASSET ===', asset.id);
 
-            if (!response.ok) {
-                throw new Error('Failed to delete asset');
-            }
+            await financeService.fixedAssets.delete(asset.id);
 
             setAssets(prev => prev.filter(a => a.id !== asset.id));
             showSuccess(`${asset.name} deleted successfully`);
         } catch (error) {
             console.error('Error deleting asset:', error);
-            showError('Failed to delete asset');
+            showError('Failed to delete asset: ' + error.message);
         }
     };
 
     const handleCalculateDepreciation = async (asset) => {
         try {
+            console.log('=== CALCULATING DEPRECIATION ===', asset.id);
+
             const [monthlyResponse, accumulatedResponse] = await Promise.all([
-                fetch(`http://localhost:8080/api/v1/fixed-assets/${asset.id}/depreciation/monthly`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch(`http://localhost:8080/api/v1/fixed-assets/${asset.id}/depreciation/accumulated`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                })
+                financeService.fixedAssets.getMonthlyDepreciation(asset.id),
+                financeService.fixedAssets.getAccumulatedDepreciation(asset.id)
             ]);
 
-            if (monthlyResponse.ok && accumulatedResponse.ok) {
-                const monthlyDep = await monthlyResponse.json();
-                const accumulatedDep = await accumulatedResponse.json();
+            console.log('Depreciation responses:', { monthlyResponse, accumulatedResponse });
 
-                showSuccess(
-                    `Depreciation calculated for ${asset.name}:\n` +
-                    `Monthly: $${monthlyDep.toLocaleString()}\n` +
-                    `Accumulated: $${accumulatedDep.toLocaleString()}`
-                );
-            } else {
-                throw new Error('Failed to calculate depreciation');
-            }
+            // Extract data from responses
+            const monthlyDep = monthlyResponse.data || monthlyResponse || 0;
+            const accumulatedDep = accumulatedResponse.data || accumulatedResponse || 0;
+
+            console.log('Calculated depreciation:', { monthlyDep, accumulatedDep });
+
+            showSuccess(
+                `Depreciation calculated for ${asset.name}:\n` +
+                `Monthly: $${parseFloat(monthlyDep).toLocaleString()}\n` +
+                `Accumulated: $${parseFloat(accumulatedDep).toLocaleString()}`
+            );
         } catch (error) {
             console.error('Error calculating depreciation:', error);
-            showError('Failed to calculate depreciation');
+            showError('Failed to calculate depreciation: ' + error.message);
         }
     };
 
@@ -377,12 +356,12 @@ const AssetManagement = () => {
         //     className: 'view',
         //     onClick: handleRowClick
         // },
-        {
-            label: 'Calculate Depreciation',
-            icon: <FaCalculator />,
-            className: 'primary',
-            onClick: handleCalculateDepreciation
-        },
+        // {
+        //     label: 'Calculate Depreciation',
+        //     icon: <FaCalculator />,
+        //     className: 'primary',
+        //     onClick: handleCalculateDepreciation
+        // },
         {
             label: 'Edit Asset',
             icon: <FaEdit />,

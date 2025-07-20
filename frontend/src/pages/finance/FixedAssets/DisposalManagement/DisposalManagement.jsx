@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaTrash, FaEye, FaPlus, FaFileDownload, FaTimes, FaInfoCircle, FaDollarSign, FaCalendarAlt, FaChartLine, FaUser, FaClipboardList, FaFile } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
+import { financeService } from '../../../../services/financeService.js';
 import './DisposalManagement.css';
 
 const DisposalManagement = () => {
@@ -31,19 +32,8 @@ const DisposalManagement = () => {
     const fetchDisposalData = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`http://localhost:8080/api/v1/fixed-assets/disposals`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch disposals');
-            }
-
-            const disposals = await response.json();
-            setDisposalData(disposals);
+            const response = await financeService.fixedAssets.getAllDisposals();
+            setDisposalData(response.data);
         } catch (error) {
             console.error('Error fetching disposal data:', error);
             showError('Failed to load disposal data');
@@ -58,20 +48,11 @@ const DisposalManagement = () => {
             const disposal = disposalData.find(d => d.id === disposalId);
             if (disposal) {
                 // Fetch additional asset details if needed
-                const assetResponse = await fetch(`http://localhost:8080/api/v1/fixed-assets/${disposal.assetId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (assetResponse.ok) {
-                    const assetData = await assetResponse.json();
-                    return {
-                        ...disposal,
-                        assetDetails: assetData
-                    };
-                }
+                const assetResponse = await financeService.fixedAssets.getById(disposal.assetId);
+                return {
+                    ...disposal,
+                    assetDetails: assetResponse.data
+                };
             }
             return disposal;
         } catch (error) {
@@ -82,23 +63,16 @@ const DisposalManagement = () => {
 
     const fetchAvailableAssets = async () => {
         try {
-            const response = await fetch(`http://localhost:8080/api/v1/fixed-assets`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                const assets = await response.json();
-                // Filter only active assets that can be disposed
-                const activeAssets = assets.filter(asset =>
-                    asset.status === 'ACTIVE' || asset.status === 'INACTIVE'
-                );
-                setAvailableAssets(activeAssets);
-            }
+            const response = await financeService.fixedAssets.getAll();
+            const assets = response.data;
+            // Filter only active assets that can be disposed
+            const activeAssets = assets.filter(asset =>
+                asset.status === 'ACTIVE' || asset.status === 'INACTIVE'
+            );
+            setAvailableAssets(activeAssets);
         } catch (error) {
             console.error('Error fetching available assets:', error);
+            showError('Failed to load available assets');
         }
     };
 
@@ -179,22 +153,8 @@ const DisposalManagement = () => {
                 hasDocument: !!selectedFile
             });
 
-            const response = await fetch(`http://localhost:8080/api/v1/fixed-assets/${formData.assetId}/dispose`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    // Don't set Content-Type header - let browser set it for FormData
-                },
-                body: formDataToSend
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Disposal request failed:', errorText);
-                throw new Error(`Failed to dispose asset: ${response.status} ${response.statusText}`);
-            }
-
-            const result = await response.json();
+            // Use the service method for disposal
+            const result = await financeService.fixedAssets.dispose(formData.assetId, formDataToSend);
             console.log('Disposal successful:', result);
 
             // Refresh disposal data

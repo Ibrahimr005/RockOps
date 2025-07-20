@@ -85,23 +85,104 @@ export const SARKY_ENDPOINTS = {
     DELETE_RANGE: (id) => `/api/v1/sarky/range/${id}`,
 };
 
-// Finance module endpoints
+// Replace your existing FINANCE_ENDPOINTS in api.config.js with this:
 export const FINANCE_ENDPOINTS = {
-    ACCOUNTS: {
-        BASE: '/api/accounts',
-        BY_ID: (id) => `/api/accounts/${id}`,
-        TYPES: '/api/accounts/types',
-        HIERARCHY: '/api/accounts/hierarchy',
-        DEACTIVATE: (id) => `/api/accounts/${id}/deactivate`
+    // Journal Entry endpoints
+    JOURNAL_ENTRIES: {
+        BASE: '/api/v1/journal-entries',
+        BY_ID: (id) => `/api/v1/journal-entries/${id}`,
+        APPROVE: (id) => `/api/v1/journal-entries/${id}/approve`,
+        REJECT: (id) => `/api/v1/journal-entries/${id}/reject`,
+        PENDING: '/api/v1/journal-entries/pending'
     },
+
+    // Audit Log endpoints
+    AUDIT_LOGS: {
+        BASE: '/api/v1/audit-logs',
+        BY_ENTITY: (entityType, entityId) => `/api/v1/audit-logs/entity/${entityType}/${entityId}`,
+        BY_USER: (userId) => `/api/v1/audit-logs/user/${userId}`,
+        BY_DATE_RANGE: '/api/v1/audit-logs/date-range',
+        BY_ENTITY_TYPE: (entityType) => `/api/v1/audit-logs/entity-type/${entityType}`,
+        EXPORT: '/api/v1/audit-logs/export'
+    },
+
+    // Invoice endpoints (Payables)
     INVOICES: {
-        BASE: '/api/invoices',
-        BY_ID: (id) => `/api/invoices/${id}`,
-        STATUS: (id) => `/api/invoices/${id}/status`,
-        SEARCH: '/api/invoices/search',
-        OVERDUE: '/api/invoices/overdue',
-        BY_MERCHANT: (merchantId) => `/api/invoices/merchant/${merchantId}`,
-        BY_SITE: (siteId) => `/api/invoices/site/${siteId}`
+        BASE: '/api/v1/invoices',
+        BY_ID: (id) => `/api/v1/invoices/${id}`,
+        BY_NUMBER: (invoiceNumber) => `/api/v1/invoices/number/${invoiceNumber}`,
+        UNPAID: '/api/v1/invoices/unpaid',
+        OVERDUE: '/api/v1/invoices/overdue',
+        DUE_SOON: '/api/v1/invoices/due-soon',
+        BY_VENDOR: '/api/v1/invoices/vendor',
+        BY_STATUS: '/api/v1/invoices/status',
+        BY_DATE_RANGE: '/api/v1/invoices/date-range',
+        SEARCH: '/api/v1/invoices/search',
+        OUTSTANDING_TOTAL: '/api/v1/invoices/outstanding-total',
+        PERIOD_TOTAL: '/api/v1/invoices/period-total',
+        TOP_VENDORS: '/api/v1/invoices/top-vendors',
+        VENDOR_STATS: '/api/v1/invoices/vendor-stats',
+
+        // Aging report endpoints
+        AGING: {
+            AGED_0_30: '/api/v1/invoices/aging/0-30',
+            AGED_31_60: '/api/v1/invoices/aging/31-60',
+            AGED_61_90: '/api/v1/invoices/aging/61-90',
+            AGED_OVER_90: '/api/v1/invoices/aging/over-90',
+            SUMMARY: '/api/v1/invoices/aging/summary',
+            EXPORT_PDF: '/api/v1/invoices/aging/export/pdf'
+        }
+    },
+
+    // Payment endpoints
+    PAYMENTS: {
+        BASE: '/api/v1/payments',
+        BY_ID: (id) => `/api/v1/payments/${id}`,
+        BY_INVOICE: (invoiceId) => `/api/v1/payments/invoice/${invoiceId}`,
+        UPDATE_STATUS: (id) => `/api/v1/payments/${id}/status`,
+        BY_DATE_RANGE: '/api/v1/payments/date-range',
+        BY_VENDOR: '/api/v1/payments/vendor',
+        BY_STATUS: '/api/v1/payments/status',
+        SEARCH_BY_REFERENCE: '/api/v1/payments/search/reference',
+        SEARCH: '/api/v1/payments/search',
+        RECENT: '/api/v1/payments/recent',
+        LARGEST: '/api/v1/payments/largest',
+        TOTALS: '/api/v1/payments/totals',
+        VENDOR_REPORT: '/api/v1/payments/vendor-report',
+        VALIDATE: '/api/v1/payments/validate'
+    },
+
+    // Fixed Assets endpoints
+    FIXED_ASSETS: {
+        BASE: '/api/v1/fixed-assets',
+        BY_ID: (id) => `/api/v1/fixed-assets/${id}`,
+        BY_STATUS: (status) => `/api/v1/fixed-assets/status/${status}`,
+        BY_SITE: (siteId) => `/api/v1/fixed-assets/site/${siteId}`,
+        SEARCH: '/api/v1/fixed-assets/search',
+
+        // Depreciation endpoints
+        MONTHLY_DEPRECIATION: (id) => `/api/v1/fixed-assets/${id}/depreciation/monthly`,
+        ACCUMULATED_DEPRECIATION: (id) => `/api/v1/fixed-assets/${id}/depreciation/accumulated`,
+        BOOK_VALUE: (id) => `/api/v1/fixed-assets/${id}/book-value`,
+
+        // Disposal endpoints
+        DISPOSE: (id) => `/api/v1/fixed-assets/${id}/dispose`,
+        DISPOSAL_BY_ASSET: (id) => `/api/v1/fixed-assets/${id}/disposal`,
+        ALL_DISPOSALS: '/api/v1/fixed-assets/disposals',
+        DISPOSALS_BY_METHOD: (method) => `/api/v1/fixed-assets/disposals/method/${method}`,
+        DISPOSALS_BY_DATE_RANGE: '/api/v1/fixed-assets/disposals/date-range',
+        PROFITABLE_DISPOSALS: '/api/v1/fixed-assets/disposals/profitable',
+        LOSS_DISPOSALS: '/api/v1/fixed-assets/disposals/losses',
+        RECENT_DISPOSALS: '/api/v1/fixed-assets/disposals/recent',
+        DISPOSAL_SUMMARY: '/api/v1/fixed-assets/disposals/summary',
+        TOTAL_GAIN_LOSS: '/api/v1/fixed-assets/disposals/total-gain-loss'
+    },
+
+    // Accounting Period endpoints
+    ACCOUNTING_PERIODS: {
+        BASE: '/api/v1/accounting-periods',
+        BY_ID: (id) => `/api/v1/accounting-periods/${id}`,
+        CLOSE: (id) => `/api/v1/accounting-periods/${id}/close`
     }
 };
 
