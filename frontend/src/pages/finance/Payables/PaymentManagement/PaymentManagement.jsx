@@ -15,6 +15,7 @@ import {
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { useAuth } from "../../../../contexts/AuthContext";
+import { financeService } from '../../../../services/financeService.js';
 import './PaymentManagement.css';
 
 const PaymentManagement = () => {
@@ -54,33 +55,28 @@ const PaymentManagement = () => {
     const fetchPayments = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
 
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
+            console.log('=== FETCHING PAYMENTS ===');
 
-            console.log('Fetching payments from: http://localhost:8080/api/v1/payments');
+            const response = await financeService.payments.getAll(0, 100); // page=0, size=100
 
-            const response = await fetch('http://localhost:8080/api/v1/payments', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            console.log('Raw payments response:', response);
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
+            // Extract data from Axios response
+            const data = response.data || response;
 
-            const data = await response.json();
-            console.log('Fetched payments:', data);
+            console.log('Extracted payments data:', data);
 
+            // Handle paginated response
             const paymentList = data.content || data || [];
+
+            console.log('Final payments list:', paymentList);
+            console.log('Payments count:', paymentList.length);
+
             setPayments(paymentList);
         } catch (error) {
             console.error('Error fetching payments:', error);
-            showError('Could not fetch payments. Please try again.');
+            showError('Could not fetch payments: ' + error.message);
             setPayments([]);
         } finally {
             setLoading(false);
@@ -89,28 +85,21 @@ const PaymentManagement = () => {
 
     const fetchUnpaidInvoices = async () => {
         try {
-            const token = localStorage.getItem('token');
+            console.log('=== FETCHING UNPAID INVOICES ===');
 
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
+            const response = await financeService.invoices.getUnpaid();
 
-            const response = await fetch('http://localhost:8080/api/v1/invoices/unpaid', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            console.log('Raw unpaid invoices response:', response);
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
+            // Extract data from Axios response
+            const data = response.data || response;
 
-            const data = await response.json();
-            setUnpaidInvoices(data || []);
+            console.log('Extracted unpaid invoices data:', data);
+
+            setUnpaidInvoices(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error fetching unpaid invoices:', error);
-            showError('Could not fetch unpaid invoices. Please try again.');
+            showError('Could not fetch unpaid invoices: ' + error.message);
             setUnpaidInvoices([]);
         }
     };
@@ -122,24 +111,18 @@ const PaymentManagement = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
+            console.log('=== VALIDATING PAYMENT ===');
+            console.log('Invoice ID:', invoiceId, 'Amount:', amount);
 
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
+            const response = await financeService.payments.validate(invoiceId, amount);
 
-            const response = await fetch(`http://localhost:8080/api/v1/payments/validate?invoiceId=${invoiceId}&amount=${amount}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            console.log('Raw validation response:', response);
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
+            // Extract data from Axios response
+            const result = response.data || response;
 
-            const result = await response.json();
+            console.log('Validation result:', result);
+
             setValidationResult(result);
         } catch (error) {
             console.error('Error validating payment:', error);
@@ -156,46 +139,26 @@ const PaymentManagement = () => {
         }
 
         try {
-            const token = localStorage.getItem('token');
-
-            if (!token) {
-                showError('Authentication token not found. Please log in again.');
-                return;
-            }
-
             if (!currentUser) {
                 showError('User information not found. Please log in again.');
                 return;
             }
 
-            const response = await fetch('http://localhost:8080/api/v1/payments', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...paymentForm,
-                    amount: parseFloat(paymentForm.amount),
-                    createdBy: currentUser.username || currentUser.name || currentUser.email
-                }),
-            });
+            const paymentData = {
+                ...paymentForm,
+                amount: parseFloat(paymentForm.amount),
+                createdBy: currentUser.username || currentUser.name || currentUser.email
+            };
 
-            if (response.ok) {
-                showSuccess('Payment created successfully');
-                setShowCreateModal(false);
-                resetForm();
-                fetchPayments();
-                fetchUnpaidInvoices(); // Refresh to update remaining balances
-            } else {
-                const errorText = await response.text();
-                try {
-                    const error = JSON.parse(errorText);
-                    showError(error.error || 'Failed to create payment');
-                } catch (parseError) {
-                    showError(`Failed to create payment: ${response.status} ${response.statusText}`);
-                }
-            }
+            console.log('Creating payment with data:', paymentData);
+
+            await financeService.payments.create(paymentData);
+
+            showSuccess('Payment created successfully');
+            setShowCreateModal(false);
+            resetForm();
+            fetchPayments();
+            fetchUnpaidInvoices(); // Refresh to update remaining balances
         } catch (error) {
             console.error('Error creating payment:', error);
             showError('Failed to create payment: ' + error.message);

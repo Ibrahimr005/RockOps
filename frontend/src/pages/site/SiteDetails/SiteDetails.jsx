@@ -11,6 +11,7 @@ import SiteFixedAssetsTab from './tabs/SiteFixedAssetsTab';
 import SiteMerchantsTab from './tabs/SiteMerchantsTab';
 import SitePartnersTab from './tabs/SitePartnersTab';
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
+import { siteService } from '../../../services/siteService';
 
 const SiteDetails = () => {
     const { siteId } = useParams();
@@ -30,25 +31,12 @@ const SiteDetails = () => {
     const fetchSiteDetails = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/site/${siteId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
+            const { data } = await siteService.getById(siteId);
             setSite(data);
             setLoading(false);
         } catch (error) {
             console.error('Error fetching site details:', error);
-            setError(error.message);
+            setError(error.message || 'Failed to fetch site details');
             setLoading(false);
         }
     };

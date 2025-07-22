@@ -3,6 +3,7 @@ import { FaBook, FaCalendarAlt, FaHistory, FaFileInvoiceDollar } from 'react-ico
 import './GeneralLedger.scss';
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
+import { financeService } from '../../../services/financeService.js';
 
 // Import your components
 import JournalEntries from './JournalEntries/JournalEntries';
@@ -48,12 +49,8 @@ const GeneralLedger = () => {
             }
 
             // You can create an endpoint for general ledger stats or calculate from existing data
-            const response = await fetch('http://localhost:8080/api/v1/general-ledger/stats', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            // Note: You'll need to create this endpoint or use existing journal entries data
+            const response = await financeService.journalEntries.getAll();
 
             if (response.ok) {
                 const data = await response.json();
@@ -143,7 +140,7 @@ const GeneralLedger = () => {
         <div className="general-ledger-container">
             {/* Enhanced IntroCard with Icon */}
             <IntroCard
-                icon={<FaFileInvoiceDollar />}
+                icon={<FaBook />}
                 label="FINANCE MANAGEMENT"
                 title="General Ledger"
                 stats={loading ? [] : stats}

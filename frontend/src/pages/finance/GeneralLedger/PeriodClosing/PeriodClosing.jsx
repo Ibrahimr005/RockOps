@@ -4,6 +4,8 @@ import { useAuth } from "../../../../contexts/AuthContext";
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import './PeriodClosing.css';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
+import { financeService } from '../../../../services/financeService.js';
+
 
 const PeriodClosing = () => {
     const [accountingPeriods, setAccountingPeriods] = useState([]);
@@ -49,27 +51,10 @@ const PeriodClosing = () => {
 
     const confirmPeriodAction = async () => {
         try {
-            const token = localStorage.getItem('token');
             const { periodId, action } = confirmationModal;
 
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-
-            // Note: Based on your backend, we only have a close endpoint, not reopen
             if (action === 'close') {
-                const response = await fetch(`http://localhost:8080/api/v1/accounting-periods/${periodId}/close`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ notes: 'Period closed by finance manager' })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
+                await financeService.accountingPeriods.close(periodId, { notes: 'Period closed by finance manager' });
 
                 // Refresh periods after successful action
                 await fetchAccountingPeriods();
@@ -102,30 +87,24 @@ const PeriodClosing = () => {
     const handleCreatePeriod = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
+            console.log('=== DEBUGGING CREATE PERIOD ===');
+            console.log('Form data:', newPeriod);
 
             // Validate form data
             if (!newPeriod.name || !newPeriod.startDate || !newPeriod.endDate) {
                 throw new Error('Please fill in all required fields');
             }
 
-            const response = await fetch('http://localhost:8080/api/v1/accounting-periods', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(newPeriod)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(`HTTP error! Status: ${response.status}. ${errorData}`);
+            // Validate date order
+            if (new Date(newPeriod.startDate) >= new Date(newPeriod.endDate)) {
+                throw new Error('End date must be after start date');
             }
+
+            console.log('Sending period data:', newPeriod);
+
+            const response = await financeService.accountingPeriods.create(newPeriod);
+
+            console.log('Create response:', response);
 
             // Reset form and close modal
             setNewPeriod({
@@ -139,9 +118,9 @@ const PeriodClosing = () => {
             await fetchAccountingPeriods();
             showSuccess('Period created successfully.');
         } catch (err) {
+            console.error('=== ERROR CREATING PERIOD ===');
+            console.error('Error:', err);
             showError('Error creating period: ' + err.message);
-            console.error("Error creating period:", err);
-            showError('Could not create period. Please check your input and try again.');
         }
     };
 
@@ -163,49 +142,46 @@ const PeriodClosing = () => {
     const fetchAccountingPeriods = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
 
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
+            console.log('=== DEBUGGING ACCOUNTING PERIODS ===');
 
-            const response = await fetch('http://localhost:8080/api/v1/accounting-periods', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const data = await financeService.accountingPeriods.getAll();
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
             console.log("Fetched periods raw data:", data);
+            console.log("Data type:", typeof data);
+            console.log("Is array?", Array.isArray(data));
 
-            // Ensure data is an array and normalize the closed field
-            const periodsArray = Array.isArray(data) ? data.map(period => ({
-                ...period,
-                // Backend uses 'status' field, not 'closed' field
-                closed: period.status === 'CLOSED' || period.status === 'closed'
-            })) : [];
+            // Handle different response structures (same as journal entries)
+            let periodsArray = [];
 
-            setAccountingPeriods(periodsArray);
-
-            // Debug the normalized data
-            if (periodsArray.length > 0) {
-                console.log("Normalized periods:", periodsArray);
-                periodsArray.forEach(period => {
-                    console.log(`Period: ${period.name}, Closed: ${period.closed} (${typeof period.closed})`);
-                });
+            if (Array.isArray(data)) {
+                periodsArray = data;
+            } else if (data && Array.isArray(data.content)) {
+                periodsArray = data.content;
+            } else if (data && Array.isArray(data.data)) {
+                periodsArray = data.data;
+            } else if (data && typeof data === 'object') {
+                const arrayKeys = Object.keys(data).filter(key => Array.isArray(data[key]));
+                if (arrayKeys.length > 0) {
+                    periodsArray = data[arrayKeys[0]];
+                }
+                console.log('Object keys:', Object.keys(data));
             }
 
+            // Normalize the closed field
+            const normalizedPeriods = periodsArray.map(period => ({
+                ...period,
+                closed: period.status === 'CLOSED' || period.status === 'closed'
+            }));
+
+            console.log("Final periods array:", normalizedPeriods);
+            setAccountingPeriods(normalizedPeriods);
             setError(null);
         } catch (err) {
+            console.error('=== ERROR IN FETCH PERIODS ===');
+            console.error('Error object:', err);
             showError('Error: ' + err.message);
-            console.error("Error fetching accounting periods:", err);
             setAccountingPeriods([]);
-            showError('Could not fetch periods. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -324,7 +300,7 @@ const PeriodClosing = () => {
                 onAddClick={handleAddPeriod}
 
                 // Export configuration
-                showExportButton={true}
+                showExportButton={false}
                 exportButtonText="Export Periods"
                 exportFileName="accounting_periods"
                 customExportHeaders={{

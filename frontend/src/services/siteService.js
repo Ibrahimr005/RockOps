@@ -108,10 +108,23 @@ export const siteService = {
         return apiClient.post(`/siteadmin/${siteId}/assign-fixedAsset/${fixedAssetId}`);
     },
 
-    // Partner assignment
+    // // Partner assignment
+    // assignPartner: (siteId, partnerId, percentage) => {
+    //     return apiClient.post(SITE_ENDPOINTS.ADMIN.ASSIGN_PARTNER(siteId, partnerId), {
+    //         percentage: percentage
+    //     });
+    // },
     assignPartner: (siteId, partnerId, percentage) => {
+        console.log('Calling assignPartner API:', { siteId, partnerId, percentage });
         return apiClient.post(SITE_ENDPOINTS.ADMIN.ASSIGN_PARTNER(siteId, partnerId), {
             percentage: percentage
+        }).catch(error => {
+            console.error('API Error Details:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message
+            });
+            throw error;
         });
     },
 

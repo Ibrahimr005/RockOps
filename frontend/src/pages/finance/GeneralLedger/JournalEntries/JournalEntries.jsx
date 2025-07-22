@@ -5,6 +5,8 @@ import { useAuth } from "../../../../contexts/AuthContext";
 import { FaBook, FaSearch, FaFilter, FaPlus, FaCheck, FaTimes, FaEye, FaEdit, FaTrash } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
+import { financeService } from '../../../../services/financeService.js';
+
 
 const JournalEntries = () => {
     const [journalEntries, setJournalEntries] = useState([]);
@@ -38,7 +40,7 @@ const JournalEntries = () => {
         ]
     });
 
-    const isFinanceManager = currentUser?.role === "FINANCE_MANAGER";
+    const isFinanceManager = currentUser?.role === "FINANCE_MANAGER" || "ADMIN";
     const isFinanceEmployee = currentUser?.role === "FINANCE_EMPLOYEE" || isFinanceManager;
 
     useEffect(() => {
@@ -48,51 +50,58 @@ const JournalEntries = () => {
     const fetchJournalEntries = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
 
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
+            console.log('=== DEBUGGING JOURNAL ENTRIES ===');
+            console.log('Status filter:', statusFilter);
+            console.log('Date filter:', dateFilter);
 
-            let url = 'http://localhost:8080/api/v1/journal-entries';
+            const params = {
+                status: statusFilter !== 'ALL' ? statusFilter : undefined,
+                startDate: dateFilter.startDate || undefined,
+                endDate: dateFilter.endDate || undefined
+            };
 
-            // Add filters to the URL if they exist
-            const params = new URLSearchParams();
+            console.log('Params being sent:', params);
 
-            if (statusFilter !== 'ALL') {
-                params.append('status', statusFilter);
-            }
+            const data = await financeService.journalEntries.getAll(params);
 
-            if (dateFilter.startDate && dateFilter.endDate) {
-                params.append('startDate', dateFilter.startDate);
-                params.append('endDate', dateFilter.endDate);
-            }
+            console.log('Raw data received:', data);
+            console.log('Data type:', typeof data);
+            console.log('Is array?', Array.isArray(data));
 
-            if (params.toString()) {
-                url += `?${params.toString()}`;
-            }
+            // Handle different response structures
+            let entriesArray = [];
 
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+            if (Array.isArray(data)) {
+                // Direct array response
+                entriesArray = data;
+            } else if (data && Array.isArray(data.content)) {
+                // Paginated response with content array
+                entriesArray = data.content;
+            } else if (data && Array.isArray(data.data)) {
+                // Response wrapped in data property
+                entriesArray = data.data;
+            } else if (data && typeof data === 'object') {
+                // Check if the object has any array properties
+                const arrayKeys = Object.keys(data).filter(key => Array.isArray(data[key]));
+                if (arrayKeys.length > 0) {
+                    entriesArray = data[arrayKeys[0]]; // Use the first array found
                 }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                console.log('Object keys:', Object.keys(data));
+                console.log('Found array keys:', arrayKeys);
             }
 
-            const data = await response.json();
-            console.log('Fetched journal entries:', data);
+            console.log('Final entries array:', entriesArray);
+            console.log('Final array length:', entriesArray.length);
 
-            // Ensure data is always an array
-            const entriesArray = Array.isArray(data) ? data : [];
             setJournalEntries(entriesArray);
             setError(null);
         } catch (err) {
+            console.error('=== ERROR IN FETCH ===');
+            console.error('Error object:', err);
+            console.error('Error message:', err.message);
+
             showError('Could not fetch journal entries. Please try again.');
-            console.error("Error fetching journal entries:", err);
             setJournalEntries([]);
         } finally {
             setLoading(false);
@@ -118,17 +127,9 @@ const JournalEntries = () => {
         try {
             // If we need to fetch complete entry details
             if (!entry.entryLines || entry.entryLines.length === 0) {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:8080/api/v1/journal-entries/${entry.id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
-                const detailedEntry = await response.json();
+                const response = await financeService.journalEntries.getById(entry.id);
+                // Extract the actual data from the response
+                const detailedEntry = response.data || response;
                 setSelectedEntry(detailedEntry);
             } else {
                 setSelectedEntry(entry);
@@ -199,13 +200,6 @@ const JournalEntries = () => {
             return;
         }
 
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-            alert('Authentication token not found. Please log in again.');
-            return;
-        }
-
         const formDataToSend = new FormData();
 
         // Create a copy without the file for JSON conversion
@@ -220,18 +214,7 @@ const JournalEntries = () => {
         }
 
         try {
-            const response = await fetch("http://localhost:8080/api/v1/journal-entries", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                },
-                body: formDataToSend,
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`HTTP error! Status: ${response.status}. ${errorText}`);
-            }
+            await financeService.journalEntries.create(formDataToSend);
 
             // Refresh entries and close modal
             await fetchJournalEntries();
@@ -242,102 +225,55 @@ const JournalEntries = () => {
             showError('Could not create journal entry. Please check your input and try again.');
         }
     };
-
     const handleFileChange = (e) => {
         setFormData({ ...formData, documentPath: e.target.files[0] });
     };
 
     const handleApproveEntry = async (id) => {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-            alert('Authentication token not found. Please log in again.');
-            return;
-        }
-
         try {
+            console.log('=== DEBUGGING APPROVAL ===');
             console.log('Attempting to approve entry with ID:', id);
+            console.log('Current user object:', currentUser);
+            console.log('Current user username:', currentUser?.username);
 
             // First, check if the entry exists and get its current state
-            const checkResponse = await fetch(`http://localhost:8080/api/v1/journal-entries/${id}`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                }
-            });
+            const response = await financeService.journalEntries.getById(id);
 
-            if (checkResponse.ok) {
-                const entryDetails = await checkResponse.json();
-                console.log('Entry details:', entryDetails);
+            // Extract the actual data from the response
+            const entryDetails = response.data || response;
 
-                // Check if current user is trying to approve their own entry
-                if (entryDetails.createdBy === currentUser?.username || entryDetails.createdBy === currentUser?.name) {
-                    showError('You cannot approve your own journal entries. Another finance manager must review and approve this entry.');
-                    return;
-                }
+            console.log('Full response:', response);
+            console.log('Entry details:', entryDetails);
+            console.log('Entry createdBy:', entryDetails.createdBy);
+            console.log('Entry createdBy type:', typeof entryDetails.createdBy);
 
-                // Check entry status
-                if (entryDetails.status !== 'PENDING') {
-                    showError(`Cannot approve entry. Current status: ${entryDetails.status}`);
-                    return;
-                }
-            } else {
-                console.error('Failed to fetch entry details:', checkResponse.status);
-                showError('Could not verify entry details. Please try again.');
+            // Log the comparison with the correct field
+            console.log('Comparison results:');
+            console.log('entryDetails.createdBy === currentUser?.username:', entryDetails.createdBy === currentUser?.username);
+
+            // Check if current user is trying to approve their own entry
+            // Only compare with username since that's what we have
+            if (entryDetails.createdBy === currentUser?.username) {
+                console.log('BLOCKED: User trying to approve own entry');
+                showError('You cannot approve your own journal entries. Another finance manager must review and approve this entry.');
                 return;
             }
+
+            // Check entry status
+            if (entryDetails.status !== 'PENDING') {
+                console.log('BLOCKED: Entry status is not PENDING, current status:', entryDetails.status);
+                showError(`Cannot approve entry. Current status: ${entryDetails.status}`);
+                return;
+            }
+
+            console.log('PROCEEDING: All checks passed, attempting approval...');
 
             // Proceed with approval
-            const approveResponse = await fetch(`http://localhost:8080/api/v1/journal-entries/${id}/approve`, {
-                method: "PUT",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    comments: "Approved by finance manager"
-                })
+            await financeService.journalEntries.approve(id, {
+                comments: "Approved by finance manager"
             });
 
-            console.log('Approve response status:', approveResponse.status);
-
-            if (!approveResponse.ok) {
-                const errorText = await approveResponse.text();
-                console.error('Approve error response:', errorText);
-
-                // Handle specific error cases
-                switch (approveResponse.status) {
-                    case 400:
-                        // Try to parse the error message from backend
-                        try {
-                            const errorJson = JSON.parse(errorText);
-                            if (errorJson.error && errorJson.error.includes('cannot approve')) {
-                                showError('You cannot approve your own journal entries. Another finance manager must review and approve this entry.');
-                            } else {
-                                showError(`Approval failed: ${errorJson.error || 'Invalid request. Please check entry status and your permissions.'}`);
-                            }
-                        } catch (parseError) {
-                            showError('You cannot approve your own journal entries. Another finance manager must review and approve this entry.');
-                        }
-                        break;
-                    case 401:
-                        showError('Session expired. Please log in again.');
-                        break;
-                    case 403:
-                        showError('You do not have permission to approve entries. Only Finance Managers can approve journal entries.');
-                        break;
-                    case 404:
-                        showError('Journal entry not found.');
-                        break;
-                    default:
-                        showError(`Server error: Unable to approve entry. Please try again later.`);
-                }
-                return;
-            }
-
-            // Success
-            const result = await approveResponse.json();
-            console.log('Approval successful:', result);
+            console.log('SUCCESS: Entry approved successfully');
 
             // Refresh entries and close modal
             await fetchJournalEntries();
@@ -346,18 +282,11 @@ const JournalEntries = () => {
 
         } catch (err) {
             console.error("Failed to approve journal entry:", err);
-            showError('Network error: Unable to connect to server. Please check your connection and try again.');
+            showError('Failed to approve journal entry: ' + err.message);
         }
     };
 
     const handleRejectEntry = async (id, reason) => {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-            alert('Authentication token not found. Please log in again.');
-            return;
-        }
-
         if (!reason || reason.trim() === '') {
             alert('Please provide a reason for rejection.');
             return;
@@ -366,27 +295,9 @@ const JournalEntries = () => {
         try {
             console.log('Rejecting entry with ID:', id, 'Reason:', reason);
 
-            const response = await fetch(`http://localhost:8080/api/v1/journal-entries/${id}/reject`, {
-                method: "PUT",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    reason: reason.trim()
-                })
+            await financeService.journalEntries.reject(id, {
+                reason: reason.trim()
             });
-
-            console.log('Reject response status:', response.status);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                throw new Error(`HTTP error! Status: ${response.status}. ${errorText}`);
-            }
-
-            const result = await response.json();
-            console.log('Reject result:', result);
 
             // Refresh entries and close modal
             await fetchJournalEntries();
@@ -511,7 +422,7 @@ const JournalEntries = () => {
                 addButtonText="Add Entry"
                 addButtonIcon={<FaPlus />}
                 onAddClick={handleOpenAddModal}
-                showExportButton={true}
+                showExportButton={false}
                 exportFileName="journal_entries"
                 exportButtonText="Export Excel"
                 itemsPerPageOptions={[10, 25, 50, 100]}
@@ -823,7 +734,7 @@ const JournalEntries = () => {
                                 {selectedEntry.status === 'PENDING' && isFinanceManager && (
                                     <div className="journal-form-actions">
                                         {/* Only show approve/reject buttons if user didn't create this entry */}
-                                        {selectedEntry.createdBy !== currentUser?.username && selectedEntry.createdBy !== currentUser?.name ? (
+                                        {selectedEntry.createdBy !== currentUser?.username ? (
                                             <>
                                                 <button
                                                     className="journal-submit-button"

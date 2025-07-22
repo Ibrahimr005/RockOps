@@ -3,6 +3,7 @@ import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import {useTranslation} from 'react-i18next';
 import {useAuth} from "../../../../contexts/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
+import { FaPlus } from 'react-icons/fa';
 import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import { siteService } from "../../../../services/siteService";
 
@@ -35,7 +36,6 @@ const SiteEquipmentTab = ({siteId}) => {
             accessor: 'equipmentType',
             sortable: true
         },
-
         {
             header: 'Status',
             accessor: 'status',
@@ -137,7 +137,7 @@ const SiteEquipmentTab = ({siteId}) => {
             const response = await siteService.getUnassignedEquipment();
             const data = response.data;
             setAvailableEquipment(data);
-            
+
             if (data.length === 0) {
                 setSnackbar({
                     show: true,
@@ -208,6 +208,13 @@ const SiteEquipmentTab = ({siteId}) => {
         setSnackbar(prev => ({ ...prev, show: false }));
     };
 
+    // Define filterable columns
+    const filterableColumns = [
+        { accessor: 'equipmentType', header: 'Equipment Type', filterType: 'select' },
+        { accessor: 'status', header: 'Status', filterType: 'select' },
+        { accessor: 'driverName', header: 'Driver Name', filterType: 'text' }
+    ];
+
     if (loading) return <div className="loading-container">{t('site.loadingEquipment')}</div>;
 
     return (
@@ -219,26 +226,8 @@ const SiteEquipmentTab = ({siteId}) => {
                 onClose={handleCloseSnackbar}
                 duration={3000}
             />
-            <div className="departments-header">
-                <h3>{t('site.siteEquipmentReport')}</h3>
-                {isSiteAdmin && (
-                    <div className="btn-primary-container">
-                        <button className="btn btn-primary" onClick={handleOpenModal}>
-                            {t('site.assignEquipment')}
-                        </button>
-                    </div>
-                )}
-            </div>
 
-            {/*<div className="equipment-stats">*/}
-            {/*    {Object.entries(Equipcounts).map(([type, count]) => (*/}
-            {/*        <div className="stat-card" key={type}>*/}
-            {/*            <div className="stat-title">{type}</div>*/}
-            {/*            <div className="stat-value">{count}</div>*/}
-            {/*        </div>*/}
-            {/*    ))}*/}
-            {/*</div>*/}
-            {/* Updated Assign Equipment Modal JSX - Replace the existing modal section in your component */}
+            {/* Assign Equipment Modal */}
             {showModal && (
                 <div className="assign-equipment-modal-overlay">
                     <div className="assign-equipment-modal-content">
@@ -271,7 +260,6 @@ const SiteEquipmentTab = ({siteId}) => {
                                         {availableEquipment.map((eq) => {
                                             const eqData = eq.equipment || {};
                                             const equipmentId = eqData.id || eq.id;
-                                            // Try both possible data structures
                                             const equipmentType = eq.type?.name || eq.typeName || '';
                                             const status = eqData.status || eq.status;
 
@@ -284,11 +272,11 @@ const SiteEquipmentTab = ({siteId}) => {
                                                         {equipmentType}
                                                     </td>
                                                     <td data-label={t('common.status')}>
-                                                <span
-                                                    className={`assign-equipment-status status-${status?.toLowerCase().replace(/\s+/g, '-')}`}
-                                                >
-                                                    {status}
-                                                </span>
+                                                        <span
+                                                            className={`assign-equipment-status status-${status?.toLowerCase().replace(/\s+/g, '-')}`}
+                                                        >
+                                                            {status}
+                                                        </span>
                                                     </td>
                                                     <td data-label={t('common.action')}>
                                                         <button
@@ -320,12 +308,26 @@ const SiteEquipmentTab = ({siteId}) => {
                         loading={loading}
                         showSearch={true}
                         showFilters={true}
-                        filterableColumns={columns}
+                        filterableColumns={filterableColumns}
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10}
-                        tableTitle="Equipment List"
+                        tableTitle={t('site.siteEquipmentReport')}
                         onRowClick={handleRowClick}
                         rowClassName="clickable-row"
+                        // Add button configuration - only show for site admins
+                        showAddButton={isSiteAdmin}
+                        addButtonText={t('site.assignEquipment')}
+                        addButtonIcon={<FaPlus />}
+                        onAddClick={handleOpenModal}
+                        addButtonProps={{
+                            className: 'assign-button'
+                        }}
+                        // Optional: Add export functionality
+                        showExportButton={false}
+                        exportButtonText="Export Equipment"
+                        exportFileName="site_equipment"
+                        // Empty message
+                        emptyMessage="No equipment found for this site"
                     />
                 </div>
             )}

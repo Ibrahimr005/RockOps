@@ -4,6 +4,8 @@ import { useAuth } from "../../../../contexts/AuthContext";
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import './AuditTrail.css';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
+import { financeService } from '../../../../services/financeService.js';
+
 
 const AuditTrail = () => {
     const [auditRecords, setAuditRecords] = useState([]);
@@ -41,26 +43,59 @@ const AuditTrail = () => {
     const fetchAuditLogs = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/audit-logs', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+
+            console.log('=== DEBUGGING AUDIT LOGS ===');
+
+            const response = await financeService.auditLogs.getAll();
+
+            console.log('Raw response:', response);
+            console.log('Response type:', typeof response);
+            console.log('Is response array?', Array.isArray(response));
+
+            // Extract the actual data from the response
+            let data;
+            if (response.data) {
+                // If it's an Axios response, get the data property
+                data = response.data;
+            } else {
+                // If it's already the data
+                data = response;
+            }
+
+            console.log('Extracted data:', data);
+            console.log('Data type:', typeof data);
+
+            // Handle different response structures
+            let auditArray = [];
+
+            if (Array.isArray(data)) {
+                auditArray = data;
+            } else if (data && Array.isArray(data.content)) {
+                // Paginated response with content array
+                auditArray = data.content;
+            } else if (data && Array.isArray(data.data)) {
+                // Response wrapped in data property
+                auditArray = data.data;
+            } else if (data && typeof data === 'object') {
+                // Check if the object has any array properties
+                const arrayKeys = Object.keys(data).filter(key => Array.isArray(data[key]));
+                if (arrayKeys.length > 0) {
+                    auditArray = data[arrayKeys[0]]; // Use the first array found
                 }
-            });
+                console.log('Object keys:', Object.keys(data));
+                console.log('Found array keys:', arrayKeys);
+            }
 
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            console.log('Final audit array:', auditArray);
+            console.log('Final array length:', auditArray.length);
 
-            const data = await response.json();
-
-            // Add this debugging line
-            console.log('Audit logs data:', data.content || data);
-
-            setAuditRecords(data.content || data);
+            setAuditRecords(auditArray);
             showSuccess('Audit logs fetched successfully');
         } catch (err) {
+            console.error('=== ERROR FETCHING AUDIT LOGS ===');
+            console.error('Error:', err);
             showError('Error: ' + err.message);
-            console.error("Error fetching audit logs:", err);
+            setAuditRecords([]); // Set empty array on error
         } finally {
             setLoading(false);
         }

@@ -2,8 +2,9 @@ import React, {useEffect, useState} from "react";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import {useTranslation} from 'react-i18next';
 import {useAuth} from "../../../../contexts/AuthContext.jsx";
-import { FaTrash, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import {FaTrash, FaEdit, FaSave, FaTimes, FaPlus} from 'react-icons/fa';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
+import { siteService } from "../../../../services/siteService.js";
 
 const SitePartnersTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -192,31 +193,61 @@ const SitePartnersTab = ({siteId}) => {
         }
     };
 
+// Update your React component's handleAssignPartner method
     const handleAssignPartner = async (partnerId) => {
         try {
-            const token = localStorage.getItem("token");
             const percentageValue = partnerPercentages[partnerId];
 
-            const response = await fetch(`http://localhost:8080/siteadmin/${siteId}/assign-partner/${partnerId}`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({percentage: parseFloat(percentageValue)}),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                throw new Error(errorData);
+            // Enhanced frontend validation
+            if (!percentageValue || isNaN(percentageValue)) {
+                showError("Please enter a valid percentage");
+                return;
             }
 
+            const numericPercentage = parseFloat(percentageValue);
+            if (numericPercentage <= 0 || numericPercentage > 100) {
+                showError("Percentage must be between 0 and 100");
+                return;
+            }
+
+            console.log(`Assigning partner ${partnerId} with ${numericPercentage}% to site ${siteId}`);
+
+            // Call the API
+            const response = await siteService.assignPartner(siteId, partnerId, numericPercentage);
+
+            console.log("Assignment successful:", response);
+
+            // Reset state and refresh
             setShowModal(false);
+            setPartnerPercentages({});
             await fetchPartners();
             showSuccess("Partner successfully assigned to the site.");
+
         } catch (err) {
             console.error("Error assigning partner:", err);
-            showError(err.message || "Failed to assign partner. Please try again.");
+
+            // Enhanced error handling based on common issues
+            if (err.response?.status === 500) {
+                const errorMessage = err.response?.data?.message || err.message;
+
+                if (errorMessage?.includes("already assigned")) {
+                    showError("This partner is already assigned to the site.");
+                } else if (errorMessage?.includes("available")) {
+                    showError("Not enough percentage available. Please check current assignments.");
+                } else if (errorMessage?.includes("not found")) {
+                    showError("Partner or site not found. Please refresh and try again.");
+                } else if (errorMessage?.includes("Default partner assignment not found")) {
+                    showError("Site configuration error. Please contact administrator.");
+                } else if (errorMessage?.includes("Percentage calculation error")) {
+                    showError("Assignment would exceed 100%. Please adjust percentages.");
+                } else {
+                    showError("Server error occurred. Please try again or contact support.");
+                }
+            } else if (err.response?.status === 400) {
+                showError("Invalid request. Please check your input and try again.");
+            } else {
+                showError(err.message || "Failed to assign partner. Please try again.");
+            }
         }
     };
 
@@ -319,16 +350,16 @@ const SitePartnersTab = ({siteId}) => {
 
     return (
         <div className="site-partners-tab">
-            <div className="departments-header">
-                <h3>Site Partners Report</h3>
-                {isSiteAdmin && (
-                    <div className="btn-primary-container">
-                        <button className="assign-button" onClick={handleOpenModal}>
-                            Assign Partner
-                        </button>
-                    </div>
-                )}
-            </div>
+            {/*<div className="departments-header">*/}
+            {/*    <h3>Site Partners Report</h3>*/}
+            {/*    {isSiteAdmin && (*/}
+            {/*        <div className="btn-primary-container">*/}
+            {/*            <button className="assign-button" onClick={handleOpenModal}>*/}
+            {/*                Assign Partner*/}
+            {/*            </button>*/}
+            {/*        </div>*/}
+            {/*    )}*/}
+            {/*</div>*/}
 
             {/* Updated Assign Partner Modal JSX - Replace the existing modal section in your component */}
             {showModal && (
@@ -437,6 +468,13 @@ const SitePartnersTab = ({siteId}) => {
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10}
                         tableTitle="Partners List"
+                        showAddButton={isSiteAdmin}
+                        addButtonText="Assign Partner"
+                        addButtonIcon={<FaPlus />}
+                        onAddClick={handleOpenModal}
+                        addButtonProps={{
+                            className: 'assign-button',
+                        }}
                     />
                 </div>
             )}
