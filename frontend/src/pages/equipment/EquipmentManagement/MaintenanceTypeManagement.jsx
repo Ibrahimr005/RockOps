@@ -189,6 +189,19 @@ const MaintenanceTypeManagement = () => {
                 addButtonText="Add Maintenance Type"
                 addButtonIcon={<FaPlus />}
                 onAddClick={() => handleOpenModal()}
+                showExportButton={true}
+                exportButtonText="Export Maintenance Types"
+                exportFileName="maintenance_types"
+                exportAllData={true}
+                excludeColumnsFromExport={['actions']}
+                customExportHeaders={{
+                    'name': 'Maintenance Type Name',
+                    'description': 'Description',
+                    'active': 'Active Status'
+                }}
+                onExportStart={() => showSuccess("Exporting maintenance types...")}
+                onExportComplete={(result) => showSuccess(`Exported ${result.rowCount} maintenance types to Excel`)}
+                onExportError={(error) => showError("Failed to export maintenance types")}
             />
 
             {/* Modal for adding/editing maintenance types */}

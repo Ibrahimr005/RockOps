@@ -4,6 +4,9 @@ import EquipmentPendingTransactionsTable from "./EquipmentPendingTransactionsTab
 import EquipmentValidatedTransactionsTable from "./EquipmentValidatedTransactionsTable.jsx";
 import EquipmentIncomingTransactionsTable from "./EquipmentIncomingTransactionsTable.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2";
+import { equipmentService } from "../../../services/equipmentService";
+import { siteService } from "../../../services/siteService";
+import { warehouseService } from "../../../services/warehouseService";
 
 const UnifiedTransactionsView = forwardRef(({ 
     entityId, // equipmentId
@@ -86,29 +89,20 @@ const UnifiedTransactionsView = forwardRef(({
         }
         setLoading(true);
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/equipment/${entityId}/transactions`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                const updatedData = await Promise.all(
-                    data.map(async (transaction) => {
-                        const sender = await fetchEntitiesByType(transaction.senderType);
-                        const receiver = await fetchEntitiesByType(transaction.receiverType);
-                        return {
-                            ...transaction,
-                            sender: sender.find(item => item.id === transaction.senderId),
-                            receiver: receiver.find(item => item.id === transaction.receiverId)
-                        };
-                    })
-                );
-                setAllTransactions(updatedData);
-            } else {
-                console.error("Failed to fetch transactions, status:", response.status);
-            }
+            const response = await equipmentService.getEquipmentTransactions(entityId);
+            const data = response.data;
+            const updatedData = await Promise.all(
+                data.map(async (transaction) => {
+                    const sender = await fetchEntitiesByType(transaction.senderType);
+                    const receiver = await fetchEntitiesByType(transaction.receiverType);
+                    return {
+                        ...transaction,
+                        sender: sender.find(item => item.id === transaction.senderId),
+                        receiver: receiver.find(item => item.id === transaction.receiverId)
+                    };
+                })
+            );
+            setAllTransactions(updatedData);
         } catch (error) {
             console.error("Failed to fetch transactions:", error);
         } finally {
@@ -120,32 +114,21 @@ const UnifiedTransactionsView = forwardRef(({
         if (!entityType) return [];
 
         try {
-            const token = localStorage.getItem("token");
-            let endpoint;
+            let response;
 
             if (entityType === "WAREHOUSE") {
-                endpoint = `http://localhost:8080/api/v1/warehouses`;
+                response = await warehouseService.getAll();
             } else if (entityType === "SITE") {
-                endpoint = `http://localhost:8080/api/v1/sites`;
+                response = await siteService.getAllSites();
             } else if (entityType === "EQUIPMENT") {
-                endpoint = `http://localhost:8080/api/equipment`;
+                response = await equipmentService.getAllEquipment();
             } else {
-                endpoint = `http://localhost:8080/api/v1/${entityType.toLowerCase()}s`;
-            }
-
-            const response = await fetch(endpoint, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                return data;
-            } else {
-                console.error(`Failed to fetch ${entityType}, status:`, response.status);
+                // For other entity types, we'll need to add specific services
+                console.warn(`No service found for entity type: ${entityType}`);
                 return [];
             }
+
+            return response.data;
         } catch (error) {
             console.error(`Failed to fetch ${entityType}:`, error);
             return [];

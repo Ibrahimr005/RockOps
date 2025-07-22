@@ -289,6 +289,20 @@ const WorkTypeManagement = () => {
                 addButtonText="Add Work Type"
                 addButtonIcon={<FaPlus />}
                 onAddClick={() => handleOpenModal()}
+                showExportButton={true}
+                exportButtonText="Export Work Types"
+                exportFileName="work_types"
+                exportAllData={true}
+                excludeColumnsFromExport={['actions']}
+                customExportHeaders={{
+                    'name': 'Work Type Name',
+                    'description': 'Description',
+                    'active': 'Active Status',
+                    'supportedEquipmentTypes': 'Supported Equipment Types'
+                }}
+                onExportStart={() => showSuccess("Exporting work types...")}
+                onExportComplete={(result) => showSuccess(`Exported ${result.rowCount} work types to Excel`)}
+                onExportError={(error) => showError("Failed to export work types")}
             />
 
             {/* Modal for adding/editing work types */}

@@ -164,20 +164,9 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
     const fetchConsumableHistory = async (consumableId) => {
         try {
             console.log("🔍 Fetching consumable history for ID:", consumableId);
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/equipment/consumables/${consumableId}/history`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                console.log("✅ Fetched consumable history:", data);
-                setConsumableHistory(data);
-            } else {
-                console.error("Failed to fetch consumable history, status:", response.status);
-                showSnackbar("Failed to fetch consumable history", "error");
-            }
+            const response = await consumableService.getConsumableHistory(consumableId);
+            console.log("✅ Fetched consumable history:", response.data);
+            setConsumableHistory(response.data);
         } catch (error) {
             console.error("Failed to fetch consumable history:", error);
             showSnackbar("Failed to fetch consumable history", "error");
@@ -517,6 +506,21 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                             defaultItemsPerPage={10}
                             emptyMessage="No resolution history found"
                             className="resolution-history-table"
+                            showExportButton={true}
+                            exportButtonText="Export Resolution History"
+                            exportFileName="equipment_resolution_history"
+                            exportAllData={true}
+                            customExportHeaders={{
+                                'consumable.itemType.name': 'Item Name',
+                                'consumable.itemType.itemCategory.name': 'Category',
+                                'resolutionType': 'Resolution Type',
+                                'resolvedBy': 'Resolved By',
+                                'resolvedAt': 'Resolved Date',
+                                'notes': 'Notes'
+                            }}
+                            onExportStart={() => showSnackbar("Exporting resolution history...", "info")}
+                            onExportComplete={(result) => showSnackbar(`Exported ${result.rowCount} records to Excel`, "success")}
+                            onExportError={(error) => showSnackbar("Failed to export resolution history", "error")}
                         />
                     ) : (
                         <DataTable
@@ -534,6 +538,23 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                             addButtonText="Add Consumable"
                             addButtonIcon={<FaPlus />}
                             onAddClick={onAddClick}
+                            showExportButton={true}
+                            exportButtonText={`Export ${activeTab === 'current' ? 'Consumables' : 'Surplus Items'}`}
+                            exportFileName={`equipment_${activeTab === 'current' ? 'consumables' : 'surplus_items'}`}
+                            exportAllData={true}
+                            customExportHeaders={{
+                                'itemTypeName': 'Item Name',
+                                'itemTypeCategory': 'Category',
+                                'quantity': 'Quantity',
+                                'unit': 'Unit',
+                                'status': 'Status',
+                                'batchNumber': 'Batch Number',
+                                'transactionDate': 'Transaction Date',
+                                'lastUpdated': 'Last Updated'
+                            }}
+                            onExportStart={() => showSnackbar(`Exporting ${activeTab === 'current' ? 'consumables' : 'surplus items'}...`, "info")}
+                            onExportComplete={(result) => showSnackbar(`Exported ${result.rowCount} records to Excel`, "success")}
+                            onExportError={(error) => showSnackbar(`Failed to export ${activeTab === 'current' ? 'consumables' : 'surplus items'}`, "error")}
                         />
                     )
                 )}

@@ -25,5 +25,10 @@ export const itemTypeService = {
     // Delete an item type
     delete: (id) => {
         return apiClient.delete(ITEM_TYPE_ENDPOINTS.DELETE(id));
+    },
+
+    // Get all item types (alternative endpoint)
+    getAllTypes: () => {
+        return apiClient.get(ITEM_TYPE_ENDPOINTS.ALL_TYPES);
     }
 }; 

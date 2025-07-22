@@ -42,7 +42,9 @@ export const EQUIPMENT_ENDPOINTS = {
     // Maintenance integration endpoints
     MAINTENANCE_SEARCH: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/search`,
     MAINTENANCE_FOR_LINKING: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/for-linking`,
-    ACCEPT_TRANSACTION_WITH_MAINTENANCE: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept-with-maintenance`
+    ACCEPT_TRANSACTION_WITH_MAINTENANCE: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept-with-maintenance`,
+    ITEMS: (equipmentId) => `/api/equipment/${equipmentId}/items`,
+    CHECK_BATCH_EXISTS: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`
 };
 
 // Consumable Resolution endpoints
@@ -50,7 +52,8 @@ export const CONSUMABLE_ENDPOINTS = {
     RESOLVE_DISCREPANCY: '/api/v1/consumables/resolve-discrepancy',
     RESOLUTION_HISTORY: (equipmentId) => `/api/v1/consumables/resolution-history/equipment/${equipmentId}`,
     DISCREPANCIES: (equipmentId) => `/api/v1/consumables/equipment/${equipmentId}/discrepancies`,
-    RESOLVED: (equipmentId) => `/api/v1/consumables/equipment/${equipmentId}/resolved`
+    RESOLVED: (equipmentId) => `/api/v1/consumables/equipment/${equipmentId}/resolved`,
+    HISTORY_BY_CONSUMABLE: (consumableId) => `/api/v1/equipment/consumables/${consumableId}/history`
 };
 
 // Equipment Types module endpoints
@@ -244,7 +247,8 @@ export const ITEM_CATEGORY_ENDPOINTS = {
     BASE: '/api/v1/itemCategories',
     CREATE: '/api/v1/itemCategories',
     PARENTS: '/api/v1/itemCategories/parents',
-    CHILDREN: '/api/v1/itemCategories/children'
+    CHILDREN: '/api/v1/itemCategories/children',
+    PARENT_CATEGORIES: '/api/v1/item-categories/parent'
 };
 
 // Request Order module endpoints
@@ -325,7 +329,8 @@ export const ITEM_TYPE_ENDPOINTS = {
     BY_ID: (id) => `/api/v1/itemTypes/${id}`,
     CREATE: '/api/v1/itemTypes',
     UPDATE: (id) => `/api/v1/itemTypes/${id}`,
-    DELETE: (id) => `/api/v1/itemTypes/${id}`
+    DELETE: (id) => `/api/v1/itemTypes/${id}`,
+    ALL_TYPES: '/api/v1/item-types'
 };
 
 // Warehouse module endpoints
