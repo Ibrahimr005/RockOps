@@ -1,6 +1,6 @@
 // src/services/candidateService.js
-import apiClient from '../utils/apiClient';
-import { CANDIDATE_ENDPOINTS } from '../config/api.config';
+import apiClient from '../../utils/apiClient.js';
+import { CANDIDATE_ENDPOINTS } from '../../config/api.config.js';
 
 export const candidateService = {
     // Get all candidates

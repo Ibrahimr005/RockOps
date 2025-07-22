@@ -1,4 +1,4 @@
-package com.example.backend.dto.hr;
+package com.example.backend.dto.hr.attendance;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

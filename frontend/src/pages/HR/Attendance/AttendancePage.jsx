@@ -6,7 +6,7 @@ import AttendanceMonthlyView from './components/AttendanceMonthlyView';
 import AttendanceSummaryCard from './components/AttendanceSummaryCard';
 import './attendance.scss';
 import { siteService } from '../../../services/siteService';
-import { attendanceService } from '../../../services/attendanceService'; // Import the new service
+import { attendanceService } from '../../../services/hr/attendanceService.js'; // Import the new service
 
 const AttendancePage = () => {
     const { showSnackbar } = useSnackbar();

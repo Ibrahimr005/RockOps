@@ -1,11 +1,10 @@
-package com.example.backend.dto.hr;
+package com.example.backend.dto.hr.attendance;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 // DTO for bulk attendance operations

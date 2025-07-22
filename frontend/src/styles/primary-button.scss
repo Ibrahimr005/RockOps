@@ -4,6 +4,80 @@
 }
 
 
+// Button Styles (matching your design system)
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  text-decoration: none;
+  justify-content: center;
+  min-width: fit-content;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.btn-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: var(--color-text-inverse);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3);
+    }
+  }
+
+  &.btn-secondary {
+    background: var(--color-surface-secondary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--border-color);
+
+    &:hover:not(:disabled) {
+      background: var(--color-surface-hover);
+      border-color: var(--color-primary);
+    }
+  }
+
+  &.btn-info {
+    background: linear-gradient(135deg, var(--color-info) 0%, #0ea5e9 100%);
+    color: var(--color-text-inverse);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(var(--color-info-rgb), 0.3);
+    }
+  }
+
+  &.btn-success {
+    background: linear-gradient(135deg, var(--color-success) 0%, #10b981 100%);
+    color: var(--color-text-inverse);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(var(--color-success-rgb), 0.3);
+    }
+  }
+
+  &.btn-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    gap: 0.25rem;
+
+    svg {
+      width: 12px;
+      height: 12px;
+    }
+  }
+}
+
 .primary-button,
 .btn-primary, .assign-button {
   /* Base Layout */

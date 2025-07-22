@@ -6,8 +6,8 @@ import EditVacancyModal from './modals/EditVacancyModal.jsx';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import {FaEdit, FaTrashAlt, FaEye} from "react-icons/fa";
 import { useSnackbar } from '../../../contexts/SnackbarContext';
-import { vacancyService } from '../../../services/vacancyService';
-import { jobPositionService } from '../../../services/jobPositionService';
+import { vacancyService } from '../../../services/hr/vacancyService.js';
+import { jobPositionService } from '../../../services/hr/jobPositionService.js';
 
 const VacancyList = () => {
     const navigate = useNavigate();

@@ -1,6 +1,6 @@
 // src/services/hrEmployeeService.js
-import apiClient from '../utils/apiClient';
-import { HR_ENDPOINTS } from '../config/api.config';
+import apiClient from '../../utils/apiClient.js';
+import { HR_ENDPOINTS } from '../../config/api.config.js';
 
 export const hrEmployeeService = {
     // Employee management

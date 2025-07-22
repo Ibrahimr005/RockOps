@@ -1,11 +1,11 @@
-package com.example.backend.dto.hr;
+package com.example.backend.dto.hr.attendance;
+import com.example.backend.dto.hr.ContractTypeSummary;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.Map;
 import java.util.UUID;
 

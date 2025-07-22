@@ -7,7 +7,7 @@ import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import { useSnackbar } from "../../../contexts/SnackbarContext";
 import { inSiteMaintenanceService } from "../../../services/inSiteMaintenanceService";
 import { maintenanceTypeService } from "../../../services/maintenanceTypeService";
-import { employeeService } from "../../../services/employeeService";
+import { employeeService } from "../../../services/hr/employeeService.js";
 
 const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
     const [loading, setLoading] = useState(false);

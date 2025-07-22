@@ -1,4 +1,4 @@
-import apiClient from '../utils/apiClient';
+import apiClient from '../../utils/apiClient.js';
 
 // Attendance API endpoints
 const ATTENDANCE_ENDPOINTS = {

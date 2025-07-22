@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {FiCheck, FiEdit, FiPlus, FiTrash2, FiX} from 'react-icons/fi';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import {useSnackbar} from '../../../contexts/SnackbarContext';
-import {departmentService} from '../../../services/departmentService';
+import {departmentService} from '../../../services/hr/departmentService.js';
 import './DepartmentsList.scss';
 
 const DepartmentsList = () => {

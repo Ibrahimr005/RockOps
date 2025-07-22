@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import './CandidatesTable.scss';
 import AddCandidateModal from './AddCandidateModal';
 import DataTable from '../../../../components/common/DataTable/DataTable';
-import { candidateService } from '../../../../services/candidateService';
+import { candidateService } from '../../../../services/hr/candidateService.js';
 import { FaFilePdf, FaUserCheck, FaTrashAlt } from 'react-icons/fa';
+import {vacancyService} from "../../../../services/hr/vacancyService.js";
 
 const CandidatesTable = ({ vacancyId }) => {
     const navigate = useNavigate();
@@ -31,20 +32,14 @@ const CandidatesTable = ({ vacancyId }) => {
 
         const fetchVacancyStats = async () => {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:8080/api/v1/vacancies/${vacancyId}/statistics`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
 
-                if (response.ok) {
-                    const stats = await response.json();
-                    setVacancyStats(stats);
-                }
+                const response = await vacancyService.getStatistics();
+                setVacancyStats(response.data);
+                setLoading(false);
+
             } catch (error) {
+                setError(error.message);
+                setLoading(false);
                 console.error('Error fetching vacancy stats:', error);
             }
         };

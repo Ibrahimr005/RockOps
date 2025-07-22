@@ -1,6 +1,6 @@
 // src/services/departmentService.js
-import apiClient from '../utils/apiClient';
-import { DEPARTMENT_ENDPOINTS } from '../config/api.config';
+import apiClient from '../../utils/apiClient.js';
+import { DEPARTMENT_ENDPOINTS } from '../../config/api.config.js';
 
 export const departmentService = {
     // Get all departments

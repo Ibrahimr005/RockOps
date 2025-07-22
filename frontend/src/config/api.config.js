@@ -224,10 +224,17 @@ export const PARTNER_ENDPOINTS = {
 // Authentication module endpoints
 export const AUTH_ENDPOINTS = {
     BASE: '/api/v1/auth',
+    AUTHENTICATE: '/api/v1/auth/authenticate',
     REGISTER: '/api/v1/auth/register',
-    LOGIN: '/api/v1/auth/login'
+    LOGIN: '/api/v1/auth/authenticate', // Assuming login and authenticate are the same
+    LOGOUT: '/api/v1/auth/logout',
+    VALIDATE: '/api/v1/auth/validate',
+    REFRESH: '/api/v1/auth/refresh',
+    PROFILE: '/api/v1/auth/profile',
+    CHANGE_PASSWORD: '/api/v1/auth/change-password',
+    FORGOT_PASSWORD: '/api/v1/auth/forgot-password',
+    RESET_PASSWORD: '/api/v1/auth/reset-password'
 };
-
 // Item Category module endpoints
 export const ITEM_CATEGORY_ENDPOINTS = {
     BASE: '/api/v1/itemCategories',
@@ -263,13 +270,27 @@ export const CANDIDATE_ENDPOINTS = {
     TO_EMPLOYEE: (id) => `/api/v1/candidates/${id}/to-employee`
 };
 
-// Vacancy module endpoints
+
 export const VACANCY_ENDPOINTS = {
+    // Base endpoint
     BASE: '/api/v1/vacancies',
-    BY_ID: (id) => `/api/v1/vacancies/${id}`,
-    CREATE: '/api/v1/vacancies',
-    UPDATE: (id) => `/api/v1/vacancies/${id}`,
-    DELETE: (id) => `/api/v1/vacancies/${id}`
+
+    // Basic CRUD operations
+    CREATE: '/api/v1/vacancies',                              // POST - Create new vacancy
+    GET_ALL: '/api/v1/vacancies',                            // GET - Get all vacancies
+    BY_ID: (id) => `/api/v1/vacancies/${id}`,                // GET - Get vacancy by ID
+    UPDATE: (id) => `/api/v1/vacancies/${id}`,               // PUT - Update vacancy
+    DELETE: (id) => `/api/v1/vacancies/${id}`,               // DELETE - Delete vacancy
+
+    // Statistics and reporting
+    STATISTICS: (id) => `/api/v1/vacancies/${id}/statistics`, // GET - Get vacancy statistics
+
+    // Candidate management
+    HIRE_CANDIDATE: (candidateId) => `/api/v1/vacancies/hire-candidate/${candidateId}`, // POST - Hire a candidate
+
+    // Potential candidates management
+    MOVE_TO_POTENTIAL: (id) => `/api/v1/vacancies/${id}/move-to-potential`, // POST - Move candidates to potential list
+    GET_POTENTIAL_CANDIDATES: '/api/v1/vacancies/potential-candidates'       // GET - Get all potential candidates
 };
 
 // Department module endpoints

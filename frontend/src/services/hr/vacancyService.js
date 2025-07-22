@@ -1,6 +1,6 @@
 // src/services/vacancyService.js
-import apiClient from '../utils/apiClient';
-import { VACANCY_ENDPOINTS } from '../config/api.config';
+import apiClient from '../../utils/apiClient.js';
+import { VACANCY_ENDPOINTS } from '../../config/api.config.js';
 
 export const vacancyService = {
     // Get all vacancies

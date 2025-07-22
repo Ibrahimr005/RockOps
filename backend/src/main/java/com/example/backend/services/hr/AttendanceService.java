@@ -1,6 +1,9 @@
 package com.example.backend.services.hr;
 
 import com.example.backend.dto.hr.*;
+import com.example.backend.dto.hr.attendance.AttendanceRequestDTO;
+import com.example.backend.dto.hr.attendance.AttendanceResponseDTO;
+import com.example.backend.dto.hr.attendance.BulkAttendanceDTO;
 import com.example.backend.models.hr.Attendance;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.hr.JobPosition;

@@ -1,6 +1,6 @@
 // src/services/jobPositionService.js
-import apiClient from '../utils/apiClient';
-import { JOB_POSITION_ENDPOINTS } from '../config/api.config';
+import apiClient from '../../utils/apiClient.js';
+import { JOB_POSITION_ENDPOINTS } from '../../config/api.config.js';
 
 export const jobPositionService = {
     // Get all job positions
