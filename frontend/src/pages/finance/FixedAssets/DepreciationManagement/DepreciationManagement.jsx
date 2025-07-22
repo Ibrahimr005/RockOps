@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FaCalculator, FaEye, FaFileDownload, FaTimes, FaInfoCircle, FaDollarSign, FaCalendarAlt, FaChartLine, FaClock } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
+import { financeService } from '../../../../services/financeService.js';
+
 import './DepreciationManagement.css';
 
 const DepreciationManagement = () => {
@@ -19,47 +21,22 @@ const DepreciationManagement = () => {
         try {
             setLoading(true);
 
-            // Fetch all assets first
-            const assetsResponse = await fetch(`http://localhost:8080/api/v1/fixed-assets`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            // Fetch all assets using the service
+            const assetsResponse = await financeService.fixedAssets.getAll();
+            const assets = assetsResponse.data;
 
-            if (!assetsResponse.ok) {
-                throw new Error('Failed to fetch assets');
-            }
-
-            const assets = await assetsResponse.json();
-
-            // For each asset, get depreciation data
+            // For each asset, get depreciation data using the service
             const depreciationPromises = assets.map(async (asset) => {
                 try {
                     const [monthlyResponse, accumulatedResponse, bookValueResponse] = await Promise.all([
-                        fetch(`http://localhost:8080/api/v1/fixed-assets/${asset.id}/depreciation/monthly`, {
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                'Content-Type': 'application/json'
-                            }
-                        }),
-                        fetch(`http://localhost:8080/api/v1/fixed-assets/${asset.id}/depreciation/accumulated`, {
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                'Content-Type': 'application/json'
-                            }
-                        }),
-                        fetch(`http://localhost:8080/api/v1/fixed-assets/${asset.id}/book-value`, {
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                'Content-Type': 'application/json'
-                            }
-                        })
+                        financeService.fixedAssets.getMonthlyDepreciation(asset.id),
+                        financeService.fixedAssets.getAccumulatedDepreciation(asset.id),
+                        financeService.fixedAssets.getBookValue(asset.id)
                     ]);
 
-                    const monthlyDepreciation = monthlyResponse.ok ? await monthlyResponse.json() : 0;
-                    const accumulatedDepreciation = accumulatedResponse.ok ? await accumulatedResponse.json() : 0;
-                    const currentBookValue = bookValueResponse.ok ? await bookValueResponse.json() : 0;
+                    const monthlyDepreciation = monthlyResponse.data || 0;
+                    const accumulatedDepreciation = accumulatedResponse.data || 0;
+                    const currentBookValue = bookValueResponse.data || 0;
 
                     return {
                         id: asset.id,
@@ -120,36 +97,16 @@ const DepreciationManagement = () => {
     const fetchAssetDepreciationDetails = async (assetId) => {
         try {
             const [assetResponse, monthlyResponse, accumulatedResponse, bookValueResponse] = await Promise.all([
-                fetch(`http://localhost:8080/api/v1/fixed-assets/${assetId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch(`http://localhost:8080/api/v1/fixed-assets/${assetId}/depreciation/monthly`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch(`http://localhost:8080/api/v1/fixed-assets/${assetId}/depreciation/accumulated`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch(`http://localhost:8080/api/v1/fixed-assets/${assetId}/book-value`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                })
+                financeService.fixedAssets.getById(assetId),
+                financeService.fixedAssets.getMonthlyDepreciation(assetId),
+                financeService.fixedAssets.getAccumulatedDepreciation(assetId),
+                financeService.fixedAssets.getBookValue(assetId)
             ]);
 
-            const assetData = assetResponse.ok ? await assetResponse.json() : null;
-            const monthlyDep = monthlyResponse.ok ? await monthlyResponse.json() : 0;
-            const accumulatedDep = accumulatedResponse.ok ? await accumulatedResponse.json() : 0;
-            const bookValue = bookValueResponse.ok ? await bookValueResponse.json() : 0;
+            const assetData = assetResponse.data;
+            const monthlyDep = monthlyResponse.data || 0;
+            const accumulatedDep = accumulatedResponse.data || 0;
+            const bookValue = bookValueResponse.data || 0;
 
             return {
                 ...assetData,
@@ -159,6 +116,7 @@ const DepreciationManagement = () => {
             };
         } catch (error) {
             console.error('Error fetching asset depreciation details:', error);
+            showError('Failed to fetch asset details');
             return null;
         }
     };
@@ -166,39 +124,25 @@ const DepreciationManagement = () => {
     const handleRecalculateDepreciation = async (asset) => {
         try {
             const [monthlyResponse, accumulatedResponse] = await Promise.all([
-                fetch(`http://localhost:8080/api/v1/fixed-assets/${asset.id}/depreciation/monthly`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch(`http://localhost:8080/api/v1/fixed-assets/${asset.id}/depreciation/accumulated`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json'
-                    }
-                })
+                financeService.fixedAssets.getMonthlyDepreciation(asset.id),
+                financeService.fixedAssets.getAccumulatedDepreciation(asset.id)
             ]);
 
-            if (monthlyResponse.ok && accumulatedResponse.ok) {
-                const monthlyDep = await monthlyResponse.json();
-                const accumulatedDep = await accumulatedResponse.json();
+            const monthlyDep = monthlyResponse.data || 0;
+            const accumulatedDep = accumulatedResponse.data || 0;
 
-                // Update the specific asset in the data
-                setDepreciationData(prev => prev.map(item =>
-                    item.id === asset.id
-                        ? { ...item, monthlyDepreciation: monthlyDep, accumulatedDepreciation: accumulatedDep }
-                        : item
-                ));
+            // Update the specific asset in the data
+            setDepreciationData(prev => prev.map(item =>
+                item.id === asset.id
+                    ? { ...item, monthlyDepreciation: monthlyDep, accumulatedDepreciation: accumulatedDep }
+                    : item
+            ));
 
-                showSuccess(
-                    `Depreciation recalculated for ${asset.assetName}:\n` +
-                    `Monthly: $${monthlyDep.toLocaleString()}\n` +
-                    `Accumulated: $${accumulatedDep.toLocaleString()}`
-                );
-            } else {
-                throw new Error('Failed to recalculate depreciation');
-            }
+            showSuccess(
+                `Depreciation recalculated for ${asset.assetName}:\n` +
+                `Monthly: $${monthlyDep.toLocaleString()}\n` +
+                `Accumulated: $${accumulatedDep.toLocaleString()}`
+            );
         } catch (error) {
             console.error('Error recalculating depreciation:', error);
             showError('Failed to recalculate depreciation');
@@ -210,8 +154,6 @@ const DepreciationManagement = () => {
         if (detailedAsset) {
             setSelectedAsset(detailedAsset);
             setShowDetailsModal(true);
-        } else {
-            showError('Failed to load asset depreciation details');
         }
     };
 
