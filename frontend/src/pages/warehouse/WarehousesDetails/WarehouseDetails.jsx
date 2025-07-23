@@ -10,6 +10,8 @@ import WarehouseRequestOrders from "../../warehouse/WarehouseRequestOrders/Wareh
 import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 import "./WarehouseDetails.scss";
 import warehouseImg from "../../../assets/imgs/warehouse1.jpg";
+import { transactionService } from "../../../services/transaction/transactionService.js"; // Add this line
+import { warehouseService } from "../../../services/warehouse/warehouseService"; // Add this line too
 
 // Simple Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -74,27 +76,16 @@ const WarehouseDetails = () => {
     if (!id) return;
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8080/api/v1/transactions/warehouse/${id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const data = await transactionService.getTransactionsForWarehouse(id);
 
-      if (response.ok) {
-        const data = await response.json();
+      // Filter for incoming transactions (same logic as IncomingTransactionsTable)
+      const incomingCount = data.filter(transaction =>
+          transaction.status === "PENDING" &&
+          (transaction.receiverId === id || transaction.senderId === id) &&
+          transaction.sentFirst !== id
+      ).length;
 
-        // Filter for incoming transactions (same logic as IncomingTransactionsTable)
-        const incomingCount = data.filter(transaction =>
-            transaction.status === "PENDING" &&
-            (transaction.receiverId === id || transaction.senderId === id) &&
-            transaction.sentFirst !== id
-        ).length;
-
-        setIncomingTransactionsCount(incomingCount);
-      }
+      setIncomingTransactionsCount(incomingCount);
     } catch (error) {
       console.error("Failed to fetch incoming transactions count:", error);
     }
@@ -103,25 +94,12 @@ const WarehouseDetails = () => {
   useEffect(() => {
     const fetchWarehouseDetails = async () => {
       try {
-        const token = localStorage.getItem('token');
-
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
         if (userInfo && userInfo.role) {
           setUserRole(userInfo.role);
         }
 
-        const response = await fetch(`http://localhost:8080/api/v1/warehouses/${id}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
+        const data = await warehouseService.getById(id);
         setWarehouseData(data);
         console.log("warehouse:", JSON.stringify(data, null, 2));
 

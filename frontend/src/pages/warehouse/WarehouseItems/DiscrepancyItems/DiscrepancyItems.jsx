@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
+import { itemService } from '../../../../services/warehouse/itemService';
 
 const DiscrepancyItems= ({
                                  warehouseId,
@@ -31,25 +32,12 @@ const DiscrepancyItems= ({
 
     const handleDeleteItem = async (itemId) => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/items/${itemId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                refreshItems();
-                showSnackbar("Item deleted successfully", "success");
-            } else {
-                const errorText = await response.text();
-                console.error("Failed to delete item:", response.status, errorText);
-                showSnackbar("Failed to delete item", "error");
-            }
+            await itemService.deleteItem(itemId);
+            refreshItems();
+            showSnackbar("Item deleted successfully", "success");
         } catch (error) {
             console.error('Delete error:', error);
-            showSnackbar("Error deleting item", "error");
+            showSnackbar("Failed to delete item", "error");
         }
     };
 
@@ -59,8 +47,6 @@ const DiscrepancyItems= ({
         if (!selectedItem) return;
 
         try {
-            const token = localStorage.getItem("token");
-
             const resolution = {
                 itemId: selectedItem.id,
                 resolutionType: resolutionData.resolutionType,
@@ -69,27 +55,13 @@ const DiscrepancyItems= ({
                 resolvedBy: localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')).username : "system"
             };
 
-            const response = await fetch(`http://localhost:8080/api/v1/items/resolve-discrepancy`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(resolution),
-            });
-
-            if (response.ok) {
-                refreshItems();
-                setIsResolutionModalOpen(false);
-                showSnackbar("Discrepancy resolved successfully", "success");
-            } else {
-                const errorText = await response.text();
-                console.error("Failed to resolve item:", response.status, errorText);
-                showSnackbar("Failed to resolve discrepancy", "error");
-            }
+            await itemService.resolveDiscrepancy(resolution);
+            refreshItems();
+            setIsResolutionModalOpen(false);
+            showSnackbar("Discrepancy resolved successfully", "success");
         } catch (error) {
             console.error("Failed to resolve item:", error);
-            showSnackbar("Error resolving discrepancy", "error");
+            showSnackbar("Failed to resolve discrepancy", "error");
         }
     };
 

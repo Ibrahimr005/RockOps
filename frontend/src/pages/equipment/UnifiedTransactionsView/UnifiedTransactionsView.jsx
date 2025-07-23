@@ -6,7 +6,7 @@ import EquipmentIncomingTransactionsTable from "./EquipmentIncomingTransactionsT
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2";
 import { equipmentService } from "../../../services/equipmentService";
 import { siteService } from "../../../services/siteService";
-import { warehouseService } from "../../../services/warehouseService";
+import { warehouseService } from "../../../services/warehouse/warehouseService.js";
 
 const UnifiedTransactionsView = forwardRef(({ 
     entityId, // equipmentId

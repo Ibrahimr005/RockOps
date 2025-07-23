@@ -140,16 +140,16 @@
 
 /* Action Buttons */
 .warehouse-list-card-actions {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  margin-top: 20px;
+  display: grid; /* Keep using grid */
+  grid-template-columns: 1fr 1.3fr; /* Left button smaller, right button bigger */
   gap: 10px;
+  margin-top: 20px;
+  width: 100%;
 }
 
 .warehouse-list-edit-button, .warehouse-list-view-button {
-  flex: 1;
-  padding: 10px 12px;
+  flex: 1; /* Each button takes equal space */
+  padding: 12px 16px;
   border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: var(--bold-font-weight);
@@ -956,17 +956,15 @@
 }
 
 .warehouse-list-assignment-footer .btn-primary {
-  padding: 12px 24px;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
+  flex: 1; /* Each button takes equal space */
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: var(--bold-font-weight);
   cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  width: auto !important;
-  flex: none !important;
+  transition: all var(--transition-normal);
+  text-align: center;
+  border: none;
 
   &:hover {
     background: var(--color-primary-dark);

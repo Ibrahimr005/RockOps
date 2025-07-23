@@ -7,6 +7,9 @@ import { useAuth } from "../../../contexts/AuthContext";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog";
+import { warehouseService } from "../../../services/warehouse/warehouseService";
+import { warehouseEmployeeService } from "../../../services/warehouse/warehouseEmployeeService";
+import { itemService } from "../../../services/warehouse/itemService";
 
 const WarehousesList = () => {
     const [warehouses, setWarehouses] = useState([]);
@@ -72,43 +75,12 @@ const WarehousesList = () => {
         setConfirmDialog(prev => ({ ...prev, isVisible: false }));
     };
 
-    // API functions for actual assignment/unassignment
     const assignEmployeeToWarehouseAPI = async (employeeId, warehouseId) => {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:8080/api/v1/warehouseEmployees/${employeeId}/assign-warehouse`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ warehouseId })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to assign employee");
-        }
-
-        return await response.json();
+        return await warehouseEmployeeService.assignToWarehouse(employeeId, { warehouseId });
     };
 
     const unassignEmployeeFromWarehouseAPI = async (employeeId, warehouseId) => {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:8080/api/v1/warehouseEmployees/${employeeId}/unassign-warehouse`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ warehouseId })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to unassign employee");
-        }
-
-        return await response.json();
+        return await warehouseEmployeeService.unassignFromWarehouse(employeeId, { warehouseId });
     };
 
     // Fetch warehouses on initial load - wait for currentUser to be available
@@ -137,22 +109,11 @@ const WarehousesList = () => {
 
     const fetchAndFilterWarehousesForEmployee = async (allWarehouses) => {
         try {
-            const token = localStorage.getItem('token');
             console.log("Filtering warehouses for employee:", currentUser.username);
             console.log("Total warehouses available:", allWarehouses.length);
 
             // Get all warehouse assignments for this user
-            const response = await fetch(`http://localhost:8080/api/v1/warehouseEmployees/by-username/${currentUser.username}/assignments`, {
-                headers: { "Authorization": `Bearer ${token}` },
-            });
-
-            if (!response.ok) {
-                console.log("No assignments found for user or API error, showing empty list");
-                setWarehouses([]);
-                return;
-            }
-
-            const assignments = await response.json();
+            const assignments = await warehouseEmployeeService.getAssignmentsByUsername(currentUser.username);
             console.log("Found assignments:", assignments);
 
             if (!Array.isArray(assignments) || assignments.length === 0) {
@@ -189,35 +150,22 @@ const WarehousesList = () => {
     const fetchWarehouses = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
 
             console.log("Fetching warehouses for user role:", currentUser?.role);
 
-            // Always fetch from the main warehouses endpoint
-            const response = await fetch("http://localhost:8080/api/v1/warehouses", {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const respo = await warehouseService.getAll();
+            console.log("Fetched warehouse data:", JSON.stringify(respo, null, 2));
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("Fetched warehouse data:", data);
 
             // If user is a warehouse employee, filter warehouses on frontend
             if (currentUser?.role === 'WAREHOUSE_EMPLOYEE') {
                 console.log("User is WAREHOUSE_EMPLOYEE, filtering warehouses");
                 // Get user's assigned warehouses via separate API call
-                await fetchAndFilterWarehousesForEmployee(data);
+                await fetchAndFilterWarehousesForEmployee(respo);
             } else {
                 // For other roles, show all warehouses
                 console.log("User is not WAREHOUSE_EMPLOYEE, showing all warehouses");
-                setWarehouses(data);
+                setWarehouses(respo);
                 console.log("Fetched all warehouses for role:", currentUser?.role);
             }
 
@@ -234,28 +182,7 @@ const WarehousesList = () => {
 
     const fetchWarehouseEmployees = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch("http://localhost:8080/api/v1/warehouseEmployees/warehouse-employees", {
-                headers: { "Authorization": `Bearer ${token}` },
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch warehouse employees: ${response.status}`);
-            }
-
-            // Add response text debugging
-            const responseText = await response.text();
-            console.log("Raw response:", responseText);
-
-            let data;
-            try {
-                data = JSON.parse(responseText);
-            } catch (parseError) {
-                console.error("JSON Parse Error:", parseError);
-                console.error("Response text:", responseText);
-                throw new Error("Invalid JSON response from server");
-            }
-
+            const data = await warehouseEmployeeService.getWarehouseEmployees();
             setWarehouseEmployees(data);
             console.log("Successfully fetched warehouse employees:", data.length);
         } catch (error) {
@@ -268,13 +195,7 @@ const WarehousesList = () => {
     const fetchWarehouseAssignedEmployees = async (warehouseId) => {
         try {
             setAssignmentLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/warehouses/${warehouseId}/assigned-users-dto`, {
-                headers: { "Authorization": `Bearer ${token}` },
-            });
-
-            if (!response.ok) throw new Error("Failed to fetch assigned employees");
-            const data = await response.json();
+            const data = await warehouseEmployeeService.getWarehouseAssignedUsers(warehouseId);
 
             if (!Array.isArray(data)) {
                 setAssignedEmployees([]);
@@ -496,20 +417,7 @@ const WarehousesList = () => {
 
     const fetchTotalItemsInWarehouse = async (warehouseId) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/items/warehouse/${warehouseId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch items');
-            }
-
-            const items = await response.json();
+            const items = await itemService.getItemsByWarehouse(warehouseId);
             const inWarehouseItems = items.filter(item => item.itemStatus === 'IN_WAREHOUSE');
             const total = inWarehouseItems.reduce((sum, item) => sum + item.quantity, 0);
 

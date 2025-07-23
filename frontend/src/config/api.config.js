@@ -422,7 +422,9 @@ export const WAREHOUSE_ENDPOINTS = {
     ITEMS: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}`,
     CREATE: '/api/v1/warehouses',
     UPDATE: (id) => `/api/v1/warehouses/${id}`,
-    DELETE: (id) => `/api/v1/warehouses/${id}`
+    DELETE: (id) => `/api/v1/warehouses/${id}`,
+    BY_EMPLOYEES: (warehouseId) => `/api/v1/warehouses/${warehouseId}/employees`
+
 };
 
 // Maintenance Type module endpoints
@@ -448,4 +450,47 @@ export const INSITE_MAINTENANCE_ENDPOINTS = {
     CHECK_TRANSACTION: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`,
     VALIDATE_TRANSACTION: (equipmentId, maintenanceId, transactionId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}/validate-transaction/${transactionId}`,
     ANALYTICS: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/analytics`
+};
+
+// Item module endpoints
+export const ITEM_ENDPOINTS = {
+    BASE: '/api/v1/items',
+    BY_ID: (itemId) => `/api/v1/items/${itemId}`,
+    CREATE: '/api/v1/items',
+    DELETE: (itemId) => `/api/v1/items/${itemId}`,
+
+    // Warehouse-related endpoints
+    BY_WAREHOUSE: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}`,
+    WAREHOUSE_DISCREPANCIES: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/discrepancies`,
+    WAREHOUSE_RESOLVED: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/resolved`,
+    WAREHOUSE_STOLEN: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/stolen`,
+    WAREHOUSE_OVERRECEIVED: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/overreceived`,
+    WAREHOUSE_COUNTS: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/counts`,
+    WAREHOUSE_ACTIVE: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/active`,
+    WAREHOUSE_SUMMARY: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/summary`,
+
+    // Resolution endpoints
+    RESOLVE_DISCREPANCY: '/api/v1/items/resolve-discrepancy',
+    ITEM_RESOLUTIONS: (itemId) => `/api/v1/items/${itemId}/resolutions`,
+    RESOLUTIONS_BY_USER: (username) => `/api/v1/items/resolutions/user/${username}`,
+    RESOLUTION_HISTORY_BY_WAREHOUSE: (warehouseId) => `/api/v1/items/resolution-history/warehouse/${warehouseId}`,
+
+    // Item capabilities
+    CAN_RESOLVE: (itemId) => `/api/v1/items/${itemId}/can-resolve`,
+
+    // Transaction details
+    TRANSACTION_DETAILS: (warehouseId, itemTypeId) => `/api/v1/items/transaction-details/${warehouseId}/${itemTypeId}`
+};
+
+export const WAREHOUSE_EMPLOYEE_ENDPOINTS = {
+    BASE: '/api/v1/warehouseEmployees',
+    WAREHOUSE_EMPLOYEES: '/api/v1/warehouseEmployees/warehouse-employees',
+    ASSIGN_WAREHOUSE: (employeeId) => `/api/v1/warehouseEmployees/${employeeId}/assign-warehouse`,
+    UNASSIGN_WAREHOUSE: (employeeId) => `/api/v1/warehouseEmployees/${employeeId}/unassign-warehouse`,
+    BY_USERNAME_ASSIGNMENTS: (username) => `/api/v1/warehouseEmployees/by-username/${username}/assignments`,
+    WAREHOUSE_ASSIGNED_USERS: (warehouseId) => `/api/v1/warehouses/${warehouseId}/assigned-users-dto`,
+    EMPLOYEE_WAREHOUSES: (employeeId) => `/api/v1/warehouseEmployees/${employeeId}/warehouses`,
+    ASSIGNMENT_DETAILS: (employeeId, warehouseId) => `/api/v1/warehouseEmployees/${employeeId}/warehouses/${warehouseId}/assignment`,
+    EMPLOYEE_ASSIGNMENTS: (employeeId) => `/api/v1/warehouseEmployees/${employeeId}/assignments`,
+    CHECK_WAREHOUSE_ACCESS: (employeeId, warehouseId) => `/api/v1/warehouseEmployees/${employeeId}/warehouses/${warehouseId}/access`
 };

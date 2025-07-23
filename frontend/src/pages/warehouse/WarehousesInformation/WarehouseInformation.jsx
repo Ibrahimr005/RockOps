@@ -5,6 +5,7 @@ import { BsPrinter } from "react-icons/bs";
 import { IoDocumentOutline } from "react-icons/io5";
 import warehouseimg1 from "../../../assets/imgs/warehouse1.jpg";
 import "./WarehouseInformation.scss";
+import { warehouseService } from "../../../services/warehouse/warehouseService";
 
 const WarehouseInformation = () => {
   const { id } = useParams();
@@ -15,21 +16,8 @@ const WarehouseInformation = () => {
   useEffect(() => {
     const fetchWarehouseDetails = async () => {
       try {
-        const response = await fetch(`http://localhost:8080/api/v1/warehouses/${id}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch warehouse data");
-        }
-
-        const data = await response.json();
+        const data = await warehouseService.getById(id);
         console.log(JSON.stringify(data, null, 2));
-
         setWarehouseData(data);
       } catch (error) {
         setError(error.message);
