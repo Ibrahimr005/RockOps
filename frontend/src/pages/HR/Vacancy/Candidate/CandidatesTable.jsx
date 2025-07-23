@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import './CandidatesTable.scss';
 import AddCandidateModal from './AddCandidateModal';
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import { candidateService } from '../../../../services/hr/candidateService.js';
+import { vacancyService } from "../../../../services/hr/vacancyService.js";
+import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
 import { FaFilePdf, FaUserCheck, FaTrashAlt } from 'react-icons/fa';
-import {vacancyService} from "../../../../services/hr/vacancyService.js";
 
 const CandidatesTable = ({ vacancyId }) => {
     const navigate = useNavigate();
@@ -14,171 +16,164 @@ const CandidatesTable = ({ vacancyId }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [confirmDialog, setConfirmDialog] = useState({
+        isVisible: false,
+        type: 'warning',
+        title: '',
+        message: '',
+        onConfirm: null
+    });
+    const [actionLoading, setActionLoading] = useState(false);
 
-    // Fetch candidates for the vacancy
+    const { showSuccess, showError } = useSnackbar();
+
+    // Fetch candidates and vacancy stats
     useEffect(() => {
-        const fetchCandidates = async () => {
-            try {
-                setLoading(true);
-                const response = await candidateService.getByVacancy(vacancyId);
-                setCandidates(response.data);
-                setLoading(false);
-            } catch (error) {
-                console.error('Error fetching candidates:', error);
-                setError(error.message);
-                setLoading(false);
-            }
-        };
-
-        const fetchVacancyStats = async () => {
-            try {
-
-                const response = await vacancyService.getStatistics();
-                setVacancyStats(response.data);
-                setLoading(false);
-
-            } catch (error) {
-                setError(error.message);
-                setLoading(false);
-                console.error('Error fetching vacancy stats:', error);
-            }
-        };
-
         if (vacancyId) {
-            fetchCandidates();
-            fetchVacancyStats();
+            fetchCandidatesAndStats();
         }
     }, [vacancyId]);
+
+    const fetchCandidatesAndStats = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            // Fetch candidates and vacancy stats in parallel
+            const [candidatesResponse, statsResponse] = await Promise.all([
+                candidateService.getByVacancy(vacancyId),
+                vacancyService.getStatistics(vacancyId)
+            ]);
+
+            setCandidates(candidatesResponse.data || []);
+            setVacancyStats(statsResponse.data);
+
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch data';
+            setError(errorMessage);
+            showError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Handle adding a new candidate
     const handleAddCandidate = async (formData) => {
         try {
-            setLoading(true);
-            setError(null); // Clear any previous errors
-            
-            console.log('Submitting candidate data:', formData); // Debug log
-            
+            setActionLoading(true);
+            setError(null);
+
+            console.log('Submitting candidate data:', formData);
+
             const response = await candidateService.create(formData);
-            console.log('Candidate created successfully:', response); // Debug log
-            
-            await refreshData();
+            console.log('Candidate created successfully:', response);
+
+            await fetchCandidatesAndStats();
             setShowAddModal(false);
+            showSuccess('Candidate added successfully');
+
         } catch (error) {
             console.error('Error adding candidate:', error);
             console.error('Error details:', error.response?.data || error.message);
-            
-            // Set a more descriptive error message
-            const errorMessage = error.response?.data?.message || 
-                                error.response?.data?.error || 
-                                error.message || 
-                                'Failed to add candidate';
+
+            const errorMessage = error.response?.data?.message ||
+                error.response?.data?.error ||
+                error.message ||
+                'Failed to add candidate';
             setError(errorMessage);
+            showError(errorMessage);
         } finally {
-            setLoading(false); // Always reset loading state
+            setActionLoading(false);
         }
     };
 
     // Handle deleting a candidate
-    const handleDeleteCandidate = async (candidateId) => {
-        if (!window.confirm('Are you sure you want to delete this candidate?')) {
-            return;
-        }
-
-        try {
-            setLoading(true);
-            await candidateService.delete(candidateId);
-            await refreshData();
-        } catch (error) {
-            console.error('Error deleting candidate:', error);
-            setError(error.message);
-        } finally {
-            setLoading(false);
-        }
+    const handleDeleteCandidate = (candidate) => {
+        setConfirmDialog({
+            isVisible: true,
+            type: 'danger',
+            title: 'Delete Candidate',
+            message: `Are you sure you want to delete candidate "${candidate.firstName} ${candidate.lastName}"? This action cannot be undone.`,
+            onConfirm: async () => {
+                setActionLoading(true);
+                try {
+                    await candidateService.delete(candidate.id);
+                    await fetchCandidatesAndStats();
+                    showSuccess('Candidate deleted successfully');
+                } catch (error) {
+                    console.error('Error deleting candidate:', error);
+                    const errorMessage = error.response?.data?.message || error.message || 'Failed to delete candidate';
+                    showError(errorMessage);
+                } finally {
+                    setActionLoading(false);
+                    setConfirmDialog(prev => ({ ...prev, isVisible: false }));
+                }
+            }
+        });
     };
 
     // Handle hiring a candidate
-    const handleHireCandidate = async (candidateId) => {
-        if (!window.confirm('Are you sure you want to hire this candidate?')) {
+    const handleHireCandidate = (candidate) => {
+        const isVacancyFull = vacancyStats?.isFull && candidate.candidateStatus !== 'POTENTIAL';
+
+        if (isVacancyFull) {
+            showError('Cannot hire candidate. Vacancy is full and candidate is not in potential list.');
             return;
         }
 
-        try {
-            setLoading(true);
-            const token = localStorage.getItem('token');
+        setConfirmDialog({
+            isVisible: true,
+            type: 'success',
+            title: 'Hire Candidate',
+            message: `Are you sure you want to hire "${candidate.firstName} ${candidate.lastName}"? This will convert them to an employee and update the vacancy position count.`,
+            onConfirm: async () => {
+                setActionLoading(true);
+                try {
+                    // First hire the candidate (this updates the vacancy position count)
+                    await vacancyService.hireCandidate(candidate.id);
 
-            // First hire the candidate (this updates the vacancy position count)
-            const hireResponse = await fetch(`http://localhost:8080/api/v1/vacancies/hire-candidate/${candidateId}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    // Then convert to employee
+                    const employeeDataResponse = await candidateService.convertToEmployee(candidate.id);
+                    sessionStorage.setItem('prepopulatedEmployeeData', JSON.stringify(employeeDataResponse.data));
+
+                    showSuccess('Candidate hired successfully! Redirecting to employee creation...');
+                    navigate('/hr/employees/add');
+
+                } catch (error) {
+                    console.error('Error hiring candidate:', error);
+                    const errorMessage = error.response?.data?.error ||
+                        error.response?.data?.message ||
+                        error.message ||
+                        'Failed to hire candidate';
+                    showError(`Failed to hire candidate: ${errorMessage}`);
+                } finally {
+                    setActionLoading(false);
+                    setConfirmDialog(prev => ({ ...prev, isVisible: false }));
                 }
-            });
-
-            if (!hireResponse.ok) {
-                const errorData = await hireResponse.json();
-                throw new Error(errorData.error || 'Failed to hire candidate');
             }
-
-            // Then convert to employee
-            const employeeData = await candidateService.convertToEmployee(candidateId);
-            sessionStorage.setItem('prepopulatedEmployeeData', JSON.stringify(employeeData.data));
-            navigate('/employees/add');
-        } catch (error) {
-            console.error('Error hiring candidate:', error);
-            setError(error.message);
-            alert(`Failed to hire candidate: ${error.message}`);
-        } finally {
-            setLoading(false);
-        }
+        });
     };
 
     // Update candidate status
     const handleUpdateCandidateStatus = async (candidateId, newStatus) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/candidates/${candidateId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ status: newStatus })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            await refreshData();
+            setActionLoading(true);
+            await candidateService.updateStatus(candidateId, newStatus);
+            await fetchCandidatesAndStats();
+            showSuccess('Candidate status updated successfully');
         } catch (error) {
             console.error('Error updating candidate status:', error);
-            setError(error.message);
+            const errorMessage = error.response?.data?.message || error.message || 'Failed to update candidate status';
+            showError(errorMessage);
+        } finally {
+            setActionLoading(false);
         }
     };
 
-    // Refresh both candidates and vacancy stats
-    const refreshData = async () => {
-        try {
-            const response = await candidateService.getByVacancy(vacancyId);
-            setCandidates(response.data);
-
-            const token = localStorage.getItem('token');
-            const statsResponse = await fetch(`http://localhost:8080/api/v1/vacancies/${vacancyId}/statistics`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (statsResponse.ok) {
-                const statsData = await statsResponse.json();
-                setVacancyStats(statsData);
-            }
-        } catch (error) {
-            console.error('Error refreshing data:', error);
-        }
+    // Handle dialog cancel
+    const handleDialogCancel = () => {
+        setConfirmDialog(prev => ({ ...prev, isVisible: false }));
     };
 
     // Format date
@@ -195,7 +190,7 @@ const CandidatesTable = ({ vacancyId }) => {
         const closing = new Date(closingDate);
         const diffTime = closing - today;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+
         if (diffDays < 0) return 'Closed';
         if (diffDays === 0) return 'Today';
         return `${diffDays} days`;
@@ -272,17 +267,27 @@ const CandidatesTable = ({ vacancyId }) => {
         {
             label: 'Hire',
             icon: <FaUserCheck />,
-            onClick: (row) => handleHireCandidate(row.id),
+            onClick: (row) => handleHireCandidate(row),
             isDisabled: (row) => row.candidateStatus === 'HIRED' || (vacancyStats?.isFull && row.candidateStatus !== 'POTENTIAL'),
             className: 'hire-btn'
         },
         {
             label: 'Delete',
             icon: <FaTrashAlt />,
-            onClick: (row) => handleDeleteCandidate(row.id),
+            onClick: (row) => handleDeleteCandidate(row),
             className: 'delete-btn'
         }
     ];
+
+    if (!vacancyId) {
+        return (
+            <div className="candidates-section">
+                <div className="error-alert">
+                    <strong>Error:</strong> No vacancy ID provided
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="candidates-section">
@@ -321,9 +326,9 @@ const CandidatesTable = ({ vacancyId }) => {
                             <div className="vacancy-stat-label">Filled</div>
                         </div>
                         <div className="vacancy-stat-card">
-                            <div className={`vacancy-stat-number ${calculateRemainingDays(vacancyStats.closingDate) === 'Closed' ? 'remaining-days-closed' : 
-                                calculateRemainingDays(vacancyStats.closingDate) === 'Today' ? 'remaining-days-today' : 
-                                parseInt(calculateRemainingDays(vacancyStats.closingDate)) <= 7 ? 'remaining-days-urgent' : 'remaining-days-normal'}`}>
+                            <div className={`vacancy-stat-number ${calculateRemainingDays(vacancyStats.closingDate) === 'Closed' ? 'remaining-days-closed' :
+                                calculateRemainingDays(vacancyStats.closingDate) === 'Today' ? 'remaining-days-today' :
+                                    parseInt(calculateRemainingDays(vacancyStats.closingDate)) <= 7 ? 'remaining-days-urgent' : 'remaining-days-normal'}`}>
                                 {calculateRemainingDays(vacancyStats.closingDate)}
                             </div>
                             <div className="vacancy-stat-label">Time Remaining</div>
@@ -343,14 +348,14 @@ const CandidatesTable = ({ vacancyId }) => {
                 <button
                     className="btn-primary"
                     onClick={() => setShowAddModal(true)}
-                    disabled={loading}
+                    disabled={loading || actionLoading}
                 >
-                    {loading ? 'Loading...' : 'Add Candidate'}
+                    {actionLoading ? 'Processing...' : loading ? 'Loading...' : 'Add Candidate'}
                 </button>
             </div>
 
             <DataTable
-                data={candidates || []} // Ensure data is always an array
+                data={candidates}
                 columns={columns}
                 actions={actions}
                 loading={loading}
@@ -362,13 +367,29 @@ const CandidatesTable = ({ vacancyId }) => {
                 itemsPerPageOptions={[10, 25, 50, 100]}
             />
 
+            {/* Add Candidate Modal */}
             {showAddModal && (
                 <AddCandidateModal
                     onClose={() => setShowAddModal(false)}
                     onSave={handleAddCandidate}
                     vacancyId={vacancyId}
+                    isLoading={actionLoading}
                 />
             )}
+
+            {/* Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={confirmDialog.isVisible}
+                type={confirmDialog.type}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                confirmText="Yes, Proceed"
+                cancelText="Cancel"
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={handleDialogCancel}
+                isLoading={actionLoading}
+                size="medium"
+            />
         </div>
     );
 };
