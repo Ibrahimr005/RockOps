@@ -16,6 +16,7 @@ import PayslipsTab from '../tabs/PayslipsTab.jsx';
 import VacationTab from '../tabs/VacationTab.jsx';
 import LoadingPage from "../../../../components/common/LoadingPage/LoadingPage.jsx";
 import {FaUser} from "react-icons/fa";
+import { hrEmployeeService } from '../../../../services/hrEmployeeService';
 
 const EmployeeDetails = () => {
     const { id } = useParams();
@@ -32,22 +33,8 @@ const EmployeeDetails = () => {
     const fetchEmployeeDetails = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/hr/employee/${id}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            console.log('Employee details response:', response);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
+            const response = await hrEmployeeService.getById(id);
+            const data = response.data;
             console.log('Employee details data:', data);
             setEmployee(data);
             setLoading(false);

@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Package, Users, Warehouse, AlertTriangle, TrendingUp, Search, RefreshCw, Activity, MapPin, CheckCircle, ArrowUp, ArrowDown, Eye, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
 import './WarehouseDashboard.scss';
+import { warehouseService } from '../../../services/warehouseService';
+import { itemTypeService } from '../../../services/itemTypeService';
+import { itemCategoryService } from '../../../services/itemCategoryService';
 
 const WarehouseManagerDashboard = () => {
     const [loading, setLoading] = useState(false);
@@ -17,21 +20,16 @@ const WarehouseManagerDashboard = () => {
     const [warehouseSummaries, setWarehouseSummaries] = useState({});
     const [itemCounts, setItemCounts] = useState({});
 
-    const API_BASE_URL = 'http://localhost:8080/api/v1';
+    // Remove the hardcoded API_BASE_URL
+    // const API_BASE_URL = 'http://localhost:8080/api/v1';
 
     // API Functions
     const fetchWarehouses = async () => {
         try {
-            const token = localStorage.getItem("token");
-            if (!token) throw new Error("No authentication token found");
-            const response = await fetch(`${API_BASE_URL}/warehouses`, {
-                headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setWarehouses(data);
-                return data;
-            }
+            const response = await warehouseService.getAll();
+            const data = response.data;
+            setWarehouses(data);
+            return data;
         } catch (error) {
             console.error('Error fetching warehouses:', error);
         }
@@ -40,16 +38,10 @@ const WarehouseManagerDashboard = () => {
 
     const fetchItemTypes = async () => {
         try {
-            const token = localStorage.getItem("token");
-            if (!token) throw new Error("No authentication token found");
-            const response = await fetch(`${API_BASE_URL}/itemTypes`, {
-                headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setItemTypes(data);
-                return data;
-            }
+            const response = await itemTypeService.getAll();
+            const data = response.data;
+            setItemTypes(data);
+            return data;
         } catch (error) {
             console.error('Error fetching item types:', error);
         }
@@ -58,16 +50,10 @@ const WarehouseManagerDashboard = () => {
 
     const fetchItemCategories = async () => {
         try {
-            const token = localStorage.getItem("token");
-            if (!token) throw new Error("No authentication token found");
-            const response = await fetch(`${API_BASE_URL}/itemCategories`, {
-                headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setItemCategories(data);
-                return data;
-            }
+            const response = await itemCategoryService.getAll();
+            const data = response.data;
+            setItemCategories(data);
+            return data;
         } catch (error) {
             console.error('Error fetching item categories:', error);
         }
@@ -76,12 +62,8 @@ const WarehouseManagerDashboard = () => {
 
     const fetchWarehouseItems = async (warehouseId) => {
         try {
-            const token = localStorage.getItem("token");
-            if (!token) throw new Error("No authentication token found");
-            const response = await fetch(`${API_BASE_URL}/items/warehouse/${warehouseId}`, {
-                headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
-            });
-            if (response.ok) return await response.json();
+            const response = await warehouseService.getItems(warehouseId);
+            return response.data;
         } catch (error) {
             console.error(`Error fetching items for warehouse ${warehouseId}:`, error);
         }
@@ -90,12 +72,8 @@ const WarehouseManagerDashboard = () => {
 
     const fetchWarehouseSummary = async (warehouseId) => {
         try {
-            const token = localStorage.getItem("token");
-            if (!token) throw new Error("No authentication token found");
-            const response = await fetch(`${API_BASE_URL}/items/warehouse/${warehouseId}/summary`, {
-                headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
-            });
-            if (response.ok) return await response.json();
+            const response = await warehouseService.getSummary(warehouseId);
+            return response.data;
         } catch (error) {
             console.error(`Error fetching summary for warehouse ${warehouseId}:`, error);
         }
@@ -104,12 +82,8 @@ const WarehouseManagerDashboard = () => {
 
     const fetchWarehouseItemCounts = async (warehouseId) => {
         try {
-            const token = localStorage.getItem("token");
-            if (!token) throw new Error("No authentication token found");
-            const response = await fetch(`${API_BASE_URL}/items/warehouse/${warehouseId}/counts`, {
-                headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
-            });
-            if (response.ok) return await response.json();
+            const response = await warehouseService.getCounts(warehouseId);
+            return response.data;
         } catch (error) {
             console.error(`Error fetching counts for warehouse ${warehouseId}:`, error);
         }

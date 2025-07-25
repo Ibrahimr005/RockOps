@@ -4,6 +4,7 @@ import './CandidatesTable.scss';
 import AddCandidateModal from './AddCandidateModal';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import { candidateService } from '../../../../services/candidateService';
+import { vacancyService } from '../../../../services/vacancyService';
 import { FaFilePdf, FaUserCheck, FaTrashAlt } from 'react-icons/fa';
 
 const CandidatesTable = ({ vacancyId }) => {
@@ -31,19 +32,9 @@ const CandidatesTable = ({ vacancyId }) => {
 
         const fetchVacancyStats = async () => {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:8080/api/v1/vacancies/${vacancyId}/statistics`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    const stats = await response.json();
-                    setVacancyStats(stats);
-                }
+                const response = await vacancyService.getStatistics(vacancyId);
+                const stats = response.data;
+                setVacancyStats(stats);
             } catch (error) {
                 console.error('Error fetching vacancy stats:', error);
             }
@@ -109,21 +100,9 @@ const CandidatesTable = ({ vacancyId }) => {
 
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
 
             // First hire the candidate (this updates the vacancy position count)
-            const hireResponse = await fetch(`http://localhost:8080/api/v1/vacancies/hire-candidate/${candidateId}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!hireResponse.ok) {
-                const errorData = await hireResponse.json();
-                throw new Error(errorData.error || 'Failed to hire candidate');
-            }
+            await candidateService.hireCandidate(candidateId);
 
             // Then convert to employee
             const employeeData = await candidateService.convertToEmployee(candidateId);
@@ -165,24 +144,15 @@ const CandidatesTable = ({ vacancyId }) => {
     // Refresh both candidates and vacancy stats
     const refreshData = async () => {
         try {
-            const response = await candidateService.getByVacancy(vacancyId);
-            setCandidates(response.data);
+            const candidatesResponse = await candidateService.getByVacancy(vacancyId);
+            setCandidates(candidatesResponse.data);
 
-            const token = localStorage.getItem('token');
-            const statsResponse = await fetch(`http://localhost:8080/api/v1/vacancies/${vacancyId}/statistics`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (statsResponse.ok) {
-                const statsData = await statsResponse.json();
-                setVacancyStats(statsData);
-            }
+            const statsResponse = await vacancyService.getStatistics(vacancyId);
+            const statsData = statsResponse.data;
+            setVacancyStats(statsData);
         } catch (error) {
             console.error('Error refreshing data:', error);
+            setError(error.message);
         }
     };
 

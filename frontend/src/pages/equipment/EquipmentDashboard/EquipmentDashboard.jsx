@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Clock, Package, Wrench, TrendingUp, Activity, AlertTriangle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import './EquipmentDashboard.scss';
+import { equipmentService } from '../../../services/equipmentService';
 
 const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
     const [loading, setLoading] = useState(true);
@@ -37,11 +38,11 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                 maintenanceResponse
             ] = await Promise.allSettled([
                 // Fetch consumables data
-                axiosInstance.get(`http://localhost:8080/api/equipment/${equipmentId}/consumables`),
+                equipmentService.getConsumables(equipmentId),
                 // Fetch work hours (sarky) data
-                axiosInstance.get(`http://localhost:8080/api/v1/equipment/${equipmentId}/sarky`),
+                equipmentService.getSarky(equipmentId),
                 // Fetch maintenance data (using same endpoint as InSiteMaintenanceLog)
-                axiosInstance.get(`http://localhost:8080/api/equipment/${equipmentId}/maintenance`)
+                equipmentService.getMaintenance(equipmentId)
             ]);
 
             // Process consumables data

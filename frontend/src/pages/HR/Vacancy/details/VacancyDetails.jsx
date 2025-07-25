@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './VacancyDetails.scss';
 import CandidatesTable from "../Candidate/CandidatesTable.jsx";
+import { vacancyService } from '../../../../services/vacancyService';
 
 
 const VacancyDetails = () => {
@@ -17,20 +18,8 @@ const VacancyDetails = () => {
         const fetchVacancyDetails = async () => {
             try {
                 setLoading(true);
-                const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:8080/api/v1/vacancies/${id}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-
-                const data = await response.json();
+                const response = await vacancyService.getById(id);
+                const data = response.data;
                 setVacancy(data);
                 setLoading(false);
             } catch (error) {

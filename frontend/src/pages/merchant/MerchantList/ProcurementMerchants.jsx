@@ -8,6 +8,8 @@ import Snackbar from '../../../components/common/Snackbar/Snackbar.jsx'
 import MerchantModal from './MerchantModal.jsx'; // Import the new wizard component
 import IntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx'; // Add this import
+import { merchantService } from '../../../services/merchantService';
+import { siteService } from '../../../services/siteService';
 
 const ProcurementMerchants = () => {
     const [merchants, setMerchants] = useState([]);
@@ -48,44 +50,22 @@ const ProcurementMerchants = () => {
     });
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
         setLoading(true);
 
-        // Fetch merchants
-        fetch('http://localhost:8080/api/v1/merchants', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to fetch');
-                return response.json();
-            })
-            .then(data => {
-                setMerchants(data);
+        // Fetch merchants and sites
+        Promise.all([
+            merchantService.getAll(),
+            siteService.getAll()
+        ])
+            .then(([merchantsResponse, sitesResponse]) => {
+                setMerchants(merchantsResponse.data);
+                setSites(sitesResponse.data);
                 setLoading(false);
             })
             .catch(error => {
-                console.error('Error fetching merchants:', error);
+                console.error('Error fetching data:', error);
                 setError(error.message);
                 setLoading(false);
-            });
-
-        // Fetch sites for the dropdown
-        fetch('http://localhost:8080/api/v1/site', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to fetch sites');
-                return response.json();
-            })
-            .then(data => {
-                setSites(data);
-            })
-            .catch(error => {
-                console.error('Error fetching sites:', error);
             });
     }, []);
 
@@ -136,37 +116,19 @@ const ProcurementMerchants = () => {
         if (!merchantToDelete) return;
 
         setDeleteLoading(true);
-        const token = localStorage.getItem('token');
 
         try {
-            const response = await fetch(`http://localhost:8080/api/v1/procurement/${merchantToDelete.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            await merchantService.delete(merchantToDelete.id);
 
-            if (!response.ok) {
-                throw new Error('Failed to delete merchant');
-            }
-
-            // Remove merchant from the list
-            setMerchants(merchants.filter(m => m.id !== merchantToDelete.id));
-
-            // Show success message
-            setSnackbarMessage(`Merchant "${merchantToDelete.name}" successfully deleted`);
-            setSnackbarType("success");
-            setShowSnackbar(true);
-
-        } catch (error) {
-            console.error('Error deleting merchant:', error);
-            setSnackbarMessage("Failed to delete merchant. Please try again.");
-            setSnackbarType("error");
-            setShowSnackbar(true);
-        } finally {
-            setDeleteLoading(false);
+            // Remove from local state
+            setMerchants(prev => prev.filter(m => m.id !== merchantToDelete.id));
             setShowDeleteDialog(false);
             setMerchantToDelete(null);
+            setDeleteLoading(false);
+        } catch (error) {
+            console.error('Error deleting merchant:', error);
+            setError('Failed to delete merchant');
+            setDeleteLoading(false);
         }
     };
 

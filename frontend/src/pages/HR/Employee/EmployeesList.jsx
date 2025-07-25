@@ -10,6 +10,7 @@ import { employeeService } from '../../../services/employeeService';
 import { hrEmployeeService } from '../../../services/hrEmployeeService';
 import { departmentService } from '../../../services/departmentService';
 import { jobPositionService } from '../../../services/jobPositionService';
+import {siteService} from "../../../services/siteService.js";
 
 const EmployeesList = () => {
     const { showSuccess, showError } = useSnackbar();
@@ -224,13 +225,7 @@ const EmployeesList = () => {
         try {
             // Note: You'll need to create a site service or use the appropriate endpoint
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/site', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await siteService.getAll()
 
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);

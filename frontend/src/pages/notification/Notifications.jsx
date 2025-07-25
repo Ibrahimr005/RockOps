@@ -24,6 +24,7 @@ import ConfirmationDialog from '../../components/common/ConfirmationDialog/Confi
 import notificationLight from '../../assets/imgs/notificationlight.png';
 import notificationDark from '../../assets/imgs/notificationdark.png';
 import './Notifications.scss';
+import { notificationService } from '../../services/notificationService';
 
 const Notifications = () => {
     const { currentUser, token } = useAuth();
@@ -76,18 +77,8 @@ const Notifications = () => {
     const fetchNotifications = async () => {
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:8080/api/notifications', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch notifications');
-            }
-
-            const data = await response.json();
+            const response = await notificationService.getAll();
+            const data = response.data;
             setNotifications(data);
             console.log('Notifications fetched:', data);
         } catch (error) {
@@ -109,7 +100,7 @@ const Notifications = () => {
             const { Client } = await import('@stomp/stompjs');
 
             const stompClient = new Client({
-                brokerURL: 'ws://localhost:8080/ws-native',
+                brokerURL: notificationService.getWebSocketUrl(),
                 connectHeaders: {
                     'Authorization': `Bearer ${token}`
                 },
@@ -338,133 +329,80 @@ const Notifications = () => {
     };
 
     const deleteNotification = async (notificationId) => {
-        setConfirmDialog({
-            isVisible: true,
-            type: 'delete',
-            title: 'Delete Notification',
-            message: 'Are you sure you want to delete this notification? This action cannot be undone.',
-            onConfirm: async () => {
-                setConfirmDialog(prev => ({ ...prev, isLoading: true }));
-
-                try {
-                    const response = await fetch(`http://localhost:8080/api/notifications/${notificationId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to delete notification');
-                    }
-
-                    setNotifications(prev => prev.filter(n => n.id !== notificationId));
-                    showSnackbar('Notification deleted successfully');
-                    setConfirmDialog({ isVisible: false, type: 'warning', title: '', message: '', onConfirm: null, isLoading: false });
-                } catch (error) {
-                    console.error('Failed to delete notification:', error);
-                    showSnackbar('Failed to delete notification', 'error');
-                    setConfirmDialog(prev => ({ ...prev, isLoading: false }));
-                }
-            },
-            isLoading: false
-        });
+        try {
+            await notificationService.delete(notificationId);
+            showSnackbar('Notification deleted successfully', 'success');
+            fetchNotifications(); // Refresh the list
+        } catch (error) {
+            console.error('Failed to delete notification:', error);
+            showSnackbar('Failed to delete notification', 'error');
+        }
     };
 
     const markAllAsRead = async () => {
-        if (!stompClientRef.current?.connected) {
-            showSnackbar('Not connected to notification service', 'error');
-            return;
-        }
-
         try {
-            // Get the notifications that match the current filter
-            const notificationsToUpdate = filteredNotifications.filter(n => !n.read);
+            setLoading(true);
+            let successCount = 0;
+            let errorCount = 0;
 
-            if (notificationsToUpdate.length === 0) {
-                showSnackbar('No unread notifications to mark as read', 'info');
-                return;
+            // Mark each unread notification as read
+            for (const notification of notifications.filter(n => !n.read)) {
+                try {
+                    await notificationService.markAsRead(notification.id);
+                    successCount++;
+                } catch (error) {
+                    console.error(`Failed to mark notification ${notification.id} as read:`, error);
+                    errorCount++;
+                }
             }
 
-            // Mark each notification as read
-            for (const notification of notificationsToUpdate) {
-                stompClientRef.current.publish({
-                    destination: '/app/markAsRead',
-                    body: JSON.stringify({
-                        notificationId: notification.id,
-                        userId: currentUser.id
-                    })
-                });
+            if (successCount > 0) {
+                showSnackbar(`Marked ${successCount} notifications as read`, 'success');
+                fetchNotifications(); // Refresh the list
             }
 
-            // Update local state
-            setNotifications(prev =>
-                prev.map(notification =>
-                    notificationsToUpdate.some(n => n.id === notification.id)
-                        ? { ...notification, read: true }
-                        : notification
-                )
-            );
-
-            const filterText = filter === 'all' ? 'all' : `${filter}`;
-            showSnackbar(`Marked ${notificationsToUpdate.length} ${filterText} notifications as read`, 'success');
+            if (errorCount > 0) {
+                showSnackbar(`Failed to mark ${errorCount} notifications as read`, 'error');
+            }
         } catch (error) {
             console.error('Failed to mark all as read:', error);
-            showSnackbar('Failed to update notifications', 'error');
+            showSnackbar('Failed to mark all notifications as read', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
     const clearAllNotifications = async () => {
-        const filterText = filter === 'all' ? 'all' : `${filter}`;
-        const notificationsToDelete = filteredNotifications;
+        try {
+            setLoading(true);
+            let successCount = 0;
+            let errorCount = 0;
 
-        if (notificationsToDelete.length === 0) {
-            showSnackbar(`No ${filterText} notifications to clear`, 'info');
-            return;
-        }
-
-        setConfirmDialog({
-            isVisible: true,
-            type: 'delete',
-            title: `Clear All ${filterText.charAt(0).toUpperCase() + filterText.slice(1)} Notifications`,
-            message: `Are you sure you want to clear all ${filterText} notifications? This action cannot be undone.`,
-            onConfirm: async () => {
-                setConfirmDialog(prev => ({ ...prev, isLoading: true }));
-
+            // Delete each notification individually
+            for (const notification of notifications) {
                 try {
-                    // Delete each notification individually
-                    for (const notification of notificationsToDelete) {
-                        const response = await fetch(`http://localhost:8080/api/notifications/${notification.id}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            }
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Failed to delete notification');
-                        }
-                    }
-
-                    // Remove from local state
-                    setNotifications(prev =>
-                        prev.filter(notification =>
-                            !notificationsToDelete.some(n => n.id === notification.id)
-                        )
-                    );
-
-                    showSnackbar(`Cleared all notifications successfully`, 'success');
-                    setConfirmDialog({ isVisible: false, type: 'warning', title: '', message: '', onConfirm: null, isLoading: false });
+                    await notificationService.delete(notification.id);
+                    successCount++;
                 } catch (error) {
-                    console.error('Failed to clear notifications:', error);
-                    showSnackbar('Failed to clear notifications', 'error');
-                    setConfirmDialog(prev => ({ ...prev, isLoading: false }));
+                    console.error(`Failed to delete notification ${notification.id}:`, error);
+                    errorCount++;
                 }
-            },
-            isLoading: false
-        });
+            }
+
+            if (successCount > 0) {
+                showSnackbar(`Deleted ${successCount} notifications`, 'success');
+                fetchNotifications(); // Refresh the list
+            }
+
+            if (errorCount > 0) {
+                showSnackbar(`Failed to delete ${errorCount} notifications`, 'error');
+            }
+        } catch (error) {
+            console.error('Failed to clear all notifications:', error);
+            showSnackbar('Failed to clear all notifications', 'error');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const getTimeAgo = (dateString) => {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiSearch, FiCheckCircle } from 'react-icons/fi';
 import "./PurchaseOrders.scss";
 import offersImage from "../../../../assets/imgs/pro_icon.png";
+import { purchaseOrderService } from '../../../../services/purchaseOrderService';
 
 const PurchaseOrders = () => {
     const [purchaseOrders, setPurchaseOrders] = useState([]);
@@ -12,38 +13,17 @@ const PurchaseOrders = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
 
-    // Define your API URL based on your project setup
-    const API_URL =  'http://localhost:8080/api/v1';
-
     useEffect(() => {
         fetchPurchaseOrders();
     }, [activeTab]);
-
-    const fetchWithAuth = async (url, options = {}) => {
-        const token = localStorage.getItem('token');
-        const defaultOptions = {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-        };
-
-        const response = await fetch(url, { ...defaultOptions, ...options });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        return response.json();
-    };
 
     const fetchPurchaseOrders = async () => {
         try {
             setLoading(true);
 
-            // Using the getAllPurchaseOrders endpoint
-            const endpoint = `${API_URL}/purchaseOrders`;
-            const data = await fetchWithAuth(endpoint);
+            // Using the service to get all purchase orders
+            const response = await purchaseOrderService.getAll();
+            const data = response.data;
 
             // Filter the purchase orders based on status in the client side
             let filteredData;
