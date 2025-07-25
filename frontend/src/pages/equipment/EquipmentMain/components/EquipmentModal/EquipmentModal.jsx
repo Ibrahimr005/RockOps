@@ -4,7 +4,7 @@ import { equipmentService } from "../../../../../services/equipmentService.js";
 import { equipmentTypeService } from "../../../../../services/equipmentTypeService.js";
 import { equipmentBrandService } from "../../../../../services/equipmentBrandService.js";
 import { siteService } from "../../../../../services/siteService.js";
-import { merchantService } from "../../../../../services/merchantService.js";
+import { merchantService } from "../../../../../services/merchant/merchantService.js";
 import { documentService } from "../../../../../services/documentService.js";
 import { useSnackbar } from "../../../../../contexts/SnackbarContext.jsx";
 import DocumentUpload from '../../../../../components/equipment/DocumentUpload';

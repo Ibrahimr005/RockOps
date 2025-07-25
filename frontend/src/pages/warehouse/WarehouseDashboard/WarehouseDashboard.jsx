@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { Package, Users, Warehouse, AlertTriangle, TrendingUp, Search, RefreshCw, Activity, MapPin, CheckCircle, ArrowUp, ArrowDown, Eye, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
 import './WarehouseDashboard.scss';
-import { warehouseService } from '../../../services/warehouseService';
-import { itemTypeService } from '../../../services/itemTypeService';
-import { itemCategoryService } from '../../../services/itemCategoryService';
+
+// Import services
+import { warehouseService } from '../../../services/warehouse/warehouseService';
+import { itemService } from '../../../services/warehouse/itemService';
+import { itemTypeService } from '../../../services/warehouse/itemTypeService';
+import { itemCategoryService } from '../../../services/warehouse/itemCategoryService';
 
 const WarehouseManagerDashboard = () => {
     const [loading, setLoading] = useState(false);
@@ -20,83 +23,79 @@ const WarehouseManagerDashboard = () => {
     const [warehouseSummaries, setWarehouseSummaries] = useState({});
     const [itemCounts, setItemCounts] = useState({});
 
-    // Remove the hardcoded API_BASE_URL
-    // const API_BASE_URL = 'http://localhost:8080/api/v1';
-
-    // API Functions
+    // Service Functions
     const fetchWarehouses = async () => {
         try {
-            const response = await warehouseService.getAll();
-            const data = response.data;
+            const data = await warehouseService.getAll();
             setWarehouses(data);
             return data;
         } catch (error) {
             console.error('Error fetching warehouses:', error);
+            return [];
         }
-        return [];
     };
 
     const fetchItemTypes = async () => {
         try {
-            const response = await itemTypeService.getAll();
-            const data = response.data;
+            const data = await itemTypeService.getAll();
             setItemTypes(data);
             return data;
         } catch (error) {
             console.error('Error fetching item types:', error);
+            return [];
         }
-        return [];
     };
 
     const fetchItemCategories = async () => {
         try {
-            const response = await itemCategoryService.getAll();
-            const data = response.data;
+            const data = await itemCategoryService.getAll();
             setItemCategories(data);
             return data;
         } catch (error) {
             console.error('Error fetching item categories:', error);
+            return [];
         }
-        return [];
     };
 
     const fetchWarehouseItems = async (warehouseId) => {
         try {
-            const response = await warehouseService.getItems(warehouseId);
-            return response.data;
+            const data = await itemService.getItemsByWarehouse(warehouseId);
+            return data;
         } catch (error) {
             console.error(`Error fetching items for warehouse ${warehouseId}:`, error);
+            return [];
         }
-        return [];
     };
 
     const fetchWarehouseSummary = async (warehouseId) => {
         try {
-            const response = await warehouseService.getSummary(warehouseId);
-            return response.data;
+            const data = await itemService.getWarehouseSummary(warehouseId);
+            return data;
         } catch (error) {
             console.error(`Error fetching summary for warehouse ${warehouseId}:`, error);
+            return {};
         }
-        return {};
     };
 
     const fetchWarehouseItemCounts = async (warehouseId) => {
         try {
-            const response = await warehouseService.getCounts(warehouseId);
-            return response.data;
+            const data = await itemService.getItemStatusCounts(warehouseId);
+            return data;
         } catch (error) {
             console.error(`Error fetching counts for warehouse ${warehouseId}:`, error);
+            return {};
         }
-        return {};
     };
 
     const loadAllData = async () => {
         setLoading(true);
         try {
+            // Fetch base data
             const warehousesData = await fetchWarehouses();
             await fetchItemTypes();
             await fetchItemCategories();
 
+            // Fetch warehouse-specific data
             const allItems = [];
             const summaries = {};
             const counts = {};

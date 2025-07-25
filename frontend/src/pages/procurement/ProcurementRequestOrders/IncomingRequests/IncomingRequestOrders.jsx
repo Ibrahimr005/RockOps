@@ -4,7 +4,14 @@ import { FaPlus } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx"
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { siteService } from '../../../../services/siteService.js';
+import { warehouseService } from '../../../../services/warehouse/warehouseService.js';
+import { itemTypeService } from '../../../../services/warehouse/itemTypeService.js';
+import { employeeService } from '../../../../services/employeeService.js';
+import { requestOrderService } from '../../../../services/procurement/requestOrderService.js';
+import { offerService } from '../../../../services/procurement/offerService.js';
 import './IncomingRequestOrders.scss';
+import RequestOrderViewModal from "../RequestOrderViewModal/RequestOrderViewModal.jsx";
 
 const IncomingRequestOrders = ({
                                    onDataChange,
@@ -26,6 +33,10 @@ const IncomingRequestOrders = ({
     const [selectedRowForApproval, setSelectedRowForApproval] = useState(null);
     const [isApproving, setIsApproving] = useState(false);
 
+    // View modal states
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [selectedRequestOrder, setSelectedRequestOrder] = useState(null);
+
     // Form data and related states
     const [formData, setFormData] = useState({
         title: '',
@@ -44,73 +55,80 @@ const IncomingRequestOrders = ({
     const [warehouses, setWarehouses] = useState([]);
 
     useEffect(() => {
-        fetchSites();
-        fetchItemTypes();
-        fetchEmployees();
+        fetchInitialData();
     }, []);
+
+    const fetchInitialData = async () => {
+        try {
+            // Initialize all arrays to prevent undefined errors
+            setSites([]);
+            setItemTypes([]);
+            setEmployees([]);
+            setWarehouses([]);
+
+            await Promise.all([
+                fetchSites(),
+                fetchItemTypes(),
+                fetchEmployees()
+            ]);
+        } catch (error) {
+            console.error('Error fetching initial data:', error);
+            // Ensure all arrays are set even on error
+            setSites([]);
+            setItemTypes([]);
+            setEmployees([]);
+            setWarehouses([]);
+            showErrorNotification('Failed to load initial data');
+        }
+    };
 
     const fetchSites = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/site', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to load sites');
-            }
-
-            const data = await response.json();
-            setSites(data);
+            const data = await siteService.getAllSites();
+            setSites(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching sites:', err);
+            setSites([]); // Set empty array on error
+            showErrorNotification('Failed to load sites');
         }
     };
 
     const fetchItemTypes = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/itemTypes', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to load item types');
-            }
-
-            const data = await response.json();
-            setItemTypes(data);
+            const data = await itemTypeService.getAll();
+            setItemTypes(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching item types:', err);
+            setItemTypes([]); // Set empty array on error
+            showErrorNotification('Failed to load item types');
         }
     };
 
     const fetchEmployees = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/employees', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setEmployees(data);
-            }
+            const response = await employeeService.getAll();
+            // Handle different response structures
+            const employeesData = response.data || response;
+            setEmployees(Array.isArray(employeesData) ? employeesData : []);
         } catch (err) {
             console.error('Error fetching employees:', err);
+            setEmployees([]); // Set empty array on error
+            showErrorNotification('Failed to load employees');
         }
+    };
+
+    const showErrorNotification = (message) => {
+        console.error('Error notification:', message);
+        setNotificationMessage(String(message || 'An error occurred'));
+        setNotificationType('error');
+        setShowNotification(true);
+    };
+
+    const showSuccessNotification = (message) => {
+        console.log('Success notification:', message);
+        setNotificationMessage(String(message || 'Operation successful'));
+        setNotificationType('success');
+        setShowNotification(true);
     };
 
     const handleRowClick = (row) => {
@@ -130,19 +148,7 @@ const IncomingRequestOrders = ({
 
         try {
             // Step 1: Update the request order status
-            const token = localStorage.getItem('token');
-            const updateResponse = await fetch(`http://localhost:8080/api/v1/requestOrders/${selectedRowForApproval.id}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ status: 'APPROVED' })
-            });
-
-            if (!updateResponse.ok) {
-                throw new Error('Failed to update request order status');
-            }
+            await requestOrderService.updateStatus(selectedRowForApproval.id, 'APPROVED');
 
             // Step 2: Create a new offer based on this request order
             const offerData = {
@@ -155,26 +161,10 @@ const IncomingRequestOrders = ({
                 offerItems: []
             };
 
-            const createOfferResponse = await fetch('http://localhost:8080/api/v1/offers', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(offerData)
-            });
-
-            if (!createOfferResponse.ok) {
-                setNotificationMessage('Failed to accept request order');
-                setShowNotification(true);
-                setNotificationType("error");
-                return;
-            }
+            await offerService.create(offerData);
 
             // Success notification
-            setNotificationMessage('Request Order accepted successfully, Visit Offers to start on the offer.');
-            setShowNotification(true);
-            setNotificationType("success");
+            showSuccessNotification('Request Order accepted successfully, Visit Offers to start on the offer.');
 
             // Refresh the request orders list in parent
             if (onDataChange) {
@@ -182,9 +172,7 @@ const IncomingRequestOrders = ({
             }
         } catch (err) {
             console.error('Error approving request order:', err);
-            setNotificationMessage(`Error: ${err.message}`);
-            setShowNotification(true);
-            setNotificationType("error");
+            showErrorNotification(`Error: ${err.message || 'Failed to accept request order'}`);
         } finally {
             setIsApproving(false);
             setShowConfirmDialog(false);
@@ -201,6 +189,17 @@ const IncomingRequestOrders = ({
     const handleEditClick = (row, e) => {
         e.stopPropagation();
         handleOpenEditModal(row);
+    };
+
+    const handleViewClick = (row, e) => {
+        e.stopPropagation();
+        setSelectedRequestOrder(row);
+        setShowViewModal(true);
+    };
+
+    const handleCloseViewModal = () => {
+        setShowViewModal(false);
+        setSelectedRequestOrder(null);
     };
 
     // Handle add button click
@@ -237,24 +236,12 @@ const IncomingRequestOrders = ({
         // Fetch warehouses for the selected site
         if (siteId) {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:8080/api/v1/warehouses/site/${siteId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to load warehouses');
-                }
-
-                const data = await response.json();
-                setWarehouses(data);
+                const data = await warehouseService.getBySite(siteId);
+                setWarehouses(Array.isArray(data) ? data : []);
             } catch (err) {
                 console.error('Error fetching warehouses:', err);
                 setWarehouses([]);
+                showErrorNotification('Failed to load warehouses');
             }
         } else {
             setWarehouses([]);
@@ -265,7 +252,9 @@ const IncomingRequestOrders = ({
         const requesterId = e.target.value;
 
         // Find the selected warehouse's name
-        const selectedWarehouse = warehouses.find(warehouse => warehouse.id === requesterId);
+        const selectedWarehouse = Array.isArray(warehouses)
+            ? warehouses.find(warehouse => warehouse.id === requesterId)
+            : null;
         const requesterName = selectedWarehouse ? selectedWarehouse.name : '';
 
         setFormData(prev => ({
@@ -321,9 +310,7 @@ const IncomingRequestOrders = ({
         });
     };
 
-    const handleAddRequest = async (e) => {
-        e.preventDefault();
-
+    const getUserInfo = () => {
         let username = "system"; // Default fallback
         const userInfoString = localStorage.getItem('userInfo');
 
@@ -337,41 +324,48 @@ const IncomingRequestOrders = ({
                 console.error("Error parsing user info:", error);
             }
         }
+        return username;
+    };
 
-        // Prepare the request payload to match your backend expectations
+    const handleAddRequest = async (e) => {
+        e.preventDefault();
+        const username = getUserInfo();
+
+        // Validate form data before submission
+        if (!formData.title || !formData.description || !formData.requesterId || !formData.deadline) {
+            showErrorNotification('Please fill in all required fields');
+            return;
+        }
+
+        if (!formData.items.some(item => item.itemTypeId && item.quantity)) {
+            showErrorNotification('Please add at least one item with type and quantity');
+            return;
+        }
+
+        // Prepare the request payload to match your Spring Boot backend expectations
         const requestPayload = {
-            title: formData.title,
-            description: formData.description,
+            title: formData.title.trim(),
+            description: formData.description.trim(),
             createdBy: username,
             status: 'PENDING',
-            partyType: 'WAREHOUSE', // Always set to WAREHOUSE
-            requesterId: formData.requesterId,
-            employeeRequestedBy: formData.employeeRequestedBy,
-            deadline: formData.deadline,
-            items: formData.items.map(item => ({
-                itemTypeId: item.itemTypeId,
-                quantity: item.quantity,
-                comment: item.comment || ''
-            }))
+            partyType: 'WAREHOUSE',
+            requesterId: formData.requesterId, // Should be UUID string
+            employeeRequestedBy: formData.employeeRequestedBy || null,
+            deadline: formData.deadline, // Send as datetime-local format, not ISO
+            items: formData.items
+                .filter(item => item.itemTypeId && item.quantity) // Only include valid items
+                .map(item => ({
+                    itemTypeId: item.itemTypeId, // Should be UUID string
+                    quantity: parseFloat(item.quantity),
+                    comment: (item.comment || '').trim()
+                }))
         };
 
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/requestOrders', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestPayload)
-            });
+        console.log('Creating request with payload:', JSON.stringify(requestPayload, null, 2));
 
-            if (!response.ok) {
-                setNotificationMessage('Failed to create request order');
-                setShowNotification(true);
-                setNotificationType("error");
-                return;
-            }
+        try {
+            const result = await requestOrderService.create(requestPayload);
+            console.log('Request creation successful:', result);
 
             // Request created successfully
             handleCloseModal();
@@ -379,66 +373,89 @@ const IncomingRequestOrders = ({
                 onDataChange(); // Refresh the list
             }
 
-            setNotificationMessage('Request Order created successfully');
-            setShowNotification(true);
-            setNotificationType("success");
-
+            showSuccessNotification('Request Order created successfully');
         } catch (err) {
-            console.error('Error creating request order:', err);
-            setNotificationMessage(`Error: ${err.message}`);
-            setShowNotification(true);
-            setNotificationType("error");
+            console.error('Full error object:', err);
+
+            // Enhanced error handling
+            let errorMessage = 'Failed to create request order';
+
+            if (err.response) {
+                // Server responded with error status
+                console.error('Server error details:', {
+                    status: err.response.status,
+                    statusText: err.response.statusText,
+                    data: err.response.data,
+                    headers: err.response.headers
+                });
+
+                if (err.response.data) {
+                    if (typeof err.response.data === 'string') {
+                        errorMessage = err.response.data;
+                    } else if (err.response.data.message) {
+                        errorMessage = err.response.data.message;
+                    } else if (err.response.data.error) {
+                        errorMessage = err.response.data.error;
+                    } else {
+                        errorMessage = `Server error: ${err.response.status} ${err.response.statusText}`;
+                    }
+                } else {
+                    errorMessage = `HTTP ${err.response.status}: ${err.response.statusText}`;
+                }
+            } else if (err.request) {
+                // Network error
+                console.error('Network error - no response received:', err.request);
+                errorMessage = 'Network error - please check your connection and try again';
+            } else {
+                // Other error
+                console.error('Request setup error:', err.message);
+                errorMessage = err.message || 'Unknown error occurred';
+            }
+
+            showErrorNotification(`Error: ${errorMessage}`);
         }
     };
 
     const handleUpdateRequest = async (e) => {
         e.preventDefault();
+        const username = getUserInfo();
 
-        let username = "system"; // Default fallback
-        const userInfoString = localStorage.getItem('userInfo');
-        if (userInfoString) {
-            try {
-                const userInfo = JSON.parse(userInfoString);
-                if (userInfo.username) {
-                    username = userInfo.username;
-                }
-            } catch (error) {
-                console.error("Error parsing user info:", error);
-            }
+        // Validate form data before submission
+        if (!formData.title || !formData.description || !formData.requesterId || !formData.deadline) {
+            showErrorNotification('Please fill in all required fields');
+            return;
+        }
+
+        if (!formData.items.some(item => item.itemTypeId && item.quantity)) {
+            showErrorNotification('Please add at least one item with type and quantity');
+            return;
         }
 
         // Prepare the update payload
         const requestPayload = {
-            title: formData.title,
-            description: formData.description,
+            title: formData.title.trim(),
+            description: formData.description.trim(),
             updatedBy: username,
             status: formData.status,
-            partyType: 'WAREHOUSE', // Always set to WAREHOUSE
-            requesterId: formData.requesterId,
-            employeeRequestedBy: formData.employeeRequestedBy,
-            deadline: formData.deadline,
-            items: formData.items.map(item => ({
-                id: item.id, // Include the item ID if it exists (for updates)
-                itemTypeId: item.itemTypeId,
-                quantity: item.quantity,
-                comment: item.comment || ''
-            }))
+            partyType: 'WAREHOUSE',
+            requesterId: formData.requesterId, // Should be UUID string
+            employeeRequestedBy: formData.employeeRequestedBy || null,
+            deadline: formData.deadline, // Send as datetime-local format, not ISO
+            items: formData.items
+                .filter(item => item.itemTypeId && item.quantity) // Only include valid items
+                .map(item => ({
+                    id: item.id || null, // Include the item ID if it exists (for updates)
+                    itemTypeId: item.itemTypeId, // Should be UUID string
+                    quantity: parseFloat(item.quantity),
+                    comment: (item.comment || '').trim()
+                }))
         };
 
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/requestOrders/${currentOrderId}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestPayload)
-            });
+        console.log('Updating request with payload:', JSON.stringify(requestPayload, null, 2));
 
-            if (!response.ok) {
-                throw new Error('Failed to update request order');
-            }
+        try {
+            const result = await requestOrderService.update(currentOrderId, requestPayload);
+            console.log('Request update successful:', result);
 
             // Update successful
             handleCloseModal();
@@ -446,87 +463,126 @@ const IncomingRequestOrders = ({
                 onDataChange(); // Refresh the list
             }
 
-            setNotificationMessage('Request Order updated successfully');
-            setShowNotification(true);
-            setNotificationType("success");
-
+            showSuccessNotification('Request Order updated successfully');
         } catch (err) {
-            console.error('Error updating request order:', err);
-            setNotificationMessage(`Error: ${err.message}`);
-            setShowNotification(true);
-            setNotificationType("error");
+            console.error('Full error object:', err);
+
+            // Enhanced error handling
+            let errorMessage = 'Failed to update request order';
+
+            if (err.response) {
+                // Server responded with error status
+                console.error('Server error details:', {
+                    status: err.response.status,
+                    statusText: err.response.statusText,
+                    data: err.response.data,
+                    headers: err.response.headers
+                });
+
+                if (err.response.data) {
+                    if (typeof err.response.data === 'string') {
+                        errorMessage = err.response.data;
+                    } else if (err.response.data.message) {
+                        errorMessage = err.response.data.message;
+                    } else if (err.response.data.error) {
+                        errorMessage = err.response.data.error;
+                    } else {
+                        errorMessage = `Server error: ${err.response.status} ${err.response.statusText}`;
+                    }
+                } else {
+                    errorMessage = `HTTP ${err.response.status}: ${err.response.statusText}`;
+                }
+            } else if (err.request) {
+                // Network error
+                console.error('Network error - no response received:', err.request);
+                errorMessage = 'Network error - please check your connection and try again';
+            } else {
+                // Other error
+                console.error('Request setup error:', err.message);
+                errorMessage = err.message || 'Unknown error occurred';
+            }
+
+            showErrorNotification(`Error: ${errorMessage}`);
         }
     };
 
     const handleOpenEditModal = async (order) => {
-        // Set edit mode
-        setIsEditMode(true);
-        setCurrentOrderId(order.id);
+        try {
+            // Set edit mode
+            setIsEditMode(true);
+            setCurrentOrderId(order.id);
 
-        // Format the deadline for datetime-local input (if it exists)
-        const deadline = order.deadline
-            ? new Date(order.deadline).toISOString().slice(0, 16)
-            : '';
+            // Format the deadline for datetime-local input (if it exists)
+            const deadline = order.deadline
+                ? new Date(order.deadline).toISOString().slice(0, 16)
+                : '';
 
-        // Handle items specifically - make sure we're getting the items array correctly
-        let itemsToSet = [{ itemTypeId: '', quantity: '', comment: '' }]; // Default
+            // Handle items specifically - make sure we're getting the items array correctly
+            let itemsToSet = [{ itemTypeId: '', quantity: '', comment: '' }]; // Default
 
-        // Check if order.items exists and is an array
-        if (order.items && Array.isArray(order.items) && order.items.length > 0) {
-            itemsToSet = order.items.map(item => ({
-                id: item.id,
-                itemTypeId: item.itemTypeId,
-                quantity: item.quantity,
-                comment: item.comment || ''
-            }));
-        }
-        // If the items are in a different property, check there
-        else if (order.requestItems && Array.isArray(order.requestItems) && order.requestItems.length > 0) {
-            itemsToSet = order.requestItems.map(item => ({
-                id: item.id,
-                itemTypeId: item.itemTypeId || item.itemType?.id, // Handle nested structure if needed
-                quantity: item.quantity,
-                comment: item.comment || ''
-            }));
-        }
-
-        // Populate form with the order data directly
-        setFormData({
-            title: order.title || '',
-            description: order.description || '',
-            siteId: order.siteId || '',
-            requesterId: order.requesterId || '',
-            requesterName: order.requesterName || '',
-            status: order.status || 'PENDING',
-            deadline: deadline,
-            employeeRequestedBy: order.employeeRequestedBy || '',
-            items: itemsToSet
-        });
-
-        // Load warehouses for the selected site
-        if (order.siteId) {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:8080/api/v1/warehouses/site/${order.siteId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setWarehouses(data);
-                }
-            } catch (err) {
-                console.error('Error fetching warehouses:', err);
+            // Check if order.items exists and is an array
+            if (order.items && Array.isArray(order.items) && order.items.length > 0) {
+                itemsToSet = order.items.map(item => ({
+                    id: item.id,
+                    itemTypeId: item.itemTypeId,
+                    quantity: item.quantity,
+                    comment: item.comment || ''
+                }));
             }
+            // If the items are in a different property, check there
+            else if (order.requestItems && Array.isArray(order.requestItems) && order.requestItems.length > 0) {
+                itemsToSet = order.requestItems.map(item => ({
+                    id: item.id,
+                    itemTypeId: item.itemTypeId || item.itemType?.id, // Handle nested structure if needed
+                    quantity: item.quantity,
+                    comment: item.comment || ''
+                }));
+            }
+
+            // Populate form with the order data directly
+            setFormData({
+                title: order.title || '',
+                description: order.description || '',
+                siteId: order.siteId || '',
+                requesterId: order.requesterId || '',
+                requesterName: order.requesterName || '',
+                status: order.status || 'PENDING',
+                deadline: deadline,
+                employeeRequestedBy: order.employeeRequestedBy || '',
+                items: itemsToSet
+            });
+
+            // Load warehouses for the selected site
+            if (order.siteId) {
+                try {
+                    const data = await warehouseService.getBySite(order.siteId);
+                    setWarehouses(Array.isArray(data) ? data : []);
+                } catch (err) {
+                    console.error('Error fetching warehouses:', err);
+                    setWarehouses([]);
+                    showErrorNotification('Failed to load warehouses for selected site');
+                }
+            }
+
+            // Show the modal
+            setShowAddModal(true);
+        } catch (error) {
+            console.error('Error opening edit modal:', error);
+            showErrorNotification('Failed to open edit modal');
+        }
+    };
+
+    useEffect(() => {
+        if (showAddModal) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
         }
 
-        // Show the modal
-        setShowAddModal(true);
-    };
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [showAddModal]);
 
     const handleCloseModal = () => {
         setShowAddModal(false);
@@ -602,6 +658,17 @@ const IncomingRequestOrders = ({
     // Define actions for DataTable
     const actions = [
         {
+            label: 'View',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+            ),
+            onClick: (row) => handleViewClick(row, { stopPropagation: () => {} }),
+            className: 'view'
+        },
+        {
             label: 'Approve',
             icon: (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -674,7 +741,7 @@ const IncomingRequestOrders = ({
                     <div className="pro-ro-modal">
                         <div className="pro-ro-modal-header">
                             <h2>{isEditMode ? 'Update Request Order' : 'Create New Request'}</h2>
-                            <button className="pro-ro-close-modal" onClick={handleCloseModal}>
+                            <button className="btn-close" onClick={handleCloseModal}>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path d="M18 6L6 18M6 6l12 12"/>
                                 </svg>
@@ -686,7 +753,7 @@ const IncomingRequestOrders = ({
                                 {/* Basic Request Information */}
                                 <div className="pro-ro-form-section">
                                     <div className="pro-ro-form-field pro-ro-full-width">
-                                        <label htmlFor="title">Title</label>
+                                        <label htmlFor="title">Title <span style={{color: 'red'}}>*</span></label>
                                         <input
                                             type="text"
                                             id="title"
@@ -707,16 +774,16 @@ const IncomingRequestOrders = ({
                                             onChange={handleInputChange}
                                         >
                                             <option value="">Select Employee</option>
-                                            {employees.map(employee => (
+                                            {Array.isArray(employees) && employees.map(employee => (
                                                 <option key={employee.id} value={employee.id}>
-                                                    {employee.name}
+                                                    {employee.name || employee.fullName || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Unknown Employee'}
                                                 </option>
                                             ))}
                                         </select>
                                     </div>
 
                                     <div className="pro-ro-form-field">
-                                        <label htmlFor="deadline">Deadline</label>
+                                        <label htmlFor="deadline">Deadline <span style={{color: 'red'}}>*</span></label>
                                         <input
                                             type="datetime-local"
                                             id="deadline"
@@ -728,7 +795,7 @@ const IncomingRequestOrders = ({
                                     </div>
 
                                     <div className="pro-ro-form-field pro-ro-full-width">
-                                        <label htmlFor="description">Description</label>
+                                        <label htmlFor="description">Description <span style={{color: 'red'}}>*</span></label>
                                         <textarea
                                             id="description"
                                             name="description"
@@ -777,14 +844,14 @@ const IncomingRequestOrders = ({
 
                                             <div className="pro-ro-item-fields">
                                                 <div className="pro-ro-form-field">
-                                                    <label>Item Type</label>
+                                                    <label>Item Type <span style={{color: 'red'}}>*</span></label>
                                                     <select
                                                         value={item.itemTypeId || ''}
                                                         onChange={(e) => handleItemChange(index, 'itemTypeId', e.target.value)}
                                                         required
                                                     >
                                                         <option value="">Select Item Type</option>
-                                                        {itemTypes
+                                                        {Array.isArray(itemTypes) && itemTypes
                                                             .filter(type =>
                                                                 // Show the item type if it's the currently selected one for this item
                                                                 // OR if it's not selected in any other item
@@ -792,13 +859,13 @@ const IncomingRequestOrders = ({
                                                                 !formData.items.some(i => i !== item && i.itemTypeId === type.id)
                                                             )
                                                             .map(type => (
-                                                                <option key={type.id} value={type.id}>{type.name}</option>
+                                                                <option key={type.id} value={type.id}>{type.name || 'Unknown Item Type'}</option>
                                                             ))}
                                                     </select>
                                                 </div>
 
                                                 <div className="pro-ro-form-field">
-                                                    <label>Quantity</label>
+                                                    <label>Quantity <span style={{color: 'red'}}>*</span></label>
                                                     <div className="pro-ro-quantity-unit-container">
                                                         <input
                                                             type="number"
@@ -809,7 +876,7 @@ const IncomingRequestOrders = ({
                                                             required
                                                             className="pro-ro-quantity-input"
                                                         />
-                                                        {item.itemTypeId && (
+                                                        {item.itemTypeId && Array.isArray(itemTypes) && (
                                                             <span className="pro-ro-unit-label">
                                                                 {itemTypes.find(type => type.id === item.itemTypeId)?.measuringUnit || ''}
                                                             </span>
@@ -838,7 +905,7 @@ const IncomingRequestOrders = ({
                                     </div>
 
                                     <div className="pro-ro-form-field">
-                                        <label htmlFor="site">Site</label>
+                                        <label htmlFor="site">Site <span style={{color: 'red'}}>*</span></label>
                                         <select
                                             id="site"
                                             name="siteId"
@@ -847,15 +914,15 @@ const IncomingRequestOrders = ({
                                             required
                                         >
                                             <option value="">Select Site</option>
-                                            {sites.map(site => (
-                                                <option key={site.id} value={site.id}>{site.name}</option>
+                                            {Array.isArray(sites) && sites.map(site => (
+                                                <option key={site.id} value={site.id}>{site.name || 'Unknown Site'}</option>
                                             ))}
                                         </select>
                                     </div>
 
                                     {formData.siteId && (
                                         <div className="pro-ro-form-field">
-                                            <label htmlFor="requesterId">Select Warehouse</label>
+                                            <label htmlFor="requesterId">Select Warehouse <span style={{color: 'red'}}>*</span></label>
                                             <select
                                                 id="requesterId"
                                                 name="requesterId"
@@ -864,9 +931,9 @@ const IncomingRequestOrders = ({
                                                 required
                                             >
                                                 <option value="">Select Warehouse</option>
-                                                {warehouses.map(warehouse => (
+                                                {Array.isArray(warehouses) && warehouses.map(warehouse => (
                                                     <option key={warehouse.id} value={warehouse.id}>
-                                                        {warehouse.name}
+                                                        {warehouse.name || 'Unknown Warehouse'}
                                                     </option>
                                                 ))}
                                             </select>
@@ -884,15 +951,15 @@ const IncomingRequestOrders = ({
                                 <div className="pro-ro-modal-footer">
                                     <button
                                         type="button"
-                                        className="pro-ro-cancel-button"
+                                        className="btn-cancel"
                                         onClick={handleCloseModal}
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        className="pro-ro-submit-button"
-                                        disabled={!formData.requesterId || !formData.title || formData.items.length === 0}
+                                        className="btn-primary"
+
                                     >
                                         {isEditMode ? 'Update Request' : 'Submit Request'}
                                     </button>
@@ -914,7 +981,7 @@ const IncomingRequestOrders = ({
                 onConfirm={handleConfirmApproval}
                 onCancel={handleCancelApproval}
                 isLoading={isApproving}
-                size="medium"
+                size="large"
             />
 
             <Snackbar
@@ -923,6 +990,13 @@ const IncomingRequestOrders = ({
                 isVisible={showNotification}
                 onClose={() => setShowNotification(false)}
                 duration={3000}
+            />
+
+            {/* Request Order View Modal */}
+            <RequestOrderViewModal
+                requestOrder={selectedRequestOrder}
+                isOpen={showViewModal}
+                onClose={handleCloseViewModal}
             />
         </div>
     );

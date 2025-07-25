@@ -37,6 +37,20 @@ const ParentCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
         fetchParentCategories();
     }, []);
 
+    useEffect(() => {
+        if (isModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        // Cleanup when component unmounts
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isModalOpen]);
+
+
     // Modal functions
     const openModal = (category = null) => {
         if (category) {

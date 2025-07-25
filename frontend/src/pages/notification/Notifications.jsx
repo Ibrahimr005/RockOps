@@ -21,10 +21,10 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 import IntroCard from '../../components/common/IntroCard/IntroCard.jsx';
 import Snackbar from '../../components/common/Snackbar/Snackbar.jsx';
 import ConfirmationDialog from '../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { notificationService } from '../../services/notification/notificationService';
 import notificationLight from '../../assets/imgs/notificationlight.png';
 import notificationDark from '../../assets/imgs/notificationdark.png';
 import './Notifications.scss';
-import { notificationService } from '../../services/notificationService';
 
 const Notifications = () => {
     const { currentUser, token } = useAuth();
@@ -53,8 +53,6 @@ const Notifications = () => {
     const reconnectTimeoutRef = useRef(null);
     const [forceUpdate, setForceUpdate] = useState(0);
 
-
-
     useEffect(() => {
         if (currentUser && token) {
             fetchNotifications();
@@ -77,8 +75,7 @@ const Notifications = () => {
     const fetchNotifications = async () => {
         setLoading(true);
         try {
-            const response = await notificationService.getAll();
-            const data = response.data;
+            const data = await notificationService.getAll();
             setNotifications(data);
             console.log('Notifications fetched:', data);
         } catch (error) {
@@ -100,7 +97,7 @@ const Notifications = () => {
             const { Client } = await import('@stomp/stompjs');
 
             const stompClient = new Client({
-                brokerURL: notificationService.getWebSocketUrl(),
+                brokerURL: 'ws://localhost:8080/ws-native',
                 connectHeaders: {
                     'Authorization': `Bearer ${token}`
                 },
@@ -122,7 +119,6 @@ const Notifications = () => {
                     handleNewNotification(notification);
                 });
 
-// 🎯 ADD THIS TEST SUBSCRIPTION
                 stompClient.subscribe(`/user/${currentUser.id}/queue/notifications`, (message) => {
                     const notification = JSON.parse(message.body);
                     console.log('🎯 Received notification via direct user subscription:', notification);
@@ -147,8 +143,6 @@ const Notifications = () => {
                 stompClient.subscribe('/user/queue/auth-response', (message) => {
                     const response = JSON.parse(message.body);
                     console.log('Auth response:', response);
-                    // Removed the snackbar for authentication success
-                    // Authentication happens silently in the background
                 });
 
                 stompClient.subscribe('/topic/notifications', (message) => {
@@ -233,7 +227,6 @@ const Notifications = () => {
             return newNotifications;
         });
 
-        // Force re-render (this is now INSIDE the function, so it's safe)
         setForceUpdate(prev => prev + 1);
 
         if (Notification.permission === 'granted') {
@@ -329,80 +322,107 @@ const Notifications = () => {
     };
 
     const deleteNotification = async (notificationId) => {
-        try {
-            await notificationService.delete(notificationId);
-            showSnackbar('Notification deleted successfully', 'success');
-            fetchNotifications(); // Refresh the list
-        } catch (error) {
-            console.error('Failed to delete notification:', error);
-            showSnackbar('Failed to delete notification', 'error');
-        }
+        setConfirmDialog({
+            isVisible: true,
+            type: 'delete',
+            title: 'Delete Notification',
+            message: 'Are you sure you want to delete this notification? This action cannot be undone.',
+            onConfirm: async () => {
+                setConfirmDialog(prev => ({ ...prev, isLoading: true }));
+
+                try {
+                    await notificationService.delete(notificationId);
+                    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+                    showSnackbar('Notification deleted successfully');
+                    setConfirmDialog({ isVisible: false, type: 'warning', title: '', message: '', onConfirm: null, isLoading: false });
+                } catch (error) {
+                    console.error('Failed to delete notification:', error);
+                    showSnackbar('Failed to delete notification', 'error');
+                    setConfirmDialog(prev => ({ ...prev, isLoading: false }));
+                }
+            },
+            isLoading: false
+        });
     };
 
     const markAllAsRead = async () => {
+        if (!stompClientRef.current?.connected) {
+            showSnackbar('Not connected to notification service', 'error');
+            return;
+        }
+
         try {
-            setLoading(true);
-            let successCount = 0;
-            let errorCount = 0;
+            const notificationsToUpdate = filteredNotifications.filter(n => !n.read);
 
-            // Mark each unread notification as read
-            for (const notification of notifications.filter(n => !n.read)) {
-                try {
-                    await notificationService.markAsRead(notification.id);
-                    successCount++;
-                } catch (error) {
-                    console.error(`Failed to mark notification ${notification.id} as read:`, error);
-                    errorCount++;
-                }
+            if (notificationsToUpdate.length === 0) {
+                showSnackbar('No unread notifications to mark as read', 'info');
+                return;
             }
 
-            if (successCount > 0) {
-                showSnackbar(`Marked ${successCount} notifications as read`, 'success');
-                fetchNotifications(); // Refresh the list
+            for (const notification of notificationsToUpdate) {
+                stompClientRef.current.publish({
+                    destination: '/app/markAsRead',
+                    body: JSON.stringify({
+                        notificationId: notification.id,
+                        userId: currentUser.id
+                    })
+                });
             }
 
-            if (errorCount > 0) {
-                showSnackbar(`Failed to mark ${errorCount} notifications as read`, 'error');
-            }
+            setNotifications(prev =>
+                prev.map(notification =>
+                    notificationsToUpdate.some(n => n.id === notification.id)
+                        ? { ...notification, read: true }
+                        : notification
+                )
+            );
+
+            const filterText = filter === 'all' ? 'all' : `${filter}`;
+            showSnackbar(`Marked ${notificationsToUpdate.length} ${filterText} notifications as read`, 'success');
         } catch (error) {
             console.error('Failed to mark all as read:', error);
-            showSnackbar('Failed to mark all notifications as read', 'error');
-        } finally {
-            setLoading(false);
+            showSnackbar('Failed to update notifications', 'error');
         }
     };
 
     const clearAllNotifications = async () => {
-        try {
-            setLoading(true);
-            let successCount = 0;
-            let errorCount = 0;
+        const filterText = filter === 'all' ? 'all' : `${filter}`;
+        const notificationsToDelete = filteredNotifications;
 
-            // Delete each notification individually
-            for (const notification of notifications) {
-                try {
-                    await notificationService.delete(notification.id);
-                    successCount++;
-                } catch (error) {
-                    console.error(`Failed to delete notification ${notification.id}:`, error);
-                    errorCount++;
-                }
-            }
-
-            if (successCount > 0) {
-                showSnackbar(`Deleted ${successCount} notifications`, 'success');
-                fetchNotifications(); // Refresh the list
-            }
-
-            if (errorCount > 0) {
-                showSnackbar(`Failed to delete ${errorCount} notifications`, 'error');
-            }
-        } catch (error) {
-            console.error('Failed to clear all notifications:', error);
-            showSnackbar('Failed to clear all notifications', 'error');
-        } finally {
-            setLoading(false);
+        if (notificationsToDelete.length === 0) {
+            showSnackbar(`No ${filterText} notifications to clear`, 'info');
+            return;
         }
+
+        setConfirmDialog({
+            isVisible: true,
+            type: 'delete',
+            title: `Clear All ${filterText.charAt(0).toUpperCase() + filterText.slice(1)} Notifications`,
+            message: `Are you sure you want to clear all ${filterText} notifications? This action cannot be undone.`,
+            onConfirm: async () => {
+                setConfirmDialog(prev => ({ ...prev, isLoading: true }));
+
+                try {
+                    for (const notification of notificationsToDelete) {
+                        await notificationService.delete(notification.id);
+                    }
+
+                    setNotifications(prev =>
+                        prev.filter(notification =>
+                            !notificationsToDelete.some(n => n.id === notification.id)
+                        )
+                    );
+
+                    showSnackbar(`Cleared all notifications successfully`, 'success');
+                    setConfirmDialog({ isVisible: false, type: 'warning', title: '', message: '', onConfirm: null, isLoading: false });
+                } catch (error) {
+                    console.error('Failed to clear notifications:', error);
+                    showSnackbar('Failed to clear notifications', 'error');
+                    setConfirmDialog(prev => ({ ...prev, isLoading: false }));
+                }
+            },
+            isLoading: false
+        });
     };
 
     const getTimeAgo = (dateString) => {
@@ -630,7 +650,6 @@ const Notifications = () => {
                                     <span className="page-numbers">
                                         {Array.from({ length: totalPages }, (_, i) => i + 1)
                                             .filter(page => {
-                                                // Show first page, last page, current page, and 2 pages around current
                                                 return page === 1 ||
                                                     page === totalPages ||
                                                     (page >= currentPage - 2 && page <= currentPage + 2);

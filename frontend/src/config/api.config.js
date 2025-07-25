@@ -495,36 +495,37 @@ export const WAREHOUSE_EMPLOYEE_ENDPOINTS = {
     CHECK_WAREHOUSE_ACCESS: (employeeId, warehouseId) => `/api/v1/warehouseEmployees/${employeeId}/warehouses/${warehouseId}/access`
 };
 
-// Notification module endpoints
 export const NOTIFICATION_ENDPOINTS = {
     BASE: '/api/notifications',
+    UNREAD: '/api/notifications/unread',
     UNREAD_COUNT: '/api/notifications/unread/count',
-    BY_ID: (id) => `/api/notifications/${id}`,
-    MARK_READ: (id) => `/api/notifications/${id}/read`,
-    MARK_UNREAD: (id) => `/api/notifications/${id}/unread`,
-    DELETE: (id) => `/api/notifications/${id}`,
-    WEBSOCKET: '/ws-native'
+    READ_ALL: '/api/notifications/read-all',
+    SEND: '/api/notifications/send',
+    BROADCAST: '/api/notifications/broadcast',
+    MARK_AS_READ: (id) => `/api/notifications/${id}/read`,
+    DELETE: (id) => `/api/notifications/${id}`
 };
 
-// Event module endpoints
-export const EVENT_ENDPOINTS = {
-    BASE: '/api/v1/events',
-    BY_ID: (id) => `/api/v1/events/${id}`,
-    CREATE: '/api/v1/events',
-    UPDATE: (id) => `/api/v1/events/${id}`,
-    DELETE: (id) => `/api/v1/events/${id}`,
-    CANCEL: (id) => `/api/v1/events/${id}/cancel`,
-    RESCHEDULE: (id) => `/api/v1/events/${id}/reschedule`
+export const PROCUREMENT_ENDPOINTS = {
+    BASE: '/api/v1/procurement',
+    BY_ID: (id) => `/api/v1/procurement/${id}`,
+    CREATE: '/api/v1/procurement',
+    UPDATE: (id) => `/api/v1/procurement/${id}`,
+    DELETE: (id) => `/api/v1/procurement/${id}`,
+    BY_SITE: (siteId) => `/api/v1/procurement/site/${siteId}`,
+    BY_TYPE: (type) => `/api/v1/procurement/type/${type}`,
+    SEARCH: '/api/v1/procurement/search'
 };
 
-// Purchase Order module endpoints
+// Add this to your existing api.config.js file
+
 export const PURCHASE_ORDER_ENDPOINTS = {
     BASE: '/api/v1/purchaseOrders',
-    BY_ID: (id) => `/api/v1/purchaseOrders/${id}`,
-    CREATE: '/api/v1/purchaseOrders',
-    UPDATE: (id) => `/api/v1/purchaseOrders/${id}`,
-    DELETE: (id) => `/api/v1/purchaseOrders/${id}`,
-    BY_STATUS: (status) => `/api/v1/purchaseOrders/status/${status}`,
-    PENDING: '/api/v1/purchaseOrders/pending',
-    COMPLETED: '/api/v1/purchaseOrders/completed'
+    BY_ID: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}`,
+    PENDING_OFFERS: '/api/v1/purchaseOrders/pending-offers',
+    BY_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/purchase-order`,
+    UPDATE_STATUS: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}/status`,
+    FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`
 };
+
+

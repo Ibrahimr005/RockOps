@@ -38,6 +38,23 @@ const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
         fetchChildCategories();
     }, []);
 
+
+
+
+    useEffect(() => {
+        if (isModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        // Cleanup when component unmounts
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isModalOpen]);
+
+
     // Fetch parent categories for dropdown
     useEffect(() => {
         const fetchParentCategories = async () => {

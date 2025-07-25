@@ -366,9 +366,7 @@ const WarehouseDetails = () => {
                   <div className="tab-content-header">
                     <h2 className="tab-title">
                       Inventory
-                      {discrepancyCounts.totalDiscrepancies > 0 && (
-                          <span className="notification-dot-title"></span>
-                      )}
+
                     </h2>
                     <div className="tab-header-line"></div>
                   </div>

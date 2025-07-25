@@ -69,12 +69,15 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
     };
 
     // Helper function to close snackbar
+// Helper function to close snackbar
     const closeSnackbar = () => {
-        setSnackbar({
-            ...snackbar,
+        setSnackbar(prev => ({
+            ...prev,
             isOpen: false
-        });
+        }));
     };
+
+    
     // Confirmation dialog state
     const [confirmDialog, setConfirmDialog] = useState({
         isVisible: false,
@@ -212,6 +215,18 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
         return date.toISOString().slice(0, 16);
     };
 
+    useEffect(() => {
+        if (isTransactionModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isTransactionModalOpen]);
+
     // Initialize form for update mode
     const initializeUpdateForm = async (transaction) => {
         console.log("🔍 Initializing update form with transaction:", transaction);
@@ -260,16 +275,19 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
     // Fetch all required data
     const fetchAllSites = async () => {
         try {
-            const data = await siteService.getAll();
-            setAllSites(data);
+            const response = await siteService.getAll();
+            const data = response.data || response;
+            setAllSites(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Failed to fetch sites:", error);
+            setAllSites([]);
         }
     };
 
     const fetchWarehouseDetails = async () => {
         try {
-            const data = await warehouseService.getById(warehouseId);
+            const response = await warehouseService.getById(warehouseId);
+            const data = response.data || response;
             setWarehouseData({
                 name: data.name || "",
                 id: data.id || "",
@@ -282,19 +300,23 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
 
     const fetchItems = async () => {
         try {
-            const data = await itemService.getItemsByWarehouse(warehouseId);
-            setItems(data);
+            const response = await itemService.getItemsByWarehouse(warehouseId);
+            const data = response.data || response;
+            setItems(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Failed to fetch item types:", error);
+            setItems([]);
         }
     };
 
     const fetchAllItemTypes = async () => {
         try {
-            const data = await itemTypeService.getAll();
-            setAllItemTypes(data);
+            const response = await itemTypeService.getAll();
+            const data = response.data || response;
+            setAllItemTypes(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Failed to fetch all item types:", error);
+            setAllItemTypes([]);
         }
     };
 
@@ -302,16 +324,20 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
         if (!entityType || !siteId) return [];
 
         try {
+            let response;
             if (entityType === "WAREHOUSE") {
-                return await siteService.getSiteWarehouses(siteId);
+                response = await siteService.getSiteWarehouses(siteId);
             } else if (entityType === "EQUIPMENT") {
-                return await siteService.getSiteEquipment(siteId);
+                response = await siteService.getSiteEquipment(siteId);
             } else if (entityType === "MERCHANT") {
-                return await siteService.getSiteMerchants(siteId);
+                response = await siteService.getSiteMerchants(siteId);
             } else {
                 console.error(`Unsupported entity type: ${entityType}`);
                 return [];
             }
+
+            const data = response.data || response;
+            return Array.isArray(data) ? data : [];
         } catch (error) {
             console.error(`Failed to fetch ${entityType} for site ${siteId}:`, error);
             return [];
@@ -357,16 +383,20 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
         if (!entityType || !entityId) return null;
 
         try {
+            let response;
             if (entityType === "WAREHOUSE") {
-                return await warehouseService.getById(entityId);
+                response = await warehouseService.getById(entityId);
             } else if (entityType === "SITE") {
-                return await siteService.getById(entityId);
+                response = await siteService.getById(entityId);
             } else if (entityType === "EQUIPMENT") {
-                return await equipmentService.getEquipmentById(entityId);
+                response = await equipmentService.getEquipmentById(entityId);
             } else {
                 console.error(`Unsupported entity type: ${entityType}`);
                 return null;
             }
+
+            // Extract data from the response
+            return response.data || response;
         } catch (error) {
             console.error(`Failed to fetch ${entityType} details:`, error);
             return null;

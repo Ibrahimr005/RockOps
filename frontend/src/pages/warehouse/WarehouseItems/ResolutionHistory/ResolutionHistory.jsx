@@ -115,7 +115,7 @@ const ResolutionHistory = ({ warehouseId, showSnackbar }) => {
         },
         {
             accessor: 'item.itemType.itemCategory.name',
-            header: 'CATEGORY',
+            header: 'CHILD CATEGORY',
             width: '180px',
             render: (row) => (
                 <span className="category-tag">
