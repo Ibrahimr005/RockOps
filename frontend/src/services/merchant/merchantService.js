@@ -1,6 +1,6 @@
 // src/services/merchantService.js
-import apiClient from '../utils/apiClient';
-import { MERCHANT_ENDPOINTS } from '../config/api.config';
+import apiClient from '../../utils/apiClient.js';
+import { MERCHANT_ENDPOINTS } from '../../config/api.config.js';
 
 export const merchantService = {
     getAll: () => {

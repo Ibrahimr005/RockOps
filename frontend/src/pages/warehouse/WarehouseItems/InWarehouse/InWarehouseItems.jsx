@@ -83,6 +83,19 @@ const InWarehouseItems = ({
         }
     };
 
+    useEffect(() => {
+        if (isAddItemModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isAddItemModalOpen]);
+
+
 // Replace the fetchChildCategories method:
     const fetchChildCategories = async (parentCategoryId) => {
         if (!parentCategoryId) {
@@ -261,6 +274,19 @@ const InWarehouseItems = ({
         }
     };
 
+    useEffect(() => {
+        if (isTransactionDetailsModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isTransactionDetailsModalOpen]);
+
+
     const handleOpenTransactionDetailsModal = async (item) => {
         setSelectedItem(item);
         setIsTransactionDetailsModalOpen(true);
@@ -320,13 +346,23 @@ const InWarehouseItems = ({
     // Table columns
     const itemColumns = [
         {
+            accessor: 'itemType.itemCategory.parentCategory.name',
+            header: 'PARENT CATEGORY',
+            width: '10px',
+            render: (row) => (
+                <span className="parent-category-tag">
+                {row.itemType?.itemCategory?.parentCategory?.name || "No Parent"}
+            </span>
+            )
+        },
+        {
             accessor: 'itemType.itemCategory.name',
-            header: 'CATEGORY',
-            width: '255px',
+            header: 'CHILD CATEGORY',
+            width: '180px',
             render: (row) => (
                 <span className="category-tag">
-                    {row.itemType?.itemCategory?.name || "No Category"}
-                </span>
+                {row.itemType?.itemCategory?.name || "No Category"}
+            </span>
             )
         },
         {
@@ -344,14 +380,14 @@ const InWarehouseItems = ({
                     return (
                         <div className="quantity-cell">
                             <div className="quantity-main">
-                                <span className={`total-quantity ${lowStock ? 'low-stock' : ''}`}>
-                                    {row.quantity}
-                                </span>
+                            <span className={`total-quantity ${lowStock ? 'low-stock' : ''}`}>
+                                {row.quantity}
+                            </span>
                             </div>
                             {row.individualItems && row.individualItems.length > 1 && (
                                 <span className="quantity-breakdown" title={`From ${row.individualItems.length} transactions`}>
-                                    {` (${row.individualItems.length} entries)`}
-                                </span>
+                                {` (${row.individualItems.length} entries)`}
+                            </span>
                             )}
                         </div>
                     );
@@ -370,7 +406,7 @@ const InWarehouseItems = ({
         {
             accessor: 'itemType.measuringUnit',
             header: 'UNIT',
-            width: '230px',
+            width: '200px',
             render: (row) => row.itemType?.measuringUnit || "N/A"
         }
     ];
@@ -444,8 +480,9 @@ const InWarehouseItems = ({
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={[
-                    { accessor: 'itemType.name', header: 'Item' },
+                    { accessor: 'itemType.itemCategory.parentCategory.name', header: 'Parent Category' },
                     { accessor: 'itemType.itemCategory.name', header: 'Category' },
+                    { accessor: 'itemType.name', header: 'Item' },
                     { accessor: 'itemType.measuringUnit', header: 'Unit' }
                 ]}
                 actions={actions}
@@ -458,7 +495,6 @@ const InWarehouseItems = ({
                     </svg>
                 }
                 onAddClick={handleOpenAddItemModal}
-
                 // Excel Export functionality
                 showExportButton={true}
                 exportButtonText="Export Items"
@@ -475,6 +511,7 @@ const InWarehouseItems = ({
                 exportAllData={false}
                 excludeColumnsFromExport={[]}
                 customExportHeaders={{
+                    'itemType.itemCategory.parentCategory.name': 'Parent Category',
                     'itemType.itemCategory.name': 'Category',
                     'itemType.name': 'Item Name',
                     'quantity': 'Current Quantity',

@@ -94,6 +94,20 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        if (isModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        // Cleanup when component unmounts
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isModalOpen]);
+
+
     // Add this useEffect to get the user role when component mounts
     useEffect(() => {
         try {
@@ -453,8 +467,8 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="modal-backdrop">
-                    <div className="modal" ref={modalRef}>
+                <div className="modal-backdrop-type">
+                    <div className="modal-item-type" ref={modalRef}>
                         <div className="modal-header0">
                             <h2>{selectedItem ? 'Edit Item Type' : 'Add New Item Type'}</h2>
                             <button className="close-modal" onClick={() => setIsModalOpen(false)}>

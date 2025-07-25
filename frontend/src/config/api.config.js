@@ -494,3 +494,38 @@ export const WAREHOUSE_EMPLOYEE_ENDPOINTS = {
     EMPLOYEE_ASSIGNMENTS: (employeeId) => `/api/v1/warehouseEmployees/${employeeId}/assignments`,
     CHECK_WAREHOUSE_ACCESS: (employeeId, warehouseId) => `/api/v1/warehouseEmployees/${employeeId}/warehouses/${warehouseId}/access`
 };
+
+export const NOTIFICATION_ENDPOINTS = {
+    BASE: '/api/notifications',
+    UNREAD: '/api/notifications/unread',
+    UNREAD_COUNT: '/api/notifications/unread/count',
+    READ_ALL: '/api/notifications/read-all',
+    SEND: '/api/notifications/send',
+    BROADCAST: '/api/notifications/broadcast',
+    MARK_AS_READ: (id) => `/api/notifications/${id}/read`,
+    DELETE: (id) => `/api/notifications/${id}`
+};
+
+export const PROCUREMENT_ENDPOINTS = {
+    BASE: '/api/v1/procurement',
+    BY_ID: (id) => `/api/v1/procurement/${id}`,
+    CREATE: '/api/v1/procurement',
+    UPDATE: (id) => `/api/v1/procurement/${id}`,
+    DELETE: (id) => `/api/v1/procurement/${id}`,
+    BY_SITE: (siteId) => `/api/v1/procurement/site/${siteId}`,
+    BY_TYPE: (type) => `/api/v1/procurement/type/${type}`,
+    SEARCH: '/api/v1/procurement/search'
+};
+
+// Add this to your existing api.config.js file
+
+export const PURCHASE_ORDER_ENDPOINTS = {
+    BASE: '/api/v1/purchaseOrders',
+    BY_ID: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}`,
+    PENDING_OFFERS: '/api/v1/purchaseOrders/pending-offers',
+    BY_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/purchase-order`,
+    UPDATE_STATUS: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}/status`,
+    FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`
+};
+
+

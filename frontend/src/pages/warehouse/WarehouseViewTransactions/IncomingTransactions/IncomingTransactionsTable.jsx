@@ -127,6 +127,18 @@ const IncomingTransactionsTable = ({
         }
     };
 
+    useEffect(() => {
+        if (isAcceptModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isAcceptModalOpen]);
+
     // Helper function to process entity data for consistent display
     const processEntityData = (entityType, entityData) => {
         if (!entityData) return null;
@@ -161,20 +173,25 @@ const IncomingTransactionsTable = ({
     };
 
     // Helper function to fetch entity details
+// Helper function to fetch entity details
     const fetchEntityDetails = async (entityType, entityId) => {
         if (!entityType || !entityId) return null;
 
         try {
+            let response;
             if (entityType === "WAREHOUSE") {
-                return await warehouseService.getById(entityId);
+                response = await warehouseService.getById(entityId);
             } else if (entityType === "SITE") {
-                return await siteService.getById(entityId);
+                response = await siteService.getById(entityId);
             } else if (entityType === "EQUIPMENT") {
-                return await equipmentService.getEquipmentById(entityId);
+                response = await equipmentService.getEquipmentById(entityId);
             } else {
                 console.error(`Unsupported entity type: ${entityType}`);
                 return null;
             }
+
+            // Extract data from the response (this handles both response.data and direct response)
+            return response.data || response;
         } catch (error) {
             console.error(`Failed to fetch ${entityType} details:`, error);
             return null;

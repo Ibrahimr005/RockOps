@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./WarehousesList.scss";
 import warehouseImg from "../../../assets/imgs/warehouse1.jpg";
-import { FaWarehouse, FaTimes, FaUserCog, FaPlus } from 'react-icons/fa';
+import { FaWarehouse, FaTimes, FaUserCog, FaPlus, FaExclamationTriangle, FaBell } from 'react-icons/fa';
 import { useAuth } from "../../../contexts/AuthContext";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar";
@@ -10,6 +10,7 @@ import ConfirmationDialog from "../../../components/common/ConfirmationDialog/Co
 import { warehouseService } from "../../../services/warehouse/warehouseService";
 import { warehouseEmployeeService } from "../../../services/warehouse/warehouseEmployeeService";
 import { itemService } from "../../../services/warehouse/itemService";
+import { transactionService } from "../../../services/transaction/transactionService.js";
 
 const WarehousesList = () => {
     const [warehouses, setWarehouses] = useState([]);
@@ -26,6 +27,10 @@ const WarehousesList = () => {
     const [selectedWarehouse, setSelectedWarehouse] = useState(null);
     const [totalItemsMap, setTotalItemsMap] = useState({});
     const [assignmentLoading, setAssignmentLoading] = useState(false);
+
+    // Notification states
+    const [warehouseNotifications, setWarehouseNotifications] = useState({});
+    const [loadingNotifications, setLoadingNotifications] = useState(true);
 
     // Pending changes tracking
     const [pendingAssignments, setPendingAssignments] = useState([]);
@@ -83,6 +88,45 @@ const WarehousesList = () => {
         return await warehouseEmployeeService.unassignFromWarehouse(employeeId, { warehouseId });
     };
 
+    // Function to fetch notification data for each warehouse
+    const fetchWarehouseNotifications = async (warehouseId) => {
+        try {
+            const [transactions, items] = await Promise.all([
+                transactionService.getTransactionsForWarehouse(warehouseId),
+                itemService.getItemsByWarehouse(warehouseId)
+            ]);
+
+            // Count incoming transactions (same logic as IncomingTransactionsTable)
+            const incomingTransactionsCount = transactions.filter(transaction =>
+                transaction.status === "PENDING" &&
+                (transaction.receiverId === warehouseId || transaction.senderId === warehouseId) &&
+                transaction.sentFirst !== warehouseId
+            ).length;
+
+            // Count actual discrepancy items like in DiscrepancyItems component
+            const missingItems = items.filter(item => item.itemStatus === 'MISSING' && !item.resolved);
+            const excessItems = items.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved);
+            const discrepancyCount = missingItems.length + excessItems.length;
+
+            return {
+                incomingTransactions: incomingTransactionsCount,
+                discrepancies: discrepancyCount,
+                missingItems: missingItems.length,
+                excessItems: excessItems.length,
+                hasAlerts: incomingTransactionsCount > 0 || discrepancyCount > 0
+            };
+        } catch (error) {
+            console.error(`Error fetching notifications for warehouse ${warehouseId}:`, error);
+            return {
+                incomingTransactions: 0,
+                discrepancies: 0,
+                missingItems: 0,
+                excessItems: 0,
+                hasAlerts: false
+            };
+        }
+    };
+
     // Fetch warehouses on initial load - wait for currentUser to be available
     useEffect(() => {
         console.log("Current user in useEffect:", currentUser);
@@ -105,7 +149,30 @@ const WarehousesList = () => {
         }
     }, [selectedWarehouse, showAssignmentModal]);
 
-    // Replace the fetchAndFilterWarehousesForEmployee function in your WarehousesList.jsx
+    // Fetch notifications for all warehouses
+    useEffect(() => {
+        const fetchAllNotifications = async () => {
+            if (warehouses.length === 0) return;
+
+            setLoadingNotifications(true);
+            const notifications = {};
+
+            // Only fetch notifications for warehouse managers and employees
+            if (currentUser?.role === 'WAREHOUSE_MANAGER' || currentUser?.role === 'WAREHOUSE_EMPLOYEE') {
+                await Promise.all(
+                    warehouses.map(async (warehouse) => {
+                        const notificationData = await fetchWarehouseNotifications(warehouse.id);
+                        notifications[warehouse.id] = notificationData;
+                    })
+                );
+            }
+
+            setWarehouseNotifications(notifications);
+            setLoadingNotifications(false);
+        };
+
+        fetchAllNotifications();
+    }, [warehouses, currentUser?.role]);
 
     const fetchAndFilterWarehousesForEmployee = async (allWarehouses) => {
         try {
@@ -145,8 +212,6 @@ const WarehousesList = () => {
         }
     };
 
-// Also update the fetchWarehouses function to add better debugging:
-
     const fetchWarehouses = async () => {
         try {
             setLoading(true);
@@ -155,7 +220,6 @@ const WarehousesList = () => {
 
             const respo = await warehouseService.getAll();
             console.log("Fetched warehouse data:", JSON.stringify(respo, null, 2));
-
 
             // If user is a warehouse employee, filter warehouses on frontend
             if (currentUser?.role === 'WAREHOUSE_EMPLOYEE') {
@@ -178,8 +242,6 @@ const WarehousesList = () => {
         }
     };
 
-
-
     const fetchWarehouseEmployees = async () => {
         try {
             const data = await warehouseEmployeeService.getWarehouseEmployees();
@@ -191,6 +253,18 @@ const WarehousesList = () => {
             showSnackbar('error', `Failed to load warehouse employees: ${error.message}`);
         }
     };
+
+    useEffect(() => {
+        if (showAssignmentModal) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [showAssignmentModal]);
 
     const fetchWarehouseAssignedEmployees = async (warehouseId) => {
         try {
@@ -358,7 +432,6 @@ const WarehousesList = () => {
         setAssignedEmployees(prev => [...prev, tempAssignment]);
         setHasUnsavedChanges(true);
         setSelectedEmployee("");
-
     };
 
     // Handle employee unassignment - remove from UI immediately
@@ -378,7 +451,6 @@ const WarehousesList = () => {
             const stillHasUnassignments = pendingUnassignments.length > 0;
             setHasUnsavedChanges(stillHasAssignments || stillHasUnassignments);
 
-
             return;
         }
 
@@ -386,8 +458,6 @@ const WarehousesList = () => {
         setPendingUnassignments(prev => [...prev, employeeId]);
         setAssignedEmployees(prev => prev.filter(emp => emp.id !== employeeId));
         setHasUnsavedChanges(true);
-
-
     };
 
     const getAvailableEmployeesForAssignment = () => {
@@ -465,14 +535,42 @@ const WarehousesList = () => {
                             (emp) => emp.jobPosition?.positionName?.toLowerCase() === "warehouse worker"
                         ) || [];
 
+                        // Get notification data for this warehouse
+                        const notifications = warehouseNotifications[warehouse.id] || {};
+                        const hasIncomingTransactions = notifications.incomingTransactions > 0;
+                        const hasDiscrepancies = notifications.discrepancies > 0;
+                        const hasAlerts = hasIncomingTransactions || hasDiscrepancies;
+
+                        // Optional: Add urgent class for high counts
+                        const isUrgent = notifications.discrepancies > 5 || notifications.incomingTransactions > 3;
+
                         return (
-                            <div key={warehouse.id} className="warehouse-list-card" onClick={() => navigate(`/warehouses/${warehouse.id}`)} style={{ cursor: "pointer" }}>
+                            <div
+                                key={warehouse.id}
+                                className={`warehouse-list-card ${hasAlerts ? 'has-attention' : ''}`}
+                                onClick={() => navigate(`/warehouses/${warehouse.id}`)}
+                                style={{ cursor: "pointer" }}
+                                title={hasAlerts ? (
+                                    hasIncomingTransactions && hasDiscrepancies
+                                        ? `${notifications.incomingTransactions} pending transactions, ${notifications.discrepancies} inventory issues`
+                                        : hasIncomingTransactions
+                                            ? `${notifications.incomingTransactions} pending transactions`
+                                            : `${notifications.discrepancies} inventory issues`
+                                ) : undefined}
+                            >
                                 <div className="warehouse-list-card-image">
                                     <img src={warehouse.photoUrl ? warehouse.photoUrl : warehouseImg} alt="Warehouse" />
+
+                                    {/* Red Corner Alert */}
+                                    {hasAlerts && (
+                                        <div className="warehouse-status-corner"></div>
+                                    )}
                                 </div>
 
                                 <div className="warehouse-list-card-content">
-                                    <h2 className="warehouse-list-card-name">{warehouse.name || 'Unnamed Warehouse'}</h2>
+                                    <h2 className="warehouse-list-card-name">
+                                        {warehouse.name || 'Unnamed Warehouse'}
+                                    </h2>
 
                                     <div className="warehouse-list-card-stats">
                                         <div className="warehouse-list-stat-item">
@@ -499,7 +597,7 @@ const WarehousesList = () => {
                                         </div>
                                     </div>
 
-                                    <div className="warehouse-list-card-actions">
+                                    <div className={`warehouse-list-card-actions ${isWarehouseManager ? 'has-two-buttons' : ''}`}>
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -545,7 +643,7 @@ const WarehousesList = () => {
                                 <FaUserCog />
                                 Assign Employees to {selectedWarehouse?.name}
                             </h2>
-                            <button className="warehouse-list-modal-close-button" onClick={handleCloseAssignmentModal}>×</button>
+                            <button className="btn-close" onClick={handleCloseAssignmentModal}>×</button>
                         </div>
 
                         <div className="warehouse-list-modal-body">

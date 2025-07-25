@@ -41,6 +41,19 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
         }
     }));
 
+    useEffect(() => {
+        if (showAddModal) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [showAddModal]);
+
+
     // Column configuration for pending request orders
     const pendingOrderColumns = [
         {
@@ -561,6 +574,8 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
             onShowSnackbar(`Error: ${error.message}`, 'error');
         }
     };
+
+
 
     return (
         <div className="pending-request-orders-container">
