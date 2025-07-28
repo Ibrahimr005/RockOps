@@ -68,13 +68,13 @@ const VacancyDetails = () => {
     const getStatusBadgeClass = (status) => {
         switch (status) {
             case 'OPEN':
-                return 'status-badge--success';
+                return 'success';
             case 'CLOSED':
-                return 'status-badge-danger';
+                return 'status-danger';
             case 'FILLED':
-                return 'status-badge-info';
+                return 'info';
             default:
-                return 'status-badge-warning';
+                return 'status-warning';
         }
     };
 
@@ -193,10 +193,7 @@ const VacancyDetails = () => {
         <div className="vacancy-details-container">
             <div className="details-header">
                 <div className="header-content">
-                    <button className="back-button" onClick={handleBackClick}>
-                        <i className="fas fa-arrow-left"></i>
-                        Back to Vacancies
-                    </button>
+
                     <h1>{vacancy.title}</h1>
                     <div className="header-badges">
                         <span className={`status-badge ${getStatusBadgeClass(vacancy.status)}`}>

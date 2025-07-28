@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaEye, FaCheck, FaTimes, FaCalendarAlt, FaExclamationTriangle, FaMoneyBillWave, FaFilter, FaSearch, FaEdit } from 'react-icons/fa';
+import { FaPlus, FaEye, FaCheck, FaTimes, FaCalendarAlt, FaExclamationTriangle, FaMoneyBillWave, FaFilter, FaSearch, FaEdit, FaHandHoldingUsd } from 'react-icons/fa';
 import { loanService } from '../../../../services/payroll/loanService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import IntroCard from '../../../../components/common/IntroCard/IntroCard.jsx';
 import LoanFormModal from '../components/LoanFormModal.jsx';
 import LoanDetailsModal from '../components/LoanDetailsModal.jsx';
 import './LoanManagement.scss';
@@ -47,9 +48,6 @@ const LoanManagement = () => {
         loadLoanStats();
     }, [filters.page, filters.size]);
 
-    // Fix for the loadLoans function in LoanManagement.jsx
-// Replace the existing loadLoans function with this enhanced version:
-
     const loadLoans = async () => {
         try {
             setLoading(true);
@@ -65,7 +63,7 @@ const LoanManagement = () => {
             } else {
                 console.log('Fetching all active loans');
                 // For "All Loans" tab, we should get all loans, not just active ones
-                // Let's try getting all statuses
+                // Let's try getting all loans by fetching each status
                 try {
                     // Try to get all loans by fetching each status
                     const [pendingResponse, activeResponse, completedResponse, rejectedResponse, cancelledResponse] = await Promise.all([
@@ -315,14 +313,29 @@ const LoanManagement = () => {
         }));
     };
 
+    // Calculate loan statistics for IntroCard
+    const calculateStats = () => {
+        const totalOutstanding = loanStats?.totalOutstanding || 0;
+        const activeLoans = loanStats?.activeLoans || 0;
+        const pendingLoans = loanStats?.pendingLoans || 0;
+        const overdueLoans = loanStats?.overdueLoans || 0;
+
+        return [
+            { value: formatCurrency(totalOutstanding), label: 'Total Outstanding' },
+            { value: activeLoans.toString(), label: 'Active Loans' },
+            { value: pendingLoans.toString(), label: 'Pending Approval' },
+            { value: overdueLoans.toString(), label: 'Overdue' }
+        ];
+    };
+
     // Define table columns
     const columns = [
         {
-            key: 'employee',
+            id: 'employee',
             accessor: 'employeeName',
             header: 'Employee',
-            width: 200,
             sortable: true,
+            filterable: true,
             render: (loan) => (
                 <div className="employee-info">
                     <div className="employee-name">{loan.employeeName}</div>
@@ -331,19 +344,19 @@ const LoanManagement = () => {
             )
         },
         {
-            key: 'loanAmount',
+            id: 'loanAmount',
             accessor: 'loanAmount',
             header: 'Loan Amount',
-            width: 120,
             sortable: true,
+            filterable: false,
             render: (loan) => formatCurrency(loan.loanAmount)
         },
         {
-            key: 'remainingBalance',
+            id: 'remainingBalance',
             accessor: 'remainingBalance',
             header: 'Remaining',
-            width: 120,
             sortable: true,
+            filterable: false,
             render: (loan) => (
                 <span className="remaining-balance">
                     {formatCurrency(loan.remainingBalance)}
@@ -351,18 +364,19 @@ const LoanManagement = () => {
             )
         },
         {
-            key: 'installmentAmount',
+            id: 'installmentAmount',
             accessor: 'installmentAmount',
             header: 'Monthly Payment',
-            width: 120,
             sortable: true,
+            filterable: false,
             render: (loan) => formatCurrency(loan.installmentAmount)
         },
         {
-            key: 'progress',
+            id: 'progress',
             accessor: 'paidInstallments',
             header: 'Progress',
-            width: 150,
+            sortable: false,
+            filterable: false,
             render: (loan) => (
                 <LoanProgress
                     paid={loan.paidInstallments || 0}
@@ -372,27 +386,27 @@ const LoanManagement = () => {
             )
         },
         {
-            key: 'startDate',
+            id: 'startDate',
             accessor: 'startDate',
             header: 'Start Date',
-            width: 120,
             sortable: true,
+            filterable: false,
             render: (loan) => new Date(loan.startDate).toLocaleDateString()
         },
         {
-            key: 'endDate',
+            id: 'endDate',
             accessor: 'endDate',
             header: 'End Date',
-            width: 120,
             sortable: true,
+            filterable: false,
             render: (loan) => new Date(loan.endDate).toLocaleDateString()
         },
         {
-            key: 'status',
+            id: 'status',
             accessor: 'status',
             header: 'Status',
-            width: 120,
             sortable: true,
+            filterable: true,
             render: (loan) => getLoanStatusBadge(loan.status)
         }
     ];
@@ -400,12 +414,14 @@ const LoanManagement = () => {
     // Define table actions
     const actions = [
         {
+            id: 'view',
             label: 'View Details',
             icon: <FaEye />,
             onClick: (loan) => handleViewLoan(loan),
             className: 'action-view'
         },
         {
+            id: 'edit',
             label: 'Edit',
             icon: <FaEdit />,
             onClick: (loan) => handleEditLoan(loan),
@@ -413,6 +429,7 @@ const LoanManagement = () => {
             isDisabled: (loan) => loan.status !== 'PENDING'
         },
         {
+            id: 'approve',
             label: 'Approve',
             icon: <FaCheck />,
             onClick: (loan) => handleApproveLoan(loan.id),
@@ -420,6 +437,7 @@ const LoanManagement = () => {
             isDisabled: (loan) => loan.status !== 'PENDING'
         },
         {
+            id: 'reject',
             label: 'Reject',
             icon: <FaTimes />,
             onClick: (loan) => handleRejectLoan(loan.id),
@@ -427,43 +445,12 @@ const LoanManagement = () => {
             isDisabled: (loan) => loan.status !== 'PENDING'
         },
         {
+            id: 'cancel',
             label: 'Cancel',
             icon: <FaTimes />,
             onClick: (loan) => handleCancelLoan(loan.id),
             className: 'action-cancel',
             isDisabled: (loan) => ['COMPLETED', 'CANCELLED'].includes(loan.status)
-        }
-    ];
-
-    // Prepare filterable columns for DataTable
-    const filterableColumns = [
-        {
-            accessor: 'employeeName',
-            header: 'Employee',
-            filterType: 'text'
-        },
-        {
-            accessor: 'status',
-            header: 'Status',
-            filterType: 'select',
-            options: [
-                { value: '', label: 'All Statuses' },
-                { value: 'PENDING', label: 'Pending' },
-                { value: 'ACTIVE', label: 'Active' },
-                { value: 'COMPLETED', label: 'Completed' },
-                { value: 'REJECTED', label: 'Rejected' },
-                { value: 'CANCELLED', label: 'Cancelled' }
-            ]
-        },
-        {
-            accessor: 'loanAmount',
-            header: 'Loan Amount',
-            filterType: 'number'
-        },
-        {
-            accessor: 'remainingBalance',
-            header: 'Remaining Balance',
-            filterType: 'number'
         }
     ];
 
@@ -515,57 +502,14 @@ const LoanManagement = () => {
 
     return (
         <div className="loan-management">
-            {/* Header */}
-            <div className="loan-management__header">
-                <div className="header-content">
-                    <h1 className="page-title">Loan Management</h1>
-                    <div className="header-actions">
-                        <button
-                            className="btn btn-primary"
-                            onClick={handleAddLoan}
-                        >
-                            <FaPlus /> Create New Loan
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Stats Cards */}
-            <div className="loan-management__stats">
-                <LoanStatsCard
-                    title="Total Outstanding"
-                    value={loanStats?.totalOutstanding || 0}
-                    format="currency"
-                    icon={<FaMoneyBillWave />}
-                    className="stats-card--primary"
-                    loading={statsLoading}
-                />
-                <LoanStatsCard
-                    title="Active Loans"
-                    value={loanStats?.activeLoans || 0}
-                    format="number"
-                    icon={<FaCalendarAlt />}
-                    className="stats-card--success"
-                    loading={statsLoading}
-                />
-                <LoanStatsCard
-                    title="Overdue Loans"
-                    value={loanStats?.overdueLoans || 0}
-                    format="number"
-                    urgent={loanStats?.overdueLoans > 0}
-                    icon={<FaExclamationTriangle />}
-                    className="stats-card--warning"
-                    loading={statsLoading}
-                />
-                <LoanStatsCard
-                    title="Pending Approval"
-                    value={loanStats?.pendingLoans || 0}
-                    format="number"
-                    icon={<FaCheck />}
-                    className="stats-card--info"
-                    loading={statsLoading}
-                />
-            </div>
+            {/* IntroCard with loan statistics */}
+            <IntroCard
+                title="Employee Loan Management"
+                label="LOAN CENTER"
+                icon={<FaHandHoldingUsd />}
+                stats={calculateStats()}
+                className="loan-intro-card"
+            />
 
             {/* Filter Tabs */}
             <div className="loan-management__filters">
@@ -597,47 +541,66 @@ const LoanManagement = () => {
                 </div>
             </div>
 
-            {/* Results Summary */}
-            <div className="loan-management__summary">
-                <p>Showing {loans.length} of {totalElements} loans</p>
-            </div>
-
             {/* Data Table */}
-            <div className="loan-management__table">
-                <DataTable
-                    // Data props
-                    data={loans}
-                    columns={columns}
-                    loading={loading}
+            <DataTable
+                // Data props
+                data={loans}
+                columns={columns}
+                loading={loading}
 
-                    // Table configuration
-                    tableTitle=""
-                    emptyMessage="No loans found. Click 'Create New Loan' to add your first loan."
-                    defaultSortField="startDate"
-                    defaultSortDirection="desc"
-                    defaultItemsPerPage={20}
-                    itemsPerPageOptions={[10, 20, 50, 100]}
+                // Table configuration
+                tableTitle="Employee Loans"
+                emptyStateMessage="No loans found"
+                noResultsMessage="No loans match your search criteria"
+                defaultSortField="startDate"
+                defaultSortDirection="desc"
+                defaultItemsPerPage={20}
+                itemsPerPageOptions={[10, 20, 50, 100]}
 
-                    // Search and filters
-                    showSearch={true}
-                    showFilters={true}
-                    filterableColumns={filterableColumns}
+                // Search and filters
+                showSearch={true}
+                showFilters={true}
 
-                    // Actions
-                    actions={actions}
+                // Actions
+                actions={actions}
 
-                    // Export functionality
-                    showExportButton={true}
-                    exportButtonText="Export Loans"
-                    exportFileName="loans"
-                    onExportStart={() => console.log('Export started')}
-                    onExportComplete={(data) => showSuccess(`Exported ${data.rowCount} loans`)}
-                    onExportError={(error) => showError('Export failed')}
+                // Add button configuration
+                showAddButton={true}
+                addButtonText="Create New Loan"
+                addButtonIcon={<FaPlus />}
+                onAddClick={handleAddLoan}
+                addButtonDisabled={loading}
 
-                    // Styling
-                    className="loan-data-table"
-                />
-            </div>
+                // Export functionality
+                showExportButton={true}
+                exportButtonText="Export Loans"
+                exportFileName={`Employee_Loans_${new Date().toISOString().split('T')[0]}`}
+                exportAllData={true}
+                customExportHeaders={{
+                    employeeName: 'Employee Name',
+                    loanAmount: 'Loan Amount (USD)',
+                    remainingBalance: 'Remaining Balance (USD)',
+                    installmentAmount: 'Monthly Payment (USD)',
+                    startDate: 'Start Date',
+                    endDate: 'End Date',
+                    status: 'Loan Status'
+                }}
+                onExportStart={() => {
+                    console.log('Export started');
+                    showSuccess('Starting loans export...');
+                }}
+                onExportComplete={(data) => {
+                    console.log('Export completed:', data);
+                    showSuccess(`Successfully exported ${data.rowCount} loans to Excel`);
+                }}
+                onExportError={(error) => {
+                    console.error('Export failed:', error);
+                    showError('Failed to export loans. Please try again.');
+                }}
+
+                // Styling
+                className="loan-data-table"
+            />
 
             {/* Modals */}
             {showAddModal && (
@@ -672,37 +635,6 @@ const LoanManagement = () => {
     );
 };
 
-// Loan Stats Card Component
-const LoanStatsCard = ({ title, value, format, urgent, icon, className = '', loading = false }) => {
-    const formatValue = (val) => {
-        if (loading) return '...';
-
-        switch (format) {
-            case 'currency':
-                return new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD'
-                }).format(val);
-            case 'number':
-                return new Intl.NumberFormat('en-US').format(val);
-            default:
-                return val;
-        }
-    };
-
-    return (
-        <div className={`stats-card ${className} ${urgent ? 'stats-card--urgent' : ''} ${loading ? 'loading' : ''}`}>
-            <div className="stats-card__icon">
-                {icon}
-            </div>
-            <div className="stats-card__content">
-                <h4 className="stats-card__title">{title}</h4>
-                <div className="stats-card__value">{formatValue(value)}</div>
-            </div>
-        </div>
-    );
-};
-
 // Loan Progress Component
 const LoanProgress = ({ paid, total, percentage }) => {
     return (
@@ -711,9 +643,9 @@ const LoanProgress = ({ paid, total, percentage }) => {
                 <span className="progress-text">{paid}/{total}</span>
                 <span className="progress-percentage">{Math.round(percentage)}%</span>
             </div>
-            <div className="progress-bar">
+            <div className="loan-progress-bar">
                 <div
-                    className="progress-fill"
+                    className="loan-progress-fill"
                     style={{ width: `${Math.min(percentage, 100)}%` }}
                 />
             </div>

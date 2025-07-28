@@ -7,7 +7,7 @@ import ConfirmationDialog from '../../../../components/common/ConfirmationDialog
 import { candidateService } from '../../../../services/hr/candidateService.js';
 import { vacancyService } from "../../../../services/hr/vacancyService.js";
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
-import { FaFilePdf, FaUserCheck, FaTrashAlt } from 'react-icons/fa';
+import { FaFilePdf, FaUserCheck, FaTrashAlt, FaUserPlus } from 'react-icons/fa';
 
 const CandidatesTable = ({ vacancyId }) => {
     const navigate = useNavigate();
@@ -176,6 +176,11 @@ const CandidatesTable = ({ vacancyId }) => {
         setConfirmDialog(prev => ({ ...prev, isVisible: false }));
     };
 
+    // Handle add button click from DataTable
+    const handleAddButtonClick = () => {
+        setShowAddModal(true);
+    };
+
     // Format date
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -220,37 +225,58 @@ const CandidatesTable = ({ vacancyId }) => {
     // Define columns for DataTable
     const columns = [
         {
+            id: 'name',
             header: 'Name',
             accessor: 'firstName',
+            sortable: true,
+            filterable: true,
             render: (row) => `${row.firstName} ${row.lastName}`
         },
         {
+            id: 'status',
             header: 'Status',
             accessor: 'candidateStatus',
+            sortable: true,
+            filterable: true,
             render: (row) => getCandidateStatusBadge(row.candidateStatus)
         },
         {
+            id: 'email',
             header: 'Email',
-            accessor: 'email'
+            accessor: 'email',
+            sortable: true,
+            filterable: true
         },
         {
+            id: 'phone',
             header: 'Phone',
             accessor: 'phoneNumber',
+            sortable: true,
+            filterable: true,
             render: (row) => row.phoneNumber || 'N/A'
         },
         {
+            id: 'currentPosition',
             header: 'Current Position',
             accessor: 'currentPosition',
+            sortable: true,
+            filterable: true,
             render: (row) => row.currentPosition || 'N/A'
         },
         {
+            id: 'currentCompany',
             header: 'Current Company',
             accessor: 'currentCompany',
+            sortable: true,
+            filterable: true,
             render: (row) => row.currentCompany || 'N/A'
         },
         {
+            id: 'applicationDate',
             header: 'Applied',
             accessor: 'applicationDate',
+            sortable: true,
+            filterable: false,
             render: (row) => formatDate(row.applicationDate)
         }
     ];
@@ -258,6 +284,7 @@ const CandidatesTable = ({ vacancyId }) => {
     // Define actions for DataTable
     const actions = [
         {
+            id: 'view-resume',
             label: 'View Resume',
             icon: <FaFilePdf />,
             onClick: (row) => window.open(row.resumeUrl, '_blank'),
@@ -265,6 +292,7 @@ const CandidatesTable = ({ vacancyId }) => {
             className: 'view-resume-btn'
         },
         {
+            id: 'hire',
             label: 'Hire',
             icon: <FaUserCheck />,
             onClick: (row) => handleHireCandidate(row),
@@ -272,6 +300,7 @@ const CandidatesTable = ({ vacancyId }) => {
             className: 'hire-btn'
         },
         {
+            id: 'delete',
             label: 'Delete',
             icon: <FaTrashAlt />,
             onClick: (row) => handleDeleteCandidate(row),
@@ -293,14 +322,7 @@ const CandidatesTable = ({ vacancyId }) => {
         <div className="candidates-section">
             {/* Error Display */}
             {error && (
-                <div className="error-alert" style={{
-                    backgroundColor: '#f8d7da',
-                    color: '#721c24',
-                    padding: '12px',
-                    borderRadius: '4px',
-                    marginBottom: '16px',
-                    border: '1px solid #f5c6cb'
-                }}>
+                <div className="error-alert">
                     <strong>Error:</strong> {error}
                 </div>
             )}
@@ -336,35 +358,40 @@ const CandidatesTable = ({ vacancyId }) => {
                     </div>
                     {vacancyStats.isFull && (
                         <div className="vacancy-full-alert">
-                            <i className="fas fa-exclamation-circle"></i>
-                            This vacancy is full. New candidates will be moved to the potential list.
+                            <i className="fas fa-exclamation-triangle"></i>
+                            <span>
+                                <span className="important-label">Important</span>
+                                This vacancy is full. New candidates will be moved to the potential list.
+                            </span>
                         </div>
                     )}
                 </div>
             )}
-
-            <div className="departments-header">
-                <h2>Candidates</h2>
-                <button
-                    className="btn-primary"
-                    onClick={() => setShowAddModal(true)}
-                    disabled={loading || actionLoading}
-                >
-                    {actionLoading ? 'Processing...' : loading ? 'Loading...' : 'Add Candidate'}
-                </button>
-            </div>
 
             <DataTable
                 data={candidates}
                 columns={columns}
                 actions={actions}
                 loading={loading}
-                tableTitle="Candidates List"
+                tableTitle="Candidates"
                 showSearch={true}
                 showFilters={true}
-                filterableColumns={columns.filter(col => col.accessor !== 'candidateStatus')}
+                showExport={true}
+                exportFileName={`Vacancy_${vacancyId}_Candidates`}
+                filterableColumns={columns.filter(col => col.filterable)}
                 defaultItemsPerPage={10}
                 itemsPerPageOptions={[10, 25, 50, 100]}
+                defaultSortField="applicationDate"
+                defaultSortDirection="desc"
+                emptyStateMessage="No candidates found for this vacancy"
+                noResultsMessage="No candidates match your search criteria"
+                className="candidates-datatable"
+                // Add button configuration
+                showAddButton={true}
+                addButtonText="Add Candidate"
+                addButtonIcon={<FaUserPlus />}
+                onAddClick={handleAddButtonClick}
+                addButtonDisabled={loading || actionLoading}
             />
 
             {/* Add Candidate Modal */}

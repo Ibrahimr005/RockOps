@@ -290,7 +290,7 @@ const DepartmentsList = () => {
 
                                 <button
                                     type="button"
-                                    className="departments-cancel-button"
+                                    className="btn-cancel"
                                     onClick={handleCloseForm}
                                     disabled={loading}
                                 >
@@ -349,7 +349,7 @@ const DepartmentsList = () => {
 
                                 <button
                                     type="button"
-                                    className="departments-cancel-button"
+                                    className="btn-cancel"
                                     onClick={handleCloseEditForm}
                                     disabled={loading}
                                 >
@@ -377,7 +377,7 @@ const DepartmentsList = () => {
                         <div className="departments-form-actions">
 
                             <button
-                                className="departments-cancel-button"
+                                className="btn-cancel"
                                 onClick={() => setDeleteConfirmId(null)}
                                 disabled={loading}
                             >

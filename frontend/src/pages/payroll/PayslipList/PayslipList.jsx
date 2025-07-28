@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaDownload, FaEnvelope, FaFilePdf, FaEye, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaDownload, FaEnvelope, FaFilePdf, FaEye, FaTrash, FaMoneyBillWave, FaFileInvoiceDollar } from 'react-icons/fa';
 import { payslipService } from '../../../services/payroll/payslipService.js';
 import { payrollService } from '../../../services/payroll/payrollService.js';
 import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import IntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
 import './PayslipList.scss';
 
 const PayslipList = () => {
@@ -33,6 +34,9 @@ const PayslipList = () => {
         startDate: '',
         endDate: ''
     });
+
+    // State for bulk actions and selection
+    const [selectedPayslips, setSelectedPayslips] = useState([]);
 
     useEffect(() => {
         loadPayslips();
@@ -192,9 +196,6 @@ const PayslipList = () => {
         }
     };
 
-    // State for bulk actions and selection
-    const [selectedPayslips, setSelectedPayslips] = useState([]);
-
     // Handle bulk actions
     const handleBulkAction = (action) => {
         if (selectedPayslips.length === 0) {
@@ -240,12 +241,30 @@ const PayslipList = () => {
         setSelectedPayslips(selectedRows);
     };
 
+    // Calculate payslip statistics for IntroCard
+    const calculateStats = () => {
+        const totalPayslips = payslips.length;
+        const draftCount = payslips.filter(p => p.status === 'DRAFT').length;
+        const sentCount = payslips.filter(p => p.status === 'SENT').length;
+        const totalAmount = payslips.reduce((sum, p) => sum + (p.netPay || 0), 0);
+
+        return [
+            { value: totalPayslips.toString(), label: 'Total Payslips' },
+            { value: draftCount.toString(), label: 'Draft' },
+            { value: sentCount.toString(), label: 'Sent' },
+            { value: formatCurrency(totalAmount), label: 'Total Amount' }
+        ];
+    };
+
     // Define table columns with selection column
     const columns = [
         {
-            key: 'select',
+            id: 'select',
             header: '',
+            accessor: 'select',
             width: 50,
+            sortable: false,
+            filterable: false,
             render: (payslip) => (
                 <input
                     type="checkbox"
@@ -261,9 +280,11 @@ const PayslipList = () => {
             )
         },
         {
+            id: 'employee',
             accessor: 'employeeName',
             header: 'Employee',
             sortable: true,
+            filterable: true,
             render: (payslip) => (
                 <div className="employee-info">
                     <div className="employee-name">{payslip.employeeName}</div>
@@ -275,9 +296,11 @@ const PayslipList = () => {
             )
         },
         {
+            id: 'payPeriod',
             accessor: 'payPeriodStart',
             header: 'Pay Period',
             sortable: true,
+            filterable: false,
             render: (payslip) => (
                 <div className="pay-period">
                     <div>{new Date(payslip.payPeriodStart).toLocaleDateString()}</div>
@@ -286,27 +309,35 @@ const PayslipList = () => {
             )
         },
         {
+            id: 'payDate',
             accessor: 'payDate',
             header: 'Pay Date',
             sortable: true,
+            filterable: false,
             render: (payslip) => new Date(payslip.payDate).toLocaleDateString()
         },
         {
+            id: 'grossSalary',
             accessor: 'grossSalary',
             header: 'Gross Salary',
             sortable: true,
+            filterable: false,
             render: (payslip) => formatCurrency(payslip.grossSalary)
         },
         {
+            id: 'totalDeductions',
             accessor: 'totalDeductions',
             header: 'Deductions',
             sortable: true,
+            filterable: false,
             render: (payslip) => formatCurrency(payslip.totalDeductions)
         },
         {
+            id: 'netPay',
             accessor: 'netPay',
             header: 'Net Pay',
             sortable: true,
+            filterable: false,
             render: (payslip) => (
                 <span className="net-pay-amount">
                     {formatCurrency(payslip.netPay)}
@@ -314,22 +345,26 @@ const PayslipList = () => {
             )
         },
         {
+            id: 'status',
             accessor: 'status',
             header: 'Status',
             sortable: true,
+            filterable: true,
             render: (payslip) => getStatusBadge(payslip.status)
         }
     ];
 
-    // Define table actions - DataTable expects a single actions array, not per-row
+    // Define table actions
     const actions = [
         {
+            id: 'view',
             label: 'View Details',
             icon: <FaEye />,
             onClick: (payslip) => handlePayslipAction(payslip.id, 'view'),
             className: 'action-view'
         },
         {
+            id: 'generatePdf',
             label: 'Generate PDF',
             icon: <FaFilePdf />,
             onClick: (payslip) => handlePayslipAction(payslip.id, 'generatePdf'),
@@ -337,6 +372,7 @@ const PayslipList = () => {
             isDisabled: (payslip) => payslip.status !== 'DRAFT'
         },
         {
+            id: 'sendEmail',
             label: 'Send Email',
             icon: <FaEnvelope />,
             onClick: (payslip) => handlePayslipAction(payslip.id, 'sendEmail'),
@@ -344,6 +380,7 @@ const PayslipList = () => {
             isDisabled: (payslip) => payslip.status !== 'GENERATED'
         },
         {
+            id: 'download',
             label: 'Download PDF',
             icon: <FaDownload />,
             onClick: (payslip) => handlePayslipAction(payslip.id, 'download'),
@@ -351,54 +388,12 @@ const PayslipList = () => {
             isDisabled: (payslip) => payslip.status !== 'SENT' && payslip.status !== 'ACKNOWLEDGED'
         },
         {
+            id: 'delete',
             label: 'Delete',
             icon: <FaTrash />,
             onClick: (payslip) => handlePayslipAction(payslip.id, 'delete'),
             className: 'action-delete',
             isDisabled: (payslip) => payslip.status !== 'DRAFT'
-        }
-    ];
-
-    // Define filterable columns
-    const filterableColumns = [
-        {
-            accessor: 'status',
-            header: 'Status',
-            filterType: 'select'
-        },
-        {
-            accessor: 'employeeName',
-            header: 'Employee',
-            filterType: 'text'
-        },
-        {
-            accessor: 'departmentName',
-            header: 'Department',
-            filterType: 'select'
-        }
-    ];
-
-    // Custom filters for date range
-    const customFilters = [
-        {
-            label: 'Start Date',
-            component: (
-                <input
-                    type="date"
-                    value={filters.startDate}
-                    onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-                />
-            )
-        },
-        {
-            label: 'End Date',
-            component: (
-                <input
-                    type="date"
-                    value={filters.endDate}
-                    onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-                />
-            )
         }
     ];
 
@@ -427,8 +422,8 @@ const PayslipList = () => {
 
         return (
             <span className={`status-badge ${config.class}`}>
-            {config.text}
-        </span>
+                {config.text}
+            </span>
         );
     };
 
@@ -454,20 +449,14 @@ const PayslipList = () => {
 
     return (
         <div className="payslip-list">
-            {/* Header with bulk actions */}
-            <div className="payslip-list__header">
-                <div className="header-content">
-                    <h1 className="page-title">Payslips</h1>
-                    <div className="header-actions">
-                        <button
-                            className="btn btn-primary"
-                            onClick={handleGenerateMonthlyPayroll}
-                        >
-                            <FaPlus /> Generate Monthly Payroll
-                        </button>
-                    </div>
-                </div>
-            </div>
+            {/* IntroCard with payslip statistics */}
+            <IntroCard
+                title="Payroll Management"
+                label="PAYROLL CENTER"
+                icon={<FaFileInvoiceDollar />}
+                stats={calculateStats()}
+                className="payslip-intro-card"
+            />
 
             {/* Bulk Actions */}
             {selectedPayslips.length > 0 && (
@@ -494,11 +483,6 @@ const PayslipList = () => {
                 </div>
             )}
 
-            {/* Results Summary */}
-            <div className="payslip-list__summary">
-                <p>Showing {payslips.length} payslips</p>
-            </div>
-
             <DataTable
                 // Data props
                 data={payslips}
@@ -506,8 +490,9 @@ const PayslipList = () => {
                 loading={loading}
 
                 // Table configuration
-                tableTitle="" // We have our own header above
-                emptyMessage="No payslips found"
+                tableTitle="Employee Payslips"
+                emptyStateMessage="No payslips found"
+                noResultsMessage="No payslips match your search criteria"
                 defaultSortField="payDate"
                 defaultSortDirection="desc"
                 defaultItemsPerPage={20}
@@ -516,39 +501,51 @@ const PayslipList = () => {
                 // Search and filters
                 showSearch={true}
                 showFilters={true}
-                filterableColumns={filterableColumns}
-                customFilters={customFilters}
 
                 // Actions
                 actions={actions}
 
-                // Add button - disabled since we have our own header
-                showAddButton={false}
+                // Add button configuration
+                showAddButton={true}
+                addButtonText="Generate Monthly Payroll"
+                addButtonIcon={<FaPlus />}
+                onAddClick={handleGenerateMonthlyPayroll}
+                addButtonDisabled={loading}
 
-                // Export functionality
+                // Export functionality - Enhanced
                 showExportButton={true}
-                exportButtonText="Export Payslips"
-                exportFileName="payslips"
-                onExportStart={() => console.log('Export started')}
-                onExportComplete={(data) => showSuccess(`Exported ${data.rowCount} payslips`)}
-                onExportError={(error) => showError('Export failed')}
-
-                // Selection handling
-                selectAll={{
-                    checked: selectedPayslips.length === payslips.length && payslips.length > 0,
-                    indeterminate: selectedPayslips.length > 0 && selectedPayslips.length < payslips.length,
-                    onChange: (checked) => {
-                        if (checked) {
-                            setSelectedPayslips(payslips);
-                        } else {
-                            setSelectedPayslips([]);
-                        }
-                    }
+                exportButtonText="Export to Excel"
+                exportButtonIcon={<FaDownload />}
+                exportFileName={`Payslips_${new Date().toISOString().split('T')[0]}`}
+                exportAllData={true} // Export all data, not just current page
+                excludeColumnsFromExport={['select']} // Don't export the checkbox column
+                customExportHeaders={{
+                    employeeName: 'Employee Name',
+                    payPeriodStart: 'Pay Period Start',
+                    payPeriodEnd: 'Pay Period End',
+                    payDate: 'Pay Date',
+                    grossSalary: 'Gross Salary (USD)',
+                    totalDeductions: 'Total Deductions (USD)',
+                    netPay: 'Net Pay (USD)',
+                    status: 'Payment Status'
+                }}
+                onExportStart={() => {
+                    console.log('Export started');
+                    showSuccess('Starting payslips export...');
+                }}
+                onExportComplete={(data) => {
+                    console.log('Export completed:', data);
+                    showSuccess(`Successfully exported ${data.rowCount} payslips to Excel`);
+                }}
+                onExportError={(error) => {
+                    console.error('Export failed:', error);
+                    showError('Failed to export payslips. Please try again.');
                 }}
 
-                // Row selection
-                onSelectionChange={handleSelectionChange}
+                // Selection handling
+                showSelection={true}
                 selectedRows={selectedPayslips}
+                onSelectionChange={handleSelectionChange}
 
                 // Styling
                 className="payslip-data-table"

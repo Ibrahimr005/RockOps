@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BsCalendarCheck, BsClockHistory, BsPersonCheck, BsClipboardData } from 'react-icons/bs';
+import { FaEye, FaEdit, FaClock } from 'react-icons/fa';
+import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 
 import './AttendanceTab.scss';
 import {useSnackbar} from "../../../../contexts/SnackbarContext.jsx";
@@ -317,127 +319,199 @@ const AttendanceTab = ({ employee, formatDate }) => {
         });
     };
 
-    const renderAttendanceTable = (records = attendanceData.slice(0, 5)) => {
-        if (records.length === 0) {
-            return (
-                <div className="attendance-tab-no-records">
-                    <p>No attendance records found for the selected period.</p>
-                </div>
-            );
-        }
+    // Define columns based on contract type
+    const getColumns = () => {
+        const baseColumns = [
+            {
+                id: 'date',
+                header: 'Date',
+                accessor: 'date',
+                sortable: true,
+                filterable: true,
+                render: (row) => {
+                    const date = new Date(row.date);
+                    return formatDate ? formatDate(row.date) : date.toLocaleDateString();
+                }
+            },
+            {
+                id: 'day',
+                header: 'Day',
+                accessor: 'day',
+                sortable: false,
+                filterable: false,
+                render: (row) => {
+                    const date = new Date(row.date);
+                    return date.toLocaleDateString('en-US', { weekday: 'short' });
+                }
+            },
+            {
+                id: 'status',
+                header: 'Status',
+                accessor: 'status',
+                sortable: true,
+                filterable: true,
+                render: (row) => getStatusBadge(row.status)
+            }
+        ];
 
         if (contractType === 'HOURLY') {
-            return (
-                <table className="attendance-tab-table">
-                    <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th>Check In</th>
-                        <th>Check Out</th>
-                        <th>Hours Worked</th>
-                        <th>Expected</th>
-                        <th>Overtime</th>
-                        <th>Notes</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {records.map((record, index) => (
-                        <tr key={`${record.date}-${index}`}>
-                            <td>{formatDate ? formatDate(record.date) : new Date(record.date).toLocaleDateString()}</td>
-                            <td>{getStatusBadge(record.status)}</td>
-                            <td>{formatTime(record.checkIn)}</td>
-                            <td>{formatTime(record.checkOut)}</td>
-                            <td className="attendance-tab-hours-cell">
-                                {record.hoursWorked ? `${record.hoursWorked}h` : '-'}
-                            </td>
-                            <td className="attendance-tab-hours-cell">
-                                {record.expectedHours ? `${record.expectedHours}h` : '-'}
-                            </td>
-                            <td className="attendance-tab-overtime-cell">
-                                {record.overtimeHours ? `${record.overtimeHours}h` : '-'}
-                            </td>
-                            <td className="attendance-tab-notes-cell">{record.notes || '-'}</td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
-            );
+            return [
+                ...baseColumns,
+                {
+                    id: 'checkIn',
+                    header: 'Check In',
+                    accessor: 'checkIn',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => formatTime(row.checkIn)
+                },
+                {
+                    id: 'checkOut',
+                    header: 'Check Out',
+                    accessor: 'checkOut',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => formatTime(row.checkOut)
+                },
+                {
+                    id: 'hoursWorked',
+                    header: 'Hours Worked',
+                    accessor: 'hoursWorked',
+                    sortable: true,
+                    filterable: true,
+                    render: (row) => row.hoursWorked ? `${row.hoursWorked}h` : '-'
+                },
+                {
+                    id: 'expectedHours',
+                    header: 'Expected',
+                    accessor: 'expectedHours',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => row.expectedHours ? `${row.expectedHours}h` : '-'
+                },
+                {
+                    id: 'overtimeHours',
+                    header: 'Overtime',
+                    accessor: 'overtimeHours',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => row.overtimeHours ? `${row.overtimeHours}h` : '-'
+                },
+                {
+                    id: 'notes',
+                    header: 'Notes',
+                    accessor: 'notes',
+                    sortable: false,
+                    filterable: true,
+                    render: (row) => row.notes || '-'
+                }
+            ];
         } else if (contractType === 'MONTHLY') {
-            return (
-                <table className="attendance-tab-table">
-                    <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Day</th>
-                        <th>Status</th>
-                        <th>Check In</th>
-                        <th>Check Out</th>
-                        <th>Working Hours</th>
-                        <th>Overtime</th>
-                        <th>Notes</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {records.map((record, index) => {
-                        const date = new Date(record.date);
-                        const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
-                        const workingHours = calculateHoursFromTimes(record.checkIn, record.checkOut);
-
-                        return (
-                            <tr key={`${record.date}-${index}`}>
-                                <td>{formatDate ? formatDate(record.date) : date.toLocaleDateString()}</td>
-                                <td>{dayOfWeek}</td>
-                                <td>{getStatusBadge(record.status)}</td>
-                                <td>{formatTime(record.checkIn)}</td>
-                                <td>{formatTime(record.checkOut)}</td>
-                                <td className="attendance-tab-hours-cell">
-                                    {workingHours > 0 ? `${workingHours}h` : '-'}
-                                </td>
-                                <td className="attendance-tab-overtime-cell">
-                                    {record.overtimeHours ? `${record.overtimeHours}h` : '-'}
-                                </td>
-                                <td className="attendance-tab-notes-cell">{record.notes || '-'}</td>
-                            </tr>
-                        );
-                    })}
-                    </tbody>
-                </table>
-            );
+            return [
+                ...baseColumns,
+                {
+                    id: 'checkIn',
+                    header: 'Check In',
+                    accessor: 'checkIn',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => formatTime(row.checkIn)
+                },
+                {
+                    id: 'checkOut',
+                    header: 'Check Out',
+                    accessor: 'checkOut',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => formatTime(row.checkOut)
+                },
+                {
+                    id: 'workingHours',
+                    header: 'Working Hours',
+                    accessor: 'workingHours',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => {
+                        const hours = calculateHoursFromTimes(row.checkIn, row.checkOut);
+                        return hours > 0 ? `${hours}h` : '-';
+                    }
+                },
+                {
+                    id: 'overtimeHours',
+                    header: 'Overtime',
+                    accessor: 'overtimeHours',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => row.overtimeHours ? `${row.overtimeHours}h` : '-'
+                },
+                {
+                    id: 'notes',
+                    header: 'Notes',
+                    accessor: 'notes',
+                    sortable: false,
+                    filterable: true,
+                    render: (row) => row.notes || '-'
+                }
+            ];
         } else {
-            return (
-                <table className="attendance-tab-table">
-                    <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Day</th>
-                        <th>Status</th>
-                        <th>Day Type</th>
-                        <th>Leave Type</th>
-                        <th>Notes</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {records.map((record, index) => {
-                        const date = new Date(record.date);
-                        const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
-
-                        return (
-                            <tr key={`${record.date}-${index}`}>
-                                <td>{formatDate ? formatDate(record.date) : date.toLocaleDateString()}</td>
-                                <td>{dayOfWeek}</td>
-                                <td>{getStatusBadge(record.status)}</td>
-                                <td>{record.dayType || 'WORKING_DAY'}</td>
-                                <td>{record.leaveType || '-'}</td>
-                                <td className="attendance-tab-notes-cell">{record.notes || '-'}</td>
-                            </tr>
-                        );
-                    })}
-                    </tbody>
-                </table>
-            );
+            // DAILY contract type
+            return [
+                ...baseColumns,
+                {
+                    id: 'dayType',
+                    header: 'Day Type',
+                    accessor: 'dayType',
+                    sortable: true,
+                    filterable: true,
+                    render: (row) => row.dayType || 'WORKING_DAY'
+                },
+                {
+                    id: 'leaveType',
+                    header: 'Leave Type',
+                    accessor: 'leaveType',
+                    sortable: true,
+                    filterable: true,
+                    render: (row) => row.leaveType || '-'
+                },
+                {
+                    id: 'notes',
+                    header: 'Notes',
+                    accessor: 'notes',
+                    sortable: false,
+                    filterable: true,
+                    render: (row) => row.notes || '-'
+                }
+            ];
         }
     };
+
+    // Define actions for DataTable
+    const actions = [
+        {
+            id: 'view',
+            label: 'View Details',
+            icon: <FaEye />,
+            onClick: (row) => {
+                // Handle view attendance record details
+                console.log('View attendance record:', row);
+            }
+        },
+        {
+            id: 'edit',
+            label: 'Edit Record',
+            icon: <FaEdit />,
+            onClick: (row) => {
+                // Handle edit attendance record
+                console.log('Edit attendance record:', row);
+            },
+            isDisabled: (row) => {
+                // Disable editing for old records or certain statuses
+                const recordDate = new Date(row.date);
+                const daysDiff = Math.floor((new Date() - recordDate) / (1000 * 60 * 60 * 24));
+                return daysDiff > 7; // Can't edit records older than 7 days
+            }
+        }
+    ];
 
     const renderAttendanceMetrics = () => {
         return (
@@ -529,6 +603,28 @@ const AttendanceTab = ({ employee, formatDate }) => {
             <div className="attendance-tab">
                 <div className="attendance-tab-no-employee">
                     <p>No employee data available</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (isLoading) {
+        return (
+            <div className="attendance-tab">
+                <div className="attendance-tab-loading-container">
+                    <div className="loader"></div>
+                    <p>Loading attendance data...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="attendance-tab">
+                <div className="attendance-tab-error-container">
+                    <p>Error: {error}</p>
+                    <button onClick={fetchAttendanceData}>Try Again</button>
                 </div>
             </div>
         );
@@ -630,48 +726,55 @@ const AttendanceTab = ({ employee, formatDate }) => {
                 </div>
             </div>
 
-            {isLoading ? (
-                <div className="attendance-tab-loading-container">
-                    <div className="loader"></div>
-                    <p>Loading attendance data...</p>
+            {renderAttendanceMetrics()}
+
+            {todayRecords.length > 0 && (
+                <div className="attendance-tab-today-attendance">
+                    <h4>Today's Attendance</h4>
+                    <DataTable
+                        data={todayRecords}
+                        columns={getColumns()}
+                        actions={actions}
+                        tableTitle=""
+                        showSearch={false}
+                        showFilters={false}
+                        showExport={false}
+                        defaultItemsPerPage={5}
+                        itemsPerPageOptions={[5]}
+                        defaultSortField="date"
+                        defaultSortDirection="desc"
+                        emptyStateMessage="No attendance record for today"
+                        className="today-attendance-table"
+                    />
                 </div>
-            ) : error ? (
-                <div className="attendance-tab-error-container">
-                    <p>Error: {error}</p>
-                    <button onClick={fetchAttendanceData}>Try Again</button>
-                </div>
-            ) : (
-                <>
-                    {renderAttendanceMetrics()}
-
-                    {todayRecords.length > 0 && (
-                        <div className="attendance-tab-today-attendance">
-                            <h4>Today's Attendance</h4>
-                            <div className="attendance-tab-table-container">
-                                {renderAttendanceTable(todayRecords)}
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="attendance-tab-details">
-                        <h4>Recent Attendance</h4>
-                        <div className="attendance-tab-table-container">
-                            {renderAttendanceTable()}
-                        </div>
-                        {attendanceData.length > 5 && (
-                            <div className="attendance-tab-table-footer">
-                                <small>Showing {Math.min(5, attendanceData.length)} of {attendanceData.length} records</small>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="attendance-tab-view-all-link">
-                        <a href={`/attendance/${employee.id}`} target="_blank" rel="noopener noreferrer">
-                            View Complete Attendance History →
-                        </a>
-                    </div>
-                </>
             )}
+
+            <div className="attendance-tab-details">
+                <h4>Attendance History</h4>
+                <DataTable
+                    data={attendanceData}
+                    columns={getColumns()}
+                    actions={actions}
+                    tableTitle=""
+                    showSearch={true}
+                    showFilters={true}
+                    showExport={true}
+                    exportFileName={`${employee.firstName}_${employee.lastName}_Attendance_${months.find(m => m.value === selectedMonth)?.label}_${selectedYear}`}
+                    defaultItemsPerPage={15}
+                    itemsPerPageOptions={[10, 15, 25, 50]}
+                    defaultSortField="date"
+                    defaultSortDirection="desc"
+                    emptyStateMessage="No attendance records found for this period"
+                    noResultsMessage="No attendance records match your search criteria"
+                    className="attendance-history-table"
+                />
+            </div>
+
+            <div className="attendance-tab-view-all-link">
+                <a href={`/hr/attendance`} target="_blank" rel="noopener noreferrer">
+                    View Complete Attendance History →
+                </a>
+            </div>
         </div>
     );
 };

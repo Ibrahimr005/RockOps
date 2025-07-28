@@ -3,6 +3,7 @@ import { FaTimes, FaUser, FaMoneyBillWave, FaCalendarAlt, FaPercent, FaFileAlt, 
 import { loanService } from '../../../../services/payroll/loanService';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
+import DataTable from '../../../../components/common/DataTable/DataTable';
 import './LoanModal.scss';
 
 const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
@@ -64,6 +65,7 @@ const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
                     setSelectedSchedule(null);
                     setRepaymentAmount('');
                     loadRepaymentSchedule(); // Refresh the schedule
+                    showSuccess('Repayment processed successfully');
                 } catch (error) {
                     console.error('Error processing repayment:', error);
                     showError('Failed to process repayment');
@@ -91,8 +93,8 @@ const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
 
     const getStatusBadge = (status) => {
         const statusConfig = {
-            PENDING: { class: 'status-pending', text: 'Pending' },
-            PAID: { class: 'status-paid', text: 'Paid' },
+            PENDING: { class: 'pending', text: 'Pending' },
+            PAID: { class: 'active', text: 'Paid' },
             OVERDUE: { class: 'status-overdue', text: 'Overdue' },
             PARTIAL: { class: 'status-partial', text: 'Partial' }
         };
@@ -137,6 +139,52 @@ const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
             schedule.status === 'PENDING' && new Date(schedule.dueDate) < today
         ).length;
     };
+
+    // DataTable columns configuration
+    const scheduleColumns = [
+        {
+            header: 'Installment',
+            accessor: 'installmentNumber',
+            width: '100px',
+            render: (row) => `#${row.installmentNumber}`
+        },
+        {
+            header: 'Due Date',
+            accessor: 'dueDate',
+            render: (row) => formatDate(row.dueDate)
+        },
+        {
+            header: 'Scheduled Amount',
+            accessor: 'scheduledAmount',
+            render: (row) => formatCurrency(row.scheduledAmount)
+        },
+        {
+            header: 'Paid Amount',
+            accessor: 'paidAmount',
+            render: (row) => row.paidAmount ? formatCurrency(row.paidAmount) : '-'
+        },
+        {
+            header: 'Payment Date',
+            accessor: 'paymentDate',
+            render: (row) => row.paymentDate ? formatDate(row.paymentDate) : '-'
+        },
+        {
+            header: 'Status',
+            accessor: 'status',
+            render: (row) => getStatusBadge(row.status)
+        }
+    ];
+
+    // DataTable actions configuration
+    const scheduleActions = [
+        {
+            label: 'Process Payment',
+            icon: <FaCheck />,
+            onClick: (row) => handleProcessRepayment(row),
+            isDisabled: (row) => row.status !== 'PENDING',
+            className: 'btn-primary'
+        }
+    ];
 
     if (!loan) return null;
 
@@ -223,69 +271,40 @@ const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
                                     </div>
                                 )}
                             </div>
-                            <div className="progress-bar">
+                            <div className="loan-progress-bar">
                                 <div
-                                    className="progress-fill"
+                                    className="loan-progress-fill"
                                     style={{ width: `${Math.min(calculateProgress(), 100)}%` }}
                                 />
                             </div>
                         </div>
 
-                        {/* Repayment Schedule */}
+                        {/* Repayment Schedule with DataTable */}
                         <div className="schedule-section">
                             <h3>Repayment Schedule</h3>
-                            {loading ? (
-                                <div className="loading">Loading repayment schedule...</div>
-                            ) : (
-                                <div className="schedule-table">
-                                    <div className="table-header">
-                                        <span>Installment</span>
-                                        <span>Due Date</span>
-                                        <span>Scheduled Amount</span>
-                                        <span>Paid Amount</span>
-                                        <span>Payment Date</span>
-                                        <span>Status</span>
-                                        <span>Actions</span>
-                                    </div>
-                                    <div className="table-body">
-                                        {repaymentSchedule.map((schedule, index) => (
-                                            <div key={schedule.id || index} className="table-row">
-                                                <span>#{schedule.installmentNumber}</span>
-                                                <span>{formatDate(schedule.dueDate)}</span>
-                                                <span>{formatCurrency(schedule.scheduledAmount)}</span>
-                                                <span>
-                                                    {schedule.paidAmount
-                                                        ? formatCurrency(schedule.paidAmount)
-                                                        : '-'
-                                                    }
-                                                </span>
-                                                <span>
-                                                    {schedule.paymentDate
-                                                        ? formatDate(schedule.paymentDate)
-                                                        : '-'
-                                                    }
-                                                </span>
-                                                <span>{getStatusBadge(schedule.status)}</span>
-                                                <span>
-                                                    {schedule.status === 'PENDING' && (
-                                                        <button
-                                                            className="btn btn-sm btn-primary"
-                                                            onClick={() => handleProcessRepayment(schedule)}
-                                                        >
-                                                            <FaCheck /> Pay
-                                                        </button>
-                                                    )}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                            <DataTable
+                                data={repaymentSchedule}
+                                columns={scheduleColumns}
+                                actions={scheduleActions}
+                                loading={loading}
+                                tableTitle=""
+                                showSearch={true}
+                                showFilters={true}
+                                filterableColumns={[
+                                    { header: 'Status', accessor: 'status' },
+                                    { header: 'Due Date', accessor: 'dueDate' }
+                                ]}
+                                defaultItemsPerPage={10}
+                                itemsPerPageOptions={[5, 10, 15, 20]}
+                                showAddButton={false}
+                                emptyMessage="No repayment schedule available"
+                                className="loan-schedule-table"
+                            />
                         </div>
                     </div>
 
                     <div className="modal-footer">
-                        <button className="btn btn-secondary" onClick={onClose}>
+                        <button className="btn-cancel" onClick={onClose}>
                             Close
                         </button>
                     </div>
@@ -326,7 +345,7 @@ const LoanDetailsModal = ({ loan, onClose, onProcessRepayment }) => {
                         </div>
                         <div className="modal-footer">
                             <button
-                                className="btn btn-secondary"
+                                className="btn-cancel"
                                 onClick={() => setShowRepaymentModal(false)}
                             >
                                 Cancel
