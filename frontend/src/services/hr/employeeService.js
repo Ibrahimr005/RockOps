@@ -1,5 +1,5 @@
-import apiClient from '../utils/apiClient.js';
-import { EMPLOYEE_ENDPOINTS } from '../config/api.config.js';
+import apiClient from '../../utils/apiClient.js';
+import { EMPLOYEE_ENDPOINTS } from '../../config/api.config.js';
 
 export const employeeService = {
     /**

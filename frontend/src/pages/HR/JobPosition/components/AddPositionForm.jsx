@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import './AddPositionForm.scss';
-import employeeService from "../../../../services/hr/employeeService.js";
+import {employeeService} from "../../../../services/hr/employeeService.js";
 import {departmentService} from "../../../../services/hr/departmentService.js";
 
 const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
