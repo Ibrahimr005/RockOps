@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import "./ResolutionHistory.scss";
+import { itemService } from '../../../../services/warehouse/itemService';
 
 const ResolutionHistory = ({ warehouseId, showSnackbar }) => {
     const [resolutionHistory, setResolutionHistory] = useState([]);
@@ -16,18 +17,8 @@ const ResolutionHistory = ({ warehouseId, showSnackbar }) => {
         }
         setHistoryLoading(true);
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/items/resolution-history/warehouse/${warehouseId}`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setResolutionHistory(data);
-            } else {
-                console.error("Failed to fetch resolution history, status:", response.status);
-            }
+            const data = await itemService.getResolutionHistoryByWarehouse(warehouseId);
+            setResolutionHistory(data);
         } catch (error) {
             console.error("Failed to fetch resolution history:", error);
         } finally {
@@ -124,7 +115,7 @@ const ResolutionHistory = ({ warehouseId, showSnackbar }) => {
         },
         {
             accessor: 'item.itemType.itemCategory.name',
-            header: 'CATEGORY',
+            header: 'CHILD CATEGORY',
             width: '180px',
             render: (row) => (
                 <span className="category-tag">

@@ -14,6 +14,7 @@ import CompletedOffers from "./CompletedOffers/CompletedOffers.jsx";
 
 // Import the new component
 import ProcurementIntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
+import { offerService } from '../../../services/offerService';
 
 // Icons
 import {
@@ -25,8 +26,6 @@ import {
 import { FiCheck } from 'react-icons/fi';
 import offersImage from "../../../assets/imgs/pro_icon.png";
 import offersImageDark from "../../../assets/imgs/pro_icon_dark.png"; // Add dark mode image
-
-const API_URL = 'http://localhost:8080/api/v1';
 
 const ProcurementOffers = () => {
     const navigate = useNavigate();
@@ -42,49 +41,11 @@ const ProcurementOffers = () => {
     const [success, setSuccess] = useState(null);
     const [userRole, setUserRole] = useState(''); // Added for role checking
 
-    // Helper function for authenticated fetch
-    const fetchWithAuth = async (url, options = {}) => {
-        const token = localStorage.getItem('token');
-
-        if (!token) {
-            throw new Error('Authentication token not found');
-        }
-
-        const defaultOptions = {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        };
-
-        const mergedOptions = {
-            ...defaultOptions,
-            ...options,
-            headers: {
-                ...defaultOptions.headers,
-                ...options.headers
-            }
-        };
-
-        const response = await fetch(url, mergedOptions);
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || `Error: ${response.status}`);
-        }
-
-        // Check if response is 204 No Content or has no content
-        if (response.status === 204 || response.headers.get('content-length') === '0') {
-            return null; // Return null for empty responses
-        }
-
-        return response.json();
-    };
-
     // Fetch request order for a specific offer
     const fetchRequestOrderForOffer = async (offerId) => {
         try {
-            return await fetchWithAuth(`${API_URL}/offers/${offerId}/request-order`);
+            const response = await offerService.getRequestOrder(offerId);
+            return response.data;
         } catch (error) {
             console.error(`Error fetching request order for offer ${offerId}:`, error);
             setError('Failed to load request order details. Please try again.');
@@ -106,12 +67,15 @@ const ProcurementOffers = () => {
                 // Fetch offers based on active tab
                 let offersData;
                 if (activeTab === 'unstarted') {
-                    offersData = await fetchWithAuth(`${API_URL}/offers?status=UNSTARTED`);
+                    const response = await offerService.getAll('UNSTARTED');
+                    offersData = response.data;
                 } else if (activeTab === 'inprogress') {
-                    offersData = await fetchWithAuth(`${API_URL}/offers?status=INPROGRESS`);
+                    const response = await offerService.getAll('INPROGRESS');
+                    offersData = response.data;
                 } else if (activeTab === 'submitted') {
                     // Explicitly handle the submitted tab, using the correct format for multiple statuses
-                    offersData = await fetchWithAuth(`${API_URL}/offers?status=SUBMITTED`);
+                    const response = await offerService.getAll('SUBMITTED');
+                    offersData = response.data;
                     // const sentOffers = await fetchWithAuth(`${API_URL}/offers?status=SENT`);
                     // const acceptedOffers = await fetchWithAuth(`${API_URL}/offers?status=ACCEPTED`);
                     // const rejectedOffers = await fetchWithAuth(`${API_URL}/offers?status=REJECTED`);
@@ -120,11 +84,11 @@ const ProcurementOffers = () => {
                     // offersData = [...submittedOffers, ...sentOffers, ...acceptedOffers, ...rejectedOffers];
                 } else if (activeTab === 'validated') {
                     // Get ACCEPTED and REJECTED offers for the Validated tab
-                    const acceptedOffers = await fetchWithAuth(`${API_URL}/offers?status=MANAGERACCEPTED`);
-                    const rejectedOffers = await fetchWithAuth(`${API_URL}/offers?status=MANAGERREJECTED`);
+                    const acceptedOffers = await offerService.getAll('MANAGERACCEPTED');
+                    const rejectedOffers = await offerService.getAll('MANAGERREJECTED');
 
                     // Combine the relevant statuses
-                    offersData = [...acceptedOffers, ...rejectedOffers];
+                    offersData = [...acceptedOffers.data, ...rejectedOffers.data];
 
 
                     // offersData = allValidatedOffers.filter(offer =>
@@ -134,17 +98,17 @@ const ProcurementOffers = () => {
                 } else if (activeTab === 'finance') {
                     // Get finance reviewed offers
                     // This endpoint would need to be implemented in your backend
-                    const acceptedOffers = await fetchWithAuth(`${API_URL}/offers?status=FINANCE_ACCEPTED`);
-                    const accepted2Offers = await fetchWithAuth(`${API_URL}/offers?status=FINANCE_PARTIALLY_ACCEPTED`);
-                    const rejectedOffers = await fetchWithAuth(`${API_URL}/offers?status=FINANCE_REJECTED`);
-                    offersData = [...acceptedOffers,...accepted2Offers, ...rejectedOffers];
+                    const acceptedOffers = await offerService.getAll('FINANCE_ACCEPTED');
+                    const accepted2Offers = await offerService.getAll('FINANCE_PARTIALLY_ACCEPTED');
+                    const rejectedOffers = await offerService.getAll('FINANCE_REJECTED');
+                    offersData = [...acceptedOffers.data,...accepted2Offers.data, ...rejectedOffers.data];
 
                 } else if (activeTab === 'finalize') {
                     // Get offers with finance status FINANCE_ACCEPTED
-                    offersData = await fetchWithAuth(`${API_URL}/offers?status=FINALIZING`);
+                    offersData = await offerService.getAll('FINALIZING');
                 } else if (activeTab === 'completed') {
                     // Get completed offers
-                    offersData = await fetchWithAuth(`${API_URL}/offers?status=COMPLETED`);
+                    offersData = await offerService.getAll('COMPLETED');
                 } else {
                     offersData = [];
                 }
@@ -197,9 +161,7 @@ const ProcurementOffers = () => {
     // Handle starting work on an offer (change from UNSTARTED to INPROGRESS)
     const handleOfferStatusChange = async (offerId, newStatus) => {
         try {
-            await fetchWithAuth(`${API_URL}/offers/${offerId}/status?status=${newStatus}`, {
-                method: 'PUT'
-            });
+            await offerService.updateStatus(offerId, newStatus);
 
             // Remove the offer from the current tab's list
             const updatedOffers = offers.filter(o => o.id !== offerId);
@@ -412,6 +374,9 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 handleOfferStatusChange={handleOfferStatusChange}
+                                offerService={offerService}
+                                setError={setError}
+                                setSuccess={setSuccess}
                             />
                         )}
 
@@ -420,21 +385,20 @@ const ProcurementOffers = () => {
                                 offers={filteredOffers}
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
-                                handleOfferStatusChange={handleOfferStatusChange}
-                                fetchWithAuth={fetchWithAuth}
-                                API_URL={API_URL}
-                                setError={setError}
-                                setSuccess={setSuccess}
+                                getTotalPrice={getTotalPrice}
+                                offerService={offerService}
                             />
                         )}
 
                         {activeTab === 'submitted' && (
                             <SubmittedOffers
                                 offers={filteredOffers}
-                                setOffers={setOffers}  // ← ADD THIS LINE
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
+                                offerService={offerService}
+                                setError={setError}              // ADD THIS
+                                setSuccess={setSuccess}          // ADD THIS
                             />
                         )}
 
@@ -444,7 +408,7 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
-                                onRetryOffer={handleRetryOffer} // Pass the callback
+                                offerService={offerService}
                             />
                         )}
 
@@ -454,8 +418,8 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
-                                fetchWithAuth={fetchWithAuth}
-                                API_URL={API_URL}
+                                fetchWithAuth={offerService.fetchWithAuth}
+                                API_URL={offerService.API_URL}
                             />
                         )}
 
@@ -465,8 +429,8 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
-                                fetchWithAuth={fetchWithAuth}
-                                API_URL={API_URL}
+                                fetchWithAuth={offerService.fetchWithAuth}
+                                API_URL={offerService.API_URL}
                                 setError={setError}              // ADD THIS
                                 setSuccess={setSuccess}          // ADD THIS
                                 onOfferFinalized={handleOfferFinalized}  // ADD THIS
@@ -480,8 +444,8 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
-                                fetchWithAuth={fetchWithAuth}
-                                API_URL={API_URL}
+                                fetchWithAuth={offerService.fetchWithAuth}
+                                API_URL={offerService.API_URL}
                             />
                         )}
                     </>

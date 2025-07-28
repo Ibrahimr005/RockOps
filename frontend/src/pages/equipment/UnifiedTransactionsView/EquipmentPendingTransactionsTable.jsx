@@ -8,9 +8,9 @@ import { FaPlus } from 'react-icons/fa';
 import "../../warehouse/WarehouseViewTransactions/PendingTransactions/PendingTransactions.scss";
 import { equipmentService } from "../../../services/equipmentService";
 import { siteService } from "../../../services/siteService";
-import { warehouseService } from "../../../services/warehouseService";
-import { itemTypeService } from "../../../services/itemTypeService";
-import { itemCategoryService } from "../../../services/itemCategoryService";
+import { warehouseService } from "../../../services/warehouse/warehouseService.js";
+import { itemTypeService } from "../../../services/warehouse/itemTypeService.js";
+import { itemCategoryService } from "../../../services/warehouse/itemCategoryService.js";
 
 const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
     const [loading, setLoading] = useState(false);

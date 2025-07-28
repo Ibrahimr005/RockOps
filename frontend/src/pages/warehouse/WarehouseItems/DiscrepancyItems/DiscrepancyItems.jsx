@@ -1,14 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
+import { itemService } from '../../../../services/warehouse/itemService';
 
 const DiscrepancyItems= ({
-                                 warehouseId,
-                                 activeTab,
-                                 filteredData,
-                                 loading,
-                                 showSnackbar,
-                                 refreshItems
-                             }) => {
+                             warehouseId,
+                             activeTab,
+                             filteredData,
+                             loading,
+                             showSnackbar,
+                             refreshItems
+                         }) => {
     // Modal states
     const [isResolutionModalOpen, setIsResolutionModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
@@ -17,6 +18,18 @@ const DiscrepancyItems= ({
         notes: "",
         transactionId: ""
     });
+
+    useEffect(() => {
+        if (isResolutionModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isResolutionModalOpen]);
 
     // Modal handlers
     const handleOpenResolutionModal = (item) => {
@@ -31,25 +44,12 @@ const DiscrepancyItems= ({
 
     const handleDeleteItem = async (itemId) => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/items/${itemId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                refreshItems();
-                showSnackbar("Item deleted successfully", "success");
-            } else {
-                const errorText = await response.text();
-                console.error("Failed to delete item:", response.status, errorText);
-                showSnackbar("Failed to delete item", "error");
-            }
+            await itemService.deleteItem(itemId);
+            refreshItems();
+            showSnackbar("Item deleted successfully", "success");
         } catch (error) {
             console.error('Delete error:', error);
-            showSnackbar("Error deleting item", "error");
+            showSnackbar("Failed to delete item", "error");
         }
     };
 
@@ -59,8 +59,6 @@ const DiscrepancyItems= ({
         if (!selectedItem) return;
 
         try {
-            const token = localStorage.getItem("token");
-
             const resolution = {
                 itemId: selectedItem.id,
                 resolutionType: resolutionData.resolutionType,
@@ -69,27 +67,13 @@ const DiscrepancyItems= ({
                 resolvedBy: localStorage.getItem('userInfo') ? JSON.parse(localStorage.getItem('userInfo')).username : "system"
             };
 
-            const response = await fetch(`http://localhost:8080/api/v1/items/resolve-discrepancy`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(resolution),
-            });
-
-            if (response.ok) {
-                refreshItems();
-                setIsResolutionModalOpen(false);
-                showSnackbar("Discrepancy resolved successfully", "success");
-            } else {
-                const errorText = await response.text();
-                console.error("Failed to resolve item:", response.status, errorText);
-                showSnackbar("Failed to resolve discrepancy", "error");
-            }
+            await itemService.resolveDiscrepancy(resolution);
+            refreshItems();
+            setIsResolutionModalOpen(false);
+            showSnackbar("Discrepancy resolved successfully", "success");
         } catch (error) {
             console.error("Failed to resolve item:", error);
-            showSnackbar("Error resolving discrepancy", "error");
+            showSnackbar("Failed to resolve discrepancy", "error");
         }
     };
 
@@ -121,39 +105,49 @@ const DiscrepancyItems= ({
     // Table columns for discrepancy items
     const discrepancyItemColumns = [
         {
+            accessor: 'itemType.itemCategory.parentCategory.name',
+            header: 'PARENT CATEGORY',
+            width: '160px',
+            render: (row) => (
+                <span className="parent-category-tag">
+                {row.itemType?.itemCategory?.parentCategory?.name || "No Parent"}
+            </span>
+            )
+        },
+        {
             accessor: 'itemType.itemCategory.name',
-            header: 'CATEGORY',
-            width: '200px',
+            header: 'CHILD CATEGORY',
+            width: '160px',
             render: (row) => (
                 <span className="category-tag">
-          {row.itemType?.itemCategory?.name || "No Category"}
-        </span>
+                {row.itemType?.itemCategory?.name || "No Category"}
+            </span>
             )
         },
         {
             accessor: 'itemType.name',
             header: 'ITEM',
-            width: '210px'
+            width: '180px'
         },
         {
             accessor: 'quantity',
             header: 'QUANTITY',
-            width: '210px'
+            width: '150px'
         },
         {
             accessor: 'itemType.measuringUnit',
             header: 'UNIT',
-            width: '210px',
+            width: '120px',
             render: (row) => row.itemType?.measuringUnit || "N/A"
         },
         {
             accessor: 'transaction.batchNumber',
             header: 'BATCH #',
-            width: '200px',
+            width: '140px',
             render: (row) => (
                 <span className="batch-number">
-          {row.transaction?.batchNumber || row.batchNumber || 'N/A'}
-        </span>
+                {row.transaction?.batchNumber || row.batchNumber || 'N/A'}
+            </span>
             )
         }
     ];
@@ -216,8 +210,9 @@ const DiscrepancyItems= ({
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={[
-                    { accessor: 'itemType.name', header: 'Item' },
+                    { accessor: 'itemType.itemCategory.parentCategory.name', header: 'Parent Category' },
                     { accessor: 'itemType.itemCategory.name', header: 'Category' },
+                    { accessor: 'itemType.name', header: 'Item' },
                     { accessor: 'transaction.batchNumber', header: 'Batch Number' }
                 ]}
                 actions={actions}
@@ -226,9 +221,9 @@ const DiscrepancyItems= ({
 
             {/* Resolution Modal */}
             {isResolutionModalOpen && selectedItem && (
-                <div className="resolution-modal-backdrop">
-                    <div className="resolution-modal">
-                        <div className="resolution-modal-header">
+                <div className="discrepancy-item-modal-backdrop">
+                    <div className="discrepancy-item-modal">
+                        <div className="discrepancy-item-modal-header">
                             <h2>Resolve Inventory Discrepancy</h2>
                             <button
                                 className="btn-close"
@@ -237,32 +232,32 @@ const DiscrepancyItems= ({
                             </button>
                         </div>
 
-                        <div className="resolution-modal-body">
-                            <div className="resolution-item-details">
-                                <div className="resolution-detail">
-                                    <span className="resolution-label">Item:</span>
-                                    <span className="resolution-value">{selectedItem.itemType?.name}</span>
+                        <div className="discrepancy-item-modal-body">
+                            <div className="discrepancy-item-details">
+                                <div className="discrepancy-item-detail">
+                                    <span className="discrepancy-item-label">Item:</span>
+                                    <span className="discrepancy-item-value">{selectedItem.itemType?.name}</span>
                                 </div>
 
-                                <div className="resolution-detail">
-                                    <span className="resolution-label">Quantity:</span>
-                                    <span className="resolution-value">{selectedItem.quantity} {selectedItem.itemType?.measuringUnit || ''}</span>
+                                <div className="discrepancy-item-detail">
+                                    <span className="discrepancy-item-label">Quantity:</span>
+                                    <span className="discrepancy-item-value">{selectedItem.quantity} {selectedItem.itemType?.measuringUnit || ''}</span>
                                 </div>
 
-                                <div className="resolution-detail">
-                                    <span className="resolution-label">Status:</span>
-                                    <span className="resolution-value">{getStatusLabel(selectedItem.itemStatus)}</span>
+                                <div className="discrepancy-item-detail">
+                                    <span className="discrepancy-item-label">Status:</span>
+                                    <span className="discrepancy-item-value">{getStatusLabel(selectedItem.itemStatus)}</span>
                                 </div>
 
-                                <div className="resolution-detail">
-                                    <span className="resolution-label">Batch Number:</span>
-                                    <span className="resolution-value">{selectedItem.transaction?.batchNumber || selectedItem.batchNumber || 'N/A'}</span>
+                                <div className="discrepancy-item-detail">
+                                    <span className="discrepancy-item-label">Batch Number:</span>
+                                    <span className="discrepancy-item-value">{selectedItem.transaction?.batchNumber || selectedItem.batchNumber || 'N/A'}</span>
                                 </div>
                             </div>
 
-                            <form onSubmit={handleResolutionSubmit} className="resolution-form">
-                                <div className="resolution-form-group">
-                                    <label htmlFor="resolutionType">Resolution Type</label>
+                            <form onSubmit={handleResolutionSubmit} className="discrepancy-item-form">
+                                <div className="discrepancy-item-form-group">
+                                    <label htmlFor="resolutionType">Resolution Type <span style={{color: 'var(--color-danger)', fontWeight: 'bold'}}>*</span></label>
                                     <select
                                         id="resolutionType"
                                         name="resolutionType"
@@ -285,7 +280,7 @@ const DiscrepancyItems= ({
                                     </select>
                                 </div>
 
-                                <div className="resolution-form-group">
+                                <div className="discrepancy-item-form-group">
                                     <label htmlFor="notes">Resolution Notes</label>
                                     <textarea
                                         id="notes"
@@ -297,32 +292,33 @@ const DiscrepancyItems= ({
                                     />
                                 </div>
 
-                                <div className="resolution-confirmation">
-                                    <p className="resolution-confirmation-text">
-                                        {resolutionData.resolutionType === 'ACKNOWLEDGE_LOSS' &&
-                                            "You are confirming that these items are lost and will be not be added to the inventory."}
+                                {resolutionData.resolutionType && (
+                                    <div className="discrepancy-item-confirmation">
+                                        <p className="discrepancy-item-confirmation-text">
+                                            {resolutionData.resolutionType === 'ACKNOWLEDGE_LOSS' &&
+                                                "You are confirming that these items are lost and will be not be added to the inventory."}
 
-                                        {resolutionData.resolutionType === 'FOUND_ITEMS' &&
-                                            "You are confirming items were found and will be returned to regular inventory."}
-                                        {resolutionData.resolutionType === 'ACCEPT_SURPLUS' &&
-                                            "You are accepting the surplus items that are already in your regular inventory."}
-                                        {resolutionData.resolutionType === 'COUNTING_ERROR' &&
-                                            "You are confirming this was a counting error. The excess quantity will be deducted from the original transaction inventory."}
-                                    </p>
-                                </div>
+                                            {resolutionData.resolutionType === 'FOUND_ITEMS' &&
+                                                "You are confirming items were found and will be returned to regular inventory."}
+                                            {resolutionData.resolutionType === 'ACCEPT_SURPLUS' &&
+                                                "You are accepting the surplus items that are already in your regular inventory."}
+                                            {resolutionData.resolutionType === 'COUNTING_ERROR' &&
+                                                "You are confirming this was a counting error. The excess quantity will be deducted from the original transaction inventory."}
+                                        </p>
+                                    </div>
+                                )}
 
-                                <div className="resolution-modal-footer">
+                                <div className="discrepancy-item-modal-footer">
                                     <button
                                         type="button"
-                                        className="cancel-button"
+                                        className="btn-cancel"
                                         onClick={() => setIsResolutionModalOpen(false)}
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        className="resolve-submit-button2"
-                                        disabled={!resolutionData.resolutionType}
+                                        className="btn-primary"
                                     >
                                         Resolve Discrepancy
                                     </button>

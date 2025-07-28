@@ -10,7 +10,7 @@ import { maintenanceTypeService } from "../../../services/maintenanceTypeService
 import { employeeService } from "../../../services/employeeService";
 import { equipmentService } from "../../../services/equipmentService";
 import { siteService } from "../../../services/siteService";
-import { warehouseService } from "../../../services/warehouseService";
+import { warehouseService } from "../../../services/warehouse/warehouseService.js";
 
 const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
     const [loading, setLoading] = useState(false);

@@ -4,6 +4,11 @@ import "./AcceptRejectModal.scss";
 import TransactionViewModal from "../TransactionViewModal/TransactionViewModal.jsx";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
+import { transactionService } from '../../../../services/transaction/transactionService.js';
+import { warehouseService } from '../../../../services/warehouse/warehouseService';
+import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
+import { siteService } from '../../../../services/siteService';
+import { equipmentService } from '../../../../services/equipmentService';
 
 const IncomingTransactionsTable = ({
                                        warehouseId,
@@ -86,54 +91,53 @@ const IncomingTransactionsTable = ({
         }
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/transactions/warehouse/${warehouseId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const data = await transactionService.getTransactionsForWarehouse(warehouseId);
 
-            if (response.ok) {
-                const data = await response.json();
+            // Filter for only pending transactions where:
+            // 1. Status is PENDING
+            // 2. Current warehouse is involved (as sender or receiver)
+            // 3. Current warehouse is NOT the entity that initiated the transaction (sentFirst)
+            const pendingData = await Promise.all(
+                data
+                    .filter(transaction =>
+                        transaction.status === "PENDING" &&
+                        (transaction.receiverId === warehouseId || transaction.senderId === warehouseId) &&
+                        transaction.sentFirst !== warehouseId
+                    )
+                    .map(async (transaction) => {
+                        const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
+                        const receiver = await fetchEntityDetails(transaction.receiverType, transaction.receiverId);
 
-                // Filter for only pending transactions where:
-                // 1. Status is PENDING
-                // 2. Current warehouse is involved (as sender or receiver)
-                // 3. Current warehouse is NOT the entity that initiated the transaction (sentFirst)
-                const pendingData = await Promise.all(
-                    data
-                        .filter(transaction =>
-                            transaction.status === "PENDING" &&
-                            (transaction.receiverId === warehouseId || transaction.senderId === warehouseId) &&
-                            transaction.sentFirst !== warehouseId
-                        )
-                        .map(async (transaction) => {
-                            const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
-                            const receiver = await fetchEntityDetails(transaction.receiverType, transaction.receiverId);
+                        // Process entity data for consistent display
+                        const processedSender = processEntityData(transaction.senderType, sender);
+                        const processedReceiver = processEntityData(transaction.receiverType, receiver);
 
-                            // Process entity data for consistent display
-                            const processedSender = processEntityData(transaction.senderType, sender);
-                            const processedReceiver = processEntityData(transaction.receiverType, receiver);
-
-                            return {
-                                ...transaction,
-                                sender: processedSender,
-                                receiver: processedReceiver
-                            };
-                        })
-                );
-                setPendingTransactions(pendingData);
-            } else {
-                console.error("Failed to fetch transactions, status:", response.status);
-            }
+                        return {
+                            ...transaction,
+                            sender: processedSender,
+                            receiver: processedReceiver
+                        };
+                    })
+            );
+            setPendingTransactions(pendingData);
         } catch (error) {
             console.error("Failed to fetch transactions:", error);
         } finally {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (isAcceptModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isAcceptModalOpen]);
 
     // Helper function to process entity data for consistent display
     const processEntityData = (entityType, entityData) => {
@@ -169,37 +173,25 @@ const IncomingTransactionsTable = ({
     };
 
     // Helper function to fetch entity details
+// Helper function to fetch entity details
     const fetchEntityDetails = async (entityType, entityId) => {
         if (!entityType || !entityId) return null;
 
         try {
-            const token = localStorage.getItem('token');
-
-            let endpoint = '';
+            let response;
             if (entityType === "WAREHOUSE") {
-                endpoint = `http://localhost:8080/api/v1/warehouses/${entityId}`;
+                response = await warehouseService.getById(entityId);
             } else if (entityType === "SITE") {
-                endpoint = `http://localhost:8080/api/v1/site/${entityId}`;
+                response = await siteService.getById(entityId);
             } else if (entityType === "EQUIPMENT") {
-                endpoint = `http://localhost:8080/api/equipment/${entityId}`;
+                response = await equipmentService.getEquipmentById(entityId);
             } else {
-                endpoint = `http://localhost:8080/${entityType.toLowerCase()}/${entityId}`;
-            }
-
-            const response = await fetch(endpoint, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                return await response.json();
-            } else {
-                console.error(`Failed to fetch ${entityType} details, status:`, response.status);
+                console.error(`Unsupported entity type: ${entityType}`);
                 return null;
             }
+
+            // Extract data from the response (this handles both response.data and direct response)
+            return response.data || response;
         } catch (error) {
             console.error(`Failed to fetch ${entityType} details:`, error);
             return null;
@@ -316,28 +308,19 @@ const IncomingTransactionsTable = ({
                 itemNotReceived: itemsNotReceived[index] || false
             }));
 
-            const response = await fetch(`http://localhost:8080/api/v1/transactions/${selectedTransaction.id}/accept`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    receivedItems: receivedItems,
-                    username: username,
-                    acceptanceComment: comments
-                }),
+            await transactionService.accept(selectedTransaction.id, {
+                receivedItems: receivedItems,
+                username: username,
+                acceptanceComment: comments
             });
 
-            if (response.ok) {
-                fetchPendingTransactions();
-                setIsAcceptModalOpen(false);
-                showSnackbar("Transaction Accepted Successfully", "success");
+            fetchPendingTransactions();
+            setIsAcceptModalOpen(false);
+            showSnackbar("Transaction Accepted Successfully", "success");
 
-                // ADD THIS LINE:
-                if (onTransactionUpdate) {
-                    onTransactionUpdate();
-                }
+            if (onTransactionUpdate) {
+                onTransactionUpdate();
+
             } else {
                 let errorMessage = "Failed to accept transaction";
                 let snackbarMessage = "Failed to accept transaction";
@@ -514,9 +497,7 @@ const IncomingTransactionsTable = ({
     return (
         <div className="transaction-table-section">
             <div className="table-header-section">
-                <div className="left-section3">
-                    <div className="item-count3">{pendingTransactions.length} incoming transactions</div>
-                </div>
+
             </div>
 
             {/* DataTable Component */}
@@ -811,7 +792,7 @@ const IncomingTransactionsTable = ({
                         <div className="accept-transaction-modal-footer">
                             <button
                                 type="button"
-                                className="accept-transaction-cancel-btn"
+                                className="btn-cancel"
                                 onClick={() => setIsAcceptModalOpen(false)}
                                 disabled={processingAction}
                             >
@@ -819,14 +800,14 @@ const IncomingTransactionsTable = ({
                             </button>
                             <button
                                 type="button"
-                                className="accept-transaction-submit-btn"
+                                className="btn-primary"
                                 onClick={handleAcceptTransaction}
-                                disabled={processingAction || selectedTransaction.items?.some((_, index) => {
-                                    if (itemsNotReceived[index]) return false;
-                                    return receivedQuantities[index] === undefined ||
-                                        receivedQuantities[index] === "" ||
-                                        parseInt(receivedQuantities[index]) < 0;
-                                })}
+                                // disabled={processingAction || selectedTransaction.items?.some((_, index) => {
+                                //     if (itemsNotReceived[index]) return false;
+                                //     return receivedQuantities[index] === undefined ||
+                                //         receivedQuantities[index] === "" ||
+                                //         parseInt(receivedQuantities[index]) < 0;
+                                // })}
                             >
                                 {processingAction ? (
                                     <>

@@ -139,17 +139,26 @@
 }
 
 /* Action Buttons */
+/* Action Buttons */
+/* Action Buttons */
 .warehouse-list-card-actions {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  margin-top: 20px;
+  display: grid;
   gap: 10px;
+  margin-top: 20px;
+  width: 100%;
+
+  /* Default: single button takes full width */
+  grid-template-columns: 1fr;
+
+  /* When there are 2 buttons, use different column sizes */
+  &.has-two-buttons {
+    grid-template-columns: 1fr 1.3fr; /* Left button smaller, right button bigger */
+  }
 }
 
 .warehouse-list-edit-button, .warehouse-list-view-button {
-  flex: 1;
-  padding: 10px 12px;
+  flex: 1; /* Each button takes equal space */
+  padding: 12px 16px;
   border-radius: var(--radius-md);
   font-size: 14px;
   font-weight: var(--bold-font-weight);
@@ -955,28 +964,26 @@
   border-top: 1px solid var(--border-color);
 }
 
-.warehouse-list-assignment-footer .btn-primary {
-  padding: 12px 24px;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  width: auto !important;
-  flex: none !important;
-
-  &:hover {
-    background: var(--color-primary-dark);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
+//.warehouse-list-assignment-footer .btn-primary {
+//  flex: 1; /* Each button takes equal space */
+//  padding: 12px 16px;
+//  border-radius: var(--radius-md);
+//  font-size: 14px;
+//  font-weight: var(--bold-font-weight);
+//  cursor: pointer;
+//  transition: all var(--transition-normal);
+//  text-align: center;
+//  border: none;
+//
+//  &:hover {
+//    background: var(--color-primary-dark);
+//  }
+//
+//  &:disabled {
+//    opacity: 0.5;
+//    cursor: not-allowed;
+//  }
+//}
 
 .warehouse-list-form-cancel-button {
   padding: 10px 20px;
@@ -1132,4 +1139,83 @@
       color: var(--color-text-secondary);
     }
   }
+}
+
+/* ADD THIS TO THE END OF YOUR EXISTING WarehousesList.scss FILE */
+/* Add this to your existing WarehousesList.scss file */
+
+/* Remove all previous alert styles */
+.warehouse-alert-icon,
+.warehouse-alert-indicator,
+.warehouse-sleek-badge,
+.badge-inner,
+.warehouse-red-dot,
+.warehouse-notification-count,
+.warehouse-top-stripe,
+.warehouse-title-row,
+.warehouse-status-badge,
+.warehouse-corner-alert,
+.warehouse-list-card.has-alert-border,
+.warehouse-alert-label,
+.warehouse-alert-dot,
+.warehouse-notifications,
+.notification-indicator,
+.warehouse-floating-badges,
+.floating-badge,
+.warehouse-alert-badges,
+.alert-badge,
+.warehouse-simple-alerts,
+.alert-symbol,
+.simple-alert-dot,
+.simple-alert-notice,
+.warehouse-alert-indicators,
+.warehouse-image-overlay,
+.warehouse-name-alert-dot,
+.warehouse-alert-summary,
+.warehouse-alert-banner,
+.warehouse-professional-alert-summary {
+  display: none !important;
+}
+
+/* Red Corner Triangle Alert */
+.warehouse-status-corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 50px 50px 0;
+  border-color: transparent #ef4444 transparent transparent;
+  z-index: 20;
+}
+
+/* Remove the has-attention class styling since we're using dots now */
+.warehouse-list-card.has-attention {
+  /* Keep existing card styles, no special border or glow */
+}
+
+.warehouse-list-card.has-attention:hover {
+  /* Keep normal hover behavior */
+}
+
+/* Make sure the card image container has relative positioning */
+.warehouse-list-card-image {
+  position: relative;
+  overflow: hidden; /* This ensures the corner triangle doesn't extend outside the card */
+}
+
+/* Optional: Add hover effect to make corner more prominent */
+.warehouse-list-card:hover .warehouse-status-corner {
+  border-color: transparent #dc2626 transparent transparent;
+  transition: border-color 0.2s ease;
+}
+
+/* Dark mode support */
+[data-theme="dark"] .warehouse-status-corner {
+  border-color: transparent #ef4444 transparent transparent;
+}
+
+[data-theme="dark"] .warehouse-list-card:hover .warehouse-status-corner {
+  border-color: transparent #dc2626 transparent transparent;
 }

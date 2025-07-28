@@ -5,7 +5,7 @@ import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx";
 import { equipmentService } from "../../../services/equipmentService";
 import { siteService } from "../../../services/siteService";
-import { warehouseService } from "../../../services/warehouseService";
+import { warehouseService } from "../../../services/warehouse/warehouseService.js";
 
 const EquipmentValidatedTransactionsTable = ({ equipmentId }) => {
     const [loading, setLoading] = useState(false);

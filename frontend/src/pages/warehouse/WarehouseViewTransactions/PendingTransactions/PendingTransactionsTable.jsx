@@ -6,6 +6,13 @@ import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx";
 import { FaPlus } from 'react-icons/fa';
 import ConfirmationDialog from "../../../../components/common/ConfirmationDialog/ConfirmationDialog";
 import "./PendingTransactions.scss"
+import { transactionService } from '../../../../services/transaction/transactionService.js';
+import { warehouseService } from '../../../../services/warehouse/warehouseService';
+import { itemService } from '../../../../services/warehouse/itemService';
+import { itemTypeService } from '../../../../services/warehouse/itemTypeService';
+import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
+import { siteService } from '../../../../services/siteService';
+import { equipmentService } from '../../../../services/equipmentService';
 
 const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, onTransactionUpdate }) => {
     const [loading, setLoading] = useState(false);
@@ -62,12 +69,15 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
     };
 
     // Helper function to close snackbar
+// Helper function to close snackbar
     const closeSnackbar = () => {
-        setSnackbar({
-            ...snackbar,
+        setSnackbar(prev => ({
+            ...prev,
             isOpen: false
-        });
+        }));
     };
+
+    
     // Confirmation dialog state
     const [confirmDialog, setConfirmDialog] = useState({
         isVisible: false,
@@ -205,6 +215,18 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
         return date.toISOString().slice(0, 16);
     };
 
+    useEffect(() => {
+        if (isTransactionModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isTransactionModalOpen]);
+
     // Initialize form for update mode
     const initializeUpdateForm = async (transaction) => {
         console.log("🔍 Initializing update form with transaction:", transaction);
@@ -253,37 +275,24 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
     // Fetch all required data
     const fetchAllSites = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/site`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setAllSites(data);
-            }
+            const response = await siteService.getAll();
+            const data = response.data || response;
+            setAllSites(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Failed to fetch sites:", error);
+            setAllSites([]);
         }
     };
 
     const fetchWarehouseDetails = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/warehouses/${warehouseId}`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
+            const response = await warehouseService.getById(warehouseId);
+            const data = response.data || response;
+            setWarehouseData({
+                name: data.name || "",
+                id: data.id || "",
+                site: data.site || null
             });
-            if (response.ok) {
-                const data = await response.json();
-                setWarehouseData({
-                    name: data.name || "",
-                    id: data.id || "",
-                    site: data.site || null  // ADD THIS LINE to store the site
-                });
-            }
         } catch (error) {
             console.error("Error fetching warehouse details:", error);
         }
@@ -291,35 +300,23 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
 
     const fetchItems = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/items/warehouse/${warehouseId}`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setItems(data);
-            }
+            const response = await itemService.getItemsByWarehouse(warehouseId);
+            const data = response.data || response;
+            setItems(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Failed to fetch item types:", error);
+            setItems([]);
         }
     };
 
     const fetchAllItemTypes = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/itemTypes`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setAllItemTypes(data);
-            }
+            const response = await itemTypeService.getAll();
+            const data = response.data || response;
+            setAllItemTypes(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Failed to fetch all item types:", error);
+            setAllItemTypes([]);
         }
     };
 
@@ -327,33 +324,20 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
         if (!entityType || !siteId) return [];
 
         try {
-            const token = localStorage.getItem("token");
-            let endpoint;
-
+            let response;
             if (entityType === "WAREHOUSE") {
-                endpoint = `http://localhost:8080/api/v1/warehouses/site/${siteId}`;
+                response = await siteService.getSiteWarehouses(siteId);
             } else if (entityType === "EQUIPMENT") {
-                endpoint = `http://localhost:8080/api/v1/site/${siteId}/equipment`;
+                response = await siteService.getSiteEquipment(siteId);
             } else if (entityType === "MERCHANT") {
-                endpoint = `http://localhost:8080/api/v1/merchants/site/${siteId}`;
+                response = await siteService.getSiteMerchants(siteId);
             } else {
                 console.error(`Unsupported entity type: ${entityType}`);
                 return [];
             }
 
-            const response = await fetch(endpoint, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                return data;
-            } else {
-                console.error(`Failed to fetch ${entityType} for site ${siteId}, status:`, response.status);
-                return [];
-            }
+            const data = response.data || response;
+            return Array.isArray(data) ? data : [];
         } catch (error) {
             console.error(`Failed to fetch ${entityType} for site ${siteId}:`, error);
             return [];
@@ -368,36 +352,25 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
 
         setLoading(true);
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/transactions/warehouse/${warehouseId}`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                const pendingData = await Promise.all(
-                    data
-                        .filter(transaction =>
-                            transaction.status === "PENDING" &&
-                            (transaction.receiverId === warehouseId || transaction.senderId === warehouseId) &&
-                            transaction.sentFirst === warehouseId
-                        )
-                        .map(async (transaction) => {
-                            const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
-                            const receiver = await fetchEntityDetails(transaction.receiverType, transaction.receiverId);
-                            return {
-                                ...transaction,
-                                sender,
-                                receiver
-                            };
-                        })
-                );
-                setPendingTransactions(pendingData);
-            } else {
-                console.error("Failed to fetch transactions, status:", response.status);
-                showSnackbar("Failed to fetch pending transactions", "error");
-            }
+            const data = await transactionService.getTransactionsForWarehouse(warehouseId);
+            const pendingData = await Promise.all(
+                data
+                    .filter(transaction =>
+                        transaction.status === "PENDING" &&
+                        (transaction.receiverId === warehouseId || transaction.senderId === warehouseId) &&
+                        transaction.sentFirst === warehouseId
+                    )
+                    .map(async (transaction) => {
+                        const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
+                        const receiver = await fetchEntityDetails(transaction.receiverType, transaction.receiverId);
+                        return {
+                            ...transaction,
+                            sender,
+                            receiver
+                        };
+                    })
+            );
+            setPendingTransactions(pendingData);
         } catch (error) {
             console.error("Failed to fetch transactions:", error);
             showSnackbar("Error fetching pending transactions", "error");
@@ -410,30 +383,20 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
         if (!entityType || !entityId) return null;
 
         try {
-            const token = localStorage.getItem("token");
-            let endpoint;
-
+            let response;
             if (entityType === "WAREHOUSE") {
-                endpoint = `http://localhost:8080/api/v1/warehouses/${entityId}`;
+                response = await warehouseService.getById(entityId);
             } else if (entityType === "SITE") {
-                endpoint = `http://localhost:8080/api/v1/sites/${entityId}`;
+                response = await siteService.getById(entityId);
             } else if (entityType === "EQUIPMENT") {
-                endpoint = `http://localhost:8080/api/equipment/${entityId}`;
+                response = await equipmentService.getEquipmentById(entityId);
             } else {
-                endpoint = `http://localhost:8080/api/v1/${entityType.toLowerCase()}s/${entityId}`;
-            }
-
-            const response = await fetch(endpoint, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            if (response.ok) {
-                return await response.json();
-            } else {
-                console.error(`Failed to fetch ${entityType} details, status:`, response.status);
+                console.error(`Unsupported entity type: ${entityType}`);
                 return null;
             }
+
+            // Extract data from the response
+            return response.data || response;
         } catch (error) {
             console.error(`Failed to fetch ${entityType} details:`, error);
             return null;
@@ -442,19 +405,8 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
 
     const fetchParentCategories = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/itemCategories/parents', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setParentCategories(data);
-            }
+            const data = await itemCategoryService.getParents();
+            setParentCategories(data);
         } catch (error) {
             console.error('Error fetching parent categories:', error);
         }
@@ -470,22 +422,15 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
         }
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/itemCategories/children/${parentCategoryId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setChildCategoriesByItem(prev => ({
-                    ...prev,
-                    [itemIndex]: data
-                }));
-            }
+            const data = await itemCategoryService.getChildren();
+            // Filter by parent category since the endpoint returns all children
+            const filteredChildren = data.filter(category =>
+                category.parentCategory?.id === parentCategoryId
+            );
+            setChildCategoriesByItem(prev => ({
+                ...prev,
+                [itemIndex]: filteredChildren
+            }));
         } catch (error) {
             console.error('Error fetching child categories:', error);
             setChildCategoriesByItem(prev => ({
@@ -901,48 +846,25 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
         };
 
         try {
-            const token = localStorage.getItem("token");
-            let response;
+
 
             if (modalMode === "create") {
                 console.log("Creating transaction:", JSON.stringify(transactionData));
-                response = await fetch(`http://localhost:8080/api/v1/transactions/create`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(transactionData),
-                });
+                await transactionService.create(transactionData);
             } else {
-                // Update mode
                 console.log("Updating transaction:", JSON.stringify(transactionData));
-                response = await fetch(`http://localhost:8080/api/v1/transactions/${selectedTransaction.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(transactionData),
-                });
+                await transactionService.update(selectedTransaction.id, transactionData);
             }
 
-            if (response.ok) {
-                await fetchPendingTransactions();
-                handleCloseTransactionModal();
-                showSnackbar(
-                    modalMode === "create" ? 'Transaction created successfully!' : 'Transaction updated successfully!',
-                    'success'
-                );
+            await fetchPendingTransactions();
+            handleCloseTransactionModal();
+            showSnackbar(
+                modalMode === "create" ? 'Transaction created successfully!' : 'Transaction updated successfully!',
+                'success'
+            );
 
-                // ADD THIS:
-                if (onTransactionUpdate) {
-                    onTransactionUpdate();
-                }
-            } else {
-                const errorText = await response.text();
-                console.error(`Failed to ${modalMode} transaction:`, response.status, errorText);
-                showSnackbar(`Failed to ${modalMode} transaction. Please try again.`, 'error');
+            if (onTransactionUpdate) {
+                onTransactionUpdate();
             }
         } catch (error) {
             console.error(`Error ${modalMode === "create" ? "creating" : "updating"} transaction:`, error);
@@ -1102,36 +1024,21 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
 
         try {
             const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/transactions/${confirmDialog.transactionId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
+            await transactionService.delete(confirmDialog.transactionId);
+
+        // Success - show message and refresh the table
+                    showSnackbar('Transaction deleted successfully!', 'success');
+        // Refresh the pending transactions table
+                    await fetchPendingTransactions();
+        // Close dialog
+            setConfirmDialog({
+                isVisible: false,
+                transactionId: null,
+                isDeleting: false
             });
 
-            const result = await response.json();
-
-            if (response.ok) {
-                // Success - show message and refresh the table
-                showSnackbar('Transaction deleted successfully!', 'success');
-                // Refresh the pending transactions table
-                await fetchPendingTransactions();
-                // Close dialog
-                setConfirmDialog({
-                    isVisible: false,
-                    transactionId: null,
-                    isDeleting: false
-                });
-
-                // ADD THIS:
-                if (onTransactionUpdate) {
-                    onTransactionUpdate();
-                }
-            } else {
-                // Error - show error message
-                showSnackbar(`Failed to delete transaction: ${result.message || 'Unknown error'}`, 'error');
-                setConfirmDialog(prev => ({ ...prev, isDeleting: false }));
+            if (onTransactionUpdate) {
+                onTransactionUpdate();
             }
 
         } catch (error) {
@@ -1164,9 +1071,7 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
     return (
         <div className="transaction-table-section">
             <div className="table-header-section">
-                <div className="left-section3">
-                    <div className="item-count3">{pendingTransactions.length} pending transactions</div>
-                </div>
+
             </div>
 
             {/* DataTable Component with Add Button */}

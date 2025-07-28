@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import "./InWarehouseItems.scss";
+import { itemService } from '../../../../services/warehouse/itemService';
+import { itemTypeService } from '../../../../services/warehouse/itemTypeService';
+import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
+import { warehouseService } from '../../../../services/warehouse/warehouseService';
 
 const InWarehouseItems = ({
                               warehouseId,
@@ -60,37 +64,39 @@ const InWarehouseItems = ({
         return Object.values(aggregated);
     };
 
-    // Fetch functions
     const fetchItemTypes = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/itemTypes`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setItemTypes(data);
-            }
+            const data = await itemTypeService.getAll();
+            setItemTypes(data);
         } catch (error) {
             console.error("Failed to fetch item types:", error);
         }
     };
 
+    // Replace the fetchParentCategories method:
     const fetchParentCategories = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/itemCategories/parents`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setParentCategories(data);
-            }
+            const data = await itemCategoryService.getParents();
+            setParentCategories(data);
         } catch (error) {
             console.error("Failed to fetch parent categories:", error);
         }
     };
 
+    useEffect(() => {
+        if (isAddItemModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isAddItemModalOpen]);
+
+
+// Replace the fetchChildCategories method:
     const fetchChildCategories = async (parentCategoryId) => {
         if (!parentCategoryId) {
             setChildCategories([]);
@@ -98,17 +104,12 @@ const InWarehouseItems = ({
         }
 
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/itemCategories/children/${parentCategoryId}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setChildCategories(data);
-            } else {
-                setChildCategories([]);
-            }
+            const data = await itemCategoryService.getChildren();
+            // Filter by parent category since the endpoint returns all children
+            const filteredChildren = data.filter(category =>
+                category.parentCategory?.id === parentCategoryId
+            );
+            setChildCategories(filteredChildren);
         } catch (error) {
             console.error("Failed to fetch child categories:", error);
             setChildCategories([]);
@@ -117,18 +118,12 @@ const InWarehouseItems = ({
 
     const fetchWarehouseName = async (warehouseId) => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/warehouses/${warehouseId}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const warehouse = await response.json();
-                return warehouse.name;
-            }
+            const warehouse = await warehouseService.getById(warehouseId);
+            return warehouse.name;
         } catch (error) {
             console.error("Error fetching warehouse name:", error);
+            return "Unknown Warehouse";
         }
-        return "Unknown Warehouse";
     };
 
     // Initialize data
@@ -260,38 +255,37 @@ const InWarehouseItems = ({
         setAddItemLoading(true);
 
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/items`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    itemTypeId: addItemData.itemTypeId,
-                    warehouseId: warehouseId,
-                    initialQuantity: parseInt(addItemData.initialQuantity),
-                    username: username,
-                    createdAt: addItemData.createdAt
-                }),
+            await itemService.createItem({
+                itemTypeId: addItemData.itemTypeId,
+                warehouseId: warehouseId,
+                initialQuantity: parseInt(addItemData.initialQuantity),
+                username: username,
+                createdAt: addItemData.createdAt
             });
 
-            if (response.ok) {
-                refreshItems();
-                setIsAddItemModalOpen(false);
-                showSnackbar("Item added successfully", "success");
-            } else {
-                const errorText = await response.text();
-                console.error("Failed to add item:", response.status, errorText);
-                showSnackbar("Failed to add item", "error");
-            }
+            refreshItems();
+            setIsAddItemModalOpen(false);
+            showSnackbar("Item added successfully", "success");
         } catch (error) {
             console.error("Error adding item:", error);
-            showSnackbar("Error adding item", "error");
+            showSnackbar("Failed to add item", "error");
         } finally {
             setAddItemLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (isTransactionDetailsModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isTransactionDetailsModalOpen]);
+
 
     const handleOpenTransactionDetailsModal = async (item) => {
         setSelectedItem(item);
@@ -299,50 +293,39 @@ const InWarehouseItems = ({
         setTransactionDetailsLoading(true);
 
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(
-                `http://localhost:8080/api/v1/items/transaction-details/${warehouseId}/${item.itemType.id}`,
-                { headers: { "Authorization": `Bearer ${token}` } }
+            const details = await itemService.getItemTransactionDetails(warehouseId, item.itemType.id);
+
+            const detailsWithWarehouseNames = await Promise.all(
+                details.map(async (detail) => {
+                    if (detail.transactionItem?.transaction) {
+                        const transaction = detail.transactionItem.transaction;
+                        let senderName = "Unknown";
+                        let receiverName = "Unknown";
+
+                        if (transaction.senderType === 'WAREHOUSE' && transaction.senderId) {
+                            senderName = await fetchWarehouseName(transaction.senderId);
+                        }
+                        if (transaction.receiverType === 'WAREHOUSE' && transaction.receiverId) {
+                            receiverName = await fetchWarehouseName(transaction.receiverId);
+                        }
+
+                        return {
+                            ...detail,
+                            senderWarehouseName: senderName,
+                            receiverWarehouseName: receiverName
+                        };
+                    }
+                    return detail;
+                })
             );
 
-            if (response.ok) {
-                const details = await response.json();
+            const sortedDetails = detailsWithWarehouseNames.sort((a, b) => {
+                const dateA = new Date(a.createdAt || 0);
+                const dateB = new Date(b.createdAt || 0);
+                return dateA - dateB;
+            });
 
-                const detailsWithWarehouseNames = await Promise.all(
-                    details.map(async (detail) => {
-                        if (detail.transactionItem?.transaction) {
-                            const transaction = detail.transactionItem.transaction;
-                            let senderName = "Unknown";
-                            let receiverName = "Unknown";
-
-                            if (transaction.senderType === 'WAREHOUSE' && transaction.senderId) {
-                                senderName = await fetchWarehouseName(transaction.senderId);
-                            }
-                            if (transaction.receiverType === 'WAREHOUSE' && transaction.receiverId) {
-                                receiverName = await fetchWarehouseName(transaction.receiverId);
-                            }
-
-                            return {
-                                ...detail,
-                                senderWarehouseName: senderName,
-                                receiverWarehouseName: receiverName
-                            };
-                        }
-                        return detail;
-                    })
-                );
-
-                const sortedDetails = detailsWithWarehouseNames.sort((a, b) => {
-                    const dateA = new Date(a.createdAt || 0);
-                    const dateB = new Date(b.createdAt || 0);
-                    return dateA - dateB;
-                });
-
-                setTransactionDetails(sortedDetails);
-            } else {
-                console.error("Failed to fetch transaction details:", response.status);
-                showSnackbar("Failed to load transaction details", "error");
-            }
+            setTransactionDetails(sortedDetails);
         } catch (error) {
             console.error("Error fetching transaction details:", error);
             showSnackbar("Error loading transaction details", "error");
@@ -363,13 +346,23 @@ const InWarehouseItems = ({
     // Table columns
     const itemColumns = [
         {
+            accessor: 'itemType.itemCategory.parentCategory.name',
+            header: 'PARENT CATEGORY',
+            width: '10px',
+            render: (row) => (
+                <span className="parent-category-tag">
+                {row.itemType?.itemCategory?.parentCategory?.name || "No Parent"}
+            </span>
+            )
+        },
+        {
             accessor: 'itemType.itemCategory.name',
-            header: 'CATEGORY',
-            width: '255px',
+            header: 'CHILD CATEGORY',
+            width: '180px',
             render: (row) => (
                 <span className="category-tag">
-                    {row.itemType?.itemCategory?.name || "No Category"}
-                </span>
+                {row.itemType?.itemCategory?.name || "No Category"}
+            </span>
             )
         },
         {
@@ -387,14 +380,14 @@ const InWarehouseItems = ({
                     return (
                         <div className="quantity-cell">
                             <div className="quantity-main">
-                                <span className={`total-quantity ${lowStock ? 'low-stock' : ''}`}>
-                                    {row.quantity}
-                                </span>
+                            <span className={`total-quantity ${lowStock ? 'low-stock' : ''}`}>
+                                {row.quantity}
+                            </span>
                             </div>
                             {row.individualItems && row.individualItems.length > 1 && (
                                 <span className="quantity-breakdown" title={`From ${row.individualItems.length} transactions`}>
-                                    {` (${row.individualItems.length} entries)`}
-                                </span>
+                                {` (${row.individualItems.length} entries)`}
+                            </span>
                             )}
                         </div>
                     );
@@ -413,7 +406,7 @@ const InWarehouseItems = ({
         {
             accessor: 'itemType.measuringUnit',
             header: 'UNIT',
-            width: '230px',
+            width: '200px',
             render: (row) => row.itemType?.measuringUnit || "N/A"
         }
     ];
@@ -487,8 +480,9 @@ const InWarehouseItems = ({
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={[
-                    { accessor: 'itemType.name', header: 'Item' },
+                    { accessor: 'itemType.itemCategory.parentCategory.name', header: 'Parent Category' },
                     { accessor: 'itemType.itemCategory.name', header: 'Category' },
+                    { accessor: 'itemType.name', header: 'Item' },
                     { accessor: 'itemType.measuringUnit', header: 'Unit' }
                 ]}
                 actions={actions}
@@ -501,7 +495,6 @@ const InWarehouseItems = ({
                     </svg>
                 }
                 onAddClick={handleOpenAddItemModal}
-
                 // Excel Export functionality
                 showExportButton={true}
                 exportButtonText="Export Items"
@@ -518,6 +511,7 @@ const InWarehouseItems = ({
                 exportAllData={false}
                 excludeColumnsFromExport={[]}
                 customExportHeaders={{
+                    'itemType.itemCategory.parentCategory.name': 'Parent Category',
                     'itemType.itemCategory.name': 'Category',
                     'itemType.name': 'Item Name',
                     'quantity': 'Current Quantity',

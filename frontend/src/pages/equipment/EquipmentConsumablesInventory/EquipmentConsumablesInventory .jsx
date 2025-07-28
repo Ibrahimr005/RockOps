@@ -2,7 +2,7 @@ import React, {forwardRef, useEffect, useImperativeHandle, useState} from 'react
 import { FaPlus } from 'react-icons/fa';
 import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
 import { equipmentService } from '../../../services/equipmentService';
-import { transactionService } from '../../../services/transactionService';
+import { transactionService } from '../../../services/transaction/transactionService.js';
 import { consumableService } from '../../../services/consumableService';
 import './EquipmentConsumablesInventory.scss';
 import DataTable from '../../../components/common/DataTable/DataTable';

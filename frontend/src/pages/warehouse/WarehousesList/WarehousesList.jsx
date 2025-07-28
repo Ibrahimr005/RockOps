@@ -2,11 +2,15 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./WarehousesList.scss";
 import warehouseImg from "../../../assets/imgs/warehouse1.jpg";
-import { FaWarehouse, FaTimes, FaUserCog, FaPlus } from 'react-icons/fa';
+import { FaWarehouse, FaTimes, FaUserCog, FaPlus, FaExclamationTriangle, FaBell } from 'react-icons/fa';
 import { useAuth } from "../../../contexts/AuthContext";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog";
+import { warehouseService } from "../../../services/warehouse/warehouseService";
+import { warehouseEmployeeService } from "../../../services/warehouse/warehouseEmployeeService";
+import { itemService } from "../../../services/warehouse/itemService";
+import { transactionService } from "../../../services/transaction/transactionService.js";
 
 const WarehousesList = () => {
     const [warehouses, setWarehouses] = useState([]);
@@ -23,6 +27,10 @@ const WarehousesList = () => {
     const [selectedWarehouse, setSelectedWarehouse] = useState(null);
     const [totalItemsMap, setTotalItemsMap] = useState({});
     const [assignmentLoading, setAssignmentLoading] = useState(false);
+
+    // Notification states
+    const [warehouseNotifications, setWarehouseNotifications] = useState({});
+    const [loadingNotifications, setLoadingNotifications] = useState(true);
 
     // Pending changes tracking
     const [pendingAssignments, setPendingAssignments] = useState([]);
@@ -72,43 +80,51 @@ const WarehousesList = () => {
         setConfirmDialog(prev => ({ ...prev, isVisible: false }));
     };
 
-    // API functions for actual assignment/unassignment
     const assignEmployeeToWarehouseAPI = async (employeeId, warehouseId) => {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:8080/api/v1/warehouseEmployees/${employeeId}/assign-warehouse`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ warehouseId })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to assign employee");
-        }
-
-        return await response.json();
+        return await warehouseEmployeeService.assignToWarehouse(employeeId, { warehouseId });
     };
 
     const unassignEmployeeFromWarehouseAPI = async (employeeId, warehouseId) => {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:8080/api/v1/warehouseEmployees/${employeeId}/unassign-warehouse`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ warehouseId })
-        });
+        return await warehouseEmployeeService.unassignFromWarehouse(employeeId, { warehouseId });
+    };
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Failed to unassign employee");
+    // Function to fetch notification data for each warehouse
+    const fetchWarehouseNotifications = async (warehouseId) => {
+        try {
+            const [transactions, items] = await Promise.all([
+                transactionService.getTransactionsForWarehouse(warehouseId),
+                itemService.getItemsByWarehouse(warehouseId)
+            ]);
+
+            // Count incoming transactions (same logic as IncomingTransactionsTable)
+            const incomingTransactionsCount = transactions.filter(transaction =>
+                transaction.status === "PENDING" &&
+                (transaction.receiverId === warehouseId || transaction.senderId === warehouseId) &&
+                transaction.sentFirst !== warehouseId
+            ).length;
+
+            // Count actual discrepancy items like in DiscrepancyItems component
+            const missingItems = items.filter(item => item.itemStatus === 'MISSING' && !item.resolved);
+            const excessItems = items.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved);
+            const discrepancyCount = missingItems.length + excessItems.length;
+
+            return {
+                incomingTransactions: incomingTransactionsCount,
+                discrepancies: discrepancyCount,
+                missingItems: missingItems.length,
+                excessItems: excessItems.length,
+                hasAlerts: incomingTransactionsCount > 0 || discrepancyCount > 0
+            };
+        } catch (error) {
+            console.error(`Error fetching notifications for warehouse ${warehouseId}:`, error);
+            return {
+                incomingTransactions: 0,
+                discrepancies: 0,
+                missingItems: 0,
+                excessItems: 0,
+                hasAlerts: false
+            };
         }
-
-        return await response.json();
     };
 
     // Fetch warehouses on initial load - wait for currentUser to be available
@@ -133,26 +149,38 @@ const WarehousesList = () => {
         }
     }, [selectedWarehouse, showAssignmentModal]);
 
-    // Replace the fetchAndFilterWarehousesForEmployee function in your WarehousesList.jsx
+    // Fetch notifications for all warehouses
+    useEffect(() => {
+        const fetchAllNotifications = async () => {
+            if (warehouses.length === 0) return;
+
+            setLoadingNotifications(true);
+            const notifications = {};
+
+            // Only fetch notifications for warehouse managers and employees
+            if (currentUser?.role === 'WAREHOUSE_MANAGER' || currentUser?.role === 'WAREHOUSE_EMPLOYEE') {
+                await Promise.all(
+                    warehouses.map(async (warehouse) => {
+                        const notificationData = await fetchWarehouseNotifications(warehouse.id);
+                        notifications[warehouse.id] = notificationData;
+                    })
+                );
+            }
+
+            setWarehouseNotifications(notifications);
+            setLoadingNotifications(false);
+        };
+
+        fetchAllNotifications();
+    }, [warehouses, currentUser?.role]);
 
     const fetchAndFilterWarehousesForEmployee = async (allWarehouses) => {
         try {
-            const token = localStorage.getItem('token');
             console.log("Filtering warehouses for employee:", currentUser.username);
             console.log("Total warehouses available:", allWarehouses.length);
 
             // Get all warehouse assignments for this user
-            const response = await fetch(`http://localhost:8080/api/v1/warehouseEmployees/by-username/${currentUser.username}/assignments`, {
-                headers: { "Authorization": `Bearer ${token}` },
-            });
-
-            if (!response.ok) {
-                console.log("No assignments found for user or API error, showing empty list");
-                setWarehouses([]);
-                return;
-            }
-
-            const assignments = await response.json();
+            const assignments = await warehouseEmployeeService.getAssignmentsByUsername(currentUser.username);
             console.log("Found assignments:", assignments);
 
             if (!Array.isArray(assignments) || assignments.length === 0) {
@@ -184,40 +212,24 @@ const WarehousesList = () => {
         }
     };
 
-// Also update the fetchWarehouses function to add better debugging:
-
     const fetchWarehouses = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
 
             console.log("Fetching warehouses for user role:", currentUser?.role);
 
-            // Always fetch from the main warehouses endpoint
-            const response = await fetch("http://localhost:8080/api/v1/warehouses", {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log("Fetched warehouse data:", data);
+            const respo = await warehouseService.getAll();
+            console.log("Fetched warehouse data:", JSON.stringify(respo, null, 2));
 
             // If user is a warehouse employee, filter warehouses on frontend
             if (currentUser?.role === 'WAREHOUSE_EMPLOYEE') {
                 console.log("User is WAREHOUSE_EMPLOYEE, filtering warehouses");
                 // Get user's assigned warehouses via separate API call
-                await fetchAndFilterWarehousesForEmployee(data);
+                await fetchAndFilterWarehousesForEmployee(respo);
             } else {
                 // For other roles, show all warehouses
                 console.log("User is not WAREHOUSE_EMPLOYEE, showing all warehouses");
-                setWarehouses(data);
+                setWarehouses(respo);
                 console.log("Fetched all warehouses for role:", currentUser?.role);
             }
 
@@ -230,32 +242,9 @@ const WarehousesList = () => {
         }
     };
 
-
-
     const fetchWarehouseEmployees = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch("http://localhost:8080/api/v1/warehouseEmployees/warehouse-employees", {
-                headers: { "Authorization": `Bearer ${token}` },
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch warehouse employees: ${response.status}`);
-            }
-
-            // Add response text debugging
-            const responseText = await response.text();
-            console.log("Raw response:", responseText);
-
-            let data;
-            try {
-                data = JSON.parse(responseText);
-            } catch (parseError) {
-                console.error("JSON Parse Error:", parseError);
-                console.error("Response text:", responseText);
-                throw new Error("Invalid JSON response from server");
-            }
-
+            const data = await warehouseEmployeeService.getWarehouseEmployees();
             setWarehouseEmployees(data);
             console.log("Successfully fetched warehouse employees:", data.length);
         } catch (error) {
@@ -265,16 +254,22 @@ const WarehousesList = () => {
         }
     };
 
+    useEffect(() => {
+        if (showAssignmentModal) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [showAssignmentModal]);
+
     const fetchWarehouseAssignedEmployees = async (warehouseId) => {
         try {
             setAssignmentLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/warehouses/${warehouseId}/assigned-users-dto`, {
-                headers: { "Authorization": `Bearer ${token}` },
-            });
-
-            if (!response.ok) throw new Error("Failed to fetch assigned employees");
-            const data = await response.json();
+            const data = await warehouseEmployeeService.getWarehouseAssignedUsers(warehouseId);
 
             if (!Array.isArray(data)) {
                 setAssignedEmployees([]);
@@ -437,7 +432,6 @@ const WarehousesList = () => {
         setAssignedEmployees(prev => [...prev, tempAssignment]);
         setHasUnsavedChanges(true);
         setSelectedEmployee("");
-
     };
 
     // Handle employee unassignment - remove from UI immediately
@@ -457,7 +451,6 @@ const WarehousesList = () => {
             const stillHasUnassignments = pendingUnassignments.length > 0;
             setHasUnsavedChanges(stillHasAssignments || stillHasUnassignments);
 
-
             return;
         }
 
@@ -465,8 +458,6 @@ const WarehousesList = () => {
         setPendingUnassignments(prev => [...prev, employeeId]);
         setAssignedEmployees(prev => prev.filter(emp => emp.id !== employeeId));
         setHasUnsavedChanges(true);
-
-
     };
 
     const getAvailableEmployeesForAssignment = () => {
@@ -496,20 +487,7 @@ const WarehousesList = () => {
 
     const fetchTotalItemsInWarehouse = async (warehouseId) => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/items/warehouse/${warehouseId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch items');
-            }
-
-            const items = await response.json();
+            const items = await itemService.getItemsByWarehouse(warehouseId);
             const inWarehouseItems = items.filter(item => item.itemStatus === 'IN_WAREHOUSE');
             const total = inWarehouseItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -557,14 +535,42 @@ const WarehousesList = () => {
                             (emp) => emp.jobPosition?.positionName?.toLowerCase() === "warehouse worker"
                         ) || [];
 
+                        // Get notification data for this warehouse
+                        const notifications = warehouseNotifications[warehouse.id] || {};
+                        const hasIncomingTransactions = notifications.incomingTransactions > 0;
+                        const hasDiscrepancies = notifications.discrepancies > 0;
+                        const hasAlerts = hasIncomingTransactions || hasDiscrepancies;
+
+                        // Optional: Add urgent class for high counts
+                        const isUrgent = notifications.discrepancies > 5 || notifications.incomingTransactions > 3;
+
                         return (
-                            <div key={warehouse.id} className="warehouse-list-card" onClick={() => navigate(`/warehouses/${warehouse.id}`)} style={{ cursor: "pointer" }}>
+                            <div
+                                key={warehouse.id}
+                                className={`warehouse-list-card ${hasAlerts ? 'has-attention' : ''}`}
+                                onClick={() => navigate(`/warehouses/${warehouse.id}`)}
+                                style={{ cursor: "pointer" }}
+                                title={hasAlerts ? (
+                                    hasIncomingTransactions && hasDiscrepancies
+                                        ? `${notifications.incomingTransactions} pending transactions, ${notifications.discrepancies} inventory issues`
+                                        : hasIncomingTransactions
+                                            ? `${notifications.incomingTransactions} pending transactions`
+                                            : `${notifications.discrepancies} inventory issues`
+                                ) : undefined}
+                            >
                                 <div className="warehouse-list-card-image">
                                     <img src={warehouse.photoUrl ? warehouse.photoUrl : warehouseImg} alt="Warehouse" />
+
+                                    {/* Red Corner Alert */}
+                                    {hasAlerts && (
+                                        <div className="warehouse-status-corner"></div>
+                                    )}
                                 </div>
 
                                 <div className="warehouse-list-card-content">
-                                    <h2 className="warehouse-list-card-name">{warehouse.name || 'Unnamed Warehouse'}</h2>
+                                    <h2 className="warehouse-list-card-name">
+                                        {warehouse.name || 'Unnamed Warehouse'}
+                                    </h2>
 
                                     <div className="warehouse-list-card-stats">
                                         <div className="warehouse-list-stat-item">
@@ -591,7 +597,7 @@ const WarehousesList = () => {
                                         </div>
                                     </div>
 
-                                    <div className="warehouse-list-card-actions">
+                                    <div className={`warehouse-list-card-actions ${isWarehouseManager ? 'has-two-buttons' : ''}`}>
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -637,7 +643,7 @@ const WarehousesList = () => {
                                 <FaUserCog />
                                 Assign Employees to {selectedWarehouse?.name}
                             </h2>
-                            <button className="warehouse-list-modal-close-button" onClick={handleCloseAssignmentModal}>×</button>
+                            <button className="btn-close" onClick={handleCloseAssignmentModal}>×</button>
                         </div>
 
                         <div className="warehouse-list-modal-body">

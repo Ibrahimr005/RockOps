@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
-import { transactionService } from '../../../../services/transactionService';
+import { transactionService } from '../../../../services/transaction/transactionService.js';
 import { siteService } from '../../../../services/siteService';
-import { itemTypeService } from '../../../../services/itemTypeService';
+import { itemTypeService } from '../../../../services/warehouse/itemTypeService.js';
 import { equipmentService } from '../../../../services/equipmentService';
 import './AddConsumablesModal.scss';
 
