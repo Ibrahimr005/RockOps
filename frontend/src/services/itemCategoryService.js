@@ -17,5 +17,9 @@ export const itemCategoryService = {
 
     getChildren: () => {
         return apiClient.get(ITEM_CATEGORY_ENDPOINTS.CHILDREN);
+    },
+
+    getParentCategories: () => {
+        return apiClient.get(ITEM_CATEGORY_ENDPOINTS.PARENT_CATEGORIES);
     }
 }; 

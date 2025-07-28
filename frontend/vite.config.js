@@ -28,5 +28,8 @@ export default defineConfig({
   preview: {
     port: 4173,
     host: true,
+  },
+  define: {
+    __API_URL__: JSON.stringify(process.env.VITE_API_BASE_URL)
   }
 })

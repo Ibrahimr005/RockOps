@@ -230,6 +230,20 @@ const EquipmentTypeManagement = () => {
                 addButtonText="Add Equipment Type"
                 addButtonIcon={<FaPlus />}
                 onAddClick={() => handleOpenModal()}
+                showExportButton={true}
+                exportButtonText="Export Equipment Types"
+                exportFileName="equipment_types"
+                exportAllData={true}
+                excludeColumnsFromExport={['actions']}
+                customExportHeaders={{
+                    'name': 'Equipment Type Name',
+                    'description': 'Description',
+                    'drivable': 'Requires Driver',
+                    'supportedWorkTypes': 'Supported Work Types'
+                }}
+                onExportStart={() => showSuccess("Exporting equipment types...")}
+                onExportComplete={(result) => showSuccess(`Exported ${result.rowCount} equipment types to Excel`)}
+                onExportError={(error) => showError("Failed to export equipment types")}
             />
 
             {/* Modal for adding/editing equipment types */}

@@ -144,7 +144,7 @@ const AddConsumablesModal = ({
         try {
             const response = await equipmentService.checkBatchExists(equipmentId, batchToVerify);
 
-            if (response.data.exists) {
+            if (response.data.found) {
                 setBatchVerificationResult({ 
                     exists: true, 
                     transaction: response.data.transaction 

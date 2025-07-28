@@ -368,6 +368,16 @@ export const equipmentService = {
 
     // Check if batch number exists for equipment
     checkBatchExists: (equipmentId, batchNumber) => {
-        return apiClient.get(`/api/equipment/${equipmentId}/transactions/batch/${batchNumber}/exists`);
+        return apiClient.get(EQUIPMENT_ENDPOINTS.CHECK_BATCH_EXISTS(equipmentId, batchNumber));
+    },
+
+    // Get equipment items
+    getEquipmentItems: (equipmentId) => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.ITEMS(equipmentId));
+    },
+
+    // Get equipment by site
+    getEquipmentBySite: (siteId) => {
+        return apiClient.get(`/api/equipment/site/${siteId}`);
     }
 };

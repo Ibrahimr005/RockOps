@@ -7,7 +7,10 @@ import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import { useSnackbar } from "../../../contexts/SnackbarContext";
 import { inSiteMaintenanceService } from "../../../services/inSiteMaintenanceService";
 import { maintenanceTypeService } from "../../../services/maintenanceTypeService";
-import { employeeService } from "../../../services/hr/employeeService.js";
+import { employeeService } from "../../../services/employeeService";
+import { equipmentService } from "../../../services/equipmentService";
+import { siteService } from "../../../services/siteService";
+import { warehouseService } from "../../../services/warehouseService";
 
 const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
     const [loading, setLoading] = useState(false);
@@ -72,45 +75,35 @@ const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
 
         setLoading(true);
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/equipment/${equipmentId}/transactions`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
+            const response = await equipmentService.getEquipmentTransactions(equipmentId);
+            const data = response.data;
+            // Filter for only pending transactions where:
+            // 1. Status is PENDING
+            // 2. Current equipment is involved (as sender or receiver)
+            // 3. Current equipment is NOT the entity that initiated the transaction (sentFirst)
+            const pendingData = await Promise.all(
+                data
+                    .filter(transaction =>
+                        transaction.status === "PENDING" &&
+                        (transaction.receiverId === equipmentId || transaction.senderId === equipmentId) &&
+                        transaction.sentFirst !== equipmentId
+                    )
+                    .map(async (transaction) => {
+                        const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
+                        const receiver = await fetchEntityDetails(transaction.receiverType, transaction.receiverId);
 
-            if (response.ok) {
-                const data = await response.json();
-                // Filter for only pending transactions where:
-                // 1. Status is PENDING
-                // 2. Current equipment is involved (as sender or receiver)
-                // 3. Current equipment is NOT the entity that initiated the transaction (sentFirst)
-                const pendingData = await Promise.all(
-                    data
-                        .filter(transaction =>
-                            transaction.status === "PENDING" &&
-                            (transaction.receiverId === equipmentId || transaction.senderId === equipmentId) &&
-                            transaction.sentFirst !== equipmentId
-                        )
-                        .map(async (transaction) => {
-                            const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
-                            const receiver = await fetchEntityDetails(transaction.receiverType, transaction.receiverId);
+                        // Process entity data for consistent display
+                        const processedSender = processEntityData(transaction.senderType, sender);
+                        const processedReceiver = processEntityData(transaction.receiverType, receiver);
 
-                            // Process entity data for consistent display
-                            const processedSender = processEntityData(transaction.senderType, sender);
-                            const processedReceiver = processEntityData(transaction.receiverType, receiver);
-
-                            return {
-                                ...transaction,
-                                sender: processedSender,
-                                receiver: processedReceiver
-                            };
-                        })
-                );
-                setPendingTransactions(pendingData);
-            } else {
-                console.error("Failed to fetch transactions, status:", response.status);
-            }
+                        return {
+                            ...transaction,
+                            sender: processedSender,
+                            receiver: processedReceiver
+                        };
+                    })
+            );
+            setPendingTransactions(pendingData);
         } catch (error) {
             console.error("Failed to fetch transactions:", error);
         } finally {
@@ -130,32 +123,19 @@ const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
 
     const fetchEntityDetails = async (entityType, entityId) => {
         try {
-            const token = localStorage.getItem("token");
-            let endpoint;
+            let response;
 
             if (entityType === "WAREHOUSE") {
-                endpoint = `http://localhost:8080/api/v1/warehouses/${entityId}`;
+                response = await warehouseService.getById(entityId);
             } else if (entityType === "EQUIPMENT") {
-                endpoint = `http://localhost:8080/api/equipment/${entityId}`;
+                response = await equipmentService.getEquipmentById(entityId);
             } else if (entityType === "SITE") {
-                endpoint = `http://localhost:8080/api/v1/sites/${entityId}`;
+                response = await siteService.getSiteById(entityId);
             } else {
                 return null;
             }
 
-            const response = await fetch(endpoint, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                return data;
-            } else {
-                console.error(`Failed to fetch ${entityType} details, status:`, response.status);
-                return null;
-            }
+            return response.data;
         } catch (error) {
             console.error(`Failed to fetch ${entityType} details:`, error);
             return null;
@@ -359,35 +339,22 @@ const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
                 }
             }
 
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/equipment/${equipmentId}/transactions/${selectedTransaction.id}/accept`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(acceptanceData)
-            });
+            const response = await equipmentService.acceptEquipmentTransaction(equipmentId, selectedTransaction.id, acceptanceData);
 
-            if (response.ok) {
-                // Success feedback based on what was accomplished
-                let successMessage = "Transaction accepted successfully!";
-                
-                if (selectedPurpose === 'MAINTENANCE') {
-                    if (maintenanceOption === 'existing') {
-                        successMessage += " Transaction linked to existing maintenance record.";
-                    } else if (maintenanceOption === 'create') {
-                        successMessage += " New maintenance record created and linked.";
-                    }
+            // Success feedback based on what was accomplished
+            let successMessage = "Transaction accepted successfully!";
+            
+            if (selectedPurpose === 'MAINTENANCE') {
+                if (maintenanceOption === 'existing') {
+                    successMessage += " Transaction linked to existing maintenance record.";
+                } else if (maintenanceOption === 'create') {
+                    successMessage += " New maintenance record created and linked.";
                 }
-                
-                showSuccess(successMessage);
-                setIsAcceptModalOpen(false);
-                await fetchIncomingTransactions();
-            } else {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to accept transaction");
             }
+            
+            showSuccess(successMessage);
+            setIsAcceptModalOpen(false);
+            await fetchIncomingTransactions();
         } catch (error) {
             console.error("Error accepting transaction:", error);
             
@@ -411,26 +378,11 @@ const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
                 throw new Error("Please provide a reason for rejection");
             }
 
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/equipment/${equipmentId}/transactions/${selectedTransaction.id}/reject`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    rejectionReason
-                })
-            });
+            const response = await equipmentService.rejectEquipmentTransaction(equipmentId, selectedTransaction.id, { rejectionReason });
 
-            if (response.ok) {
-                showSnackbar("Transaction rejected successfully", "success");
-                setIsRejectModalOpen(false);
-                await fetchIncomingTransactions();
-            } else {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to reject transaction");
-            }
+            showSnackbar("Transaction rejected successfully", "success");
+            setIsRejectModalOpen(false);
+            await fetchIncomingTransactions();
         } catch (error) {
             console.error("Error rejecting transaction:", error);
             setRejectError(error.message);
@@ -546,6 +498,22 @@ const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
                 itemsPerPageOptions={[5, 10, 15, 20]}
                 defaultItemsPerPage={10}
                 actionsColumnWidth="200px"
+                showExportButton={true}
+                exportButtonText="Export Incoming Transactions"
+                exportFileName="equipment_incoming_transactions"
+                exportAllData={true}
+                excludeColumnsFromExport={['actions']}
+                customExportHeaders={{
+                    'sender.name': 'Sender Name',
+                    'sender.type': 'Sender Type',
+                    'receiver.name': 'Receiver Name',
+                    'receiver.type': 'Receiver Type',
+                    'batchNumber': 'Batch Number',
+                    'transactionDate': 'Transaction Date'
+                }}
+                onExportStart={() => showSnackbar("Exporting incoming transactions...", "info")}
+                onExportComplete={(result) => showSnackbar(`Exported ${result.rowCount} records to Excel`, "success")}
+                onExportError={(error) => showSnackbar("Failed to export incoming transactions", "error")}
             />
 
             {/* Accept Modal */}

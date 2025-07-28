@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "../../warehouse/WarehouseViewTransactions/WarehouseViewTransactions.scss";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
+import { equipmentService } from "../../../services/equipmentService";
+import { siteService } from "../../../services/siteService";
 
 const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, onUpdate, equipmentId }) => {
     const [updatedTransaction, setUpdatedTransaction] = useState(transaction || {});
@@ -96,15 +98,8 @@ const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, 
 
     const fetchEquipmentData = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/equipment/${equipmentId}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setEquipmentData(data);
-            }
+            const response = await equipmentService.getEquipmentById(equipmentId);
+            setEquipmentData(response.data);
         } catch (error) {
             console.error("Failed to fetch equipment data:", error);
         }
@@ -112,15 +107,8 @@ const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, 
 
     const fetchAllSites = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/site`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setAllSites(data);
-            }
+            const response = await siteService.getAllSites();
+            setAllSites(response.data);
         } catch (error) {
             console.error("Failed to fetch sites:", error);
         }
@@ -128,15 +116,8 @@ const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, 
 
     const fetchItems = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/equipment/${equipmentId}/items`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setItems(data);
-            }
+            const response = await equipmentService.getEquipmentItems(equipmentId);
+            setItems(response.data);
         } catch (error) {
             console.error("Failed to fetch items:", error);
         }
@@ -210,25 +191,13 @@ const EquipmentUpdatePendingTransactionModal = ({ transaction, isOpen, onClose, 
                 username: username
             };
 
-            const response = await fetch(`http://localhost:8080/api/equipment/${equipmentId}/transactions/${transaction.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(transactionData)
-            });
+            const response = await equipmentService.updateEquipmentTransaction(equipmentId, transaction.id, transactionData);
 
-            if (response.ok) {
-                showSnackbar('success', 'Transaction updated successfully!');
-                if (onUpdate) {
-                    onUpdate();
-                }
-                onClose();
-            } else {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to update transaction');
+            showSnackbar('success', 'Transaction updated successfully!');
+            if (onUpdate) {
+                onUpdate();
             }
+            onClose();
         } catch (error) {
             showSnackbar('error', error.message || 'Failed to update transaction. Please try again.');
             setError(error.message || "Failed to update transaction");

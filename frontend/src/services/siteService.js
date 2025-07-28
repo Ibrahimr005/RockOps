@@ -49,7 +49,6 @@ export const siteService = {
         return apiClient.get(SITE_ENDPOINTS.FIXED_ASSETS(siteId));
     },
 
-
     // Partner operations (used in site forms)
     getAllPartners: () => {
         return apiClient.get(PARTNER_ENDPOINTS.GET_ALL);
@@ -145,7 +144,7 @@ export const siteService = {
 
     // Fixed Assets operations
     getUnassignedFixedAssets: () => {
-        return apiClient.get('/api/v1/site/unassigned-fixedassets'); // You need to add this endpoint
+        return apiClient.get('/api/v1/site/unassigned-fixedassets');
     },
 
     // Warehouse operations
@@ -161,4 +160,4 @@ export const siteService = {
     getMerchants: (siteId) => {
         return apiClient.get(`/api/v1/site/${siteId}/merchants`);
     }
-}; 
+};
