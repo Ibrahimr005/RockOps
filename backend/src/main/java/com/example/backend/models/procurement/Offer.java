@@ -34,6 +34,8 @@ public class Offer {
     private LocalDateTime validUntil; // Offer validity period
     private String notes;
 
+    private LocalDateTime submittedAtM;
+
     // Reference to the request order this offer is for
     @ManyToOne
     @JoinColumn(name = "request_order_id")

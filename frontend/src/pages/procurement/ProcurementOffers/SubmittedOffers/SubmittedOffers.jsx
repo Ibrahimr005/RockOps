@@ -1,6 +1,8 @@
 import React from 'react';
 import Snackbar from '../../../../components/common/Snackbar2/Snackbar2.jsx'
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { offerService } from '../../../../services/procurement/offerService.js';
 
 import "../ProcurementOffers.scss"
 import "./SubmittedOffers.scss"
@@ -27,6 +29,23 @@ const SubmittedOffers = ({
     const [snackbarMessage, setSnackbarMessage] = React.useState('');
     const [snackbarType, setSnackbarType] = React.useState('success');
 
+    // Confirmation dialog states
+    const [confirmationDialog, setConfirmationDialog] = React.useState({
+        show: false,
+        type: 'warning',
+        title: '',
+        message: '',
+        confirmText: 'Confirm',
+        onConfirm: null,
+        isLoading: false,
+        showInput: false,
+        inputLabel: '',
+        inputPlaceholder: '',
+        inputRequired: false
+    });
+
+    const [rejectionReason, setRejectionReason] = React.useState('');
+
     // Function to show snackbar
     const showNotification = (message, type = 'success') => {
         setSnackbarMessage(message);
@@ -36,6 +55,12 @@ const SubmittedOffers = ({
 
     const handleSnackbarClose = () => {
         setShowSnackbar(false);
+    };
+
+    // Handle confirmation dialog cancel
+    const handleConfirmationCancel = () => {
+        setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
+        setRejectionReason('');
     };
 
     React.useEffect(() => {
@@ -81,112 +106,111 @@ const SubmittedOffers = ({
         }
     };
 
-    // Handle approve action with API call and state updates
-    const handleApprove = async (e, offer) => {
+    // Handle approve action - show confirmation dialog
+    const handleApprove = (e, offer) => {
         e.stopPropagation(); // Prevent triggering the card click
-        if (window.confirm(`Are you sure you want to approve this offer: ${offer.title}?`)) {
-            try {
-                // First, update the offer status to ACCEPTED
-                const statusResponse = await fetch(`http://localhost:8080/api/v1/offers/${offer.id}/status?status=MANAGERACCEPTED`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
 
-                if (statusResponse.ok) {
-                    // Then, update the finance status to PENDING_FINANCE_REVIEW
-                    const financeResponse = await fetch(`http://localhost:8080/api/v1/offers/${offer.id}/finance-status?financeStatus=PENDING_FINANCE_REVIEW`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        }
-                    });
+        setConfirmationDialog({
+            show: true,
+            type: 'success',
+            title: 'Approve Offer',
+            message: `Are you sure you want to approve the offer "${offer.title}"? This will send it to finance for review.`,
+            confirmText: 'Approve Offer',
+            onConfirm: () => handleConfirmApprove(offer),
+            isLoading: false,
+            showInput: false
+        });
+    };
 
-                    if (financeResponse.ok) {
-                        // Remove the offer from the submitted offers list
-                        const updatedOffers = offers.filter(o => o.id !== offer.id);
-                        setOffers(updatedOffers);
+    // Handle confirmed approval
+    const handleConfirmApprove = async (offer) => {
+        try {
+            setConfirmationDialog(prev => ({ ...prev, isLoading: true }));
 
-                        // Clear active offer if it was the approved one
-                        if (activeOffer && activeOffer.id === offer.id) {
-                            setActiveOffer(null);
-                        }
+            // First, update the offer status to ACCEPTED using the service
+            await offerService.updateStatus(offer.id, 'MANAGERACCEPTED');
 
-                        // Call the parent component's handler if provided
-                        if (onApproveOffer) {
-                            onApproveOffer(offer.id);
-                        }
+            // Then, update the finance status to PENDING_FINANCE_REVIEW using the service
+            await offerService.updateFinanceStatus(offer.id, 'PENDING_FINANCE_REVIEW');
 
-                        showNotification('Offer has been approved and sent to finance for review!', 'success');
-                    } else {
-                        const errorData = await financeResponse.json();
-                        showNotification(`Error updating finance status: ${errorData.message || 'Failed to update finance status'}`, 'error');
-                    }
-                } else {
-                    const errorData = await statusResponse.json();
-                    showNotification(`Error: ${errorData.message || 'Failed to approve offer'}`, 'error');
-                }
-            } catch (error) {
-                console.error('Error approving offer:', error);
-                showNotification('Error: Could not connect to the server', 'error');
+            // Remove the offer from the submitted offers list
+            const updatedOffers = offers.filter(o => o.id !== offer.id);
+            setOffers(updatedOffers);
+
+            // Clear active offer if it was the approved one
+            if (activeOffer && activeOffer.id === offer.id) {
+                setActiveOffer(updatedOffers.length > 0 ? updatedOffers[0] : null);
             }
+
+            // Call the parent component's handler if provided
+            if (onApproveOffer) {
+                onApproveOffer(offer.id);
+            }
+
+            // Close dialog and show success notification
+            setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
+            showNotification('Offer has been approved and sent to finance for review!', 'success');
+
+        } catch (error) {
+            console.error('Error approving offer:', error);
+            setConfirmationDialog(prev => ({ ...prev, isLoading: false }));
+            showNotification(`Error: ${error.message || 'Failed to approve offer'}`, 'error');
         }
     };
 
-    // Handle decline action with API call and state updates
-    const handleDecline = async (e, offer) => {
+    // Handle decline action - show confirmation dialog with input
+    const handleDecline = (e, offer) => {
         e.stopPropagation(); // Prevent triggering the card click
 
-        // Prompt for rejection reason
-        const rejectionReason = window.prompt("Please provide a reason for rejecting this offer:", "");
+        setConfirmationDialog({
+            show: true,
+            type: 'danger',
+            title: 'Decline Offer',
+            message: `Are you sure you want to decline the offer "${offer.title}"? Please provide a reason for the rejection.`,
+            confirmText: 'Decline Offer',
+            onConfirm: (reason) => handleConfirmDecline(offer, reason),
+            isLoading: false,
+            showInput: true,
+            inputLabel: 'Rejection Reason',
+            inputPlaceholder: 'Please provide a detailed reason for declining this offer...',
+            inputRequired: true
+        });
 
-        // If user cancels the prompt or doesn't provide a reason, don't proceed
-        if (rejectionReason === null) {
-            return; // User cancelled
-        }
+        // Reset rejection reason when opening dialog
+        setRejectionReason('');
+    };
 
-        if (rejectionReason.trim() === "") {
-            showNotification("Please provide a rejection reason.", 'error');
-            return;
-        }
+    // Handle confirmed decline
+    const handleConfirmDecline = async (offer, rejectionReason) => {
+        try {
+            setConfirmationDialog(prev => ({ ...prev, isLoading: true }));
 
-        if (window.confirm(`Are you sure you want to decline this offer: ${offer.title}?`)) {
-            try {
-                const response = await fetch(`http://localhost:8080/api/v1/offers/${offer.id}/status?status=MANAGERREJECTED&rejectionReason=${encodeURIComponent(rejectionReason)}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
+            // Use the service to update status with rejection reason
+            await offerService.updateStatus(offer.id, 'MANAGERREJECTED', rejectionReason);
 
-                if (response.ok) {
-                    // Remove the offer from the submitted offers list
-                    const updatedOffers = offers.filter(o => o.id !== offer.id);
-                    setOffers(updatedOffers);
+            // Remove the offer from the submitted offers list
+            const updatedOffers = offers.filter(o => o.id !== offer.id);
+            setOffers(updatedOffers);
 
-                    // Clear active offer if it was the declined one
-                    if (activeOffer && activeOffer.id === offer.id) {
-                        setActiveOffer(null);
-                    }
-
-                    // Call the parent component's handler if provided
-                    if (onDeclineOffer) {
-                        onDeclineOffer(offer.id);
-                    }
-
-                    showNotification('Offer has been declined successfully!', 'success');
-                } else {
-                    const errorData = await response.json();
-                    showNotification(`Error: ${errorData.message || 'Failed to decline offer'}`, 'error');
-                }
-            } catch (error) {
-                console.error('Error declining offer:', error);
-                showNotification('Error: Could not connect to the server', 'error');
+            // Clear active offer if it was the declined one
+            if (activeOffer && activeOffer.id === offer.id) {
+                setActiveOffer(updatedOffers.length > 0 ? updatedOffers[0] : null);
             }
+
+            // Call the parent component's handler if provided
+            if (onDeclineOffer) {
+                onDeclineOffer(offer.id);
+            }
+
+            // Close dialog and show success notification
+            setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
+            setRejectionReason('');
+            showNotification('Offer has been declined successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error declining offer:', error);
+            setConfirmationDialog(prev => ({ ...prev, isLoading: false }));
+            showNotification(`Error: ${error.message || 'Failed to decline offer'}`, 'error');
         }
     };
 
@@ -251,7 +275,7 @@ const SubmittedOffers = ({
                                 {activeOffer.status === 'SUBMITTED' && userRole && managerRoles.includes(userRole) && (
                                     <>
                                         <button
-                                            className="procurement-button primary approve-button"
+                                            className="btn-primary"
                                             onClick={(e) => handleApprove(e, activeOffer)}
                                             title="Approve Offer"
                                         >
@@ -259,7 +283,7 @@ const SubmittedOffers = ({
                                             <span>Approve</span>
                                         </button>
                                         <button
-                                            className="procurement-button secondary decline-button"
+                                            className="btn-primary"
                                             onClick={(e) => handleDecline(e, activeOffer)}
                                             title="Decline Offer"
                                         >
@@ -409,19 +433,22 @@ const SubmittedOffers = ({
                                     </div>
                                 </div>
 
-                                {/* Enhanced Total Summary */}
+                                {/* Simplified Summary */}
                                 <div className="procurement-submitted-summary-submitted">
-                                    <div className="submitted-summary-row-submitted">
-                                        <span><FiPackage size={16} /> Total Items:</span>
-                                        <span>{activeOffer.requestOrder?.requestItems?.length || 0}</span>
+                                    <div className="summary-item">
+                                        <FiPackage size={16} />
+                                        <span className="summary-label">Total Items:</span>
+                                        <span className="summary-value">{activeOffer.requestOrder?.requestItems?.length || 0}</span>
                                     </div>
-                                    <div className="submitted-summary-row-submitted">
-                                        <span><FiUser size={16} /> Submitted By:</span>
-                                        <span>{activeOffer.createdBy || 'System'}</span>
+                                    <div className="summary-item">
+                                        <FiUser size={16} />
+                                        <span className="summary-label">Submitted By:</span>
+                                        <span className="summary-value">{activeOffer.createdBy || 'System'}</span>
                                     </div>
-                                    <div className="submitted-summary-row-submitted">
-                                        <span><FiDollarSign size={18} /> Total Value:</span>
-                                        <span className="submitted-total-value-submitted">${getTotalPrice(activeOffer).toFixed(2)}</span>
+                                    <div className="summary-item total-value">
+                                        <FiDollarSign size={18} />
+                                        <span className="summary-label">Total Value:</span>
+                                        <span className="summary-value total">${getTotalPrice(activeOffer).toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -447,6 +474,26 @@ const SubmittedOffers = ({
                     </div>
                 )}
             </div>
+
+            {/* Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={confirmationDialog.show}
+                type={confirmationDialog.type}
+                title={confirmationDialog.title}
+                message={confirmationDialog.message}
+                confirmText={confirmationDialog.confirmText}
+                cancelText="Cancel"
+                onConfirm={confirmationDialog.onConfirm}
+                onCancel={handleConfirmationCancel}
+                isLoading={confirmationDialog.isLoading}
+                showInput={confirmationDialog.showInput}
+                inputLabel={confirmationDialog.inputLabel}
+                inputPlaceholder={confirmationDialog.inputPlaceholder}
+                inputRequired={confirmationDialog.inputRequired}
+                inputValue={rejectionReason}
+                onInputChange={setRejectionReason}
+                size="large"
+            />
 
             {/* Snackbar Notification */}
             <Snackbar
