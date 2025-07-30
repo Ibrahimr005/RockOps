@@ -8,7 +8,7 @@ import { siteService } from '../../../../services/siteService.js';
 import { warehouseService } from '../../../../services/warehouse/warehouseService.js';
 import { itemTypeService } from '../../../../services/warehouse/itemTypeService.js';
 import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService.js';
-import { employeeService } from '../../../../services/employeeService.js';
+import { employeeService } from '../../../../services/hr/employeeService.js';
 import { requestOrderService } from '../../../../services/procurement/requestOrderService.js';
 import { offerService } from '../../../../services/procurement/offerService.js';
 import './IncomingRequestOrders.scss';
