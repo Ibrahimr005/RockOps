@@ -1,0 +1,202 @@
+.contacts {
+    padding: 24px;
+    background-color: var(--color-background);
+    min-height: 100vh;
+
+    .contacts-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 32px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid var(--border-color);
+
+        .header-left {
+            h1 {
+                font-size: 28px;
+                font-weight: 700;
+                color: var(--color-text-primary);
+                margin: 0 0 8px 0;
+            }
+
+            p {
+                font-size: 16px;
+                color: var(--color-text-secondary);
+                margin: 0;
+            }
+        }
+
+        .header-right {
+            .btn {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 12px 24px;
+                font-size: 14px;
+                font-weight: 600;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+                transition: all 0.2s ease;
+
+                &.btn-primary {
+                    background-color: var(--color-primary);
+                    color: white;
+
+                    &:hover {
+                        background-color: var(--color-primary-dark);
+                        transform: translateY(-1px);
+                    }
+                }
+            }
+        }
+    }
+
+    .contacts-error {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+
+        .error-message {
+            text-align: center;
+            padding: 32px;
+            background-color: var(--color-surface);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+
+            h3 {
+                color: var(--color-danger);
+                margin-bottom: 16px;
+            }
+
+            p {
+                color: var(--color-text-secondary);
+                margin-bottom: 24px;
+            }
+
+            .retry-btn {
+                background-color: var(--color-primary);
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: 600;
+
+                &:hover {
+                    background-color: var(--color-primary-dark);
+                }
+            }
+        }
+    }
+
+    // Contact info styling
+    .contact-info {
+        .contact-name {
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 4px;
+        }
+
+        .contact-email {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
+    }
+
+    .company-info {
+        .company-name {
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 4px;
+        }
+
+        .company-position {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
+    }
+
+    .phone-info {
+        .primary-phone {
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 4px;
+        }
+
+        .alternate-phone {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
+    }
+
+    .assignments-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .assignments-count {
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .available-indicator {
+            font-size: 10px;
+            background-color: var(--color-success);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+    }
+
+    // Badge styling
+    .contact-type-badge,
+    .status-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .contact-type-badge {
+        background-color: var(--color-primary);
+        color: white;
+    }
+
+    .status-badge {
+        &.active {
+            background-color: var(--color-success);
+            color: white;
+        }
+
+        &.inactive {
+            background-color: var(--color-danger);
+            color: white;
+        }
+    }
+
+    // Responsive design
+    @media (max-width: 768px) {
+        padding: 16px;
+
+        .contacts-header {
+            flex-direction: column;
+            gap: 16px;
+
+            .header-right {
+                align-self: stretch;
+
+                .btn {
+                    justify-content: center;
+                    width: 100%;
+                }
+            }
+        }
+    }
+} 

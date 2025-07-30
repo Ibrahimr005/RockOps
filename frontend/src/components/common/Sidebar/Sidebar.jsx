@@ -35,7 +35,7 @@ import {
     FaTags,
     FaListAlt,
     FaArrowLeft,
-    FaBook,
+    FaBook, FaReceipt, FaPiggyBank, FaFileAlt, FaMoneyBillWave, FaChartBar,
 } from 'react-icons/fa';
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE } from '../../../utils/roles';
 
@@ -334,6 +334,39 @@ const Sidebar = () => {
                     icon: <FaTasks/>,
                     path: '/hr/attendance',
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
+                },
+            ]
+        },
+        {
+            title: 'Payroll',
+            icon: <FaMoneyBillWave/>,
+            path: '/payroll',
+            roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+            hasSubmenu: true,
+            submenuItems: [
+                {
+                    title: 'Dashboard',
+                    icon: <FaChartBar/>,
+                    path: '/payroll',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                },
+                {
+                    title: 'Payslips',
+                    icon: <FaReceipt/>,
+                    path: '/payroll/payslips',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                },
+                {
+                    title: 'Loans',
+                    icon: <FaPiggyBank/>,
+                    path: '/payroll/loans',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                },
+                {
+                    title: 'Reports',
+                    icon: <FaFileAlt/>,
+                    path: '/payroll/reports',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
             ]
         },

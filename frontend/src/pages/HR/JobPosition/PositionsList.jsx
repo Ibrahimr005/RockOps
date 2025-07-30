@@ -4,7 +4,7 @@ import AddPositionForm from './components/AddPositionForm.jsx';
 import EditPositionForm from './components/EditPositionForm.jsx';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
-import { jobPositionService } from '../../../services/jobPositionService';
+import { jobPositionService } from '../../../services/hr/jobPositionService.js';
 import './PositionsList.scss';
 
 const PositionsList = () => {

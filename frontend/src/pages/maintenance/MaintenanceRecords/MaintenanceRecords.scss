@@ -1,0 +1,189 @@
+.maintenance-records {
+    padding: 2rem;
+    background-color: var(--main-background-color);
+    min-height: 100vh;
+
+    .maintenance-records-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+        gap: 2rem;
+
+        .header-left {
+            h1 {
+                color: var(--head-title-color);
+                font-size: 2rem;
+                font-weight: var(--bold-font-weight);
+                margin: 0 0 0.5rem 0;
+            }
+
+            p {
+                color: var(--paragraph-color);
+                margin: 0;
+                font-size: 1rem;
+            }
+        }
+
+        .header-right {
+            .btn {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.75rem 1.5rem;
+                border: none;
+                border-radius: var(--radius-md);
+                font-weight: 500;
+                cursor: pointer;
+                transition: all var(--transition-fast);
+                text-decoration: none;
+
+                &.btn-primary {
+                    background-color: var(--color-primary);
+                    color: var(--text-hover);
+
+                    &:hover {
+                        background-color: var(--color-primary-hover);
+                        transform: translateY(-1px);
+                    }
+                }
+            }
+        }
+    }
+
+    .maintenance-records-error {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+
+        .error-message {
+            text-align: center;
+            background-color: var(--section-background-color);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+
+            h3 {
+                color: var(--color-danger);
+                margin: 0 0 1rem 0;
+                font-size: 1.25rem;
+            }
+
+            p {
+                color: var(--color-text-secondary);
+                margin: 0 0 1.5rem 0;
+            }
+
+            .retry-btn {
+                background-color: var(--color-primary);
+                color: var(--text-hover);
+                border: none;
+                padding: 0.75rem 1.5rem;
+                border-radius: var(--radius-md);
+                cursor: pointer;
+                font-weight: 500;
+                transition: all var(--transition-fast);
+
+                &:hover {
+                    background-color: var(--color-primary-hover);
+                }
+            }
+        }
+    }
+
+    // Custom styles for DataTable content
+    .equipment-info {
+        .equipment-name {
+            font-weight: 500;
+            color: var(--text-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .equipment-details {
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+        }
+    }
+
+    .issue-description {
+        color: var(--text-color);
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+
+    .responsible-person {
+        .person-name {
+            font-weight: 500;
+            color: var(--text-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .person-phone {
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+        }
+    }
+
+    .cost-info {
+        font-weight: 500;
+        color: var(--text-color);
+    }
+
+    .date-info {
+        .creation-date {
+            font-size: 0.875rem;
+            color: var(--text-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .completion-date {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+        }
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+}
+
+// Responsive adjustments
+@media (max-width: 1024px) {
+    .maintenance-records {
+        padding: 1.5rem;
+
+        .maintenance-records-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+
+            .header-right {
+                .btn {
+                    justify-content: center;
+                }
+            }
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .maintenance-records {
+        padding: 1rem;
+
+        .maintenance-records-header {
+            .header-left {
+                h1 {
+                    font-size: 1.5rem;
+                }
+            }
+        }
+    }
+} 

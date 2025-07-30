@@ -8,6 +8,7 @@ import { FaSignOutAlt, FaBars, FaTimes, FaMoon, FaSun, FaArrowLeft, FaBell } fro
 import logoImage from '../../../assets/logos/Logo.png';
 import logoDarkImage from '../../../assets/logos/Logo-dark.png';
 import './Navbar.css';
+import { notificationService } from '../../../services/notificationService';
 
 const Navbar = () => {
     const { currentUser, logout, token } = useAuth();
@@ -55,18 +56,10 @@ const Navbar = () => {
     // Fetch initial unread count
     const fetchUnreadCount = async () => {
         try {
-            const response = await fetch('http://localhost:8080/api/notifications/unread/count', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                console.log('📊 Initial unread count fetched:', data);
-                setUnreadNotifications(data.unreadCount || data.count || 0);
-            }
+            const response = await notificationService.getUnreadCount();
+            const data = response.data;
+            console.log('📊 Initial unread count fetched:', data);
+            setUnreadNotifications(data.unreadCount || data.count || 0);
         } catch (error) {
             console.error('Failed to fetch unread count:', error);
         }
@@ -84,7 +77,7 @@ const Navbar = () => {
             const { Client } = await import('@stomp/stompjs');
 
             const stompClient = new Client({
-                brokerURL: 'ws://localhost:8080/ws-native',
+                brokerURL: notificationService.getWebSocketUrl(),
                 connectHeaders: {
                     'Authorization': `Bearer ${token}`
                 },

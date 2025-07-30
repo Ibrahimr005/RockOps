@@ -57,6 +57,14 @@ import Notifications from './pages/notification/Notifications.jsx';
 import FixedAssets from "./pages/finance/FixedAssets/FixedAssets.jsx";
 
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ROLES } from './utils/roles';
+import PayrollDashboard from "./pages/payroll/PayrollDashboard/PayrollDashboard.jsx";
+import PayslipList from "./pages/payroll/PayslipList/PayslipList.jsx";
+import LoanManagement from "./pages/payroll/Loans/LoanManagement/LoanManagement.jsx";
+import PayrollLayout from "./pages/payroll/PayrollLayout.jsx";
+import LoanDetails from "./pages/payroll/Loans/LoanDetails/LoanDetails.jsx";
+import PayrollReports from "./pages/payroll/PayrollReports/PayrollReports.jsx";
+import PayslipDetails from "./pages/payroll/PayslipDetails/PayslipDetails.jsx";
+import EmployeeOnboarding from "./pages/HR/Vacancy/EmployeeOnboarding.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -150,10 +158,22 @@ function App() {
                                         <Route path="vacancies" element={<VacancyList/>}/>
                                         <Route path="positions" element={<PositionsList/>}/>
                                         <Route path="employees" element={<EmployeesList/>}/>
+                                        <Route path="employees/add" element={<EmployeeOnboarding/>}/>
                                         <Route path="employee-details/:id" element={<EmployeeDetails/>}/>
                                         <Route path="attendance" element={<AttendancePage/>}/>
                                         <Route path="vacancies/:id" element={<VacancyDetails/>}/>
                                         <Route path="departments" element={<DepartmentsList/>}/>
+                                    </Route>
+
+
+                                    {/* Payroll Routes */}
+                                    <Route path="/payroll" element={<RoleRoute allowedRoles={[HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ADMIN]}><PayrollLayout/></RoleRoute>}>
+                                        <Route index element={<PayrollDashboard/>}/>
+                                        <Route path="payslips" element={<PayslipList/>}/>
+                                        <Route path="payslips/:id" element={<PayslipDetails/>}/>
+                                        <Route path="loans" element={<LoanManagement/>}/>
+                                        <Route path="loans/:id" element={<LoanDetails/>}/>
+                                        <Route path="reports" element={<PayrollReports/>}/>
                                     </Route>
 
                                     {/* Equipment Management Routes */}

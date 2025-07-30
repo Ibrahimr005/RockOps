@@ -6,42 +6,795 @@
   border: 1px solid var(--border-color);
 }
 
-/* Status badges */
+/* Base Status Badge */
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 8px;
-  border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 500;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--po-radius);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+  text-transform: uppercase;
+  width: fit-content;
+ text-align: center;
+  justify-content: center;
+  justify-self: center ;
+  align-self: center;
+  border: 1px solid;
+
+  /* Icon support */
+  .badge-icon {
+    margin-right: 4px;
+    font-size: 10px;
+  }
+
+  /* Dot indicator */
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
 }
 
-.status-badge.active {
+/* Employee Status */
+.status-badge.active, {
   background-color: rgba(76, 175, 80, 0.15);
   color: var(--color-success) !important;
+  border-color: rgba(76, 175, 80, 0.3);
 }
 
 .status-badge.inactive {
   background-color: rgba(158, 158, 158, 0.15);
   color: var(--color-text-tertiary);
+  border-color: rgba(158, 158, 158, 0.3);
 }
 
-.status-badge.invited, .status-badge.pending {
+.status-badge.invited,
+.status-badge.pending {
   background-color: rgba(255, 152, 0, 0.15);
   color: var(--color-warning);
+  border-color: rgba(255, 152, 0, 0.3);
 }
 
-.status-badge.on_leave {
+.status-badge.on_leave,
+.status-badge.on-leave, .status-badge.info {
   background-color: rgba(33, 150, 243, 0.15);
   color: var(--color-info);
+  border-color: rgba(33, 150, 245, 1);
 }
 
-.status-badge.suspended {
+.status-badge.suspended, .status-badge.danger {
   background-color: rgba(244, 67, 54, 0.15);
   color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
 }
 
 .status-badge.terminated {
   background-color: rgba(97, 97, 97, 0.15);
   color: var(--color-text-secondary);
+  border-color: rgba(97, 97, 97, 0.3);
+}
+
+/* Payroll & Payslip Status */
+.status-badge.draft {
+  background-color: rgba(158, 158, 158, 0.15);
+  color: var(--color-text-secondary);
+  border-color: rgba(158, 158, 158, 0.3);
+}
+
+.status-badge.generated {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--color-info);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+.status-badge.sent {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.acknowledged {
+  background-color: rgba(139, 195, 74, 0.15);
+  color: #689f38;
+  border-color: rgba(139, 195, 74, 0.3);
+}
+
+.status-badge.processing {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #f57c00;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+/* Payslip Specific Status */
+.status-badge.status-draft {
+  background-color: rgba(158, 158, 158, 0.15);
+  color: var(--color-text-secondary);
+  border-color: rgba(158, 158, 158, 0.3);
+}
+
+.status-badge.status-generated {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--color-info);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+.status-badge.status-sent {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.status-acknowledged {
+  background-color: rgba(139, 195, 74, 0.15);
+  color: #689f38;
+  border-color: rgba(139, 195, 74, 0.3);
+}
+
+.status-badge.status-processing {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #f57c00;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.status-pending {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: var(--color-warning);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.status-badge.status-ready {
+  background-color: rgba(139, 195, 74, 0.15);
+  color: #689f38;
+  border-color: rgba(139, 195, 74, 0.3);
+}
+
+.status-badge.status-error {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.status-badge.status-deleted {
+  background-color: rgba(97, 97, 97, 0.15);
+  color: var(--color-text-secondary);
+  border-color: rgba(97, 97, 97, 0.3);
+}
+
+.status-badge.status-regenerating {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #f57c00;
+  border-color: rgba(255, 193, 7, 0.3);
+  animation: pulse 2s infinite;
+}
+
+/* Payslip Status Variants with Icons */
+.status-badge.status-draft:before {
+  margin-right: 4px;
+}
+
+.status-badge.status-generated:before {
+  margin-right: 4px;
+}
+
+.status-badge.status-sent:before {
+  margin-right: 4px;
+}
+
+.status-badge.status-acknowledged:before {
+  margin-right: 4px;
+}
+
+.status-badge.status-error:before {
+  margin-right: 4px;
+}
+
+.status-badge.status-processing:before {
+  margin-right: 4px;
+}
+
+/* Additional Payroll Process Status */
+.status-badge.payroll-pending {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: var(--color-warning);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.status-badge.payroll-calculating {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--color-info);
+  border-color: rgba(33, 150, 243, 0.3);
+  animation: pulse 2s infinite;
+}
+
+.status-badge.payroll-calculated {
+  background-color: rgba(139, 195, 74, 0.15);
+  color: #689f38;
+  border-color: rgba(139, 195, 74, 0.3);
+}
+
+.status-badge.payroll-approved {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.payroll-finalized {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+  font-weight: 600;
+}
+
+.status-badge.payroll-locked {
+  background-color: rgba(97, 97, 97, 0.15);
+  color: var(--color-text-secondary);
+  border-color: rgba(97, 97, 97, 0.3);
+}
+
+.status-badge.payroll-cancelled {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+/* Salary Calculation Status */
+.status-badge.salary-calculated {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--color-info);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+.status-badge.salary-adjusted {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #f57c00;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.salary-confirmed {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+/* Deduction Status */
+.status-badge.deduction-applied {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.status-badge.deduction-pending {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: var(--color-warning);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.status-badge.deduction-waived {
+  background-color: rgba(139, 195, 74, 0.15);
+  color: #689f38;
+  border-color: rgba(139, 195, 74, 0.3);
+}
+
+/* Tax Status */
+.status-badge.tax-calculated {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--color-info);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+.status-badge.tax-exempt {
+  background-color: rgba(139, 195, 74, 0.15);
+  color: #689f38;
+  border-color: rgba(139, 195, 74, 0.3);
+}
+
+.status-badge.tax-withheld {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+/* Overtime Status */
+.status-badge.overtime-approved {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.overtime-pending {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: var(--color-warning);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.status-badge.overtime-rejected {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+/* Bonus Status */
+.status-badge.bonus-eligible {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.bonus-applied {
+  background-color: rgba(139, 195, 74, 0.15);
+  color: #689f38;
+  border-color: rgba(139, 195, 74, 0.3);
+}
+
+.status-badge.bonus-pending {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: var(--color-warning);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+/* Transaction Status */
+.status-badge.completed {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.accepted {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.rejected {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.status-badge.cancelled,
+.status-badge.canceled {
+  background-color: rgba(97, 97, 97, 0.15);
+  color: var(--color-text-secondary);
+  border-color: rgba(97, 97, 97, 0.3);
+}
+
+.status-badge.failed {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+/* Payment Status */
+.status-badge.paid {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.unpaid {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.status-badge.partial,
+.status-badge.partially-paid {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: var(--color-warning);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.status-badge.overdue {
+  background-color: rgba(183, 28, 28, 0.15);
+  color: #c62828;
+  border-color: rgba(183, 28, 28, 0.3);
+}
+
+.status-badge.refunded {
+  background-color: rgba(103, 58, 183, 0.15);
+  color: #7b1fa2;
+  border-color: rgba(103, 58, 183, 0.3);
+}
+
+/* Loan Status */
+.status-badge.approved {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.disbursed {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--color-info);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+.status-badge.defaulted {
+  background-color: rgba(183, 28, 28, 0.15);
+  color: #c62828;
+  border-color: rgba(183, 28, 28, 0.3);
+}
+
+/* Equipment Status */
+.status-badge.available {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.in-use,
+.status-badge.in_use {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--color-info);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+.status-badge.maintenance {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: var(--color-warning);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.status-badge.damaged {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.status-badge.retired {
+  background-color: rgba(97, 97, 97, 0.15);
+  color: var(--color-text-secondary);
+  border-color: rgba(97, 97, 97, 0.3);
+}
+
+/* Attendance Status */
+.status-badge.present {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.absent {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.status-badge.late {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: var(--color-warning);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.status-badge.half-day,
+.status-badge.half_day {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #f57c00;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.excused {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--color-info);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+/* Project Status */
+.status-badge.planned {
+  background-color: rgba(158, 158, 158, 0.15);
+  color: var(--color-text-secondary);
+  border-color: rgba(158, 158, 158, 0.3);
+}
+
+.status-badge.in-progress,
+.status-badge.in_progress {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--color-info);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+.status-badge.on-hold,
+.status-badge.on_hold {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: var(--color-warning);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.status-badge.reviewed {
+  background-color: rgba(103, 58, 183, 0.15);
+  color: #7b1fa2;
+  border-color: rgba(103, 58, 183, 0.3);
+}
+
+/* Inventory Status */
+.status-badge.in-stock,
+.status-badge.in_stock {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.low-stock,
+.status-badge.low_stock {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: var(--color-warning);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.status-badge.out-of-stock,
+.status-badge.out_of_stock {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.status-badge.backordered {
+  background-color: rgba(103, 58, 183, 0.15);
+  color: #7b1fa2;
+  border-color: rgba(103, 58, 183, 0.3);
+}
+
+.status-badge.discontinued {
+  background-color: rgba(97, 97, 97, 0.15);
+  color: var(--color-text-secondary);
+  border-color: rgba(97, 97, 97, 0.3);
+}
+
+/* Priority Levels */
+.status-badge.low {
+  background-color: rgba(139, 195, 74, 0.15);
+  color: #689f38;
+  border-color: rgba(139, 195, 74, 0.3);
+}
+
+.status-badge.medium {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: var(--color-warning);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+.status-badge.high {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.status-badge.critical,
+.status-badge.urgent {
+  background-color: rgba(183, 28, 28, 0.15);
+  color: #c62828;
+  border-color: rgba(183, 28, 28, 0.3);
+  animation: pulse 2s infinite;
+}
+
+/* Order Status */
+.status-badge.ordered {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--color-info);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+.status-badge.shipped {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #f57c00;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.delivered {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.returned {
+  background-color: rgba(103, 58, 183, 0.15);
+  color: #7b1fa2;
+  border-color: rgba(103, 58, 183, 0.3);
+}
+
+/* Verification Status */
+.status-badge.verified {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.unverified {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.status-badge.expired {
+  background-color: rgba(97, 97, 97, 0.15);
+  color: var(--color-text-secondary);
+  border-color: rgba(97, 97, 97, 0.3);
+}
+
+/* Request Status */
+.status-badge.submitted {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: var(--color-info);
+  border-color: rgba(33, 150, 243, 0.3);
+}
+
+.status-badge.under-review,
+.status-badge.under_review {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #f57c00;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.requires-action,
+.status-badge.requires_action {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: var(--color-warning);
+  border-color: rgba(255, 152, 0, 0.3);
+}
+
+/* Contract Status */
+.status-badge.active-contract,
+.status-badge.active_contract {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.renewable {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #f57c00;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.non-renewable,
+.status-badge.non_renewable {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+/* Account Status */
+.status-badge.enabled {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.disabled {
+  background-color: rgba(158, 158, 158, 0.15);
+  color: var(--color-text-tertiary);
+  border-color: rgba(158, 158, 158, 0.3);
+}
+
+.status-badge.locked {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+/* Connection Status */
+.status-badge.online {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.offline {
+  background-color: rgba(158, 158, 158, 0.15);
+  color: var(--color-text-tertiary);
+  border-color: rgba(158, 158, 158, 0.3);
+}
+
+.status-badge.connecting {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #f57c00;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+/* Quality Status */
+.status-badge.excellent {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: var(--color-success);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.status-badge.good {
+  background-color: rgba(139, 195, 74, 0.15);
+  color: #689f38;
+  border-color: rgba(139, 195, 74, 0.3);
+}
+
+.status-badge.fair {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #f57c00;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.poor {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: var(--color-danger);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+/* Size variants */
+.status-badge.small {
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+.status-badge.large {
+  font-size: 14px;
+  padding: 4px 12px;
+}
+
+/* Style variants */
+.status-badge.solid {
+  background-color: var(--color-success);
+  color: white;
+  border-color: var(--color-success);
+}
+
+.status-badge.outline {
+  background-color: transparent;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.status-badge.subtle {
+  background-color: transparent;
+  color: var(--color-text-secondary);
+  border: none;
+}
+
+/* Animations */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(183, 28, 28, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(183, 28, 28, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(183, 28, 28, 0);
+  }
+}
+
+.status-badge.blinking {
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0.5;
+  }
+}
+
+/* Hover effects */
+.status-badge.interactive {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.status-badge.interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .status-badge {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .status-badge.subtle {
+    color: var(--color-text-primary);
+  }
 }

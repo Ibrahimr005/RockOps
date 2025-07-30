@@ -7,7 +7,6 @@ import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import { useSnackbar } from "../../../contexts/SnackbarContext";
 import { inSiteMaintenanceService } from "../../../services/inSiteMaintenanceService";
 import { maintenanceTypeService } from "../../../services/maintenanceTypeService";
-import { employeeService } from "../../../services/employeeService";
 import { equipmentService } from "../../../services/equipmentService";
 import { siteService } from "../../../services/siteService";
 import { warehouseService } from "../../../services/warehouse/warehouseService.js";

@@ -1,0 +1,537 @@
+/* LoanManagement.scss - Enhanced styles */
+
+.loan-management {
+  padding: 1.5rem;
+  background-color: var(--page-background-color);
+  min-height: 100vh;
+
+  // Header Section
+  &__header {
+    margin-bottom: 2rem;
+
+    .header-content {
+
+      .page-title {
+        margin: 0;
+        color: var(--color-text-primary);
+        font-size: 2rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+    }
+  }
+
+  // Stats Section
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  // Filter Tabs Section
+  &__filters {
+    margin-bottom: 1.5rem;
+
+    .filter-tabs {
+      display: flex;
+      gap: 0.5rem;
+      background: var(--section-background-color);
+      padding: 0.5rem;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+
+      .filter-tab {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        background: transparent;
+        color: var(--color-text-secondary);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        font-weight: 500;
+        white-space: nowrap;
+        font-size: 0.9rem;
+
+        &:hover {
+          background: var(--color-surface-hover);
+          color: var(--color-text-primary);
+        }
+
+        &.active {
+          background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+          color: white;
+          box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.3);
+        }
+      }
+    }
+  }
+
+  // Summary Section
+  &__summary {
+    margin-bottom: 1rem;
+
+    p {
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+  }
+
+
+
+  // Error State
+  .error-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+
+    .error-content {
+      text-align: center;
+      background: var(--section-background-color);
+      padding: 3rem;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-color);
+      max-width: 500px;
+
+      .error-icon {
+        font-size: 3rem;
+        color: var(--color-danger);
+        margin-bottom: 1rem;
+      }
+
+      h3 {
+        color: var(--color-text-primary);
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+      }
+
+      p {
+        color: var(--color-text-secondary);
+        margin-bottom: 2rem;
+        line-height: 1.6;
+      }
+    }
+  }
+}
+
+// Stats Card Styles
+.stats-card {
+  background: var(--section-background-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  &.loading {
+    .stats-card__value {
+      background: linear-gradient(90deg, var(--color-surface-hover) 25%, var(--color-surface) 50%, var(--color-surface-hover) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: var(--radius-sm);
+      height: 2.5rem;
+      width: 80px;
+    }
+  }
+
+  &--primary::before {
+    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  }
+
+  &--success::before {
+    background: linear-gradient(90deg, var(--color-success) 0%, #45a049 100%);
+  }
+
+  &--warning::before {
+    background: linear-gradient(90deg, var(--color-warning) 0%, #e68900 100%);
+  }
+
+  &--info::before {
+    background: linear-gradient(90deg, var(--color-info) 0%, #1976d2 100%);
+  }
+
+  &--urgent {
+    border-color: var(--color-danger);
+    background: linear-gradient(135deg,
+            rgba(244, 67, 54, 0.05) 0%,
+            var(--section-background-color) 100%);
+
+    &::before {
+      background: linear-gradient(90deg, var(--color-danger) 0%, #c62828 100%);
+    }
+
+    .stats-card__value {
+      color: var(--color-danger);
+      font-weight: 700;
+    }
+
+    .stats-card__icon {
+      color: var(--color-danger);
+      animation: pulse 2s infinite;
+    }
+  }
+
+  &__icon {
+    font-size: 2.5rem;
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  &__content {
+    .stats-card__title {
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin: 0 0 0.5rem 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stats-card__value {
+      color: var(--color-text-primary);
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin: 0;
+      line-height: 1;
+    }
+  }
+}
+
+// Employee Info Styles
+.employee-info {
+  .employee-name {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .employee-id {
+    font-size: 0.8rem;
+    color: var(--color-text-tertiary);
+  }
+}
+
+// Remaining Balance Styles
+.remaining-balance {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+// Loan Progress Styles
+.loan-progress {
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+
+    .progress-text {
+      color: var(--color-text-primary);
+      font-weight: 500;
+    }
+
+    .progress-percentage {
+      color: var(--color-text-secondary);
+      font-weight: 500;
+    }
+  }
+
+  .loan-progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--color-surface-hover);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+
+    .loan-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-success) 0%, #45a049 100%);
+      transition: width 0.3s ease;
+      border-radius: var(--radius-sm);
+    }
+  }
+}
+
+// Action Button Styles
+.action-view {
+  color: var(--color-info);
+  &:hover { background-color: rgba(33, 150, 243, 0.1); }
+}
+
+.action-edit {
+  color: var(--color-warning);
+  &:hover { background-color: rgba(255, 152, 0, 0.1); }
+}
+
+.action-approve {
+  color: var(--color-success);
+  &:hover { background-color: rgba(76, 175, 80, 0.1); }
+}
+
+.action-reject,
+.action-cancel {
+  color: var(--color-danger);
+  &:hover { background-color: rgba(244, 67, 54, 0.1); }
+}
+
+// Animations
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+// Responsive Design
+@media (max-width: 1200px) {
+  .loan-management {
+    &__stats {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .loan-management {
+    padding: 1rem;
+
+    &__header {
+      .header-content {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+
+        .page-title {
+          font-size: 1.5rem;
+          text-align: center;
+        }
+
+        .header-actions {
+          justify-content: center;
+        }
+      }
+    }
+
+    &__stats {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    &__filters {
+      .filter-tabs {
+        .filter-tab {
+          padding: 0.5rem 1rem;
+          font-size: 0.8rem;
+        }
+      }
+    }
+
+    .stats-card {
+      padding: 1rem;
+
+      &__icon {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+      }
+
+      &__content {
+        .stats-card__value {
+          font-size: 2rem;
+        }
+      }
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .loan-management {
+    padding: 0.5rem;
+
+    &__header {
+      margin-bottom: 1rem;
+
+      .header-content {
+        padding: 1rem;
+
+        .page-title {
+          font-size: 1.25rem;
+        }
+      }
+    }
+
+    &__stats {
+      margin-bottom: 1rem;
+    }
+
+    &__filters {
+      margin-bottom: 1rem;
+
+      .filter-tabs {
+        padding: 0.25rem;
+
+        .filter-tab {
+          padding: 0.4rem 0.8rem;
+          font-size: 0.75rem;
+        }
+      }
+    }
+
+    .stats-card {
+      padding: 0.75rem;
+
+      &__icon {
+        font-size: 1.75rem;
+        margin-bottom: 0.5rem;
+      }
+
+      &__content {
+        .stats-card__title {
+          font-size: 0.8rem;
+        }
+
+        .stats-card__value {
+          font-size: 1.75rem;
+        }
+      }
+    }
+  }
+}
+
+// Dark theme adjustments
+[data-theme="dark"] {
+  .loan-management {
+    background-color: var(--page-background-color-dark);
+
+    &__header {
+      .header-content {
+        background: var(--section-background-color-dark);
+        border-color: var(--border-color-dark);
+      }
+    }
+
+    &__filters {
+      .filter-tabs {
+        background: var(--section-background-color-dark);
+        border-color: var(--border-color-dark);
+
+        .filter-tab {
+          &:hover {
+            background: var(--color-surface-hover-dark);
+          }
+        }
+      }
+    }
+
+    &__table {
+      background: var(--section-background-color-dark);
+      border-color: var(--border-color-dark);
+    }
+
+    .error-state {
+      .error-content {
+        background: var(--section-background-color-dark);
+        border-color: var(--border-color-dark);
+      }
+    }
+  }
+
+  .stats-card {
+    background: var(--section-background-color-dark);
+    border-color: var(--border-color-dark);
+
+    &:hover {
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    &--urgent {
+      background: linear-gradient(135deg,
+              rgba(244, 67, 54, 0.08) 0%,
+              var(--section-background-color-dark) 100%);
+    }
+  }
+
+  .btn {
+    &.btn-secondary {
+
+
+
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .loan-management {
+    padding: 0;
+    background: white;
+
+    &__header {
+      .header-actions {
+        display: none;
+      }
+    }
+
+    &__filters {
+      display: none;
+    }
+
+    .stats-card {
+      break-inside: avoid;
+      box-shadow: none;
+      border: 1px solid #ddd;
+    }
+
+    .btn {
+      display: none;
+    }
+
+    .action-view,
+    .action-edit,
+    .action-approve,
+    .action-reject,
+    .action-cancel {
+      display: none;
+    }
+  }
+}

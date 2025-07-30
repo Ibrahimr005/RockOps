@@ -1,6 +1,9 @@
 package com.example.backend.controllers.hr;
 
 import com.example.backend.dto.hr.*;
+import com.example.backend.dto.hr.attendance.AttendanceRequestDTO;
+import com.example.backend.dto.hr.attendance.AttendanceResponseDTO;
+import com.example.backend.dto.hr.attendance.BulkAttendanceDTO;
 import com.example.backend.services.hr.AttendanceService;
 import com.example.backend.models.hr.Attendance;
 import lombok.RequiredArgsConstructor;
