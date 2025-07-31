@@ -5,9 +5,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity
 @Builder
@@ -226,5 +228,268 @@ public class JobPosition {
         if (contractType == ContractType.MONTHLY && monthlyBaseSalary == null) {
             this.monthlyBaseSalary = baseSalary;
         }
+    }
+
+    @OneToMany(mappedBy = "currentJobPosition", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference("current-position-promotions")
+    private List<PromotionRequest> promotionsFromThisPosition;
+
+    @OneToMany(mappedBy = "promotedToJobPosition", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference("promoted-position-promotions")
+    private List<PromotionRequest> promotionsToThisPosition;
+
+// Add these helper methods to the JobPosition class:
+
+    /**
+     * Get all promotion requests from this position
+     * @return List of promotion requests where this position is the current position
+     */
+    public List<PromotionRequest> getPromotionsFromThisPosition() {
+        return promotionsFromThisPosition != null ? promotionsFromThisPosition : Collections.emptyList();
+    }
+
+    /**
+     * Get all promotion requests to this position
+     * @return List of promotion requests where this position is the promoted-to position
+     */
+    public List<PromotionRequest> getPromotionsToThisPosition() {
+        return promotionsToThisPosition != null ? promotionsToThisPosition : Collections.emptyList();
+    }
+
+    /**
+     * Get count of employees promoted from this position
+     * @return Number of implemented promotions from this position
+     */
+    public long getPromotionsFromCount() {
+        return getPromotionsFromThisPosition().stream()
+                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
+                .count();
+    }
+
+    /**
+     * Get count of employees promoted to this position
+     * @return Number of implemented promotions to this position
+     */
+    public long getPromotionsToCount() {
+        return getPromotionsToThisPosition().stream()
+                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
+                .count();
+    }
+
+    /**
+     * Get pending promotion requests from this position
+     * @return List of pending promotion requests from this position
+     */
+    public List<PromotionRequest> getPendingPromotionsFrom() {
+        return getPromotionsFromThisPosition().stream()
+                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.PENDING ||
+                        request.getStatus() == PromotionRequest.PromotionStatus.UNDER_REVIEW)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get pending promotion requests to this position
+     * @return List of pending promotion requests to this position
+     */
+    public List<PromotionRequest> getPendingPromotionsTo() {
+        return getPromotionsToThisPosition().stream()
+                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.PENDING ||
+                        request.getStatus() == PromotionRequest.PromotionStatus.UNDER_REVIEW)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Check if this position has career progression opportunities
+     * @return true if employees have been promoted from this position
+     */
+    public boolean hasCareerProgression() {
+        return getPromotionsFromCount() > 0;
+    }
+
+    /**
+     * Check if this position is a destination for promotions
+     * @return true if employees have been promoted to this position
+     */
+    public boolean isPromotionDestination() {
+        return getPromotionsToCount() > 0;
+    }
+
+    /**
+     * Get average salary increase for promotions from this position
+     * @return Average salary increase amount for promotions from this position
+     */
+    public BigDecimal getAverageSalaryIncreaseFromPosition() {
+        List<PromotionRequest> implementedPromotions = getPromotionsFromThisPosition().stream()
+                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED &&
+                        request.getApprovedSalary() != null &&
+                        request.getCurrentSalary() != null)
+                .collect(Collectors.toList());
+
+        if (implementedPromotions.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal totalIncrease = implementedPromotions.stream()
+                .map(PromotionRequest::getSalaryIncrease)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return totalIncrease.divide(BigDecimal.valueOf(implementedPromotions.size()), 2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Get average time employees spend in this position before promotion
+     * @return Average months in position before promotion
+     */
+    public double getAverageTimeBeforePromotion() {
+        List<PromotionRequest> implementedPromotions = getPromotionsFromThisPosition().stream()
+                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
+                .collect(Collectors.toList());
+
+        if (implementedPromotions.isEmpty()) {
+            return 0.0;
+        }
+
+        return implementedPromotions.stream()
+                .filter(request -> request.getYearsInCurrentPosition() != null)
+                .mapToInt(request -> request.getYearsInCurrentPosition() * 12) // Convert years to months
+                .average()
+                .orElse(0.0);
+    }
+
+    /**
+     * Get most common promotion destinations from this position
+     * @return Map of position names to promotion counts
+     */
+    public Map<String, Long> getCommonPromotionDestinations() {
+        return getPromotionsFromThisPosition().stream()
+                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
+                .collect(Collectors.groupingBy(
+                        PromotionRequest::getPromotedToPositionName,
+                        Collectors.counting()
+                ));
+    }
+
+    /**
+     * Get promotion statistics for this position
+     * @return Map containing promotion-related statistics
+     */
+    public Map<String, Object> getPromotionStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+
+        stats.put("promotionsFromCount", getPromotionsFromCount());
+        stats.put("promotionsToCount", getPromotionsToCount());
+        stats.put("pendingPromotionsFromCount", getPendingPromotionsFrom().size());
+        stats.put("pendingPromotionsToCount", getPendingPromotionsTo().size());
+        stats.put("hasCareerProgression", hasCareerProgression());
+        stats.put("isPromotionDestination", isPromotionDestination());
+        stats.put("averageSalaryIncrease", getAverageSalaryIncreaseFromPosition());
+        stats.put("averageTimeBeforePromotion", getAverageTimeBeforePromotion());
+        stats.put("commonPromotionDestinations", getCommonPromotionDestinations());
+
+        return stats;
+    }
+
+    /**
+     * Check if this position is eligible as a promotion source
+     * @return true if position can be a source for promotions
+     */
+    public boolean isEligibleForPromotionFrom() {
+        // Basic checks for promotion eligibility
+        return active != null && active &&
+                employees != null && !employees.isEmpty();
+    }
+
+    /**
+     * Check if this position is eligible as a promotion destination
+     * @return true if position can be a destination for promotions
+     */
+    public boolean isEligibleForPromotionTo() {
+        // Basic checks for promotion destination eligibility
+        return active != null && active;
+    }
+
+    /**
+     * Get promotion rate from this position (promotions / total employees who held this position)
+     * @return Promotion rate as percentage
+     */
+    public double getPromotionRateFromPosition() {
+        long totalEmployeesEverInPosition = getPromotionsFromCount() +
+                (employees != null ? employees.size() : 0);
+
+        if (totalEmployeesEverInPosition == 0) {
+            return 0.0;
+        }
+
+        return (double) getPromotionsFromCount() / totalEmployeesEverInPosition * 100.0;
+    }
+
+    /**
+     * Check if there are employees ready for promotion from this position
+     * @return true if there are employees eligible for promotion
+     */
+    public boolean hasEmployeesReadyForPromotion() {
+        if (employees == null || employees.isEmpty()) {
+            return false;
+        }
+
+        return employees.stream()
+                .anyMatch(Employee::isEligibleForPromotion);
+    }
+
+    /**
+     * Get employees eligible for promotion from this position
+     * @return List of employees eligible for promotion
+     */
+    public List<Employee> getEmployeesEligibleForPromotion() {
+        if (employees == null || employees.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return employees.stream()
+                .filter(Employee::isEligibleForPromotion)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Check if this position requires specific qualifications for promotion
+     * @return true if position has high requirements (senior level, high salary, etc.)
+     */
+    public boolean isHighLevelPosition() {
+        // Determine if this is a high-level position based on various factors
+        String positionNameLower = positionName != null ? positionName.toLowerCase() : "";
+        String experienceLevelLower = experienceLevel != null ? experienceLevel.toLowerCase() : "";
+
+        // Check for senior/management keywords
+        boolean hasSeniorKeywords = positionNameLower.contains("manager") ||
+                positionNameLower.contains("director") ||
+                positionNameLower.contains("senior") ||
+                positionNameLower.contains("lead") ||
+                positionNameLower.contains("supervisor") ||
+                positionNameLower.contains("head") ||
+                positionNameLower.contains("chief");
+
+        // Check experience level
+        boolean isSeniorLevel = experienceLevelLower.contains("senior") ||
+                experienceLevelLower.contains("expert") ||
+                experienceLevelLower.contains("lead");
+
+        // Check salary threshold (assuming positions with base salary > 50000 are high-level)
+        boolean hasHighSalary = baseSalary != null && baseSalary > 50000.0;
+
+        return hasSeniorKeywords || isSeniorLevel || hasHighSalary;
+    }
+
+    /**
+     * Get career path suggestions from this position
+     * @return List of suggested next positions based on promotion history
+     */
+    public List<String> getCareerPathSuggestions() {
+        Map<String, Long> destinations = getCommonPromotionDestinations();
+
+        return destinations.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(5) // Top 5 destinations
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
     }
 }

@@ -65,6 +65,7 @@ import LoanDetails from "./pages/payroll/Loans/LoanDetails/LoanDetails.jsx";
 import PayrollReports from "./pages/payroll/PayrollReports/PayrollReports.jsx";
 import PayslipDetails from "./pages/payroll/PayslipDetails/PayslipDetails.jsx";
 import EmployeeOnboarding from "./pages/HR/Vacancy/EmployeeOnboarding.jsx";
+import PromotionList from "./pages/HR/Promotion/PromotionList.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -163,6 +164,7 @@ function App() {
                                         <Route path="attendance" element={<AttendancePage/>}/>
                                         <Route path="vacancies/:id" element={<VacancyDetails/>}/>
                                         <Route path="departments" element={<DepartmentsList/>}/>
+                                        <Route path="promotions/*" element={<PromotionList/>}/>
                                     </Route>
 
 

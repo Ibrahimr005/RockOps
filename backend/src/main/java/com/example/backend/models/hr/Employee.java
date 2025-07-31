@@ -15,9 +15,8 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity
 @Data
@@ -445,5 +444,237 @@ public class Employee
      */
     public boolean canDriveEquipmentType(EquipmentType equipmentType) {
         return canDrive(equipmentType);
+    }
+
+
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference("employee-promotion-requests")
+    private List<PromotionRequest> promotionRequests;
+
+    /**
+     * Get all promotion requests for this employee
+     * @return List of promotion requests (never null)
+     */
+    public List<PromotionRequest> getPromotionRequests() {
+        return promotionRequests != null ? promotionRequests : Collections.emptyList();
+    }
+
+
+    /**
+     * Get pending promotion requests for this employee
+     * @return List of pending promotion requests
+     */
+    public List<PromotionRequest> getPendingPromotionRequests() {
+        return getPromotionRequests().stream()
+                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.PENDING ||
+                        request.getStatus() == PromotionRequest.PromotionStatus.UNDER_REVIEW)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get approved promotion requests for this employee
+     * @return List of approved promotion requests
+     */
+    public List<PromotionRequest> getApprovedPromotionRequests() {
+        return getPromotionRequests().stream()
+                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.APPROVED)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get promotion history (implemented promotions) for this employee
+     * @return List of implemented promotion requests ordered by implementation date
+     */
+    public List<PromotionRequest> getPromotionHistory() {
+        return getPromotionRequests().stream()
+                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
+                .sorted((r1, r2) -> r2.getImplementedAt().compareTo(r1.getImplementedAt()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Check if employee has any pending promotion requests
+     * @return true if employee has pending promotion requests
+     */
+    public boolean hasPendingPromotionRequests() {
+        return !getPendingPromotionRequests().isEmpty();
+    }
+
+    /**
+     * Check if employee has any approved promotion requests
+     * @return true if employee has approved promotion requests
+     */
+    public boolean hasApprovedPromotionRequests() {
+        return !getApprovedPromotionRequests().isEmpty();
+    }
+
+    /**
+     * Get the most recent promotion request regardless of status
+     * @return Most recent promotion request or null if none exists
+     */
+    public PromotionRequest getMostRecentPromotionRequest() {
+        return getPromotionRequests().stream()
+                .max(Comparator.comparing(PromotionRequest::getCreatedAt))
+                .orElse(null);
+    }
+
+    /**
+     * Get the last implemented promotion (promotion history)
+     * @return Last implemented promotion or null if never promoted
+     */
+    public PromotionRequest getLastPromotion() {
+        return getPromotionHistory().stream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Calculate time since last promotion
+     * @return Number of months since last promotion, or months since hire date if never promoted
+     */
+    public long getMonthsSinceLastPromotion() {
+        PromotionRequest lastPromotion = getLastPromotion();
+        LocalDate referenceDate;
+
+        if (lastPromotion != null && lastPromotion.getImplementedAt() != null) {
+            referenceDate = lastPromotion.getImplementedAt().toLocalDate();
+        } else if (hireDate != null) {
+            referenceDate = hireDate;
+        } else {
+            return 0;
+        }
+
+        return java.time.temporal.ChronoUnit.MONTHS.between(referenceDate, LocalDate.now());
+    }
+
+    /**
+     * Check if employee is eligible for promotion based on business rules
+     * @return true if employee is eligible for promotion
+     */
+    public boolean isEligibleForPromotion() {
+        // Business rules for promotion eligibility:
+
+        // 1. Must be active employee
+        if (!"ACTIVE".equalsIgnoreCase(status)) {
+            return false;
+        }
+
+        // 2. Must not have pending promotion requests
+        if (hasPendingPromotionRequests()) {
+            return false;
+        }
+
+        // 3. Must have been in current position for at least 12 months
+        long monthsInPosition = getMonthsSinceLastPromotion();
+        if (monthsInPosition < 12) {
+            return false;
+        }
+
+        // 4. Must have a job position assigned
+        if (jobPosition == null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get promotion eligibility status with reasons
+     * @return Map containing eligibility status and reasons
+     */
+    public Map<String, Object> getPromotionEligibilityStatus() {
+        Map<String, Object> eligibility = new HashMap<>();
+        List<String> reasons = new ArrayList<>();
+
+        boolean eligible = true;
+
+        if (!"ACTIVE".equalsIgnoreCase(status)) {
+            eligible = false;
+            reasons.add("Employee is not in active status");
+        }
+
+        if (hasPendingPromotionRequests()) {
+            eligible = false;
+            reasons.add("Employee has pending promotion requests");
+        }
+
+        long monthsInPosition = getMonthsSinceLastPromotion();
+        if (monthsInPosition < 12) {
+            eligible = false;
+            reasons.add("Employee must be in current position for at least 12 months (currently " + monthsInPosition + " months)");
+        }
+
+        if (jobPosition == null) {
+            eligible = false;
+            reasons.add("Employee has no job position assigned");
+        }
+
+        eligibility.put("eligible", eligible);
+        eligibility.put("reasons", reasons);
+        eligibility.put("monthsInCurrentPosition", monthsInPosition);
+        eligibility.put("hasActivePromotionRequests", hasPendingPromotionRequests());
+        eligibility.put("promotionHistory", getPromotionHistory().size());
+
+        return eligibility;
+    }
+
+    /**
+     * Get count of total promotions received by this employee
+     * @return Number of implemented promotions
+     */
+    public int getPromotionCount() {
+        return getPromotionHistory().size();
+    }
+
+    /**
+     * Calculate average time between promotions for this employee
+     * @return Average months between promotions, or 0 if less than 2 promotions
+     */
+    public double getAverageTimeBetweenPromotions() {
+        List<PromotionRequest> history = getPromotionHistory();
+        if (history.size() < 2) {
+            return 0.0;
+        }
+
+        // Calculate time differences between consecutive promotions
+        List<Long> intervals = new ArrayList<>();
+        for (int i = 0; i < history.size() - 1; i++) {
+            LocalDate laterDate = history.get(i).getImplementedAt().toLocalDate();
+            LocalDate earlierDate = history.get(i + 1).getImplementedAt().toLocalDate();
+            long months = java.time.temporal.ChronoUnit.MONTHS.between(earlierDate, laterDate);
+            intervals.add(months);
+        }
+
+        return intervals.stream().mapToLong(Long::longValue).average().orElse(0.0);
+    }
+
+    /**
+     * Get promotion summary for this employee
+     * @return Map containing promotion-related statistics
+     */
+    public Map<String, Object> getPromotionSummary() {
+        Map<String, Object> summary = new HashMap<>();
+
+        summary.put("totalPromotions", getPromotionCount());
+        summary.put("pendingRequests", getPendingPromotionRequests().size());
+        summary.put("approvedRequests", getApprovedPromotionRequests().size());
+        summary.put("monthsSinceLastPromotion", getMonthsSinceLastPromotion());
+        summary.put("averageTimeBetweenPromotions", getAverageTimeBetweenPromotions());
+        summary.put("eligibilityStatus", getPromotionEligibilityStatus());
+
+        PromotionRequest lastPromotion = getLastPromotion();
+        if (lastPromotion != null) {
+            summary.put("lastPromotionDate", lastPromotion.getImplementedAt());
+            summary.put("lastPromotionFrom", lastPromotion.getCurrentPositionName());
+            summary.put("lastPromotionTo", lastPromotion.getPromotedToPositionName());
+        }
+
+        PromotionRequest recentRequest = getMostRecentPromotionRequest();
+        if (recentRequest != null) {
+            summary.put("mostRecentRequestStatus", recentRequest.getStatus());
+            summary.put("mostRecentRequestDate", recentRequest.getCreatedAt());
+        }
+
+        return summary;
     }
 }
