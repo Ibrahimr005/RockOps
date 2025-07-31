@@ -270,15 +270,35 @@ export const WORK_TYPE_ENDPOINTS = {
 
 // Job Position module endpoints
 export const JOB_POSITION_ENDPOINTS = {
+    // Basic CRUD endpoints
     BASE: '/api/v1/job-positions',
+    CREATE: '/api/v1/job-positions',
     CREATE_DTO: '/api/v1/job-positions/dto',
     BY_ID: (id) => `/api/v1/job-positions/${id}`,
     DTO_BY_ID: (id) => `/api/v1/job-positions/dto/${id}`,
+    UPDATE: (id) => `/api/v1/job-positions/${id}`,
     UPDATE_DTO: (id) => `/api/v1/job-positions/dto/${id}`,
     DELETE: (id) => `/api/v1/job-positions/${id}`,
+
+    // Employee-related endpoints
     EMPLOYEES: (id) => `/api/v1/job-positions/${id}/employees`,
-    CREATE: '/api/v1/job-positions',
-    UPDATE: (id) => `/api/v1/job-positions/${id}`
+
+    // NEW: Enhanced endpoints for details view
+    DETAILS: (id) => `/api/v1/job-positions/${id}/details`,
+    PROMOTION_STATISTICS: (id) => `/api/v1/job-positions/${id}/promotion-statistics`,
+    PROMOTIONS_FROM: (id) => `/api/v1/job-positions/${id}/promotions/from`,
+    PROMOTIONS_TO: (id) => `/api/v1/job-positions/${id}/promotions/to`,
+    PROMOTIONS_FROM_PENDING: (id) => `/api/v1/job-positions/${id}/promotions/from/pending`,
+    PROMOTIONS_TO_PENDING: (id) => `/api/v1/job-positions/${id}/promotions/to/pending`,
+    CAREER_PATH_SUGGESTIONS: (id) => `/api/v1/job-positions/${id}/career-path-suggestions`,
+    EMPLOYEES_ELIGIBLE_FOR_PROMOTION: (id) => `/api/v1/job-positions/${id}/employees/eligible-for-promotion`,
+    SALARY_STATISTICS: (id) => `/api/v1/job-positions/${id}/salary-statistics`,
+    VALIDATION: (id) => `/api/v1/job-positions/${id}/validation`,
+    ANALYTICS: (id) => `/api/v1/job-positions/${id}/analytics`,
+    CAN_DELETE: (id) => `/api/v1/job-positions/${id}/can-delete`,
+    PROMOTION_DESTINATIONS: (id) => `/api/v1/job-positions/${id}/promotion-destinations`,
+    PROMOTION_SOURCES: (id) => `/api/v1/job-positions/${id}/promotion-sources`,
+    EMPLOYEE_ANALYTICS: (id) => `/api/v1/job-positions/${id}/employee-analytics`
 };
 
 // Document module endpoints

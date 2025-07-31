@@ -1,12 +1,16 @@
 package com.example.backend.services.hr;
 
 import com.example.backend.dto.hr.JobPositionDTO;
+import com.example.backend.dto.hr.promotions.PromotionStatsDTO;
+import com.example.backend.dto.hr.promotions.PromotionSummaryDTO;
 import com.example.backend.models.hr.Department;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.hr.JobPosition;
+import com.example.backend.models.hr.PromotionRequest;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.repositories.hr.DepartmentRepository;
 import com.example.backend.repositories.hr.JobPositionRepository;
+import com.example.backend.repositories.hr.PromotionRequestRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import com.example.backend.services.notification.NotificationService;
 import jakarta.transaction.Transactional;
@@ -15,9 +19,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import java.time.LocalTime;
@@ -39,6 +43,10 @@ public class JobPositionService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private PromotionRequestRepository promotionRequestRepository;
+
 
     /**
      * Convert JobPosition entity to JobPositionDTO
@@ -780,6 +788,630 @@ public class JobPositionService {
             } catch (DateTimeParseException e) {
                 throw new RuntimeException("Invalid end time format. Use HH:mm format");
             }
+        }
+    }
+    /**
+     * Get job position with full details including all related entities
+     */
+    @Transactional()
+    public JobPosition getJobPositionWithDetails(UUID id) {
+        try {
+            // Use the optimized query that loads everything in one database call
+            JobPosition jobPosition = jobPositionRepository.findByIdWithDetails(id)
+                    .orElseThrow(() -> new RuntimeException("Job position not found with id: " + id));
+            
+            // Initialize lazy collections to prevent LazyInitializationException
+            if (jobPosition.getEmployees() == null) {
+                jobPosition.setEmployees(new ArrayList<>());
+            }
+            if (jobPosition.getVacancies() == null) {
+                jobPosition.setVacancies(new ArrayList<>());
+            }
+            if (jobPosition.getPromotionsFromThisPosition() == null) {
+                jobPosition.setPromotionsFromThisPosition(new ArrayList<>());
+            }
+            if (jobPosition.getPromotionsToThisPosition() == null) {
+                jobPosition.setPromotionsToThisPosition(new ArrayList<>());
+            }
+            
+            return jobPosition;
+        } catch (Exception e) {
+            logger.error("Error fetching job position details for id: " + id, e);
+            throw new RuntimeException("Failed to fetch job position details: " + e.getMessage());
+        }
+    }
+    /**
+     * Get promotion statistics for a job position
+     */
+    public Map<String, Object> getPromotionStatistics(UUID id) {
+        JobPosition jobPosition = getJobPositionById(id);
+        return jobPosition.getPromotionStatistics();
+    }
+
+    /**
+     * Get all promotions FROM this position
+     */
+    public List<PromotionRequest> getPromotionsFromPosition(UUID id) {
+        JobPosition jobPosition = getJobPositionById(id);
+        return jobPosition.getPromotionsFromThisPosition();
+    }
+
+    /**
+     * Get all promotions TO this position
+     */
+    public List<PromotionRequest> getPromotionsToPosition(UUID id) {
+        JobPosition jobPosition = getJobPositionById(id);
+        return jobPosition.getPromotionsToThisPosition();
+    }
+
+    /**
+     * Get pending promotions FROM this position
+     */
+    public List<PromotionRequest> getPendingPromotionsFromPosition(UUID id) {
+        JobPosition jobPosition = getJobPositionById(id);
+        return jobPosition.getPendingPromotionsFrom();
+    }
+
+    /**
+     * Get pending promotions TO this position
+     */
+    public List<PromotionRequest> getPendingPromotionsToPosition(UUID id) {
+        JobPosition jobPosition = getJobPositionById(id);
+        return jobPosition.getPendingPromotionsTo();
+    }
+
+    /**
+     * Get career path suggestions from this position
+     */
+    public List<String> getCareerPathSuggestions(UUID id) {
+        JobPosition jobPosition = getJobPositionById(id);
+        return jobPosition.getCareerPathSuggestions();
+    }
+
+    /**
+     * Get employees eligible for promotion from this position
+     */
+    public List<Employee> getEmployeesEligibleForPromotion(UUID id) {
+        JobPosition jobPosition = getJobPositionById(id);
+
+        // Use the Employee model's eligibility check methods
+        if (jobPosition.getEmployees() != null) {
+            return jobPosition.getEmployees().stream()
+                    .filter(Employee::isEligibleForPromotion)
+                    .collect(Collectors.toList());
+        }
+
+        return Collections.emptyList();
+    }
+
+    /**
+     * Get salary statistics for this position
+     */
+    public Map<String, Object> getSalaryStatistics(UUID id) {
+        JobPosition jobPosition = getJobPositionById(id);
+        Map<String, Object> stats = new HashMap<>();
+
+        // Basic salary information
+        stats.put("baseSalary", jobPosition.getBaseSalary());
+        stats.put("contractType", jobPosition.getContractType());
+        stats.put("calculatedMonthlySalary", jobPosition.calculateMonthlySalary());
+        stats.put("calculatedDailySalary", jobPosition.calculateDailySalary());
+
+        // Contract-specific salary details
+        switch (jobPosition.getContractType()) {
+            case HOURLY:
+                stats.put("hourlyRate", jobPosition.getHourlyRate());
+                stats.put("hoursPerShift", jobPosition.getHoursPerShift());
+                stats.put("workingDaysPerWeek", jobPosition.getWorkingDaysPerWeek());
+                stats.put("overtimeMultiplier", jobPosition.getOvertimeMultiplier());
+                break;
+            case DAILY:
+                stats.put("dailyRate", jobPosition.getDailyRate());
+                stats.put("workingDaysPerMonth", jobPosition.getWorkingDaysPerMonth());
+                stats.put("includesWeekends", jobPosition.getIncludesWeekends());
+                break;
+            case MONTHLY:
+                stats.put("monthlyBaseSalary", jobPosition.getMonthlyBaseSalary());
+                stats.put("workingHours", jobPosition.getWorkingHours());
+                stats.put("startTime", jobPosition.getStartTime());
+                stats.put("endTime", jobPosition.getEndTime());
+                stats.put("workingTimeRange", jobPosition.getWorkingTimeRange());
+                break;
+        }
+
+        // Employee salary statistics
+        List<Employee> employees = jobPosition.getEmployees();
+        if (employees != null && !employees.isEmpty()) {
+            stats.put("numberOfEmployees", employees.size());
+
+            // Calculate average, min, max salaries of current employees using getMonthlySalary()
+            List<BigDecimal> salaries = employees.stream()
+                    .map(Employee::getMonthlySalary)
+                    .filter(salary -> salary != null && salary.compareTo(BigDecimal.ZERO) > 0)
+                    .collect(Collectors.toList());
+
+            if (!salaries.isEmpty()) {
+                BigDecimal totalSalary = salaries.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+                BigDecimal avgSalary = totalSalary.divide(BigDecimal.valueOf(salaries.size()), 2, RoundingMode.HALF_UP);
+
+                stats.put("averageEmployeeSalary", avgSalary.doubleValue());
+                stats.put("minEmployeeSalary", Collections.min(salaries).doubleValue());
+                stats.put("maxEmployeeSalary", Collections.max(salaries).doubleValue());
+            }
+        } else {
+            stats.put("numberOfEmployees", 0);
+        }
+
+        return stats;
+    }
+
+    /**
+     * Get position validation status
+     */
+    public Map<String, Object> getPositionValidation(UUID id) {
+        JobPosition jobPosition = getJobPositionById(id);
+        Map<String, Object> validation = new HashMap<>();
+
+        validation.put("isValid", jobPosition.isValidConfiguration());
+        validation.put("isActive", jobPosition.getActive());
+        validation.put("isEligibleForPromotionFrom", jobPosition.isEligibleForPromotionFrom());
+        validation.put("isEligibleForPromotionTo", jobPosition.isEligibleForPromotionTo());
+        validation.put("isHighLevelPosition", jobPosition.isHighLevelPosition());
+        validation.put("hasCareerProgression", jobPosition.hasCareerProgression());
+        validation.put("isPromotionDestination", jobPosition.isPromotionDestination());
+        validation.put("hasEmployeesReadyForPromotion", jobPosition.hasEmployeesReadyForPromotion());
+
+        // Validation messages
+        List<String> issues = new ArrayList<>();
+        List<String> recommendations = new ArrayList<>();
+
+        if (!jobPosition.isValidConfiguration()) {
+            issues.add("Position configuration is incomplete or invalid");
+            recommendations.add("Review and complete all required fields for this contract type");
+        }
+
+        if (!jobPosition.getActive()) {
+            issues.add("Position is currently inactive");
+            recommendations.add("Activate position to make it available for hiring");
+        }
+
+        if (jobPosition.getEmployees() != null && !jobPosition.getEmployees().isEmpty() && !jobPosition.getActive()) {
+            issues.add("Inactive position has assigned employees");
+            recommendations.add("Consider reassigning employees or reactivating the position");
+        }
+
+        if (jobPosition.getBaseSalary() == null || jobPosition.getBaseSalary() <= 0) {
+            issues.add("No salary information configured");
+            recommendations.add("Set up salary structure for this position");
+        }
+
+        validation.put("issues", issues);
+        validation.put("recommendations", recommendations);
+        validation.put("issueCount", issues.size());
+
+        return validation;
+    }
+
+    /**
+     * Get comprehensive position analytics
+     */
+    public Map<String, Object> getPositionAnalytics(UUID id) {
+        JobPosition jobPosition = getJobPositionById(id);
+        Map<String, Object> analytics = new HashMap<>();
+
+        // Combine all statistical data
+        analytics.put("basic", convertToDTO(jobPosition));
+        analytics.put("promotionStats", jobPosition.getPromotionStatistics());
+        analytics.put("salaryStats", getSalaryStatistics(id));
+        analytics.put("validation", getPositionValidation(id));
+
+        // Additional analytics
+        analytics.put("employeeCount", jobPosition.getEmployees() != null ? jobPosition.getEmployees().size() : 0);
+        analytics.put("vacancyCount", jobPosition.getVacancies() != null ? jobPosition.getVacancies().size() : 0);
+        analytics.put("departmentName", jobPosition.getDepartment() != null ? jobPosition.getDepartment().getName() : null);
+        analytics.put("createdDate", jobPosition.getId()); // Assuming timestamp in UUID, or add actual timestamp field
+
+        // Performance metrics
+        analytics.put("promotionRate", jobPosition.getPromotionRateFromPosition());
+        analytics.put("averageTimeBeforePromotion", jobPosition.getAverageTimeBeforePromotion());
+        analytics.put("averageSalaryIncrease", jobPosition.getAverageSalaryIncreaseFromPosition());
+
+        return analytics;
+    }
+
+    /**
+     * Check if position can be safely deleted
+     */
+    public Map<String, Object> canDeletePosition(UUID id) {
+        JobPosition jobPosition = getJobPositionById(id);
+        Map<String, Object> result = new HashMap<>();
+
+        boolean canDelete = true;
+        List<String> blockingReasons = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
+
+        // Check for assigned employees
+        int employeeCount = jobPosition.getEmployees() != null ? jobPosition.getEmployees().size() : 0;
+        if (employeeCount > 0) {
+            canDelete = false;
+            blockingReasons.add(employeeCount + " employee(s) are currently assigned to this position");
+        }
+
+        // Check for active vacancies
+        long activeVacancyCount = jobPosition.getVacancies() != null ?
+                jobPosition.getVacancies().stream()
+                        .filter(vacancy -> vacancy.getStatus() != null && vacancy.getStatus().equals("ACTIVE"))
+                        .count() : 0;
+
+        if (activeVacancyCount > 0) {
+            canDelete = false;
+            blockingReasons.add(activeVacancyCount + " active vacanc(ies) exist for this position");
+        }
+
+        // Check for pending promotions
+        int pendingPromotionsFrom = jobPosition.getPendingPromotionsFrom().size();
+        int pendingPromotionsTo = jobPosition.getPendingPromotionsTo().size();
+
+        if (pendingPromotionsFrom > 0 || pendingPromotionsTo > 0) {
+            warnings.add("Position has " + (pendingPromotionsFrom + pendingPromotionsTo) + " pending promotion(s)");
+        }
+
+        // Check for historical data
+        long totalPromotions = jobPosition.getPromotionsFromCount() + jobPosition.getPromotionsToCount();
+        if (totalPromotions > 0) {
+            warnings.add("Position has historical promotion data (" + totalPromotions + " promotion(s))");
+        }
+
+        result.put("canDelete", canDelete);
+        result.put("blockingReasons", blockingReasons);
+        result.put("warnings", warnings);
+        result.put("employeeCount", employeeCount);
+        result.put("activeVacancyCount", activeVacancyCount);
+        result.put("pendingPromotionsCount", pendingPromotionsFrom + pendingPromotionsTo);
+        result.put("totalPromotionsCount", totalPromotions);
+
+        return result;
+    }
+
+    /**
+     * Get positions that can be promoted to from this position
+     */
+    public List<JobPositionDTO> getPromotionDestinations(UUID id) {
+        JobPosition jobPosition = getJobPositionById(id);
+
+        // Get common promotion destinations based on historical data
+        Map<String, Long> destinations = jobPosition.getCommonPromotionDestinations();
+
+        // Find actual position objects for these destinations
+        List<JobPositionDTO> destinationPositions = new ArrayList<>();
+
+        for (String positionName : destinations.keySet()) {
+            List<JobPosition> positions = jobPositionRepository.findByPositionNameContainingIgnoreCase(positionName);
+            for (JobPosition pos : positions) {
+                if (!pos.getId().equals(id) && pos.getActive()) { // Exclude self and inactive positions
+                    destinationPositions.add(convertToDTO(pos));
+                }
+            }
+        }
+
+        // Also suggest positions in higher levels or related departments
+        if (destinationPositions.isEmpty()) {
+            // Fallback: suggest senior positions in same department
+            if (jobPosition.getDepartment() != null) {
+                List<JobPosition> departmentPositions = jobPositionRepository.findByDepartment(jobPosition.getDepartment());
+                for (JobPosition pos : departmentPositions) {
+                    if (!pos.getId().equals(id) && pos.getActive() && pos.isHighLevelPosition()) {
+                        destinationPositions.add(convertToDTO(pos));
+                    }
+                }
+            }
+        }
+
+        return destinationPositions.stream().distinct().limit(10).collect(Collectors.toList());
+    }
+
+    /**
+     * Get positions that commonly promote to this position
+     */
+    public List<JobPositionDTO> getPromotionSources(UUID id) {
+        JobPosition jobPosition = getJobPositionById(id);
+
+        // Get positions that have promoted to this position
+        List<JobPositionDTO> sourcePositions = new ArrayList<>();
+
+        List<PromotionRequest> promotionsTo = jobPosition.getPromotionsToThisPosition();
+        Set<UUID> sourcePositionIds = promotionsTo.stream()
+                .filter(promotion -> promotion.getCurrentJobPosition() != null)
+                .map(promotion -> promotion.getCurrentJobPosition().getId())
+                .collect(Collectors.toSet());
+
+        for (UUID sourceId : sourcePositionIds) {
+            try {
+                JobPosition sourcePosition = getJobPositionById(sourceId);
+                if (sourcePosition.getActive()) {
+                    sourcePositions.add(convertToDTO(sourcePosition));
+                }
+            } catch (Exception e) {
+                // Position might have been deleted, skip
+            }
+        }
+
+        return sourcePositions.stream().distinct().collect(Collectors.toList());
+    }
+
+    /**
+     * Get detailed employee analytics for this position
+     */
+    public Map<String, Object> getEmployeeAnalytics(UUID id) {
+        List<Employee> employees = getEmployeesByJobPositionId(id);
+        Map<String, Object> analytics = new HashMap<>();
+
+        if (employees.isEmpty()) {
+            analytics.put("totalEmployees", 0);
+            analytics.put("eligibleForPromotion", 0);
+            analytics.put("averageMonthsInPosition", 0.0);
+            analytics.put("promotionRate", 0.0);
+            return analytics;
+        }
+
+        // Basic counts
+        analytics.put("totalEmployees", employees.size());
+
+        // Promotion eligibility
+        long eligibleCount = employees.stream()
+                .filter(Employee::isEligibleForPromotion)
+                .count();
+        analytics.put("eligibleForPromotion", eligibleCount);
+        analytics.put("promotionEligibilityRate", (double) eligibleCount / employees.size() * 100);
+
+        // Average time in position
+        double avgMonthsInPosition = employees.stream()
+                .mapToLong(Employee::getMonthsSinceLastPromotion)
+                .average()
+                .orElse(0.0);
+        analytics.put("averageMonthsInPosition", avgMonthsInPosition);
+
+        // Salary analytics
+        List<Employee> employeesWithSalary = employees.stream()
+                .filter(emp -> emp.getMonthlySalary() != null && emp.getMonthlySalary().compareTo(BigDecimal.ZERO) > 0)
+                .collect(Collectors.toList());
+
+        if (!employeesWithSalary.isEmpty()) {
+            BigDecimal totalSalary = employeesWithSalary.stream()
+                    .map(Employee::getMonthlySalary)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal avgSalary = totalSalary.divide(BigDecimal.valueOf(employeesWithSalary.size()), 2, RoundingMode.HALF_UP);
+
+            BigDecimal minSalary = employeesWithSalary.stream()
+                    .map(Employee::getMonthlySalary)
+                    .min(BigDecimal::compareTo)
+                    .orElse(BigDecimal.ZERO);
+
+            BigDecimal maxSalary = employeesWithSalary.stream()
+                    .map(Employee::getMonthlySalary)
+                    .max(BigDecimal::compareTo)
+                    .orElse(BigDecimal.ZERO);
+
+            analytics.put("averageSalary", avgSalary.doubleValue());
+            analytics.put("minSalary", minSalary.doubleValue());
+            analytics.put("maxSalary", maxSalary.doubleValue());
+            analytics.put("totalPayroll", totalSalary.doubleValue());
+        }
+
+        // Status distribution
+        Map<String, Long> statusDistribution = employees.stream()
+                .collect(Collectors.groupingBy(
+                        emp -> emp.getStatus() != null ? emp.getStatus() : "ACTIVE",
+                        Collectors.counting()
+                ));
+        analytics.put("statusDistribution", statusDistribution);
+
+        // Contract type distribution
+        Map<String, Long> contractDistribution = employees.stream()
+                .filter(emp -> emp.getJobPosition() != null)
+                .collect(Collectors.groupingBy(
+                        emp -> emp.getJobPosition().getContractType().name(),
+                        Collectors.counting()
+                ));
+        analytics.put("contractTypeDistribution", contractDistribution);
+
+        // Promotion statistics
+        int totalPromotions = employees.stream()
+                .mapToInt(Employee::getPromotionCount)
+                .sum();
+        analytics.put("totalPromotionsFromPosition", totalPromotions);
+
+        long employeesWithPromotions = employees.stream()
+                .filter(emp -> emp.getPromotionCount() > 0)
+                .count();
+
+        if (employees.size() > 0) {
+            analytics.put("employeePromotionRate", (double) employeesWithPromotions / employees.size() * 100);
+        }
+
+        return analytics;
+    }
+
+    public PromotionStatsDTO getSimplifiedPromotionStats(UUID jobPositionId) {
+        try {
+            JobPosition jobPosition = getJobPositionById(jobPositionId);
+
+            // Get basic counts from collections with null checks
+            Long totalFrom = (long) (jobPosition.getPromotionsFromThisPosition() != null ?
+                    jobPosition.getPromotionsFromThisPosition().size() : 0);
+            Long totalTo = (long) (jobPosition.getPromotionsToThisPosition() != null ?
+                    jobPosition.getPromotionsToThisPosition().size() : 0);
+
+            // Count by status with null checks
+            Long pendingFrom = jobPosition.getPromotionsFromThisPosition() != null ?
+                    jobPosition.getPromotionsFromThisPosition().stream()
+                            .filter(p -> p != null && ("PENDING".equals(p.getStatus()) || "UNDER_REVIEW".equals(p.getStatus())))
+                            .count() : 0;
+
+            Long pendingTo = jobPosition.getPromotionsToThisPosition() != null ?
+                    jobPosition.getPromotionsToThisPosition().stream()
+                            .filter(p -> p != null && ("PENDING".equals(p.getStatus()) || "UNDER_REVIEW".equals(p.getStatus())))
+                            .count() : 0;
+
+            Long implementedFrom = jobPosition.getPromotionsFromThisPosition() != null ?
+                    jobPosition.getPromotionsFromThisPosition().stream()
+                            .filter(p -> p != null && "IMPLEMENTED".equals(p.getStatus()))
+                            .count() : 0;
+
+            Long implementedTo = jobPosition.getPromotionsToThisPosition() != null ?
+                    jobPosition.getPromotionsToThisPosition().stream()
+                            .filter(p -> p != null && "IMPLEMENTED".equals(p.getStatus()))
+                            .count() : 0;
+
+            // Calculate averages (simplified)
+            BigDecimal avgSalaryIncrease = jobPosition.getAverageSalaryIncreaseFromPosition();
+            Double avgTimeBeforePromotion = jobPosition.getAverageTimeBeforePromotion();
+            Double promotionRate = jobPosition.getPromotionRateFromPosition();
+
+            // Get top destinations (simplified)
+            Map<String, Long> topDestinations = jobPosition.getCommonPromotionDestinations();
+
+            return PromotionStatsDTO.builder()
+                    .totalPromotionsFrom(totalFrom)
+                    .totalPromotionsTo(totalTo)
+                    .pendingPromotionsFrom(pendingFrom)
+                    .pendingPromotionsTo(pendingTo)
+                    .implementedPromotionsFrom(implementedFrom)
+                    .implementedPromotionsTo(implementedTo)
+                    .averageSalaryIncrease(avgSalaryIncrease)
+                    .averageTimeBeforePromotion(avgTimeBeforePromotion)
+                    .promotionRate(promotionRate)
+                    .hasCareerProgression(implementedFrom > 0)
+                    .isPromotionDestination(implementedTo > 0)
+                    .topPromotionDestinations(topDestinations)
+                    .promotionsLastYear(0L) // You can calculate this if needed
+                    .promotionsLastQuarter(0L) // You can calculate this if needed
+                    .build();
+        } catch (Exception e) {
+            logger.error("Error getting simplified promotion stats for job position: " + jobPositionId, e);
+            // Return empty stats instead of throwing exception
+            return PromotionStatsDTO.builder()
+                    .totalPromotionsFrom(0L)
+                    .totalPromotionsTo(0L)
+                    .pendingPromotionsFrom(0L)
+                    .pendingPromotionsTo(0L)
+                    .implementedPromotionsFrom(0L)
+                    .implementedPromotionsTo(0L)
+                    .averageSalaryIncrease(BigDecimal.ZERO)
+                    .averageTimeBeforePromotion(0.0)
+                    .promotionRate(0.0)
+                    .hasCareerProgression(false)
+                    .isPromotionDestination(false)
+                    .topPromotionDestinations(new HashMap<>())
+                    .promotionsLastYear(0L)
+                    .promotionsLastQuarter(0L)
+                    .build();
+        }
+    }
+
+
+    /**
+     * Get simplified list of promotions FROM this position
+     */
+    public List<PromotionSummaryDTO> getSimplifiedPromotionsFrom(UUID jobPositionId) {
+        try {
+            JobPosition jobPosition = getJobPositionById(jobPositionId);
+
+            if (jobPosition.getPromotionsFromThisPosition() == null) {
+                return Collections.emptyList();
+            }
+
+            return jobPosition.getPromotionsFromThisPosition().stream()
+                    .filter(promotion -> promotion != null)
+                    .map(this::convertToPromotionSummary)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error getting simplified promotions from job position: " + jobPositionId, e);
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Get simplified list of promotions TO this position
+     */
+    public List<PromotionSummaryDTO> getSimplifiedPromotionsTo(UUID jobPositionId) {
+        try {
+            JobPosition jobPosition = getJobPositionById(jobPositionId);
+
+            if (jobPosition.getPromotionsToThisPosition() == null) {
+                return Collections.emptyList();
+            }
+
+            return jobPosition.getPromotionsToThisPosition().stream()
+                    .filter(promotion -> promotion != null)
+                    .map(this::convertToPromotionSummary)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.error("Error getting simplified promotions to job position: " + jobPositionId, e);
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Convert PromotionRequest to simplified PromotionSummaryDTO
+     */
+    private PromotionSummaryDTO convertToPromotionSummary(PromotionRequest promotion) {
+        try {
+            BigDecimal salaryIncrease = BigDecimal.ZERO;
+            Double salaryIncreasePercentage = 0.0;
+
+            if (promotion.getCurrentSalary() != null && promotion.getApprovedSalary() != null) {
+                salaryIncrease = promotion.getApprovedSalary().subtract(promotion.getCurrentSalary());
+                if (promotion.getCurrentSalary().compareTo(BigDecimal.ZERO) > 0) {
+                    salaryIncreasePercentage = salaryIncrease
+                            .divide(promotion.getCurrentSalary(), 4, RoundingMode.HALF_UP)
+                            .multiply(BigDecimal.valueOf(100))
+                            .doubleValue();
+                }
+            }
+
+            return PromotionSummaryDTO.builder()
+                    .id(promotion.getId())
+                    .employeeName(promotion.getEmployee() != null ?
+                            promotion.getEmployee().getFirstName() + " " + promotion.getEmployee().getLastName() : "Unknown")
+                    .currentPositionName(promotion.getCurrentJobPosition() != null ?
+                            promotion.getCurrentJobPosition().getPositionName() : "Unknown")
+                    .promotedToPositionName(promotion.getPromotedToJobPosition() != null ?
+                            promotion.getPromotedToJobPosition().getPositionName() : "Unknown")
+                    .status(promotion.getStatus() != null ? promotion.getStatus().toString() : "UNKNOWN")
+                    .currentSalary(promotion.getCurrentSalary())
+                    .proposedSalary(promotion.getApprovedSalary())
+                    .salaryIncrease(salaryIncrease)
+                    .salaryIncreasePercentage(salaryIncreasePercentage)
+                    .requestDate(promotion.getCreatedAt())
+                    .effectiveDate(promotion.getActualEffectiveDate() != null ?
+                            promotion.getActualEffectiveDate().atStartOfDay() : null)
+                    .requestedBy(promotion.getRequestedBy())
+                    .approvedBy(promotion.getApprovedBy())
+                    .yearsInCurrentPosition(promotion.getYearsInCurrentPosition())
+                    .justification(promotion.getJustification())
+                    .build();
+        } catch (Exception e) {
+            logger.error("Error converting promotion to summary: " + promotion.getId(), e);
+            // Return a basic summary with available data
+            return PromotionSummaryDTO.builder()
+                    .id(promotion.getId())
+                    .employeeName("Unknown")
+                    .currentPositionName("Unknown")
+                    .promotedToPositionName("Unknown")
+                    .status("UNKNOWN")
+                    .currentSalary(BigDecimal.ZERO)
+                    .proposedSalary(BigDecimal.ZERO)
+                    .salaryIncrease(BigDecimal.ZERO)
+                    .salaryIncreasePercentage(0.0)
+                    .requestDate(null)
+                    .effectiveDate(null)
+                    .requestedBy(null)
+                    .approvedBy(null)
+                    .yearsInCurrentPosition(null)
+                    .justification(null)
+                    .build();
         }
     }
 }

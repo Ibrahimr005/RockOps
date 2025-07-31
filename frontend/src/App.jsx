@@ -66,6 +66,7 @@ import PayrollReports from "./pages/payroll/PayrollReports/PayrollReports.jsx";
 import PayslipDetails from "./pages/payroll/PayslipDetails/PayslipDetails.jsx";
 import EmployeeOnboarding from "./pages/HR/Vacancy/EmployeeOnboarding.jsx";
 import PromotionList from "./pages/HR/Promotion/PromotionList.jsx";
+import JobPositionDetails from "./pages/HR/JobPosition/details/JobPositionDetails.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -158,6 +159,7 @@ function App() {
                                     <Route path="/hr" element={<RoleRoute allowedRoles={[HR_MANAGER, HR_EMPLOYEE, ADMIN]}><HRLayout/></RoleRoute>}>
                                         <Route path="vacancies" element={<VacancyList/>}/>
                                         <Route path="positions" element={<PositionsList/>}/>
+                                        <Route path="positions/:id" element={<JobPositionDetails/>}/>
                                         <Route path="employees" element={<EmployeesList/>}/>
                                         <Route path="employees/add" element={<EmployeeOnboarding/>}/>
                                         <Route path="employee-details/:id" element={<EmployeeDetails/>}/>

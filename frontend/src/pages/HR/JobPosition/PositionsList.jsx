@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { FiPlus, FiEdit, FiTrash2, FiClock } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiPlus, FiEdit, FiTrash2, FiClock, FiEye } from 'react-icons/fi';
 import AddPositionForm from './components/AddPositionForm.jsx';
 import EditPositionForm from './components/EditPositionForm.jsx';
 import DataTable from '../../../components/common/DataTable/DataTable';
@@ -8,6 +9,7 @@ import { jobPositionService } from '../../../services/hr/jobPositionService.js';
 import './PositionsList.scss';
 
 const PositionsList = () => {
+    const navigate = useNavigate();
     const { showSuccess, showError } = useSnackbar();
     const [positions, setPositions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -92,6 +94,11 @@ const PositionsList = () => {
             setError(errorMessage);
             showError('Failed to delete position. Please try again.');
         }
+    };
+
+    // NEW: Handle row click to navigate to details
+    const handleRowClick = (row) => {
+        navigate(`/hr/positions/${row.id}`);
     };
 
     // Helper function to format time range
@@ -184,13 +191,13 @@ const PositionsList = () => {
                 switch (contractType) {
                     case 'HOURLY':
                         const hourlyRate = row.hourlyRate;
-                        return hourlyRate ? `$${Number(hourlyRate).toLocaleString()}/hr` : 'N/A';
+                        return hourlyRate ? `${Number(hourlyRate).toLocaleString()}/hr` : 'N/A';
                     case 'DAILY':
                         const dailyRate = row.dailyRate;
-                        return dailyRate ? `$${Number(dailyRate).toLocaleString()}/day` : 'N/A';
+                        return dailyRate ? `${Number(dailyRate).toLocaleString()}/day` : 'N/A';
                     case 'MONTHLY':
                     default:
-                        return `$${Number(salary).toLocaleString()}/month`;
+                        return `${Number(salary).toLocaleString()}/month`;
                 }
             }
         },
@@ -265,6 +272,14 @@ const PositionsList = () => {
 
     const actions = [
         {
+            label: 'View Details',
+            icon: <FiEye />,
+            onClick: (row) => {
+                navigate(`/hr/positions/${row.id}`);
+            },
+            className: 'info',
+        },
+        {
             label: 'Edit',
             icon: <FiEdit />,
             onClick: (row) => {
@@ -328,6 +343,8 @@ const PositionsList = () => {
                 defaultSortField="positionName"
                 defaultSortDirection="asc"
                 emptyMessage="No job positions found. Click 'Add Position' to create one."
+                onRowClick={handleRowClick}
+                rowClickable={true}
             />
 
             {showAddForm && (

@@ -241,19 +241,17 @@ public class JobPosition {
 // Add these helper methods to the JobPosition class:
 
     /**
-     * Get all promotion requests from this position
-     * @return List of promotion requests where this position is the current position
+     * Get promotions FROM this position
      */
     public List<PromotionRequest> getPromotionsFromThisPosition() {
-        return promotionsFromThisPosition != null ? promotionsFromThisPosition : Collections.emptyList();
+        return promotionsFromThisPosition != null ? promotionsFromThisPosition : new ArrayList<>();
     }
 
     /**
-     * Get all promotion requests to this position
-     * @return List of promotion requests where this position is the promoted-to position
+     * Get promotions TO this position
      */
     public List<PromotionRequest> getPromotionsToThisPosition() {
-        return promotionsToThisPosition != null ? promotionsToThisPosition : Collections.emptyList();
+        return promotionsToThisPosition != null ? promotionsToThisPosition : new ArrayList<>();
     }
 
     /**
@@ -315,12 +313,13 @@ public class JobPosition {
     }
 
     /**
-     * Get average salary increase for promotions from this position
-     * @return Average salary increase amount for promotions from this position
+     * Get average salary increase from promotions from this position
+     * @return Average salary increase as BigDecimal
      */
     public BigDecimal getAverageSalaryIncreaseFromPosition() {
         List<PromotionRequest> implementedPromotions = getPromotionsFromThisPosition().stream()
-                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED &&
+                .filter(request -> request != null && 
+                        request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED &&
                         request.getApprovedSalary() != null &&
                         request.getCurrentSalary() != null)
                 .collect(Collectors.toList());
@@ -331,6 +330,7 @@ public class JobPosition {
 
         BigDecimal totalIncrease = implementedPromotions.stream()
                 .map(PromotionRequest::getSalaryIncrease)
+                .filter(increase -> increase != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return totalIncrease.divide(BigDecimal.valueOf(implementedPromotions.size()), 2, RoundingMode.HALF_UP);
@@ -342,7 +342,7 @@ public class JobPosition {
      */
     public double getAverageTimeBeforePromotion() {
         List<PromotionRequest> implementedPromotions = getPromotionsFromThisPosition().stream()
-                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
+                .filter(request -> request != null && request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
                 .collect(Collectors.toList());
 
         if (implementedPromotions.isEmpty()) {
@@ -361,10 +361,20 @@ public class JobPosition {
      * @return Map of position names to promotion counts
      */
     public Map<String, Long> getCommonPromotionDestinations() {
+        if (getPromotionsFromThisPosition() == null || getPromotionsFromThisPosition().isEmpty()) {
+            return new HashMap<>();
+        }
+        
         return getPromotionsFromThisPosition().stream()
-                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
+                .filter(request -> request != null && request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
                 .collect(Collectors.groupingBy(
-                        PromotionRequest::getPromotedToPositionName,
+                        request -> {
+                            try {
+                                return request.getPromotedToPositionName();
+                            } catch (Exception e) {
+                                return "Unknown Position";
+                            }
+                        },
                         Collectors.counting()
                 ));
     }
@@ -396,7 +406,7 @@ public class JobPosition {
     public boolean isEligibleForPromotionFrom() {
         // Basic checks for promotion eligibility
         return active != null && active &&
-                employees != null && !employees.isEmpty();
+                getEmployees() != null && !getEmployees().isEmpty();
     }
 
     /**
@@ -414,7 +424,7 @@ public class JobPosition {
      */
     public double getPromotionRateFromPosition() {
         long totalEmployeesEverInPosition = getPromotionsFromCount() +
-                (employees != null ? employees.size() : 0);
+                (getEmployees() != null ? getEmployees().size() : 0);
 
         if (totalEmployeesEverInPosition == 0) {
             return 0.0;
@@ -428,11 +438,12 @@ public class JobPosition {
      * @return true if there are employees eligible for promotion
      */
     public boolean hasEmployeesReadyForPromotion() {
-        if (employees == null || employees.isEmpty()) {
+        if (getEmployees() == null || getEmployees().isEmpty()) {
             return false;
         }
 
-        return employees.stream()
+        return getEmployees().stream()
+                .filter(employee -> employee != null)
                 .anyMatch(Employee::isEligibleForPromotion);
     }
 
@@ -441,11 +452,12 @@ public class JobPosition {
      * @return List of employees eligible for promotion
      */
     public List<Employee> getEmployeesEligibleForPromotion() {
-        if (employees == null || employees.isEmpty()) {
+        if (getEmployees() == null || getEmployees().isEmpty()) {
             return Collections.emptyList();
         }
 
-        return employees.stream()
+        return getEmployees().stream()
+                .filter(employee -> employee != null)
                 .filter(Employee::isEligibleForPromotion)
                 .collect(Collectors.toList());
     }
@@ -491,5 +503,12 @@ public class JobPosition {
                 .limit(5) // Top 5 destinations
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Get employees in this position
+     */
+    public List<Employee> getEmployees() {
+        return employees != null ? employees : new ArrayList<>();
     }
 }

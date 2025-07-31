@@ -507,17 +507,37 @@ const PromotionList = () => {
                     return <div className="salary-change-cell">N/A</div>;
                 }
 
-                const increase = proposedSalary - currentSalary;
-                const percentage = ((increase / currentSalary) * 100).toFixed(1);
+                const change = proposedSalary - currentSalary;
+                const percentage = ((change / currentSalary) * 100).toFixed(1);
 
-                return (
-                    <div className="salary-change-cell">
-                        <div className="salary-increase text-success">
-                            +{formatCurrency(increase)}
+                if (change > 0) {
+                    return (
+                        <div className="salary-change-cell">
+                            <div className="salary-increase text-success">
+                                +{formatCurrency(change)}
+                            </div>
+                            <div className="salary-percentage text-muted">+{percentage}%</div>
                         </div>
-                        <div className="salary-percentage text-muted">+{percentage}%</div>
-                    </div>
-                );
+                    );
+                } else if (change < 0) {
+                    return (
+                        <div className="salary-change-cell">
+                            <div className="salary-decrease text-danger">
+                                {formatCurrency(change)}
+                            </div>
+                            <div className="salary-percentage text-danger">{percentage}%</div>
+                        </div>
+                    );
+                } else {
+                    return (
+                        <div className="salary-change-cell">
+                            <div className="salary-nochange text-muted">
+                                {formatCurrency(change)}
+                            </div>
+                            <div className="salary-percentage text-muted">{percentage}%</div>
+                        </div>
+                    );
+                }
             }
         },
         {
