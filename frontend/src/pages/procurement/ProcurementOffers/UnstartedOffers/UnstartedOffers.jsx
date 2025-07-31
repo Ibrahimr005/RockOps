@@ -16,7 +16,7 @@ import ConfirmationDialog from '../../../../components/common/ConfirmationDialog
 import "../ProcurementOffers.scss"
 import "./UnstartedOffers.scss"
 
-const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatusChange }) => {
+const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatusChange, onOfferStarted }) => {
     // Snackbar state
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
@@ -43,6 +43,11 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
 
             // Close confirmation dialog
             setShowStartWorkingConfirm(false);
+
+            // Redirect to inprogress tab with this offer
+            if (onOfferStarted) {
+                onOfferStarted(activeOffer);
+            }
         } catch (error) {
             // Show error notification if something goes wrong
             setNotificationMessage('Failed to start working on offer. Please try again.');
@@ -80,13 +85,15 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                             >
                                 <div className="procurement-item-header">
                                     <h4>{offer.title}</h4>
-                                    {/*<span className={`procurement-status-badge status-${offer.status.toLowerCase()}`}>*/}
-                                    {/*    {offer.status}*/}
-                                    {/*</span>*/}
                                 </div>
                                 <div className="procurement-item-footer">
                                     <span className="procurement-item-date">
                                         <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
+                                    </span>
+                                </div>
+                                <div className="procurement-item-footer">
+                                    <span className="procurement-item-status">
+                                        Ready to Start
                                     </span>
                                 </div>
                             </div>
@@ -101,7 +108,7 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                     <div className="procurement-details-content">
                         <div className="procurement-details-header">
                             <div className="procurement-title-section">
-                                <h3>{activeOffer.title}</h3>
+                                <h2 className="procurement-main-title">{activeOffer.title}</h2>
                                 <div className="procurement-header-meta">
                                     <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
                                         {activeOffer.status}
@@ -156,7 +163,7 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
 
                                                     {item.comment && (
                                                         <div className="procurement-unstarted-offers-item-notes">
-                                                            <div className="procurement-unstarted-offers-item-notes-label">Notes:</div>
+                                                            <div className="procurement-unstarted-offers-item-notes-title">Notes</div>
                                                             <div className="procurement-unstarted-offers-item-notes-content">{item.comment}</div>
                                                         </div>
                                                     )}
@@ -201,7 +208,7 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                 onConfirm={confirmStartWorking}
                 onCancel={cancelStartWorking}
                 isLoading={isStartingWork}
-                size="medium"
+                size="large"
             />
 
             {/* Snackbar Component */}

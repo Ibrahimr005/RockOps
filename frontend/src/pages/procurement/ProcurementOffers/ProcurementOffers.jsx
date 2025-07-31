@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import './ProcurementOffers.scss';
 
+// Import services
+import { offerService } from '../../../services/procurement/offerService.js';
+
 // Import tabs
 import UnstartedOffers from './UnstartedOffers/UnstartedOffers';
 import InProgressOffers from './InprogressOffers/InProgressOffers';
@@ -14,7 +17,6 @@ import CompletedOffers from "./CompletedOffers/CompletedOffers.jsx";
 
 // Import the new component
 import ProcurementIntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
-import { offerService } from '../../../services/offerService';
 
 // Icons
 import {
@@ -26,6 +28,8 @@ import {
 import { FiCheck } from 'react-icons/fi';
 import offersImage from "../../../assets/imgs/pro_icon.png";
 import offersImageDark from "../../../assets/imgs/pro_icon_dark.png"; // Add dark mode image
+
+const API_URL = 'http://localhost:8080/api/v1';
 
 const ProcurementOffers = () => {
     const navigate = useNavigate();
@@ -40,12 +44,51 @@ const ProcurementOffers = () => {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
     const [userRole, setUserRole] = useState(''); // Added for role checking
+    const [pendingSubmittedOffer, setPendingSubmittedOffer] = useState(null); // Track submitted offer for redirection
+
+    // Helper function for authenticated fetch (keep for backward compatibility with child components)
+    const fetchWithAuth = async (url, options = {}) => {
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+            throw new Error('Authentication token not found');
+        }
+
+        const defaultOptions = {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        };
+
+        const mergedOptions = {
+            ...defaultOptions,
+            ...options,
+            headers: {
+                ...defaultOptions.headers,
+                ...options.headers
+            }
+        };
+
+        const response = await fetch(url, mergedOptions);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || `Error: ${response.status}`);
+        }
+
+        // Check if response is 204 No Content or has no content
+        if (response.status === 204 || response.headers.get('content-length') === '0') {
+            return null; // Return null for empty responses
+        }
+
+        return response.json();
+    };
 
     // Fetch request order for a specific offer
     const fetchRequestOrderForOffer = async (offerId) => {
         try {
-            const response = await offerService.getRequestOrder(offerId);
-            return response.data;
+            return await offerService.getRequestOrder(offerId);
         } catch (error) {
             console.error(`Error fetching request order for offer ${offerId}:`, error);
             setError('Failed to load request order details. Please try again.');
@@ -53,7 +96,7 @@ const ProcurementOffers = () => {
         }
     };
 
-    // Fetch data
+    // Fetch data using service
     useEffect(() => {
         // Get user role from localStorage
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
@@ -64,60 +107,49 @@ const ProcurementOffers = () => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Fetch offers based on active tab
                 let offersData;
+
                 if (activeTab === 'unstarted') {
-                    const response = await offerService.getAll('UNSTARTED');
-                    offersData = response.data;
+                    offersData = await offerService.getByStatus('UNSTARTED');
                 } else if (activeTab === 'inprogress') {
-                    const response = await offerService.getAll('INPROGRESS');
-                    offersData = response.data;
+                    offersData = await offerService.getByStatus('INPROGRESS');
                 } else if (activeTab === 'submitted') {
-                    // Explicitly handle the submitted tab, using the correct format for multiple statuses
-                    const response = await offerService.getAll('SUBMITTED');
-                    offersData = response.data;
-                    // const sentOffers = await fetchWithAuth(`${API_URL}/offers?status=SENT`);
-                    // const acceptedOffers = await fetchWithAuth(`${API_URL}/offers?status=ACCEPTED`);
-                    // const rejectedOffers = await fetchWithAuth(`${API_URL}/offers?status=REJECTED`);
-
-                    // Combine all the relevant statuses
-                    // offersData = [...submittedOffers, ...sentOffers, ...acceptedOffers, ...rejectedOffers];
+                    offersData = await offerService.getByStatus('SUBMITTED');
                 } else if (activeTab === 'validated') {
-                    // Get ACCEPTED and REJECTED offers for the Validated tab
-                    const acceptedOffers = await offerService.getAll('MANAGERACCEPTED');
-                    const rejectedOffers = await offerService.getAll('MANAGERREJECTED');
-
-                    // Combine the relevant statuses
-                    offersData = [...acceptedOffers.data, ...rejectedOffers.data];
-
-
-                    // offersData = allValidatedOffers.filter(offer =>
-                    //     offer.financeStatus === 'PENDING_FINANCE_REVIEW' || offer.financeStatus === null
-                    // );
-
+                    offersData = await offerService.getMultipleStatuses(['MANAGERACCEPTED', 'MANAGERREJECTED']);
                 } else if (activeTab === 'finance') {
-                    // Get finance reviewed offers
-                    // This endpoint would need to be implemented in your backend
-                    const acceptedOffers = await offerService.getAll('FINANCE_ACCEPTED');
-                    const accepted2Offers = await offerService.getAll('FINANCE_PARTIALLY_ACCEPTED');
-                    const rejectedOffers = await offerService.getAll('FINANCE_REJECTED');
-                    offersData = [...acceptedOffers.data,...accepted2Offers.data, ...rejectedOffers.data];
-
+                    offersData = await offerService.getMultipleStatuses(['FINANCE_ACCEPTED', 'FINANCE_PARTIALLY_ACCEPTED', 'FINANCE_REJECTED']);
                 } else if (activeTab === 'finalize') {
-                    // Get offers with finance status FINANCE_ACCEPTED
-                    offersData = await offerService.getAll('FINALIZING');
+                    offersData = await offerService.getByStatus('FINALIZING');
                 } else if (activeTab === 'completed') {
-                    // Get completed offers
-                    offersData = await offerService.getAll('COMPLETED');
+                    offersData = await offerService.getByStatus('COMPLETED');
                 } else {
                     offersData = [];
                 }
 
                 setOffers(offersData);
 
-                // Set first offer as active if available
+                // Set active offer based on context
                 if (offersData.length > 0) {
-                    setActiveOffer(offersData[0]);
+                    // If we have a pending submitted offer and we're on the submitted tab, select it
+                    if (pendingSubmittedOffer && activeTab === 'submitted') {
+                        const submittedOffer = offersData.find(offer => offer.id === pendingSubmittedOffer.id);
+                        if (submittedOffer) {
+                            setActiveOffer(submittedOffer);
+                            setPendingSubmittedOffer(null); // Clear the pending offer
+                        } else {
+                            setActiveOffer(offersData[0]);
+                        }
+                    }
+                    // If we have an activeOffer and it exists in the new data, keep it selected
+                    else if (activeOffer && offersData.find(offer => offer.id === activeOffer.id)) {
+                        // Find the updated version of the active offer from the fetched data
+                        const updatedActiveOffer = offersData.find(offer => offer.id === activeOffer.id);
+                        setActiveOffer(updatedActiveOffer);
+                    } else {
+                        // Otherwise, select the first offer
+                        setActiveOffer(offersData[0]);
+                    }
                 } else {
                     setActiveOffer(null);
                 }
@@ -131,7 +163,7 @@ const ProcurementOffers = () => {
         };
 
         fetchData();
-    }, [activeTab]);
+    }, [activeTab, pendingSubmittedOffer]); // Add pendingSubmittedOffer to dependencies
 
     // When active offer changes, fetch its request order
     useEffect(() => {
@@ -159,11 +191,26 @@ const ProcurementOffers = () => {
     }, [activeOffer]);
 
     // Handle starting work on an offer (change from UNSTARTED to INPROGRESS)
-    const handleOfferStatusChange = async (offerId, newStatus) => {
+    const handleOfferStatusChange = async (offerId, newStatus, offerData = null) => {
         try {
             await offerService.updateStatus(offerId, newStatus);
 
-            // Remove the offer from the current tab's list
+            // If this is a submission (INPROGRESS -> SUBMITTED), redirect to submitted tab
+            if (newStatus === 'SUBMITTED' && offerData) {
+                // Store the submitted offer for selection after tab switch
+                setPendingSubmittedOffer({
+                    ...offerData,
+                    status: 'SUBMITTED'
+                });
+
+                // Switch to submitted tab
+                setActiveTab('submitted');
+
+                // Don't update the current offers list since we're switching tabs
+                return;
+            }
+
+            // For other status changes, update the current tab's offers
             const updatedOffers = offers.filter(o => o.id !== offerId);
             setOffers(updatedOffers);
 
@@ -251,6 +298,18 @@ const ProcurementOffers = () => {
         navigate('/procurement/request-orders');
     };
 
+    // Handle offer started callback
+    const handleOfferStarted = (startedOffer) => {
+        // Switch to inprogress tab
+        setActiveTab('inprogress');
+
+        // Set the started offer as active (it will have INPROGRESS status now)
+        setActiveOffer({
+            ...startedOffer,
+            status: 'INPROGRESS'
+        });
+    };
+
     // Prepare stats data for the intro card
     const getActiveTabLabel = () => {
         switch(activeTab) {
@@ -269,10 +328,6 @@ const ProcurementOffers = () => {
         {
             value: offers.length,
             label: getActiveTabLabel()
-        },
-        {
-            value: `$${offers.reduce((total, offer) => total + getTotalPrice(offer), 0).toFixed(2)}`,
-            label: 'Total Value'
         }
     ];
 
@@ -341,25 +396,6 @@ const ProcurementOffers = () => {
 
             {/* Content Container with Theme Support */}
             <div className="procurement-content-container">
-                {/* Search and Description */}
-                <div className="procurement-section-description">
-                    {getTabDescription()}
-
-                    <div className="procurement-search-container">
-                        <input
-                            type="text"
-                            placeholder="Search offers..."
-                            className="procurement-search-input"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                        <svg className="procurement-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="11" cy="11" r="8" />
-                            <path d="M21 21l-4.35-4.35" />
-                        </svg>
-                    </div>
-                </div>
-
                 {/* Render the active tab component */}
                 {loading ? (
                     <div className="procurement-loading">
@@ -374,9 +410,7 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 handleOfferStatusChange={handleOfferStatusChange}
-                                offerService={offerService}
-                                setError={setError}
-                                setSuccess={setSuccess}
+                                onOfferStarted={handleOfferStarted}
                             />
                         )}
 
@@ -385,20 +419,21 @@ const ProcurementOffers = () => {
                                 offers={filteredOffers}
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
-                                getTotalPrice={getTotalPrice}
-                                offerService={offerService}
+                                handleOfferStatusChange={handleOfferStatusChange}
+                                fetchWithAuth={fetchWithAuth}
+                                API_URL={API_URL}
+                                setError={setError}
+                                setSuccess={setSuccess}
                             />
                         )}
 
                         {activeTab === 'submitted' && (
                             <SubmittedOffers
                                 offers={filteredOffers}
+                                setOffers={setOffers}
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
-                                offerService={offerService}
-                                setError={setError}              // ADD THIS
-                                setSuccess={setSuccess}          // ADD THIS
                             />
                         )}
 
@@ -408,7 +443,7 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
-                                offerService={offerService}
+                                onRetryOffer={handleRetryOffer}
                             />
                         )}
 
@@ -418,8 +453,8 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
-                                fetchWithAuth={offerService.fetchWithAuth}
-                                API_URL={offerService.API_URL}
+                                fetchWithAuth={fetchWithAuth}
+                                API_URL={API_URL}
                             />
                         )}
 
@@ -429,11 +464,11 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
-                                fetchWithAuth={offerService.fetchWithAuth}
-                                API_URL={offerService.API_URL}
-                                setError={setError}              // ADD THIS
-                                setSuccess={setSuccess}          // ADD THIS
-                                onOfferFinalized={handleOfferFinalized}  // ADD THIS
+                                fetchWithAuth={fetchWithAuth}
+                                API_URL={API_URL}
+                                setError={setError}
+                                setSuccess={setSuccess}
+                                onOfferFinalized={handleOfferFinalized}
                             />
                         )}
 
@@ -444,8 +479,8 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
-                                fetchWithAuth={offerService.fetchWithAuth}
-                                API_URL={offerService.API_URL}
+                                fetchWithAuth={fetchWithAuth}
+                                API_URL={API_URL}
                             />
                         )}
                     </>

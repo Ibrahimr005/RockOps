@@ -7,6 +7,7 @@ import ConfirmationDialog from '../../../../components/common/ConfirmationDialog
 import { siteService } from '../../../../services/siteService.js';
 import { warehouseService } from '../../../../services/warehouse/warehouseService.js';
 import { itemTypeService } from '../../../../services/warehouse/itemTypeService.js';
+import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService.js';
 import { employeeService } from '../../../../services/hr/employeeService.js';
 import { requestOrderService } from '../../../../services/procurement/requestOrderService.js';
 import { offerService } from '../../../../services/procurement/offerService.js';
@@ -44,7 +45,7 @@ const IncomingRequestOrders = ({
         siteId: '',
         requesterId: '',
         requesterName: '',
-        items: [{ itemTypeId: '', quantity: '', comment: '' }],
+        items: [{ itemTypeId: '', quantity: '', comment: '', parentCategoryId: '', itemCategoryId: '' }],
         status: 'PENDING',
         deadline: '',
         employeeRequestedBy: ''
@@ -53,6 +54,11 @@ const IncomingRequestOrders = ({
     const [sites, setSites] = useState([]);
     const [itemTypes, setItemTypes] = useState([]);
     const [warehouses, setWarehouses] = useState([]);
+
+    // Category filtering states
+    const [parentCategories, setParentCategories] = useState([]);
+    const [childCategoriesByItem, setChildCategoriesByItem] = useState({});
+    const [showFilters, setShowFilters] = useState({});
 
     useEffect(() => {
         fetchInitialData();
@@ -65,11 +71,13 @@ const IncomingRequestOrders = ({
             setItemTypes([]);
             setEmployees([]);
             setWarehouses([]);
+            setParentCategories([]);
 
             await Promise.all([
                 fetchSites(),
                 fetchItemTypes(),
-                fetchEmployees()
+                fetchEmployees(),
+                fetchParentCategories()
             ]);
         } catch (error) {
             console.error('Error fetching initial data:', error);
@@ -78,17 +86,19 @@ const IncomingRequestOrders = ({
             setItemTypes([]);
             setEmployees([]);
             setWarehouses([]);
+            setParentCategories([]);
             showErrorNotification('Failed to load initial data');
         }
     };
 
     const fetchSites = async () => {
         try {
-            const data = await siteService.getAllSites();
+            const response = await siteService.getAllSites();
+            const data = response.data || response;
             setSites(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching sites:', err);
-            setSites([]); // Set empty array on error
+            setSites([]);
             showErrorNotification('Failed to load sites');
         }
     };
@@ -99,7 +109,7 @@ const IncomingRequestOrders = ({
             setItemTypes(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching item types:', err);
-            setItemTypes([]); // Set empty array on error
+            setItemTypes([]);
             showErrorNotification('Failed to load item types');
         }
     };
@@ -107,13 +117,70 @@ const IncomingRequestOrders = ({
     const fetchEmployees = async () => {
         try {
             const response = await employeeService.getAll();
-            // Handle different response structures
             const employeesData = response.data || response;
             setEmployees(Array.isArray(employeesData) ? employeesData : []);
         } catch (err) {
             console.error('Error fetching employees:', err);
-            setEmployees([]); // Set empty array on error
+            setEmployees([]);
             showErrorNotification('Failed to load employees');
+        }
+    };
+
+    const fetchParentCategories = async () => {
+        try {
+            const data = await itemCategoryService.getParents();
+            setParentCategories(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error('Error fetching parent categories:', error);
+            setParentCategories([]);
+        }
+    };
+
+    const fetchChildCategories = async (parentCategoryId, itemIndex) => {
+        if (!parentCategoryId) {
+            setChildCategoriesByItem(prev => ({
+                ...prev,
+                [itemIndex]: []
+            }));
+            return;
+        }
+
+        try {
+            const data = await itemCategoryService.getChildren();
+            const filteredChildren = data.filter(category =>
+                category.parentCategory?.id === parentCategoryId
+            );
+            setChildCategoriesByItem(prev => ({
+                ...prev,
+                [itemIndex]: filteredChildren
+            }));
+        } catch (error) {
+            console.error('Error fetching child categories:', error);
+            setChildCategoriesByItem(prev => ({
+                ...prev,
+                [itemIndex]: []
+            }));
+        }
+    };
+
+    // Toggle filters with animation
+    const toggleFilters = (index) => {
+        if (showFilters[index]) {
+            const filterElement = document.querySelector(`[data-filter-index="${index}"]`);
+            if (filterElement) {
+                filterElement.classList.add('collapsing');
+                setTimeout(() => {
+                    setShowFilters(prev => ({
+                        ...prev,
+                        [index]: false
+                    }));
+                }, 300);
+            }
+        } else {
+            setShowFilters(prev => ({
+                ...prev,
+                [index]: true
+            }));
         }
     };
 
@@ -147,10 +214,8 @@ const IncomingRequestOrders = ({
         setIsApproving(true);
 
         try {
-            // Step 1: Update the request order status
             await requestOrderService.updateStatus(selectedRowForApproval.id, 'APPROVED');
 
-            // Step 2: Create a new offer based on this request order
             const offerData = {
                 requestOrderId: selectedRowForApproval.id,
                 title: `Procurement Offer for: ${selectedRowForApproval.title}`,
@@ -163,10 +228,8 @@ const IncomingRequestOrders = ({
 
             await offerService.create(offerData);
 
-            // Success notification
             showSuccessNotification('Request Order accepted successfully, Visit Offers to start on the offer.');
 
-            // Refresh the request orders list in parent
             if (onDataChange) {
                 onDataChange();
             }
@@ -212,12 +275,14 @@ const IncomingRequestOrders = ({
             siteId: '',
             requesterId: '',
             requesterName: '',
-            items: [{ itemTypeId: '', quantity: '', comment: '' }],
+            items: [{ itemTypeId: '', quantity: '', comment: '', parentCategoryId: '', itemCategoryId: '' }],
             status: 'PENDING',
             deadline: '',
             employeeRequestedBy: ''
         });
         setWarehouses([]);
+        setChildCategoriesByItem({});
+        setShowFilters({});
         setShowAddModal(true);
     };
 
@@ -225,7 +290,6 @@ const IncomingRequestOrders = ({
     const handleSiteChange = async (e) => {
         const siteId = e.target.value;
 
-        // Reset downstream selections
         setFormData(prev => ({
             ...prev,
             siteId,
@@ -233,7 +297,6 @@ const IncomingRequestOrders = ({
             requesterName: ''
         }));
 
-        // Fetch warehouses for the selected site
         if (siteId) {
             try {
                 const data = await warehouseService.getBySite(siteId);
@@ -251,7 +314,6 @@ const IncomingRequestOrders = ({
     const handleWarehouseChange = (e) => {
         const requesterId = e.target.value;
 
-        // Find the selected warehouse's name
         const selectedWarehouse = Array.isArray(warehouses)
             ? warehouses.find(warehouse => warehouse.id === requesterId)
             : null;
@@ -275,10 +337,35 @@ const IncomingRequestOrders = ({
     const handleItemChange = (index, field, value) => {
         setFormData(prev => {
             const newItems = [...prev.items];
-            newItems[index] = {
-                ...newItems[index],
-                [field]: value
-            };
+
+            if (field === 'parentCategoryId') {
+                newItems[index] = {
+                    ...newItems[index],
+                    parentCategoryId: value,
+                    itemCategoryId: '',
+                    itemTypeId: ''
+                };
+                if (value) {
+                    fetchChildCategories(value, index);
+                } else {
+                    setChildCategoriesByItem(prevState => ({
+                        ...prevState,
+                        [index]: []
+                    }));
+                }
+            } else if (field === 'itemCategoryId') {
+                newItems[index] = {
+                    ...newItems[index],
+                    itemCategoryId: value,
+                    itemTypeId: ''
+                };
+            } else {
+                newItems[index] = {
+                    ...newItems[index],
+                    [field]: value
+                };
+            }
+
             return {
                 ...prev,
                 items: newItems
@@ -291,13 +378,12 @@ const IncomingRequestOrders = ({
             ...prev,
             items: [
                 ...prev.items,
-                { itemTypeId: '', quantity: '', comment: '' }
+                { itemTypeId: '', quantity: '', comment: '', parentCategoryId: '', itemCategoryId: '' }
             ]
         }));
     };
 
     const handleRemoveItem = (index) => {
-        // Don't allow removing if there's only one item
         if (formData.items.length <= 1) return;
 
         setFormData(prev => {
@@ -308,10 +394,73 @@ const IncomingRequestOrders = ({
                 items: newItems
             };
         });
+
+        // Clean up child categories and filter states
+        setChildCategoriesByItem(prev => {
+            const newChildCategories = { ...prev };
+            delete newChildCategories[index];
+            const reindexed = {};
+            Object.keys(newChildCategories).forEach(key => {
+                const oldIndex = parseInt(key);
+                if (oldIndex > index) {
+                    reindexed[oldIndex - 1] = newChildCategories[key];
+                } else {
+                    reindexed[key] = newChildCategories[key];
+                }
+            });
+            return reindexed;
+        });
+
+        setShowFilters(prev => {
+            const newShowFilters = { ...prev };
+            delete newShowFilters[index];
+            const reindexed = {};
+            Object.keys(newShowFilters).forEach(key => {
+                const oldIndex = parseInt(key);
+                if (oldIndex > index) {
+                    reindexed[oldIndex - 1] = newShowFilters[key];
+                } else {
+                    reindexed[key] = newShowFilters[key];
+                }
+            });
+            return reindexed;
+        });
+    };
+
+    // Helper function to get filtered item types based on category selection
+    const getFilteredItemTypes = (itemIndex) => {
+        const item = formData.items[itemIndex];
+        if (!item) return itemTypes;
+
+        let filteredTypes = itemTypes;
+
+        if (item.itemCategoryId) {
+            filteredTypes = filteredTypes.filter(itemType =>
+                itemType.itemCategory?.id === item.itemCategoryId
+            );
+        } else if (item.parentCategoryId) {
+            filteredTypes = filteredTypes.filter(itemType =>
+                itemType.itemCategory?.parentCategory?.id === item.parentCategoryId
+            );
+        }
+
+        return filteredTypes;
+    };
+
+    const getAvailableItemTypes = (currentIndex) => {
+        const selectedItemTypeIds = formData.items
+            .filter((_, idx) => idx !== currentIndex && !!_.itemTypeId)
+            .map(item => item.itemTypeId);
+
+        const filteredTypes = getFilteredItemTypes(currentIndex);
+
+        return filteredTypes.filter(itemType =>
+            !selectedItemTypeIds.includes(itemType.id)
+        );
     };
 
     const getUserInfo = () => {
-        let username = "system"; // Default fallback
+        let username = "system";
         const userInfoString = localStorage.getItem('userInfo');
 
         if (userInfoString) {
@@ -331,7 +480,6 @@ const IncomingRequestOrders = ({
         e.preventDefault();
         const username = getUserInfo();
 
-        // Validate form data before submission
         if (!formData.title || !formData.description || !formData.requesterId || !formData.deadline) {
             showErrorNotification('Please fill in all required fields');
             return;
@@ -342,20 +490,19 @@ const IncomingRequestOrders = ({
             return;
         }
 
-        // Prepare the request payload to match your Spring Boot backend expectations
         const requestPayload = {
             title: formData.title.trim(),
             description: formData.description.trim(),
             createdBy: username,
             status: 'PENDING',
             partyType: 'WAREHOUSE',
-            requesterId: formData.requesterId, // Should be UUID string
+            requesterId: formData.requesterId,
             employeeRequestedBy: formData.employeeRequestedBy || null,
-            deadline: formData.deadline, // Send as datetime-local format, not ISO
+            deadline: formData.deadline,
             items: formData.items
-                .filter(item => item.itemTypeId && item.quantity) // Only include valid items
+                .filter(item => item.itemTypeId && item.quantity)
                 .map(item => ({
-                    itemTypeId: item.itemTypeId, // Should be UUID string
+                    itemTypeId: item.itemTypeId,
                     quantity: parseFloat(item.quantity),
                     comment: (item.comment || '').trim()
                 }))
@@ -367,21 +514,18 @@ const IncomingRequestOrders = ({
             const result = await requestOrderService.create(requestPayload);
             console.log('Request creation successful:', result);
 
-            // Request created successfully
             handleCloseModal();
             if (onDataChange) {
-                onDataChange(); // Refresh the list
+                onDataChange();
             }
 
             showSuccessNotification('Request Order created successfully');
         } catch (err) {
             console.error('Full error object:', err);
 
-            // Enhanced error handling
             let errorMessage = 'Failed to create request order';
 
             if (err.response) {
-                // Server responded with error status
                 console.error('Server error details:', {
                     status: err.response.status,
                     statusText: err.response.statusText,
@@ -403,11 +547,9 @@ const IncomingRequestOrders = ({
                     errorMessage = `HTTP ${err.response.status}: ${err.response.statusText}`;
                 }
             } else if (err.request) {
-                // Network error
                 console.error('Network error - no response received:', err.request);
                 errorMessage = 'Network error - please check your connection and try again';
             } else {
-                // Other error
                 console.error('Request setup error:', err.message);
                 errorMessage = err.message || 'Unknown error occurred';
             }
@@ -420,7 +562,6 @@ const IncomingRequestOrders = ({
         e.preventDefault();
         const username = getUserInfo();
 
-        // Validate form data before submission
         if (!formData.title || !formData.description || !formData.requesterId || !formData.deadline) {
             showErrorNotification('Please fill in all required fields');
             return;
@@ -431,21 +572,20 @@ const IncomingRequestOrders = ({
             return;
         }
 
-        // Prepare the update payload
         const requestPayload = {
             title: formData.title.trim(),
             description: formData.description.trim(),
             updatedBy: username,
             status: formData.status,
             partyType: 'WAREHOUSE',
-            requesterId: formData.requesterId, // Should be UUID string
+            requesterId: formData.requesterId,
             employeeRequestedBy: formData.employeeRequestedBy || null,
-            deadline: formData.deadline, // Send as datetime-local format, not ISO
+            deadline: formData.deadline,
             items: formData.items
-                .filter(item => item.itemTypeId && item.quantity) // Only include valid items
+                .filter(item => item.itemTypeId && item.quantity)
                 .map(item => ({
-                    id: item.id || null, // Include the item ID if it exists (for updates)
-                    itemTypeId: item.itemTypeId, // Should be UUID string
+                    id: item.id || null,
+                    itemTypeId: item.itemTypeId,
                     quantity: parseFloat(item.quantity),
                     comment: (item.comment || '').trim()
                 }))
@@ -457,21 +597,18 @@ const IncomingRequestOrders = ({
             const result = await requestOrderService.update(currentOrderId, requestPayload);
             console.log('Request update successful:', result);
 
-            // Update successful
             handleCloseModal();
             if (onDataChange) {
-                onDataChange(); // Refresh the list
+                onDataChange();
             }
 
             showSuccessNotification('Request Order updated successfully');
         } catch (err) {
             console.error('Full error object:', err);
 
-            // Enhanced error handling
             let errorMessage = 'Failed to update request order';
 
             if (err.response) {
-                // Server responded with error status
                 console.error('Server error details:', {
                     status: err.response.status,
                     statusText: err.response.statusText,
@@ -493,11 +630,9 @@ const IncomingRequestOrders = ({
                     errorMessage = `HTTP ${err.response.status}: ${err.response.statusText}`;
                 }
             } else if (err.request) {
-                // Network error
                 console.error('Network error - no response received:', err.request);
                 errorMessage = 'Network error - please check your connection and try again';
             } else {
-                // Other error
                 console.error('Request setup error:', err.message);
                 errorMessage = err.message || 'Unknown error occurred';
             }
@@ -508,38 +643,35 @@ const IncomingRequestOrders = ({
 
     const handleOpenEditModal = async (order) => {
         try {
-            // Set edit mode
             setIsEditMode(true);
             setCurrentOrderId(order.id);
 
-            // Format the deadline for datetime-local input (if it exists)
             const deadline = order.deadline
                 ? new Date(order.deadline).toISOString().slice(0, 16)
                 : '';
 
-            // Handle items specifically - make sure we're getting the items array correctly
-            let itemsToSet = [{ itemTypeId: '', quantity: '', comment: '' }]; // Default
+            let itemsToSet = [{ itemTypeId: '', quantity: '', comment: '', parentCategoryId: '', itemCategoryId: '' }];
 
-            // Check if order.items exists and is an array
             if (order.items && Array.isArray(order.items) && order.items.length > 0) {
                 itemsToSet = order.items.map(item => ({
                     id: item.id,
                     itemTypeId: item.itemTypeId,
                     quantity: item.quantity,
-                    comment: item.comment || ''
+                    comment: item.comment || '',
+                    parentCategoryId: '',
+                    itemCategoryId: ''
                 }));
-            }
-            // If the items are in a different property, check there
-            else if (order.requestItems && Array.isArray(order.requestItems) && order.requestItems.length > 0) {
+            } else if (order.requestItems && Array.isArray(order.requestItems) && order.requestItems.length > 0) {
                 itemsToSet = order.requestItems.map(item => ({
                     id: item.id,
-                    itemTypeId: item.itemTypeId || item.itemType?.id, // Handle nested structure if needed
+                    itemTypeId: item.itemTypeId || item.itemType?.id,
                     quantity: item.quantity,
-                    comment: item.comment || ''
+                    comment: item.comment || '',
+                    parentCategoryId: '',
+                    itemCategoryId: ''
                 }));
             }
 
-            // Populate form with the order data directly
             setFormData({
                 title: order.title || '',
                 description: order.description || '',
@@ -552,7 +684,6 @@ const IncomingRequestOrders = ({
                 items: itemsToSet
             });
 
-            // Load warehouses for the selected site
             if (order.siteId) {
                 try {
                     const data = await warehouseService.getBySite(order.siteId);
@@ -564,7 +695,9 @@ const IncomingRequestOrders = ({
                 }
             }
 
-            // Show the modal
+            setChildCategoriesByItem({});
+            setShowFilters({});
+
             setShowAddModal(true);
         } catch (error) {
             console.error('Error opening edit modal:', error);
@@ -588,19 +721,20 @@ const IncomingRequestOrders = ({
         setShowAddModal(false);
         setIsEditMode(false);
         setCurrentOrderId(null);
-        // Reset form data
         setFormData({
             title: '',
             description: '',
             siteId: '',
             requesterId: '',
             requesterName: '',
-            items: [{ itemTypeId: '', quantity: '', comment: '' }],
+            items: [{ itemTypeId: '', quantity: '', comment: '', parentCategoryId: '', itemCategoryId: '' }],
             status: 'PENDING',
             deadline: '',
             employeeRequestedBy: ''
         });
         setWarehouses([]);
+        setChildCategoriesByItem({});
+        setShowFilters({});
     };
 
     // Define columns for DataTable
@@ -725,7 +859,6 @@ const IncomingRequestOrders = ({
                 filterableColumns={filterableColumns}
                 defaultItemsPerPage={10}
                 itemsPerPageOptions={[5, 10, 15, 20]}
-                // Add button props
                 showAddButton={true}
                 addButtonText="Add Request Order"
                 addButtonIcon={<FaPlus />}
@@ -828,19 +961,91 @@ const IncomingRequestOrders = ({
                                         <div key={index} className="pro-ro-item-card">
                                             <div className="pro-ro-item-header">
                                                 <span>Item {index + 1}</span>
-                                                {formData.items.length > 1 && (
+                                                <div className="pro-ro-item-header-actions">
                                                     <button
                                                         type="button"
-                                                        className="pro-ro-remove-button"
-                                                        onClick={() => handleRemoveItem(index)}
+                                                        className={`pro-ro-filter-toggle ${showFilters[index] ? 'active' : ''}`}
+                                                        onClick={() => toggleFilters(index)}
                                                     >
                                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                            <path d="M18 6L6 18M6 6l12 12" />
+                                                            <path d="M22 3H2l8 9.46V19l4 2V12.46L22 3z"/>
                                                         </svg>
-                                                        Remove
+                                                        {showFilters[index] ? 'Hide Filters' : 'Filter Categories'}
                                                     </button>
-                                                )}
+                                                    {formData.items.length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            className="pro-ro-remove-button"
+                                                            onClick={() => handleRemoveItem(index)}
+                                                        >
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                <path d="M18 6L6 18M6 6l12 12" />
+                                                            </svg>
+                                                            Remove
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
+
+                                            {/* COLLAPSIBLE FILTERS */}
+                                            {showFilters[index] && (
+                                                <div
+                                                    className="pro-ro-collapsible-filters"
+                                                    data-filter-index={index}
+                                                >
+                                                    <div className="pro-ro-filters-header">
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <path d="M22 3H2l8 9.46V19l4 2V12.46L22 3z"/>
+                                                        </svg>
+                                                        <h4>Category Filters</h4>
+                                                    </div>
+
+                                                    <div className="pro-ro-filters-content">
+                                                        <div className="pro-ro-form-field">
+                                                            <label>Parent Category</label>
+                                                            <select
+                                                                value={item.parentCategoryId || ''}
+                                                                onChange={(e) => handleItemChange(index, 'parentCategoryId', e.target.value)}
+                                                            >
+                                                                <option value="">All Categories</option>
+                                                                {parentCategories.map((category) => (
+                                                                    <option key={category.id} value={category.id}>
+                                                                        {category.name}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                            <span className="pro-ro-form-helper-text">
+                                                                Choose a parent category to filter item types
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="pro-ro-form-field">
+                                                            <label>Child Category</label>
+                                                            <select
+                                                                value={item.itemCategoryId || ''}
+                                                                onChange={(e) => handleItemChange(index, 'itemCategoryId', e.target.value)}
+                                                                disabled={!item.parentCategoryId}
+                                                            >
+                                                                <option value="">All child categories</option>
+                                                                {(childCategoriesByItem[index] || []).map((category) => (
+                                                                    <option key={category.id} value={category.id}>
+                                                                        {category.name}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                            <span className="pro-ro-form-helper-text">
+                                                                {!item.parentCategoryId ? (
+                                                                    "Select a parent category first"
+                                                                ) : (childCategoriesByItem[index] || []).length === 0 ? (
+                                                                    "No child categories found for the selected parent category"
+                                                                ) : (
+                                                                    "Optional - leave empty to show all from parent"
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
 
                                             <div className="pro-ro-item-fields">
                                                 <div className="pro-ro-form-field">
@@ -851,16 +1056,12 @@ const IncomingRequestOrders = ({
                                                         required
                                                     >
                                                         <option value="">Select Item Type</option>
-                                                        {Array.isArray(itemTypes) && itemTypes
-                                                            .filter(type =>
-                                                                // Show the item type if it's the currently selected one for this item
-                                                                // OR if it's not selected in any other item
-                                                                type.id === item.itemTypeId ||
-                                                                !formData.items.some(i => i !== item && i.itemTypeId === type.id)
-                                                            )
-                                                            .map(type => (
-                                                                <option key={type.id} value={type.id}>{type.name || 'Unknown Item Type'}</option>
-                                                            ))}
+                                                        {getAvailableItemTypes(index).map(type => (
+                                                            <option key={type.id} value={type.id}>
+                                                                {type.name || 'Unknown Item Type'}
+                                                                {type.measuringUnit ? ` (${type.measuringUnit})` : ''}
+                                                            </option>
+                                                        ))}
                                                     </select>
                                                 </div>
 
@@ -959,7 +1160,6 @@ const IncomingRequestOrders = ({
                                     <button
                                         type="submit"
                                         className="btn-primary"
-
                                     >
                                         {isEditMode ? 'Update Request' : 'Submit Request'}
                                     </button>

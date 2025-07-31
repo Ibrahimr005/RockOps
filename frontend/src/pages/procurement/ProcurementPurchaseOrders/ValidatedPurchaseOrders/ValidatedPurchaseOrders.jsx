@@ -264,7 +264,7 @@ const ValidatedPurchaseOrders = () => {
                     showSearch={true}
                     showFilters={true}
                     filterableColumns={filterableColumns}
-                    defaultItemsPerPage={15}
+                    defaultItemsPerPage={10}
                     itemsPerPageOptions={[10, 15, 25, 50]}
                 />
             </div>

@@ -340,12 +340,37 @@ export const REQUEST_ORDER_ENDPOINTS = {
 };
 
 // Offer module endpoints
+// Add these to your OFFER_ENDPOINTS in api.config.js
+
 export const OFFER_ENDPOINTS = {
     BASE: '/api/v1/offers',
     BY_ID: (id) => `/api/v1/offers/${id}`,
     CREATE: '/api/v1/offers',
     UPDATE: (id) => `/api/v1/offers/${id}`,
-    DELETE: (id) => `/api/v1/offers/${id}`
+    DELETE: (id) => `/api/v1/offers/${id}`,
+
+    // Status operations
+    BY_STATUS: (status) => `/api/v1/offers?status=${status}`,
+    UPDATE_STATUS: (id) => `/api/v1/offers/${id}/status`,
+
+    // Request Order operations
+    REQUEST_ORDER: (offerId) => `/api/v1/offers/${offerId}/request-order`,
+
+    // Items operations
+    ADD_ITEMS: (offerId) => `/api/v1/offers/${offerId}/items`,
+    GET_ITEMS: (offerId) => `/api/v1/offers/${offerId}/items`,
+    UPDATE_ITEM: (itemId) => `/api/v1/offers/items/${itemId}`,
+    DELETE_ITEM: (itemId) => `/api/v1/offers/items/${itemId}`,
+
+    // Finance operations
+    UPDATE_FINANCE_STATUS: (offerId) => `/api/v1/offers/${offerId}/finance-status`,
+    UPDATE_ITEM_FINANCE_STATUS: (itemId) => `/api/v1/offers/offer-items/${itemId}/financeStatus`,
+    BY_FINANCE_STATUS: (status) => `/api/v1/offers/finance-status/${status}`,
+    COMPLETED_FINANCE: '/api/v1/offers/completed-offers',
+    COMPLETE_FINANCE_REVIEW: (offerId) => `/api/v1/offers/${offerId}/complete-review`,
+
+    // Retry operation
+    RETRY: (offerId) => `/api/v1/offers/${offerId}/retry`
 };
 
 // Candidate module endpoints
