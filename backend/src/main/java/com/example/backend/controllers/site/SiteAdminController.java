@@ -25,8 +25,8 @@ import java.util.UUID;
 @RequestMapping("/siteadmin")
 public class SiteAdminController
 {
-    private SiteAdminService siteAdminService;
-    private MinioService minioService;
+    private final SiteAdminService siteAdminService;
+    private final MinioService minioService;
 
     @Autowired
     public SiteAdminController(SiteAdminService siteAdminService, MinioService minioService) {

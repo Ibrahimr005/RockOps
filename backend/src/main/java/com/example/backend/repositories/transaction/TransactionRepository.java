@@ -52,5 +52,11 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
      */
     List<Transaction> findByStatusAndSentFirst(TransactionStatus status, UUID sentFirst);
     List<Transaction> findByBatchNumberAndStatus(int batchNumber, TransactionStatus status);
+    
+    /**
+     * Find transactions by receiver id and receiver type
+     * Used to find all transactions where a specific party was the receiver
+     */
+    List<Transaction> findByReceiverIdAndReceiverType(UUID receiverId, PartyType receiverType);
 }
 

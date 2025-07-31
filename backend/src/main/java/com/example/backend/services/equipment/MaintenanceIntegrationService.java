@@ -175,9 +175,7 @@ public class MaintenanceIntegrationService {
         // Linked transactions filter
         if (criteria.getHasLinkedTransactions() != null) {
             boolean hasTransactions = !maintenance.getRelatedTransactions().isEmpty();
-            if (criteria.getHasLinkedTransactions() != hasTransactions) {
-                return false;
-            }
+            return criteria.getHasLinkedTransactions() == hasTransactions;
         }
 
         return true;

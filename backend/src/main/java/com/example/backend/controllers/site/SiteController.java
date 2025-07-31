@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @RequestMapping("api/v1/site")
 public class SiteController
 {
-    private SiteService siteService;
+    private final SiteService siteService;
     @Autowired
     public SiteController(SiteService siteService) {
         this.siteService = siteService;

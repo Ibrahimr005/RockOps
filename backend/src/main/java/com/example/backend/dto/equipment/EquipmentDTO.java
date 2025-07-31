@@ -84,7 +84,7 @@ public class EquipmentDTO {
         dto.setStatus(equipment.getStatus());
         dto.setRelatedDocuments(equipment.getRelatedDocuments());
         dto.setWorkedHours(equipment.getWorkedHours());
-        dto.setDrivable(equipment.getType() != null ? equipment.getType().isDrivable() : false);
+        dto.setDrivable(equipment.getType() != null && equipment.getType().isDrivable());
 
         // Handle site
         if (equipment.getSite() != null) {

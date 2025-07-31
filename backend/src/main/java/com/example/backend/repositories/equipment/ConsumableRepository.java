@@ -16,6 +16,8 @@ import java.util.UUID;
 public interface ConsumableRepository extends JpaRepository<Consumable, UUID> {
 
 
+
+
     Consumable findByEquipmentIdAndItemTypeId(UUID equipmentId, UUID itemTypeId);
     
     Consumable findByEquipmentIdAndItemTypeIdAndStatus(UUID equipmentId, UUID itemTypeId, ItemStatus status);
@@ -31,6 +33,9 @@ public interface ConsumableRepository extends JpaRepository<Consumable, UUID> {
 
     // Method to get resolved consumables for history tab
     List<Consumable> findByEquipmentIdAndResolvedTrue(UUID equipmentId);
+    
+    // Method to get ALL resolved consumables (for backfill)
+    List<Consumable> findByResolvedTrue();
 
     // Method to find consumables by transaction and status
     List<Consumable> findByTransactionAndStatusIn(Transaction transaction, List<ItemStatus> statuses);
@@ -40,16 +45,29 @@ public interface ConsumableRepository extends JpaRepository<Consumable, UUID> {
      * Returns all transaction records for this consumable type on this equipment
      */
     @Query("SELECT c FROM Consumable c " +
-           "LEFT JOIN FETCH c.transaction t " +
            "WHERE c.equipment.id = :equipmentId " +
            "AND c.itemType.id = :itemTypeId " +
-           "ORDER BY t.completedAt DESC NULLS LAST")
+           "ORDER BY c.createdAt DESC")
     List<Consumable> findAllByEquipmentIdAndItemTypeId(
             @Param("equipmentId") UUID equipmentId, 
             @Param("itemTypeId") UUID itemTypeId
     );
 
     /**
+     * Find the history of transactions that contributed to a specific consumable's availability.
+     * This method now uses the new transactions relationship instead of rebuilding from scratch.
+     * 
+     * Logic: 
+     * 1. Get the consumable by ID
+     * 2. Return the list of transactions associated with this consumable
+     * 3. Transactions are ordered by creation date (most recent first)
+     */
+    @Query("SELECT c FROM Consumable c " +
+           "WHERE c.id = :consumableId")
+    Consumable findConsumableWithTransactions(@Param("consumableId") UUID consumableId);
+
+    /**
+     * Legacy method - kept for backward compatibility during migration
      * Find the history of transactions that contributed to a specific consumable's availability.
      * This rebuilds history based on transaction relationships, not the unreliable transaction field in consumables.
      * 
@@ -60,12 +78,11 @@ public interface ConsumableRepository extends JpaRepository<Consumable, UUID> {
      * 4. Check if any transaction item matches the consumable's item type
      */
     @Query("SELECT DISTINCT t FROM Transaction t " +
-           "JOIN FETCH t.items ti " +
-           "LEFT JOIN FETCH ti.itemType it " +
            "WHERE t.receiverId = (SELECT c.equipment.id FROM Consumable c WHERE c.id = :consumableId) " +
            "AND t.receiverType = 'EQUIPMENT' " +
            "AND t.purpose = 'CONSUMABLE' " +
-           "AND ti.itemType.id = (SELECT c.itemType.id FROM Consumable c WHERE c.id = :consumableId) " +
+           "AND EXISTS (SELECT ti FROM TransactionItem ti WHERE ti.transaction = t " +
+           "AND ti.itemType.id = (SELECT c.itemType.id FROM Consumable c WHERE c.id = :consumableId)) " +
            "ORDER BY t.createdAt DESC NULLS LAST")
     List<Transaction> findTransactionHistoryForConsumable(@Param("consumableId") UUID consumableId);
 }

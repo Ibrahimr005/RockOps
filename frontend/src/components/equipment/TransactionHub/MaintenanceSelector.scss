@@ -1,0 +1,422 @@
+// MaintenanceSelector.scss - Styling for maintenance record selection and creation
+@import '../../../styles/primary-button.scss';
+@import '../../../styles/theme-variables.css';
+
+.maintenance-selector-container {
+    .maintenance-selector-header {
+        margin-bottom: 1.5rem;
+
+        h4 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+    }
+
+    .maintenance-selector-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+
+        .maintenance-selector-option {
+            cursor: pointer;
+
+            input[type="radio"] {
+                display: none;
+            }
+
+            .maintenance-selector-option-card {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                padding: 1rem;
+                border: 2px solid var(--border-light);
+                border-radius: 10px;
+                background: var(--bg-primary);
+                transition: all 0.2s ease;
+
+                .maintenance-selector-option-icon {
+                    width: 1.5rem;
+                    height: 1.5rem;
+                    color: var(--text-secondary);
+                    flex-shrink: 0;
+                }
+
+                .maintenance-selector-option-info {
+                    h4 {
+                        margin: 0 0 0.25rem 0;
+                        font-size: 0.875rem;
+                        font-weight: 600;
+                        color: var(--text-primary);
+                    }
+
+                    p {
+                        margin: 0;
+                        font-size: 0.75rem;
+                        color: var(--text-secondary);
+                    }
+                }
+            }
+
+            &.selected .maintenance-selector-option-card {
+                border-color: var(--primary-500);
+                background: var(--primary-50);
+
+                .maintenance-selector-option-icon {
+                    color: var(--primary-500);
+                }
+
+                .maintenance-selector-option-info h4 {
+                    color: var(--primary-700);
+                }
+            }
+
+            &:hover:not(.selected) .maintenance-selector-option-card {
+                border-color: var(--primary-300);
+            }
+        }
+    }
+
+    .maintenance-selector-existing {
+        padding: 1rem;
+        background: var(--bg-secondary);
+        border-radius: 10px;
+
+        .maintenance-selector-search {
+            margin-bottom: 1rem;
+
+            .maintenance-selector-search-input {
+                position: relative;
+
+                svg {
+                    position: absolute;
+                    left: 0.75rem;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: var(--text-secondary);
+                }
+
+                input {
+                    width: 100%;
+                    padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+                    border: 1px solid var(--border-medium);
+                    border-radius: 8px;
+                    font-size: 0.875rem;
+
+                    &:focus {
+                        outline: none;
+                        border-color: var(--primary-500);
+                        box-shadow: 0 0 0 3px var(--primary-100);
+                    }
+                }
+            }
+        }
+
+        .maintenance-selector-loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .maintenance-selector-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+
+            .maintenance-selector-empty-icon {
+                width: 2.5rem;
+                height: 2.5rem;
+                color: var(--text-disabled);
+                margin-bottom: 1rem;
+            }
+
+            h4 {
+                margin: 0 0 0.5rem 0;
+                color: var(--text-primary);
+                font-weight: 600;
+            }
+
+            p {
+                margin: 0 0 1.5rem 0;
+                color: var(--text-secondary);
+                font-size: 0.875rem;
+            }
+
+            .maintenance-selector-empty-action {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.75rem 1rem;
+                background: var(--primary-500);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background 0.2s ease;
+
+                &:hover {
+                    background: var(--primary-600);
+                }
+            }
+        }
+
+        .maintenance-selector-records {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 300px;
+            overflow-y: auto;
+
+            .maintenance-selector-record {
+                padding: 1rem;
+                border: 1px solid var(--border-light);
+                border-radius: 8px;
+                background: var(--bg-primary);
+                cursor: pointer;
+                transition: all 0.2s ease;
+
+                &:hover {
+                    border-color: var(--primary-300);
+                }
+
+                &.selected {
+                    border-color: var(--primary-500);
+                    background: var(--primary-50);
+                }
+
+                .maintenance-selector-record-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: 0.75rem;
+
+                    .maintenance-selector-record-info {
+                        h4 {
+                            margin: 0 0 0.25rem 0;
+                            font-size: 0.875rem;
+                            font-weight: 600;
+                            color: var(--text-primary);
+                        }
+
+                        .maintenance-selector-record-type {
+                            font-size: 0.75rem;
+                            color: var(--text-secondary);
+                            padding: 0.25rem 0.5rem;
+                            background: var(--bg-tertiary);
+                            border-radius: 4px;
+                        }
+                    }
+
+                    .maintenance-selector-record-status {
+                        padding: 0.25rem 0.5rem;
+                        border-radius: 4px;
+                        font-size: 0.65rem;
+                        font-weight: 600;
+                        text-transform: uppercase;
+
+                        &.in_progress {
+                            background: var(--warning-100);
+                            color: var(--warning-700);
+                        }
+
+                        &.pending {
+                            background: var(--info-100);
+                            color: var(--info-700);
+                        }
+
+                        &.completed {
+                            background: var(--success-100);
+                            color: var(--success-700);
+                        }
+                    }
+                }
+
+                .maintenance-selector-record-details {
+                    .maintenance-selector-record-meta {
+                        display: flex;
+                        gap: 1rem;
+
+                        .maintenance-selector-record-technician,
+                        .maintenance-selector-record-date {
+                            display: flex;
+                            align-items: center;
+                            gap: 0.25rem;
+                            font-size: 0.75rem;
+                            color: var(--text-secondary);
+
+                            svg {
+                                color: var(--text-disabled);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    .maintenance-selector-create {
+        padding: 1rem;
+        background: var(--bg-secondary);
+        border-radius: 10px;
+
+        .maintenance-selector-create-header {
+            margin-bottom: 1.5rem;
+
+            h4 {
+                margin: 0 0 0.5rem 0;
+                font-size: 1rem;
+                font-weight: 600;
+                color: var(--text-primary);
+            }
+
+            p {
+                margin: 0;
+                font-size: 0.875rem;
+                color: var(--text-secondary);
+            }
+        }
+
+        .maintenance-selector-create-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+
+            .maintenance-selector-form-group {
+                display: flex;
+                flex-direction: column;
+
+                &:nth-child(3),
+                &:nth-child(5) {
+                    grid-column: 1 / -1;
+                }
+
+                label {
+                    margin-bottom: 0.5rem;
+                    font-size: 0.875rem;
+                    font-weight: 500;
+                    color: var(--text-primary);
+                }
+
+                .maintenance-selector-form-select,
+                .maintenance-selector-form-input,
+                .maintenance-selector-form-textarea {
+                    padding: 0.75rem;
+                    border: 1px solid var(--border-medium);
+                    border-radius: 6px;
+                    font-size: 0.875rem;
+
+                    &:focus {
+                        outline: none;
+                        border-color: var(--primary-500);
+                        box-shadow: 0 0 0 3px var(--primary-100);
+                    }
+                }
+
+                .maintenance-selector-form-textarea {
+                    resize: vertical;
+                    min-height: 80px;
+                    font-family: inherit;
+                }
+
+                .maintenance-selector-auto-fill {
+                    margin-top: 0.5rem;
+                    padding: 0.5rem 0.75rem;
+                    background: var(--primary-100);
+                    color: var(--primary-700);
+                    border: 1px solid var(--primary-200);
+                    border-radius: 6px;
+                    font-size: 0.75rem;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+
+                    &:hover {
+                        background: var(--primary-200);
+                    }
+                }
+            }
+        }
+
+        .maintenance-selector-create-preview {
+            padding: 1rem;
+            background: var(--bg-primary);
+            border-radius: 8px;
+
+            h5 {
+                margin: 0 0 0.75rem 0;
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: var(--text-primary);
+            }
+
+            .maintenance-selector-items-preview {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+
+                .maintenance-selector-item-preview {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 0.5rem 0.75rem;
+                    background: var(--bg-secondary);
+                    border-radius: 6px;
+
+                    .maintenance-selector-item-name {
+                        font-size: 0.875rem;
+                        color: var(--text-primary);
+                        font-weight: 500;
+                    }
+
+                    .maintenance-selector-item-quantity {
+                        font-size: 0.875rem;
+                        color: var(--text-secondary);
+                    }
+                }
+            }
+        }
+    }
+
+    .maintenance-selector-error {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        background: var(--error-100);
+        color: var(--error-700);
+        border: 1px solid var(--error-200);
+        border-radius: 8px;
+        font-size: 0.875rem;
+
+        svg {
+            color: var(--error-600);
+        }
+    }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+    .maintenance-selector-container {
+        .maintenance-selector-create {
+            .maintenance-selector-create-form {
+                grid-template-columns: 1fr;
+
+                .maintenance-selector-form-group:nth-child(3),
+                .maintenance-selector-form-group:nth-child(5) {
+                    grid-column: 1;
+                }
+            }
+        }
+    }
+} 

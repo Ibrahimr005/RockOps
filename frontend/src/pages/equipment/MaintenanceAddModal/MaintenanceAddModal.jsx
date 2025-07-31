@@ -367,7 +367,8 @@ const MaintenanceAddModal = ({
             .map((item, index) => index !== currentIndex ? item.itemTypeId : null)
             .filter(id => id);
         
-        return itemTypes.filter(itemType => !selectedItemTypeIds.includes(itemType.id));
+        // Ensure itemTypes is always an array before filtering
+        return (itemTypes || []).filter(itemType => !selectedItemTypeIds.includes(itemType.id));
     };
 
 

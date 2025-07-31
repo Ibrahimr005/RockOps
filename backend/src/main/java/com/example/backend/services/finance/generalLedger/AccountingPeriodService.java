@@ -22,7 +22,7 @@ public class AccountingPeriodService {
 
     private final AccountingPeriodRepository accountingPeriodRepository;
     private final UserRepository userRepository;
-    private AuditService auditService;
+    private final AuditService auditService;
 
     @Autowired
     public AccountingPeriodService(AccountingPeriodRepository accountingPeriodRepository,

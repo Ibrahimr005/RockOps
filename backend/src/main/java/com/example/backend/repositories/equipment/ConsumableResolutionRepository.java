@@ -26,4 +26,7 @@ public interface ConsumableResolutionRepository extends JpaRepository<Consumable
     // Alternative method if the above doesn't work
     @Query("SELECT cr FROM ConsumableResolution cr WHERE cr.consumable.equipment.id = :equipmentId ORDER BY cr.resolvedAt DESC")
     List<ConsumableResolution> findByConsumableEquipmentIdOrderByResolvedAtDesc(@Param("equipmentId") UUID equipmentId);
+
+    // Find resolutions by transaction ID
+    List<ConsumableResolution> findByTransactionId(String transactionId);
 } 

@@ -35,8 +35,8 @@ public class JournalEntryController {
 
     private final JournalEntryService journalEntryService;
     private final JournalEntryRepository journalEntryRepository;
-    private MinioService minioService;
-    private UserRepository userRepository;
+    private final MinioService minioService;
+    private final UserRepository userRepository;
 
     @Autowired
     public JournalEntryController(JournalEntryService journalEntryService,

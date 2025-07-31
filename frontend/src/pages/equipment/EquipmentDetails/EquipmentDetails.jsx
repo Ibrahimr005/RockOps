@@ -14,7 +14,7 @@ import { equipmentService } from "../../../services/equipmentService";
 import { useSnackbar } from "../../../contexts/SnackbarContext";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useEquipmentPermissions } from "../../../utils/rbac";
-import UnifiedTransactionsView from "../UnifiedTransactionsView/UnifiedTransactionsView";
+import TransactionHub from "../../../components/equipment/TransactionHub/TransactionHub";
 import EquipmentSarkyMatrix from '../EquipmentSarkyMatrix/EquipmentSarkyMatrix';
 
 // Set the app element for accessibility
@@ -331,13 +331,10 @@ const EquipmentDetails = () => {
                                 <h2 className="panel-title">Equipment Transactions</h2>
                             </div>
                             <div className="tab-content-container">
-                                <UnifiedTransactionsView
+                                <TransactionHub
                                     ref={unifiedTransactionsRef}
-                                    entityId={params.EquipmentID}
-                                    entityType="EQUIPMENT"
-                                    onAcceptTransaction={handleAcceptTransaction}
-                                    onRejectTransaction={handleRejectTransaction}
-                                    onUpdateTransaction={handleUpdateTransaction}
+                                    equipmentId={params.EquipmentID}
+                                    onTransactionUpdate={refreshAllTabs}
                                 />
                             </div>
                         </div>

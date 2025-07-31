@@ -34,7 +34,7 @@ import java.util.*;
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
-    private ExportUtil exportUtil;
+    private final ExportUtil exportUtil;
 
     @Autowired
     public InvoiceController(InvoiceService invoiceService, ExportUtil exportUtil) {
