@@ -57,6 +57,7 @@ import Notifications from './pages/notification/Notifications.jsx';
 import FixedAssets from "./pages/finance/FixedAssets/FixedAssets.jsx";
 
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ROLES } from './utils/roles';
+import BankReconciliation from "./pages/finance/BankReconciliation/BankReconciliation.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -171,6 +172,7 @@ function App() {
                                     <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={allRoles}><GeneralLedger/></RoleRoute>} />
                                     <Route path="/finance/payables" element={<RoleRoute allowedRoles={allRoles}><Payables/></RoleRoute>} />
                                     <Route path="/finance/fixed-assets" element={<RoleRoute allowedRoles={allRoles}><FixedAssets/></RoleRoute>} />
+                                    <Route path="/finance/bank-reconciliation" element={<RoleRoute allowedRoles={allRoles}><BankReconciliation/></RoleRoute>} />
 
 
 
