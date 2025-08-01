@@ -30,6 +30,7 @@ const VacancyDetails = () => {
                 setLoading(true);
                 const response = await vacancyService.getById(id);
                 setVacancy(response.data);
+                console.log('Vacancy Data:', response.data); // Correct way to print it
             } catch (error) {
                 console.error('Error fetching vacancy details:', error);
                 setError(error.message);
@@ -38,6 +39,7 @@ const VacancyDetails = () => {
                 setLoading(false);
             }
         };
+
 
         if (id) {
             fetchVacancyDetails();
@@ -191,6 +193,22 @@ const VacancyDetails = () => {
 
     return (
         <div className="vacancy-details-container">
+            {process.env.NODE_ENV === 'development' && vacancy && (
+                <div className="debug-section">
+                    <h3>Debug: Vacancy Object</h3>
+                    <pre style={{
+                        background: 'black',
+                        padding: '1rem',
+                        border: '1px solid #ccc',
+                        borderRadius: '8px',
+                        overflowX: 'auto',
+                        maxHeight: '300px'
+                    }}>
+            {JSON.stringify(vacancy, null, 2)}
+        </pre>
+                </div>
+            )}
+
             <div className="details-header">
                 <div className="header-content">
 

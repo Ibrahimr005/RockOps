@@ -1,6 +1,7 @@
 package com.example.backend.models.hr;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,8 +17,8 @@ import java.util.stream.Collectors;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"employees", "vacancies"})
-@ToString(exclude = {"employees", "vacancies"})
+@EqualsAndHashCode(exclude = {"employees", "vacancies", "promotionsFromThisPosition", "promotionsToThisPosition"})
+@ToString(exclude = {"employees", "vacancies", "promotionsFromThisPosition", "promotionsToThisPosition"})
 public class JobPosition {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -69,11 +70,11 @@ public class JobPosition {
     private LocalTime endTime;
 
     @OneToMany(mappedBy = "jobPosition", cascade = CascadeType.ALL)
-    @JsonBackReference("job-employee")
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent circular reference
     private List<Employee> employees;
 
     @OneToMany(mappedBy = "jobPosition", cascade = CascadeType.ALL)
-    @JsonBackReference("vacancy-jobposition")
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent circular reference
     private List<Vacancy> vacancies;
 
     // Enum for contract types
@@ -231,18 +232,18 @@ public class JobPosition {
     }
 
     @OneToMany(mappedBy = "currentJobPosition", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonBackReference("current-position-promotions")
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     private List<PromotionRequest> promotionsFromThisPosition;
 
     @OneToMany(mappedBy = "promotedToJobPosition", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonBackReference("promoted-position-promotions")
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     private List<PromotionRequest> promotionsToThisPosition;
 
-// Add these helper methods to the JobPosition class:
 
     /**
      * Get promotions FROM this position
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public List<PromotionRequest> getPromotionsFromThisPosition() {
         return promotionsFromThisPosition != null ? promotionsFromThisPosition : new ArrayList<>();
     }
@@ -250,6 +251,7 @@ public class JobPosition {
     /**
      * Get promotions TO this position
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public List<PromotionRequest> getPromotionsToThisPosition() {
         return promotionsToThisPosition != null ? promotionsToThisPosition : new ArrayList<>();
     }
@@ -258,6 +260,7 @@ public class JobPosition {
      * Get count of employees promoted from this position
      * @return Number of implemented promotions from this position
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public long getPromotionsFromCount() {
         return getPromotionsFromThisPosition().stream()
                 .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
@@ -268,6 +271,7 @@ public class JobPosition {
      * Get count of employees promoted to this position
      * @return Number of implemented promotions to this position
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public long getPromotionsToCount() {
         return getPromotionsToThisPosition().stream()
                 .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
@@ -278,6 +282,7 @@ public class JobPosition {
      * Get pending promotion requests from this position
      * @return List of pending promotion requests from this position
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public List<PromotionRequest> getPendingPromotionsFrom() {
         return getPromotionsFromThisPosition().stream()
                 .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.PENDING ||
@@ -289,6 +294,7 @@ public class JobPosition {
      * Get pending promotion requests to this position
      * @return List of pending promotion requests to this position
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public List<PromotionRequest> getPendingPromotionsTo() {
         return getPromotionsToThisPosition().stream()
                 .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.PENDING ||
@@ -300,6 +306,7 @@ public class JobPosition {
      * Check if this position has career progression opportunities
      * @return true if employees have been promoted from this position
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public boolean hasCareerProgression() {
         return getPromotionsFromCount() > 0;
     }
@@ -308,6 +315,7 @@ public class JobPosition {
      * Check if this position is a destination for promotions
      * @return true if employees have been promoted to this position
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public boolean isPromotionDestination() {
         return getPromotionsToCount() > 0;
     }
@@ -316,9 +324,10 @@ public class JobPosition {
      * Get average salary increase from promotions from this position
      * @return Average salary increase as BigDecimal
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public BigDecimal getAverageSalaryIncreaseFromPosition() {
         List<PromotionRequest> implementedPromotions = getPromotionsFromThisPosition().stream()
-                .filter(request -> request != null && 
+                .filter(request -> request != null &&
                         request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED &&
                         request.getApprovedSalary() != null &&
                         request.getCurrentSalary() != null)
@@ -340,6 +349,7 @@ public class JobPosition {
      * Get average time employees spend in this position before promotion
      * @return Average months in position before promotion
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public double getAverageTimeBeforePromotion() {
         List<PromotionRequest> implementedPromotions = getPromotionsFromThisPosition().stream()
                 .filter(request -> request != null && request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
@@ -360,11 +370,12 @@ public class JobPosition {
      * Get most common promotion destinations from this position
      * @return Map of position names to promotion counts
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public Map<String, Long> getCommonPromotionDestinations() {
         if (getPromotionsFromThisPosition() == null || getPromotionsFromThisPosition().isEmpty()) {
             return new HashMap<>();
         }
-        
+
         return getPromotionsFromThisPosition().stream()
                 .filter(request -> request != null && request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
                 .collect(Collectors.groupingBy(
@@ -383,6 +394,7 @@ public class JobPosition {
      * Get promotion statistics for this position
      * @return Map containing promotion-related statistics
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public Map<String, Object> getPromotionStatistics() {
         Map<String, Object> stats = new HashMap<>();
 
@@ -403,6 +415,7 @@ public class JobPosition {
      * Check if this position is eligible as a promotion source
      * @return true if position can be a source for promotions
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public boolean isEligibleForPromotionFrom() {
         // Basic checks for promotion eligibility
         return active != null && active &&
@@ -413,6 +426,7 @@ public class JobPosition {
      * Check if this position is eligible as a promotion destination
      * @return true if position can be a destination for promotions
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public boolean isEligibleForPromotionTo() {
         // Basic checks for promotion destination eligibility
         return active != null && active;
@@ -422,6 +436,7 @@ public class JobPosition {
      * Get promotion rate from this position (promotions / total employees who held this position)
      * @return Promotion rate as percentage
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public double getPromotionRateFromPosition() {
         long totalEmployeesEverInPosition = getPromotionsFromCount() +
                 (getEmployees() != null ? getEmployees().size() : 0);
@@ -437,6 +452,7 @@ public class JobPosition {
      * Check if there are employees ready for promotion from this position
      * @return true if there are employees eligible for promotion
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public boolean hasEmployeesReadyForPromotion() {
         if (getEmployees() == null || getEmployees().isEmpty()) {
             return false;
@@ -451,6 +467,7 @@ public class JobPosition {
      * Get employees eligible for promotion from this position
      * @return List of employees eligible for promotion
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public List<Employee> getEmployeesEligibleForPromotion() {
         if (getEmployees() == null || getEmployees().isEmpty()) {
             return Collections.emptyList();
@@ -466,6 +483,7 @@ public class JobPosition {
      * Check if this position requires specific qualifications for promotion
      * @return true if position has high requirements (senior level, high salary, etc.)
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public boolean isHighLevelPosition() {
         // Determine if this is a high-level position based on various factors
         String positionNameLower = positionName != null ? positionName.toLowerCase() : "";
@@ -495,6 +513,7 @@ public class JobPosition {
      * Get career path suggestions from this position
      * @return List of suggested next positions based on promotion history
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public List<String> getCareerPathSuggestions() {
         Map<String, Long> destinations = getCommonPromotionDestinations();
 
@@ -508,6 +527,7 @@ public class JobPosition {
     /**
      * Get employees in this position
      */
+    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
     public List<Employee> getEmployees() {
         return employees != null ? employees : new ArrayList<>();
     }

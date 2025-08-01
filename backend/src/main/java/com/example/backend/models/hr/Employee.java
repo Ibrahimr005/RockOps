@@ -677,4 +677,17 @@ public class Employee
 
         return summary;
     }
+
+
+    /**
+     * Calculate months since hire date
+     */
+    public Integer getMonthsSinceHire() {
+        if (hireDate == null) {
+            return 0;
+        }
+
+        LocalDate now = LocalDate.now();
+        return (int) java.time.temporal.ChronoUnit.MONTHS.between(hireDate, now);
+    }
 }

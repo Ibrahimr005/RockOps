@@ -1,7 +1,7 @@
 package com.example.backend.models.hr;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -21,7 +21,7 @@ import java.util.UUID;
 @EqualsAndHashCode(exclude = {"employee", "currentJobPosition", "promotedToJobPosition"})
 @ToString(exclude = {"employee", "currentJobPosition", "promotedToJobPosition"})
 public class PromotionRequest {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", updatable = false, nullable = false)
@@ -30,19 +30,24 @@ public class PromotionRequest {
     // Employee being promoted
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", nullable = false)
-    @JsonManagedReference("employee-promotion-requests")
+    @JsonIgnoreProperties({"jobPosition", "promotionRequests", "loans", "payslips",
+            "vacationRecords", "attendanceRecords", "deductions", "commissions"})
     private Employee employee;
 
     // Current position at time of request
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "current_job_position_id", nullable = false)
-    @JsonManagedReference("current-position-promotions")
+    @JsonIgnoreProperties({"employees", "vacancies", "promotionsFromThisPosition", "promotionsToThisPosition",
+            "pendingPromotionsFrom", "pendingPromotionsTo", "employeesEligibleForPromotion",
+            "promotionStatistics", "careerPathSuggestions", "commonPromotionDestinations"})
     private JobPosition currentJobPosition;
 
     // Position being promoted to
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "promoted_to_job_position_id", nullable = false)
-    @JsonManagedReference("promoted-position-promotions")
+    @JsonIgnoreProperties({"employees", "vacancies", "promotionsFromThisPosition", "promotionsToThisPosition",
+            "pendingPromotionsFrom", "pendingPromotionsTo", "employeesEligibleForPromotion",
+            "promotionStatistics", "careerPathSuggestions", "commonPromotionDestinations"})
     private JobPosition promotedToJobPosition;
 
     // Request details
@@ -164,7 +169,7 @@ public class PromotionRequest {
         URGENT
     }
 
-    // Helper methods
+    // Helper methods - These are safe as they return simple strings/primitives
     public String getEmployeeName() {
         return employee != null ? employee.getFullName() : "Unknown Employee";
     }
@@ -178,25 +183,25 @@ public class PromotionRequest {
     }
 
     public String getCurrentDepartmentName() {
-        return currentJobPosition != null && currentJobPosition.getDepartment() != null 
-            ? currentJobPosition.getDepartment().getName() : "Unknown Department";
+        return currentJobPosition != null && currentJobPosition.getDepartment() != null
+                ? currentJobPosition.getDepartment().getName() : "Unknown Department";
     }
 
     public String getPromotedToDepartmentName() {
-        return promotedToJobPosition != null && promotedToJobPosition.getDepartment() != null 
-            ? promotedToJobPosition.getDepartment().getName() : "Unknown Department";
+        return promotedToJobPosition != null && promotedToJobPosition.getDepartment() != null
+                ? promotedToJobPosition.getDepartment().getName() : "Unknown Department";
     }
 
     public boolean isInterdepartmentalPromotion() {
         if (currentJobPosition == null || promotedToJobPosition == null) {
             return false;
         }
-        
-        UUID currentDeptId = currentJobPosition.getDepartment() != null 
-            ? currentJobPosition.getDepartment().getId() : null;
-        UUID promotedDeptId = promotedToJobPosition.getDepartment() != null 
-            ? promotedToJobPosition.getDepartment().getId() : null;
-            
+
+        UUID currentDeptId = currentJobPosition.getDepartment() != null
+                ? currentJobPosition.getDepartment().getId() : null;
+        UUID promotedDeptId = promotedToJobPosition.getDepartment() != null
+                ? promotedToJobPosition.getDepartment().getId() : null;
+
         return currentDeptId != null && promotedDeptId != null && !currentDeptId.equals(promotedDeptId);
     }
 
@@ -210,8 +215,8 @@ public class PromotionRequest {
     public BigDecimal getSalaryIncreasePercentage() {
         if (currentSalary != null && currentSalary.compareTo(BigDecimal.ZERO) > 0 && proposedSalary != null) {
             return getSalaryIncrease()
-                .divide(currentSalary, 4, java.math.RoundingMode.HALF_UP)
-                .multiply(BigDecimal.valueOf(100));
+                    .divide(currentSalary, 4, java.math.RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100));
         }
         return BigDecimal.ZERO;
     }
@@ -225,8 +230,8 @@ public class PromotionRequest {
     }
 
     public boolean canBeImplemented() {
-        return status == PromotionStatus.APPROVED && actualEffectiveDate != null && 
-               !actualEffectiveDate.isAfter(LocalDate.now());
+        return status == PromotionStatus.APPROVED && actualEffectiveDate != null &&
+                !actualEffectiveDate.isAfter(LocalDate.now());
     }
 
     public long getDaysToEffectiveDate() {
@@ -237,37 +242,37 @@ public class PromotionRequest {
     }
 
     public boolean isOverdue() {
-        return status == PromotionStatus.APPROVED && proposedEffectiveDate != null && 
-               proposedEffectiveDate.isBefore(LocalDate.now());
+        return status == PromotionStatus.APPROVED && proposedEffectiveDate != null &&
+                proposedEffectiveDate.isBefore(LocalDate.now());
     }
 
     // Validation methods
     public boolean isValidRequest() {
-        return employee != null && 
-               currentJobPosition != null && 
-               promotedToJobPosition != null && 
-               requestTitle != null && !requestTitle.trim().isEmpty() &&
-               proposedEffectiveDate != null;
+        return employee != null &&
+                currentJobPosition != null &&
+                promotedToJobPosition != null &&
+                requestTitle != null && !requestTitle.trim().isEmpty() &&
+                proposedEffectiveDate != null;
     }
 
     public String getValidationErrors() {
         StringBuilder errors = new StringBuilder();
-        
+
         if (employee == null) errors.append("Employee is required. ");
         if (currentJobPosition == null) errors.append("Current job position is required. ");
         if (promotedToJobPosition == null) errors.append("Promoted to job position is required. ");
         if (requestTitle == null || requestTitle.trim().isEmpty()) errors.append("Request title is required. ");
         if (proposedEffectiveDate == null) errors.append("Proposed effective date is required. ");
-        
-        if (currentJobPosition != null && promotedToJobPosition != null && 
-            currentJobPosition.getId().equals(promotedToJobPosition.getId())) {
+
+        if (currentJobPosition != null && promotedToJobPosition != null &&
+                currentJobPosition.getId().equals(promotedToJobPosition.getId())) {
             errors.append("Cannot promote to the same position. ");
         }
-        
+
         if (proposedEffectiveDate != null && proposedEffectiveDate.isBefore(LocalDate.now())) {
             errors.append("Proposed effective date cannot be in the past. ");
         }
-        
+
         return errors.toString().trim();
     }
 
@@ -278,10 +283,10 @@ public class PromotionRequest {
         if (!isValidRequest()) {
             throw new IllegalStateException("Invalid promotion request: " + getValidationErrors());
         }
-        
+
         // Auto-detect department change
         this.involvesDepartmentChange = isInterdepartmentalPromotion();
-        
+
         // Set submission time if moving to pending status
         if (status == PromotionStatus.PENDING && submittedAt == null) {
             submittedAt = LocalDateTime.now();

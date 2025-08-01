@@ -420,6 +420,7 @@ const VacancyList = () => {
 
     return (
         <div className="vacancy-container">
+
             <div className="departments-header">
                 <h1>
                     Job Vacancies

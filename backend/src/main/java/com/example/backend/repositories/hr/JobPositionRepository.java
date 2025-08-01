@@ -30,10 +30,29 @@ public interface JobPositionRepository extends JpaRepository<JobPosition, UUID> 
     List<JobPosition> findByDepartment(Department department);
 
     @Query("SELECT jp FROM JobPosition jp " +
-            "LEFT JOIN FETCH jp.employees e " +
-            "LEFT JOIN FETCH jp.vacancies v " +
-            "LEFT JOIN FETCH jp.promotionsFromThisPosition pftp " +
-            "LEFT JOIN FETCH jp.promotionsToThisPosition ptth " +
+            "LEFT JOIN FETCH jp.department " +
             "WHERE jp.id = :id")
-    Optional<JobPosition> findByIdWithDetails(@Param("id") UUID id);
+    Optional<JobPosition> findByIdWithDepartment(@Param("id") UUID id);
+
+    // ✅ SOLUTION 2: Separate queries for each collection
+    @Query("SELECT jp FROM JobPosition jp " +
+            "LEFT JOIN FETCH jp.department " +
+            "LEFT JOIN FETCH jp.employees " +
+            "WHERE jp.id = :id")
+    Optional<JobPosition> findByIdWithEmployees(@Param("id") UUID id);
+
+    @Query("SELECT jp FROM JobPosition jp " +
+            "LEFT JOIN FETCH jp.department " +
+            "LEFT JOIN FETCH jp.vacancies " +
+            "WHERE jp.id = :id")
+    Optional<JobPosition> findByIdWithVacancies(@Param("id") UUID id);
+
+
+    // Alternative: Find all with departments
+    @Query("SELECT jp FROM JobPosition jp LEFT JOIN FETCH jp.department")
+    List<JobPosition> findAllWithDepartments();
+
+    // Find by department name
+    @Query("SELECT jp FROM JobPosition jp LEFT JOIN FETCH jp.department d WHERE d.name = :departmentName")
+    List<JobPosition> findByDepartmentName(@Param("departmentName") String departmentName);
 }

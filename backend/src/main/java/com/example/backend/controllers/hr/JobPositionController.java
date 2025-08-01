@@ -1,6 +1,7 @@
 package com.example.backend.controllers.hr;
 
 import com.example.backend.dto.hr.JobPositionDTO;
+import com.example.backend.dto.hr.JobPositionDetailsDTO;
 import com.example.backend.dto.hr.promotions.PromotionStatsDTO;
 import com.example.backend.dto.hr.promotions.PromotionSummaryDTO;
 import com.example.backend.models.hr.Employee;
@@ -79,13 +80,24 @@ public class JobPositionController {
     // NEW ENHANCED ENDPOINTS FOR DETAILS VIEW
     // ======================================
 
+
     /**
-     * Get job position details with full entity data (not DTO)
-     * This includes all related entities for the details page
+     * Get comprehensive job position details with all analytics, employees, and promotions
+     * This is the main endpoint for the job position details page
      */
     @GetMapping("/{id}/details")
-    public ResponseEntity<JobPosition> getJobPositionDetails(@PathVariable UUID id) {
-        return ResponseEntity.ok(jobPositionService.getJobPositionWithDetails(id));
+    public ResponseEntity<JobPositionDetailsDTO> getJobPositionDetails(@PathVariable UUID id) {
+        JobPositionDetailsDTO details = jobPositionService.getJobPositionDetailsDTO(id);
+        return ResponseEntity.ok(details);
+    }
+
+    /**
+     * Get only basic job position info (for backward compatibility)
+     */
+    @GetMapping("/{id}/basic")
+    public ResponseEntity<JobPosition> getJobPositionBasic(@PathVariable UUID id) {
+        JobPosition jobPosition = jobPositionService.getJobPositionById(id);
+        return ResponseEntity.ok(jobPosition);
     }
 
     /**

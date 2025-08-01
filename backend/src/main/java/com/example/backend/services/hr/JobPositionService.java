@@ -1,6 +1,10 @@
 package com.example.backend.services.hr;
 
+import com.example.backend.dto.hr.EmployeeSummaryDTO;
 import com.example.backend.dto.hr.JobPositionDTO;
+import com.example.backend.dto.hr.JobPositionDetailsDTO;
+import com.example.backend.dto.hr.PositionAnalyticsDTO;
+import com.example.backend.dto.hr.promotions.PositionPromotionsDTO;
 import com.example.backend.dto.hr.promotions.PromotionStatsDTO;
 import com.example.backend.dto.hr.promotions.PromotionSummaryDTO;
 import com.example.backend.models.hr.Department;
@@ -21,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -790,36 +795,7 @@ public class JobPositionService {
             }
         }
     }
-    /**
-     * Get job position with full details including all related entities
-     */
-    @Transactional()
-    public JobPosition getJobPositionWithDetails(UUID id) {
-        try {
-            // Use the optimized query that loads everything in one database call
-            JobPosition jobPosition = jobPositionRepository.findByIdWithDetails(id)
-                    .orElseThrow(() -> new RuntimeException("Job position not found with id: " + id));
-            
-            // Initialize lazy collections to prevent LazyInitializationException
-            if (jobPosition.getEmployees() == null) {
-                jobPosition.setEmployees(new ArrayList<>());
-            }
-            if (jobPosition.getVacancies() == null) {
-                jobPosition.setVacancies(new ArrayList<>());
-            }
-            if (jobPosition.getPromotionsFromThisPosition() == null) {
-                jobPosition.setPromotionsFromThisPosition(new ArrayList<>());
-            }
-            if (jobPosition.getPromotionsToThisPosition() == null) {
-                jobPosition.setPromotionsToThisPosition(new ArrayList<>());
-            }
-            
-            return jobPosition;
-        } catch (Exception e) {
-            logger.error("Error fetching job position details for id: " + id, e);
-            throw new RuntimeException("Failed to fetch job position details: " + e.getMessage());
-        }
-    }
+
     /**
      * Get promotion statistics for a job position
      */
@@ -1411,6 +1387,744 @@ public class JobPositionService {
                     .approvedBy(null)
                     .yearsInCurrentPosition(null)
                     .justification(null)
+                    .build();
+        }
+    }
+
+    // ===============================
+// 1. FIXED: getJobPositionDetailsDTO method with corrected field names
+// ===============================
+
+    @Transactional()
+    public JobPositionDetailsDTO getJobPositionDetailsDTO(UUID id) {
+        logger.info("🔍 Starting getJobPositionDetailsDTO for id: {}", id);
+
+        try {
+            // Step 1: Get basic job position with department
+            logger.debug("📋 Step 1: Fetching basic job position with department");
+            JobPosition jobPosition = jobPositionRepository.findByIdWithDepartment(id)
+                    .orElseThrow(() -> new RuntimeException("Job position not found with id: " + id));
+
+            logger.info("✅ Job position found: {} ({})", jobPosition.getPositionName(), jobPosition.getContractType());
+
+            // Step 2: Build the comprehensive DTO
+            logger.debug("🏗️ Step 2: Building DTO");
+            JobPositionDetailsDTO.JobPositionDetailsDTOBuilder builder = JobPositionDetailsDTO.builder();
+
+            // ===============================
+            // OVERVIEW DATA
+            // ===============================
+            logger.debug("📊 Building overview data");
+            try {
+                builder.id(jobPosition.getId())
+                        .positionName(jobPosition.getPositionName())
+                        .department(jobPosition.getDepartment())
+                        .departmentName(jobPosition.getDepartment() != null ? jobPosition.getDepartment().getName() : null)
+                        .head(jobPosition.getHead())
+                        .baseSalary(jobPosition.getBaseSalary())
+                        .probationPeriod(jobPosition.getProbationPeriod())
+                        .contractType(jobPosition.getContractType())
+                        .experienceLevel(jobPosition.getExperienceLevel())
+                        .active(jobPosition.getActive());
+
+                // Contract-specific fields
+                builder.workingDaysPerWeek(jobPosition.getWorkingDaysPerWeek())
+                        .hoursPerShift(jobPosition.getHoursPerShift())
+                        .hourlyRate(jobPosition.getHourlyRate())
+                        .overtimeMultiplier(jobPosition.getOvertimeMultiplier())
+                        .trackBreaks(jobPosition.getTrackBreaks())
+                        .breakDurationMinutes(jobPosition.getBreakDurationMinutes())
+                        .dailyRate(jobPosition.getDailyRate())
+                        .workingDaysPerMonth(jobPosition.getWorkingDaysPerMonth())
+                        .includesWeekends(jobPosition.getIncludesWeekends())
+                        .monthlyBaseSalary(jobPosition.getMonthlyBaseSalary())
+                        .shifts(jobPosition.getShifts())
+                        .workingHours(jobPosition.getWorkingHours())
+                        .vacations(jobPosition.getVacations())
+                        .startTime(jobPosition.getStartTime())
+                        .endTime(jobPosition.getEndTime());
+
+                // Working time range - safely handle this
+                try {
+                    builder.workingTimeRange(jobPosition.getWorkingTimeRange());
+                } catch (Exception e) {
+                    logger.warn("⚠️ Could not get working time range: {}", e.getMessage());
+                    builder.workingTimeRange(null);
+                }
+
+                // Calculated fields - safely handle these
+                try {
+                    builder.calculatedMonthlySalary(jobPosition.calculateMonthlySalary())
+                            .calculatedDailySalary(jobPosition.calculateDailySalary())
+                            .isValidConfiguration(jobPosition.isValidConfiguration())
+                            .isHighLevelPosition(jobPosition.isHighLevelPosition());
+                } catch (Exception e) {
+                    logger.warn("⚠️ Could not calculate derived fields: {}", e.getMessage());
+                    builder.calculatedMonthlySalary(0.0)
+                            .calculatedDailySalary(0.0)
+                            .isValidConfiguration(false)
+                            .isHighLevelPosition(false);
+                }
+
+                logger.debug("✅ Overview data built successfully");
+
+            } catch (Exception e) {
+                logger.error("❌ Error building overview data: {}", e.getMessage(), e);
+                throw new RuntimeException("Failed to build overview data: " + e.getMessage());
+            }
+
+            // ===============================
+            // EMPLOYEES DATA
+            // ===============================
+            logger.debug("👥 Building employees data");
+            List<EmployeeSummaryDTO> employees = Collections.emptyList();
+            try {
+                employees = getEmployeeSummariesForPosition(id);
+                logger.info("✅ Found {} employees", employees.size());
+
+                builder.employees(employees)
+                        .totalEmployeeCount(employees.size())
+                        .activeEmployeeCount((int) employees.stream()
+                                .filter(e -> e != null && "ACTIVE".equals(e.getStatus())).count())
+                        .inactiveEmployeeCount((int) employees.stream()
+                                .filter(e -> e != null && !"ACTIVE".equals(e.getStatus())).count())
+                        .eligibleForPromotionEmployees(employees.stream()
+                                .filter(e -> e != null && Boolean.TRUE.equals(e.getEligibleForPromotion()))
+                                .collect(Collectors.toList()));
+
+            } catch (Exception e) {
+                logger.error("❌ Error building employees data: {}", e.getMessage(), e);
+                // Use empty data instead of failing
+                builder.employees(Collections.emptyList())
+                        .totalEmployeeCount(0)
+                        .activeEmployeeCount(0)
+                        .inactiveEmployeeCount(0)
+                        .eligibleForPromotionEmployees(Collections.emptyList());
+            }
+
+            // ===============================
+            // ANALYTICS DATA
+            // ===============================
+            logger.debug("📈 Building analytics data");
+            PositionAnalyticsDTO analytics = null;
+            try {
+                analytics = buildPositionAnalytics(jobPosition, employees);
+                builder.analytics(analytics);
+                logger.debug("✅ Analytics data built successfully");
+            } catch (Exception e) {
+                logger.error("❌ Error building analytics data: {}", e.getMessage(), e);
+                // Create minimal analytics data
+                analytics = PositionAnalyticsDTO.builder()
+                        .averageEmployeeSalary(BigDecimal.ZERO)
+                        .minEmployeeSalary(BigDecimal.ZERO)
+                        .maxEmployeeSalary(BigDecimal.ZERO)
+                        .totalPayroll(BigDecimal.ZERO)
+                        .positionBaseSalary(BigDecimal.valueOf(jobPosition.getBaseSalary() != null ? jobPosition.getBaseSalary() : 0))
+                        .totalEmployees(employees.size())
+                        .activeEmployees(0)
+                        .eligibleForPromotionCount(0)
+                        .promotionEligibilityRate(0.0)
+                        .averageMonthsInPosition(0.0)
+                        .statusDistribution(new HashMap<>())
+                        .contractTypeDistribution(new HashMap<>())
+                        .isValidConfiguration(true)
+                        .validationIssueCount(0)
+                        .validationIssues(Collections.emptyList())
+                        .recommendations(Collections.emptyList())
+                        .build();
+                builder.analytics(analytics);
+            }
+
+            // ===============================
+            // PROMOTIONS DATA
+            // ===============================
+            logger.debug("🚀 Building promotions data");
+            PositionPromotionsDTO promotions = null;
+            try {
+                promotions = buildPositionPromotions(jobPosition);
+                builder.promotions(promotions);
+                logger.debug("✅ Promotions data built successfully");
+            } catch (Exception e) {
+                logger.error("❌ Error building promotions data: {}", e.getMessage(), e);
+                // Create minimal promotions data
+                promotions = PositionPromotionsDTO.builder()
+                        .totalPromotionsFrom(0L)
+                        .totalPromotionsTo(0L)
+                        .pendingPromotionsFromCount(0L)
+                        .pendingPromotionsToCount(0L)
+                        .implementedPromotionsFrom(0L)
+                        .implementedPromotionsTo(0L)
+                        .rejectedPromotionsFrom(0L)
+                        .rejectedPromotionsTo(0L)
+                        .averageSalaryIncrease(BigDecimal.ZERO)
+                        .averageTimeBeforePromotion(0.0)
+                        .promotionRate(0.0)
+                        .promotionSuccessRate(0.0)
+                        .hasCareerProgression(false)
+                        .isPromotionDestination(false)
+                        .topPromotionDestinations(new HashMap<>())
+                        .commonPromotionSources(new HashMap<>())
+                        .promotionsFromList(Collections.emptyList())
+                        .promotionsToList(Collections.emptyList())
+                        .pendingPromotionsFromList(Collections.emptyList())
+                        .pendingPromotionsToList(Collections.emptyList())
+                        .recentPromotions(Collections.emptyList())
+                        .careerPathSuggestions(Collections.emptyList())
+                        .promotionDestinations(Collections.emptyList())
+                        .promotionSources(Collections.emptyList())
+                        .promotionsLastYear(0L)
+                        .promotionsLastQuarter(0L)
+                        .promotionsThisMonth(0L)
+                        .build();
+                builder.promotions(promotions);
+            }
+
+            // ===============================
+            // SUMMARY COUNTS
+            // ===============================
+            logger.debug("🔢 Building summary counts");
+            try {
+                int vacancyCount = getVacancyCountForPosition(id);
+                int activeVacancyCount = getActiveVacancyCountForPosition(id);
+
+                int totalPromotionsCount = 0;
+                int pendingPromotionsCount = 0;
+
+                if (promotions != null) {
+                    totalPromotionsCount = (promotions.getTotalPromotionsFrom() != null ? promotions.getTotalPromotionsFrom().intValue() : 0) +
+                            (promotions.getTotalPromotionsTo() != null ? promotions.getTotalPromotionsTo().intValue() : 0);
+                    pendingPromotionsCount = (promotions.getPendingPromotionsFromCount() != null ? promotions.getPendingPromotionsFromCount().intValue() : 0) +
+                            (promotions.getPendingPromotionsToCount() != null ? promotions.getPendingPromotionsToCount().intValue() : 0);
+                }
+
+                builder.vacancyCount(vacancyCount)
+                        .activeVacancyCount(activeVacancyCount)
+                        .totalPromotionsCount(totalPromotionsCount)
+                        .pendingPromotionsCount(pendingPromotionsCount);
+
+                logger.debug("✅ Summary counts: vacancies={}, activeVacancies={}, promotions={}, pending={}",
+                        vacancyCount, activeVacancyCount, totalPromotionsCount, pendingPromotionsCount);
+
+            } catch (Exception e) {
+                logger.error("❌ Error building summary counts: {}", e.getMessage(), e);
+                // Use zero counts
+                builder.vacancyCount(0)
+                        .activeVacancyCount(0)
+                        .totalPromotionsCount(0)
+                        .pendingPromotionsCount(0);
+            }
+
+            // Build and return
+            logger.info("🎉 Successfully built JobPositionDetailsDTO for position: {}", jobPosition.getPositionName());
+            return builder.build();
+
+        } catch (Exception e) {
+            logger.error("💥 Fatal error in getJobPositionDetailsDTO for id {}: {}", id, e.getMessage(), e);
+            throw new RuntimeException("Failed to create job position details: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Safe version of buildPositionPromotions with extensive error handling
+     */
+    private PositionPromotionsDTO buildPositionPromotions(JobPosition jobPosition) {
+        logger.debug("🚀 Building promotions for position: {}", jobPosition.getPositionName());
+
+        try {
+            // Get simplified promotion stats to avoid lazy loading issues
+            logger.debug("📊 Getting promotion stats");
+            PromotionStatsDTO stats = null;
+            try {
+                stats = getSimplifiedPromotionStats(jobPosition.getId());
+                logger.debug("✅ Promotion stats retrieved successfully");
+            } catch (Exception e) {
+                logger.warn("⚠️ Could not get promotion stats: {}", e.getMessage());
+                // Create empty stats
+                stats = PromotionStatsDTO.builder()
+                        .totalPromotionsFrom(0L)
+                        .totalPromotionsTo(0L)
+                        .pendingPromotionsFrom(0L)
+                        .pendingPromotionsTo(0L)
+                        .implementedPromotionsFrom(0L)
+                        .implementedPromotionsTo(0L)
+                        .averageSalaryIncrease(BigDecimal.ZERO)
+                        .averageTimeBeforePromotion(0.0)
+                        .promotionRate(0.0)
+                        .hasCareerProgression(false)
+                        .isPromotionDestination(false)
+                        .topPromotionDestinations(new HashMap<>())
+                        .promotionsLastYear(0L)
+                        .promotionsLastQuarter(0L)
+                        .build();
+            }
+
+            // Get promotion lists
+            logger.debug("📋 Getting promotion lists");
+            List<PromotionSummaryDTO> promotionsFromList = Collections.emptyList();
+            List<PromotionSummaryDTO> promotionsToList = Collections.emptyList();
+
+            try {
+                promotionsFromList = getSimplifiedPromotionsFrom(jobPosition.getId());
+                promotionsToList = getSimplifiedPromotionsTo(jobPosition.getId());
+                logger.debug("✅ Promotion lists retrieved: from={}, to={}",
+                        promotionsFromList.size(), promotionsToList.size());
+            } catch (Exception e) {
+                logger.warn("⚠️ Could not get promotion lists: {}", e.getMessage());
+            }
+
+            // Filter for pending and recent promotions safely
+            List<PromotionSummaryDTO> pendingFromList = Collections.emptyList();
+            List<PromotionSummaryDTO> pendingToList = Collections.emptyList();
+            List<PromotionSummaryDTO> recentPromotions = Collections.emptyList();
+
+            try {
+                pendingFromList = promotionsFromList.stream()
+                        .filter(p -> p != null && ("PENDING".equals(p.getStatus()) || "UNDER_REVIEW".equals(p.getStatus())))
+                        .collect(Collectors.toList());
+
+                pendingToList = promotionsToList.stream()
+                        .filter(p -> p != null && ("PENDING".equals(p.getStatus()) || "UNDER_REVIEW".equals(p.getStatus())))
+                        .collect(Collectors.toList());
+
+                recentPromotions = promotionsFromList.stream()
+                        .filter(p -> p != null && p.getEffectiveDate() != null &&
+                                p.getEffectiveDate().isAfter(LocalDateTime.now().minusMonths(6)))
+                        .collect(Collectors.toList());
+
+                logger.debug("✅ Filtered lists: pendingFrom={}, pendingTo={}, recent={}",
+                        pendingFromList.size(), pendingToList.size(), recentPromotions.size());
+
+            } catch (Exception e) {
+                logger.warn("⚠️ Could not filter promotion lists: {}", e.getMessage());
+            }
+
+            // Get career path suggestions safely
+            List<String> careerPathSuggestions = Collections.emptyList();
+            try {
+                careerPathSuggestions = getCareerPathSuggestions(jobPosition.getId());
+            } catch (Exception e) {
+                logger.warn("⚠️ Could not get career path suggestions: {}", e.getMessage());
+            }
+
+            // Build the DTO
+            return PositionPromotionsDTO.builder()
+                    .totalPromotionsFrom(stats.getTotalPromotionsFrom())
+                    .totalPromotionsTo(stats.getTotalPromotionsTo())
+                    .pendingPromotionsFromCount(stats.getPendingPromotionsFrom())
+                    .pendingPromotionsToCount(stats.getPendingPromotionsTo())
+                    .implementedPromotionsFrom(stats.getImplementedPromotionsFrom())
+                    .implementedPromotionsTo(stats.getImplementedPromotionsTo())
+                    .rejectedPromotionsFrom(0L)
+                    .rejectedPromotionsTo(0L)
+                    .averageSalaryIncrease(stats.getAverageSalaryIncrease())
+                    .averageTimeBeforePromotion(stats.getAverageTimeBeforePromotion())
+                    .promotionRate(stats.getPromotionRate())
+                    .promotionSuccessRate(calculatePromotionSuccessRate(stats))
+                    .hasCareerProgression(stats.getHasCareerProgression())
+                    .isPromotionDestination(stats.getIsPromotionDestination())
+                    .topPromotionDestinations(stats.getTopPromotionDestinations())
+                    .commonPromotionSources(new HashMap<>())
+                    .promotionsFromList(promotionsFromList)
+                    .promotionsToList(promotionsToList)
+                    .pendingPromotionsFromList(pendingFromList)
+                    .pendingPromotionsToList(pendingToList)
+                    .recentPromotions(recentPromotions)
+                    .careerPathSuggestions(careerPathSuggestions)
+                    .promotionDestinations(Collections.emptyList())
+                    .promotionSources(Collections.emptyList())
+                    .promotionsLastYear(stats.getPromotionsLastYear())
+                    .promotionsLastQuarter(stats.getPromotionsLastQuarter())
+                    .promotionsThisMonth(0L)
+                    .build();
+
+        } catch (Exception e) {
+            logger.error("💥 Fatal error building promotions data: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to build promotions data: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Safe helper method to calculate promotion success rate
+     */
+    private Double calculatePromotionSuccessRate(PromotionStatsDTO stats) {
+        try {
+            if (stats == null) return 0.0;
+
+            Long total = stats.getTotalPromotionsFrom();
+            Long implemented = stats.getImplementedPromotionsFrom();
+
+            if (total == null || total == 0) return 0.0;
+            if (implemented == null) return 0.0;
+
+            return (double) implemented / total * 100.0;
+        } catch (Exception e) {
+            logger.warn("⚠️ Could not calculate promotion success rate: {}", e.getMessage());
+            return 0.0;
+        }
+    }
+
+// ===============================
+// 2. FIXED: getEmployeeSummariesForPosition method (no changes needed, but improved error handling)
+// ===============================
+
+    /**
+     * Get employee summaries for a position (separate query to avoid lazy loading)
+     */
+    private List<EmployeeSummaryDTO> getEmployeeSummariesForPosition(UUID jobPositionId) {
+        try {
+            // Use a separate repository method or query to get employees
+            JobPosition position = jobPositionRepository.findByIdWithEmployees(jobPositionId).orElse(null);
+            if (position == null || position.getEmployees() == null) {
+                return Collections.emptyList();
+            }
+
+            return position.getEmployees().stream()
+                    .filter(employee -> employee != null) // Add null check
+                    .map(this::convertToEmployeeSummary)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.warn("Could not load employees for position {}: {}", jobPositionId, e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+// ===============================
+// 3. FIXED: convertToEmployeeSummary method (improved with better null handling)
+// ===============================
+
+    /**
+     * Convert Employee to EmployeeSummaryDTO with improved null handling
+     */
+    private EmployeeSummaryDTO convertToEmployeeSummary(Employee employee) {
+        if (employee == null) {
+            return null;
+        }
+
+        try {
+            return EmployeeSummaryDTO.builder()
+                    .id(employee.getId())
+                    .firstName(employee.getFirstName())
+                    .lastName(employee.getLastName())
+                    .fullName(employee.getFullName())
+                    .email(employee.getEmail())
+                    .phoneNumber(employee.getPhoneNumber())
+                    .status(employee.getStatus() != null ? employee.getStatus() : "UNKNOWN")
+                    .photoUrl(employee.getPhotoUrl())
+                    .hireDate(employee.getHireDate())
+                    .monthlySalary(employee.getMonthlySalary())
+
+                    // ✅ FIXED: Handle contract type properly
+                    .contractType(employee.getJobPosition() != null && employee.getJobPosition().getContractType() != null ?
+                            employee.getJobPosition().getContractType().name() : null)
+
+                    // ✅ FIXED: No null check needed - method returns boolean primitive
+                    .eligibleForPromotion(employee.isEligibleForPromotion())
+
+                    // ✅ FIXED: No null check needed - method returns Integer primitive
+                    .monthsSinceHire(employee.getMonthsSinceHire())
+
+                    // ✅ FIXED: No null check needed - method returns Integer primitive
+                    .monthsSinceLastPromotion(employee.getMonthsSinceLastPromotion())
+
+                    // ✅ FIXED: No null check needed - method returns Integer primitive
+                    .promotionCount(employee.getPromotionCount())
+
+                    .siteName(employee.getSite() != null ? employee.getSite().getName() : null)
+                    .build();
+
+        } catch (Exception e) {
+            logger.warn("Error converting employee {} to summary DTO: {}", employee.getId(), e.getMessage());
+            // Return a basic DTO with available data
+            return EmployeeSummaryDTO.builder()
+                    .id(employee.getId())
+                    .firstName(employee.getFirstName() != null ? employee.getFirstName() : "Unknown")
+                    .lastName(employee.getLastName() != null ? employee.getLastName() : "Unknown")
+                    .fullName(employee.getFullName() != null ? employee.getFullName() : "Unknown Employee")
+                    .status("UNKNOWN")
+                    .eligibleForPromotion(false)  // Default value
+                    .monthsSinceHire(0)           // Default value
+                    .monthsSinceLastPromotion(0L)  // Default value
+                    .promotionCount(0)            // Default value
+                    .build();
+        }
+    }
+
+// ===============================
+// 4. MISSING HELPER METHODS - Add these to your JobPositionService
+// ===============================
+
+    /**
+     * Get vacancy count for a position (simple implementation)
+     */
+    private int getVacancyCountForPosition(UUID jobPositionId) {
+        try {
+            Optional<JobPosition> positionOpt = jobPositionRepository.findById(jobPositionId);
+            if (positionOpt.isPresent()) {
+                JobPosition position = positionOpt.get();
+                return position.getVacancies() != null ? position.getVacancies().size() : 0;
+            }
+            return 0;
+        } catch (Exception e) {
+            logger.warn("Could not get vacancy count for position {}: {}", jobPositionId, e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Get active vacancy count for a position (simple implementation)
+     */
+    private int getActiveVacancyCountForPosition(UUID jobPositionId) {
+        try {
+            Optional<JobPosition> positionOpt = jobPositionRepository.findById(jobPositionId);
+            if (positionOpt.isPresent()) {
+                JobPosition position = positionOpt.get();
+                if (position.getVacancies() != null) {
+                    return (int) position.getVacancies().stream()
+                            .filter(v -> v.getStatus() != null && "OPEN".equals(v.getStatus()))
+                            .count();
+                }
+            }
+            return 0;
+        } catch (Exception e) {
+            logger.warn("Could not get active vacancy count for position {}: {}", jobPositionId, e.getMessage());
+            return 0;
+        }
+    }
+
+
+
+
+
+
+
+    /**
+     * Get employee count for a position without loading full collections
+     */
+    private int getEmployeeCountForPosition(UUID jobPositionId) {
+        try {
+            JobPosition position = jobPositionRepository.findById(jobPositionId).orElse(null);
+            if (position == null || position.getEmployees() == null) {
+                return 0;
+            }
+            return position.getEmployees().size();
+        } catch (Exception e) {
+            logger.warn("Could not get employee count for position {}: {}", jobPositionId, e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Build comprehensive position analytics DTO
+     */
+    private PositionAnalyticsDTO buildPositionAnalytics(JobPosition jobPosition, List<EmployeeSummaryDTO> employees) {
+        try {
+            PositionAnalyticsDTO.PositionAnalyticsDTOBuilder builder = PositionAnalyticsDTO.builder();
+
+            // ===============================
+            // SALARY ANALYTICS
+            // ===============================
+            if (!employees.isEmpty()) {
+                List<BigDecimal> salaries = employees.stream()
+                        .map(EmployeeSummaryDTO::getMonthlySalary)
+                        .filter(salary -> salary != null && salary.compareTo(BigDecimal.ZERO) > 0)
+                        .collect(Collectors.toList());
+
+                if (!salaries.isEmpty()) {
+                    BigDecimal totalSalary = salaries.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal avgSalary = totalSalary.divide(BigDecimal.valueOf(salaries.size()), 2, RoundingMode.HALF_UP);
+                    BigDecimal minSalary = Collections.min(salaries);
+                    BigDecimal maxSalary = Collections.max(salaries);
+
+                    builder.averageEmployeeSalary(avgSalary)
+                            .minEmployeeSalary(minSalary)
+                            .maxEmployeeSalary(maxSalary)
+                            .totalPayroll(totalSalary);
+                } else {
+                    builder.averageEmployeeSalary(BigDecimal.ZERO)
+                            .minEmployeeSalary(BigDecimal.ZERO)
+                            .maxEmployeeSalary(BigDecimal.ZERO)
+                            .totalPayroll(BigDecimal.ZERO);
+                }
+            } else {
+                builder.averageEmployeeSalary(BigDecimal.ZERO)
+                        .minEmployeeSalary(BigDecimal.ZERO)
+                        .maxEmployeeSalary(BigDecimal.ZERO)
+                        .totalPayroll(BigDecimal.ZERO);
+            }
+
+            // Position base salary
+            BigDecimal positionBaseSalary = jobPosition.getBaseSalary() != null ?
+                    BigDecimal.valueOf(jobPosition.getBaseSalary()) : BigDecimal.ZERO;
+            builder.positionBaseSalary(positionBaseSalary);
+
+            // ===============================
+            // EMPLOYEE ANALYTICS
+            // ===============================
+            int totalEmployees = employees.size();
+            int activeEmployees = (int) employees.stream()
+                    .filter(e -> "ACTIVE".equals(e.getStatus()))
+                    .count();
+            int eligibleForPromotionCount = (int) employees.stream()
+                    .filter(EmployeeSummaryDTO::getEligibleForPromotion)
+                    .count();
+
+            Double promotionEligibilityRate = totalEmployees > 0 ?
+                    (double) eligibleForPromotionCount / totalEmployees * 100 : 0.0;
+
+            Double averageMonthsInPosition = employees.stream()
+                    .mapToLong(EmployeeSummaryDTO::getMonthsSinceLastPromotion)
+                    .average().orElse(0.0);
+
+            builder.totalEmployees(totalEmployees)
+                    .activeEmployees(activeEmployees)
+                    .eligibleForPromotionCount(eligibleForPromotionCount)
+                    .promotionEligibilityRate(promotionEligibilityRate)
+                    .averageMonthsInPosition(averageMonthsInPosition)
+                    .employeeTurnoverRate(0.0); // You can calculate this if needed
+
+            // ===============================
+            // PROMOTION ANALYTICS
+            // ===============================
+            Double promotionRate = jobPosition.getPromotionRateFromPosition();
+            Double avgTimeBeforePromotion = jobPosition.getAverageTimeBeforePromotion();
+            BigDecimal avgSalaryIncrease = jobPosition.getAverageSalaryIncreaseFromPosition();
+
+            int totalPromotionsFrom = jobPosition.getPromotionsFromThisPosition() != null ?
+                    jobPosition.getPromotionsFromThisPosition().size() : 0;
+            int totalPromotionsTo = jobPosition.getPromotionsToThisPosition() != null ?
+                    jobPosition.getPromotionsToThisPosition().size() : 0;
+
+            builder.promotionRate(promotionRate != null ? promotionRate : 0.0)
+                    .averageTimeBeforePromotion(avgTimeBeforePromotion != null ? avgTimeBeforePromotion : 0.0)
+                    .averageSalaryIncrease(avgSalaryIncrease != null ? avgSalaryIncrease : BigDecimal.ZERO)
+                    .totalPromotionsFrom(totalPromotionsFrom)
+                    .totalPromotionsTo(totalPromotionsTo)
+                    .hasCareerProgression(totalPromotionsFrom > 0)
+                    .isPromotionDestination(totalPromotionsTo > 0);
+
+            // ===============================
+            // DISTRIBUTION ANALYTICS
+            // ===============================
+            Map<String, Long> statusDistribution = employees.stream()
+                    .collect(Collectors.groupingBy(
+                            e -> e.getStatus() != null ? e.getStatus() : "UNKNOWN",
+                            Collectors.counting()
+                    ));
+
+            Map<String, Long> contractTypeDistribution = employees.stream()
+                    .filter(e -> e.getContractType() != null)
+                    .collect(Collectors.groupingBy(
+                            EmployeeSummaryDTO::getContractType,
+                            Collectors.counting()
+                    ));
+
+            // Create experience level distribution (you might need to add this field to EmployeeSummaryDTO)
+            Map<String, Long> experienceLevelDistribution = new HashMap<>();
+            experienceLevelDistribution.put(jobPosition.getExperienceLevel() != null ?
+                    jobPosition.getExperienceLevel() : "Unknown", (long) totalEmployees);
+
+            // Department distribution
+            Map<String, Long> departmentDistribution = new HashMap<>();
+            String deptName = jobPosition.getDepartment() != null ?
+                    jobPosition.getDepartment().getName() : "Unknown";
+            departmentDistribution.put(deptName, (long) totalEmployees);
+
+            builder.statusDistribution(statusDistribution)
+                    .contractTypeDistribution(contractTypeDistribution)
+                    .experienceLevelDistribution(experienceLevelDistribution)
+                    .departmentDistribution(departmentDistribution);
+
+            // ===============================
+            // PERFORMANCE METRICS
+            // ===============================
+            // Calculate average performance rating if available
+            Double avgPerformanceRating = employees.stream()
+                    .map(EmployeeSummaryDTO::getPerformanceRating)
+                    .filter(Objects::nonNull)
+                    .mapToDouble(Double::doubleValue)
+                    .average().orElse(0.0);
+
+            // Vacancy metrics
+            int vacanciesCreated = getVacancyCountForPosition(jobPosition.getId());
+            int vacanciesFilled = totalEmployees; // Assuming filled = current employees
+            Double vacancyFillRate = vacanciesCreated > 0 ?
+                    (double) vacanciesFilled / vacanciesCreated * 100 : 0.0;
+
+            builder.averagePerformanceRating(avgPerformanceRating)
+                    .positionsFilledLastYear(0) // You can calculate this if needed
+                    .vacanciesCreated(vacanciesCreated)
+                    .vacanciesFilled(vacanciesFilled)
+                    .vacancyFillRate(vacancyFillRate);
+
+            // ===============================
+            // VALIDATION & HEALTH
+            // ===============================
+            Boolean isValidConfiguration = jobPosition.isValidConfiguration();
+            List<String> validationIssues = new ArrayList<>();
+            List<String> recommendations = new ArrayList<>();
+
+            if (!isValidConfiguration) {
+                validationIssues.add("Position configuration is incomplete or invalid");
+                recommendations.add("Review and complete all required fields for this contract type");
+            }
+
+            if (!jobPosition.getActive()) {
+                validationIssues.add("Position is currently inactive");
+                recommendations.add("Activate position to make it available for hiring");
+            }
+
+            if (totalEmployees == 0) {
+                validationIssues.add("No employees currently assigned to this position");
+                recommendations.add("Consider recruiting for this position or reviewing its necessity");
+            }
+
+            if (jobPosition.getBaseSalary() == null || jobPosition.getBaseSalary() <= 0) {
+                validationIssues.add("No salary information configured");
+                recommendations.add("Set up appropriate salary structure for this position");
+            }
+
+            builder.isValidConfiguration(isValidConfiguration)
+                    .validationIssueCount(validationIssues.size())
+                    .validationIssues(validationIssues)
+                    .recommendations(recommendations);
+
+            return builder.build();
+
+        } catch (Exception e) {
+            logger.warn("Could not build position analytics for position {}: {}", jobPosition.getId(), e.getMessage());
+            // Return empty analytics
+            return PositionAnalyticsDTO.builder()
+                    .averageEmployeeSalary(BigDecimal.ZERO)
+                    .minEmployeeSalary(BigDecimal.ZERO)
+                    .maxEmployeeSalary(BigDecimal.ZERO)
+                    .totalPayroll(BigDecimal.ZERO)
+                    .positionBaseSalary(BigDecimal.ZERO)
+                    .totalEmployees(0)
+                    .activeEmployees(0)
+                    .eligibleForPromotionCount(0)
+                    .promotionEligibilityRate(0.0)
+                    .averageMonthsInPosition(0.0)
+                    .employeeTurnoverRate(0.0)
+                    .promotionRate(0.0)
+                    .averageTimeBeforePromotion(0.0)
+                    .averageSalaryIncrease(BigDecimal.ZERO)
+                    .totalPromotionsFrom(0)
+                    .totalPromotionsTo(0)
+                    .hasCareerProgression(false)
+                    .isPromotionDestination(false)
+                    .statusDistribution(new HashMap<>())
+                    .contractTypeDistribution(new HashMap<>())
+                    .experienceLevelDistribution(new HashMap<>())
+                    .departmentDistribution(new HashMap<>())
+                    .averagePerformanceRating(0.0)
+                    .positionsFilledLastYear(0)
+                    .vacanciesCreated(0)
+                    .vacanciesFilled(0)
+                    .vacancyFillRate(0.0)
+                    .isValidConfiguration(false)
+                    .validationIssueCount(0)
+                    .validationIssues(Collections.emptyList())
+                    .recommendations(Collections.emptyList())
                     .build();
         }
     }
