@@ -1103,7 +1103,6 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         value={formData.status}
                                         onChange={handleInputChange}
                                     >
-<<<<<<< Updated upstream
                                         {equipmentStatuses.length > 0 ? (
                                             equipmentStatuses.map(status => (
                                                 <option key={status.value} value={status.value}>
@@ -1120,14 +1119,12 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                                 <option value="SCRAPED">Scrapped</option>
                                             </>
                                         )}
-=======
                                         <option value="AVAILABLE">Available</option>
                                         <option value="RENTED">Rented</option>
                                         <option value="IN_MAINTENANCE">In Maintenance</option>
                                         <option value="RUNNING">Running</option>
                                         <option value="SOLD">Sold</option>
                                         <option value="SCRAPPED">Scrapped</option>
->>>>>>> Stashed changes
                                     </select>
                                 </div>
                                 <div className="equipment-modal-form-group">

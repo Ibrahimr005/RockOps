@@ -175,10 +175,7 @@ public class EquipmentService {
         equipment.setShipping(createDTO.getShipping());
         equipment.setCustoms(createDTO.getCustoms());
         equipment.setTaxes(createDTO.getTaxes());
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
         equipment.setStatus(createDTO.getStatus() != null ? createDTO.getStatus() : equipment.getStatus());
         equipment.setRelatedDocuments(createDTO.getRelatedDocuments());
         equipment.setWorkedHours(createDTO.getWorkedHours());
@@ -311,10 +308,7 @@ public class EquipmentService {
             createDTO.setCustoms(Double.parseDouble(requestBody.get("customs").toString()));
         if (requestBody.get("taxes") != null)
             createDTO.setTaxes(Double.parseDouble(requestBody.get("taxes").toString()));
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
         if (requestBody.get("status") != null) {
             try {
                 createDTO.setStatus(EquipmentStatus.valueOf(requestBody.get("status").toString().toUpperCase()));
@@ -400,10 +394,7 @@ public class EquipmentService {
         if (updateDTO.getShipping() != null) equipment.setShipping(updateDTO.getShipping());
         if (updateDTO.getCustoms() != null) equipment.setCustoms(updateDTO.getCustoms());
         if (updateDTO.getTaxes() != null) equipment.setTaxes(updateDTO.getTaxes());
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
         if (updateDTO.getStatus() != null) equipment.setStatus(updateDTO.getStatus());
         if (updateDTO.getRelatedDocuments() != null) equipment.setRelatedDocuments(updateDTO.getRelatedDocuments());
         if (updateDTO.getWorkedHours() != null) equipment.setWorkedHours(updateDTO.getWorkedHours());
@@ -552,10 +543,7 @@ public class EquipmentService {
             updateDTO.setCustoms(Double.parseDouble(requestBody.get("customs").toString()));
         if (requestBody.get("taxes") != null && !requestBody.get("taxes").toString().isEmpty())
             updateDTO.setTaxes(Double.parseDouble(requestBody.get("taxes").toString()));
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
         if (requestBody.get("status") != null && !requestBody.get("status").toString().isEmpty()) {
             try {
                 updateDTO.setStatus(EquipmentStatus.valueOf(requestBody.get("status").toString().toUpperCase()));
