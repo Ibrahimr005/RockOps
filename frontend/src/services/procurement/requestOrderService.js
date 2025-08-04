@@ -1,4 +1,3 @@
-// src/services/requestOrderService.js
 import apiClient from '../../utils/apiClient.js';
 import { REQUEST_ORDER_ENDPOINTS } from '../../config/api.config.js';
 
@@ -34,6 +33,25 @@ export const requestOrderService = {
                 warehouseId,
                 status
             }
+        });
+        return response.data || response;
+    },
+
+    // NEW: Method specifically for getting pending requests by warehouse
+    getPendingByWarehouse: async (warehouseId) => {
+        const response = await apiClient.get(REQUEST_ORDER_ENDPOINTS.BASE + '/warehouse', {
+            params: {
+                warehouseId,
+                status: 'PENDING'
+            }
+        });
+        return response.data || response;
+    },
+
+    // NEW: Validate restock items for time-based prevention
+    validateRestockItems: async (warehouseId, itemTypeIds) => {
+        const response = await apiClient.post(REQUEST_ORDER_ENDPOINTS.VALIDATE_RESTOCK, itemTypeIds, {
+            params: { warehouseId }
         });
         return response.data || response;
     },

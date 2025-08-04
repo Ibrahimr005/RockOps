@@ -6,7 +6,8 @@
 // In Progress specific list items
 // Make InProgress cards IDENTICAL to Unstarted cards - copy exact measurements
 
-.procurement-items-list-inprogress {
+// InProgress offers cards - Same design as Unstarted
+.procurement-items-list {
   padding: 1rem;
   max-height: calc(100vh - 250px);
   overflow-y: auto;
@@ -39,7 +40,7 @@
       z-index: 5;
     }
 
-    .procurement-item-header-inprogress {
+    .procurement-item-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
@@ -54,7 +55,7 @@
       }
     }
 
-    .procurement-item-footer-inprogress {
+    .procurement-item-footer {
       display: flex;
       justify-content: space-between;
       font-size: 0.8rem;
@@ -67,20 +68,20 @@
       }
 
       .completion-complete {
-        color: var(--color-success);
+        color: var(--color-success) !important;
         font-weight: var(--bold-font-weight);
 
         svg {
-          color: var(--color-success);
+          color: var(--color-success) !important;
         }
       }
 
       .completion-incomplete {
-        color: var(--color-warning);
+        color: var(--color-warning) !important;
         font-weight: var(--bold-font-weight);
 
         svg {
-          color: var(--color-warning);
+          color: var(--color-warning) !important;
         }
       }
 
@@ -92,9 +93,14 @@
           color: var(--color-primary);
         }
       }
+
+      .procurement-item-date {
+        color: var(--color-text-muted);
+        font-weight: 500;
+      }
     }
 
-    .procurement-item-date-inprogress {
+    .procurement-item-date {
       margin-bottom: 0.5rem;
     }
   }

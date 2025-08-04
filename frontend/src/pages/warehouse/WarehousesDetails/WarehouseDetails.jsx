@@ -174,7 +174,6 @@ const WarehouseDetails = () => {
     if (!warehouseData) return [];
 
     return [
-      { value: warehouseData.capacity?.toString() || "0", label: "Capacity" },
       { value: warehouseData.employees?.length?.toString() || "0", label: "Employees" },
       { value: warehouseData.site?.name || "No Site", label: "Site Location" }
     ];

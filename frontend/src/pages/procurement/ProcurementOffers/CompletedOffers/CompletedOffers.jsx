@@ -8,10 +8,13 @@ import {
     FiExternalLink,
     FiUser,
     FiCalendar,
-    FiFlag
+    FiFlag,
+    FiDollarSign,
+    FiArrowRight
 } from 'react-icons/fi';
 import "../ProcurementOffers.scss";
 import "./CompletedOffers.scss";
+import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 
 const CompletedOffers = ({
                              offers,
@@ -89,7 +92,7 @@ const CompletedOffers = ({
                         {offers.map(offer => (
                             <div
                                 key={offer.id}
-                                className={`procurement-item-card ${activeOffer?.id === offer.id ? 'selected' : ''} card-success`}
+                                className={`procurement-item-card-completed ${activeOffer?.id === offer.id ? 'selected' : ''} card-success`}
                                 onClick={() => setActiveOffer(offer)}
                             >
                                 <div className="procurement-item-header">
@@ -97,7 +100,7 @@ const CompletedOffers = ({
                                 </div>
                                 <div className="procurement-item-footer">
                                     <span className="procurement-item-date">
-                                        <FiClock /> {new Date(offer.updatedAt).toLocaleDateString()}
+                                        <FiClock />{new Date(offer.createdAt).toLocaleDateString()}
                                     </span>
                                 </div>
                             </div>
@@ -124,172 +127,113 @@ const CompletedOffers = ({
                                     </div>
                                 </div>
                             </div>
-
                         </div>
 
-                        {/* Purchase Order Information Banner - MOVED BEFORE Request Order */}
-                        {purchaseOrder && (
-                            <div className="purchase-order-notification">
-                                <div className="notification-icon">
-                                    <FiFileText size={20} />
-                                </div>
-                                <div className="notification-content">
-                                    <h4>Purchase Order Created</h4>
-                                    <p>PO Number: <strong>#{purchaseOrder.poNumber}</strong></p>
-                                    <p>Created: {new Date(purchaseOrder.createdAt).toLocaleDateString()}</p>
-                                </div>
-                                <button
-                                    className="view-purchase-order-details-button"
-                                    onClick={() => window.location.href = `/procurement/purchase-orders/${purchaseOrder.id}`}
-                                >
-                                    View Details
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Request Order Information Card */}
-                        <div className="procurement-request-order-info-card">
-                            <h4>Request Order Information</h4>
-
-                            <div className="procurement-request-order-details-grid">
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiUser size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Requester</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.requesterName || 'Unknown'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiCalendar size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Request Date</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.createdAt ? new Date(activeOffer.requestOrder.createdAt).toLocaleDateString() : 'N/A'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiCalendar size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Deadline</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.deadline ? new Date(activeOffer.requestOrder.deadline).toLocaleDateString() : 'N/A'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiUser size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Created By</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.createdBy || 'Unknown'}</span>
-                                    </div>
-                                </div>
-
-                                {activeOffer.requestOrder?.priority && (
-                                    <div className="request-order-detail-item">
-                                        <div className="request-order-detail-icon">
-                                            <FiFlag size={18} />
-                                        </div>
-                                        <div className="request-order-detail-content">
-                                            <span className="request-order-detail-label">Priority</span>
-                                            <span className={`request-order-detail-value request-priority ${activeOffer.requestOrder.priority.toLowerCase()}`}>
-                                                {activeOffer.requestOrder.priority}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {activeOffer.requestOrder?.description && (
-                                    <div className="request-order-detail-item description-item">
-                                        <div className="request-order-detail-icon">
-                                            <FiFileText size={18} />
-                                        </div>
-                                        <div className="request-order-detail-content">
-                                            <span className="request-order-detail-label">Description</span>
-                                            <p className="request-order-detail-value description-text">
-                                                {activeOffer.requestOrder.description}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {loading ? (
+                        {!activeOffer.requestOrder ? (
                             <div className="procurement-loading">
                                 <div className="procurement-spinner"></div>
-                                <p>Loading details...</p>
+                                <p>Loading request order details...</p>
                             </div>
                         ) : (
                             <div className="procurement-submitted-info">
-                                <div className="finance-review-summary">
-                                    <h4>Completed Offer Summary</h4>
-                                    <p className="finance-review-description">
-                                        This offer has been completed successfully. All items have been procured and a purchase order has been generated.
+                                {/* Use the reusable RequestOrderDetails component */}
+                                <RequestOrderDetails requestOrder={activeOffer.requestOrder} />
+
+                                <div className="procurement-request-summary-card-completed">
+                                    <h4>Offer Timeline</h4>
+                                    <p className="procurement-section-description-completed">
+                                        This timeline shows the complete journey of this offer from creation to completion.
                                     </p>
 
-                                    {/* Completion Timeline */}
-                                    <div className="procurement-timeline">
-                                        <div className="procurement-timeline-item active">
-                                            <div className="timeline-icon">
-                                                <FiClock size={18} />
-                                            </div>
-                                            <div className="timeline-content">
-                                                <h5>Offer Created</h5>
-                                                <p className="timeline-date">
-                                                    {new Date(activeOffer.createdAt).toLocaleDateString()}
+                                    {/* NEW TIMELINE DESIGN - MATCHING OTHER COMPONENTS */}
+                                    <div className="procurement-timeline-completed">
+                                        {/* Request Order Approved Step */}
+                                        <div className="procurement-timeline-item-completed active-completed">
+                                            <div className="timeline-content-completed">
+                                                <h5>Request Order Approved</h5>
+                                                <p className="timeline-date-completed">
+                                                    <FiCalendar size={14} /> Approved at: {activeOffer.requestOrder?.approvedAt ? new Date(activeOffer.requestOrder.approvedAt).toLocaleDateString() : 'N/A'}
+                                                </p>
+                                                <p className="timeline-date-completed">
+                                                    <FiUser size={14} /> Approved by: {activeOffer.requestOrder?.approvedBy || 'N/A'}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <div className="procurement-timeline-item active">
-                                            <div className="timeline-icon">
-                                                <FiCheckCircle size={18} />
-                                            </div>
-                                            <div className="timeline-content">
-                                                <h5>Offer Accepted & Finance Approved</h5>
+                                        {/* Offer Submitted Step */}
+                                        <div className="procurement-timeline-item-completed active-completed">
+                                            <div className="timeline-content-completed">
+                                                <h5>Offer Submitted</h5>
+                                                <p className="timeline-date-completed">
+                                                    <FiCalendar size={14} /> Submitted at: {new Date(activeOffer.createdAt).toLocaleDateString()}
+                                                </p>
+                                                <p className="timeline-date-completed">
+                                                    <FiUser size={14} /> Submitted by: {activeOffer.createdBy || 'N/A'}
+                                                </p>
                                             </div>
                                         </div>
 
-                                        <div className="procurement-timeline-item active">
-                                            <div className="timeline-icon">
-                                                <FiFileText size={18} />
+                                        {/* Manager Accepted Step */}
+                                        <div className="procurement-timeline-item-completed active-completed">
+                                            <div className="timeline-content-completed">
+                                                <h5>Manager Accepted</h5>
+                                                <p className="timeline-date-completed">
+                                                    <FiCalendar size={14} /> Accepted at: {activeOffer.managerAcceptedAt ? new Date(activeOffer.managerAcceptedAt).toLocaleDateString() : 'N/A'}
+                                                </p>
+                                                <p className="timeline-date-completed">
+                                                    <FiUser size={14} /> Accepted by: {activeOffer.managerApprovedBy || 'N/A'}
+                                                </p>
                                             </div>
-                                            <div className="timeline-content">
-                                                <h5>Offer finalized</h5>
+                                        </div>
+
+                                        {/* Finance Accepted Step */}
+                                        <div className="procurement-timeline-item-completed active-completed">
+                                            <div className="timeline-content-completed">
+                                                <h5>Finance Accepted</h5>
+                                                <p className="timeline-date-completed">
+                                                    <FiCalendar size={14} /> Accepted at: {activeOffer.financeAcceptedAt ? new Date(activeOffer.financeAcceptedAt).toLocaleDateString() : 'N/A'}
+                                                </p>
+                                                <p className="timeline-date-completed">
+                                                    <FiUser size={14} /> Accepted by: {activeOffer.financeApprovedBy || 'N/A'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Offer Finalized Step */}
+                                        <div className="procurement-timeline-item-completed active-completed">
+                                            <div className="timeline-content-completed">
+                                                <h5>Offer Finalized</h5>
+                                                <p className="timeline-date-completed">
+                                                    <FiCalendar size={14} /> Finalized at: {activeOffer.finalizedAt ? new Date(activeOffer.finalizedAt).toLocaleDateString() : 'N/A'}
+                                                </p>
+                                                <p className="timeline-date-completed">
+                                                    <FiUser size={14} /> Finalized by: {activeOffer.finalizedBy || 'N/A'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Completed Step */}
+                                        <div className="procurement-timeline-item-completed active-completed">
+                                            <div className="timeline-content-completed">
+                                                <h5>Offer Completed</h5>
+                                                <p className="timeline-date-completed">
+                                                    <FiCalendar size={14} /> Completed at: {new Date(activeOffer.updatedAt).toLocaleDateString()}
+                                                </p>
                                                 {purchaseOrder && (
-                                                    <p className="timeline-date">
-                                                        {new Date(purchaseOrder.createdAt).toLocaleDateString()}
+                                                    <p className="timeline-date-completed">
+                                                        <FiFileText size={14} /> PO Number: #{purchaseOrder.poNumber}
                                                     </p>
                                                 )}
                                             </div>
                                         </div>
-
-                                        <div className="procurement-timeline-item active">
-                                            <div className="timeline-icon">
-                                                <FiCheckCircle size={18} />
-                                            </div>
-                                            <div className="timeline-content">
-                                                <h5>Purchase Order Created</h5>
-                                                <p className="timeline-date">
-                                                    {new Date(activeOffer.updatedAt).toLocaleDateString()}
-                                                </p>
-                                            </div>
-                                        </div>
                                     </div>
+                                    {/* END OF NEW TIMELINE DESIGN */}
                                 </div>
 
                                 {/* Procurement Items */}
-                                <div className="procurement-submitted-details">
-                                    <h4>Procured Items</h4>
-                                    <div className="procurement-submitted-items">
+                                <div className="procurement-submitted-details-completed">
+                                    <h4>Completed Items</h4>
+                                    <div className="procurement-submitted-items-completed">
                                         {activeOffer.requestOrder?.requestItems?.map(requestItem => {
                                             const offerItems = getOfferItemsForRequestItem(requestItem.id);
 
@@ -297,22 +241,22 @@ const CompletedOffers = ({
                                             if (offerItems.length === 0) return null;
 
                                             return (
-                                                <div key={requestItem.id} className="procurement-submitted-item-card">
-                                                    <div className="submitted-item-header">
-                                                        <div className="item-icon-name">
-                                                            <div className="item-icon-container">
-                                                                <FiPackage size={20} />
+                                                <div key={requestItem.id} className="procurement-submitted-item-card-completed">
+                                                    <div className="submitted-item-header-completed">
+                                                        <div className="item-icon-name-completed">
+                                                            <div className="item-icon-container-completed">
+                                                                <FiPackage size={22} />
                                                             </div>
                                                             <h5>{requestItem.itemType?.name || 'Item'}</h5>
                                                         </div>
-                                                        <div className="submitted-item-quantity">
+                                                        <div className="submitted-item-quantity-completed">
                                                             {requestItem.quantity} {requestItem.itemType.measuringUnit}
                                                         </div>
                                                     </div>
 
                                                     {offerItems.length > 0 && (
-                                                        <div className="submitted-offer-solutions">
-                                                            <table className="procurement-offer-entries-table">
+                                                        <div className="submitted-offer-solutions-completed">
+                                                            <table className="procurement-offer-entries-table-completed">
                                                                 <thead>
                                                                 <tr>
                                                                     <th>Merchant</th>
@@ -346,40 +290,33 @@ const CompletedOffers = ({
                                     </div>
                                 </div>
 
-                                {/* Total Summary */}
-                                <div className="procurement-submitted-summary">
-                                    <div className="submitted-summary-row">
-                                        <span>Total Items Procured:</span>
-                                        <span>
-                                            {activeOffer.offerItems?.filter(item =>
-                                                item.financeStatus === 'FINANCE_ACCEPTED'
-                                            ).length || 0}
-                                        </span>
-                                    </div>
-                                    <div className="submitted-summary-row">
-                                        <span>Total Value:</span>
-                                        <span className="submitted-total-value text-success">
-                                            ${getTotalPrice(activeOffer).toFixed(2)}
-                                        </span>
-                                    </div>
-                                    {purchaseOrder && (
-                                        <div className="submitted-summary-row">
-                                            <span>Purchase Order:</span>
-                                            <span className="po-link">
-                                                <a href={`/procurement/purchase-orders/${purchaseOrder.id}`}>
-                                                    #{purchaseOrder.poNumber}
-                                                </a>
-                                            </span>
+                                {/* Simple Purchase Order Notification */}
+                                {purchaseOrder && (
+                                    <div className="purchase-order-notification-simple">
+                                        <div className="po-notification-content">
+                                            <div className="po-notification-icon">
+                                                <FiCheckCircle size={20} />
+                                            </div>
+                                            <div className="po-notification-text">
+                                                <p>A purchase order has been created for this completed offer.</p>
+                                            </div>
+                                            <button
+                                                className="btn-primary"
+                                                onClick={() => window.location.href = `/procurement/purchase-orders`}
+                                            >
+                                                View Purchase Order
+                                                <FiArrowRight size={16} />
+                                            </button>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
                 ) : (
                     <div className="procurement-empty-state-container">
                         <div className="procurement-empty-state">
-                            <FiCheckCircle size={64} color="#10B981" />
+                            <FiList size={64} color="#CBD5E1" />
                             <h3>No Completed Offer Selected</h3>
                             {offers.length > 0 ? (
                                 <p>Select an offer from the list to view completion details</p>

@@ -138,17 +138,8 @@ const ProcurementMerchants = () => {
         setShowAddModal(true);
     };
 
-    useEffect(() => {
-        if (showAddModal) {
-            document.body.classList.add("modal-open");
-        } else {
-            document.body.classList.remove("modal-open");
-        }
-
-        return () => {
-            document.body.classList.remove("modal-open");
-        };
-    }, [showAddModal]);
+    // REMOVED THE CONFLICTING useEffect FOR showAddModal
+    // Let the MerchantModal component handle its own body class management
 
     // Updated onDelete function to show confirmation dialog
     const onDelete = (merchant) => {
