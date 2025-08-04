@@ -356,9 +356,9 @@ export const ITEM_CATEGORY_ENDPOINTS = {
 export const REQUEST_ORDER_ENDPOINTS = {
     BASE: '/api/v1/requestOrders',
     BY_ID: (id) => `/api/v1/requestOrders/${id}`,
-    CREATE: '/api/v1/requestOrders'
+    CREATE: '/api/v1/requestOrders',
+    VALIDATE_RESTOCK: '/api/v1/requestOrders/validate-restock'
 };
-
 // Offer module endpoints
 // Add these to your OFFER_ENDPOINTS in api.config.js
 

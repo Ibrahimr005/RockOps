@@ -12,7 +12,7 @@ import InProgressOffers from './InprogressOffers/InProgressOffers';
 import SubmittedOffers from './SubmittedOffers/SubmittedOffers';
 import ValidatedOffers from "./ManagerValidatedOffers/ValidatedOffers";
 import FinanceValidatedOffers from "./FinanceValidatedOffers/FinanceValidatedOffers";
-import FinalizeOffers from "./FinalizeOffers/FinalizeOffers";
+import FinalizeOffers from "./FinalizeOffers/FinalizeOffers.jsx";
 import CompletedOffers from "./CompletedOffers/CompletedOffers.jsx";
 
 // Import the new component
@@ -45,10 +45,13 @@ const ProcurementOffers = () => {
     const [success, setSuccess] = useState(null);
     const [userRole, setUserRole] = useState(''); // Added for role checking
     const [pendingSubmittedOffer, setPendingSubmittedOffer] = useState(null); // Track submitted offer for redirection
+    const [pendingFinalizedOffer, setPendingFinalizedOffer] = useState(null); // Track finalized offer for redirection
+    const [pendingCompletedOffer, setPendingCompletedOffer] = useState(null); // Track completed offer for redirection
 
     // Helper function for authenticated fetch (keep for backward compatibility with child components)
     const fetchWithAuth = async (url, options = {}) => {
         const token = localStorage.getItem('token');
+        console.log("token:" + token);
 
         if (!token) {
             throw new Error('Authentication token not found');
@@ -141,6 +144,21 @@ const ProcurementOffers = () => {
                             setActiveOffer(offersData[0]);
                         }
                     }
+                    // If we have a pending finalized offer and we're on the finalize tab, select it
+                    else if (pendingFinalizedOffer && activeTab === 'finalize') {
+                        const finalizedOffer = offersData.find(offer => offer.id === pendingFinalizedOffer.id);
+                        if (finalizedOffer) {
+                            setActiveOffer(finalizedOffer);
+                            setPendingFinalizedOffer(null); // Clear the pending offer
+                        } else {
+                            setActiveOffer(offersData[0]);
+                        }
+                    }
+                    // If we have a pending completed offer and we're on the completed tab, select it
+                    else if (pendingCompletedOffer && activeTab === 'completed') {
+                        setActiveOffer(pendingCompletedOffer);
+                        setPendingCompletedOffer(null); // Clear the pending offer
+                    }
                     // If we have an activeOffer and it exists in the new data, keep it selected
                     else if (activeOffer && offersData.find(offer => offer.id === activeOffer.id)) {
                         // Find the updated version of the active offer from the fetched data
@@ -163,7 +181,7 @@ const ProcurementOffers = () => {
         };
 
         fetchData();
-    }, [activeTab, pendingSubmittedOffer]); // Add pendingSubmittedOffer to dependencies
+    }, [activeTab, pendingSubmittedOffer, pendingFinalizedOffer, pendingCompletedOffer]); // Add pendingCompletedOffer to dependencies
 
     // When active offer changes, fetch its request order
     useEffect(() => {
@@ -249,28 +267,6 @@ const ProcurementOffers = () => {
 
     const statusCounts = getStatusCounts();
 
-    // Get the tab description
-    const getTabDescription = () => {
-        switch(activeTab) {
-            case 'unstarted':
-                return '(New offers created when request order was accepted - need items added)';
-            case 'inprogress':
-                return '(Offers that are being worked on but not yet submitted)';
-            case 'submitted':
-                return '(Offers that have been sent to managers for review)';
-            case 'validated':
-                return '(Offers that have been accepted or rejected by managers and are sent to the finance)';
-            case 'finance':
-                return '(Offers that have been reviewed by finance)';
-            case 'finalize':
-                return '(Offers that have been accepted by finance and are ready for final confirmation)';
-            case 'completed':
-                return '(Offers that have been fully processed and completed)';
-            default:
-                return '';
-        }
-    };
-
     // Filter offers based on search term
     const filteredOffers = offers.filter(offer => {
         return searchTerm
@@ -285,6 +281,17 @@ const ProcurementOffers = () => {
 
         // Set the active offer to the newly created one
         setActiveOffer(newOffer);
+    };
+
+    // Handle delete offer callback
+    const handleDeleteOffer = (offerId) => {
+        // Remove the deleted offer from the offers array
+        setOffers(prevOffers => prevOffers.filter(offer => offer.id !== offerId));
+
+        // Clear the active offer if it was the deleted one
+        if (activeOffer?.id === offerId) {
+            setActiveOffer(null);
+        }
     };
 
     const handleOfferFinalized = (finalizedOfferId) => {
@@ -308,6 +315,24 @@ const ProcurementOffers = () => {
             ...startedOffer,
             status: 'INPROGRESS'
         });
+    };
+
+    // Handle offer sent to finalize callback
+    const handleOfferSentToFinalize = (finalizedOffer) => {
+        // Store the finalized offer for selection after tab switch
+        setPendingFinalizedOffer(finalizedOffer);
+
+        // Switch to finalize tab
+        setActiveTab('finalize');
+    };
+
+    // Handle offer completed callback - NEW FUNCTION
+    const handleOfferCompleted = (completedOffer) => {
+        // Store the completed offer for selection after tab switch
+        setPendingCompletedOffer(completedOffer);
+
+        // Switch to completed tab
+        setActiveTab('completed');
     };
 
     // Prepare stats data for the intro card
@@ -444,6 +469,7 @@ const ProcurementOffers = () => {
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
                                 onRetryOffer={handleRetryOffer}
+                                onDeleteOffer={handleDeleteOffer}
                             />
                         )}
 
@@ -453,8 +479,9 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
-                                fetchWithAuth={fetchWithAuth}
-                                API_URL={API_URL}
+                                setError={setError}
+                                setSuccess={setSuccess}
+                                onOfferFinalized={handleOfferSentToFinalize}
                             />
                         )}
 
@@ -464,11 +491,10 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
-                                fetchWithAuth={fetchWithAuth}
-                                API_URL={API_URL}
                                 setError={setError}
                                 setSuccess={setSuccess}
                                 onOfferFinalized={handleOfferFinalized}
+                                onOfferCompleted={handleOfferCompleted}
                             />
                         )}
 
