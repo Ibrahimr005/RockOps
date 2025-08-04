@@ -912,7 +912,7 @@ public class EquipmentService {
                 .photoUrl(employee.getPhotoUrl())
                 .salary(employee.getBaseSalary())
                 .employmentType(employee.getContractType())
-                .hireDate(employee.getHireDate() != null ? employee.getHireDate().toString() : null)
+                .hireDate(employee.getHireDate() != null ? employee.getHireDate(): null)
                 .build();
     }
 

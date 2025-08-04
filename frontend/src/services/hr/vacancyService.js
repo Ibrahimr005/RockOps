@@ -5,7 +5,7 @@ import { VACANCY_ENDPOINTS } from '../../config/api.config.js';
 export const vacancyService = {
     // Get all vacancies
     getAll: () => {
-        return apiClient.get(VACANCY_ENDPOINTS.BASE);
+        return apiClient.get(VACANCY_ENDPOINTS.GET_ALL);
     },
 
     // Get vacancy by ID

@@ -35,7 +35,7 @@ import {
     FaTags,
     FaListAlt,
     FaArrowLeft,
-    FaBook, FaReceipt, FaPiggyBank, FaFileAlt, FaMoneyBillWave, FaChartBar,
+    FaBook, FaReceipt, FaPiggyBank, FaFileAlt, FaMoneyBillWave, FaChartBar, FaArrowUp,
 } from 'react-icons/fa';
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE } from '../../../utils/roles';
 
@@ -328,6 +328,12 @@ const Sidebar = () => {
                     icon: <FaSitemap/>,
                     path: '/hr/positions',
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
+                },
+                {
+                    title: 'Promotions',
+                    icon: <FaArrowUp/>,
+                    path: '/hr/promotions',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE],
                 },
                 {
                     title: 'Attendance',
