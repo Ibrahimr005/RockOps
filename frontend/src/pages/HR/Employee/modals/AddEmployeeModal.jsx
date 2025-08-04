@@ -130,6 +130,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
     };
 
     // Validate form
+    // Validate form
     const validateForm = () => {
         const newErrors = {};
 
@@ -154,10 +155,33 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
             newErrors.phoneNumber = 'Phone number is invalid';
         }
 
+        // Hire date validation - should not be after today
+        if (formData.hireDate) {
+            const hireDateObj = new Date(formData.hireDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+            hireDateObj.setHours(0, 0, 0, 0);
+
+            if (hireDateObj > today) {
+                newErrors.hireDate = 'Hire date cannot be in the future';
+            }
+        }
+
+        // Birth date validation - should not be after today
+        if (formData.birthDate) {
+            const birthDateObj = new Date(formData.birthDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            birthDateObj.setHours(0, 0, 0, 0);
+
+            if (birthDateObj > today) {
+                newErrors.birthDate = 'Birth date cannot be in the future';
+            }
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
-
     // Handle form submission
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -487,6 +511,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                         name="hireDate"
                                         value={formData.hireDate}
                                         onChange={handleChange}
+                                        max={new Date().toISOString().split('T')[0]} // Prevent future dates
                                         className={errors.hireDate ? 'error' : ''}
                                     />
                                     {errors.hireDate && <span className="r4m-error-message">{errors.hireDate}</span>}
