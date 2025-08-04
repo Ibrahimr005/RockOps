@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaCheck, FaClock, FaUser, FaMapMarkerAlt, FaDollarSign, FaStar } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCheck, FaClock, FaUser, FaMapMarkerAlt, FaDollarSign, FaStar } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -14,7 +14,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
 
     // Check for the signal to open the modal from navigation state
     const shouldOpenModalInitially = location.state?.openStepModal || false;
-    
+
     const [maintenanceSteps, setMaintenanceSteps] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -41,11 +41,11 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                 setRestoredDataForModal(location.state.restoredFormData);
             }
             setIsModalOpen(true);
-            
+
             if (location.state.showRestoredMessage) {
                 showSuccess("New contact created. Returning to your step.");
             }
-            
+
             // Clean up navigation state immediately
             const { state } = location;
             delete state.openStepModal;
@@ -59,10 +59,10 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
         try {
             setLoading(true);
             setError(null);
-            
+
             const response = await maintenanceService.getStepsByRecord(recordId);
             const steps = response.data || [];
-            
+
             // Transform data for display
             const transformedSteps = steps.map(step => ({
                 id: step.id,
@@ -87,7 +87,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                 updatedAt: step.updatedAt,
                 isFinalStep: step.isFinalStep
             }));
-            
+
             setMaintenanceSteps(transformedSteps);
         } catch (error) {
             console.error('Error loading maintenance steps:', error);
@@ -127,7 +127,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
         } catch (error) {
             console.error('Error deleting maintenance step:', error);
             let errorMessage = 'Failed to delete maintenance step. Please try again.';
-            
+
             if (error.response?.data?.error) {
                 errorMessage = error.response.data.error;
             } else if (error.response?.data?.message) {
@@ -135,7 +135,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             } else if (error.message) {
                 errorMessage = error.message;
             }
-            
+
             showError(errorMessage);
         } finally {
             setLoading(false);
@@ -175,7 +175,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
     const handleSubmit = async (formData) => {
         try {
             setLoading(true);
-            
+
             if (editingStep) {
                 await maintenanceService.updateStep(editingStep.id, formData);
                 showSuccess('Maintenance step updated successfully');
@@ -183,7 +183,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                 await maintenanceService.createStep(recordId, formData);
                 showSuccess('Maintenance step created successfully');
             }
-            
+
             setEditingStep(null);
             setIsModalOpen(false);
             loadMaintenanceSteps();
@@ -212,9 +212,9 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
     const getStepTypeBadge = (stepType) => {
         const color = getStepTypeColor(stepType);
         return (
-            <span 
+            <span
                 className="step-type-badge"
-                style={{ 
+                style={{
                     backgroundColor: color + '20',
                     color: color,
                     border: `1px solid ${color}`
@@ -265,7 +265,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             sortable: true,
             render: (row) => (
                 <div className="step-description">
-                    {row.description.length > 60 
+                    {row.description.length > 60
                         ? `${row.description.substring(0, 60)}...`
                         : row.description
                     }
@@ -315,7 +315,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             sortable: true,
             render: (row) => (
                 <div className="cost-info">
-                    <FaDollarSign /> {row.stepCost?.toFixed(2) || '0.00'}
+                    {row.stepCost?.toFixed(2) || '0.00'}
                 </div>
             )
         },
@@ -329,7 +329,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                         Start: {new Date(row.startDate).toLocaleDateString()}
                     </div>
                     <div className="end-date">
-                        {row.actualEndDate 
+                        {row.actualEndDate
                             ? `Completed: ${new Date(row.actualEndDate).toLocaleDateString()}`
                             : `Expected: ${new Date(row.expectedEndDate).toLocaleDateString()}`
                         }
@@ -410,15 +410,6 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                         <p>Equipment: {maintenanceRecord.equipmentInfo} - {maintenanceRecord.initialIssueDescription}</p>
                     )}
                 </div>
-                <div className="header-right">
-                    <button 
-                        className="btn btn-primary"
-                        onClick={() => handleOpenModal()}
-                        disabled={maintenanceRecord?.status === 'COMPLETED'}
-                    >
-                        <FaPlus /> New Step
-                    </button>
-                </div>
             </div>
 
             <DataTable
@@ -431,12 +422,18 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                 showFilters={true}
                 filterableColumns={filterableColumns}
                 emptyStateMessage="No maintenance steps found. Create your first step to get started."
+                showAddButton={true}
+                addButtonText="New Step"
+                onAddClick={() => handleOpenModal()}
+                addButtonProps={{
+                    disabled: maintenanceRecord?.status === 'COMPLETED'
+                }}
             />
 
             <div className="maintenance-steps-footer">
                 <div className="total-cost">
                     <h3>Total Record Cost:</h3>
-                    <span>${maintenanceRecord?.totalCost?.toFixed(2) || '0.00'}</span>
+                    <span>{maintenanceRecord?.totalCost?.toFixed(2) || '0.00'}</span>
                 </div>
             </div>
 
@@ -458,4 +455,4 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
     );
 };
 
-export default MaintenanceSteps; 
+export default MaintenanceSteps;

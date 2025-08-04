@@ -56,7 +56,28 @@ import Payables from "./pages/finance/Payables/Payables.jsx";
 import Notifications from './pages/notification/Notifications.jsx';
 import FixedAssets from "./pages/finance/FixedAssets/FixedAssets.jsx";
 
-import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ROLES } from './utils/roles';
+// ===================== Maintenance Team Imports =====================
+import MaintenanceLayout from "./pages/maintenance/MaintenanceLayout.jsx";
+import MaintenanceDashboard from "./pages/maintenance/MaintenanceDashboard/MaintenanceDashboard.jsx";
+import MaintenanceRecords from "./pages/maintenance/MaintenanceRecords/MaintenanceRecords.jsx";
+
+import {
+    ADMIN,
+    USER,
+    SITE_ADMIN,
+    PROCUREMENT,
+    WAREHOUSE_MANAGER,
+    WAREHOUSE_EMPLOYEE,
+    SECRETARY,
+    EQUIPMENT_MANAGER,
+    HR_MANAGER,
+    HR_EMPLOYEE,
+    FINANCE_MANAGER,
+    FINANCE_EMPLOYEE,
+    MAINTENANCE_MANAGER,
+    MAINTENANCE_EMPLOYEE,
+    ROLES
+} from './utils/roles';
 import PayrollDashboard from "./pages/payroll/PayrollDashboard/PayrollDashboard.jsx";
 import PayslipList from "./pages/payroll/PayslipList/PayslipList.jsx";
 import LoanManagement from "./pages/payroll/Loans/LoanManagement/LoanManagement.jsx";
@@ -67,6 +88,8 @@ import PayslipDetails from "./pages/payroll/PayslipDetails/PayslipDetails.jsx";
 import EmployeeOnboarding from "./pages/HR/Vacancy/EmployeeOnboarding.jsx";
 import PromotionList from "./pages/HR/Promotion/PromotionList.jsx";
 import JobPositionDetails from "./pages/HR/JobPosition/details/JobPositionDetails.jsx";
+import Contacts from "./pages/maintenance/Contacts/Contacts.jsx";
+import MaintenanceRecordDetail from "./pages/maintenance/MaintenanceRecordDetail/MaintenanceRecordDetail.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -84,8 +107,6 @@ const RoleRoute = ({allowedRoles, children, redirectPath = '/dashboard'}) => {
 };
 
 const allRoles = Object.values(ROLES);
-
-
 
 // ===================== Layout Components =====================
 // Updated MainLayout to match Claude.ai structure
@@ -169,7 +190,6 @@ function App() {
                                         <Route path="promotions/*" element={<PromotionList/>}/>
                                     </Route>
 
-
                                     {/* Payroll Routes */}
                                     <Route path="/payroll" element={<RoleRoute allowedRoles={[HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ADMIN]}><PayrollLayout/></RoleRoute>}>
                                         <Route index element={<PayrollDashboard/>}/>
@@ -191,32 +211,34 @@ function App() {
                                         <Route path=":EquipmentID" element={<RoleRoute allowedRoles={allRoles}><EquipmentDetails/></RoleRoute>}/>
                                     </Route>
 
+                                    {/* ===================== Maintenance Team Routes ===================== */}
+                                    <Route path="/maintenance" element={<RoleRoute allowedRoles={[ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]}><MaintenanceLayout/></RoleRoute>}>
+                                        <Route index element={<MaintenanceDashboard/>}/>
+                                        <Route path="records" element={<MaintenanceRecords/>}/>
+                                        <Route path="records/:recordId" element={<MaintenanceRecordDetail/>}/>
+                                        <Route path="contacts" element={<Contacts/>}/>
+                                    </Route>
+
                                     {/* Finance Routes */}
                                     <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={allRoles}><GeneralLedger/></RoleRoute>} />
                                     <Route path="/finance/payables" element={<RoleRoute allowedRoles={allRoles}><Payables/></RoleRoute>} />
                                     <Route path="/finance/fixed-assets" element={<RoleRoute allowedRoles={allRoles}><FixedAssets/></RoleRoute>} />
 
-
-
                                     {/* Generic Related Documents Route */}
                                     <Route path="/RelatedDocuments/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
-
 
                                     {/* Generic Related Documents Route */}
                                     <Route path="/related-documents/:entityType/:entityId" element={<RoleRoute allowedRoles={allRoles}><RelatedDocuments/></RoleRoute>}/>
                                 </Route>
 
-
                                 <Route path="*" element={<Navigate to="/" replace/>}/>
-                                {/* Your other routes here */}
                             </Routes>
                         </AuthProvider>
                     </ThemeProvider>
                 </LanguageProvider>
             </SnackbarProvider>
-        </Router>)
+        </Router>
+    );
 }
-
-
 
 export default App

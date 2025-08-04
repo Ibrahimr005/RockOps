@@ -175,26 +175,20 @@ public class EquipmentService {
         equipment.setShipping(createDTO.getShipping());
         equipment.setCustoms(createDTO.getCustoms());
         equipment.setTaxes(createDTO.getTaxes());
+
+        equipment.setStatus(createDTO.getStatus() != null ? createDTO.getStatus() : equipment.getStatus());
+        equipment.setRelatedDocuments(createDTO.getRelatedDocuments());
+        equipment.setWorkedHours(createDTO.getWorkedHours());
+
         // Set relationships
         if (createDTO.getSiteId() != null) {
             Site site = siteRepository.findById(createDTO.getSiteId())
                     .orElseThrow(() -> new ResourceNotFoundException("Site not found with id: "
                             + createDTO.getSiteId()));
             equipment.setSite(site);
-            
-            // Set status to RUNNING when assigned to a site, unless already in maintenance or scrapped
-            if (createDTO.getStatus() == null || createDTO.getStatus() == EquipmentStatus.AVAILABLE) {
-                equipment.setStatus(EquipmentStatus.RUNNING);
-            } else {
-                equipment.setStatus(createDTO.getStatus());
-            }
-        } else {
-            // Set status from DTO or default to AVAILABLE
-            equipment.setStatus(createDTO.getStatus() != null ? createDTO.getStatus() : equipment.getStatus());
+            // Automatically set status to RUNNING when assigned to a site
+            equipment.setStatus(EquipmentStatus.RUNNING);
         }
-        
-        equipment.setRelatedDocuments(createDTO.getRelatedDocuments());
-        equipment.setWorkedHours(createDTO.getWorkedHours());
 
         // Validate driver assignment for drivable equipment types
         if (!equipmentType.isDrivable() && (createDTO.getMainDriverId() != null || createDTO.getSubDriverId() != null)) {
@@ -269,269 +263,84 @@ public class EquipmentService {
     // Support for the old Map-based createEquipment method
 // Fixed Map-based createEquipment method in EquipmentService.java
     public EquipmentDTO createEquipment(Map<String, Object> requestBody, MultipartFile equipmentPhoto) throws Exception {
-        System.out.println("=== DEBUG: Creating Equipment ===");
-        System.out.println("Request Body received: " + requestBody);
-        if (equipmentPhoto != null) {
-            System.out.println("Photo received: " + equipmentPhoto.getOriginalFilename() + " (" + equipmentPhoto.getSize() + " bytes)");
-        }
-
         EquipmentCreateDTO createDTO = new EquipmentCreateDTO();
 
-        try {
-            // FIX: Parse type ID - handle both 'type' and 'typeId'
-            String typeIdStr = null;
-            if (requestBody.get("typeId") != null) {
-                typeIdStr = requestBody.get("typeId").toString();
-                System.out.println("DEBUG: Type ID from typeId: " + typeIdStr);
-                createDTO.setTypeId(UUID.fromString(typeIdStr));
-            } else if (requestBody.get("type") != null) {
-                typeIdStr = requestBody.get("type").toString();
-                System.out.println("DEBUG: Type ID from type: " + typeIdStr);
-                createDTO.setTypeId(UUID.fromString(typeIdStr));
-            } else {
-                throw new IllegalArgumentException("Equipment type ID is required");
-            }
-
-            // FIX: Parse brand ID - handle both 'brand' and 'brandId'
-            String brandIdStr = null;
-            if (requestBody.get("brandId") != null) {
-                brandIdStr = requestBody.get("brandId").toString();
-                System.out.println("DEBUG: Brand ID from brandId: " + brandIdStr);
-                createDTO.setBrandId(UUID.fromString(brandIdStr));
-            } else if (requestBody.get("brand") != null) {
-                brandIdStr = requestBody.get("brand").toString();
-                System.out.println("DEBUG: Brand ID from brand: " + brandIdStr);
-                createDTO.setBrandId(UUID.fromString(brandIdStr));
-            } else {
-                throw new IllegalArgumentException("Equipment brand ID is required");
-            }
-
-            // Parse basic properties with validation
-            if (requestBody.get("model") != null) {
-                createDTO.setModel(requestBody.get("model").toString());
-                System.out.println("DEBUG: Model set to: " + createDTO.getModel());
-            } else {
-                throw new IllegalArgumentException("Model is required");
-            }
-
-            if (requestBody.get("name") != null) {
-                createDTO.setName(requestBody.get("name").toString());
-                System.out.println("DEBUG: Name set to: " + createDTO.getName());
-            } else {
-                throw new IllegalArgumentException("Name is required");
-            }
-
-            if (requestBody.get("manufactureYear") != null) {
-                try {
-                    int year = Integer.parseInt(requestBody.get("manufactureYear").toString());
-                    createDTO.setManufactureYear(year);
-                    System.out.println("DEBUG: Manufacture year set to: " + year);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Invalid manufacture year format: " + requestBody.get("manufactureYear"));
-                }
-            } else {
-                throw new IllegalArgumentException("Manufacture year is required");
-            }
-
-            // Parse dates with better error handling
-            if (requestBody.get("purchasedDate") != null && !requestBody.get("purchasedDate").toString().trim().isEmpty()) {
-                try {
-                    String dateStr = requestBody.get("purchasedDate").toString();
-                    System.out.println("DEBUG: Parsing purchased date: " + dateStr);
-                    createDTO.setPurchasedDate(LocalDate.parse(dateStr));
-                    System.out.println("DEBUG: Purchased date set to: " + createDTO.getPurchasedDate());
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("Invalid purchased date format: " + requestBody.get("purchasedDate") + ". Expected format: yyyy-mm-dd");
-                }
-            } else {
-                throw new IllegalArgumentException("Purchased date is required");
-            }
-
-            if (requestBody.get("deliveredDate") != null && !requestBody.get("deliveredDate").toString().trim().isEmpty()) {
-                try {
-                    String dateStr = requestBody.get("deliveredDate").toString();
-                    System.out.println("DEBUG: Parsing delivered date: " + dateStr);
-                    createDTO.setDeliveredDate(LocalDate.parse(dateStr));
-                    System.out.println("DEBUG: Delivered date set to: " + createDTO.getDeliveredDate());
-                } catch (Exception e) {
-                    throw new IllegalArgumentException("Invalid delivered date format: " + requestBody.get("deliveredDate") + ". Expected format: yyyy-mm-dd");
-                }
-            } else {
-                throw new IllegalArgumentException("Delivered date is required");
-            }
-
-            // Parse prices with better error handling
-            if (requestBody.get("egpPrice") != null) {
-                try {
-                    double price = Double.parseDouble(requestBody.get("egpPrice").toString());
-                    createDTO.setEgpPrice(price);
-                    System.out.println("DEBUG: EGP price set to: " + price);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Invalid EGP price format: " + requestBody.get("egpPrice"));
-                }
-            } else {
-                throw new IllegalArgumentException("EGP price is required");
-            }
-
-            if (requestBody.get("dollarPrice") != null) {
-                try {
-                    double price = Double.parseDouble(requestBody.get("dollarPrice").toString());
-                    createDTO.setDollarPrice(price);
-                    System.out.println("DEBUG: Dollar price set to: " + price);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Invalid dollar price format: " + requestBody.get("dollarPrice"));
-                }
-            }
-
-            // Parse merchant with validation
-            if (requestBody.get("purchasedFrom") != null) {
-                try {
-                    String merchantIdStr = requestBody.get("purchasedFrom").toString();
-                    System.out.println("DEBUG: Parsing merchant ID: " + merchantIdStr);
-                    createDTO.setPurchasedFrom(UUID.fromString(merchantIdStr));
-                    System.out.println("DEBUG: Merchant ID set to: " + createDTO.getPurchasedFrom());
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Invalid merchant ID format: " + requestBody.get("purchasedFrom"));
-                }
-            }
-
-            if (requestBody.get("examinedBy") != null) {
-                createDTO.setExaminedBy(requestBody.get("examinedBy").toString());
-                System.out.println("DEBUG: Examined by set to: " + createDTO.getExaminedBy());
-            }
-
-            if (requestBody.get("equipmentComplaints") != null) {
-                createDTO.setEquipmentComplaints(requestBody.get("equipmentComplaints").toString());
-            }
-
-            if (requestBody.get("countryOfOrigin") != null) {
-                createDTO.setCountryOfOrigin(requestBody.get("countryOfOrigin").toString());
-                System.out.println("DEBUG: Country of origin set to: " + createDTO.getCountryOfOrigin());
-            } else {
-                throw new IllegalArgumentException("Country of origin is required");
-            }
-
-            if (requestBody.get("serialNumber") != null) {
-                createDTO.setSerialNumber(requestBody.get("serialNumber").toString());
-                System.out.println("DEBUG: Serial number set to: " + createDTO.getSerialNumber());
-            } else {
-                throw new IllegalArgumentException("Serial number is required");
-            }
-
-            // Parse financial fields with better error handling
-            if (requestBody.get("shipping") != null) {
-                try {
-                    double shipping = Double.parseDouble(requestBody.get("shipping").toString());
-                    createDTO.setShipping(shipping);
-                    System.out.println("DEBUG: Shipping set to: " + shipping);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Invalid shipping cost format: " + requestBody.get("shipping"));
-                }
-            }
-
-            if (requestBody.get("customs") != null) {
-                try {
-                    double customs = Double.parseDouble(requestBody.get("customs").toString());
-                    createDTO.setCustoms(customs);
-                    System.out.println("DEBUG: Customs set to: " + customs);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Invalid customs cost format: " + requestBody.get("customs"));
-                }
-            }
-
-            if (requestBody.get("taxes") != null) {
-                try {
-                    double taxes = Double.parseDouble(requestBody.get("taxes").toString());
-                    createDTO.setTaxes(taxes);
-                    System.out.println("DEBUG: Taxes set to: " + taxes);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Invalid taxes cost format: " + requestBody.get("taxes"));
-                }
-            }
-
-            if (requestBody.get("status") != null) {
-                try {
-                    createDTO.setStatus(EquipmentStatus.valueOf(requestBody.get("status").toString().toUpperCase()));
-                    System.out.println("DEBUG: Status set to: " + createDTO.getStatus());
-                } catch (IllegalArgumentException e) {
-                    System.out.println("DEBUG: Invalid status value, using default: " + requestBody.get("status"));
-                    // Default to AVAILABLE status if invalid
-                }
-            }
-
-            // Note: Status will be set to RUNNING automatically if siteId is provided, unless explicitly set to IN_MAINTENANCE or SCRAPPED
-            if (requestBody.get("relatedDocuments") != null) {
-                createDTO.setRelatedDocuments(requestBody.get("relatedDocuments").toString());
-            }
-
-            if (requestBody.get("workedHours") != null) {
-                try {
-                    System.out.println("DEBUG: Worked hours set to: " + requestBody.get("workedHours"));
-                    int hours = Integer.parseInt(requestBody.get("workedHours").toString());
-                    createDTO.setWorkedHours(hours);
-                    System.out.println("DEBUG: Worked hours set to: " + hours);
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Invalid worked hours format: " + requestBody.get("workedHours"));
-                }
-            }
-
-            // FIX: Parse relationships - handle both naming conventions
-            if (requestBody.get("siteId") != null) {
-                try {
-                    createDTO.setSiteId(UUID.fromString(requestBody.get("siteId").toString()));
-                    System.out.println("DEBUG: Site ID set to: " + createDTO.getSiteId());
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Invalid site ID format: " + requestBody.get("siteId"));
-                }
-            } else if (requestBody.get("site") != null) {
-                try {
-                    createDTO.setSiteId(UUID.fromString(requestBody.get("site").toString()));
-                    System.out.println("DEBUG: Site ID set from site: " + createDTO.getSiteId());
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Invalid site ID format: " + requestBody.get("site"));
-                }
-            }
-
-            if (requestBody.get("mainDriverId") != null) {
-                try {
-                    createDTO.setMainDriverId(UUID.fromString(requestBody.get("mainDriverId").toString()));
-                    System.out.println("DEBUG: Main driver ID set to: " + createDTO.getMainDriverId());
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Invalid main driver ID format: " + requestBody.get("mainDriverId"));
-                }
-            } else if (requestBody.get("mainDriver") != null) {
-                try {
-                    createDTO.setMainDriverId(UUID.fromString(requestBody.get("mainDriver").toString()));
-                    System.out.println("DEBUG: Main driver ID set from mainDriver: " + createDTO.getMainDriverId());
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Invalid main driver ID format: " + requestBody.get("mainDriver"));
-                }
-            }
-
-            if (requestBody.get("subDriverId") != null) {
-                try {
-                    createDTO.setSubDriverId(UUID.fromString(requestBody.get("subDriverId").toString()));
-                    System.out.println("DEBUG: Sub driver ID set to: " + createDTO.getSubDriverId());
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Invalid sub driver ID format: " + requestBody.get("subDriverId"));
-                }
-            } else if (requestBody.get("subDriver") != null) {
-                try {
-                    createDTO.setSubDriverId(UUID.fromString(requestBody.get("subDriver").toString()));
-                    System.out.println("DEBUG: Sub driver ID set from subDriver: " + createDTO.getSubDriverId());
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Invalid sub driver ID format: " + requestBody.get("subDriver"));
-                }
-            }
-
-            System.out.println("DEBUG: All fields parsed successfully. Calling createEquipment with DTO...");
-            return createEquipment(createDTO, equipmentPhoto);
-
-        } catch (Exception e) {
-            System.err.println("ERROR: Failed to create equipment: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
+        // FIX: Parse type ID - handle both 'type' and 'typeId'
+        if (requestBody.get("typeId") != null) {
+            createDTO.setTypeId(UUID.fromString(requestBody.get("typeId").toString()));
+        } else if (requestBody.get("type") != null) {
+            createDTO.setTypeId(UUID.fromString(requestBody.get("type").toString()));
         }
+
+        // FIX: Parse brand ID - handle both 'brand' and 'brandId'
+        if (requestBody.get("brandId") != null) {
+            createDTO.setBrandId(UUID.fromString(requestBody.get("brandId").toString()));
+        } else if (requestBody.get("brand") != null) {
+            createDTO.setBrandId(UUID.fromString(requestBody.get("brand").toString()));
+        }
+
+        // Parse basic properties
+        if (requestBody.get("model") != null) createDTO.setModel(requestBody.get("model").toString());
+        if (requestBody.get("name") != null) createDTO.setName(requestBody.get("name").toString());
+        if (requestBody.get("manufactureYear") != null)
+            createDTO.setManufactureYear(Integer.parseInt(requestBody.get("manufactureYear").toString()));
+        if (requestBody.get("purchasedDate") != null && !requestBody.get("purchasedDate").toString().trim().isEmpty())
+            createDTO.setPurchasedDate(LocalDate.parse(requestBody.get("purchasedDate").toString()));
+        if (requestBody.get("deliveredDate") != null && !requestBody.get("deliveredDate").toString().trim().isEmpty())
+            createDTO.setDeliveredDate(LocalDate.parse(requestBody.get("deliveredDate").toString()));
+        if (requestBody.get("egpPrice") != null)
+            createDTO.setEgpPrice(Double.parseDouble(requestBody.get("egpPrice").toString()));
+        if (requestBody.get("dollarPrice") != null)
+            createDTO.setDollarPrice(Double.parseDouble(requestBody.get("dollarPrice").toString()));
+        if (requestBody.get("purchasedFrom") != null)
+            createDTO.setPurchasedFrom(UUID.fromString(requestBody.get("purchasedFrom").toString()));
+        if (requestBody.get("examinedBy") != null)
+            createDTO.setExaminedBy(requestBody.get("examinedBy").toString());
+        if (requestBody.get("equipmentComplaints") != null)
+            createDTO.setEquipmentComplaints(requestBody.get("equipmentComplaints").toString());
+        if (requestBody.get("countryOfOrigin") != null)
+            createDTO.setCountryOfOrigin(requestBody.get("countryOfOrigin").toString());
+        if (requestBody.get("serialNumber") != null)
+            createDTO.setSerialNumber(requestBody.get("serialNumber").toString());
+        if (requestBody.get("shipping") != null)
+            createDTO.setShipping(Double.parseDouble(requestBody.get("shipping").toString()));
+        if (requestBody.get("customs") != null)
+            createDTO.setCustoms(Double.parseDouble(requestBody.get("customs").toString()));
+        if (requestBody.get("taxes") != null)
+            createDTO.setTaxes(Double.parseDouble(requestBody.get("taxes").toString()));
+
+        if (requestBody.get("status") != null) {
+            try {
+                createDTO.setStatus(EquipmentStatus.valueOf(requestBody.get("status").toString().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                // Default to AVAILABLE status if invalid
+            }
+        }
+        if (requestBody.get("relatedDocuments") != null)
+            createDTO.setRelatedDocuments(requestBody.get("relatedDocuments").toString());
+        if (requestBody.get("workedHours") != null)
+            createDTO.setWorkedHours(Integer.parseInt(requestBody.get("workedHours").toString()));
+
+        // FIX: Parse relationships - handle both naming conventions
+        if (requestBody.get("siteId") != null) {
+            createDTO.setSiteId(UUID.fromString(requestBody.get("siteId").toString()));
+        } else if (requestBody.get("site") != null) {
+            createDTO.setSiteId(UUID.fromString(requestBody.get("site").toString()));
+        }
+
+        if (requestBody.get("mainDriverId") != null) {
+            createDTO.setMainDriverId(UUID.fromString(requestBody.get("mainDriverId").toString()));
+        } else if (requestBody.get("mainDriver") != null) {
+            createDTO.setMainDriverId(UUID.fromString(requestBody.get("mainDriver").toString()));
+        }
+
+        if (requestBody.get("subDriverId") != null) {
+            createDTO.setSubDriverId(UUID.fromString(requestBody.get("subDriverId").toString()));
+        } else if (requestBody.get("subDriver") != null) {
+            createDTO.setSubDriverId(UUID.fromString(requestBody.get("subDriver").toString()));
+        }
+
+        return createEquipment(createDTO, equipmentPhoto);
     }
 
 
@@ -585,26 +394,20 @@ public class EquipmentService {
         if (updateDTO.getShipping() != null) equipment.setShipping(updateDTO.getShipping());
         if (updateDTO.getCustoms() != null) equipment.setCustoms(updateDTO.getCustoms());
         if (updateDTO.getTaxes() != null) equipment.setTaxes(updateDTO.getTaxes());
+
+        if (updateDTO.getStatus() != null) equipment.setStatus(updateDTO.getStatus());
+        if (updateDTO.getRelatedDocuments() != null) equipment.setRelatedDocuments(updateDTO.getRelatedDocuments());
+        if (updateDTO.getWorkedHours() != null) equipment.setWorkedHours(updateDTO.getWorkedHours());
+
         // Update relationships if provided
         if (updateDTO.getSiteId() != null) {
             Site site = siteRepository.findById(updateDTO.getSiteId())
                     .orElseThrow(() -> new ResourceNotFoundException("Site not found with id: "
                             + updateDTO.getSiteId()));
             equipment.setSite(site);
-            
-            // Set status to RUNNING when assigned to a site, unless already in maintenance or scrapped
-            if (updateDTO.getStatus() == null || updateDTO.getStatus() == EquipmentStatus.AVAILABLE) {
-                equipment.setStatus(EquipmentStatus.RUNNING);
-            } else {
-                equipment.setStatus(updateDTO.getStatus());
-            }
-        } else {
-            // Set status from DTO if provided
-            if (updateDTO.getStatus() != null) equipment.setStatus(updateDTO.getStatus());
+            // Automatically set status to RUNNING when assigned to a site
+            equipment.setStatus(EquipmentStatus.RUNNING);
         }
-        
-        if (updateDTO.getRelatedDocuments() != null) equipment.setRelatedDocuments(updateDTO.getRelatedDocuments());
-        if (updateDTO.getWorkedHours() != null) equipment.setWorkedHours(updateDTO.getWorkedHours());
 
         // Update merchant relationship
         if (updateDTO.getPurchasedFrom() != null) {
@@ -740,6 +543,7 @@ public class EquipmentService {
             updateDTO.setCustoms(Double.parseDouble(requestBody.get("customs").toString()));
         if (requestBody.get("taxes") != null && !requestBody.get("taxes").toString().isEmpty())
             updateDTO.setTaxes(Double.parseDouble(requestBody.get("taxes").toString()));
+
         if (requestBody.get("status") != null && !requestBody.get("status").toString().isEmpty()) {
             try {
                 updateDTO.setStatus(EquipmentStatus.valueOf(requestBody.get("status").toString().toUpperCase()));
@@ -747,7 +551,6 @@ public class EquipmentService {
                 // Skip status update if invalid
             }
         }
-        // Note: Status will be set to RUNNING automatically if siteId is provided, unless explicitly set to IN_MAINTENANCE or SCRAPPED
         if (requestBody.get("relatedDocuments") != null && !requestBody.get("relatedDocuments").toString().isEmpty())
             updateDTO.setRelatedDocuments(requestBody.get("relatedDocuments").toString());
         if (requestBody.get("workedHours") != null && !requestBody.get("workedHours").toString().isEmpty())
@@ -813,7 +616,7 @@ public class EquipmentService {
             try {
                 statusDTO.setStatus(EquipmentStatus.valueOf(requestBody.get("status").toString().toUpperCase()));
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid status. Allowed values: AVAILABLE, RUNNING, RENTED, IN_MAINTENANCE, SOLD, SCRAPPED");
+                throw new IllegalArgumentException("Invalid status. Allowed values: AVAILABLE, RENTED, IN_MAINTENANCE, SOLD, SCRAPPED");
             }
         } else {
             throw new IllegalArgumentException("Status is required");

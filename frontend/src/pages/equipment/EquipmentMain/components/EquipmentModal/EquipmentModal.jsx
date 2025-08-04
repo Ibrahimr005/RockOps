@@ -88,7 +88,6 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         workedHours: "0"
     };
 
-
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [equipmentTypes, setEquipmentTypes] = useState([]);
@@ -149,7 +148,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         TAXES: []
     });
 
-    // 1. Add state for status options (to be fetched from backend)
+    // Status options (to be fetched from backend)
     const [statusOptions, setStatusOptions] = useState([]);
 
     // Brand creation modal state
@@ -322,8 +321,21 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             setSites(sitesResponse.data);
 
             // Fetch equipment status options
-            const statusResponse = await equipmentService.getEquipmentStatusOptions();
-            setStatusOptions(statusResponse.data);
+            try {
+                const statusResponse = await equipmentService.getEquipmentStatusOptions();
+                setStatusOptions(statusResponse.data);
+            } catch (error) {
+                console.error("Error fetching equipment status options:", error);
+                // Fallback to default status options
+                setStatusOptions([
+                    { value: "AVAILABLE", label: "Available" },
+                    { value: "RENTED", label: "Rented" },
+                    { value: "IN_MAINTENANCE", label: "In Maintenance" },
+                    { value: "RUNNING", label: "Running" },
+                    { value: "SOLD", label: "Sold" },
+                    { value: "SCRAPPED", label: "Scrapped" }
+                ]);
+            }
 
             // Fetch merchants
             try {
@@ -550,14 +562,6 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         setFormTouched(true);
     };
 
-    const handleTypeChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({
-            ...formData,
-            [name]: value
-        });
-    };
-
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -738,7 +742,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         try {
             const formDataToSend = new FormData();
 
-            // FIX: Use 'typeId' and 'brandId' instead of 'type' and 'brand'
+            // Use 'typeId' and 'brandId' instead of 'type' and 'brand'
             formDataToSend.append('typeId', formData.typeId);
             formDataToSend.append('brandId', formData.brandId);
 
@@ -773,7 +777,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                 ? formData.workedHours : 0;
             formDataToSend.append('workedHours', workedHoursValue);
 
-            // FIX: Add optional fields with proper null checking
+            // Add optional fields with proper null checking
             if (formData.siteId) {
                 formDataToSend.append('siteId', formData.siteId);
             }
@@ -1077,7 +1081,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         id="typeId"
                                         name="typeId"
                                         value={formData.typeId}
-                                        onChange={handleTypeChange}
+                                        onChange={handleInputChange}
                                         required
                                     >
                                         <option value="">Select equipment type</option>
