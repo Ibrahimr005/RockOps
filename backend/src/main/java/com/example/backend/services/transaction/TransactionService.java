@@ -904,23 +904,44 @@ public class TransactionService {
 
         // Get the receiving warehouse
         UUID receivingWarehouseId = transaction.getReceiverId();
+        System.out.println("🔍 DEBUG: Retrieved receiver warehouse ID from transaction: " + receivingWarehouseId);
 
         // Fetch the warehouse entity
         Warehouse warehouse = warehouseRepository.findById(receivingWarehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found: " + receivingWarehouseId));
+        System.out.println("🔍 DEBUG: Successfully fetched warehouse from repository: " + warehouse.getName() + " (ID: " + warehouse.getId() + ")");
 
         // 🆕 ALWAYS create a new item entry (no more checking for existing items)
         Item newItem = new Item();
+        System.out.println("🔍 DEBUG: Initialized new Item instance");
+
+        System.out.println("🔍 DEBUG: Set item type on new item: " + transactionItem.getItemType());
         newItem.setItemType(transactionItem.getItemType());
+
+
         newItem.setQuantity(actualQuantity);
+        System.out.println("🔍 DEBUG: Set quantity on new item: " + actualQuantity);
+
         newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
+        System.out.println("🔍 DEBUG: Set item status to IN_WAREHOUSE");
+
         newItem.setWarehouse(warehouse);
-        newItem.setTransactionItem(transactionItem); // ✅ Always link to TransactionItem for traceability
+        System.out.println("🔍 DEBUG: Assigned warehouse to new item: " + warehouse.getId());
+
+        newItem.setTransactionItem(transactionItem);
+        System.out.println("🔍 DEBUG: Linked new item to TransactionItem: " + transactionItem.getId());
+
         newItem.setResolved(false);
+        System.out.println("🔍 DEBUG: Set resolved status to false");
+
         newItem.setCreatedAt(LocalDateTime.now());
+        System.out.println("🔍 DEBUG: Set createdAt to current time: " + newItem.getCreatedAt());
+
         newItem.setCreatedBy("Created by a Transaction");
+        System.out.println("🔍 DEBUG: Set createdBy to 'Created by a Transaction'");
 
         itemRepository.save(newItem);
+        System.out.println("🔍 DEBUG: Saved new item to database with ID: " + newItem.getId());
 
         System.out.println("✅ Created NEW item entry with quantity: " + actualQuantity +
                 " linked to transaction: " + transaction.getId() +

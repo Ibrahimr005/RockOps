@@ -356,6 +356,8 @@ public class ConsumablesService {
         );
         
         System.out.println("🔄 [RESOLUTION-UPDATE] Found " + relatedTransactions.size() + " transactions for this equipment");
+        System.out.println("🔄 [RESOLUTION-UPDATE] Looking for item type: " + consumable.getItemType().getName() + " (ID: " + consumable.getItemType().getId() + ")");
+        System.out.println("🔄 [RESOLUTION-UPDATE] Equipment ID: " + consumable.getEquipment().getId());
         
         boolean updatedAnyItems = false;
         
@@ -365,14 +367,14 @@ public class ConsumablesService {
             boolean foundMatchingItem = false;
             // Find the transaction item that matches this consumable's item type
             for (TransactionItem item : transaction.getItems()) {
-                System.out.println("🔄 [RESOLUTION-UPDATE] Checking transaction item: " + item.getId() + " for item type: " + item.getItemType().getName());
+                System.out.println("🔄 [RESOLUTION-UPDATE] Checking transaction item: " + item.getId() + " for item type: " + item.getItemType().getName() + " (status: " + item.getStatus() + ")");
                 
                 if (item.getItemType().getId().equals(consumable.getItemType().getId()) && 
-                    (item.getStatus() == TransactionStatus.REJECTED || item.getStatus() == TransactionStatus.PARTIALLY_ACCEPTED)) {
+                    (item.getStatus() == TransactionStatus.REJECTED || item.getStatus() == TransactionStatus.PARTIALLY_ACCEPTED || item.getStatus() == TransactionStatus.ACCEPTED)) {
                     foundMatchingItem = true;
                     updatedAnyItems = true;
                     System.out.println("✅ [RESOLUTION-UPDATE] Found matching transaction item! Updating...");
-                    System.out.println("📊 [RESOLUTION-UPDATE] Before update - item status: " + item.getStatus() + ", isResolved: " + item.getIsResolved());
+                    System.out.println("📊 [RESOLUTION-UPDATE] Before update - item status: " + item.getStatus() + ", isResolved: " + item.getIsResolved() + ", resolutionType: " + item.getResolutionType());
                     
                     // Update resolution fields in the transaction item
                     item.setIsResolved(consumable.isResolved());
@@ -387,7 +389,7 @@ public class ConsumablesService {
                         System.out.println("📊 [RESOLUTION-UPDATE] Set corrected quantity: " + request.getCorrectedQuantity());
                     }
                     
-                    System.out.println("📊 [RESOLUTION-UPDATE] After update - item status: " + item.getStatus() + ", isResolved: " + item.getIsResolved());
+                    System.out.println("📊 [RESOLUTION-UPDATE] After update - item status: " + item.getStatus() + ", isResolved: " + item.getIsResolved() + ", resolutionType: " + item.getResolutionType());
                     System.out.println("📊 [RESOLUTION-UPDATE] Resolution type set to: " + item.getResolutionType());
                     System.out.println("✅ [RESOLUTION-UPDATE] Updated transaction item " + item.getId() + " with resolution info");
                     
@@ -411,6 +413,13 @@ public class ConsumablesService {
         
         // 🆕 CRITICAL: Also update any existing resolved consumables that might have missed updates
         updateExistingResolvedTransactionItems(consumable);
+        
+        // 🆕 NEW: Force refresh the transaction items to ensure they're properly saved
+        System.out.println("🔄 [RESOLUTION-UPDATE] Forcing transaction refresh...");
+        for (Transaction transaction : relatedTransactions) {
+            transactionRepository.flush();
+
+        }
     }
     
     /**

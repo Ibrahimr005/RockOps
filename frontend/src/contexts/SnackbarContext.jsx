@@ -35,7 +35,7 @@ export const SnackbarProvider = ({ children }) => {
         }));
     }, []);
 
-    // Convenience methods for different Snackbar types
+    // Convenience methods for different Snackbar types - UNCHANGED to maintain compatibility
     const showSuccess = useCallback((message, duration) =>
         showSnackbar(message, 'success', duration), [showSnackbar]);
 
@@ -48,8 +48,8 @@ export const SnackbarProvider = ({ children }) => {
     const showWarning = useCallback((message, duration, persistent = false) =>
         showSnackbar(message, 'warning', duration, persistent), [showSnackbar]);
 
-    // New method for showing confirmation dialogs
-    const showConfirmation = useCallback((message, onConfirm, onCancel) => {
+    // NEW method for showing confirmation dialogs - ADDED without breaking existing functionality
+    const showConfirmation = useCallback((message, onConfirm, onCancel = null) => {
         showSnackbar(
             message,
             'warning',
@@ -87,7 +87,7 @@ export const SnackbarProvider = ({ children }) => {
                 showError,
                 showInfo,
                 showWarning,
-                showConfirmation
+                showConfirmation // NEW method added without affecting existing ones
             }}
         >
             {children}

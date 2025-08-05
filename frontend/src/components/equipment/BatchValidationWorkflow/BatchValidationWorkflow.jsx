@@ -128,7 +128,9 @@ const BatchValidationWorkflow = ({
             console.log('📦 Frontend: Response status:', response.status);
             console.log('📦 Frontend: Response headers:', response.headers);
             
-            const items = response.data || [];
+            // FIXED: itemService.getItemsByWarehouse now returns response.data directly
+            // So we don't need to extract response.data again - the response IS the data array
+            const items = Array.isArray(response) ? response : [];
             console.log('📋 Frontend: Extracted items array:', items);
             console.log('📋 Frontend: Number of items received:', items.length);
             

@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.*;
 
 @Service
-public class MinioService {
+public class S3Service {
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
@@ -33,9 +33,13 @@ public class MinioService {
     @Value("${aws.s3.enabled:true}")
     private boolean s3Enabled;
 
-    public MinioService(S3Client s3Client, S3Presigner s3Presigner) {
-        this.s3Client = s3Client;
-        this.s3Presigner = s3Presigner;
+    public S3Service() {
+        this.s3Client = S3Client.builder()
+                .region(Region.US_EAST_1)  // You can make this configurable
+                .build();
+        this.s3Presigner = S3Presigner.builder()
+                .region(Region.US_EAST_1)
+                .build();
     }
 
     // Drop-in replacement methods for MinioService
@@ -70,7 +74,7 @@ public class MinioService {
         }
 
         try {
-            String policyJson = String.format("""
+            String policyJson = """
                 {
                     "Version": "2012-10-17",
                     "Statement": [
@@ -83,7 +87,7 @@ public class MinioService {
                         }
                     ]
                 }
-                """, bucketName);
+                """.formatted(bucketName);
 
             PutBucketPolicyRequest policyRequest = PutBucketPolicyRequest.builder()
                     .bucket(bucketName)
@@ -112,8 +116,6 @@ public class MinioService {
         }
 
         try {
-            createBucketIfNotExists(bucketName);
-
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(fileName)
@@ -179,19 +181,19 @@ public class MinioService {
         }
     }
 
-    // Equipment-specific methods - using UUID directly
-    public void createEquipmentBucket(UUID equipmentId) {
-        String equipmentBucket = "equipment-" + equipmentId.toString();
+    // Equipment-specific methods
+    public void createEquipmentBucket(Long equipmentId) {
+        String equipmentBucket = "equipment-" + equipmentId;
         createBucketIfNotExists(equipmentBucket);
     }
 
-    public String uploadEquipmentFile(UUID equipmentId, MultipartFile file, String customFileName) throws Exception {
+    public String uploadEquipmentFile(Long equipmentId, MultipartFile file, String customFileName) throws Exception {
         if (!s3Enabled) {
             System.out.println("⚠️ S3 is disabled, equipment file upload skipped");
             return "disabled";
         }
 
-        String equipmentBucket = "equipment-" + equipmentId.toString();
+        String equipmentBucket = "equipment-" + equipmentId;
         String fileName = customFileName.isEmpty() ?
                 UUID.randomUUID().toString() + "_" + file.getOriginalFilename() :
                 customFileName + "_" + file.getOriginalFilename();
@@ -199,12 +201,12 @@ public class MinioService {
         return uploadFile(equipmentBucket, file, fileName);
     }
 
-    public String getEquipmentMainPhoto(UUID equipmentId) {
+    public String getEquipmentMainPhoto(Long equipmentId) {
         if (!s3Enabled) {
             return null;
         }
 
-        String equipmentBucket = "equipment-" + equipmentId.toString();
+        String equipmentBucket = "equipment-" + equipmentId;
         try {
             ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
                     .bucket(equipmentBucket)
@@ -223,59 +225,77 @@ public class MinioService {
         return null;
     }
 
-    public void deleteEquipmentFile(UUID equipmentId, String fileName) throws Exception {
+    public void deleteEquipmentFile(Long equipmentId, String fileName) throws Exception {
         if (!s3Enabled) {
             System.out.println("⚠️ S3 is disabled, equipment file deletion skipped");
             return;
         }
 
-        String equipmentBucket = "equipment-" + equipmentId.toString();
-        deleteFile(equipmentBucket, fileName);
+        String equipmentBucket = "equipment-" + equipmentId;
+
+        try {
+            // List all objects with the filename prefix
+            ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                    .bucket(equipmentBucket)
+                    .prefix(fileName)
+                    .build();
+
+            ListObjectsV2Response response = s3Client.listObjectsV2(listRequest);
+
+            // Delete matching files
+            for (S3Object s3Object : response.contents()) {
+                if (s3Object.key().contains(fileName)) {
+                    DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                            .bucket(equipmentBucket)
+                            .key(s3Object.key())
+                            .build();
+                    s3Client.deleteObject(deleteRequest);
+                    System.out.println("Deleted: " + s3Object.key());
+                }
+            }
+        } catch (Exception e) {
+            throw new Exception("Error deleting equipment file from S3: " + e.getMessage());
+        }
     }
 
-    public String getEquipmentFileUrl(UUID equipmentId, String documentPath) {
+    public String getEquipmentFileUrl(Long equipmentId, String documentPath) {
         if (!s3Enabled) {
             return null;
         }
 
-        String equipmentBucket = "equipment-" + equipmentId.toString();
+        String equipmentBucket = "equipment-" + equipmentId;
         return getFileUrl(equipmentBucket, documentPath);
     }
 
-    // Entity file methods (for generic file storage) - using UUID directly
-    public void uploadEntityFile(String entityType, UUID entityId, MultipartFile file, String fileName) throws Exception {
+    // Entity file methods (for generic file storage)
+    public void uploadEntityFile(String entityType, Long entityId, MultipartFile file, String fileName) throws Exception {
         if (!s3Enabled) {
             System.out.println("⚠️ S3 is disabled, entity file upload skipped");
             return;
         }
 
-        String bucketName = entityType + "-" + entityId.toString();
+        String bucketName = entityType + "-" + entityId;
         createBucketIfNotExists(bucketName);
         uploadFile(bucketName, file, fileName);
     }
 
-    public String getEntityFileUrl(String entityType, UUID entityId, String fileName) {
+    public String getEntityFileUrl(String entityType, Long entityId, String fileName) {
         if (!s3Enabled) {
             return null;
         }
 
-        String bucketName = entityType + "-" + entityId.toString();
+        String bucketName = entityType + "-" + entityId;
         return getFileUrl(bucketName, fileName);
     }
 
-    public void deleteEntityFile(String entityType, UUID entityId, String fileName) {
+    public void deleteEntityFile(String entityType, Long entityId, String fileName) {
         if (!s3Enabled) {
             System.out.println("⚠️ S3 is disabled, entity file deletion skipped");
             return;
         }
 
-        String bucketName = entityType + "-" + entityId.toString();
+        String bucketName = entityType + "-" + entityId;
         deleteFile(bucketName, fileName);
-    }
-
-    // Additional compatibility method for existing code
-    public void uploadFile(MultipartFile file, String fileName) throws Exception {
-        uploadFile(bucketName, file, fileName);
     }
 
     // Presigned URL methods

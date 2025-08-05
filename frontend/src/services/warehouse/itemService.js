@@ -9,7 +9,7 @@ export const itemService = {
         console.log('🔗 ItemService: Raw API response:', response);
         console.log('🔗 ItemService: Response status:', response.status);
         console.log('🔗 ItemService: Response data:', response.data);
-        return response; // Return the full response object, not just response.data
+        return response.data || response; // Return response.data, fallback to response if data is undefined
     },
 
     // Create a new item
