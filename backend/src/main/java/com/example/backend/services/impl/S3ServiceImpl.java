@@ -1,6 +1,8 @@
-package com.example.backend.services;
+package com.example.backend.services.impl;
 
+import com.example.backend.services.FileStorageService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -16,7 +18,8 @@ import java.time.Duration;
 import java.util.*;
 
 @Service
-public class MinioService implements FileStorageService {
+@ConditionalOnProperty(name = "storage.type", havingValue = "s3")
+public class S3ServiceImpl implements FileStorageService {
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
@@ -30,40 +33,21 @@ public class MinioService implements FileStorageService {
     @Value("${aws.s3.public-url:}")
     private String s3PublicUrl;
 
-    @Value("${aws.s3.enabled:true}")
-    private boolean s3Enabled;
-
-    public MinioService(S3Client s3Client, S3Presigner s3Presigner) {
+    public S3ServiceImpl(S3Client s3Client, S3Presigner s3Presigner) {
         this.s3Client = s3Client;
         this.s3Presigner = s3Presigner;
-
-        // Force enable S3 for local MinIO development
-        if (s3Client != null) {
-            this.s3Enabled = true;  // Override the @Value annotation
-            System.out.println("🔧 MinioService initialized with S3 enabled: " + s3Enabled + " (forced to true because S3Client exists)");
-        } else {
-            System.out.println("🔧 MinioService initialized with S3 enabled: " + s3Enabled + " (S3Client is null)");
-        }
     }
 
     @Override
     public void createBucketIfNotExists(String bucketName) {
-        if (!s3Enabled) {
-            System.out.println("⚠️ S3 is disabled, skipping bucket creation for local development");
-            return;
-        }
-
-        if (s3Client == null) {
-            System.out.println("⚠️ S3Client is null, skipping bucket creation for local development");
-            return;
-        }
-
         try {
             HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
                     .bucket(bucketName)
                     .build();
             s3Client.headBucket(headBucketRequest);
+            System.out.println("✅ S3 bucket exists: " + bucketName);
         } catch (NoSuchBucketException e) {
+            // Bucket doesn't exist, create it
             CreateBucketRequest createBucketRequest = CreateBucketRequest.builder()
                     .bucket(bucketName)
                     .build();
@@ -76,11 +60,6 @@ public class MinioService implements FileStorageService {
 
     @Override
     public void setBucketPublicReadPolicy(String bucketName) {
-        if (!s3Enabled || s3Client == null) {
-            System.out.println("⚠️ S3 is disabled, skipping bucket policy for local development");
-            return;
-        }
-
         try {
             String policyJson = String.format("""
                 {
@@ -102,6 +81,7 @@ public class MinioService implements FileStorageService {
                     .policy(policyJson)
                     .build();
             s3Client.putBucketPolicy(policyRequest);
+            System.out.println("✅ S3 bucket policy set for: " + bucketName);
         } catch (Exception e) {
             System.err.println("Error setting S3 bucket policy: " + e.getMessage());
         }
@@ -109,24 +89,12 @@ public class MinioService implements FileStorageService {
 
     @Override
     public String uploadFile(MultipartFile file) throws Exception {
-        if (!s3Enabled || s3Client == null) {
-            System.out.println("✅ S3 is disabled for local development, simulating file upload");
-            String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-            System.out.println("✅ Simulated file upload: " + fileName);
-            return fileName;
-        }
-
         String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
         return uploadFile(bucketName, file, fileName);
     }
 
     @Override
     public String uploadFile(String bucketName, MultipartFile file, String fileName) throws Exception {
-        if (!s3Enabled || s3Client == null) {
-            System.out.println("✅ S3 is disabled for local development, simulating file upload: " + fileName);
-            return fileName;
-        }
-
         try {
             createBucketIfNotExists(bucketName);
 
@@ -138,6 +106,7 @@ public class MinioService implements FileStorageService {
                     .build();
 
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+            System.out.println("✅ File uploaded to S3: " + fileName);
             return fileName;
         } catch (Exception e) {
             throw new Exception("Error uploading file to S3: " + e.getMessage());
@@ -146,19 +115,11 @@ public class MinioService implements FileStorageService {
 
     @Override
     public void uploadFile(MultipartFile file, String fileName) throws Exception {
-        if (!s3Enabled || s3Client == null) {
-            System.out.println("✅ S3 is disabled for local development, simulating file upload: " + fileName);
-            return;
-        }
         uploadFile(bucketName, file, fileName);
     }
 
     @Override
     public InputStream downloadFile(String fileName) throws Exception {
-        if (!s3Enabled || s3Client == null) {
-            throw new Exception("S3 is disabled for local development, cannot download file");
-        }
-
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
                 .key(fileName)
@@ -168,12 +129,6 @@ public class MinioService implements FileStorageService {
 
     @Override
     public String getFileUrl(String fileName) {
-        if (!s3Enabled || s3Client == null) {
-            String url = "http://localhost:9000/local-dev/" + fileName;
-            System.out.println("✅ Generated mock file URL: " + url);
-            return url;
-        }
-
         if (!s3PublicUrl.isEmpty()) {
             return s3PublicUrl + "/" + bucketName + "/" + fileName;
         }
@@ -182,12 +137,6 @@ public class MinioService implements FileStorageService {
 
     @Override
     public String getFileUrl(String bucketName, String fileName) {
-        if (!s3Enabled || s3Client == null) {
-            String url = "http://localhost:9000/local-dev/" + bucketName + "/" + fileName;
-            System.out.println("✅ Generated mock file URL: " + url);
-            return url;
-        }
-
         if (!s3PublicUrl.isEmpty()) {
             return s3PublicUrl + "/" + bucketName + "/" + fileName;
         }
@@ -196,55 +145,34 @@ public class MinioService implements FileStorageService {
 
     @Override
     public void initializeService() {
-        if (!s3Enabled || s3Client == null) {
-            System.out.println("✅ S3 is disabled for local development. Using mock file storage.");
-            return;
-        }
-
         try {
             createBucketIfNotExists(bucketName);
             System.out.println("✅ S3 initialization completed successfully");
         } catch (Exception e) {
             System.out.println("❌ S3 initialization failed: " + e.getMessage());
             e.printStackTrace();
-            System.out.println("⚠️ Continuing startup without S3. File storage will be unavailable.");
         }
     }
 
     // Equipment-specific methods
     @Override
     public void createEquipmentBucket(UUID equipmentId) {
-        if (!s3Enabled || s3Client == null) {
-            System.out.println("✅ S3 is disabled for local development, skipping equipment bucket creation");
-            return;
-        }
         String equipmentBucket = "equipment-" + equipmentId.toString();
         createBucketIfNotExists(equipmentBucket);
     }
 
     @Override
     public String uploadEquipmentFile(UUID equipmentId, MultipartFile file, String customFileName) throws Exception {
+        String equipmentBucket = "equipment-" + equipmentId.toString();
         String fileName = customFileName.isEmpty() ?
                 UUID.randomUUID().toString() + "_" + file.getOriginalFilename() :
                 customFileName + "_" + file.getOriginalFilename();
 
-        if (!s3Enabled || s3Client == null) {
-            System.out.println("✅ S3 is disabled for local development, simulating equipment file upload: " + fileName);
-            return fileName;
-        }
-
-        String equipmentBucket = "equipment-" + equipmentId.toString();
         return uploadFile(equipmentBucket, file, fileName);
     }
 
     @Override
     public String getEquipmentMainPhoto(UUID equipmentId) {
-        if (!s3Enabled || s3Client == null) {
-            String url = "http://localhost:9000/local-dev/equipment-" + equipmentId + "/main-image.jpg";
-            System.out.println("✅ Generated mock equipment photo URL: " + url);
-            return url;
-        }
-
         String equipmentBucket = "equipment-" + equipmentId.toString();
         try {
             ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
@@ -266,23 +194,12 @@ public class MinioService implements FileStorageService {
 
     @Override
     public void deleteEquipmentFile(UUID equipmentId, String fileName) throws Exception {
-        if (!s3Enabled || s3Client == null) {
-            System.out.println("✅ S3 is disabled for local development, simulating equipment file deletion: " + fileName);
-            return;
-        }
-
         String equipmentBucket = "equipment-" + equipmentId.toString();
         deleteFile(equipmentBucket, fileName);
     }
 
     @Override
     public String getEquipmentFileUrl(UUID equipmentId, String documentPath) {
-        if (!s3Enabled || s3Client == null) {
-            String url = "http://localhost:9000/local-dev/equipment-" + equipmentId + "/" + documentPath;
-            System.out.println("✅ Generated mock equipment file URL: " + url);
-            return url;
-        }
-
         String equipmentBucket = "equipment-" + equipmentId.toString();
         return getFileUrl(equipmentBucket, documentPath);
     }
@@ -290,11 +207,6 @@ public class MinioService implements FileStorageService {
     // Entity file methods
     @Override
     public void uploadEntityFile(String entityType, UUID entityId, MultipartFile file, String fileName) throws Exception {
-        if (!s3Enabled || s3Client == null) {
-            System.out.println("✅ S3 is disabled for local development, simulating entity file upload: " + fileName);
-            return;
-        }
-
         String bucketName = entityType + "-" + entityId.toString();
         createBucketIfNotExists(bucketName);
         uploadFile(bucketName, file, fileName);
@@ -302,23 +214,12 @@ public class MinioService implements FileStorageService {
 
     @Override
     public String getEntityFileUrl(String entityType, UUID entityId, String fileName) {
-        if (!s3Enabled || s3Client == null) {
-            String url = "http://localhost:9000/local-dev/" + entityType + "-" + entityId + "/" + fileName;
-            System.out.println("✅ Generated mock entity file URL: " + url);
-            return url;
-        }
-
         String bucketName = entityType + "-" + entityId.toString();
         return getFileUrl(bucketName, fileName);
     }
 
     @Override
     public void deleteEntityFile(String entityType, UUID entityId, String fileName) {
-        if (!s3Enabled || s3Client == null) {
-            System.out.println("✅ S3 is disabled for local development, simulating entity file deletion: " + fileName);
-            return;
-        }
-
         String bucketName = entityType + "-" + entityId.toString();
         deleteFile(bucketName, fileName);
     }
@@ -326,12 +227,6 @@ public class MinioService implements FileStorageService {
     // Presigned URL methods
     @Override
     public String getPresignedDownloadUrl(String fileName, int expirationMinutes) throws Exception {
-        if (!s3Enabled || s3Client == null || s3Presigner == null) {
-            String url = "http://localhost:9000/local-dev/presigned/" + fileName;
-            System.out.println("✅ Generated mock presigned URL: " + url);
-            return url;
-        }
-
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
                 .key(fileName)
@@ -348,12 +243,6 @@ public class MinioService implements FileStorageService {
 
     @Override
     public String getPresignedDownloadUrl(String bucketName, String fileName, int expirationMinutes) throws Exception {
-        if (!s3Enabled || s3Client == null || s3Presigner == null) {
-            String url = "http://localhost:9000/local-dev/presigned/" + bucketName + "/" + fileName;
-            System.out.println("✅ Generated mock presigned URL: " + url);
-            return url;
-        }
-
         GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
                 .key(fileName)
@@ -371,11 +260,6 @@ public class MinioService implements FileStorageService {
     // List and delete methods
     @Override
     public List<S3Object> listFiles(String bucketName) throws Exception {
-        if (!s3Enabled || s3Client == null) {
-            System.out.println("✅ S3 is disabled for local development, returning empty file list");
-            return new ArrayList<>();
-        }
-
         ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
                 .bucket(bucketName)
                 .build();
@@ -386,21 +270,11 @@ public class MinioService implements FileStorageService {
 
     @Override
     public void deleteFile(String fileName) {
-        if (!s3Enabled || s3Client == null) {
-            System.out.println("✅ S3 is disabled for local development, simulating file deletion: " + fileName);
-            return;
-        }
-
         deleteFile(bucketName, fileName);
     }
 
     @Override
     public void deleteFile(String bucketName, String fileName) {
-        if (!s3Enabled || s3Client == null) {
-            System.out.println("✅ S3 is disabled for local development, simulating file deletion: " + bucketName + "/" + fileName);
-            return;
-        }
-
         try {
             ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
                     .bucket(bucketName)

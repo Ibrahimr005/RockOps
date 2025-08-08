@@ -7,8 +7,8 @@ import com.example.backend.models.finance.generalLedger.JournalEntryStatus;
 import com.example.backend.models.user.User;
 import com.example.backend.repositories.finance.generalLedger.JournalEntryRepository;
 import com.example.backend.repositories.user.UserRepository;
+import com.example.backend.services.FileStorageService;
 import com.example.backend.services.finance.generalLedger.JournalEntryService;
-import com.example.backend.services.MinioService;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,17 +35,17 @@ public class JournalEntryController {
 
     private final JournalEntryService journalEntryService;
     private final JournalEntryRepository journalEntryRepository;
-    private final MinioService minioService;
+    private final FileStorageService fileStorageService;
     private final UserRepository userRepository;
 
     @Autowired
     public JournalEntryController(JournalEntryService journalEntryService,
                                   JournalEntryRepository journalEntryRepository,
-                                  MinioService minioService,
+                                  FileStorageService fileStorageService,
                                   UserRepository userRepository) {
         this.journalEntryService = journalEntryService;
         this.journalEntryRepository = journalEntryRepository;
-        this.minioService = minioService;
+        this.fileStorageService = fileStorageService;
         this.userRepository = userRepository;
     }
 
@@ -65,8 +65,8 @@ public class JournalEntryController {
 
             // Upload document if provided
             if (document != null && !document.isEmpty()) {
-                String fileName = minioService.uploadFile(document);
-                String fileUrl = minioService.getFileUrl(fileName);
+                String fileName = fileStorageService.uploadFile(document);
+                String fileUrl = fileStorageService.getFileUrl(fileName);
                 // Instead of setting base64 content, we'll set the document path directly
                 // and handle it in the service
                 requestDTO.setDocumentPath(fileUrl);

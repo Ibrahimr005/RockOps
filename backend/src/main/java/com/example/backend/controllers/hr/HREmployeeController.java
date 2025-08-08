@@ -3,8 +3,8 @@ package com.example.backend.controllers.hr;
 import com.example.backend.dto.hr.EmployeeDistributionDTO;
 import com.example.backend.dto.hr.EmployeeRequestDTO;
 import com.example.backend.dto.hr.SalaryStatisticsDTO;
+import com.example.backend.services.FileStorageService;
 import com.example.backend.services.hr.HREmployeeService;
-import com.example.backend.services.MinioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,7 +26,7 @@ public class HREmployeeController {
     private final HREmployeeService hrEmployeeService;
 
     @Autowired
-    private MinioService minioService;
+    private FileStorageService fileStorageService;
     /**
      * Get salary statistics
      * @return Salary statistics data
@@ -62,20 +62,20 @@ public class HREmployeeController {
         try {
             // Process the photo file before passing to service - just like the site controller
             if (photo != null && !photo.isEmpty()) {
-                String fileName = minioService.uploadFile(photo);
-                String fileUrl = minioService.getFileUrl(fileName);
+                String fileName = fileStorageService.uploadFile(photo);
+                String fileUrl = fileStorageService.getFileUrl(fileName);
                 employeeData.setPhotoUrl(fileUrl); // ✅ sets full URL
             }
             // Process ID front image
             if (idFrontImage != null && !idFrontImage.isEmpty()) {
-                String fileName = minioService.uploadFile(idFrontImage);
-                String fileUrl = minioService.getFileUrl(fileName);
+                String fileName = fileStorageService.uploadFile(idFrontImage);
+                String fileUrl = fileStorageService.getFileUrl(fileName);
                 employeeData.setIdFrontImage(fileUrl); // Assuming you add this setter
             }
             // Process ID back image
             if (idBackImage != null && !idBackImage.isEmpty()) {
-                String fileName = minioService.uploadFile(idBackImage);
-                String fileUrl = minioService.getFileUrl(fileName);
+                String fileName = fileStorageService.uploadFile(idBackImage);
+                String fileUrl = fileStorageService.getFileUrl(fileName);
                 employeeData.setIdBackImage(fileUrl); // Assuming you add this setter
             }
             // Now pass the DTO with URLs to the service (and null MultipartFiles since we already processed them)
@@ -106,22 +106,22 @@ public class HREmployeeController {
         try {
             // Process the photo file before passing to service - just like the addEmployee method
             if (photo != null && !photo.isEmpty()) {
-                String fileName = minioService.uploadFile(photo);
-                String fileUrl = minioService.getFileUrl(fileName);
+                String fileName = fileStorageService.uploadFile(photo);
+                String fileUrl = fileStorageService.getFileUrl(fileName);
                 employeeData.setPhotoUrl(fileUrl); // ✅ sets full URL
             }
 
             // Process ID front image
             if (idFrontImage != null && !idFrontImage.isEmpty()) {
-                String fileName = minioService.uploadFile(idFrontImage);
-                String fileUrl = minioService.getFileUrl(fileName);
+                String fileName = fileStorageService.uploadFile(idFrontImage);
+                String fileUrl = fileStorageService.getFileUrl(fileName);
                 employeeData.setIdFrontImage(fileUrl); // ✅ sets full URL
             }
 
             // Process ID back image
             if (idBackImage != null && !idBackImage.isEmpty()) {
-                String fileName = minioService.uploadFile(idBackImage);
-                String fileUrl = minioService.getFileUrl(fileName);
+                String fileName = fileStorageService.uploadFile(idBackImage);
+                String fileUrl = fileStorageService.getFileUrl(fileName);
                 employeeData.setIdBackImage(fileUrl); // ✅ sets full URL
             }
 
