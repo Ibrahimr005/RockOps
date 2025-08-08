@@ -118,26 +118,7 @@ const PendingPurchaseOrders = () => {
             minWidth: '250px',
             render: (row) => row.requestOrder?.title || '-'
         },
-        {
-            id: 'status',
-            header: 'STATUS',
-            accessor: 'status',
-            sortable: true,
-            minWidth: '150px',
-            render: (row) => (
-                <span className={`purchase-order-status-badge ${getStatusClass(row.status)}`}>
-                    {purchaseOrderService.utils.getStatusDisplay(row.status)}
-                </span>
-            )
-        },
-        {
-            id: 'totalAmount',
-            header: 'TOTAL AMOUNT',
-            accessor: 'totalAmount',
-            sortable: true,
-            minWidth: '150px',
-            render: (row) => purchaseOrderService.utils.formatCurrency(row.totalAmount)
-        },
+
         {
             id: 'deadline',
             header: 'DEADLINE',
@@ -154,28 +135,23 @@ const PendingPurchaseOrders = () => {
             minWidth: '150px',
             render: (row) => purchaseOrderService.utils.formatDate(row.expectedDeliveryDate)
         },
-        {
-            id: 'createdAt',
-            header: 'CREATED AT',
-            accessor: 'createdAt',
-            sortable: true,
-            minWidth: '150px',
-            render: (row) => purchaseOrderService.utils.formatDate(row.createdAt)
-        }
+
+
     ];
 
     // Define actions for DataTable
     const actions = [
         {
-            label: 'Validate',
+            label: 'View',
             icon: (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 6L9 17l-5-5"/>
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
                 </svg>
             ),
             onClick: (row) => handleValidateClick(row, { stopPropagation: () => {} }),
-            className: 'validate',
-            condition: (row) => row.status === 'PENDING' || row.status === 'CREATED'
+            className: 'View',
+
         }
     ];
 

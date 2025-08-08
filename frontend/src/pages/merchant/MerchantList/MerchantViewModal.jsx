@@ -2,8 +2,6 @@ import React, {useEffect} from "react";
 import "./MerchantViewModal.scss";
 
 const MerchantViewModal = ({ merchant, isOpen, onClose }) => {
-    if (!isOpen || !merchant) return null;
-
     // Format date helper
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
@@ -23,14 +21,19 @@ const MerchantViewModal = ({ merchant, isOpen, onClose }) => {
 
     useEffect(() => {
         if (isOpen) {
-            const originalStyle = window.getComputedStyle(document.body).overflow;
-            document.body.style.overflow = 'hidden';
-
-            return () => {
-                document.body.style.overflow = originalStyle;
-            };
+            // Add the modal-open class
+            document.body.classList.add('modal-open');
         }
+
+        // Cleanup function - this runs when the component unmounts or when isOpen changes
+        return () => {
+            // Simply remove the class and let CSS handle the rest
+            document.body.classList.remove('modal-open');
+        };
     }, [isOpen]);
+
+    // Early return AFTER useEffect so cleanup can run
+    if (!isOpen || !merchant) return null;
 
     // Get merchant type badge class
     const getTypeClass = (type) => {

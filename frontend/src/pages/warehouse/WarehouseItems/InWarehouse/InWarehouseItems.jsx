@@ -6,6 +6,31 @@ import { itemTypeService } from '../../../../services/warehouse/itemTypeService'
 import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
 import { warehouseService } from '../../../../services/warehouse/warehouseService';
 
+// Helper functions for quantity color coding
+const getQuantityColorClass = (currentQuantity, minQuantity) => {
+    if (!minQuantity || minQuantity === 0) return 'quantity-no-min';
+
+    const ratio = currentQuantity / minQuantity;
+
+    if (ratio >= 4) return 'quantity-excellent';    // 4x+ minimum - Dark Green
+    if (ratio >= 3) return 'quantity-very-good';   // 3x minimum - Green
+    if (ratio >= 2) return 'quantity-good';        // 2x minimum - Blue
+    if (ratio >= 1) return 'quantity-adequate';    // 1x minimum - Orange
+    return 'quantity-critical';                     // Below minimum - Red
+};
+
+const getQuantityStatus = (currentQuantity, minQuantity) => {
+    if (!minQuantity || minQuantity === 0) return 'No minimum set';
+
+    const ratio = currentQuantity / minQuantity;
+
+    if (ratio >= 4) return 'Excellent stock';
+    if (ratio >= 3) return 'Very good stock';
+    if (ratio >= 2) return 'Good stock';
+    if (ratio >= 1) return 'Adequate stock';
+    return 'Critical - Below minimum';
+};
+
 const InWarehouseItems = ({
                               warehouseId,
                               warehouseData,
@@ -36,8 +61,12 @@ const InWarehouseItems = ({
     const [childCategories, setChildCategories] = useState([]);
     const [itemTypes, setItemTypes] = useState([]);
 
-    // NEW: Filter toggle state
+    // Filter toggle state
     const [showFilters, setShowFilters] = useState(false);
+
+    // NEW: Collapsible states for alerts and legend
+    const [showLowStockAlert, setShowLowStockAlert] = useState(false);
+    const [showStockLegend, setShowStockLegend] = useState(false);
 
     // Helper function to aggregate items by type
     const aggregateItemsByType = (items) => {
@@ -343,7 +372,7 @@ const InWarehouseItems = ({
     const aggregatedData = aggregateItemsByType(filteredData);
     const lowStockItems = aggregatedData.filter(item => isLowStock(item));
 
-    // Table columns
+    // Table columns with enhanced quantity rendering
     const itemColumns = [
         {
             accessor: 'itemType.itemCategory.parentCategory.name',
@@ -376,23 +405,37 @@ const InWarehouseItems = ({
             width: '250px',
             render: (row) => {
                 if (row.isAggregated) {
-                    const lowStock = isLowStock(row);
+                    const colorClass = getQuantityColorClass(row.quantity, row.itemType?.minQuantity);
+                    const status = getQuantityStatus(row.quantity, row.itemType?.minQuantity);
+
                     return (
                         <div className="quantity-cell">
-                            <div className="quantity-main">
-                            <span className={`total-quantity ${lowStock ? 'low-stock' : ''}`}>
+                            <span
+                                className={`quantity-badge ${colorClass}`}
+                                title={`${status} (${row.quantity}/${row.itemType?.minQuantity || 'No min'})`}
+                            >
                                 {row.quantity}
                             </span>
-                            </div>
                             {row.individualItems && row.individualItems.length > 1 && (
                                 <span className="quantity-breakdown" title={`From ${row.individualItems.length} transactions`}>
-                                {` (${row.individualItems.length} entries)`}
-                            </span>
+                                    ({row.individualItems.length} entries)
+                                </span>
                             )}
                         </div>
                     );
                 }
-                return row.quantity || 0;
+
+                const colorClass = getQuantityColorClass(row.quantity, row.itemType?.minQuantity);
+                const status = getQuantityStatus(row.quantity, row.itemType?.minQuantity);
+
+                return (
+                    <span
+                        className={`quantity-badge ${colorClass}`}
+                        title={`${status} (${row.quantity}/${row.itemType?.minQuantity || 'No min'})`}
+                    >
+                        {row.quantity || 0}
+                    </span>
+                );
             },
             // Custom export formatter for Excel
             exportFormatter: (value, row) => {
@@ -429,45 +472,124 @@ const InWarehouseItems = ({
 
     return (
         <>
-            {/* Low Stock Warning Banner */}
-            {lowStockItems.length > 0 && (
-                <div className="low-stock-warning-banner">
-                    <div className="warning-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                            <line x1="12" y1="9" x2="12" y2="13"/>
-                            <line x1="12" y1="17" x2="12.01" y2="17"/>
-                        </svg>
+            {/* NEW: Full-width Alerts and Legend Container */}
+            <div className="alerts-legend-container">
+                {/* Low Stock Warning Banner - Full Width & Collapsible */}
+                {lowStockItems.length > 0 && (
+                    <div className="low-stock-warning-banner">
+                        <div className="alert-header" onClick={() => setShowLowStockAlert(!showLowStockAlert)}>
+                            <div className="alert-title-section">
+                                <div className="warning-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                        <line x1="12" y1="9" x2="12" y2="13"/>
+                                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                    </svg>
+                                </div>
+                                <h4 className="alert-title">Low Stock Alert</h4>
+                                <span className="alert-count">({lowStockItems.length} item{lowStockItems.length > 1 ? 's' : ''})</span>
+                            </div>
+                            <div className="alert-toggle">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    className={showLowStockAlert ? 'rotated' : ''}
+                                >
+                                    <polyline points="6,9 12,15 18,9"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+
+                        {showLowStockAlert && (
+                            <div className="alert-content">
+                                <div className="warning-content">
+                                    <div className="low-stock-items-list">
+                                        {lowStockItems.slice(0, 6).map((item, index) => (
+                                            <span key={index} className="low-stock-item">
+                                                {item.itemType?.name} ({item.quantity}/{item.itemType?.minQuantity})
+                                            </span>
+                                        ))}
+                                        {lowStockItems.length > 6 && (
+                                            <span className="low-stock-more">
+                                                +{lowStockItems.length - 6} more items
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="warning-actions">
+                                    <button
+                                        className="restock-button"
+                                        onClick={handleRestockButtonClick}
+                                        title="Create request order for low stock items"
+                                    >
+                                        Restock Items
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                    <div className="warning-content">
-                        <h3 className="warning-title">Low Stock Alert</h3>
-                        <p className="warning-message">
-                            {lowStockItems.length} item{lowStockItems.length > 1 ? 's are' : ' is'} below minimum quantity threshold:
-                        </p>
-                        <div className="low-stock-items-list">
-                            {lowStockItems.slice(0, 3).map((item, index) => (
-                                <span key={index} className="low-stock-item">
-                                    {item.itemType?.name} ({item.quantity}/{item.itemType?.minQuantity})
-                                </span>
-                            ))}
-                            {lowStockItems.length > 3 && (
-                                <span className="low-stock-more">
-                                    +{lowStockItems.length - 3} more
-                                </span>
-                            )}
+                )}
+
+                {/* Stock Level Legend - Full Width & Collapsible */}
+                <div className="stock-level-legend">
+                    <div className="legend-header" onClick={() => setShowStockLegend(!showStockLegend)}>
+                        <div className="legend-title-section">
+                            <div className="legend-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M12 1v6m0 6v6"/>
+                                    <path d="M21 12h-6m-6 0H3"/>
+                                </svg>
+                            </div>
+                            <h4 className="legend-title">Stock Level Guide</h4>
+                        </div>
+                        <div className="legend-toggle">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                className={showStockLegend ? 'rotated' : ''}
+                            >
+                                <polyline points="6,9 12,15 18,9"></polyline>
+                            </svg>
                         </div>
                     </div>
-                    <div className="warning-actions">
-                        <button
-                            className="restock-button"
-                            onClick={handleRestockButtonClick}
-                            title="Create request order for low stock items"
-                        >
-                            Restock Items
-                        </button>
-                    </div>
+
+                    {showStockLegend && (
+                        <div className="legend-content">
+                            <div className="legend-items">
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-excellent"></span>
+                                    <span className="legend-text">Excellent (4x+ minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-very-good"></span>
+                                    <span className="legend-text">Very Good (3x minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-good"></span>
+                                    <span className="legend-text">Good (2x minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-adequate"></span>
+                                    <span className="legend-text">Adequate (1x minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-critical"></span>
+                                    <span className="legend-text">Critical (Below minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-no-min"></span>
+                                    <span className="legend-text">No minimum set</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
 
             {/* DataTable */}
             <DataTable
