@@ -120,10 +120,57 @@ public class SiteAdminController
     }
 
     @PostMapping("/{siteId}/assign-equipment/{equipmentId}")
-    public ResponseEntity<Equipment> assignEquipmentToSite(@PathVariable UUID siteId, @PathVariable UUID equipmentId)
-    {
-        Equipment updatedEquipment = siteAdminService.assignEquipmentToSite(siteId, equipmentId);
-        return ResponseEntity.ok(updatedEquipment);
+    public ResponseEntity<?> assignEquipmentToSite(
+            @PathVariable UUID siteId,
+            @PathVariable UUID equipmentId) {
+
+        System.out.println("=== Controller: Equipment Assignment Request ===");
+        System.out.println("Site ID: " + siteId);
+        System.out.println("Equipment ID: " + equipmentId);
+
+        try {
+            // Pre-flight checks
+            if (!siteAdminService.siteExists(siteId)) {
+                System.err.println("Site not found: " + siteId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Site with ID " + siteId + " not found");
+            }
+
+            if (!siteAdminService.equipmentExists(equipmentId)) {
+                System.err.println("Equipment not found: " + equipmentId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Equipment with ID " + equipmentId + " not found");
+            }
+
+            System.out.println("Pre-flight checks passed, calling service...");
+
+            Equipment updatedEquipment = siteAdminService.assignEquipmentToSite(siteId, equipmentId);
+
+            System.out.println("Service call successful");
+            return ResponseEntity.ok(updatedEquipment);
+
+        } catch (IllegalArgumentException e) {
+            System.err.println("Invalid argument: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Invalid request: " + e.getMessage());
+
+        } catch (IllegalStateException e) {
+            System.err.println("Invalid state: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("Conflict: " + e.getMessage());
+
+        } catch (RuntimeException e) {
+            System.err.println("Runtime exception: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
+
+        } catch (Exception e) {
+            System.err.println("Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal server error occurred while assigning equipment");
+        }
     }
 
     @DeleteMapping("/{siteId}/remove-equipment/{equipmentId}")

@@ -186,6 +186,88 @@ export const FINANCE_ENDPOINTS = {
         BASE: '/api/v1/accounting-periods',
         BY_ID: (id) => `/api/v1/accounting-periods/${id}`,
         CLOSE: (id) => `/api/v1/accounting-periods/${id}/close`
+    },
+
+    // Add this to your existing FINANCE_ENDPOINTS in src/config/api.config.js
+
+// Bank Reconciliation submodule endpoints
+    BANK_RECONCILIATION: {
+        // Bank Account endpoints
+        BANK_ACCOUNTS: {
+            BASE: '/api/v1/bank-accounts',
+            BY_ID: (id) => `/api/v1/bank-accounts/${id}`,
+            UPDATE_BALANCE: (id) => `/api/v1/bank-accounts/${id}/balance`,
+            SEARCH: '/api/v1/bank-accounts/search',
+            BALANCE_ABOVE: '/api/v1/bank-accounts/balance-above'
+        },
+
+        // Bank Statement Entry endpoints
+        BANK_STATEMENT_ENTRIES: {
+            BASE: '/api/v1/bank-statement-entries',
+            BY_ID: (id) => `/api/v1/bank-statement-entries/${id}`,
+            IMPORT: '/api/v1/bank-statement-entries/import',
+            BY_BANK_ACCOUNT: (bankAccountId) => `/api/v1/bank-statement-entries/bank-account/${bankAccountId}`,
+            UNMATCHED: '/api/v1/bank-statement-entries/unmatched',
+            UNMATCHED_BY_ACCOUNT: (bankAccountId) => `/api/v1/bank-statement-entries/unmatched/bank-account/${bankAccountId}`,
+            BY_DATE_RANGE: '/api/v1/bank-statement-entries/date-range',
+            BY_CATEGORY: (category) => `/api/v1/bank-statement-entries/category/${category}`,
+            MARK_MATCHED: (id) => `/api/v1/bank-statement-entries/${id}/match`,
+            POTENTIAL_MATCHES: '/api/v1/bank-statement-entries/potential-matches',
+            SEARCH: '/api/v1/bank-statement-entries/search'
+        },
+
+        // Internal Transaction endpoints
+        INTERNAL_TRANSACTIONS: {
+            BASE: '/api/v1/internal-transactions',
+            BY_ID: (id) => `/api/v1/internal-transactions/${id}`,
+            BY_BANK_ACCOUNT: (bankAccountId) => `/api/v1/internal-transactions/bank-account/${bankAccountId}`,
+            UNRECONCILED: '/api/v1/internal-transactions/unreconciled',
+            UNRECONCILED_BY_ACCOUNT: (bankAccountId) => `/api/v1/internal-transactions/unreconciled/bank-account/${bankAccountId}`,
+            BY_DATE_RANGE: '/api/v1/internal-transactions/date-range',
+            BY_TYPE: (transactionType) => `/api/v1/internal-transactions/type/${transactionType}`,
+            MARK_RECONCILED: (id) => `/api/v1/internal-transactions/${id}/reconcile`,
+            POTENTIAL_MATCHES: '/api/v1/internal-transactions/potential-matches'
+        },
+
+        // Transaction Match endpoints
+        TRANSACTION_MATCHES: {
+            BASE: '/api/v1/transaction-matches',
+            BY_ID: (id) => `/api/v1/transaction-matches/${id}`,
+            UNCONFIRMED: '/api/v1/transaction-matches/unconfirmed',
+            BY_BANK_ACCOUNT: (bankAccountId) => `/api/v1/transaction-matches/bank-account/${bankAccountId}`,
+            NEEDS_REVIEW: '/api/v1/transaction-matches/needs-review',
+            CONFIRM: (id) => `/api/v1/transaction-matches/${id}/confirm`,
+            AUTO_MATCH: (bankAccountId) => `/api/v1/transaction-matches/auto-match/bank-account/${bankAccountId}`,
+            POTENTIAL_MATCHES: (bankStatementEntryId) => `/api/v1/transaction-matches/potential-matches/bank-statement-entry/${bankStatementEntryId}`
+        },
+
+        // Discrepancy endpoints
+        DISCREPANCIES: {
+            BASE: '/api/v1/discrepancies',
+            BY_ID: (id) => `/api/v1/discrepancies/${id}`,
+            BY_STATUS: (status) => `/api/v1/discrepancies/status/${status}`,
+            OPEN: '/api/v1/discrepancies/open',
+            HIGH_PRIORITY: '/api/v1/discrepancies/high-priority',
+            ASSIGNED_TO: (assignee) => `/api/v1/discrepancies/assigned-to/${assignee}`,
+            UNASSIGNED: '/api/v1/discrepancies/unassigned',
+            OVERDUE: '/api/v1/discrepancies/overdue',
+            ASSIGN: (id) => `/api/v1/discrepancies/${id}/assign`,
+            UPDATE_NOTES: (id) => `/api/v1/discrepancies/${id}/investigation-notes`,
+            RESOLVE: (id) => `/api/v1/discrepancies/${id}/resolve`,
+            CLOSE: (id) => `/api/v1/discrepancies/${id}/close`,
+            UPDATE_PRIORITY: (id) => `/api/v1/discrepancies/${id}/priority`
+        },
+
+        // Reconciliation Report endpoints
+        RECONCILIATION_REPORTS: {
+            SUMMARY_BY_ACCOUNT: (bankAccountId) => `/api/v1/reconciliation-reports/summary/bank-account/${bankAccountId}`,
+            SUMMARY_ALL_ACCOUNTS: '/api/v1/reconciliation-reports/summary/all-accounts',
+            OUTSTANDING_CHECKS: (bankAccountId) => `/api/v1/reconciliation-reports/outstanding-checks/bank-account/${bankAccountId}`,
+            DEPOSITS_IN_TRANSIT: (bankAccountId) => `/api/v1/reconciliation-reports/deposits-in-transit/bank-account/${bankAccountId}`,
+            STATUS: (bankAccountId) => `/api/v1/reconciliation-reports/status/bank-account/${bankAccountId}`,
+            EXPORT_CSV: (bankAccountId) => `/api/v1/reconciliation-reports/export/csv/bank-account/${bankAccountId}`,
+            TREND: (bankAccountId) => `/api/v1/reconciliation-reports/trend/bank-account/${bankAccountId}`
+        }
     }
 };
 
@@ -231,6 +313,7 @@ export const SITE_ENDPOINTS = {
     UNASSIGNED_PARTNERS: (siteId) => `/api/v1/site/${siteId}/unassigned-partners`,
     EMPLOYEES: (siteId) => `/api/v1/site/${siteId}/employees`,
     EQUIPMENT: (siteId) => `/api/v1/site/${siteId}/equipment`,
+    UNASSIGNED_EQUIPMENT: `/api/v1/site/unassigned-equipment`,
     WAREHOUSES: (siteId) => `/api/v1/site/${siteId}/warehouses`,
     MERCHANTS: (siteId) => `/api/v1/site/${siteId}/merchants`,
     FIXED_ASSETS: (siteId) => `/api/v1/site/${siteId}/fixedassets`,

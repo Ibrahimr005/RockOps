@@ -35,7 +35,7 @@ import {
     FaTags,
     FaListAlt,
     FaArrowLeft,
-    FaBook, FaReceipt, FaPiggyBank, FaFileAlt, FaMoneyBillWave, FaChartBar, FaArrowUp,
+    FaBook, FaBalanceScale, FaReceipt, FaPiggyBank, FaFileAlt, FaMoneyBillWave, FaChartBar, FaArrowUp,
 } from 'react-icons/fa';
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE } from '../../../utils/roles';
 
@@ -399,6 +399,12 @@ const Sidebar = () => {
                     title: 'Fixed Assets',
                     icon: <FaBuilding/>,
                     path: '/finance/fixed-assets',
+                    roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
+                },
+                {
+                    title: 'Bank Reconciliation',
+                    icon: <FaBalanceScale/>,
+                    path: '/finance/bank-reconciliation',
                     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
                 },
             ]

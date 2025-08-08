@@ -5,7 +5,6 @@ import { itemService } from '../../../../services/warehouse/itemService';
 import { itemTypeService } from '../../../../services/warehouse/itemTypeService';
 import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
 import { warehouseService } from '../../../../services/warehouse/warehouseService';
-import { requestOrderService } from '../../../../services/procurement/requestOrderService'; // Correct service
 
 // Helper functions for quantity color coding
 const getQuantityColorClass = (currentQuantity, minQuantity) => {
@@ -62,13 +61,12 @@ const InWarehouseItems = ({
     const [childCategories, setChildCategories] = useState([]);
     const [itemTypes, setItemTypes] = useState([]);
 
-    // NEW: Filter toggle state
+    // Filter toggle state
     const [showFilters, setShowFilters] = useState(false);
 
-    // NEW: Restock management states
-    const [selectedRestockItems, setSelectedRestockItems] = useState(new Set());
-    const [pendingRestockRequests, setPendingRestockRequests] = useState(new Map()); // itemTypeId -> requestData
-    const [restockLoading, setRestockLoading] = useState(false);
+    // NEW: Collapsible states for alerts and legend
+    const [showLowStockAlert, setShowLowStockAlert] = useState(false);
+    const [showStockLegend, setShowStockLegend] = useState(false);
 
     // Helper function to aggregate items by type
     const aggregateItemsByType = (items) => {
@@ -95,124 +93,6 @@ const InWarehouseItems = ({
         return Object.values(aggregated);
     };
 
-    // NEW: Fetch pending request orders for this warehouse
-    const fetchPendingRestockRequests = async () => {
-        try {
-            const requests = await requestOrderService.getByWarehouseAndStatus(warehouseId, 'PENDING');
-            const requestMap = new Map();
-
-            requests.forEach(request => {
-                // Assuming each request has requestItems array with itemType
-                request.requestItems?.forEach(item => {
-                    requestMap.set(item.itemType.id, {
-                        requestId: request.id,
-                        status: request.status,
-                        requestedQuantity: item.quantity,
-                        createdAt: request.createdAt,
-                        title: request.title,
-                        comment: item.comment
-                    });
-                });
-            });
-
-            setPendingRestockRequests(requestMap);
-        } catch (error) {
-            console.error("Failed to fetch pending request orders:", error);
-        }
-    };
-
-    // NEW: Toggle item selection for restocking
-    const toggleRestockItemSelection = (itemTypeId) => {
-        console.log('toggleRestockItemSelection called with:', itemTypeId); // Debug log
-        const newSelection = new Set(selectedRestockItems);
-        if (newSelection.has(itemTypeId)) {
-            newSelection.delete(itemTypeId);
-            console.log('Removed item from selection'); // Debug log
-        } else {
-            newSelection.add(itemTypeId);
-            console.log('Added item to selection'); // Debug log
-        }
-        console.log('New selection:', newSelection); // Debug log
-        setSelectedRestockItems(newSelection);
-    };
-
-    // NEW: Handle restock submission for selected items
-    const handleRestockSelectedItems = async () => {
-        if (selectedRestockItems.size === 0) {
-            showSnackbar("Please select at least one item to restock", "warning");
-            return;
-        }
-
-        setRestockLoading(true);
-
-        try {
-            const itemsToRestock = [];
-            const aggregatedData = aggregateItemsByType(filteredData);
-
-            selectedRestockItems.forEach(itemTypeId => {
-                const item = aggregatedData.find(item => item.itemType?.id === itemTypeId);
-                if (item) {
-                    const currentQuantity = item.quantity || 0;
-                    const minQuantity = item.itemType?.minQuantity || 0;
-                    const quantityNeeded = Math.max(minQuantity * 2 - currentQuantity, minQuantity); // Request 2x minimum
-
-                    itemsToRestock.push({
-                        itemTypeId: item.itemType.id,
-                        quantity: quantityNeeded,
-                        currentQuantity: currentQuantity,
-                        minQuantity: minQuantity,
-                        comment: `Restocking ${item.itemType.name} - Current: ${currentQuantity}, Min: ${minQuantity}, Requested: ${quantityNeeded}`
-                    });
-                }
-            });
-
-            // Call the existing onRestockItems callback which redirects to request order modal
-            if (onRestockItems) {
-                await onRestockItems(itemsToRestock);
-            } else {
-                // Fallback: create request order directly using the existing pattern
-                const requestData = {
-                    title: `Restock Request - ${warehouseData?.name || 'Warehouse'}`,
-                    description: `Automated restock request for ${itemsToRestock.length} low stock items`,
-                    createdBy: getCurrentUsername(),
-                    status: 'PENDING',
-                    partyType: 'WAREHOUSE',
-                    requesterId: warehouseId,
-                    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-                    items: itemsToRestock
-                };
-
-                await requestOrderService.create(requestData);
-                showSnackbar(`Successfully created restock request for ${itemsToRestock.length} items`, "success");
-            }
-
-            // Refresh data and clear selection
-            await fetchPendingRestockRequests();
-            setSelectedRestockItems(new Set());
-
-        } catch (error) {
-            console.error("Error creating restock request:", error);
-            showSnackbar("Failed to create restock request", "error");
-        } finally {
-            setRestockLoading(false);
-        }
-    };
-
-    // NEW: Get current username helper
-    const getCurrentUsername = () => {
-        try {
-            const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-            return userInfo.username || 'system';
-        } catch {
-            return 'system';
-        }
-    };
-
-    // NEW: Check if item has pending restock request
-    const getRestockStatus = (itemTypeId) => {
-        return pendingRestockRequests.get(itemTypeId);
-    };
-
     const fetchItemTypes = async () => {
         try {
             const data = await itemTypeService.getAll();
@@ -222,6 +102,7 @@ const InWarehouseItems = ({
         }
     };
 
+    // Replace the fetchParentCategories method:
     const fetchParentCategories = async () => {
         try {
             const data = await itemCategoryService.getParents();
@@ -243,6 +124,8 @@ const InWarehouseItems = ({
         };
     }, [isAddItemModalOpen]);
 
+
+// Replace the fetchChildCategories method:
     const fetchChildCategories = async (parentCategoryId) => {
         if (!parentCategoryId) {
             setChildCategories([]);
@@ -251,6 +134,7 @@ const InWarehouseItems = ({
 
         try {
             const data = await itemCategoryService.getChildren();
+            // Filter by parent category since the endpoint returns all children
             const filteredChildren = data.filter(category =>
                 category.parentCategory?.id === parentCategoryId
             );
@@ -275,28 +159,28 @@ const InWarehouseItems = ({
     useEffect(() => {
         fetchItemTypes();
         fetchParentCategories();
-        fetchPendingRestockRequests(); // NEW: Fetch restock requests on mount
-    }, [warehouseId]);
+    }, []);
 
-    // NEW: Refresh restock requests when filteredData changes
-    useEffect(() => {
-        fetchPendingRestockRequests();
-    }, [filteredData]);
-
+    // NEW: Toggle filters with animation
     const toggleFilters = () => {
         if (showFilters) {
+            // If currently showing, start collapse animation
             const filterElement = document.querySelector('.add-item-collapsible-filters');
             if (filterElement) {
                 filterElement.classList.add('collapsing');
+
+                // Wait for animation to finish, then hide
                 setTimeout(() => {
                     setShowFilters(false);
-                }, 300);
+                }, 300); // Match the animation duration
             }
         } else {
+            // If currently hidden, show immediately (slideDown animation will play)
             setShowFilters(true);
         }
     };
 
+    // Modal handlers
     const handleOpenAddItemModal = () => {
         setAddItemData({
             parentCategoryId: "",
@@ -306,8 +190,30 @@ const InWarehouseItems = ({
             createdAt: new Date().toISOString().split('T')[0]
         });
         setChildCategories([]);
-        setShowFilters(false);
+        setShowFilters(false); // Reset filter state
         setIsAddItemModalOpen(true);
+    };
+
+    const handleRestockButtonClick = () => {
+        if (onRestockItems) {
+            // Calculate items that need restocking with exact quantities
+            const itemsToRestock = lowStockItems.map(item => {
+                const currentQuantity = item.quantity || 0;
+                const minQuantity = item.itemType?.minQuantity || 0;
+                const quantityNeeded = Math.max(0, minQuantity - currentQuantity);
+
+                return {
+                    itemTypeId: item.itemType.id,
+                    quantity: quantityNeeded,
+                    comment: `Restocking for ${item.itemType.name} - Current: ${currentQuantity}, Min: ${minQuantity}`
+                };
+            });
+
+            onRestockItems(itemsToRestock);
+        } else {
+            // Fallback to opening add item modal
+            handleOpenAddItemModal();
+        }
     };
 
     const handleAddItemInputChange = (e) => {
@@ -336,18 +242,21 @@ const InWarehouseItems = ({
     };
 
     const getFilteredItemTypes = () => {
+        // If child category is selected, filter by child category (most specific)
         if (addItemData.itemCategoryId) {
             return itemTypes.filter(itemType =>
                 itemType.itemCategory?.id === addItemData.itemCategoryId
             );
         }
 
+        // If only parent category is selected, show all item types under that parent
         if (addItemData.parentCategoryId) {
             return itemTypes.filter(itemType =>
                 itemType.itemCategory?.parentCategory?.id === addItemData.parentCategoryId
             );
         }
 
+        // If nothing is selected, show all item types
         return itemTypes;
     };
 
@@ -359,7 +268,19 @@ const InWarehouseItems = ({
             return;
         }
 
-        let username = getCurrentUsername();
+        let username = "system";
+        const userInfoString = localStorage.getItem('userInfo');
+        if (userInfoString) {
+            try {
+                const userInfo = JSON.parse(userInfoString);
+                if (userInfo.username) {
+                    username = userInfo.username;
+                }
+            } catch (error) {
+                console.error("Error parsing user info:", error);
+            }
+        }
+
         setAddItemLoading(true);
 
         try {
@@ -393,6 +314,7 @@ const InWarehouseItems = ({
             document.body.classList.remove("modal-open");
         };
     }, [isTransactionDetailsModalOpen]);
+
 
     const handleOpenTransactionDetailsModal = async (item) => {
         setSelectedItem(item);
@@ -515,7 +437,9 @@ const InWarehouseItems = ({
                     </span>
                 );
             },
+            // Custom export formatter for Excel
             exportFormatter: (value, row) => {
+                // For Excel, just return the numeric value with additional info
                 if (row.isAggregated && row.individualItems?.length > 1) {
                     return `${value} (from ${row.individualItems.length} entries)`;
                 }
@@ -530,6 +454,7 @@ const InWarehouseItems = ({
         }
     ];
 
+    // Table actions
     const actions = [
         {
             label: 'View Details',
@@ -547,157 +472,126 @@ const InWarehouseItems = ({
 
     return (
         <>
-            {/* Low Stock Alert - Full Width */}
-            {lowStockItems.length > 0 && (
-                <div className="low-stock-warning-banner">
-                    <div className="warning-header">
-                        <div className="warning-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                                <line x1="12" y1="9" x2="12" y2="13"/>
-                                <line x1="12" y1="17" x2="12.01" y2="17"/>
-                            </svg>
+            {/* NEW: Full-width Alerts and Legend Container */}
+            <div className="alerts-legend-container">
+                {/* Low Stock Warning Banner - Full Width & Collapsible */}
+                {lowStockItems.length > 0 && (
+                    <div className="low-stock-warning-banner">
+                        <div className="alert-header" onClick={() => setShowLowStockAlert(!showLowStockAlert)}>
+                            <div className="alert-title-section">
+                                <div className="warning-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                        <line x1="12" y1="9" x2="12" y2="13"/>
+                                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                    </svg>
+                                </div>
+                                <h4 className="alert-title">Low Stock Alert</h4>
+                                <span className="alert-count">({lowStockItems.length} item{lowStockItems.length > 1 ? 's' : ''})</span>
+                            </div>
+                            <div className="alert-toggle">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    className={showLowStockAlert ? 'rotated' : ''}
+                                >
+                                    <polyline points="6,9 12,15 18,9"></polyline>
+                                </svg>
+                            </div>
                         </div>
-                        <h4 className="warning-title">Low Stock Alert</h4>
-                        <div className="selection-counter">
-                            {selectedRestockItems.size > 0 && (
-                                <span className="selected-count">
-                                    {selectedRestockItems.size} selected
-                                </span>
-                            )}
-                        </div>
-                    </div>
 
-                    <div className="warning-content">
-                        <p className="warning-message">
-                            {lowStockItems.length} item{lowStockItems.length > 1 ? 's are' : ' is'} below minimum quantity threshold:
-                        </p>
-
-                        <div className="low-stock-items-grid">
-                            {lowStockItems.map((item, index) => {
-                                const itemTypeId = item.itemType?.id;
-                                const isSelected = selectedRestockItems.has(itemTypeId);
-                                const restockStatus = getRestockStatus(itemTypeId);
-
-                                return (
-                                    <div key={index} className={`low-stock-item-card ${isSelected ? 'selected' : ''} ${restockStatus ? 'has-request' : ''}`}>
-                                        <div className="item-selection">
-                                            <input
-                                                type="checkbox"
-                                                id={`restock-${itemTypeId}`}
-                                                checked={isSelected}
-                                                onChange={() => toggleRestockItemSelection(itemTypeId)}
-                                                disabled={!!restockStatus}
-                                                className="restock-checkbox"
-                                            />
-                                            <label htmlFor={`restock-${itemTypeId}`} className="item-name">
-                                                {item.itemType?.name}
-                                            </label>
-                                        </div>
-
-                                        {restockStatus ? (
-                                            <div className="request-status">
-                                                Requested
-                                            </div>
-                                        ) : (
-                                            <div className="item-quantity-info">
-                                                {item.quantity}/{item.itemType?.minQuantity}
-                                            </div>
+                        {showLowStockAlert && (
+                            <div className="alert-content">
+                                <div className="warning-content">
+                                    <div className="low-stock-items-list">
+                                        {lowStockItems.slice(0, 6).map((item, index) => (
+                                            <span key={index} className="low-stock-item">
+                                                {item.itemType?.name} ({item.quantity}/{item.itemType?.minQuantity})
+                                            </span>
+                                        ))}
+                                        {lowStockItems.length > 6 && (
+                                            <span className="low-stock-more">
+                                                +{lowStockItems.length - 6} more items
+                                            </span>
                                         )}
                                     </div>
-                                );
-                            })}
+                                </div>
+                                <div className="warning-actions">
+                                    <button
+                                        className="restock-button"
+                                        onClick={handleRestockButtonClick}
+                                        title="Create request order for low stock items"
+                                    >
+                                        Restock Items
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Stock Level Legend - Full Width & Collapsible */}
+                <div className="stock-level-legend">
+                    <div className="legend-header" onClick={() => setShowStockLegend(!showStockLegend)}>
+                        <div className="legend-title-section">
+                            <div className="legend-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M12 1v6m0 6v6"/>
+                                    <path d="M21 12h-6m-6 0H3"/>
+                                </svg>
+                            </div>
+                            <h4 className="legend-title">Stock Level Guide</h4>
+                        </div>
+                        <div className="legend-toggle">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                className={showStockLegend ? 'rotated' : ''}
+                            >
+                                <polyline points="6,9 12,15 18,9"></polyline>
+                            </svg>
                         </div>
                     </div>
 
-                    <div className="warning-actions">
-                        <div className="action-buttons">
-                            <button
-                                className="select-all-button"
-                                onClick={() => {
-                                    const availableItems = lowStockItems
-                                        .filter(item => !getRestockStatus(item.itemType?.id))
-                                        .map(item => item.itemType?.id);
-
-                                    if (availableItems.every(id => selectedRestockItems.has(id))) {
-                                        // If all available items are selected, deselect all
-                                        setSelectedRestockItems(new Set());
-                                    } else {
-                                        // Otherwise, select all available items
-                                        setSelectedRestockItems(new Set(availableItems));
-                                    }
-                                }}
-                                disabled={lowStockItems.every(item => !!getRestockStatus(item.itemType?.id))}
-                            >
-                                {lowStockItems.filter(item => !getRestockStatus(item.itemType?.id)).every(item =>
-                                    selectedRestockItems.has(item.itemType?.id)
-                                ) ? 'Deselect All' : 'Select All'}
-                            </button>
-
-                            <button
-                                className="restock-button"
-                                onClick={handleRestockSelectedItems}
-                                disabled={selectedRestockItems.size === 0 || restockLoading}
-                                title={selectedRestockItems.size === 0 ?
-                                    "Select items to restock" :
-                                    `Create restock request for ${selectedRestockItems.size} items`
-                                }
-                            >
-                                {restockLoading ? (
-                                    <>
-                                        <div className="button-spinner"></div>
-                                        Processing...
-                                    </>
-                                ) : (
-                                    `Restock Selected (${selectedRestockItems.size})`
-                                )}
-                            </button>
+                    {showStockLegend && (
+                        <div className="legend-content">
+                            <div className="legend-items">
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-excellent"></span>
+                                    <span className="legend-text">Excellent (4x+ minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-very-good"></span>
+                                    <span className="legend-text">Very Good (3x minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-good"></span>
+                                    <span className="legend-text">Good (2x minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-adequate"></span>
+                                    <span className="legend-text">Adequate (1x minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-critical"></span>
+                                    <span className="legend-text">Critical (Below minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-no-min"></span>
+                                    <span className="legend-text">No minimum set</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Stock Level Guide - Horizontal Bar Above Table */}
-            <div className="stock-level-guide-horizontal">
-                <div className="legend-header-horizontal">
-                    <div className="legend-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M12 1v6m0 6v6"/>
-                            <path d="M21 12h-6m-6 0H3"/>
-                        </svg>
-                    </div>
-                    <h4 className="legend-title">Stock Level Guide:</h4>
-                </div>
-                <div className="legend-items-horizontal">
-                    <div className="legend-item">
-                        <span className="legend-color quantity-excellent"></span>
-                        <span className="legend-text">Excellent (4x+ minimum)</span>
-                    </div>
-                    <div className="legend-item">
-                        <span className="legend-color quantity-very-good"></span>
-                        <span className="legend-text">Very Good (3x minimum)</span>
-                    </div>
-                    <div className="legend-item">
-                        <span className="legend-color quantity-good"></span>
-                        <span className="legend-text">Good (2x minimum)</span>
-                    </div>
-                    <div className="legend-item">
-                        <span className="legend-color quantity-adequate"></span>
-                        <span className="legend-text">Adequate (1x minimum)</span>
-                    </div>
-                    <div className="legend-item">
-                        <span className="legend-color quantity-critical"></span>
-                        <span className="legend-text">Critical (Below minimum)</span>
-                    </div>
-                    <div className="legend-item">
-                        <span className="legend-color quantity-no-min"></span>
-                        <span className="legend-text">No minimum set</span>
-                    </div>
+                    )}
                 </div>
             </div>
 
-            {/* Rest of the component remains the same... */}
+            {/* DataTable */}
             <DataTable
                 data={aggregatedData}
                 columns={itemColumns}
@@ -723,6 +617,7 @@ const InWarehouseItems = ({
                     </svg>
                 }
                 onAddClick={handleOpenAddItemModal}
+                // Excel Export functionality
                 showExportButton={true}
                 exportButtonText="Export Items"
                 exportButtonIcon={
@@ -771,7 +666,7 @@ const InWarehouseItems = ({
 
                         <div className="add-item-modal-body">
                             <form onSubmit={handleAddItemSubmit} className="add-item-form">
-                                {/* Filter Toggle Section */}
+                                {/* NEW: Filter Toggle Section */}
                                 <div className="add-item-filter-section">
                                     <div className="add-item-filter-header">
                                         <button
@@ -961,6 +856,7 @@ const InWarehouseItems = ({
                                     <span className="item-category-top">{selectedItem.itemType?.itemCategory?.name}</span>
                                 </div>
                                 <div className="summary-stats">
+
                                     <div className="stat-item-top">
                                         <span className="stat-value">{transactionDetails.length}</span>
                                         <span className="stat-label">Entries</span>

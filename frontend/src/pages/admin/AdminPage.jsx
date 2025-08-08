@@ -26,6 +26,18 @@ const AdminPage = () => {
         setLoading(true);
         try {
             const response = await adminService.getUsers();
+
+            // DEBUG: Log the entire response
+            console.log('Full API Response:', response);
+            console.log('Response Data:', response.data);
+            console.log('Data Type:', typeof response.data);
+            console.log('Is Array:', Array.isArray(response.data));
+
+            if (response.data && Array.isArray(response.data)) {
+                console.log('First User:', response.data[0]);
+                console.log('User Count:', response.data.length);
+            }
+
             setUsers(response.data);
             setError(null);
         } catch (err) {
@@ -139,11 +151,22 @@ const AdminPage = () => {
             header: t('admin.role'),
             accessor: 'role',
             sortable: true,
-            render: (row, value) => (
-                <span className={`role-badge role-badge--${value.toLowerCase()}`}>
-                    {t(`roles.${value}`)}
-                </span>
-            )
+            render: (row, value) => {
+                // Handle null/undefined values
+                if (!value) {
+                    return (
+                        <span className="role-badge role-badge--unknown">
+                            {t('admin.noRole', 'No Role')}
+                        </span>
+                    );
+                }
+
+                return (
+                    <span className={`role-badge role-badge--${value.toLowerCase()}`}>
+                        {t(`roles.${value}`)}
+                    </span>
+                );
+            }
         }
     ];
 

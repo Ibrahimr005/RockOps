@@ -1,9 +1,14 @@
 import React from 'react';
 import './UserStatsCard.css';
 
-const UserStatsCard = ({ users }) => {
+const UserStatsCard = ({ users = [] }) => {
     // Calculate role distribution for donut chart
     const calculateRoleDistribution = () => {
+        // Add safety check
+        if (!Array.isArray(users) || users.length === 0) {
+            return {};
+        }
+
         const roleCount = {};
         users.forEach(user => {
             if (roleCount[user.role]) {
@@ -19,6 +24,12 @@ const UserStatsCard = ({ users }) => {
     const generatePieChart = () => {
         const roleCount = calculateRoleDistribution();
         const roles = Object.keys(roleCount);
+
+        // Return early if no roles
+        if (roles.length === 0) {
+            return null;
+        }
+
         const counts = Object.values(roleCount);
         const total = counts.reduce((sum, count) => sum + count, 0);
 
@@ -190,8 +201,10 @@ const UserStatsCard = ({ users }) => {
         <div className="summary-card user-stats-card">
             <h2>User Role Distribution</h2>
             <div className="user-stats-content">
-                {users.length > 0 && generatePieChart()}
-                {users.length === 0 && <p className="no-data-message">No user data available</p>}
+                {Array.isArray(users) && users.length > 0 ?
+                    generatePieChart() :
+                    <p className="no-data-message">No user data available</p>
+                }
             </div>
         </div>
     );

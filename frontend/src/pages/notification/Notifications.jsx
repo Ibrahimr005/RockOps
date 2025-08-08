@@ -467,16 +467,7 @@ const Notifications = () => {
 
     return (
         <div className="notifications-page">
-            <div className={`connection-status ${connectionStatus}`}>
-                <div className="status-indicator">
-                    <div className="status-dot"></div>
-                    <span className="status-text">
-                        {connectionStatus === 'connected' && 'Connected'}
-                        {connectionStatus === 'connecting' && 'Connecting...'}
-                        {connectionStatus === 'disconnected' && 'Disconnected'}
-                    </span>
-                </div>
-            </div>
+
 
             <IntroCard
                 title="Notifications"
@@ -484,7 +475,7 @@ const Notifications = () => {
                 lightModeImage={notificationLight}
                 darkModeImage={notificationDark}
                 stats={getNotificationStats()}
-                onInfoClick={() => console.log('Notification info clicked')}
+                icon={false}
             />
 
             {/* New Cleaner Toolbar */}
