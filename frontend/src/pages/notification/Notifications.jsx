@@ -21,6 +21,7 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 import IntroCard from '../../components/common/IntroCard/IntroCard.jsx';
 import Snackbar from '../../components/common/Snackbar/Snackbar.jsx';
 import ConfirmationDialog from '../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { notificationService } from '../../services/notification/notificationService';
 import notificationLight from '../../assets/imgs/notificationlight.png';
 import notificationDark from '../../assets/imgs/notificationdark.png';
 import './Notifications.scss';
@@ -52,8 +53,6 @@ const Notifications = () => {
     const reconnectTimeoutRef = useRef(null);
     const [forceUpdate, setForceUpdate] = useState(0);
 
-
-
     useEffect(() => {
         if (currentUser && token) {
             fetchNotifications();
@@ -76,18 +75,7 @@ const Notifications = () => {
     const fetchNotifications = async () => {
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:8080/api/notifications', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch notifications');
-            }
-
-            const data = await response.json();
+            const data = await notificationService.getAll();
             setNotifications(data);
             console.log('Notifications fetched:', data);
         } catch (error) {
@@ -131,7 +119,6 @@ const Notifications = () => {
                     handleNewNotification(notification);
                 });
 
-// 🎯 ADD THIS TEST SUBSCRIPTION
                 stompClient.subscribe(`/user/${currentUser.id}/queue/notifications`, (message) => {
                     const notification = JSON.parse(message.body);
                     console.log('🎯 Received notification via direct user subscription:', notification);
@@ -156,8 +143,6 @@ const Notifications = () => {
                 stompClient.subscribe('/user/queue/auth-response', (message) => {
                     const response = JSON.parse(message.body);
                     console.log('Auth response:', response);
-                    // Removed the snackbar for authentication success
-                    // Authentication happens silently in the background
                 });
 
                 stompClient.subscribe('/topic/notifications', (message) => {
@@ -242,7 +227,6 @@ const Notifications = () => {
             return newNotifications;
         });
 
-        // Force re-render (this is now INSIDE the function, so it's safe)
         setForceUpdate(prev => prev + 1);
 
         if (Notification.permission === 'granted') {
@@ -347,18 +331,7 @@ const Notifications = () => {
                 setConfirmDialog(prev => ({ ...prev, isLoading: true }));
 
                 try {
-                    const response = await fetch(`http://localhost:8080/api/notifications/${notificationId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to delete notification');
-                    }
-
+                    await notificationService.delete(notificationId);
                     setNotifications(prev => prev.filter(n => n.id !== notificationId));
                     showSnackbar('Notification deleted successfully');
                     setConfirmDialog({ isVisible: false, type: 'warning', title: '', message: '', onConfirm: null, isLoading: false });
@@ -379,7 +352,6 @@ const Notifications = () => {
         }
 
         try {
-            // Get the notifications that match the current filter
             const notificationsToUpdate = filteredNotifications.filter(n => !n.read);
 
             if (notificationsToUpdate.length === 0) {
@@ -387,7 +359,6 @@ const Notifications = () => {
                 return;
             }
 
-            // Mark each notification as read
             for (const notification of notificationsToUpdate) {
                 stompClientRef.current.publish({
                     destination: '/app/markAsRead',
@@ -398,7 +369,6 @@ const Notifications = () => {
                 });
             }
 
-            // Update local state
             setNotifications(prev =>
                 prev.map(notification =>
                     notificationsToUpdate.some(n => n.id === notification.id)
@@ -433,22 +403,10 @@ const Notifications = () => {
                 setConfirmDialog(prev => ({ ...prev, isLoading: true }));
 
                 try {
-                    // Delete each notification individually
                     for (const notification of notificationsToDelete) {
-                        const response = await fetch(`http://localhost:8080/api/notifications/${notification.id}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            }
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Failed to delete notification');
-                        }
+                        await notificationService.delete(notification.id);
                     }
 
-                    // Remove from local state
                     setNotifications(prev =>
                         prev.filter(notification =>
                             !notificationsToDelete.some(n => n.id === notification.id)
@@ -692,7 +650,6 @@ const Notifications = () => {
                                     <span className="page-numbers">
                                         {Array.from({ length: totalPages }, (_, i) => i + 1)
                                             .filter(page => {
-                                                // Show first page, last page, current page, and 2 pages around current
                                                 return page === 1 ||
                                                     page === totalPages ||
                                                     (page >= currentPage - 2 && page <= currentPage + 2);

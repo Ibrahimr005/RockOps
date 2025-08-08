@@ -1,164 +1,283 @@
 // src/services/siteService.js
-import apiClient from '../utils/apiClient';
-import { SITE_ENDPOINTS, PARTNER_ENDPOINTS, EMPLOYEE_ENDPOINTS } from '../config/api.config';
+import apiClient from '../utils/apiClient.js';
+import { SITE_ENDPOINTS, PARTNER_ENDPOINTS, EMPLOYEE_ENDPOINTS } from '../config/api.config.js';
 
 export const siteService = {
     // Basic site operations
-    getAll: () => {
-        return apiClient.get(SITE_ENDPOINTS.BASE);
+    getAll: async () => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.BASE);
+        } catch (error) {
+            console.error('Error fetching sites:', error);
+            throw error;
+        }
     },
 
-    getAllSites: () => {
-        return apiClient.get(SITE_ENDPOINTS.BASE);
+    getAllSites: async () => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.BASE);
+        } catch (error) {
+            console.error('Error fetching all sites:', error);
+            throw error;
+        }
     },
 
-    getById: (id) => {
-        return apiClient.get(SITE_ENDPOINTS.BY_ID(id));
+    getById: async (id) => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.BY_ID(id));
+        } catch (error) {
+            console.error(`Error fetching site ${id}:`, error);
+            throw error;
+        }
     },
 
     // Site relationships
-    getSitePartners: (siteId) => {
-        return apiClient.get(SITE_ENDPOINTS.PARTNERS(siteId));
-    },
-
-    getUnassignedPartners: (siteId) => {
-        return apiClient.get(SITE_ENDPOINTS.UNASSIGNED_PARTNERS(siteId));
-    },
-
-    getSiteEmployees: (siteId) => {
-        return apiClient.get(SITE_ENDPOINTS.EMPLOYEES(siteId));
-    },
-
-    getUnassignedEmployees: () => {
-        return apiClient.get(EMPLOYEE_ENDPOINTS.UNASSIGNED);
-    },
-
-    getSiteEquipment: (siteId) => {
-        return apiClient.get(SITE_ENDPOINTS.EQUIPMENT(siteId));
-    },
-
-    getSiteWarehouses: (siteId) => {
-        return apiClient.get(SITE_ENDPOINTS.WAREHOUSES(siteId));
-    },
-
-    getSiteMerchants: (siteId) => {
-        return apiClient.get(SITE_ENDPOINTS.MERCHANTS(siteId));
-    },
-
-    getSiteFixedAssets: (siteId) => {
-        return apiClient.get(SITE_ENDPOINTS.FIXED_ASSETS(siteId));
-    },
-
-
-    // Partner operations (used in site forms)
-    getAllPartners: () => {
-        return apiClient.get(PARTNER_ENDPOINTS.GET_ALL);
-    },
-
-    // Site Admin operations
-    addSite: (formData) => {
-        return apiClient.post(SITE_ENDPOINTS.ADMIN.ADD_SITE, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        });
-    },
-
-    updateSite: (id, formData) => {
-        return apiClient.put(SITE_ENDPOINTS.ADMIN.UPDATE_SITE(id), formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        });
-    },
-
-    addWarehouse: (siteId, formData) => {
-        return apiClient.post(SITE_ENDPOINTS.ADMIN.ADD_WAREHOUSE(siteId), formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        });
-    },
-
-    // Equipment assignment
-    assignEquipment: (siteId, equipmentId) => {
-        return apiClient.post(SITE_ENDPOINTS.ADMIN.ASSIGN_EQUIPMENT(siteId, equipmentId));
-    },
-
-    removeEquipment: (siteId, equipmentId) => {
-        return apiClient.delete(SITE_ENDPOINTS.ADMIN.REMOVE_EQUIPMENT(siteId, equipmentId));
-    },
-
-    // Employee assignment
-    assignEmployee: (siteId, employeeId) => {
-        return apiClient.post(SITE_ENDPOINTS.ADMIN.ASSIGN_EMPLOYEE(siteId, employeeId));
-    },
-
-    removeEmployee: (siteId, employeeId) => {
-        return apiClient.delete(SITE_ENDPOINTS.ADMIN.REMOVE_EMPLOYEE(siteId, employeeId));
-    },
-
-    // Warehouse assignment
-    assignWarehouse: (siteId, warehouseId) => {
-        return apiClient.post(SITE_ENDPOINTS.ADMIN.ASSIGN_WAREHOUSE(siteId, warehouseId));
-    },
-
-    // Fixed asset assignment
-    assignFixedAsset: (siteId, fixedAssetId) => {
-        return apiClient.post(`/siteadmin/${siteId}/assign-fixedAsset/${fixedAssetId}`);
-    },
-
-    // // Partner assignment
-    // assignPartner: (siteId, partnerId, percentage) => {
-    //     return apiClient.post(SITE_ENDPOINTS.ADMIN.ASSIGN_PARTNER(siteId, partnerId), {
-    //         percentage: percentage
-    //     });
-    // },
-    assignPartner: (siteId, partnerId, percentage) => {
-        console.log('Calling assignPartner API:', { siteId, partnerId, percentage });
-        return apiClient.post(SITE_ENDPOINTS.ADMIN.ASSIGN_PARTNER(siteId, partnerId), {
-            percentage: percentage
-        }).catch(error => {
-            console.error('API Error Details:', {
-                status: error.response?.status,
-                data: error.response?.data,
-                message: error.message
-            });
+    getSitePartners: async (siteId) => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.PARTNERS(siteId));
+        } catch (error) {
+            console.error(`Error fetching partners for site ${siteId}:`, error);
             throw error;
-        });
+        }
     },
 
-    updatePartnerPercentage: (siteId, partnerId, percentage) => {
-        return apiClient.put(SITE_ENDPOINTS.ADMIN.UPDATE_PARTNER_PERCENTAGE(siteId, partnerId), {
-            percentage: percentage
-        });
+    getUnassignedPartners: async (siteId) => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.UNASSIGNED_PARTNERS(siteId));
+        } catch (error) {
+            console.error(`Error fetching unassigned partners for site ${siteId}:`, error);
+            throw error;
+        }
     },
 
-    removePartner: (siteId, partnerId) => {
-        return apiClient.delete(SITE_ENDPOINTS.ADMIN.REMOVE_PARTNER(siteId, partnerId));
+    getSiteEmployees: async (siteId) => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.EMPLOYEES(siteId));
+        } catch (error) {
+            console.error(`Error fetching employees for site ${siteId}:`, error);
+            throw error;
+        }
     },
 
-    // Equipment operations
-    getUnassignedEquipment: () => {
-        return apiClient.get('/api/v1/site/unassigned-equipment');
+    getSiteEquipment: async (siteId) => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.EQUIPMENT(siteId));
+        } catch (error) {
+            console.error(`Error fetching equipment for site ${siteId}:`, error);
+            throw error;
+        }
     },
 
-    // Fixed Assets operations
-    getUnassignedFixedAssets: () => {
-        return apiClient.get('/api/v1/site/unassigned-fixedassets'); // You need to add this endpoint
+    getSiteWarehouses: async (siteId) => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.WAREHOUSES(siteId));
+        } catch (error) {
+            console.error(`Error fetching warehouses for site ${siteId}:`, error);
+            throw error;
+        }
     },
 
-    // Warehouse operations
-    getWarehouseManagers: () => {
-        return apiClient.get('/api/v1/employees/warehouse-managers');
+    getSiteMerchants: async (siteId) => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.MERCHANTS(siteId));
+        } catch (error) {
+            console.error(`Error fetching merchants for site ${siteId}:`, error);
+            throw error;
+        }
     },
 
-    getWarehouseWorkers: () => {
-        return apiClient.get('/api/v1/employees/warehouse-workers');
+    getSiteFixedAssets: async (siteId) => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.FIXED_ASSETS(siteId));
+        } catch (error) {
+            console.error(`Error fetching fixed assets for site ${siteId}:`, error);
+            throw error;
+        }
     },
 
-    // Merchant operations
-    getMerchants: (siteId) => {
-        return apiClient.get(`/api/v1/site/${siteId}/merchants`);
+    // Site admin operations
+    addSite: async (siteData) => {
+        try {
+            return await apiClient.post(SITE_ENDPOINTS.ADMIN.ADD_SITE, siteData);
+        } catch (error) {
+            console.error('Error adding site:', error);
+            throw error;
+        }
+    },
+
+    updateSite: async (id, siteData) => {
+        try {
+            return await apiClient.put(SITE_ENDPOINTS.ADMIN.UPDATE_SITE(id), siteData);
+        } catch (error) {
+            console.error(`Error updating site ${id}:`, error);
+            throw error;
+        }
+    },
+
+
+
+    addWarehouse: async (siteId, warehouseData) => {
+        try {
+            return await apiClient.post(SITE_ENDPOINTS.ADMIN.ADD_WAREHOUSE(siteId), warehouseData);
+        } catch (error) {
+            console.error(`Error adding warehouse to site ${siteId}:`, error);
+            throw error;
+        }
+    },
+
+
+    assignEquipment: async (siteId, equipmentId) => {
+        try {
+            return await apiClient.post(SITE_ENDPOINTS.ADMIN.ASSIGN_EQUIPMENT(siteId, equipmentId));
+        } catch (error) {
+            console.error(`Error assigning equipment ${equipmentId} to site ${siteId}:`, error);
+            throw error;
+        }
+    },
+
+    removeEquipment: async (siteId, equipmentId) => {
+        try {
+            return await apiClient.delete(SITE_ENDPOINTS.ADMIN.REMOVE_EQUIPMENT(siteId, equipmentId));
+        } catch (error) {
+            console.error(`Error removing equipment ${equipmentId} from site ${siteId}:`, error);
+            throw error;
+        }
+    },
+
+    assignEmployee: async (siteId, employeeId) => {
+        try {
+            return await apiClient.post(SITE_ENDPOINTS.ADMIN.ASSIGN_EMPLOYEE(siteId, employeeId));
+        } catch (error) {
+            console.error(`Error assigning employee ${employeeId} to site ${siteId}:`, error);
+            throw error;
+        }
+    },
+
+    removeEmployee: async (siteId, employeeId) => {
+        try {
+            return await apiClient.delete(SITE_ENDPOINTS.ADMIN.REMOVE_EMPLOYEE(siteId, employeeId));
+        } catch (error) {
+            console.error(`Error removing employee ${employeeId} from site ${siteId}:`, error);
+            throw error;
+        }
+    },
+
+    assignWarehouse: async (siteId, warehouseId) => {
+        try {
+            return await apiClient.post(SITE_ENDPOINTS.ADMIN.ASSIGN_WAREHOUSE(siteId, warehouseId));
+        } catch (error) {
+            console.error(`Error assigning warehouse ${warehouseId} to site ${siteId}:`, error);
+            throw error;
+        }
+    },
+
+    assignFixedAsset: async (siteId, fixedAssetId) => {
+        try {
+            return await apiClient.post(SITE_ENDPOINTS.ADMIN.ASSIGN_FIXED_ASSET(siteId, fixedAssetId));
+        } catch (error) {
+            console.error(`Error assigning fixed asset ${fixedAssetId} to site ${siteId}:`, error);
+            throw error;
+        }
+    },
+
+    assignPartner: async (siteId, partnerId) => {
+        try {
+            return await apiClient.post(SITE_ENDPOINTS.ADMIN.ASSIGN_PARTNER(siteId, partnerId));
+        } catch (error) {
+            console.error(`Error assigning partner ${partnerId} to site ${siteId}:`, error);
+            throw error;
+        }
+    },
+
+    updatePartnerPercentage: async (siteId, partnerId, percentage) => {
+        try {
+            return await apiClient.put(SITE_ENDPOINTS.ADMIN.UPDATE_PARTNER_PERCENTAGE(siteId, partnerId), { percentage });
+        } catch (error) {
+            console.error(`Error updating partner percentage for site ${siteId}, partner ${partnerId}:`, error);
+            throw error;
+        }
+    },
+
+    removePartner: async (siteId, partnerId) => {
+        try {
+            return await apiClient.delete(SITE_ENDPOINTS.ADMIN.REMOVE_PARTNER(siteId, partnerId));
+        } catch (error) {
+            console.error(`Error removing partner ${partnerId} from site ${siteId}:`, error);
+            throw error;
+        }
+    },
+
+    // Partner operations
+    getAllPartners: async () => {
+        try {
+            return await apiClient.get(PARTNER_ENDPOINTS.GET_ALL);
+        } catch (error) {
+            console.error('Error fetching all partners:', error);
+            throw error;
+        }
+    },
+
+    addPartner: async (partnerData) => {
+        try {
+            return await apiClient.post(PARTNER_ENDPOINTS.ADD, partnerData);
+        } catch (error) {
+            console.error('Error adding partner:', error);
+            throw error;
+        }
+    },
+
+    // Employee operations
+    getUnassignedEmployees: async () => {
+        try {
+            return await apiClient.get(EMPLOYEE_ENDPOINTS.UNASSIGNED);
+        } catch (error) {
+            console.error('Error fetching unassigned employees:', error);
+            throw error;
+        }
+    },
+
+    getUnassignedEquipment: async ()  => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.UNASSIGNED_EQUIPMENT);
+        } catch (error) {
+            console.error(`Error fetching unassigned equipment:`, error);
+            throw error;
+        }
+    },
+
+    getDrivers: async () => {
+        try {
+            return await apiClient.get(EMPLOYEE_ENDPOINTS.DRIVERS);
+        } catch (error) {
+            console.error('Error fetching drivers:', error);
+            throw error;
+        }
+    },
+
+    getWarehouseWorkers: async () => {
+        try {
+            return await apiClient.get(EMPLOYEE_ENDPOINTS.WAREHOUSE_WORKERS);
+        } catch (error) {
+            console.error('Error fetching warehouse workers:', error);
+            throw error;
+        }
+    },
+
+    getWarehouseManagers: async () => {
+        try {
+            return await apiClient.get(EMPLOYEE_ENDPOINTS.WAREHOUSE_MANAGERS);
+        } catch (error) {
+            console.error('Error fetching warehouse managers:', error);
+            throw error;
+        }
+    },
+
+    getTechnicians: async () => {
+        try {
+            return await apiClient.get(EMPLOYEE_ENDPOINTS.TECHNICIANS);
+        } catch (error) {
+            console.error('Error fetching technicians:', error);
+            throw error;
+        }
     }
-}; 
+};

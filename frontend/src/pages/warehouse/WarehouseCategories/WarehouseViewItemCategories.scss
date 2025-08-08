@@ -406,7 +406,7 @@
   background-color: var(--color-surface);
   border-radius: 16px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
-  animation: slideUp 0.3s ease;
+  animation: slideUpFromBottom 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
   overflow: hidden;
   max-height: 90vh;
   display: flex;
@@ -421,6 +421,14 @@
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+@keyframes slideUpFromBottom {
+  from {
+    transform: translateY(100px);
+  }
+  to {
+    transform: translateY(0);
   }
 }
 
@@ -810,3 +818,5 @@ form {
     margin-left:0.5rem;
   }
 }
+
+

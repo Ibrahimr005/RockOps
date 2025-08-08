@@ -354,7 +354,7 @@ const JournalEntries = () => {
             sortable: true,
             width: '120px',
             render: (row) => (
-                <span className={`status-badge status-badge--${(row.status || 'pending').toLowerCase()}`}>
+                <span className={`status-badge status-${(row.status || 'pending').toLowerCase()}`}>
                     {row.status || 'PENDING'}
                 </span>
             )

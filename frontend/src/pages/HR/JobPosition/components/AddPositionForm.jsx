@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import './AddPositionForm.scss';
+import {employeeService} from "../../../../services/hr/employeeService.js";
+import {departmentService} from "../../../../services/hr/departmentService.js";
 
 const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
     const { showError, showWarning } = useSnackbar();
@@ -186,52 +188,30 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
     };
 
     const fetchEmployees = async () => {
-        setLoadingEmployees(true);
         try {
-            const response = await fetch('http://localhost:8080/api/v1/employees', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch employees');
-            }
-
-            const data = await response.json();
-            setEmployees(Array.isArray(data) ? data : []);
+            setLoadingEmployees(true);
+            const response = await employeeService.getAll();
+            setEmployees(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error('Error fetching employees:', err);
-            showError('Failed to load employees. Please try again.');
-            setError(prev => prev || 'Failed to load employees');
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to load employees';
+            showError(errorMessage);
+            setError(prev => prev || errorMessage);
         } finally {
             setLoadingEmployees(false);
         }
     };
 
     const fetchDepartments = async () => {
-        setLoadingDepartments(true);
         try {
-            const response = await fetch('http://localhost:8080/api/v1/departments', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch departments');
-            }
-
-            const data = await response.json();
-            setDepartments(Array.isArray(data) ? data : []);
+            setLoadingDepartments(true);
+            const response = await departmentService.getAll();
+            setDepartments(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error('Error fetching departments:', err);
-            showError('Failed to load departments. Please try again.');
-            setError(prev => prev || 'Failed to load departments');
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to load departments';
+            showError(errorMessage);
+            setError(prev => prev || errorMessage);
         } finally {
             setLoadingDepartments(false);
         }

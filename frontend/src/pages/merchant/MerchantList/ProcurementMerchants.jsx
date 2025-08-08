@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import "./ProcurementMerchants.scss"
 import merchantsImage from "../../../assets/imgs/pro_icon.png";
 import merchantsImagedark from "../../../assets/imgs/pro_icon_dark.png";
-import DataTable from '../../../components/common/DataTable/DataTable.jsx'; // Adjust path as needed
+import DataTable from '../../../components/common/DataTable/DataTable.jsx';
 import Snackbar from '../../../components/common/Snackbar/Snackbar.jsx'
-import MerchantModal from './MerchantModal.jsx'; // Import the new wizard component
+import MerchantModal from './MerchantModal.jsx';
+import MerchantViewModal from './MerchantViewModal.jsx'; // Add this import
 import IntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
-import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx'; // Add this import
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { procurementService } from '../../../services/procurement/procurementService.js';
+import { siteService } from '../../../services/siteService.js';
 
 const ProcurementMerchants = () => {
     const [merchants, setMerchants] = useState([]);
@@ -23,6 +26,10 @@ const ProcurementMerchants = () => {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarType, setSnackbarType] = useState("success");
     const [userRole, setUserRole] = useState('');
+
+    // Add view modal states
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [selectedMerchant, setSelectedMerchant] = useState(null);
 
     // Add confirmation dialog states
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -47,55 +54,62 @@ const ProcurementMerchants = () => {
         notes: ''
     });
 
+    // Fetch merchants and sites on component mount
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        setLoading(true);
+        const fetchInitialData = async () => {
+            setLoading(true);
+            try {
+                // Fetch merchants using procurement service
+                const response = await procurementService.getAllMerchants();
+                const merchantsData = response.data || response;
+                setMerchants(merchantsData);
 
-        // Fetch merchants
-        fetch('http://localhost:8080/api/v1/merchants', {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to fetch');
-                return response.json();
-            })
-            .then(data => {
-                setMerchants(data);
-                setLoading(false);
-            })
-            .catch(error => {
+                // Fetch sites using site service
+                await fetchSites();
+
+                setError(null);
+            } catch (error) {
                 console.error('Error fetching merchants:', error);
                 setError(error.message);
+            } finally {
                 setLoading(false);
-            });
-
-        // Fetch sites for the dropdown
-        fetch('http://localhost:8080/api/v1/site', {
-            headers: {
-                'Authorization': `Bearer ${token}`
             }
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to fetch sites');
-                return response.json();
-            })
-            .then(data => {
-                setSites(data);
-            })
-            .catch(error => {
-                console.error('Error fetching sites:', error);
-            });
+        };
+
+        fetchInitialData();
     }, []);
 
+    // Fetch sites using site service
+    const fetchSites = async () => {
+        try {
+            const response = await siteService.getAll();
+            const sitesData = response.data || response;
+            setSites(sitesData);
+        } catch (error) {
+            console.error('Error fetching sites:', error);
+            setSites([]);
+        }
+    };
+
     useEffect(() => {
-        // Add this code to get the user role
+        // Get user role from localStorage
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
         if (userInfo && userInfo.role) {
             setUserRole(userInfo.role);
         }
     }, []);
+
+    // Handle view merchant
+    const onView = (merchant) => {
+        console.log("Viewing merchant:", merchant);
+        setSelectedMerchant(merchant);
+        setShowViewModal(true);
+    };
+
+    const handleCloseViewModal = () => {
+        setShowViewModal(false);
+        setSelectedMerchant(null);
+    };
 
     const onEdit = (merchant) => {
         console.log("Editing merchant:", merchant);
@@ -124,6 +138,18 @@ const ProcurementMerchants = () => {
         setShowAddModal(true);
     };
 
+    useEffect(() => {
+        if (showAddModal) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [showAddModal]);
+
     // Updated onDelete function to show confirmation dialog
     const onDelete = (merchant) => {
         console.log("Attempting to delete merchant:", merchant);
@@ -131,24 +157,13 @@ const ProcurementMerchants = () => {
         setShowDeleteDialog(true);
     };
 
-    // Handle confirmed deletion
+    // Handle confirmed deletion using procurement service
     const handleConfirmDelete = async () => {
         if (!merchantToDelete) return;
 
         setDeleteLoading(true);
-        const token = localStorage.getItem('token');
-
         try {
-            const response = await fetch(`http://localhost:8080/api/v1/procurement/${merchantToDelete.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to delete merchant');
-            }
+            await procurementService.deleteMerchant(merchantToDelete.id);
 
             // Remove merchant from the list
             setMerchants(merchants.filter(m => m.id !== merchantToDelete.id));
@@ -224,115 +239,113 @@ const ProcurementMerchants = () => {
         });
     };
 
-    const handleAddMerchant = (e) => {
+    const handleAddMerchant = async (e) => {
         e.preventDefault();
-        const token = localStorage.getItem('token');
 
-        // Create a merchant object from form data
-        const merchantData = {
-            name: formData.name,
-            merchantType: formData.merchantType,
-            contactEmail: formData.contactEmail || '',
-            contactPhone: formData.contactPhone || '',
-            contactSecondPhone: formData.contactSecondPhone || '',
-            contactPersonName: formData.contactPersonName || '',
-            address: formData.address || '',
-            preferredPaymentMethod: formData.preferredPaymentMethod || '',
-            taxIdentificationNumber: formData.taxIdentificationNumber || '',
-            reliabilityScore: formData.reliabilityScore ? parseFloat(formData.reliabilityScore) : null,
-            averageDeliveryTime: formData.averageDeliveryTime ? parseFloat(formData.averageDeliveryTime) : null,
-            lastOrderDate: formData.lastOrderDate ? new Date(formData.lastOrderDate).getTime() : null,
-            notes: formData.notes || ''
-        };
-
-        // Only include siteId if it has a value
-        if (formData.siteId && formData.siteId.trim() !== '') {
-            merchantData.siteId = formData.siteId;
+        // Validate merchant data using procurement service
+        const validation = procurementService.validateMerchant(formData);
+        if (!validation.isValid) {
+            setSnackbarMessage(validation.errors.join(', '));
+            setSnackbarType("error");
+            setShowSnackbar(true);
+            return;
         }
 
-        fetch('http://localhost:8080/api/v1/procurement', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(merchantData)
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to add merchant');
-                return response.json();
-            })
-            .then(newMerchant => {
-                // Add the new merchant to the list
-                setMerchants([...merchants, newMerchant]);
-                handleCloseModals();
-                setSnackbarMessage("Merchant successfully added");
-                setSnackbarType("success");
-                setShowSnackbar(true);
-            })
-            .catch(error => {
-                console.error('Error adding merchant:', error);
-                setSnackbarMessage("Failed to add merchant. Please try again.");
-                setSnackbarType("error");
-                setShowSnackbar(true);
-            });
+        try {
+            // Create a merchant object from form data
+            const merchantData = {
+                name: formData.name,
+                merchantType: formData.merchantType,
+                contactEmail: formData.contactEmail || '',
+                contactPhone: formData.contactPhone || '',
+                contactSecondPhone: formData.contactSecondPhone || '',
+                contactPersonName: formData.contactPersonName || '',
+                address: formData.address || '',
+                preferredPaymentMethod: formData.preferredPaymentMethod || '',
+                taxIdentificationNumber: formData.taxIdentificationNumber || '',
+                reliabilityScore: formData.reliabilityScore ? parseFloat(formData.reliabilityScore) : null,
+                averageDeliveryTime: formData.averageDeliveryTime ? parseFloat(formData.averageDeliveryTime) : null,
+                lastOrderDate: formData.lastOrderDate ? new Date(formData.lastOrderDate).getTime() : null,
+                notes: formData.notes || ''
+            };
+
+            // Only include siteId if it has a value
+            if (formData.siteId && formData.siteId.trim() !== '') {
+                merchantData.siteId = formData.siteId;
+            }
+
+            const response = await procurementService.addMerchant(merchantData);
+            const newMerchant = response.data || response;
+
+            // Add the new merchant to the list
+            setMerchants([...merchants, newMerchant]);
+            handleCloseModals();
+            setSnackbarMessage("Merchant successfully added");
+            setSnackbarType("success");
+            setShowSnackbar(true);
+
+        } catch (error) {
+            console.error('Error adding merchant:', error);
+            setSnackbarMessage("Failed to add merchant. Please try again.");
+            setSnackbarType("error");
+            setShowSnackbar(true);
+        }
     };
 
-    const handleUpdateMerchant = (e) => {
+    const handleUpdateMerchant = async (e) => {
         e.preventDefault();
-        const token = localStorage.getItem('token');
 
-        // Create a merchant object from form data
-        const merchantData = {
-            name: formData.name,
-            merchantType: formData.merchantType,
-            contactEmail: formData.contactEmail || '',
-            contactPhone: formData.contactPhone || '',
-            contactSecondPhone: formData.contactSecondPhone || '',
-            contactPersonName: formData.contactPersonName || '',
-            address: formData.address || '',
-            preferredPaymentMethod: formData.preferredPaymentMethod || '',
-            taxIdentificationNumber: formData.taxIdentificationNumber || '',
-            reliabilityScore: formData.reliabilityScore ? parseFloat(formData.reliabilityScore) : null,
-            averageDeliveryTime: formData.averageDeliveryTime ? parseFloat(formData.averageDeliveryTime) : null,
-            lastOrderDate: formData.lastOrderDate ? new Date(formData.lastOrderDate).getTime() : null,
-            notes: formData.notes || ''
-        };
-
-        // Only include siteId if it has a value
-        if (formData.siteId && formData.siteId.trim() !== '') {
-            merchantData.siteId = formData.siteId;
+        // Validate merchant data using procurement service
+        const validation = procurementService.validateMerchant(formData);
+        if (!validation.isValid) {
+            setSnackbarMessage(validation.errors.join(', '));
+            setSnackbarType("error");
+            setShowSnackbar(true);
+            return;
         }
 
-        fetch(`http://localhost:8080/api/v1/procurement/${currentMerchantId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(merchantData)
-        })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to update merchant');
-                return response.json();
-            })
-            .then(updatedMerchant => {
-                // Update the merchant in the list
-                const updatedMerchants = merchants.map(m =>
-                    m.id === updatedMerchant.id ? updatedMerchant : m
-                );
-                setMerchants(updatedMerchants);
-                handleCloseModals();
-                setSnackbarMessage("Merchant successfully updated");
-                setSnackbarType("success");
-                setShowSnackbar(true);
-            })
-            .catch(error => {
-                console.error('Error updating merchant:', error);
-                setSnackbarMessage("Failed to update merchant. Please try again.");
-                setSnackbarType("error");
-                setShowSnackbar(true);
-            });
+        try {
+            // Create a merchant object from form data
+            const merchantData = {
+                name: formData.name,
+                merchantType: formData.merchantType,
+                contactEmail: formData.contactEmail || '',
+                contactPhone: formData.contactPhone || '',
+                contactSecondPhone: formData.contactSecondPhone || '',
+                contactPersonName: formData.contactPersonName || '',
+                address: formData.address || '',
+                preferredPaymentMethod: formData.preferredPaymentMethod || '',
+                taxIdentificationNumber: formData.taxIdentificationNumber || '',
+                reliabilityScore: formData.reliabilityScore ? parseFloat(formData.reliabilityScore) : null,
+                averageDeliveryTime: formData.averageDeliveryTime ? parseFloat(formData.averageDeliveryTime) : null,
+                lastOrderDate: formData.lastOrderDate ? new Date(formData.lastOrderDate).getTime() : null,
+                notes: formData.notes || ''
+            };
+
+            // Only include siteId if it has a value
+            if (formData.siteId && formData.siteId.trim() !== '') {
+                merchantData.siteId = formData.siteId;
+            }
+
+            const response = await procurementService.updateMerchant(currentMerchantId, merchantData);
+            const updatedMerchant = response.data || response;
+
+            // Update the merchant in the list
+            const updatedMerchants = merchants.map(m =>
+                m.id === updatedMerchant.id ? updatedMerchant : m
+            );
+            setMerchants(updatedMerchants);
+            handleCloseModals();
+            setSnackbarMessage("Merchant successfully updated");
+            setSnackbarType("success");
+            setShowSnackbar(true);
+
+        } catch (error) {
+            console.error('Error updating merchant:', error);
+            setSnackbarMessage("Failed to update merchant. Please try again.");
+            setSnackbarType("error");
+            setShowSnackbar(true);
+        }
     };
 
     // Define columns for DataTable
@@ -409,6 +422,17 @@ const ProcurementMerchants = () => {
     // Define actions for each row
     const actions = [
         {
+            label: 'View',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+            ),
+            onClick: onView,
+            className: 'view'
+        },
+        {
             label: 'Edit',
             icon: (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -433,9 +457,7 @@ const ProcurementMerchants = () => {
         }
     ];
 
-    const handleRowClick = (merchant) => {
-        navigate(`/merchants/${merchant.id}`);
-    };
+    // Remove the old handleRowClick function since we're using the View action now
 
     const handleInfoClick = () => {
         // Add info click functionality here if needed
@@ -467,7 +489,7 @@ const ProcurementMerchants = () => {
                     data={merchants}
                     columns={columns}
                     loading={loading}
-                    onRowClick={handleRowClick}
+                    // Remove onRowClick since we're using the View action button
                     showSearch={true}
                     showFilters={true}
                     filterableColumns={filterableColumns}
@@ -500,6 +522,13 @@ const ProcurementMerchants = () => {
                 handleCloseModals={handleCloseModals}
                 handleAddMerchant={handleAddMerchant}
                 handleUpdateMerchant={handleUpdateMerchant}
+            />
+
+            {/* Merchant View Modal */}
+            <MerchantViewModal
+                merchant={selectedMerchant}
+                isOpen={showViewModal}
+                onClose={handleCloseViewModal}
             />
 
             {/* Confirmation Dialog for Delete */}

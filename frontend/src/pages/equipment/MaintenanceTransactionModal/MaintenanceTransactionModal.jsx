@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './MaintenanceTransactionModal.scss';
+import { siteService } from '../../../services/siteService';
+import { itemTypeService } from '../../../services/itemTypeService';
+import { transactionService } from '../../../services/transactionService';
 
 const MaintenanceTransactionModal = ({
                                          isOpen,
@@ -49,7 +52,7 @@ const MaintenanceTransactionModal = ({
     // Fetch sites for transaction form
     const fetchSites = async () => {
         try {
-            const response = await axiosInstance.get('http://localhost:8080/api/v1/site');
+            const response = await siteService.getAll();
             setSites(response.data);
         } catch (error) {
             console.error("Error fetching sites:", error);
@@ -60,7 +63,7 @@ const MaintenanceTransactionModal = ({
     // Fetch warehouses when site is selected
     const fetchWarehousesBySite = async (siteId) => {
         try {
-            const response = await axiosInstance.get(`http://localhost:8080/api/v1/site/${siteId}/warehouses`);
+            const response = await siteService.getSiteWarehouses(siteId);
             setWarehouses(response.data);
             setTransactionFormData(prev => ({
                 ...prev,
@@ -77,7 +80,7 @@ const MaintenanceTransactionModal = ({
         if (!transactionFormData.senderId) return;
 
         try {
-            const response = await axiosInstance.get(`http://localhost:8080/api/v1/itemTypes`);
+            const response = await itemTypeService.getAll();
             setAllItemTypes(response.data);
             setFilteredItemTypes(response.data);
         } catch (error) {
@@ -119,9 +122,7 @@ const MaintenanceTransactionModal = ({
 
         setIsVerifyingBatch(true);
         try {
-            const response = await axiosInstance.get(
-                `http://localhost:8080/api/v1/transactions/batch/${batchToCheck}`
-            );
+            const response = await transactionService.getByBatch(batchToCheck);
 
             if (response.data && response.data.id) {
                 // Transaction found
@@ -255,54 +256,30 @@ const MaintenanceTransactionModal = ({
         setError(null);
 
         try {
-            if (showTransactionForm && transactionFormData.senderId) {
-                // Validate transaction form data
-                if (transactionFormData.items.some(item => !item.itemTypeId || item.quantity < 1)) {
-                    throw new Error("Please complete all transaction item fields with valid quantities");
-                }
+            let transactionResponse;
 
-                // Create new transaction with items
-                const response = await axiosInstance.post(
-                    `http://localhost:8080/api/equipment/${equipmentId}/maintenance/${maintenanceId}/transactions`,
-                    transactionFormData.items,
-                    {
-                        params: {
-                            senderId: transactionFormData.senderId,
-                            senderType: 'WAREHOUSE',
-                            batchNumber: batchNumber,
-                            description: transactionFormData.description
-                        }
-                    }
+            if (batchVerificationResult && batchVerificationResult.found && batchVerificationResult.transaction) {
+                // Link existing transaction to maintenance
+                transactionResponse = await transactionService.linkTransactionToMaintenance(
+                    equipmentId,
+                    maintenanceId,
+                    batchVerificationResult.transaction.id
                 );
-                
-                console.log("Transaction created successfully:", response.data);
-            } else if (batchVerificationResult?.found && !batchVerificationResult?.error) {
-                // Link existing transaction
-                const response = await axiosInstance.put(
-                    `http://localhost:8080/api/equipment/${equipmentId}/maintenance/${maintenanceId}/link-transaction/${batchVerificationResult.transaction.id}`
-                );
-                
-                console.log("Transaction linked successfully:", response.data);
             } else {
-                throw new Error("Unable to process transaction. Please verify batch number first or complete the transaction form.");
+                // Create new transaction
+                transactionResponse = await transactionService.createMaintenanceTransaction(
+                    equipmentId,
+                    maintenanceId,
+                    transactionFormData
+                );
             }
 
-            if (onTransactionAdded) {
-                onTransactionAdded();
-            }
+            console.log("Transaction created/linked successfully:", transactionResponse.data);
+            onTransactionAdded(transactionResponse.data);
+            onClose();
         } catch (error) {
-            console.error("Error processing transaction:", error);
-            
-            // Handle different types of errors
-            if (error.response?.data?.error) {
-                setError(error.response.data.error);
-            } else if (error.response?.data?.message) {
-                setError(error.response.data.message);
-            } else if (error.message) {
-                setError(error.message);
-            } else {
-                setError("Failed to process transaction");
-            }
+            console.error("Error creating/linking transaction:", error);
+            setError("Failed to create/link transaction: " + (error.response?.data?.message || error.message));
         } finally {
             setIsLoading(false);
         }

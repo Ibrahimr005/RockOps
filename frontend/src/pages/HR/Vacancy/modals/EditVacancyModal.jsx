@@ -122,7 +122,7 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
             <div className="vacancy-modal">
                 <div className="modal-header">
                     <h2>Edit Vacancy</h2>
-                    <button className="close-button" onClick={onClose}>×</button>
+                    <button className="btn-close" onClick={onClose}>×</button>
                 </div>
 
                 <form onSubmit={handleSubmit}>

@@ -4,6 +4,8 @@ import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
 import ProcurementIntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 import "./WarehouseViewItemTypesTable.scss";
+import { itemTypeService } from '../../../services/warehouse/itemTypeService'; // ADD THIS LINE
+import { itemCategoryService } from '../../../services/warehouse/itemCategoryService'; // ADD THIS LINE
 
 // Import your item types images (you'll need to add these to your assets)
 import itemTypesImg from "../../../assets/imgs/itemType.png"; // Add this image
@@ -80,22 +82,8 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
             console.log("Fetching item types...");
 
             try {
-                const token = localStorage.getItem("token");
-                const response = await fetch("http://localhost:8080/api/v1/itemTypes", {
-                    headers: {
-                        "Authorization": `Bearer ${token}`
-                    }
-                });
-                console.log("Response Status:", response.status);
-
-                if (!response.ok)
-                    throw new Error("Failed to fetch data");
-
-                const data = await response.json();
-
-                // SIMPLE CONSOLE LOG OF ENTIRE RESPONSE
+                const data = await itemTypeService.getAll();
                 console.log("Complete API Response:", JSON.stringify(data, null, 2));
-
                 setTableData(data);
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -105,6 +93,20 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
 
         fetchData();
     }, []);
+
+    useEffect(() => {
+        if (isModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        // Cleanup when component unmounts
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isModalOpen]);
+
 
     // Add this useEffect to get the user role when component mounts
     useEffect(() => {
@@ -121,18 +123,10 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
         }
     }, []);
 
-    // Fetch categories for dropdown - updated to use global endpoint
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const token = localStorage.getItem("token");
-                const response = await fetch("http://localhost:8080/api/v1/itemCategories/children", {
-                    headers: {
-                        "Authorization": `Bearer ${token}`
-                    }
-                });
-                if (!response.ok) throw new Error("Failed to fetch categories");
-                const data = await response.json();
+                const data = await itemCategoryService.getChildren();
                 console.log("Categories fetched:", data);
                 setCategories(data);
             } catch (error) {
@@ -185,47 +179,13 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
         setShowConfirmDialog(true);
     };
 
-    // Function to confirm deletion
     const confirmDeleteItemType = async () => {
         if (!itemToDelete) return;
 
         try {
             setDeleteLoading(true);
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/itemTypes/${itemToDelete.id}`, {
-                method: "DELETE",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Delete error response:", errorText);
-
-                // Check for specific dependency errors from backend
-                if (errorText.includes("ITEMS_EXIST")) {
-                    throw new Error("This item type is currently in use in warehouse inventory. Please remove all inventory items of this type before deleting.");
-                }
-                else if (errorText.includes("TRANSACTION_ITEMS_EXIST")) {
-                    throw new Error("This item type has transaction history and cannot be deleted. Please contact your administrator if deletion is necessary.");
-                }
-                else if (errorText.includes("REQUEST_ORDER_ITEMS_EXIST")) {
-                    throw new Error("This item type is being used in active procurement requests. Please complete or cancel all related requests first.");
-                }
-                else if (errorText.includes("OFFER_ITEMS_EXIST")) {
-                    throw new Error("This item type is referenced in supplier offers. Please remove it from all offers before deleting.");
-                }
-                else if (errorText.includes("ITEM_TYPE_NOT_FOUND")) {
-                    throw new Error("This item type no longer exists. It may have been deleted by another user.");
-                }
-                else if (response.status === 500) {
-                    throw new Error("This item type cannot be deleted because it's being used elsewhere in the system. Please check for any dependencies first.");
-                }
-                else {
-                    throw new Error("Unable to delete this item type. Please try again or contact support if the problem persists.");
-                }
-            }
+            await itemTypeService.delete(itemToDelete.id);
 
             // Success - update UI
             setTableData(prevData => prevData.filter(item => item.id !== itemToDelete.id));
@@ -233,7 +193,25 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
 
         } catch (error) {
             console.error("Error deleting item type:", error);
-            showSnackbar(error.message, "error");
+
+            // Handle specific error messages
+            let errorMessage = error.message;
+
+            if (errorMessage.includes("ITEMS_EXIST")) {
+                errorMessage = "This item type is currently in use in warehouse inventory. Please remove all inventory items of this type before deleting.";
+            } else if (errorMessage.includes("TRANSACTION_ITEMS_EXIST")) {
+                errorMessage = "This item type has transaction history and cannot be deleted. Please contact your administrator if deletion is necessary.";
+            } else if (errorMessage.includes("REQUEST_ORDER_ITEMS_EXIST")) {
+                errorMessage = "This item type is being used in active procurement requests. Please complete or cancel all related requests first.";
+            } else if (errorMessage.includes("OFFER_ITEMS_EXIST")) {
+                errorMessage = "This item type is referenced in supplier offers. Please remove it from all offers before deleting.";
+            } else if (errorMessage.includes("ITEM_TYPE_NOT_FOUND")) {
+                errorMessage = "This item type no longer exists. It may have been deleted by another user.";
+            } else if (errorMessage.includes("500")) {
+                errorMessage = "This item type cannot be deleted because it's being used elsewhere in the system. Please check for any dependencies first.";
+            }
+
+            showSnackbar(errorMessage, "error");
         } finally {
             setDeleteLoading(false);
             setShowConfirmDialog(false);
@@ -396,14 +374,12 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-
-
         const payload = {
             name: newItemType.name.trim(),
             itemCategory: newItemType.itemCategory,
             minQuantity: parseInt(newItemType.minQuantity),
             measuringUnit: newItemType.measuringUnit.trim(),
-            serialNumber: newItemType.serialNumber.trim(), // Changed from toString() to trim()
+            serialNumber: newItemType.serialNumber.trim(),
             status: newItemType.status || "AVAILABLE",
             comment: newItemType.comment?.trim() || ""
         };
@@ -411,49 +387,14 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
         console.log("Submitting payload:", payload);
 
         try {
-            const token = localStorage.getItem("token");
-
-            let response;
+            let result;
             if (selectedItem) {
                 // Update existing item
-                response = await fetch(`http://localhost:8080/api/v1/itemTypes/${selectedItem.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(payload),
-                });
+                result = await itemTypeService.update(selectedItem.id, payload);
             } else {
                 // Create new item
-                response = await fetch("http://localhost:8080/api/v1/itemTypes", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(payload),
-                });
+                result = await itemTypeService.create(payload);
             }
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Server error response:", errorText);
-
-                // Try to parse JSON error response
-                let errorMessage = `Failed to ${selectedItem ? 'update' : 'add'} item type`;
-                try {
-                    const errorData = JSON.parse(errorText);
-                    errorMessage = errorData.message || errorMessage;
-                } catch {
-                    // If not JSON, use the raw text
-                    errorMessage = errorText || errorMessage;
-                }
-
-                throw new Error(`${errorMessage} (Status: ${response.status})`);
-            }
-
-            const result = await response.json();
 
             if (selectedItem) {
                 // Update existing item in table
@@ -526,8 +467,8 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="modal-backdrop">
-                    <div className="modal" ref={modalRef}>
+                <div className="modal-backdrop-type">
+                    <div className="modal-item-type" ref={modalRef}>
                         <div className="modal-header0">
                             <h2>{selectedItem ? 'Edit Item Type' : 'Add New Item Type'}</h2>
                             <button className="close-modal" onClick={() => setIsModalOpen(false)}>

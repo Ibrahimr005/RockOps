@@ -11,6 +11,7 @@ import EquipmentManagerDashboard from '../equipment/EquipmentManagerDashboard/Eq
 import HRManagerDashboard from './HRManagerDashboard.jsx';
 import HREmployeeDashboard from './HR/HREmployeeDashboard.jsx';
 import './Dashboard.css';
+import MaintenanceDashboard from "../maintenance/MaintenanceDashboard/MaintenanceDashboard.jsx";
 
 const DashboardPage = () => {
     const {currentUser} = useAuth();
@@ -53,6 +54,10 @@ const DashboardPage = () => {
                 return 'Finance Dashboard';
             case 'FINANCE_MANAGER': // Add Finance role
                 return 'Finance Dashboard';
+            case 'MAINTENANCE_EMPLOYEE':
+                return 'Maintenance Employee Portal';
+            case 'MAINTENANCE_MANAGER':
+                return 'Maintenance Management';
             case 'USER':
             default:
                 return 'User Dashboard';
@@ -76,6 +81,10 @@ const DashboardPage = () => {
                 return <HRManagerDashboard/>;
             case 'HR_EMPLOYEE':
                 return <HREmployeeDashboard/>;
+            case 'MAINTENANCE_EMPLOYEE':
+                return <MaintenanceDashboard/>; // For now, use UserDashboard as fallback
+            case 'MAINTENANCE_MANAGER':
+                return <MaintenanceDashboard/>; // Use EquipmentManagerDashboard as it's most relevant
             // case 'FINANCE': // Add Finance case
             //     return <FinanceDashboard/>;
             case 'USER':

@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useCallback} from "react";
 import "./WarehouseViewTransactions.scss";
 import PendingTransactionsTable from "./PendingTransactions/PendingTransactionsTable.jsx";
 import ValidatedTransactionsTable from "./ValidatedTransactions/ValidatedTransactionsTable.jsx";
@@ -48,8 +48,8 @@ const WarehouseViewTransactionsTable = ({
     setRefreshTrigger(prev => prev + 1);
   };
 
-
-  const updateBadgeCount = (tabType, count) => {
+  // Memoize the updateBadgeCount function to prevent infinite loops
+  const updateBadgeCount = useCallback((tabType, count) => {
     setBadgeCounts(prev => ({
       ...prev,
       [tabType]: count
@@ -59,7 +59,16 @@ const WarehouseViewTransactionsTable = ({
     if (tabType === 'incoming' && onIncomingTransactionsCountChange) {
       onIncomingTransactionsCountChange(count);
     }
-  };
+  }, [onIncomingTransactionsCountChange]);
+
+  // Memoize the count update functions to prevent creating new functions on every render
+  const handleIncomingCountUpdate = useCallback((count) => {
+    updateBadgeCount('incoming', count);
+  }, [updateBadgeCount]);
+
+  const handleValidatedCountUpdate = useCallback((count) => {
+    updateBadgeCount('validated', count);
+  }, [updateBadgeCount]);
 
   // Tab configuration with badge counts for incoming and validated
   const tabs = [
@@ -99,8 +108,10 @@ const WarehouseViewTransactionsTable = ({
       onTransactionUpdate: triggerRefresh
     };
 
-    if (activeTab === 'incoming' || activeTab === 'validated') {
-      props.onCountUpdate = (count) => updateBadgeCount(activeTab, count);
+    if (activeTab === 'incoming') {
+      props.onCountUpdate = handleIncomingCountUpdate;
+    } else if (activeTab === 'validated') {
+      props.onCountUpdate = handleValidatedCountUpdate;
     }
 
     return <TabComponent {...props} />;
@@ -122,12 +133,12 @@ const WarehouseViewTransactionsTable = ({
           <IncomingTransactionsTable
               warehouseId={warehouseId}
               refreshTrigger={refreshTrigger}
-              onCountUpdate={(count) => updateBadgeCount('incoming', count)} // This will now notify parent
+              onCountUpdate={handleIncomingCountUpdate}
           />
           <ValidatedTransactionsTable
               warehouseId={warehouseId}
               refreshTrigger={refreshTrigger}
-              onCountUpdate={(count) => updateBadgeCount('validated', count)}
+              onCountUpdate={handleValidatedCountUpdate}
           />
         </div>
 

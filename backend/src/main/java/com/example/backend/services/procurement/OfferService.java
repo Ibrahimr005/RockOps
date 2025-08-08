@@ -166,6 +166,9 @@ public class OfferService {
         if ("MANAGERREJECTED".equals(status) && rejectionReason != null && !rejectionReason.trim().isEmpty()) {
             offer.setRejectionReason(rejectionReason);
         }
+        if ("SUBMITTED".equals(status)) {
+            offer.setSubmittedAtM(LocalDateTime.now());
+        }
 
         return offerRepository.save(offer);
     }

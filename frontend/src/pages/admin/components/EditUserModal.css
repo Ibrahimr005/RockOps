@@ -28,18 +28,18 @@
 }
 
 .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--border-color);
+    /*display: flex;*/
+    /*justify-content: space-between;*/
+    /*align-items: center;*/
+    /*padding: 1.25rem 1.5rem;*/
+    /*border-bottom: 1px solid var(--border-color);*/
 }
 
 .modal-header h2 {
-    font-size: 1.25rem;
-    color: var(--head-title-color);
-    margin: 0;
-    font-weight: var(--bold-font-weight);
+    /*font-size: 1.25rem;*/
+    /*color: var(--head-title-color);*/
+    /*margin: 0;*/
+    /*font-weight: var(--bold-font-weight);*/
 }
 
 .close-button {

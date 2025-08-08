@@ -1,5 +1,5 @@
 // src/config/api.config.js
-export const API_BASE_URL = 'http://localhost:8080';  // Removed /api
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 // Equipment module endpoints
 export const EQUIPMENT_ENDPOINTS = {
@@ -42,7 +42,9 @@ export const EQUIPMENT_ENDPOINTS = {
     // Maintenance integration endpoints
     MAINTENANCE_SEARCH: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/search`,
     MAINTENANCE_FOR_LINKING: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/for-linking`,
-    ACCEPT_TRANSACTION_WITH_MAINTENANCE: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept-with-maintenance`
+    ACCEPT_TRANSACTION_WITH_MAINTENANCE: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept-with-maintenance`,
+    ITEMS: (equipmentId) => `/api/equipment/${equipmentId}/items`,
+    CHECK_BATCH_EXISTS: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`
 };
 
 // Consumable Resolution endpoints
@@ -50,7 +52,8 @@ export const CONSUMABLE_ENDPOINTS = {
     RESOLVE_DISCREPANCY: '/api/v1/consumables/resolve-discrepancy',
     RESOLUTION_HISTORY: (equipmentId) => `/api/v1/consumables/resolution-history/equipment/${equipmentId}`,
     DISCREPANCIES: (equipmentId) => `/api/v1/consumables/equipment/${equipmentId}/discrepancies`,
-    RESOLVED: (equipmentId) => `/api/v1/consumables/equipment/${equipmentId}/resolved`
+    RESOLVED: (equipmentId) => `/api/v1/consumables/equipment/${equipmentId}/resolved`,
+    HISTORY_BY_CONSUMABLE: (consumableId) => `/api/v1/equipment/consumables/${consumableId}/history`
 };
 
 // Equipment Types module endpoints
@@ -310,6 +313,7 @@ export const SITE_ENDPOINTS = {
     UNASSIGNED_PARTNERS: (siteId) => `/api/v1/site/${siteId}/unassigned-partners`,
     EMPLOYEES: (siteId) => `/api/v1/site/${siteId}/employees`,
     EQUIPMENT: (siteId) => `/api/v1/site/${siteId}/equipment`,
+    UNASSIGNED_EQUIPMENT: `/api/v1/site/unassigned-equipment`,
     WAREHOUSES: (siteId) => `/api/v1/site/${siteId}/warehouses`,
     MERCHANTS: (siteId) => `/api/v1/site/${siteId}/merchants`,
     FIXED_ASSETS: (siteId) => `/api/v1/site/${siteId}/fixedassets`,
@@ -349,15 +353,35 @@ export const WORK_TYPE_ENDPOINTS = {
 
 // Job Position module endpoints
 export const JOB_POSITION_ENDPOINTS = {
+    // Basic CRUD endpoints
     BASE: '/api/v1/job-positions',
+    CREATE: '/api/v1/job-positions',
     CREATE_DTO: '/api/v1/job-positions/dto',
     BY_ID: (id) => `/api/v1/job-positions/${id}`,
     DTO_BY_ID: (id) => `/api/v1/job-positions/dto/${id}`,
+    UPDATE: (id) => `/api/v1/job-positions/${id}`,
     UPDATE_DTO: (id) => `/api/v1/job-positions/dto/${id}`,
     DELETE: (id) => `/api/v1/job-positions/${id}`,
+
+    // Employee-related endpoints
     EMPLOYEES: (id) => `/api/v1/job-positions/${id}/employees`,
-    CREATE: '/api/v1/job-positions',
-    UPDATE: (id) => `/api/v1/job-positions/${id}`
+
+    // NEW: Enhanced endpoints for details view
+    DETAILS: (id) => `/api/v1/job-positions/${id}/details`,
+    PROMOTION_STATISTICS: (id) => `/api/v1/job-positions/${id}/promotion-statistics`,
+    PROMOTIONS_FROM: (id) => `/api/v1/job-positions/${id}/promotions/from`,
+    PROMOTIONS_TO: (id) => `/api/v1/job-positions/${id}/promotions/to`,
+    PROMOTIONS_FROM_PENDING: (id) => `/api/v1/job-positions/${id}/promotions/from/pending`,
+    PROMOTIONS_TO_PENDING: (id) => `/api/v1/job-positions/${id}/promotions/to/pending`,
+    CAREER_PATH_SUGGESTIONS: (id) => `/api/v1/job-positions/${id}/career-path-suggestions`,
+    EMPLOYEES_ELIGIBLE_FOR_PROMOTION: (id) => `/api/v1/job-positions/${id}/employees/eligible-for-promotion`,
+    SALARY_STATISTICS: (id) => `/api/v1/job-positions/${id}/salary-statistics`,
+    VALIDATION: (id) => `/api/v1/job-positions/${id}/validation`,
+    ANALYTICS: (id) => `/api/v1/job-positions/${id}/analytics`,
+    CAN_DELETE: (id) => `/api/v1/job-positions/${id}/can-delete`,
+    PROMOTION_DESTINATIONS: (id) => `/api/v1/job-positions/${id}/promotion-destinations`,
+    PROMOTION_SOURCES: (id) => `/api/v1/job-positions/${id}/promotion-sources`,
+    EMPLOYEE_ANALYTICS: (id) => `/api/v1/job-positions/${id}/employee-analytics`
 };
 
 // Document module endpoints
@@ -388,7 +412,18 @@ export const PARTNER_ENDPOINTS = {
 export const AUTH_ENDPOINTS = {
     BASE: '/api/v1/auth',
     REGISTER: '/api/v1/auth/register',
-    LOGIN: '/api/v1/auth/login'
+    LOGIN: '/api/v1/auth/login',
+    AUTHENTICATE: '/api/v1/auth/authenticate'
+};
+
+// Admin module endpoints
+export const ADMIN_ENDPOINTS = {
+    BASE: '/api/v1/admin',
+    USERS: '/api/v1/admin/users',
+    USER_BY_ID: (id) => `/api/v1/admin/users/${id}`,
+    UPDATE_USER_ROLE: (id) => `/api/v1/admin/users/${id}/role`,
+    CREATE_USER: '/api/v1/admin/users',
+    DELETE_USER: (id) => `/api/v1/admin/users/${id}`
 };
 
 // Item Category module endpoints
@@ -396,7 +431,8 @@ export const ITEM_CATEGORY_ENDPOINTS = {
     BASE: '/api/v1/itemCategories',
     CREATE: '/api/v1/itemCategories',
     PARENTS: '/api/v1/itemCategories/parents',
-    CHILDREN: '/api/v1/itemCategories/children'
+    CHILDREN: '/api/v1/itemCategories/children',
+    PARENT_CATEGORIES: '/api/v1/item-categories/parent'
 };
 
 // Request Order module endpoints
@@ -407,12 +443,37 @@ export const REQUEST_ORDER_ENDPOINTS = {
 };
 
 // Offer module endpoints
+// Add these to your OFFER_ENDPOINTS in api.config.js
+
 export const OFFER_ENDPOINTS = {
     BASE: '/api/v1/offers',
     BY_ID: (id) => `/api/v1/offers/${id}`,
     CREATE: '/api/v1/offers',
     UPDATE: (id) => `/api/v1/offers/${id}`,
-    DELETE: (id) => `/api/v1/offers/${id}`
+    DELETE: (id) => `/api/v1/offers/${id}`,
+
+    // Status operations
+    BY_STATUS: (status) => `/api/v1/offers?status=${status}`,
+    UPDATE_STATUS: (id) => `/api/v1/offers/${id}/status`,
+
+    // Request Order operations
+    REQUEST_ORDER: (offerId) => `/api/v1/offers/${offerId}/request-order`,
+
+    // Items operations
+    ADD_ITEMS: (offerId) => `/api/v1/offers/${offerId}/items`,
+    GET_ITEMS: (offerId) => `/api/v1/offers/${offerId}/items`,
+    UPDATE_ITEM: (itemId) => `/api/v1/offers/items/${itemId}`,
+    DELETE_ITEM: (itemId) => `/api/v1/offers/items/${itemId}`,
+
+    // Finance operations
+    UPDATE_FINANCE_STATUS: (offerId) => `/api/v1/offers/${offerId}/finance-status`,
+    UPDATE_ITEM_FINANCE_STATUS: (itemId) => `/api/v1/offers/offer-items/${itemId}/financeStatus`,
+    BY_FINANCE_STATUS: (status) => `/api/v1/offers/finance-status/${status}`,
+    COMPLETED_FINANCE: '/api/v1/offers/completed-offers',
+    COMPLETE_FINANCE_REVIEW: (offerId) => `/api/v1/offers/${offerId}/complete-review`,
+
+    // Retry operation
+    RETRY: (offerId) => `/api/v1/offers/${offerId}/retry`
 };
 
 // Candidate module endpoints
@@ -429,10 +490,23 @@ export const CANDIDATE_ENDPOINTS = {
 // Vacancy module endpoints
 export const VACANCY_ENDPOINTS = {
     BASE: '/api/v1/vacancies',
-    BY_ID: (id) => `/api/v1/vacancies/${id}`,
-    CREATE: '/api/v1/vacancies',
-    UPDATE: (id) => `/api/v1/vacancies/${id}`,
-    DELETE: (id) => `/api/v1/vacancies/${id}`
+
+    // Basic CRUD operations
+    CREATE: '/api/v1/vacancies',                              // POST - Create new vacancy
+    GET_ALL: '/api/v1/vacancies',                            // GET - Get all vacancies
+    BY_ID: (id) => `/api/v1/vacancies/${id}`,                // GET - Get vacancy by ID
+    UPDATE: (id) => `/api/v1/vacancies/${id}`,               // PUT - Update vacancy
+    DELETE: (id) => `/api/v1/vacancies/${id}`,               // DELETE - Delete vacancy
+
+    // Statistics and reporting
+    STATISTICS: (id) => `/api/v1/vacancies/${id}/statistics`, // GET - Get vacancy statistics
+
+    // Candidate management
+    HIRE_CANDIDATE: (candidateId) => `/api/v1/vacancies/hire-candidate/${candidateId}`, // POST - Hire a candidate
+
+    // Potential candidates management
+    MOVE_TO_POTENTIAL: (id) => `/api/v1/vacancies/${id}/move-to-potential`, // POST - Move candidates to potential list
+    GET_POTENTIAL_CANDIDATES: '/api/v1/vacancies/potential-candidates'       // GET - Get all potential candidates
 };
 
 // Department module endpoints
@@ -477,7 +551,8 @@ export const ITEM_TYPE_ENDPOINTS = {
     BY_ID: (id) => `/api/v1/itemTypes/${id}`,
     CREATE: '/api/v1/itemTypes',
     UPDATE: (id) => `/api/v1/itemTypes/${id}`,
-    DELETE: (id) => `/api/v1/itemTypes/${id}`
+    DELETE: (id) => `/api/v1/itemTypes/${id}`,
+    ALL_TYPES: '/api/v1/item-types'
 };
 
 // Warehouse module endpoints
@@ -488,7 +563,9 @@ export const WAREHOUSE_ENDPOINTS = {
     ITEMS: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}`,
     CREATE: '/api/v1/warehouses',
     UPDATE: (id) => `/api/v1/warehouses/${id}`,
-    DELETE: (id) => `/api/v1/warehouses/${id}`
+    DELETE: (id) => `/api/v1/warehouses/${id}`,
+    BY_EMPLOYEES: (warehouseId) => `/api/v1/warehouses/${warehouseId}/employees`
+
 };
 
 // Maintenance Type module endpoints
@@ -515,3 +592,81 @@ export const INSITE_MAINTENANCE_ENDPOINTS = {
     VALIDATE_TRANSACTION: (equipmentId, maintenanceId, transactionId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}/validate-transaction/${transactionId}`,
     ANALYTICS: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/analytics`
 };
+
+// Item module endpoints
+export const ITEM_ENDPOINTS = {
+    BASE: '/api/v1/items',
+    BY_ID: (itemId) => `/api/v1/items/${itemId}`,
+    CREATE: '/api/v1/items',
+    DELETE: (itemId) => `/api/v1/items/${itemId}`,
+
+    // Warehouse-related endpoints
+    BY_WAREHOUSE: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}`,
+    WAREHOUSE_DISCREPANCIES: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/discrepancies`,
+    WAREHOUSE_RESOLVED: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/resolved`,
+    WAREHOUSE_STOLEN: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/stolen`,
+    WAREHOUSE_OVERRECEIVED: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/overreceived`,
+    WAREHOUSE_COUNTS: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/counts`,
+    WAREHOUSE_ACTIVE: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/active`,
+    WAREHOUSE_SUMMARY: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/summary`,
+
+    // Resolution endpoints
+    RESOLVE_DISCREPANCY: '/api/v1/items/resolve-discrepancy',
+    ITEM_RESOLUTIONS: (itemId) => `/api/v1/items/${itemId}/resolutions`,
+    RESOLUTIONS_BY_USER: (username) => `/api/v1/items/resolutions/user/${username}`,
+    RESOLUTION_HISTORY_BY_WAREHOUSE: (warehouseId) => `/api/v1/items/resolution-history/warehouse/${warehouseId}`,
+
+    // Item capabilities
+    CAN_RESOLVE: (itemId) => `/api/v1/items/${itemId}/can-resolve`,
+
+    // Transaction details
+    TRANSACTION_DETAILS: (warehouseId, itemTypeId) => `/api/v1/items/transaction-details/${warehouseId}/${itemTypeId}`
+};
+
+export const WAREHOUSE_EMPLOYEE_ENDPOINTS = {
+    BASE: '/api/v1/warehouseEmployees',
+    WAREHOUSE_EMPLOYEES: '/api/v1/warehouseEmployees/warehouse-employees',
+    ASSIGN_WAREHOUSE: (employeeId) => `/api/v1/warehouseEmployees/${employeeId}/assign-warehouse`,
+    UNASSIGN_WAREHOUSE: (employeeId) => `/api/v1/warehouseEmployees/${employeeId}/unassign-warehouse`,
+    BY_USERNAME_ASSIGNMENTS: (username) => `/api/v1/warehouseEmployees/by-username/${username}/assignments`,
+    WAREHOUSE_ASSIGNED_USERS: (warehouseId) => `/api/v1/warehouses/${warehouseId}/assigned-users-dto`,
+    EMPLOYEE_WAREHOUSES: (employeeId) => `/api/v1/warehouseEmployees/${employeeId}/warehouses`,
+    ASSIGNMENT_DETAILS: (employeeId, warehouseId) => `/api/v1/warehouseEmployees/${employeeId}/warehouses/${warehouseId}/assignment`,
+    EMPLOYEE_ASSIGNMENTS: (employeeId) => `/api/v1/warehouseEmployees/${employeeId}/assignments`,
+    CHECK_WAREHOUSE_ACCESS: (employeeId, warehouseId) => `/api/v1/warehouseEmployees/${employeeId}/warehouses/${warehouseId}/access`
+};
+
+export const NOTIFICATION_ENDPOINTS = {
+    BASE: '/api/notifications',
+    UNREAD: '/api/notifications/unread',
+    UNREAD_COUNT: '/api/notifications/unread/count',
+    READ_ALL: '/api/notifications/read-all',
+    SEND: '/api/notifications/send',
+    BROADCAST: '/api/notifications/broadcast',
+    MARK_AS_READ: (id) => `/api/notifications/${id}/read`,
+    DELETE: (id) => `/api/notifications/${id}`
+};
+
+export const PROCUREMENT_ENDPOINTS = {
+    BASE: '/api/v1/procurement',
+    BY_ID: (id) => `/api/v1/procurement/${id}`,
+    CREATE: '/api/v1/procurement',
+    UPDATE: (id) => `/api/v1/procurement/${id}`,
+    DELETE: (id) => `/api/v1/procurement/${id}`,
+    BY_SITE: (siteId) => `/api/v1/procurement/site/${siteId}`,
+    BY_TYPE: (type) => `/api/v1/procurement/type/${type}`,
+    SEARCH: '/api/v1/procurement/search'
+};
+
+// Add this to your existing api.config.js file
+
+export const PURCHASE_ORDER_ENDPOINTS = {
+    BASE: '/api/v1/purchaseOrders',
+    BY_ID: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}`,
+    PENDING_OFFERS: '/api/v1/purchaseOrders/pending-offers',
+    BY_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/purchase-order`,
+    UPDATE_STATUS: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}/status`,
+    FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`
+};
+
+

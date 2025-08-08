@@ -79,7 +79,7 @@ const InProgressOffers = ({
             setConfirmationDialog(prev => ({ ...prev, isLoading: true }));
 
             // Call the status change handler
-            await handleOfferStatusChange(offer.id, 'SUBMITTED');
+            await handleOfferStatusChange(offer.id, 'SUBMITTED', offer);
 
             // Close confirmation dialog
             setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
@@ -90,6 +90,58 @@ const InProgressOffers = ({
             console.error('Error submitting offer:', error);
             setConfirmationDialog(prev => ({ ...prev, isLoading: false }));
             showSnackbar('error', 'Failed to submit offer. Please try again.');
+        }
+    };
+
+    // Handle delete offer item request (shows confirmation dialog)
+    const handleDeleteOfferItem = (offerItemId, offerItem) => {
+        const merchantName = offerItem?.merchant?.name || 'Unknown Merchant';
+
+        setConfirmationDialog({
+            show: true,
+            type: 'delete',
+            title: 'Delete Procurement Solution',
+            message: `Are you sure you want to remove the procurement solution from "${merchantName}"? This action cannot be undone.`,
+            onConfirm: () => handleConfirmDelete(offerItemId),
+            isLoading: false
+        });
+    };
+
+    // Handle confirmed deletion
+    const handleConfirmDelete = async (offerItemId) => {
+        if (!activeOffer) return;
+
+        try {
+            setConfirmationDialog(prev => ({ ...prev, isLoading: true }));
+
+            // Call API to delete the item
+            await fetchWithAuth(`${API_URL}/offers/items/${offerItemId}`, {
+                method: 'DELETE'
+            });
+
+            // Update UI to reflect deletion
+            const updatedOfferItems = activeOffer.offerItems.filter(item => item.id !== offerItemId);
+
+            const updatedOffer = {
+                ...activeOffer,
+                offerItems: updatedOfferItems
+            };
+
+            setActiveOffer(updatedOffer);
+
+            // Close confirmation dialog
+            setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
+
+            // Force re-render to update completion status
+            setTimeout(() => setActiveOffer({...updatedOffer}), 100);
+
+            showSnackbar('success', 'Procurement solution removed successfully!');
+            setTimeout(() => setSuccess(null), 3000);
+        } catch (error) {
+            console.error('Error removing offer item:', error);
+            setConfirmationDialog(prev => ({ ...prev, isLoading: false }));
+            showSnackbar('error', 'Failed to remove procurement solution. Please try again.');
+            setTimeout(() => setError(null), 3000);
         }
     };
 
@@ -147,7 +199,6 @@ const InProgressOffers = ({
     };
 
     // Handle modal save (both add and edit)
-// Replace your handleModalSave function with this debug version
     const handleModalSave = async (formData) => {
         if (!activeOffer || !selectedRequestItem) return;
 
@@ -329,42 +380,6 @@ const InProgressOffers = ({
         return totals;
     };
 
-    // Add this function after the handleSaveEditedOfferItem function
-    const handleDeleteOfferItem = async (offerItemId) => {
-        if (!activeOffer) return;
-
-        if (!window.confirm('Are you sure you want to remove this procurement solution?')) {
-            return;
-        }
-
-        try {
-            // Call API to delete the item
-            await fetchWithAuth(`${API_URL}/offers/items/${offerItemId}`, {
-                method: 'DELETE'
-            });
-
-            // Update UI to reflect deletion
-            const updatedOfferItems = activeOffer.offerItems.filter(item => item.id !== offerItemId);
-
-            const updatedOffer = {
-                ...activeOffer,
-                offerItems: updatedOfferItems
-            };
-
-            setActiveOffer(updatedOffer);
-
-            // Force re-render to update completion status
-            setTimeout(() => setActiveOffer({...updatedOffer}), 100);
-
-            showSnackbar('success', 'Procurement solution removed successfully!');
-            setTimeout(() => setSuccess(null), 3000);
-        } catch (error) {
-            console.error('Error removing offer item:', error);
-            showSnackbar('error', 'Failed to remove procurement solution. Please try again.');
-            setTimeout(() => setError(null), 3000);
-        }
-    };
-
     // Helper function to show snackbar
     const showSnackbar = (type, message) => {
         setSnackbar({
@@ -434,7 +449,7 @@ const InProgressOffers = ({
                     <div className="procurement-details-content">
                         <div className="procurement-details-header">
                             <div className="procurement-title-section">
-                                <h3>{activeOffer.title}</h3>
+                                <h2 className="procurement-main-title">{activeOffer.title}</h2>
                                 <div className="procurement-header-meta-inprogress">
                                 <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
                                     {activeOffer.status}
@@ -545,18 +560,15 @@ const InProgressOffers = ({
                                                 {/* Item Details - Simple Design */}
                                                 <div className="procurement-request-item-details-inprogress">
                                                     <div className="procurement-request-item-info-inprogress">
-                                                        <div className="item-quantity-info-inprogress">
-                                                            <span className="quantity-required-inprogress">
-                                                                Required: <strong>{requestItem.quantity} {requestItem.itemType.measuringUnit}</strong>
-                                                            </span>
-                                                        </div>
+
 
                                                         {requestItem.comment && (
                                                             <div className="item-notes-info-inprogress">
-                                                                <span className="notes-label-inprogress">Notes:</span>
-                                                                <span className="notes-text-inprogress">{requestItem.comment}</span>
+                                                                <div className="notes-label-inprogress">Notes</div>
+                                                                <div className="notes-text-inprogress">{requestItem.comment}</div>
                                                             </div>
                                                         )}
+
                                                     </div>
                                                 </div>
 
@@ -613,7 +625,7 @@ const InProgressOffers = ({
                                                                                 className="procurement-action-button delete"
                                                                                 onClick={(e) => {
                                                                                     e.stopPropagation();
-                                                                                    handleDeleteOfferItem(offerItem.id);
+                                                                                    handleDeleteOfferItem(offerItem.id, offerItem);
                                                                                 }}
                                                                                 title="Remove this solution"
                                                                             >
@@ -686,7 +698,7 @@ const InProgressOffers = ({
                 type={confirmationDialog.type}
                 title={confirmationDialog.title}
                 message={confirmationDialog.message}
-                confirmText="Submit Offer"
+                confirmText={confirmationDialog.type === 'delete' ? "Delete Solution" : "Submit Offer"}
                 cancelText="Cancel"
                 onConfirm={confirmationDialog.onConfirm}
                 onCancel={handleConfirmationCancel}

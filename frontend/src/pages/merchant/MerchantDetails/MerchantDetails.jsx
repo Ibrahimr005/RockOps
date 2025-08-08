@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./MerchantDetails.scss";
+import { merchantService } from '../../../services/merchant/merchantService.js';
 
 const MerchantDetails = () => {
     const { id } = useParams();
@@ -13,18 +14,8 @@ const MerchantDetails = () => {
         const fetchMerchantDetails = async () => {
             setLoading(true);
             try {
-                const token = localStorage.getItem("token");
-                const response = await fetch(`http://localhost:8080/api/v1/merchants/${id}`, {
-                    headers: {
-                        "Authorization": `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch merchant details: ${response.status}`);
-                }
-
-                const data = await response.json();
+                const response = await merchantService.getById(id);
+                const data = response.data;
                 setMerchant(data);
             } catch (error) {
                 console.error("Error fetching merchant details:", error);

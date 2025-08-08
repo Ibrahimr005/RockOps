@@ -1,0 +1,350 @@
+// ChartCard.scss - Styles for Chart Card Component using existing theme variables
+
+.chart-card {
+  background-color: var(--section-background-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: all var(--transition-fast);
+  animation: slideInUp 0.4s ease-out;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .chart-card-header {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--color-surface);
+
+    .chart-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      svg {
+        color: var(--color-primary);
+        font-size: 1.25rem;
+        flex-shrink: 0;
+      }
+
+      h3 {
+        color: var(--head-title-color);
+        font-size: 1.2rem;
+        font-weight: var(--bold-font-weight);
+        margin: 0;
+        font-family: var(--font-family);
+      }
+    }
+  }
+
+  .chart-card-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .chart-canvas {
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+      border-radius: var(--radius-sm);
+      background-color: var(--main-background-color);
+      border: 1px solid var(--border-color);
+    }
+
+    .no-data-message {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 3rem 2rem;
+      color: var(--color-text-secondary);
+      text-align: center;
+
+      svg {
+        font-size: 3rem;
+        opacity: 0.5;
+      }
+
+      span {
+        font-size: 1.1rem;
+        font-weight: var(--bold-font-weight);
+      }
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+      justify-content: center;
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+
+        .legend-color {
+          width: 12px;
+          height: 12px;
+          border-radius: 2px;
+          flex-shrink: 0;
+        }
+
+        .legend-label {
+          color: var(--color-text-primary);
+          font-weight: var(--bold-font-weight);
+        }
+      }
+
+      @media (max-width: 768px) {
+        gap: 0.75rem;
+
+        .legend-item {
+          font-size: 0.8rem;
+
+          .legend-color {
+            width: 10px;
+            height: 10px;
+          }
+        }
+      }
+    }
+  }
+
+  // Size variants
+  &.chart-full-width {
+    grid-column: 1 / -1;
+  }
+
+  &.chart-half-width {
+    @media (min-width: 1024px) {
+      grid-column: span 1;
+    }
+  }
+
+  &.chart-small {
+    .chart-card-content {
+      padding: 1rem;
+
+      .chart-canvas {
+        height: 200px;
+      }
+    }
+
+    .chart-card-header {
+      padding: 1rem;
+
+      .chart-title h3 {
+        font-size: 1rem;
+      }
+    }
+  }
+
+  &.chart-large {
+    .chart-card-content {
+      padding: 2rem;
+
+      .chart-canvas {
+        height: 400px;
+      }
+    }
+  }
+
+  // Responsive design
+  @media (max-width: 768px) {
+    .chart-card-header {
+      padding: 1rem;
+
+      .chart-title {
+        gap: 0.5rem;
+
+        svg {
+          font-size: 1rem;
+        }
+
+        h3 {
+          font-size: 1rem;
+        }
+      }
+    }
+
+    .chart-card-content {
+      padding: 1rem;
+
+      .chart-canvas {
+        height: 250px;
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    .chart-card-header {
+      padding: 0.75rem;
+
+      .chart-title h3 {
+        font-size: 0.9rem;
+      }
+    }
+
+    .chart-card-content {
+      padding: 0.75rem;
+
+      .chart-canvas {
+        height: 200px;
+      }
+
+      .no-data-message {
+        padding: 2rem 1rem;
+
+        svg {
+          font-size: 2rem;
+        }
+
+        span {
+          font-size: 1rem;
+        }
+      }
+    }
+  }
+}
+
+// Dark theme adjustments
+[data-theme="dark"] {
+  .chart-card {
+    .chart-canvas {
+      background-color: var(--color-surface-hover);
+    }
+  }
+}
+
+// Animation for chart appearance
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Loading state
+.chart-card.loading {
+  .chart-card-content {
+    position: relative;
+    min-height: 300px;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 2rem;
+      height: 2rem;
+      margin: -1rem 0 0 -1rem;
+      border: 3px solid var(--border-color);
+      border-top: 3px solid var(--color-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .chart-canvas {
+      opacity: 0.3;
+    }
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Error state
+.chart-card.error {
+  .chart-card-content {
+    .no-data-message {
+      color: var(--color-danger);
+
+      svg {
+        color: var(--color-danger);
+      }
+    }
+  }
+}
+
+// Print styles
+@media print {
+  .chart-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 1px solid #333;
+    background: white;
+    color: black;
+
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .chart-card-header {
+      background: #f5f5f5;
+      border-bottom: 1px solid #333;
+
+      .chart-title {
+        svg {
+          color: #333;
+        }
+
+        h3 {
+          color: #333;
+        }
+      }
+    }
+
+    .chart-canvas {
+      background: white;
+      border: 1px solid #333;
+    }
+
+    .legend-item .legend-label {
+      color: #333;
+    }
+  }
+}
+
+// Focus states for accessibility
+.chart-card:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .chart-card {
+    border: 2px solid var(--color-text-primary);
+
+    .chart-canvas {
+      border: 2px solid var(--color-text-primary);
+    }
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .chart-card {
+    animation: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
+
+  .chart-card.loading::before {
+    animation: none;
+  }
+}

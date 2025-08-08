@@ -4,6 +4,8 @@ import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import InWarehouseItems from "./InWarehouse/InWarehouseItems.jsx";
 import DiscrepancyItems from "./DiscrepancyItems/DiscrepancyItems.jsx";
 import ResolutionHistory from "./ResolutionHistory/ResolutionHistory.jsx";
+import { itemService } from '../../../services/warehouse/itemService';
+import { warehouseService } from '../../../services/warehouse/warehouseService';
 
 const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems,onDiscrepancyCountChange }) => {
   // Shared states
@@ -48,18 +50,8 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
     }
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8080/api/v1/items/warehouse/${warehouseId}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTableData(data);
-      } else {
-        console.error("Failed to fetch items, status:", response.status);
-      }
+      const data = await itemService.getItemsByWarehouse(warehouseId);
+      setTableData(data);
     } catch (error) {
       console.error("Failed to fetch items:", error);
     } finally {
@@ -81,23 +73,9 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
     }
   }, [tableData, onDiscrepancyCountChange]);
 
-  // Fetch warehouse details
   const fetchWarehouseDetails = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8080/api/v1/warehouses/${warehouseId}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error response:", errorText);
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await warehouseService.getById(warehouseId);
       setWarehouseData({
         site: data.site || {},
         name: data.name || "",

@@ -57,14 +57,14 @@
 
 /* Status Badge Styles (if not already defined) */
 .status-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-  border: 1px solid transparent;
+  //display: inline-block;
+  //padding: 4px 12px;
+  //border-radius: 12px;
+  //font-size: 0.75rem;
+  //font-weight: 600;
+  //text-transform: uppercase;
+  //letter-spacing: 0.025em;
+  //border: 1px solid transparent;
 
   &--success {
     background-color: rgba(76, 175, 80, 0.1);

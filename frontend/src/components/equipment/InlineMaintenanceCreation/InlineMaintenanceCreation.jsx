@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { employeeService } from '../../../services/employeeService';
+import { employeeService } from '../../../services/hr/employeeService.js';
 import { maintenanceTypeService } from '../../../services/maintenanceTypeService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import './InlineMaintenanceCreation.scss';

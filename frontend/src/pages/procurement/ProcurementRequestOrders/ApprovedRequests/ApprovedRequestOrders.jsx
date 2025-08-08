@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
-import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx"
+import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
+import RequestOrderViewModal from '../RequestOrderViewModal/RequestOrderViewModal.jsx';
 import './ApprovedRequestOrders.scss';
+import { offerService } from '../../../../services/procurement/offerService.js';
 
 const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
     const navigate = useNavigate();
@@ -10,29 +12,32 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
 
+    // View modal states
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [selectedRequestOrder, setSelectedRequestOrder] = useState(null);
+
     const handleRowClick = (row) => {
         navigate(`/procurement/request-orders/${row.id}`);
     };
 
-    const handleViewOfferClick = async (row) => {
+    const handleViewClick = (row, e) => {
+        e.stopPropagation();
+        setSelectedRequestOrder(row);
+        setShowViewModal(true);
+    };
+
+    const handleCloseViewModal = () => {
+        setShowViewModal(false);
+        setSelectedRequestOrder(null);
+    };
+
+    const handleViewOfferClick = async (row, e) => {
+        e.stopPropagation();
         try {
             // Fetch the offer associated with this request order
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/offers/by-request/${row.id}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
+            const offers = await offerService.getByRequestId(row.id);
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch offer details');
-            }
-
-            const offers = await response.json();
-
-            if (offers && offers.length > 0) {
+            if (offers && Array.isArray(offers) && offers.length > 0) {
                 // Navigate to the first offer associated with this request
                 navigate(`/procurement/offers/${offers[0].id}`);
             } else {
@@ -122,18 +127,18 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
         }
     ];
 
-    // Define actions for DataTable (commented out as per original)
+    // Define actions for DataTable
     const actions = [
         {
-            label: 'View Offer',
+            label: 'View',
             icon: (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
                 </svg>
             ),
-            onClick: (row) => handleViewOfferClick(row),
-            className: 'view-action'
+            onClick: (row) => handleViewClick(row, { stopPropagation: () => {} }),
+            className: 'view'
         }
     ];
 
@@ -166,7 +171,7 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
             <DataTable
                 data={requestOrders || []}
                 columns={columns}
-                actions={[]} // Empty actions array since original had actions commented out
+                actions={actions}
                 onRowClick={handleRowClick}
                 loading={loading}
                 emptyMessage="No approved requests found"
@@ -184,6 +189,13 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
                 isVisible={showNotification}
                 onClose={() => setShowNotification(false)}
                 duration={3000}
+            />
+
+            {/* Request Order View Modal */}
+            <RequestOrderViewModal
+                requestOrder={selectedRequestOrder}
+                isOpen={showViewModal}
+                onClose={handleCloseViewModal}
             />
         </div>
     );

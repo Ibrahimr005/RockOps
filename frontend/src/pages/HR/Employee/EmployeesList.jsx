@@ -6,10 +6,11 @@ import EmployeeAvatar from '../../../components/common/EmployeeAvatar';
 import AddEmployeeModal from './modals/AddEmployeeModal.jsx';
 import EditEmployeeModal from './modals/EditEmployeeModal.jsx';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
-import { employeeService } from '../../../services/employeeService';
-import { hrEmployeeService } from '../../../services/hrEmployeeService';
-import { departmentService } from '../../../services/departmentService';
-import { jobPositionService } from '../../../services/jobPositionService';
+import { employeeService } from '../../../services/hr/employeeService.js';
+import { hrEmployeeService } from '../../../services/hr/hrEmployeeService.js';
+import { departmentService } from '../../../services/hr/departmentService.js';
+import { jobPositionService } from '../../../services/hr/jobPositionService.js';
+import { siteService } from '../../../services/siteService.js';
 
 const EmployeesList = () => {
     const { showSuccess, showError } = useSnackbar();
@@ -222,22 +223,9 @@ const EmployeesList = () => {
     // Fetch sites for the dropdown
     const fetchSites = async () => {
         try {
-            // Note: You'll need to create a site service or use the appropriate endpoint
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/site', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            setSites(data);
+            // siteService.getAll() is assumed to return a response with a .data property (like axios)
+            const response = await siteService.getAll();
+            setSites(response.data);
         } catch (error) {
             console.error('Error fetching sites:', error);
             showError('Failed to load sites');

@@ -285,42 +285,105 @@ public class SiteAdminService
 
     @Transactional
     public Equipment assignEquipmentToSite(UUID siteId, UUID equipmentId) {
-        Site site = siteRepository.findById(siteId)
-                .orElseThrow(() -> new RuntimeException("❌ Site not found with ID: " + siteId));
+        try {
+            System.out.println("=== Starting equipment assignment ===");
+            System.out.println("Site ID: " + siteId + ", Equipment ID: " + equipmentId);
 
-        Equipment equipment = equipmentRepository.findById(equipmentId)
-                .orElseThrow(() -> new RuntimeException("❌ Equipment not found with ID: " + equipmentId));
-
-        if (equipment.getSite() != null) {
-            throw new RuntimeException("Equipment is already assigned to a site!");
-        }
-
-        // Assign equipment to site
-        equipment.setSite(site);
-
-
-            equipment.setStatus(EquipmentStatus.RUNNING);
-
-
-        // If equipment has a main driver, assign them to the site
-        if (equipment.getMainDriver() != null) {
-            Employee mainDriver = equipment.getMainDriver();
-            if (mainDriver.getSite() == null) {
-                mainDriver.setSite(site);
-                employeeRepository.save(mainDriver);
+            // Validate inputs
+            if (siteId == null || equipmentId == null) {
+                throw new IllegalArgumentException("Site ID and Equipment ID cannot be null");
             }
-        }
 
-        // If equipment has a sub driver, assign them to the site
-        if (equipment.getSubDriver() != null) {
-            Employee subDriver = equipment.getSubDriver();
-            if (subDriver.getSite() == null) {
-                subDriver.setSite(site);
-                employeeRepository.save(subDriver);
+            // Find site
+            Site site = siteRepository.findById(siteId)
+                    .orElseThrow(() -> new RuntimeException("❌ Site not found with ID: " + siteId));
+            System.out.println("Site found: " + site.getName());
+
+            // Find equipment
+            Equipment equipment = equipmentRepository.findById(equipmentId)
+                    .orElseThrow(() -> new RuntimeException("❌ Equipment not found with ID: " + equipmentId));
+            System.out.println("Equipment found: " + equipment.getModel());
+
+            // Check if equipment is already assigned
+            if (equipment.getSite() != null) {
+                throw new RuntimeException("Equipment is already assigned to site: " + equipment.getSite().getName());
             }
-        }
 
-        return equipmentRepository.save(equipment);
+            // Assign equipment to site
+            equipment.setSite(site);
+            System.out.println("Equipment assigned to site");
+
+            // Set equipment status safely
+            try {
+                if (equipment.getStatus() == null) {
+                    equipment.setStatus(EquipmentStatus.RUNNING);
+                    System.out.println("Equipment status set to RUNNING");
+                }
+            } catch (Exception e) {
+                System.out.println("Warning: Could not set equipment status - " + e.getMessage());
+                // Continue without failing the entire operation
+            }
+
+            // Handle main driver assignment
+            if (equipment.getMainDriver() != null) {
+                try {
+                    Employee mainDriver = equipment.getMainDriver();
+                    System.out.println("Processing main driver: " + mainDriver.getFirstName());
+
+                    if (mainDriver.getSite() == null) {
+                        mainDriver.setSite(site);
+                        employeeRepository.save(mainDriver);
+                        System.out.println("Main driver assigned to site");
+                    } else {
+                        System.out.println("Main driver already assigned to site: " + mainDriver.getSite().getName());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error assigning main driver: " + e.getMessage());
+                    // Log but don't fail the entire operation
+                }
+            }
+
+            // Handle sub driver assignment
+            if (equipment.getSubDriver() != null) {
+                try {
+                    Employee subDriver = equipment.getSubDriver();
+                    System.out.println("Processing sub driver: " + subDriver.getFirstName());
+
+                    if (subDriver.getSite() == null) {
+                        subDriver.setSite(site);
+                        employeeRepository.save(subDriver);
+                        System.out.println("Sub driver assigned to site");
+                    } else {
+                        System.out.println("Sub driver already assigned to site: " + subDriver.getSite().getName());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error assigning sub driver: " + e.getMessage());
+                    // Log but don't fail the entire operation
+                }
+            }
+
+            // Save equipment
+            Equipment savedEquipment = equipmentRepository.save(equipment);
+            System.out.println("Equipment saved successfully");
+
+            System.out.println("=== Equipment assignment completed ===");
+            return savedEquipment;
+
+        } catch (Exception e) {
+            System.err.println("ERROR in assignEquipmentToSite: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to assign equipment to site: " + e.getMessage(), e);
+        }
+    }
+
+// Add these helper methods to your service class
+
+    public boolean siteExists(UUID siteId) {
+        return siteRepository.existsById(siteId);
+    }
+
+    public boolean equipmentExists(UUID equipmentId) {
+        return equipmentRepository.existsById(equipmentId);
     }
 
 

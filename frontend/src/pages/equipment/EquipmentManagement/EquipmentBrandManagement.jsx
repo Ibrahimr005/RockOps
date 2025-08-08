@@ -173,6 +173,18 @@ const EquipmentBrandManagement = () => {
                 addButtonText="Add Equipment Brand"
                 addButtonIcon={<FaPlus />}
                 onAddClick={() => handleOpenModal()}
+                showExportButton={true}
+                exportButtonText="Export Equipment Brands"
+                exportFileName="equipment_brands"
+                exportAllData={true}
+                excludeColumnsFromExport={['actions']}
+                customExportHeaders={{
+                    'name': 'Brand Name',
+                    'description': 'Description'
+                }}
+                onExportStart={() => showSuccess("Exporting equipment brands...")}
+                onExportComplete={(result) => showSuccess(`Exported ${result.rowCount} equipment brands to Excel`)}
+                onExportError={(error) => showError("Failed to export equipment brands")}
             />
 
             {/* Modal for adding/editing equipment brands */}

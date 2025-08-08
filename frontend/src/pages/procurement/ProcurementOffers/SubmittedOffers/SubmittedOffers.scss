@@ -1,4 +1,4 @@
-// submitted-offers.scss - Enhanced design with dark mode compatibility
+// submitted-offers.scss - Enhanced design with simplified summary section
 
 // Submitted offers list items
 .procurement-items-list-submitted {
@@ -348,69 +348,102 @@
   }
 }
 
-// Enhanced Summary
-.procurement-submitted-summary-submitted {
-  background: linear-gradient(135deg, var(--color-surface-secondary), var(--color-surface));
-  border: 1px solid var(--border-color-light);
-  border-radius: var(--radius-md);
-  padding: 2rem;
-  box-shadow: var(--shadow-sm);
-  position: relative;
-  overflow: hidden;
+// Action buttons spacing
+.procurement-header-actions {
+  display: flex;
+  gap: 1rem; // Increase gap between approve and decline buttons
+  align-items: center;
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light), var(--color-success));
-  }
-
-  .submitted-summary-row-submitted {
-    display: flex;
-    justify-content: space-between;
+  .procurement-button {
+    display: inline-flex;
     align-items: center;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--border-color-light);
-    font-weight: 500;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-weight: var(--bold-font-weight);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     transition: all var(--transition-normal) ease;
+    border: none;
+    cursor: pointer;
 
-    &:hover {
-      background: var(--color-surface-hover);
-      margin: 0 -2rem;
-      padding: 1rem 2rem;
-      border-radius: var(--radius-sm);
-    }
-
-    &:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-      padding-top: 1.5rem;
-      margin-top: 1rem;
-      border-top: 3px solid var(--color-primary);
-      background: var(--color-surface-secondary);
-      margin: 1rem -2rem 0;
-      padding: 1.5rem 2rem 0;
-      border-radius: var(--radius-sm);
+    &.primary.approve-button {
+      background: linear-gradient(135deg, var(--color-success), var(--color-success-light));
+      color: var(--color-text-inverse);
+      box-shadow: var(--shadow-sm);
 
       &:hover {
-        background: var(--color-surface-hover);
+        background: linear-gradient(135deg, var(--color-success-dark), var(--color-success));
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
       }
     }
 
-    span:first-child {
-      color: var(--color-text-medium);
+    &.secondary.decline-button {
+      background: linear-gradient(135deg, var(--color-danger), var(--color-danger-light));
+      color: var(--color-text-inverse);
+      box-shadow: var(--shadow-sm);
+
+      &:hover {
+        background: linear-gradient(135deg, var(--color-danger-dark), var(--color-danger));
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+      }
+    }
+  }
+}
+
+// Simplified Summary Section - No Container
+.procurement-submitted-summary-submitted {
+  margin-top: 2rem;
+  padding: 0 1.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+
+  .summary-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color-light);
+    background: transparent;
+
+    &:last-child {
+      border-bottom: 1px solid var(--border-color-light);
+    }
+
+    &.total-value {
+      border-top: 1px solid var(--border-color-light);
+      border-bottom: 1px solid var(--border-color-light);
+      padding: 1.25rem 0;
+      margin-top: 0.5rem;
       font-weight: var(--bold-font-weight);
+    }
+
+    svg {
+      color: var(--color-text-muted);
+      flex-shrink: 0;
+    }
+
+    .summary-label {
+      color: var(--color-text-medium);
+      font-weight: 500;
+      flex: 1;
       font-size: 0.95rem;
     }
 
-    .submitted-total-value-submitted {
-      font-weight: var(--bold-font-weight);
-      color: var(--color-primary);
-      font-size: 1.5rem;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    .summary-value {
+      color: var(--color-text-dark);
+      font-weight: 500;
+      font-size: 0.9rem;
+
+      &.total {
+        color: var(--color-text-dark);
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+      }
     }
   }
 }
@@ -485,6 +518,27 @@
       align-self: flex-end;
     }
   }
+
+  .procurement-submitted-summary-submitted {
+    margin-top: 1.5rem;
+    padding: 0 1rem;
+
+    .summary-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding: 0.75rem 0;
+
+      .summary-value {
+        align-self: flex-end;
+        font-size: 0.85rem;
+
+        &.total {
+          font-size: 0.95rem;
+        }
+      }
+    }
+  }
 }
 
 @media (max-width: 768px) {
@@ -529,19 +583,27 @@
       padding: 0.75rem;
     }
   }
-
-  .submitted-summary-row-submitted {
-    .submitted-total-value-submitted {
-      font-size: 1.25rem;
-    }
-  }
 }
 
 @media (max-width: 640px) {
   .procurement-request-summary-card-submitted,
-  .procurement-submitted-details-submitted,
-  .procurement-submitted-summary-submitted {
+  .procurement-submitted-details-submitted {
     padding: 1rem;
+  }
+
+  .procurement-submitted-summary-submitted {
+    margin-top: 1rem;
+    padding: 0 0.75rem;
+
+    .summary-item {
+      .summary-value {
+        font-size: 0.8rem;
+
+        &.total {
+          font-size: 0.9rem;
+        }
+      }
+    }
   }
 
   .procurement-timeline-submitted {
