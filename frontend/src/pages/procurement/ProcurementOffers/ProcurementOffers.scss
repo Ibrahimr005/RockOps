@@ -317,17 +317,29 @@ $gray-900: var(--color-text-dark);
   }
 
 
-  &.status-submitted, &.status-sent {
+  &.status-submitted, &.status-sent, &.status-finalizing {
     background-color: var(--color-warning-light);
     color: var(--section-background-color);
   }
+
+
 
   &.status-manageraccepted {
     background-color: var(--color-success-light);
     color: var(--section-background-color);
   }
 
+  &.status-finance_accepted {
+    background-color: var(--color-success-light);
+    color: var(--section-background-color);
+  }
+
   &.status-managerrejected {
+    background-color: var(--color-danger-light);
+    color: var(--section-background-color);
+  }
+
+  &.status-finance_rejected {
     background-color: var(--color-danger-light);
     color: var(--section-background-color);
   }

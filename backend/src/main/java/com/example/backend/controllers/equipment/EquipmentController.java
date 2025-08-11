@@ -1,7 +1,7 @@
 package com.example.backend.controllers.equipment;
 
 import com.example.backend.dto.equipment.*;
-import com.example.backend.dto.hr.EmployeeSummaryDTO;
+import com.example.backend.dto.hr.employee.EmployeeSummaryDTO;
 import com.example.backend.models.equipment.Consumable;
 import com.example.backend.models.warehouse.ItemStatus;
 import com.example.backend.services.equipment.ConsumablesService;

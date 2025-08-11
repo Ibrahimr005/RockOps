@@ -1,0 +1,929 @@
+/* BankReconciliation.css */
+
+.bank-reconciliation-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: var(--section-background-color);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.bank-reconciliation-content-container {
+    margin-top: 20px;
+}
+
+
+.tab-count {
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.bank-reconciliation-content {
+    min-height: 400px;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .tabs-header {
+        flex-wrap: wrap;
+    }
+
+    .tab-button {
+        flex: 1;
+        min-width: 120px;
+        padding: 10px;
+        justify-content: center;
+    }
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.modal-content {
+    background: var(--section-background-color);
+    border-radius: var(--radius-md);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.modal-close:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Common button styles for all bank reconciliation components */
+.bank-reconciliation-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.bank-reconciliation-btn-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: var(--color-text-inverse);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.bank-reconciliation-btn-primary:hover {
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, #1d4ed8 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.bank-reconciliation-btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.bank-reconciliation-btn-secondary:hover {
+    background: var(--color-surface-hover);
+    border-color: var(--color-text-secondary);
+}
+
+.bank-reconciliation-btn-success {
+    background: linear-gradient(135deg, var(--color-success) 0%, #10b981 100%);
+    color: var(--color-text-inverse);
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.bank-reconciliation-btn-success:hover {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.bank-reconciliation-btn-warning {
+    background: linear-gradient(135deg, var(--color-warning) 0%, #f59e0b 100%);
+    color: var(--color-text-inverse);
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+.bank-reconciliation-btn-warning:hover {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.bank-reconciliation-btn-danger {
+    background: linear-gradient(135deg, var(--color-danger) 0%, #dc2626 100%);
+    color: var(--color-text-inverse);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.bank-reconciliation-btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.bank-reconciliation-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Common card styles */
+.bank-reconciliation-card {
+    background: var(--section-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1rem;
+}
+
+.bank-reconciliation-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.bank-reconciliation-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bank-reconciliation-card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Common status badge styles */
+.bank-reconciliation-status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.bank-reconciliation-status-active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bank-reconciliation-status-inactive {
+    background: rgba(107, 114, 128, 0.1);
+    color: #4b5563;
+    border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+.bank-reconciliation-status-reconciled {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bank-reconciliation-status-unreconciled {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.bank-reconciliation-status-matched {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bank-reconciliation-status-unmatched {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.bank-reconciliation-status-confirmed {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bank-reconciliation-status-pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.bank-reconciliation-status-open {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.bank-reconciliation-status-resolved {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bank-reconciliation-status-closed {
+    background: rgba(107, 114, 128, 0.1);
+    color: #4b5563;
+    border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+.bank-reconciliation-status-high {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.bank-reconciliation-status-medium {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.bank-reconciliation-status-low {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.bank-reconciliation-status-complete {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bank-reconciliation-status-issues {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.bank-reconciliation-status-in_progress {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* Common loading styles */
+.bank-reconciliation-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    text-align: center;
+}
+
+.bank-reconciliation-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--color-surface-hover);
+    border-top: 4px solid var(--color-primary);
+    border-radius: 50%;
+    animation: bank-reconciliation-spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+.bank-reconciliation-loading-text {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+@keyframes bank-reconciliation-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Common form styles */
+.bank-reconciliation-form {
+    background: var(--section-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.bank-reconciliation-form-group {
+    margin-bottom: 1rem;
+}
+
+.bank-reconciliation-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+}
+
+.bank-reconciliation-form-input,
+.bank-reconciliation-form-select,
+.bank-reconciliation-form-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--section-background-color);
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+    transition: all var(--transition-fast);
+}
+
+.bank-reconciliation-form-input:focus,
+.bank-reconciliation-form-select:focus,
+.bank-reconciliation-form-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.bank-reconciliation-form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.bank-reconciliation-form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.bank-reconciliation-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Common stats/summary styles */
+.bank-reconciliation-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.bank-reconciliation-stat-card {
+    background: var(--section-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.bank-reconciliation-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--color-primary);
+}
+
+.bank-reconciliation-stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.bank-reconciliation-stat-label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin: 0.5rem 0 0 0;
+    font-weight: 500;
+}
+
+.bank-reconciliation-stat-icon {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    color: var(--color-primary);
+    opacity: 0.7;
+}
+
+/* Common table customizations */
+.bank-reconciliation-table .rockops-table__container {
+    margin: 0;
+    box-shadow: none;
+}
+
+.bank-reconciliation-table .rockops-table__header-container {
+    padding: 1rem 0;
+}
+
+/* Dashboard specific styles */
+.bank-reconciliation-dashboard {
+    width: 100%;
+}
+
+.account-status-list,
+.recent-matches-list,
+.discrepancies-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.account-status-item,
+.recent-match-item {
+    transition: background-color var(--transition-fast);
+}
+
+.account-status-item:hover,
+.recent-match-item:hover {
+    background-color: var(--color-surface-hover);
+    border-radius: var(--radius-sm);
+    margin: 0 -8px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.discrepancy-item {
+    transition: all var(--transition-fast);
+}
+
+.discrepancy-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}/* BankReconciliation.css */
+
+.bank-reconciliation-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: var(--section-background-color);
+    color: var(--color-text-primary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.bank-reconciliation-content-container {
+    margin-top: 20px;
+}
+
+
+.bank-reconciliation-content {
+    min-height: 400px;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .tabs-header {
+        flex-wrap: wrap;
+    }
+
+    .tab-button {
+        flex: 1;
+        min-width: 120px;
+        padding: 10px;
+        justify-content: center;
+    }
+}
+
+/* Common button styles for all bank reconciliation components */
+.bank-reconciliation-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.bank-reconciliation-btn-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: var(--color-text-inverse);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.bank-reconciliation-btn-primary:hover {
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, #1d4ed8 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.bank-reconciliation-btn-secondary {
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.bank-reconciliation-btn-secondary:hover {
+    background: var(--color-surface-hover);
+    border-color: var(--color-text-secondary);
+}
+
+.bank-reconciliation-btn-success {
+    background: linear-gradient(135deg, var(--color-success) 0%, #10b981 100%);
+    color: var(--color-text-inverse);
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.bank-reconciliation-btn-success:hover {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.bank-reconciliation-btn-warning {
+    background: linear-gradient(135deg, var(--color-warning) 0%, #f59e0b 100%);
+    color: var(--color-text-inverse);
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+}
+
+.bank-reconciliation-btn-warning:hover {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.bank-reconciliation-btn-danger {
+    background: linear-gradient(135deg, var(--color-danger) 0%, #dc2626 100%);
+    color: var(--color-text-inverse);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.bank-reconciliation-btn-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.bank-reconciliation-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Common card styles */
+.bank-reconciliation-card {
+    background: var(--section-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1rem;
+}
+
+.bank-reconciliation-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.bank-reconciliation-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bank-reconciliation-card-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Common status badge styles */
+.bank-reconciliation-status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.bank-reconciliation-status-active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bank-reconciliation-status-inactive {
+    background: rgba(107, 114, 128, 0.1);
+    color: #4b5563;
+    border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+.bank-reconciliation-status-reconciled {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bank-reconciliation-status-unreconciled {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.bank-reconciliation-status-matched {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bank-reconciliation-status-unmatched {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.bank-reconciliation-status-confirmed {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bank-reconciliation-status-pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.bank-reconciliation-status-open {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.bank-reconciliation-status-resolved {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bank-reconciliation-status-closed {
+    background: rgba(107, 114, 128, 0.1);
+    color: #4b5563;
+    border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+.bank-reconciliation-status-high {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.bank-reconciliation-status-medium {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.bank-reconciliation-status-low {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Common loading styles */
+.bank-reconciliation-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    text-align: center;
+}
+
+.bank-reconciliation-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--color-surface-hover);
+    border-top: 4px solid var(--color-primary);
+    border-radius: 50%;
+    animation: bank-reconciliation-spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+.bank-reconciliation-loading-text {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+}
+
+@keyframes bank-reconciliation-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Common form styles */
+.bank-reconciliation-form {
+    background: var(--section-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.bank-reconciliation-form-group {
+    margin-bottom: 1rem;
+}
+
+.bank-reconciliation-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+}
+
+.bank-reconciliation-form-input,
+.bank-reconciliation-form-select,
+.bank-reconciliation-form-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--section-background-color);
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+    transition: all var(--transition-fast);
+}
+
+.bank-reconciliation-form-input:focus,
+.bank-reconciliation-form-select:focus,
+.bank-reconciliation-form-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.bank-reconciliation-form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.bank-reconciliation-form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.bank-reconciliation-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Common stats/summary styles */
+.bank-reconciliation-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.bank-reconciliation-stat-card {
+    background: var(--section-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.bank-reconciliation-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--color-primary);
+}
+
+.bank-reconciliation-stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.bank-reconciliation-stat-label {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    margin: 0.5rem 0 0 0;
+    font-weight: 500;
+}
+
+.bank-reconciliation-stat-icon {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.5rem;
+    color: var(--color-primary);
+    opacity: 0.7;
+}
+
+/* Common table customizations */
+.bank-reconciliation-table .rockops-table__container {
+    margin: 0;
+    box-shadow: none;
+}
+
+.bank-reconciliation-table .rockops-table__header-container {
+    padding: 1rem 0;
+}

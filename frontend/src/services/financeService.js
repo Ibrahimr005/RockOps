@@ -402,5 +402,332 @@ export const financeService = {
         close: (id, closeData) => {
             return apiClient.put(FINANCE_ENDPOINTS.ACCOUNTING_PERIODS.CLOSE(id), closeData);
         }
+    },
+
+    // Add this to your existing financeService object in src/services/financeService.js
+
+// Bank Reconciliation operations
+    bankReconciliation: {
+        // Bank Account operations
+        bankAccounts: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_ACCOUNTS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_ACCOUNTS.BY_ID(id));
+            },
+
+            create: (accountData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_ACCOUNTS.BASE, accountData);
+            },
+
+            update: (id, accountData) => {
+                return apiClient.put(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_ACCOUNTS.BY_ID(id), accountData);
+            },
+
+            delete: (id) => {
+                return apiClient.delete(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_ACCOUNTS.BY_ID(id));
+            },
+
+            updateBalance: (id, balance) => {
+                return apiClient.put(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_ACCOUNTS.UPDATE_BALANCE(id), null, {
+                    params: { balance }
+                });
+            },
+
+            search: (searchTerm) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_ACCOUNTS.SEARCH, {
+                    params: { searchTerm }
+                });
+            },
+
+            getWithBalanceAbove: (minBalance) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_ACCOUNTS.BALANCE_ABOVE, {
+                    params: { minBalance }
+                });
+            }
+        },
+
+        // Bank Statement Entry operations
+        bankStatementEntries: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.BY_ID(id));
+            },
+
+            create: (entryData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.BASE, entryData);
+            },
+
+            import: (entriesData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.IMPORT, entriesData);
+            },
+
+            update: (id, entryData) => {
+                return apiClient.put(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.BY_ID(id), entryData);
+            },
+
+            delete: (id) => {
+                return apiClient.delete(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.BY_ID(id));
+            },
+
+            getByBankAccount: (bankAccountId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.BY_BANK_ACCOUNT(bankAccountId));
+            },
+
+            getUnmatched: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.UNMATCHED);
+            },
+
+            getUnmatchedByAccount: (bankAccountId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.UNMATCHED_BY_ACCOUNT(bankAccountId));
+            },
+
+            getByDateRange: (startDate, endDate) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.BY_DATE_RANGE, {
+                    params: { startDate, endDate }
+                });
+            },
+
+            getByCategory: (category) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.BY_CATEGORY(category));
+            },
+
+            markAsMatched: (id, matchedBy) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.MARK_MATCHED(id), null, {
+                    params: { matchedBy }
+                });
+            },
+
+            findPotentialMatches: (bankAccountId, amount, date) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.POTENTIAL_MATCHES, {
+                    params: { bankAccountId, amount, date }
+                });
+            },
+
+            searchByDescription: (bankAccountId, keyword) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.BANK_STATEMENT_ENTRIES.SEARCH, {
+                    params: { bankAccountId, keyword }
+                });
+            }
+        },
+
+        // Internal Transaction operations
+        internalTransactions: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.INTERNAL_TRANSACTIONS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.INTERNAL_TRANSACTIONS.BY_ID(id));
+            },
+
+            create: (transactionData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BANK_RECONCILIATION.INTERNAL_TRANSACTIONS.BASE, transactionData);
+            },
+
+            update: (id, transactionData) => {
+                return apiClient.put(FINANCE_ENDPOINTS.BANK_RECONCILIATION.INTERNAL_TRANSACTIONS.BY_ID(id), transactionData);
+            },
+
+            delete: (id) => {
+                return apiClient.delete(FINANCE_ENDPOINTS.BANK_RECONCILIATION.INTERNAL_TRANSACTIONS.BY_ID(id));
+            },
+
+            getByBankAccount: (bankAccountId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.INTERNAL_TRANSACTIONS.BY_BANK_ACCOUNT(bankAccountId));
+            },
+
+            getUnreconciled: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.INTERNAL_TRANSACTIONS.UNRECONCILED);
+            },
+
+            getUnreconciledByAccount: (bankAccountId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.INTERNAL_TRANSACTIONS.UNRECONCILED_BY_ACCOUNT(bankAccountId));
+            },
+
+            getByDateRange: (startDate, endDate) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.INTERNAL_TRANSACTIONS.BY_DATE_RANGE, {
+                    params: { startDate, endDate }
+                });
+            },
+
+            getByType: (transactionType) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.INTERNAL_TRANSACTIONS.BY_TYPE(transactionType));
+            },
+
+            markAsReconciled: (id, reconciledBy) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BANK_RECONCILIATION.INTERNAL_TRANSACTIONS.MARK_RECONCILED(id), null, {
+                    params: { reconciledBy }
+                });
+            },
+
+            findPotentialMatches: (bankAccountId, amount, date) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.INTERNAL_TRANSACTIONS.POTENTIAL_MATCHES, {
+                    params: { bankAccountId, amount, date }
+                });
+            }
+        },
+
+        // Transaction Match operations
+        transactionMatches: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.TRANSACTION_MATCHES.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.TRANSACTION_MATCHES.BY_ID(id));
+            },
+
+            create: (matchData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BANK_RECONCILIATION.TRANSACTION_MATCHES.BASE, matchData);
+            },
+
+            delete: (id) => {
+                return apiClient.delete(FINANCE_ENDPOINTS.BANK_RECONCILIATION.TRANSACTION_MATCHES.BY_ID(id));
+            },
+
+            getUnconfirmed: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.TRANSACTION_MATCHES.UNCONFIRMED);
+            },
+
+            getByBankAccount: (bankAccountId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.TRANSACTION_MATCHES.BY_BANK_ACCOUNT(bankAccountId));
+            },
+
+            getNeedingReview: (confidenceThreshold = 0.5) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.TRANSACTION_MATCHES.NEEDS_REVIEW, {
+                    params: { confidenceThreshold }
+                });
+            },
+
+            confirm: (id, confirmedBy) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BANK_RECONCILIATION.TRANSACTION_MATCHES.CONFIRM(id), null, {
+                    params: { confirmedBy }
+                });
+            },
+
+            performAutoMatching: (bankAccountId) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BANK_RECONCILIATION.TRANSACTION_MATCHES.AUTO_MATCH(bankAccountId));
+            },
+
+            findPotentialMatches: (bankStatementEntryId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.TRANSACTION_MATCHES.POTENTIAL_MATCHES(bankStatementEntryId));
+            }
+        },
+
+        // Discrepancy operations
+        discrepancies: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.BY_ID(id));
+            },
+
+            create: (discrepancyData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.BASE, discrepancyData);
+            },
+
+            getByStatus: (status) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.BY_STATUS(status));
+            },
+
+            getOpen: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.OPEN);
+            },
+
+            getHighPriority: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.HIGH_PRIORITY);
+            },
+
+            getAssignedTo: (assignee) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.ASSIGNED_TO(assignee));
+            },
+
+            getUnassigned: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.UNASSIGNED);
+            },
+
+            getOverdue: (daysOld = 7) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.OVERDUE, {
+                    params: { daysOld }
+                });
+            },
+
+            assign: (id, assignee) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.ASSIGN(id), null, {
+                    params: { assignee }
+                });
+            },
+
+            updateInvestigationNotes: (id, notes) => {
+                return apiClient.put(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.UPDATE_NOTES(id), notes, {
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    }
+                });
+            },
+
+            resolve: (id, resolution, resolvedBy) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.RESOLVE(id), null, {
+                    params: { resolution, resolvedBy }
+                });
+            },
+
+            close: (id) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.CLOSE(id));
+            },
+
+            updatePriority: (id, priority) => {
+                return apiClient.put(FINANCE_ENDPOINTS.BANK_RECONCILIATION.DISCREPANCIES.UPDATE_PRIORITY(id), null, {
+                    params: { priority }
+                });
+            }
+        },
+
+        // Reconciliation Report operations
+        reconciliationReports: {
+            getSummaryByAccount: (bankAccountId, startDate, endDate) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.RECONCILIATION_REPORTS.SUMMARY_BY_ACCOUNT(bankAccountId), {
+                    params: { startDate, endDate }
+                });
+            },
+
+            getAllAccountsSummary: (startDate, endDate) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.RECONCILIATION_REPORTS.SUMMARY_ALL_ACCOUNTS, {
+                    params: { startDate, endDate }
+                });
+            },
+
+            getOutstandingChecks: (bankAccountId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.RECONCILIATION_REPORTS.OUTSTANDING_CHECKS(bankAccountId));
+            },
+
+            getDepositsInTransit: (bankAccountId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.RECONCILIATION_REPORTS.DEPOSITS_IN_TRANSIT(bankAccountId));
+            },
+
+            getReconciliationStatus: (bankAccountId, asOfDate = null) => {
+                const params = asOfDate ? { asOfDate } : {};
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.RECONCILIATION_REPORTS.STATUS(bankAccountId), { params });
+            },
+
+            exportToCsv: (bankAccountId, startDate, endDate) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.RECONCILIATION_REPORTS.EXPORT_CSV(bankAccountId), {
+                    params: { startDate, endDate },
+                    responseType: 'blob'
+                });
+            },
+
+            getReconciliationTrend: (bankAccountId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.RECONCILIATION_REPORTS.TREND(bankAccountId));
+            }
+        }
     }
 };

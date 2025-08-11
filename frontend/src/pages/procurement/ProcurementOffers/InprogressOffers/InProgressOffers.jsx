@@ -6,7 +6,7 @@ import {
 
 import "../ProcurementOffers.scss"
 import "./InprogressOffers.scss"
-import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx"
+import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx"
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import ProcurementSolutionModal from './ProcurementSolutionModal.jsx';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx'; // Add this import
@@ -411,7 +411,9 @@ const InProgressOffers = ({
                         <p>No offers in progress. Start working on an unstarted offer first.</p>
                     </div>
                 ) : (
-                    <div className="procurement-items-list-inprogress">
+                    // Replace the InProgress offers list section in your component with this:
+
+                    <div className="procurement-items-list">
                         {offers.map(offer => (
                             <div
                                 key={offer.id}
@@ -420,22 +422,24 @@ const InProgressOffers = ({
                             >
                                 <div className="procurement-item-header">
                                     <h4>{offer.title}</h4>
-                                    {/*    <span className={`procurement-status-badge status-${offer.status.toLowerCase()}`}>*/}
-                                    {/*    {offer.status}*/}
-                                    {/*</span>*/}
                                 </div>
-                                <div className="procurement-item-footer-inprogress">
-                                <span className="procurement-item-date-inprogress">
-                                    <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
-                                </span>
+                                <div className="procurement-item-footer">
+                <span className="procurement-item-date">
+                    <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
+                </span>
                                 </div>
-                                <div className="procurement-item-footer-inprogress">
-                                <span className="procurement-item-completion">
-                                    {isOfferComplete(offer) ?
-                                        <span className="completion-complete"><FiCheckCircle /> Complete</span> :
-                                        <span className="completion-incomplete"><FiAlertCircle /> Incomplete</span>
-                                    }
-                                </span>
+                                <div className="procurement-item-footer">
+                <span className={`procurement-item-status ${isOfferComplete(offer) ? 'completion-complete' : 'completion-incomplete'}`}>
+                    {isOfferComplete(offer) ? (
+                        <>
+                            <FiCheckCircle /> Complete
+                        </>
+                    ) : (
+                        <>
+                            <FiAlertCircle /> Incomplete
+                        </>
+                    )}
+                </span>
                                 </div>
                             </div>
                         ))}

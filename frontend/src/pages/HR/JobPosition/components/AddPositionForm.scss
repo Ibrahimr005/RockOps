@@ -955,3 +955,679 @@ select:focus {
         }
     }
 }
+
+// ===============================
+// PROMOTION FORM HIERARCHY STYLES
+// Add these styles to AddPromotionForm.scss
+// ===============================
+
+// Current Position Information Section
+.current-position-info {
+    background-color: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin: 1rem 0;
+
+    h4 {
+        color: var(--color-primary);
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+        margin: 0 0 0.75rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        &::before {
+            content: "📋";
+            font-size: 1.2rem;
+        }
+    }
+
+    .position-hierarchy {
+        display: grid;
+        gap: 0.5rem;
+
+        .hierarchy-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background-color: var(--color-surface-hover);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+
+            .label {
+                font-weight: var(--bold-font-weight);
+                color: var(--color-text-secondary);
+                font-size: 0.85rem;
+                min-width: 120px;
+            }
+
+            .value {
+                color: var(--color-text-primary);
+                font-weight: 500;
+                text-align: right;
+                flex: 1;
+
+                &.hierarchy-path {
+                    font-family: 'Courier New', monospace;
+                    font-size: 0.8rem;
+                    color: var(--color-primary);
+                }
+            }
+        }
+
+        .hierarchy-warning {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background-color: rgba(255, 152, 0, 0.1);
+            border: 1px solid var(--color-warning);
+            border-radius: var(--radius-sm);
+            color: var(--color-warning);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+    }
+}
+
+// Target Position Information Section
+.target-position-info {
+    background-color: var(--color-surface-hover);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin: 1rem 0;
+
+    h4 {
+        color: var(--color-primary);
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+        margin: 0 0 0.75rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        &::before {
+            content: "🎯";
+            font-size: 1.2rem;
+        }
+    }
+
+    .position-details {
+        display: grid;
+        gap: 0.5rem;
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background-color: var(--color-surface);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+
+            .label {
+                font-weight: var(--bold-font-weight);
+                color: var(--color-text-secondary);
+                font-size: 0.85rem;
+                min-width: 120px;
+            }
+
+            .value {
+                color: var(--color-primary);
+                font-weight: 600;
+                text-align: right;
+                flex: 1;
+            }
+        }
+    }
+}
+
+// Enhanced Field Hint for Hierarchy Information
+.field-hint {
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    font-style: italic;
+    display: block;
+    line-height: 1.4;
+}
+
+// Enhanced Input with Icon for Promotion Target
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    svg {
+        position: absolute;
+        left: 0.75rem;
+        color: var(--color-text-secondary);
+        z-index: 1;
+        pointer-events: none;
+    }
+
+    .form-control {
+        padding-left: 2.5rem;
+    }
+}
+
+// Enhanced Salary Preview Section
+.salary-preview {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-success);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin: 1rem 0;
+
+    h4 {
+        color: var(--color-success);
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+        margin: 0 0 0.75rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        &::before {
+            content: "💰";
+            font-size: 1.2rem;
+        }
+    }
+
+    .salary-comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+
+        .salary-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.75rem;
+            background-color: var(--color-surface-hover);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+
+            label {
+                font-size: 0.8rem;
+                color: var(--color-text-secondary);
+                font-weight: var(--bold-font-weight);
+                margin-bottom: 0.25rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .salary-increase {
+                color: var(--color-success);
+                font-size: 1.25rem;
+                font-weight: var(--bold-font-weight);
+                font-family: 'Courier New', monospace;
+            }
+
+            .salary-percentage {
+                color: var(--color-primary);
+                font-size: 1.25rem;
+                font-weight: var(--bold-font-weight);
+                font-family: 'Courier New', monospace;
+            }
+        }
+    }
+}
+
+// Enhanced Modal Footer for Hierarchy-aware Buttons
+.modal-footer {
+    .btn-primary {
+        &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+
+            &:hover {
+                transform: none;
+                box-shadow: none;
+            }
+        }
+    }
+}
+
+// Loading States for Hierarchy Elements
+.form-control {
+    &:disabled {
+        background-color: var(--color-surface-hover);
+        color: var(--color-text-secondary);
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+}
+
+// Dark Theme Adjustments
+[data-theme="dark"] {
+    .current-position-info,
+    .target-position-info {
+        background-color: var(--color-surface);
+        border-color: var(--border-color);
+    }
+
+    .current-position-info .position-hierarchy .hierarchy-item,
+    .target-position-info .position-details .detail-item {
+        background-color: var(--color-surface-hover);
+        border-color: var(--border-color);
+    }
+
+    .salary-preview {
+        background-color: var(--color-surface);
+        border-color: var(--color-success);
+
+        .salary-comparison .salary-item {
+            background-color: var(--color-surface-hover);
+            border-color: var(--border-color);
+        }
+    }
+
+    .hierarchy-warning {
+        background-color: rgba(255, 152, 0, 0.15);
+    }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+    .current-position-info,
+    .target-position-info {
+        margin: 0.75rem 0;
+        padding: 0.75rem;
+
+        h4 {
+            font-size: 0.9rem;
+        }
+
+        .hierarchy-item,
+        .detail-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+
+            .label {
+                min-width: auto;
+            }
+
+            .value {
+                text-align: left;
+                font-size: 0.9rem;
+            }
+        }
+    }
+
+    .salary-preview {
+        .salary-comparison {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+
+            .salary-item {
+                padding: 0.6rem;
+
+                .salary-increase,
+                .salary-percentage {
+                    font-size: 1.1rem;
+                }
+            }
+        }
+    }
+
+    .field-hint {
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .input-with-icon {
+        svg {
+            left: 0.5rem;
+        }
+
+        .form-control {
+            padding-left: 2rem;
+            font-size: 0.9rem;
+        }
+    }
+
+    .current-position-info,
+    .target-position-info {
+        .hierarchy-item,
+        .detail-item {
+            padding: 0.4rem;
+
+            .label {
+                font-size: 0.8rem;
+            }
+
+            .value {
+                font-size: 0.85rem;
+            }
+        }
+    }
+}
+
+// High Contrast Mode Support
+@media (prefers-contrast: high) {
+    .current-position-info,
+    .target-position-info,
+    .salary-preview {
+        border: 2px solid currentColor;
+    }
+
+    .hierarchy-item,
+    .detail-item,
+    .salary-item {
+        border: 2px solid var(--color-text-primary);
+    }
+
+    .hierarchy-warning {
+        border: 2px solid var(--color-warning);
+    }
+}
+
+// Print Styles
+@media print {
+    .current-position-info,
+    .target-position-info,
+    .salary-preview {
+        background: white !important;
+        color: black !important;
+        border-color: black !important;
+    }
+
+    .hierarchy-item,
+    .detail-item,
+    .salary-item {
+        background: white !important;
+        color: black !important;
+        border-color: black !important;
+    }
+
+    .hierarchy-warning {
+        background: white !important;
+        color: black !important;
+        border: 1px solid black !important;
+    }
+
+    .value,
+    .salary-increase,
+    .salary-percentage {
+        color: black !important;
+    }
+}
+
+// Animation for Dynamic Content
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.current-position-info,
+.target-position-info {
+    animation: slideInUp 0.3s ease-out;
+}
+
+// Loading Animation for Promotion Targets
+.form-control {
+    &:disabled {
+        position: relative;
+
+        &::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: 1rem;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+// ===============================
+// HIERARCHY STYLES
+// ===============================
+
+// Current Hierarchy Information Section
+.jp-current-hierarchy {
+    background-color: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin-top: 1rem;
+
+    .jp-hierarchy-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border-color);
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        .jp-hierarchy-label {
+            font-weight: var(--bold-font-weight);
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            min-width: 140px;
+        }
+
+        .jp-hierarchy-value {
+            color: var(--color-text-primary);
+            font-weight: 500;
+            text-align: right;
+            flex: 1;
+            font-family: 'Courier New', monospace;
+        }
+    }
+}
+
+// Hierarchy Preview Section
+.jp-hierarchy-preview {
+    background-color: var(--color-surface-hover);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin-top: 1rem;
+
+    h5 {
+        color: var(--color-primary);
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+        margin: 0 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--color-primary);
+    }
+}
+
+// Hierarchy Info Grid
+.jp-hierarchy-info {
+    display: grid;
+    gap: 0.75rem;
+
+    .jp-hierarchy-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        background-color: var(--color-surface);
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color);
+
+        .jp-hierarchy-label {
+            font-weight: var(--bold-font-weight);
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            min-width: 140px;
+        }
+
+        .jp-hierarchy-value {
+            color: var(--color-primary);
+            font-weight: 600;
+            text-align: right;
+            flex: 1;
+            font-family: 'Courier New', monospace;
+        }
+    }
+}
+
+// Hierarchy Warning Styles
+.jp-hierarchy-warning {
+    background-color: rgba(255, 152, 0, 0.1);
+    border: 1px solid var(--color-warning);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    margin-top: 1rem;
+    color: var(--color-warning);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+
+    strong {
+        color: var(--color-warning);
+        font-weight: var(--bold-font-weight);
+    }
+}
+
+// Hierarchy Note Styles
+.jp-hierarchy-note {
+    background-color: rgba(72, 128, 255, 0.1);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    margin-top: 1rem;
+    color: var(--color-primary);
+    font-size: 0.9rem;
+
+    strong {
+        color: var(--color-primary);
+        font-weight: var(--bold-font-weight);
+    }
+}
+
+// Field Hint Styles (for hierarchy descriptions)
+.jp-field-hint {
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    font-style: italic;
+    display: block;
+    line-height: 1.4;
+}
+
+// Dark Theme Adjustments
+[data-theme="dark"] {
+    .jp-current-hierarchy {
+        background-color: var(--color-surface);
+        border-color: var(--border-color);
+    }
+
+    .jp-hierarchy-preview {
+        background-color: var(--color-surface);
+        border-color: var(--color-primary);
+    }
+
+    .jp-hierarchy-info .jp-hierarchy-item {
+        background-color: var(--color-surface-hover);
+        border-color: var(--border-color);
+    }
+
+    .jp-hierarchy-warning {
+        background-color: rgba(255, 152, 0, 0.15);
+    }
+
+    .jp-hierarchy-note {
+        background-color: rgba(72, 128, 255, 0.15);
+    }
+}
+
+// Responsive Design for Hierarchy
+@media (max-width: 768px) {
+    .jp-current-hierarchy,
+    .jp-hierarchy-info {
+        .jp-hierarchy-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+
+            .jp-hierarchy-label {
+                min-width: auto;
+            }
+
+            .jp-hierarchy-value {
+                text-align: left;
+                font-size: 0.9rem;
+            }
+        }
+    }
+
+    .jp-hierarchy-warning,
+    .jp-hierarchy-note {
+        font-size: 0.85rem;
+        padding: 0.6rem;
+    }
+
+    .jp-field-hint {
+        font-size: 0.75rem;
+    }
+}
+
+// High Contrast Mode Support
+@media (prefers-contrast: high) {
+    .jp-current-hierarchy,
+    .jp-hierarchy-preview,
+    .jp-hierarchy-info .jp-hierarchy-item {
+        border: 2px solid var(--color-text-primary);
+    }
+
+    .jp-hierarchy-warning {
+        border: 2px solid var(--color-warning);
+    }
+
+    .jp-hierarchy-note {
+        border: 2px solid var(--color-primary);
+    }
+}
+
+// Print Styles
+@media print {
+    .jp-current-hierarchy,
+    .jp-hierarchy-preview,
+    .jp-hierarchy-info .jp-hierarchy-item {
+        background: white !important;
+        color: black !important;
+        border-color: black !important;
+    }
+
+    .jp-hierarchy-warning,
+    .jp-hierarchy-note {
+        background: white !important;
+        color: black !important;
+        border: 1px solid black !important;
+    }
+
+    .jp-hierarchy-value {
+        color: black !important;
+    }
+}

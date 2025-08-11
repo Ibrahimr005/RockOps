@@ -3,6 +3,7 @@ import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import './AddPositionForm.scss';
 import {employeeService} from "../../../../services/hr/employeeService.js";
 import {departmentService} from "../../../../services/hr/departmentService.js";
+import {jobPositionService} from "../../../../services/hr/jobPositionService.js";
 
 const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
     const { showError, showWarning } = useSnackbar();
@@ -14,6 +15,9 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
         experienceLevel: 'ENTRY_LEVEL',
         probationPeriod: 90,
         active: true,
+
+        // NEW: Hierarchy fields
+        parentJobPositionId: '',
 
         // HOURLY fields
         workingDaysPerWeek: 5,
@@ -49,8 +53,10 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
     const [error, setError] = useState(null);
     const [employees, setEmployees] = useState([]);
     const [departments, setDepartments] = useState([]);
+    const [jobPositions, setJobPositions] = useState([]); // NEW: For parent position selection
     const [loadingEmployees, setLoadingEmployees] = useState(false);
     const [loadingDepartments, setLoadingDepartments] = useState(false);
+    const [loadingPositions, setLoadingPositions] = useState(false); // NEW: Loading state for positions
     const [calculatedSalary, setCalculatedSalary] = useState({
         daily: 0,
         monthly: 0,
@@ -71,11 +77,12 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
         { value: 'EXPERT_LEVEL', label: 'Expert Level' }
     ];
 
-    // Fetch employees and departments when modal opens
+    // Fetch employees, departments, and job positions when modal opens
     useEffect(() => {
         if (isOpen) {
             fetchEmployees();
             fetchDepartments();
+            fetchJobPositions(); // NEW: Fetch positions for hierarchy
         }
     }, [isOpen]);
 
@@ -90,6 +97,9 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                 experienceLevel: 'ENTRY_LEVEL',
                 probationPeriod: 90,
                 active: true,
+
+                // NEW: Reset hierarchy fields
+                parentJobPositionId: '',
 
                 // HOURLY fields
                 workingDaysPerWeek: 5,
@@ -217,6 +227,37 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
         }
     };
 
+    // NEW: Fetch job positions for hierarchy selection
+    const fetchJobPositions = async () => {
+        try {
+            setLoadingPositions(true);
+            const response = await jobPositionService.getAll();
+            setJobPositions(Array.isArray(response.data) ? response.data : []);
+        } catch (err) {
+            console.error('Error fetching job positions:', err);
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to load job positions';
+            showError(errorMessage);
+            setError(prev => prev || errorMessage);
+        } finally {
+            setLoadingPositions(false);
+        }
+    };
+
+    // NEW: Get hierarchy path for selected parent position
+    const getSelectedParentHierarchyInfo = () => {
+        if (!formData.parentJobPositionId) return null;
+
+        const parentPosition = jobPositions.find(pos => pos.id === formData.parentJobPositionId);
+        if (!parentPosition) return null;
+
+        return {
+            name: parentPosition.positionName,
+            department: parentPosition.department,
+            hierarchyPath: parentPosition.hierarchyPath || parentPosition.positionName,
+            hierarchyLevel: (parentPosition.hierarchyLevel || 0) + 1
+        };
+    };
+
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
@@ -312,6 +353,11 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                 experienceLevel: formData.experienceLevel,
                 probationPeriod: formData.probationPeriod,
                 active: formData.active,
+
+                // NEW: Include hierarchy fields
+                ...(formData.parentJobPositionId && {
+                    parentJobPositionId: formData.parentJobPositionId
+                }),
 
                 // Contract-specific fields
                 ...(formData.contractType === 'HOURLY' && {
@@ -645,7 +691,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
             <div className="jp-modal-content">
                 <div className="jp-modal-header">
                     <h2>Add New Position</h2>
-                    <button className="jp-modal-close" onClick={onClose}>×</button>
+                    <button className="btn-close" onClick={onClose}>×</button>
                 </div>
 
                 {error && (
@@ -654,7 +700,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                     </div>
                 )}
 
-                {(loadingDepartments || loadingEmployees) ? (
+                {(loadingDepartments || loadingEmployees || loadingPositions) ? (
                     <div className="jp-loading">Loading form data...</div>
                 ) : (
                     <form onSubmit={handleSubmit}>
@@ -770,6 +816,75 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                             </div>
                         </div>
 
+                        {/* NEW: Position Hierarchy Section */}
+                        <div className="jp-section">
+                            <h3>Position Hierarchy</h3>
+                            <div className="jp-form-row">
+                                <div className="jp-form-group">
+                                    <label htmlFor="parentJobPositionId">Parent Position (Optional)</label>
+                                    <div className="jp-select-wrapper">
+                                        <select
+                                            id="parentJobPositionId"
+                                            name="parentJobPositionId"
+                                            value={formData.parentJobPositionId}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="">Create as Root Position (No Parent)</option>
+                                            {jobPositions
+                                                .filter(pos => pos.active) // Only show active positions
+                                                .map(position => (
+                                                    <option key={position.id} value={position.id}>
+                                                        {position.positionName} ({position.department})
+                                                        {position.hierarchyLevel !== undefined &&
+                                                            ` - Level ${position.hierarchyLevel}`}
+                                                    </option>
+                                                ))}
+                                        </select>
+                                    </div>
+                                    <small className="jp-field-hint">
+                                        Select a parent position to create a hierarchical relationship.
+                                        This will determine promotion paths and organizational structure.
+                                    </small>
+                                </div>
+                            </div>
+
+                            {/* NEW: Show hierarchy preview if parent is selected */}
+                            {getSelectedParentHierarchyInfo() && (
+                                <div className="jp-hierarchy-preview">
+                                    <h5>Hierarchy Preview</h5>
+                                    <div className="jp-hierarchy-info">
+                                        <div className="jp-hierarchy-item">
+                                            <span className="jp-hierarchy-label">Parent Position:</span>
+                                            <span className="jp-hierarchy-value">
+                                                {getSelectedParentHierarchyInfo().name}
+                                            </span>
+                                        </div>
+                                        <div className="jp-hierarchy-item">
+                                            <span className="jp-hierarchy-label">Parent Department:</span>
+                                            <span className="jp-hierarchy-value">
+                                                {getSelectedParentHierarchyInfo().department}
+                                            </span>
+                                        </div>
+                                        <div className="jp-hierarchy-item">
+                                            <span className="jp-hierarchy-label">New Position Level:</span>
+                                            <span className="jp-hierarchy-value">
+                                                Level {getSelectedParentHierarchyInfo().hierarchyLevel}
+                                            </span>
+                                        </div>
+                                        <div className="jp-hierarchy-item">
+                                            <span className="jp-hierarchy-label">Hierarchy Path:</span>
+                                            <span className="jp-hierarchy-value">
+                                                {getSelectedParentHierarchyInfo().hierarchyPath} → {formData.positionName || 'New Position'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="jp-hierarchy-note">
+                                        <strong>Note:</strong> Employees in this position will only be able to be promoted to the parent position.
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         {/* Contract Type Selection */}
                         <div className="jp-section">
                             <h3>Contract Type</h3>
@@ -829,7 +944,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                         <div className="jp-form-actions">
                             <button
                                 type="button"
-                                className="jp-cancel-button"
+                                className="btn-cancel"
                                 onClick={onClose}
                                 disabled={loading}
                             >
@@ -837,7 +952,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                             </button>
                             <button
                                 type="submit"
-                                className="jp-submit-button"
+                                className="btn-primary"
                                 disabled={loading}
                             >
                                 {loading ? 'Adding...' : 'Add Position'}

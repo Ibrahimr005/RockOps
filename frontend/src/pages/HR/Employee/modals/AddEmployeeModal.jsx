@@ -130,6 +130,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
     };
 
     // Validate form
+    // Validate form
     const validateForm = () => {
         const newErrors = {};
 
@@ -154,10 +155,33 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
             newErrors.phoneNumber = 'Phone number is invalid';
         }
 
+        // Hire date validation - should not be after today
+        if (formData.hireDate) {
+            const hireDateObj = new Date(formData.hireDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+            hireDateObj.setHours(0, 0, 0, 0);
+
+            if (hireDateObj > today) {
+                newErrors.hireDate = 'Hire date cannot be in the future';
+            }
+        }
+
+        // Birth date validation - should not be after today
+        if (formData.birthDate) {
+            const birthDateObj = new Date(formData.birthDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            birthDateObj.setHours(0, 0, 0, 0);
+
+            if (birthDateObj > today) {
+                newErrors.birthDate = 'Birth date cannot be in the future';
+            }
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
-
     // Handle form submission
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -255,14 +279,16 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                     </div>
                                 </div>
 
+
                                 <div className="r4m-form-group">
-                                    <label>First Name *</label>
+                                    <label className="r4m-required-field">First Name</label>
                                     <input
                                         type="text"
                                         name="firstName"
                                         value={formData.firstName}
                                         onChange={handleChange}
                                         className={errors.firstName ? 'error' : ''}
+                                        required
                                     />
                                     {errors.firstName && <span className="r4m-error-message">{errors.firstName}</span>}
                                 </div>
@@ -278,7 +304,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Last Name *</label>
+                                    <label className="r4m-required-field">Last Name</label>
                                     <input
                                         type="text"
                                         name="lastName"
@@ -290,7 +316,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Gender *</label>
+                                    <label className="r4m-required-field">Gender </label>
                                     <select
                                         name="gender"
                                         value={formData.gender}
@@ -306,7 +332,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Date of Birth *</label>
+                                    <label className="r4m-required-field">Date of Birth </label>
                                     <input
                                         type="date"
                                         name="birthDate"
@@ -318,7 +344,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>National ID Number *</label>
+                                    <label className="r4m-required-field">National ID Number </label>
                                     <input
                                         type="text"
                                         name="nationalIDNumber"
@@ -417,7 +443,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Country *</label>
+                                    <label className="r4m-required-field">Country </label>
                                     <input
                                         type="text"
                                         name="country"
@@ -435,7 +461,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 <h3>Employment Information</h3>
 
                                 <div className="r4m-form-group">
-                                    <label>Job Position *</label>
+                                    <label className="r4m-required-field">Job Position</label>
                                     <select
                                         name="jobPositionId"
                                         value={formData.jobPositionId}
@@ -481,12 +507,13 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 )}
 
                                 <div className="r4m-form-group">
-                                    <label>Hire Date *</label>
+                                    <label className="r4m-required-field">Hire Date </label>
                                     <input
                                         type="date"
                                         name="hireDate"
                                         value={formData.hireDate}
                                         onChange={handleChange}
+                                        max={new Date().toISOString().split('T')[0]} // Prevent future dates
                                         className={errors.hireDate ? 'error' : ''}
                                     />
                                     {errors.hireDate && <span className="r4m-error-message">{errors.hireDate}</span>}

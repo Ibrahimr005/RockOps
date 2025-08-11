@@ -1,171 +1,669 @@
-// FinanceValidatedOffers.scss
+// FinanceValidatedOffers.scss - Complete styling for finance validated offers
+// FinanceValidatedOffers cards - Same design as Unstarted
+.procurement-items-list {
+  padding: 1rem;
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
 
-// Finance Review Summary Section
-.finance-review-summary {
-  margin-bottom: 24px;
-  padding-left: 2rem;
+  .procurement-item-card-finance {
+    border: 1px solid var(--border-color-light);
+    border-left: 3px solid var(--color-primary);
+    background: linear-gradient(to right, rgba(72, 128, 255, 0.05), var(--section-background-color));
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    cursor: pointer;
+    transition: all var(--transition-normal) ease;
+    position: relative;
 
-  h4 {
-    font-size: 18px;
-    font-weight: 600;
-    color: #111827;
-    margin: 0 0 8px 0;
-  }
+    //&.card-accepted {
+    //  border-left: 3px solid var(--color-success);
+    //  background: linear-gradient(to right, rgba(34, 197, 94, 0.05), var(--section-background-color));
+    //
+    //  &:hover {
+    //    border-color: #16a34a;
+    //    box-shadow: var(--shadow-md);
+    //    transform: translateY(-1px);
+    //    background: linear-gradient(to right, rgba(34, 197, 94, 0.08), var(--color-surface-hover));
+    //  }
+    //
+    //  &.selected {
+    //    border: 2px solid var(--color-success);
+    //    border-left: 5px solid var(--color-success);
+    //    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2), var(--shadow-md);
+    //    background-color: var(--color-surface);
+    //    transform: translateY(-1px);
+    //    position: relative;
+    //    z-index: 5;
+    //  }
+    //}
 
-  .finance-review-description {
-    font-size: 14px;
-    color: #6b7280;
-    margin: 0 0 24px 0;
-    line-height: 1.5;
+    //&.card-rejected {
+    //  border-left: 3px solid var(--color-danger);
+    //  background: linear-gradient(to right, rgba(239, 68, 68, 0.05), var(--section-background-color));
+    //
+    //  &:hover {
+    //    border-color: #dc2626;
+    //    box-shadow: var(--shadow-md);
+    //    transform: translateY(-1px);
+    //    background: linear-gradient(to right, rgba(239, 68, 68, 0.08), var(--color-surface-hover));
+    //  }
+    //
+    //  &.selected {
+    //    border: 2px solid var(--color-danger);
+    //    border-left: 5px solid var(--color-danger);
+    //    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2), var(--shadow-md);
+    //    background-color: var(--color-surface);
+    //    transform: translateY(-1px);
+    //    position: relative;
+    //    z-index: 5;
+    //  }
+    //}
+
+    &:hover {
+      border-color: var(--color-primary-hover);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+      background: linear-gradient(to right, rgba(72, 128, 255, 0.08), var(--color-surface-hover));
+    }
+
+    &.selected {
+      border: 2px solid var(--color-primary);
+      border-left: 5px solid var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.2), var(--shadow-md);
+      background-color: var(--color-surface);
+      transform: translateY(-1px);
+      position: relative;
+      z-index: 5;
+    }
+
+
+    //&.card-partial {
+    //  border-left: 3px solid var(--color-warning);
+    //  background: linear-gradient(to right, rgba(245, 158, 11, 0.05), var(--section-background-color));
+    //
+    //  &:hover {
+    //    border-color: #d97706;
+    //    box-shadow: var(--shadow-md);
+    //    transform: translateY(-1px);
+    //    background: linear-gradient(to right, rgba(245, 158, 11, 0.08), var(--color-surface-hover));
+    //  }
+    //
+    //  &.selected {
+    //    border: 2px solid var(--color-warning);
+    //    border-left: 5px solid var(--color-warning);
+    //    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2), var(--shadow-md);
+    //    background-color: var(--color-surface);
+    //    transform: translateY(-1px);
+    //    position: relative;
+    //    z-index: 5;
+    //  }
+    //}
+
+    .procurement-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+
+      h4 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-dark);
+        margin-right: 1rem;
+      }
+    }
+
+    .procurement-item-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+
+      svg {
+        margin-right: 0.3rem;
+        vertical-align: -1px;
+      }
+
+      .status-accepted {
+        color: var(--color-success);
+        font-weight: var(--bold-font-weight);
+
+        svg {
+          color: var(--color-success);
+        }
+      }
+
+      .status-rejected {
+        color: var(--color-danger);
+        font-weight: var(--bold-font-weight);
+
+        svg {
+          color: var(--color-danger);
+        }
+      }
+
+      .status-partial {
+        color: var(--color-warning);
+        font-weight: var(--bold-font-weight);
+
+        svg {
+          color: var(--color-warning);
+        }
+      }
+
+      .procurement-item-date {
+        color: var(--color-text-muted);
+        font-weight: 500;
+      }
+    }
+
+    .procurement-item-date {
+      margin-bottom: 0.5rem;
+    }
   }
 }
 
-// Finalize Offer Button
+// Add styles for finance validated offer details section to match finalize design
+.procurement-request-summary-card-finance {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 2rem;
+  margin-bottom: 0;
+  box-shadow: none;
+
+  h4 {
+    font-size: 1.125rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--head-title-color);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color-light);
+  }
+
+  .procurement-section-description-finance {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+    font-style: italic;
+    font-weight: 400;
+  }
+}
+
+// Professional Timeline Design - exactly like finalize timeline
+.procurement-timeline-finance {
+  margin-top: 2rem;
+  position: relative;
+  padding: 0;
+
+  // Timeline vertical line
+  &::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 12px;
+    bottom: 0;
+    width: 2px;
+    background: var(--border-color-medium);
+  }
+}
+
+.procurement-timeline-item-finance {
+  position: relative;
+  padding: 0 0 2rem 2rem;
+  margin: 0;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  // Timeline dot
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 3px solid var(--border-color-medium);
+    transition: all var(--transition-normal) ease;
+    z-index: 2;
+  }
+
+  &.active-finance {
+    &::before {
+      background: var(--color-success);
+      border-color: var(--color-success);
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+    }
+
+    .timeline-content-finance {
+      h5 {
+        color: var(--color-success);
+        font-weight: var(--bold-font-weight);
+      }
+    }
+  }
+
+  &.rejected-finance {
+    &::before {
+      background: var(--color-danger);
+      border-color: var(--color-danger);
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+    }
+
+    .timeline-content-finance {
+      h5 {
+        color: var(--color-danger);
+        font-weight: var(--bold-font-weight);
+      }
+      .timeline-date-finance {
+        color: var(--color-danger);
+      }
+    }
+  }
+
+  .timeline-content-finance {
+    padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+
+    h5 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: var(--bold-font-weight);
+      color: var(--head-title-color);
+      transition: color var(--transition-normal) ease;
+    }
+
+    .timeline-date-finance {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+
+      svg {
+        opacity: 0.7;
+      }
+    }
+  }
+}
+
+// Simple rejection reason styling - matching the description text style
+.validated-rejection-reason-finance {
+  margin-top: 1rem;
+
+  p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    font-weight: 400;
+    font-style: italic;
+  }
+}
+
+// Finalize button styling
 .finalize-offer-button {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: #059669;
-  color: white;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-weight: var(--bold-font-weight);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all var(--transition-normal) ease;
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  background: linear-gradient(135deg, var(--color-success), #16a34a);
+  color: var(--color-text-inverse);
+  box-shadow: var(--shadow-sm);
 
-  &:hover:not(:disabled) {
-    background: #047857;
+  &:hover {
+    background: linear-gradient(135deg, #16a34a, var(--color-success));
+    box-shadow: var(--shadow-md);
     transform: translateY(-1px);
   }
 
   &:disabled {
-    background: #9ca3af;
+    opacity: 0.6;
     cursor: not-allowed;
     transform: none;
   }
 }
 
-// Finance Item Status in Table
+// Purchase Order Notification Banner
+.purchase-order-notification {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border: 1px solid #93c5fd;
+  border-radius: var(--radius-md);
+  margin-bottom: 2rem;
+  color: #1e40af;
+
+  .notification-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: #3b82f6;
+    border-radius: 50%;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .notification-content {
+    flex: 1;
+
+    h4 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+      font-weight: var(--bold-font-weight);
+      color: #1e40af;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: #1e40af;
+      opacity: 0.8;
+    }
+  }
+
+  .view-purchase-order-button {
+    padding: 0.75rem 1.5rem;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: var(--bold-font-weight);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all var(--transition-normal) ease;
+
+    &:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// Finance status styling for items
 .finance-item-status {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
   border-radius: 12px;
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 
-  // Finance Accepted
   &.status-finance_accepted {
     background: #dcfce7;
     color: #166534;
   }
 
-  // Finance Rejected
   &.status-finance_rejected {
     background: #fee2e2;
-    color: #dc2626;
+    color: #991b1b;
   }
 
-  // Not Reviewed
+  &.status-finance_partially_accepted {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
   &.status-not_reviewed {
     background: #f3f4f6;
     color: #6b7280;
   }
 }
 
-// Table Row Styling Based on Finance Status
-.procurement-offer-entries-table {
-  tbody {
-    tr {
-      &.finance-accepted {
-        background-color: #f0fdf4;
-        border-left: 3px solid #22c55e;
-      }
+.rejection-reason-icon {
+  margin-left: 0.5rem;
+  color: #ef4444;
+  cursor: help;
+}
 
-      &.finance-rejected {
-        background-color: #fef2f2;
-        border-left: 3px solid #ef4444;
-        opacity: 0.7;
+// Procurement solutions section - matching validated offers design with finance postfix
+.procurement-submitted-details-finance {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 2rem;
+  margin-bottom: 0;
+  box-shadow: none;
+  border-top: 1px solid var(--border-color-light);
 
-        td {
-          text-decoration: line-through;
-          color: #6b7280;
-        }
-
-        // Don't strike through the status column
-        td:last-child {
-          text-decoration: none;
-
-          .finance-item-status {
-            text-decoration: none;
-          }
-        }
-      }
-    }
+  h4 {
+    font-size: 1.125rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--head-title-color);
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color-light);
   }
 }
 
-// Rejection Reason Icon
-.rejection-reason-icon {
-  margin-left: 6px;
-  color: #dc2626;
-  cursor: help;
-  display: inline-flex;
-  align-items: center;
+.procurement-submitted-items-finance {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-// Summary Section Adjustments
-.procurement-submitted-summary {
-  .submitted-summary-row {
+.procurement-submitted-item-card-finance {
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal) ease;
+
+  &:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: var(--color-primary);
+  }
+
+  .submitted-item-header-finance {
+    padding: 1.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid #f3f4f6;
+    background: var(--color-surface-secondary);
+    border-bottom: 1px solid var(--border-color-light);
 
-    &:last-child {
-      border-bottom: none;
-      font-weight: 600;
+    .item-icon-name-finance {
+      display: flex;
+      align-items: center;
 
-      .submitted-total-value {
-        font-size: 16px;
-        font-weight: 700;
+      .item-icon-container-finance {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+        border-radius: var(--radius-sm);
+        color: var(--color-text-inverse);
+        margin-right: 1rem;
+        box-shadow: var(--shadow-sm);
+      }
+
+      h5 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--head-title-color);
       }
     }
 
-    span:first-child {
-      color: #6b7280;
+    .submitted-item-quantity-finance {
+      font-weight: var(--bold-font-weight);
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      box-shadow: var(--shadow-sm);
+      border: none;
+    }
+  }
+
+  .submitted-offer-solutions-finance {
+    padding: 1.5rem;
+
+    .procurement-offer-entries-table-finance {
+      width: 100%;
+      border-collapse: collapse;
       font-size: 14px;
-    }
+      background: var(--color-surface);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
 
-    span:last-child {
-      color: #111827;
-      font-weight: 600;
+      th {
+        background: var(--color-surface-secondary);
+        text-align: left;
+        padding: 1rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-medium);
+        border-bottom: 2px solid var(--border-color-light);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color-light);
+        color: var(--color-text-dark);
+        font-weight: 500;
+      }
+
+      tbody tr {
+        transition: all var(--transition-normal) ease;
+
+        &:hover {
+          background-color: var(--color-surface-hover);
+          transform: scale(1.001);
+        }
+
+        &:last-child td {
+          border-bottom: none;
+        }
+
+        // Finance status row highlighting
+        &.finance-accepted {
+          background-color: rgba(34, 197, 94, 0.05);
+        }
+
+        &.finance-rejected {
+          background-color: rgba(239, 68, 68, 0.05);
+        }
+      }
     }
   }
 }
 
-// Card styling for different statuses
-.procurement-item-card {
-  &.card-accepted {
-    border-left: 4px solid #22c55e;
-    background: linear-gradient(to right, #f0fdf4, #ffffff);
-  }
+// Summary section - exactly like finalize with -finance postfix
+.procurement-submitted-summary-finance {
+  margin-top: 2rem;
+  padding: 0 1.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 
-  &.card-rejected {
-    border-left: 4px solid #ef4444;
-    background: linear-gradient(to right, #fef2f2, #ffffff);
-  }
+  .summary-item-finance {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color-light);
+    background: transparent;
 
-  &.card-partial {
-    border-left: 4px solid #3b82f6;
-    background: linear-gradient(to right, #eff6ff, #ffffff);
+    &:last-child {
+      border-bottom: 1px solid var(--border-color-light);
+    }
+
+    &.total-value-finance {
+      border-top: 1px solid var(--border-color-light);
+      border-bottom: 1px solid var(--border-color-light);
+      padding: 1.25rem 0;
+      margin-top: 0.5rem;
+      font-weight: var(--bold-font-weight);
+    }
+
+    svg {
+      color: var(--color-text-muted);
+      flex-shrink: 0;
+    }
+
+    .summary-label-finance {
+      color: var(--color-text-medium);
+      font-weight: 500;
+      flex: 1;
+      font-size: 0.95rem;
+    }
+
+    .summary-value-finance {
+      color: var(--color-text-dark);
+      font-weight: 500;
+      font-size: 0.9rem;
+
+      &.total-finance {
+        color: var(--color-text-dark);
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+      }
+    }
   }
 }
 
-// Header Layout - Fixed Structure
+.procurement-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: var(--bold-font-weight);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--shadow-sm);
+
+  &.status-submitted {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    color: var(--color-text-inverse);
+  }
+
+  &.status-manageraccepted {
+    background: linear-gradient(135deg, var(--color-success), var(--color-success-light));
+    color: var(--color-text-inverse);
+  }
+
+
+
+  &.status-managerrejected {
+    background: linear-gradient(135deg, var(--color-danger), var(--color-danger-light));
+    color: var(--color-text-inverse);
+  }
+}

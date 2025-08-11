@@ -38,7 +38,7 @@ import WarehouseViewItemCategoriesTable from "./pages/warehouse/WarehouseCategor
 import WarehouseViewItemTypesTable from "./pages/warehouse/WarehouseItemTypes/WarehouseViewItemTypesTable.jsx";
 
 // ===================== Merchant & Procurement Components =====================
-import MerchantDetails from "./pages/merchant/MerchantDetails/MerchantDetails.jsx";
+
 import ProcurementOffers from "./pages/procurement/ProcurementOffers/ProcurementOffers.jsx";
 import ProcurementRequestOrderDetails
     from "./pages/procurement/ProcurementRequestOrderDetails/ProcurementRequestOrderDetails.jsx";
@@ -65,6 +65,9 @@ import LoanDetails from "./pages/payroll/Loans/LoanDetails/LoanDetails.jsx";
 import PayrollReports from "./pages/payroll/PayrollReports/PayrollReports.jsx";
 import PayslipDetails from "./pages/payroll/PayslipDetails/PayslipDetails.jsx";
 import EmployeeOnboarding from "./pages/HR/Vacancy/EmployeeOnboarding.jsx";
+import PromotionList from "./pages/HR/Promotion/PromotionList.jsx";
+import JobPositionDetails from "./pages/HR/JobPosition/details/JobPositionDetails.jsx";
+import BankReconciliation from "./pages/finance/BankReconciliation/BankReconciliation.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -142,7 +145,7 @@ function App() {
 
                                     {/* Merchant Routes */}
                                     <Route path="/merchants" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN, WAREHOUSE_MANAGER]}><ProcurementMerchants/></RoleRoute>}/>
-                                    <Route path="/merchants/:id" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN]}><MerchantDetails/></RoleRoute>}/>
+
 
                                     {/* Procurement Routes */}
                                     <Route path="/procurement" element={<RoleRoute allowedRoles={[PROCUREMENT, SITE_ADMIN, ADMIN]}><SitesLayout/></RoleRoute>}>
@@ -157,12 +160,14 @@ function App() {
                                     <Route path="/hr" element={<RoleRoute allowedRoles={[HR_MANAGER, HR_EMPLOYEE, ADMIN]}><HRLayout/></RoleRoute>}>
                                         <Route path="vacancies" element={<VacancyList/>}/>
                                         <Route path="positions" element={<PositionsList/>}/>
+                                        <Route path="positions/:id" element={<JobPositionDetails/>}/>
                                         <Route path="employees" element={<EmployeesList/>}/>
                                         <Route path="employees/add" element={<EmployeeOnboarding/>}/>
                                         <Route path="employee-details/:id" element={<EmployeeDetails/>}/>
                                         <Route path="attendance" element={<AttendancePage/>}/>
                                         <Route path="vacancies/:id" element={<VacancyDetails/>}/>
                                         <Route path="departments" element={<DepartmentsList/>}/>
+                                        <Route path="promotions/*" element={<PromotionList/>}/>
                                     </Route>
 
 
@@ -191,6 +196,7 @@ function App() {
                                     <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={allRoles}><GeneralLedger/></RoleRoute>} />
                                     <Route path="/finance/payables" element={<RoleRoute allowedRoles={allRoles}><Payables/></RoleRoute>} />
                                     <Route path="/finance/fixed-assets" element={<RoleRoute allowedRoles={allRoles}><FixedAssets/></RoleRoute>} />
+                                    <Route path="/finance/bank-reconciliation" element={<RoleRoute allowedRoles={allRoles}><BankReconciliation/></RoleRoute>} />
 
 
 
