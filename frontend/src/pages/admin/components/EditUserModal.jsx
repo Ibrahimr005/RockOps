@@ -93,7 +93,7 @@ const EditUserModal = ({user, mode = 'edit', onCancel, onSave}) => {
             <div className="modal-content">
                 <div className="modal-header">
                     <h2>{mode === 'edit' ? t('admin.editUser') : t('admin.addUser')}</h2>
-                    <button className="close-button" onClick={onCancel}>
+                    <button className="btn-close" onClick={onCancel}>
                         <FaTimes/>
                     </button>
                 </div>

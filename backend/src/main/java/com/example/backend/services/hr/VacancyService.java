@@ -1,5 +1,6 @@
 package com.example.backend.services.hr;
 
+import com.example.backend.dto.hr.CreateVacancyDTO;
 import com.example.backend.models.hr.Candidate;
 import com.example.backend.models.hr.JobPosition;
 import com.example.backend.models.hr.Vacancy;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -44,60 +46,70 @@ public class VacancyService {
     }
 
     @Transactional
-    public Vacancy createVacancy(Map<String, Object> vacancyData) {
+    public Vacancy createVacancy(CreateVacancyDTO dto) {
+        System.out.println("=== DEBUG: Starting vacancy creation with DTO ===");
+        System.out.println("DTO: " + dto);
+
+        // Basic validations
+        if (dto.getTitle() == null || dto.getTitle().isBlank()) {
+            throw new IllegalArgumentException("Title is required");
+        }
+
+        if (dto.getDescription() == null || dto.getDescription().isBlank()) {
+            throw new IllegalArgumentException("Description is required");
+        }
+
+        if (dto.getClosingDate() == null) {
+            throw new IllegalArgumentException("Closing date is required");
+        }
+
+        if (dto.getPostingDate() != null && dto.getClosingDate().isBefore(dto.getPostingDate())) {
+            throw new IllegalArgumentException("Closing date cannot be before posting date");
+        }
+
+        if (dto.getNumberOfPositions() != null && dto.getNumberOfPositions() < 1) {
+            throw new IllegalArgumentException("Number of positions must be at least 1");
+        }
+
+        JobPosition jobPosition = null;
+        if (dto.getJobPositionId() != null) {
+            UUID jobPositionId = dto.getJobPositionId();
+            jobPosition = jobPositionRepository.findByIdWithDepartment(jobPositionId)
+                    .orElseThrow(() -> new EntityNotFoundException("Job position not found with ID: " + jobPositionId));
+            System.out.println("DEBUG: Found job position: " + jobPosition.getPositionName());
+        }
+
+        Vacancy vacancy = Vacancy.builder()
+                .title(dto.getTitle().trim())
+                .description(dto.getDescription().trim())
+                .requirements(dto.getRequirements() != null ? dto.getRequirements().trim() : null)
+                .responsibilities(dto.getResponsibilities() != null ? dto.getResponsibilities().trim() : null)
+                .postingDate(dto.getPostingDate())
+                .closingDate(dto.getClosingDate())
+                .status(dto.getStatus() != null ? dto.getStatus() : "OPEN")
+                .priority(dto.getPriority() != null ? dto.getPriority() : "MEDIUM")
+                .numberOfPositions(dto.getNumberOfPositions() != null ? dto.getNumberOfPositions() : 1)
+                .jobPosition(jobPosition)
+                .hiredCount(0)
+                .build();
+
+        Vacancy saved = vacancyRepository.save(vacancy);
+
+        // Optional notification logic
         try {
-            // Parse dates
-            LocalDate postingDate = null;
-            LocalDate closingDate = null;
+            sendVacancyCreationNotifications(saved, jobPosition);
+        } catch (Exception e) {
+            System.err.println("Notification failed: " + e.getMessage());
+        }
 
-            if (vacancyData.get("postingDate") != null && !((String) vacancyData.get("postingDate")).trim().isEmpty()) {
-                postingDate = LocalDate.parse((String) vacancyData.get("postingDate"));
-            }
-            if (vacancyData.get("closingDate") != null && !((String) vacancyData.get("closingDate")).trim().isEmpty()) {
-                closingDate = LocalDate.parse((String) vacancyData.get("closingDate"));
-            }
+        return saved;
+    }
 
-            // Parse number of positions
-            Integer numberOfPositions = 1; // default value
-            if (vacancyData.get("numberOfPositions") != null) {
-                Object numPositions = vacancyData.get("numberOfPositions");
-                if (numPositions instanceof Integer) {
-                    numberOfPositions = (Integer) numPositions;
-                } else if (numPositions instanceof String) {
-                    numberOfPositions = Integer.parseInt((String) numPositions);
-                } else if (numPositions instanceof Number) {
-                    numberOfPositions = ((Number) numPositions).intValue();
-                }
-            }
-
-            // Handle job position
-            JobPosition jobPosition = null;
-            if (vacancyData.get("jobPosition") != null) {
-                Map<String, Object> jobPositionData = (Map<String, Object>) vacancyData.get("jobPosition");
-                if (jobPositionData.get("id") != null) {
-                    String jobPositionId = (String) jobPositionData.get("id");
-                    jobPosition = jobPositionRepository.findById(UUID.fromString(jobPositionId))
-                            .orElseThrow(() -> new EntityNotFoundException("Job position not found"));
-                }
-            }
-
-            // Use builder pattern
-            Vacancy vacancy = Vacancy.builder()
-                    .title((String) vacancyData.get("title"))
-                    .description((String) vacancyData.get("description"))
-                    .requirements((String) vacancyData.get("requirements"))
-                    .responsibilities((String) vacancyData.get("responsibilities"))
-                    .status((String) vacancyData.get("status"))
-                    .priority((String) vacancyData.get("priority"))
-                    .postingDate(postingDate)
-                    .closingDate(closingDate)
-                    .numberOfPositions(numberOfPositions)
-                    .jobPosition(jobPosition)
-                    .hiredCount(0)
-                    .build();
-
-            Vacancy savedVacancy = vacancyRepository.save(vacancy);
-
+    /**
+     * Send notifications for vacancy creation (isolated from main logic)
+     */
+    private void sendVacancyCreationNotifications(Vacancy savedVacancy, JobPosition jobPosition) {
+        try {
             // Send notifications about new vacancy
             String departmentName = jobPosition != null && jobPosition.getDepartment() != null
                     ? jobPosition.getDepartment().getName()
@@ -116,7 +128,7 @@ public class VacancyService {
             if ("HIGH".equalsIgnoreCase(savedVacancy.getPriority())) {
                 notificationService.sendNotificationToHRUsers(
                         "High Priority Vacancy",
-                        "🚨 HIGH PRIORITY: " + savedVacancy.getTitle() + " - " + numberOfPositions + " position(s) needed urgently",
+                        "🚨 HIGH PRIORITY: " + savedVacancy.getTitle() + " - " + savedVacancy.getNumberOfPositions() + " position(s) needed urgently",
                         NotificationType.WARNING,
                         "/vacancies/" + savedVacancy.getId(),
                         "high-priority-vacancy-" + savedVacancy.getId()
@@ -136,27 +148,11 @@ public class VacancyService {
                     );
                 }
             }
-
-            return savedVacancy;
-
         } catch (Exception e) {
-            // Log the error for debugging
-            System.err.println("Error creating vacancy: " + e.getMessage());
-            e.printStackTrace();
-
-            // Send error notification
-            notificationService.sendNotificationToHRUsers(
-                    "Vacancy Creation Failed",
-                    "Failed to create vacancy: " + e.getMessage(),
-                    NotificationType.ERROR,
-                    "/vacancies",
-                    "vacancy-creation-error-" + System.currentTimeMillis()
-            );
-
-            throw new RuntimeException("Failed to create vacancy: " + e.getMessage(), e);
+            System.err.println("Error sending vacancy creation notifications: " + e.getMessage());
+            throw e; // Re-throw to be caught by caller
         }
     }
-
     @Transactional
     public Vacancy updateVacancy(UUID id, Vacancy vacancyDetails) {
         try {

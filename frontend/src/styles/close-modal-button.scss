@@ -1,7 +1,7 @@
 /* Global Close Button Classes with Built-in X Icon */
 /* Regular CSS - No SCSS compilation needed */
 
-.btn-close {
+.btn-close, .modal-close {
   background: none;
   border: none;
   width: 32px;
@@ -18,7 +18,7 @@
 
 /* Create the X icon using pseudo-elements */
 .btn-close::before,
-.btn-close::after {
+.btn-close::after, , .modal-close::before, .modal-close::after {
   content: '';
   position: absolute;
   width: 14px;
@@ -28,11 +28,11 @@
   transition: all 0.2s ease;
 }
 
-.btn-close::before {
+.btn-close::before,  .modal-close::before {
   transform: rotate(45deg);
 }
 
-.btn-close::after {
+.btn-close::after, .modal-close::after {
   transform: rotate(-45deg);
 }
 

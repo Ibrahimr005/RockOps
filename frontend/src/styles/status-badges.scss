@@ -546,13 +546,13 @@
 }
 
 /* Priority Levels */
-.status-badge.low {
+.status-badge.low  {
   background-color: rgba(139, 195, 74, 0.15);
   color: #689f38;
   border-color: rgba(139, 195, 74, 0.3);
 }
 
-.status-badge.medium {
+.status-badge.medium, .status-badge.normal{
   background-color: rgba(255, 152, 0, 0.15);
   color: var(--color-warning);
   border-color: rgba(255, 152, 0, 0.3);

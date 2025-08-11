@@ -1,12 +1,22 @@
-import React, { useState, useEffect } from 'react';
+// Handle offer finalized callback - similar to handleOfferStarted
+const handleOfferSentToFinalize = (finalizedOffer) => {
+    // Switch to finalize tab
+    setActiveTab('finalize');
+
+    // Set the finalized offer as active (it will have FINALIZING status now)
+    setActiveOffer(finalizedOffer);
+};import React, { useState, useEffect } from 'react';
 import {
     FiPackage, FiCheck, FiClock, FiCheckCircle,
     FiX, FiFileText, FiDollarSign, FiList,
-    FiUser, FiCalendar, FiFlag  // Added these icons for Request Order Information
+    FiUser, FiCalendar, FiFlag, FiTrendingUp
 } from 'react-icons/fi';
 
 import "../ProcurementOffers.scss";
 import "./FinanceValidatedOffers.scss"
+import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { offerService } from '../../../../services/procurement/offerService.js';
 
 // Updated to accept offers, setError, and setSuccess from parent
 const FinanceValidatedOffers = ({
@@ -14,13 +24,15 @@ const FinanceValidatedOffers = ({
                                     activeOffer,
                                     setActiveOffer,
                                     getTotalPrice,
-                                    fetchWithAuth,
-                                    API_URL,
                                     setError,
-                                    setSuccess
+                                    setSuccess,
+                                    onRefresh, // Optional callback to refresh data after status update
+                                    onOfferFinalized // New callback to handle offer finalization and tab switch
                                 }) => {
     const [loading, setLoading] = useState(false);
     const [userRole, setUserRole] = useState(''); // Added for role checking
+    const [showFinalizeDialog, setShowFinalizeDialog] = useState(false);
+    const [offerToFinalizeId, setOfferToFinalizeId] = useState(null);
 
     // Fetch all finance reviewed offers - We're now getting offers as props
     useEffect(() => {
@@ -31,21 +43,56 @@ const FinanceValidatedOffers = ({
         }
     }, []);
 
-    // Handle clicking the Finalize Offer button
-    const handleFinalizeClick = async (offerId) => {
+    // Function to handle opening the finalize confirmation dialog
+    const handleOpenFinalizeDialog = (offerId) => {
+        setOfferToFinalizeId(offerId);
+        setShowFinalizeDialog(true);
+    };
+
+    // Function to handle the finalization after confirmation
+    const handleConfirmFinalize = async () => {
+        if (!offerToFinalizeId) return;
+
         try {
             setLoading(true);
-            // Update the offer status to FINALIZING
-            await fetchWithAuth(`${API_URL}/offers/${offerId}/status?status=FINALIZING`, {
-                method: 'PUT'
-            });
+            setShowFinalizeDialog(false);
+            setError('');
+            setSuccess('');
 
+            // Update the offer status to FINALIZING using offerService
+            await offerService.updateStatus(offerToFinalizeId, 'FINALIZING');
+
+            setSuccess('Offer has been sent to the finalizing section.');
+
+            // Find the finalized offer to pass to the callback
+            const finalizedOffer = offers.find(offer => offer.id === offerToFinalizeId);
+
+            // Call the callback to switch to finalize tab and set the specific offer as active
+            if (onOfferFinalized && finalizedOffer) {
+                onOfferFinalized({
+                    ...finalizedOffer,
+                    status: 'FINALIZING'
+                });
+            }
+
+            // Optional: You can call a refresh function here if provided as a prop
+            if (onRefresh) {
+                onRefresh();
+            }
 
         } catch (err) {
             console.error('Error updating offer status to FINALIZING:', err);
-            setError('Failed to update offer status. Please try again.');
+            setError(err.message || 'Failed to update offer status. Please try again.');
+        } finally {
             setLoading(false);
+            setOfferToFinalizeId(null);
         }
+    };
+
+    // Function to close the dialog
+    const handleCancelFinalize = () => {
+        setShowFinalizeDialog(false);
+        setOfferToFinalizeId(null);
     };
 
     // Get offer items for a specific request item
@@ -93,23 +140,45 @@ const FinanceValidatedOffers = ({
                         <p>No finance validated offers yet. Offers will appear here after finance review.</p>
                     </div>
                 ) : (
+                    // Replace the offers list section in FinanceValidatedOffers with this:
+
                     <div className="procurement-items-list">
                         {offers.map(offer => (
                             <div
                                 key={offer.id}
-                                className={`procurement-item-card ${activeOffer?.id === offer.id ? 'selected' : ''} 
-                        ${offer.status === 'FINANCE_ACCEPTED' || offer.status === 'FINANCE_PARTIALLY_ACCEPTED' ? 'card-accepted' :
+                                className={`procurement-item-card-finance ${activeOffer?.id === offer.id ? 'selected' : ''}
+            ${offer.status === 'FINANCE_ACCEPTED' || offer.status === 'FINANCE_PARTIALLY_ACCEPTED' ? 'card-accepted' :
                                     offer.status === 'FINANCE_REJECTED' ? 'card-rejected' : 'card-partial'}`}
-
                                 onClick={() => setActiveOffer(offer)}
                             >
                                 <div className="procurement-item-header">
                                     <h4>{offer.title}</h4>
                                 </div>
                                 <div className="procurement-item-footer">
-                                    <span className="procurement-item-date">
-                                        <FiClock /> {new Date(offer.updatedAt).toLocaleDateString()}
-                                    </span>
+                <span className="procurement-item-date">
+                    <FiClock /> Updated: {new Date(offer.updatedAt).toLocaleDateString()}
+                </span>
+                                </div>
+                                <div className="procurement-item-footer">
+                <span className={`procurement-item-status ${
+                    offer.status === 'FINANCE_ACCEPTED' ? 'status-accepted' :
+                        offer.status === 'FINANCE_PARTIALLY_ACCEPTED' ? 'status-partial' :
+                            'status-rejected'
+                }`}>
+                    {offer.status === 'FINANCE_ACCEPTED' ? (
+                        <>
+                            <FiCheckCircle /> Accepted
+                        </>
+                    ) : offer.status === 'FINANCE_PARTIALLY_ACCEPTED' ? (
+                        <>
+                            <FiFlag /> Partially Accepted
+                        </>
+                    ) : (
+                        <>
+                            <FiX /> Rejected
+                        </>
+                    )}
+                </span>
                                 </div>
                             </div>
                         ))}
@@ -139,203 +208,122 @@ const FinanceValidatedOffers = ({
                                 {/* Finalize button for finance-accepted offers */}
                                 {activeOffer && (activeOffer.status === 'FINANCE_ACCEPTED' || activeOffer.status === 'FINANCE_PARTIALLY_ACCEPTED') && (
                                     <button
-                                        className="finalize-offer-button"
-                                        onClick={() => handleFinalizeClick(activeOffer.id)}
+                                        className="btn-primary"
+                                        onClick={() => handleOpenFinalizeDialog(activeOffer.id)}
                                         disabled={loading}
                                     >
-                                        <FiCheckCircle /> {loading ? 'Processing...' : 'Finalize Offer'}
+                                        <FiCheckCircle /> Finalize Offer
                                     </button>
                                 )}
                             </div>
                         </div>
 
-                        {/* Request Order Information Card */}
-                        <div className="procurement-request-order-info-card">
-                            <h4>Request Order Information</h4>
-
-                            <div className="procurement-request-order-details-grid">
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiUser size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Requester</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.requesterName || 'Unknown'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiCalendar size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Request Date</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.createdAt ? new Date(activeOffer.requestOrder.createdAt).toLocaleDateString() : 'N/A'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiCalendar size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Deadline</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.deadline ? new Date(activeOffer.requestOrder.deadline).toLocaleDateString() : 'N/A'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiUser size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Created By</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.createdBy || 'Unknown'}</span>
-                                    </div>
-                                </div>
-
-                                {activeOffer.requestOrder?.priority && (
-                                    <div className="request-order-detail-item">
-                                        <div className="request-order-detail-icon">
-                                            <FiFlag size={18} />
-                                        </div>
-                                        <div className="request-order-detail-content">
-                                            <span className="request-order-detail-label">Priority</span>
-                                            <span className={`request-order-detail-value request-priority ${activeOffer.requestOrder.priority.toLowerCase()}`}>
-                                                {activeOffer.requestOrder.priority}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {activeOffer.requestOrder?.description && (
-                                    <div className="request-order-detail-item description-item">
-                                        <div className="request-order-detail-icon">
-                                            <FiFileText size={18} />
-                                        </div>
-                                        <div className="request-order-detail-content">
-                                            <span className="request-order-detail-label">Description</span>
-                                            <p className="request-order-detail-value description-text">
-                                                {activeOffer.requestOrder.description}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Purchase Order Notification Banner */}
-                        {activeOffer && (activeOffer.financeStatus === 'FINANCE_ACCEPTED' ||
-                            activeOffer.financeStatus === 'FINANCE_PARTIALLY_ACCEPTED') && (
-                            <div className="purchase-order-notification">
-                                <div className="notification-icon">
-                                    <FiFileText size={20} />
-                                </div>
-                                <div className="notification-content">
-                                    <h4>Purchase Order Created</h4>
-                                    <p>A purchase order has been generated for this offer. Visit the Purchase Orders section to view and manage it.</p>
-                                </div>
-                                <button
-                                    className="view-purchase-order-button"
-                                    onClick={() => window.location.href = '/procurement/purchase-orders'}
-                                >
-                                    View Purchase Orders
-                                </button>
-                            </div>
-                        )}
-
-                        {loading ? (
+                        {!activeOffer.requestOrder ? (
                             <div className="procurement-loading">
                                 <div className="procurement-spinner"></div>
-                                <p>Loading details...</p>
+                                <p>Loading request order details...</p>
                             </div>
                         ) : (
                             <div className="procurement-submitted-info">
-                                <div className="finance-review-summary">
-                                    <h4>Validated Offer Details</h4>
-                                    <p className="finance-review-description">
-                                        {activeOffer.status === 'FINANCE_ACCEPTED' || activeOffer.status === 'FINANCE_ACCEPTED' ?
-                                            'All items in this offer were accepted by finance. Please finalize the offer to create a purchase order.' :
-                                            activeOffer.status === 'FINANCE_REJECTED' ?
-                                                'This offer was rejected by finance.' :
-                                                'Some items in this offer were accepted and some were rejected by finance.'}
+                                {/* Use the reusable RequestOrderDetails component */}
+                                <RequestOrderDetails requestOrder={activeOffer.requestOrder} />
+
+                                <div className="procurement-request-summary-card-finance">
+                                    <h4>Offer Timeline</h4>
+                                    <p className="procurement-section-description-finance">
+                                        This timeline shows the key milestones in the finance review process.
                                     </p>
 
-                                    {/* Finance Review Timeline */}
-                                    <div className="procurement-timeline">
-                                        <div className="procurement-timeline-item active">
-                                            <div className="timeline-icon">
-                                                <FiCheckCircle size={18} />
-                                            </div>
-                                            <div className="timeline-content">
+                                    {/* NEW TIMELINE DESIGN - MATCHING FINALIZE */}
+                                    <div className="procurement-timeline-finance">
+                                        {/* Offer Submitted Step */}
+                                        <div className="procurement-timeline-item-finance active-finance">
+                                            <div className="timeline-content-finance">
                                                 <h5>Offer Submitted</h5>
-                                                <p className="timeline-date">
-                                                    {new Date(activeOffer.updatedAt).toLocaleDateString()}
+                                                <p className="timeline-date-finance">
+                                                    <FiCalendar size={14} /> Submitted at: {new Date(activeOffer.createdAt).toLocaleDateString()}
+                                                </p>
+                                                <p className="timeline-date-finance">
+                                                    <FiUser size={14} /> Submitted by: {activeOffer.createdBy || 'N/A'}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <div className="procurement-timeline-item active">
-                                            <div className="timeline-icon">
-                                                <FiCheck size={18} />
-                                            </div>
-                                            <div className="timeline-content">
-                                                <h5>Offer Accepted</h5>
-                                                <p className="timeline-date">
-                                                    {new Date(activeOffer.updatedAt).toLocaleDateString()}
+                                        {/* Manager Accepted Step */}
+                                        <div className="procurement-timeline-item-finance active-finance">
+                                            <div className="timeline-content-finance">
+                                                <h5>Manager Accepted</h5>
+                                                <p className="timeline-date-finance">
+                                                    <FiCalendar size={14} /> Accepted at: {activeOffer.updatedAt ? new Date(activeOffer.updatedAt).toLocaleDateString() : 'N/A'}
+                                                </p>
+                                                <p className="timeline-date-finance">
+                                                    <FiUser size={14} /> Approved by: {activeOffer.managerApprovedBy || 'N/A'}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <div className="procurement-timeline-item active">
-                                            <div className="timeline-icon">
-                                                <FiDollarSign size={18} />
-                                            </div>
-                                            <div className="timeline-content">
-                                                <h5>Finance Review Completed</h5>
-                                                <p className="timeline-date">
-                                                    {new Date(activeOffer.updatedAt).toLocaleDateString()}
+                                        {/* Finance Accepted/Rejected Step */}
+                                        <div className={`procurement-timeline-item-finance ${activeOffer.status === 'FINANCE_REJECTED' ? 'rejected-finance' : 'active-finance'}`}>
+                                            <div className="timeline-content-finance">
+                                                <h5>
+                                                    {activeOffer.status === 'FINANCE_ACCEPTED' ? 'Finance Accepted' :
+                                                        activeOffer.status === 'FINANCE_PARTIALLY_ACCEPTED' ? 'Finance Partially Accepted' :
+                                                            'Finance Rejected'}
+                                                </h5>
+                                                <p className="timeline-date-finance">
+                                                    <FiCalendar size={14} /> Reviewed at: {new Date(activeOffer.updatedAt).toLocaleDateString()}
                                                 </p>
+                                                <p className="timeline-date-finance">
+                                                    <FiUser size={14} /> Reviewed by: {activeOffer.financeApprovedBy || 'N/A'}
+                                                </p>
+                                                {activeOffer.status === 'FINANCE_REJECTED' && activeOffer.rejectionReason && (
+                                                    <p className="timeline-date-finance rejection">
+                                                        <FiX size={14} /> Reason: {activeOffer.rejectionReason}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
 
-                                        {activeOffer.status === 'FINANCE_ACCEPTED' && (
-                                            <div className="procurement-timeline-item">
-                                                <div className="timeline-icon">
-                                                    <FiFileText size={18} />
-                                                </div>
-                                                <div className="timeline-content">
-                                                    <h5>Waiting for Finalization</h5>
+                                        {/* Awaiting Finalization Step */}
+                                        {(activeOffer.status === 'FINANCE_ACCEPTED' || activeOffer.status === 'FINANCE_PARTIALLY_ACCEPTED') && (
+                                            <div className="procurement-timeline-item-finance">
+                                                <div className="timeline-content-finance">
+                                                    <h5>Awaiting Finalization</h5>
+                                                    <p className="timeline-date-finance">
+                                                        <FiClock size={14} /> Pending finalization from procurement.
+                                                    </p>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
+                                    {/* END OF NEW TIMELINE DESIGN */}
+
                                 </div>
 
                                 {/* Procurement Items with Finance Status */}
-                                <div className="procurement-submitted-details">
+                                <div className="procurement-submitted-details-finance">
                                     <h4>Item Review Details</h4>
-                                    <div className="procurement-submitted-items">
+                                    <div className="procurement-submitted-items-finance">
                                         {activeOffer.requestOrder?.requestItems?.map(requestItem => {
                                             const offerItems = getOfferItemsForRequestItem(requestItem.id);
 
                                             return (
-                                                <div key={requestItem.id} className="procurement-submitted-item-card">
-                                                    <div className="submitted-item-header">
-                                                        <div className="item-icon-name">
-                                                            <div className="item-icon-container">
-                                                                <FiPackage size={20} />
+                                                <div key={requestItem.id} className="procurement-submitted-item-card-finance">
+                                                    <div className="submitted-item-header-finance">
+                                                        <div className="item-icon-name-finance">
+                                                            <div className="item-icon-container-finance">
+                                                                <FiPackage size={22} />
                                                             </div>
                                                             <h5>{requestItem.itemType?.name || 'Item'}</h5>
                                                         </div>
-                                                        <div className="submitted-item-quantity">
+                                                        <div className="submitted-item-quantity-finance">
                                                             {requestItem.quantity} {requestItem.itemType.measuringUnit}
                                                         </div>
                                                     </div>
 
                                                     {offerItems.length > 0 && (
-                                                        <div className="submitted-offer-solutions">
-                                                            <table className="procurement-offer-entries-table">
+                                                        <div className="submitted-offer-solutions-finance">
+                                                            <table className="procurement-offer-entries-table-finance">
                                                                 <thead>
                                                                 <tr>
                                                                     <th>Merchant</th>
@@ -378,28 +366,30 @@ const FinanceValidatedOffers = ({
                                 </div>
 
                                 {/* Total Summary */}
-                                <div className="procurement-submitted-summary">
-                                    <div className="submitted-summary-row">
-                                        <span>Total Items Accepted:</span>
-                                        <span>
+                                <div className="procurement-submitted-summary-finance">
+                                    <div className="summary-item-finance">
+                                        <FiPackage size={16} />
+                                        <span className="summary-label-finance">Total Items Accepted:</span>
+                                        <span className="summary-value-finance">
                                             {activeOffer.offerItems?.filter(item =>
                                                 item.financeStatus === 'FINANCE_ACCEPTED'
                                             ).length || 0}
                                         </span>
                                     </div>
-                                    <div className="submitted-summary-row">
-                                        <span>Total Items Rejected:</span>
-                                        <span>
+                                    <div className="summary-item-finance">
+                                        <FiX size={16} />
+                                        <span className="summary-label-finance">Total Items Rejected:</span>
+                                        <span className="summary-value-finance">
                                             {activeOffer.offerItems?.filter(item =>
                                                 item.financeStatus === 'FINANCE_REJECTED'
                                             ).length || 0}
                                         </span>
                                     </div>
-                                    <div className="submitted-summary-row">
-                                        <span>Total Approved Value:</span>
-                                        <span className={`submitted-total-value text-success`}>
-                                            ${getTotalPrice(activeOffer).toFixed(2)}
-                                        </span>
+
+                                    <div className="summary-item-finance total-value-finance">
+                                        <FiDollarSign size={18} />
+                                        <span className="summary-label-finance">Total Approved Value:</span>
+                                        <span className="summary-value-finance total-finance">${getTotalPrice(activeOffer).toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -419,6 +409,19 @@ const FinanceValidatedOffers = ({
                     </div>
                 )}
             </div>
+
+            {/* Confirmation Dialog for Finalizing an Offer */}
+            <ConfirmationDialog
+                isVisible={showFinalizeDialog}
+                type="success"
+                title="Finalize Offer"
+                message="Are you sure you want to finalize this offer? This action will send the offer to the finalizing section and cannot be undone."
+                confirmText="Finalize"
+                onConfirm={handleConfirmFinalize}
+                onCancel={handleCancelFinalize}
+                isLoading={loading}
+                size="large"
+            />
         </div>
     );
 };

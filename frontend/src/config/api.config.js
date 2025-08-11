@@ -195,6 +195,88 @@ export const FINANCE_ENDPOINTS = {
         BASE: '/api/v1/accounting-periods',
         BY_ID: (id) => `/api/v1/accounting-periods/${id}`,
         CLOSE: (id) => `/api/v1/accounting-periods/${id}/close`
+    },
+
+    // Add this to your existing FINANCE_ENDPOINTS in src/config/api.config.js
+
+// Bank Reconciliation submodule endpoints
+    BANK_RECONCILIATION: {
+        // Bank Account endpoints
+        BANK_ACCOUNTS: {
+            BASE: '/api/v1/bank-accounts',
+            BY_ID: (id) => `/api/v1/bank-accounts/${id}`,
+            UPDATE_BALANCE: (id) => `/api/v1/bank-accounts/${id}/balance`,
+            SEARCH: '/api/v1/bank-accounts/search',
+            BALANCE_ABOVE: '/api/v1/bank-accounts/balance-above'
+        },
+
+        // Bank Statement Entry endpoints
+        BANK_STATEMENT_ENTRIES: {
+            BASE: '/api/v1/bank-statement-entries',
+            BY_ID: (id) => `/api/v1/bank-statement-entries/${id}`,
+            IMPORT: '/api/v1/bank-statement-entries/import',
+            BY_BANK_ACCOUNT: (bankAccountId) => `/api/v1/bank-statement-entries/bank-account/${bankAccountId}`,
+            UNMATCHED: '/api/v1/bank-statement-entries/unmatched',
+            UNMATCHED_BY_ACCOUNT: (bankAccountId) => `/api/v1/bank-statement-entries/unmatched/bank-account/${bankAccountId}`,
+            BY_DATE_RANGE: '/api/v1/bank-statement-entries/date-range',
+            BY_CATEGORY: (category) => `/api/v1/bank-statement-entries/category/${category}`,
+            MARK_MATCHED: (id) => `/api/v1/bank-statement-entries/${id}/match`,
+            POTENTIAL_MATCHES: '/api/v1/bank-statement-entries/potential-matches',
+            SEARCH: '/api/v1/bank-statement-entries/search'
+        },
+
+        // Internal Transaction endpoints
+        INTERNAL_TRANSACTIONS: {
+            BASE: '/api/v1/internal-transactions',
+            BY_ID: (id) => `/api/v1/internal-transactions/${id}`,
+            BY_BANK_ACCOUNT: (bankAccountId) => `/api/v1/internal-transactions/bank-account/${bankAccountId}`,
+            UNRECONCILED: '/api/v1/internal-transactions/unreconciled',
+            UNRECONCILED_BY_ACCOUNT: (bankAccountId) => `/api/v1/internal-transactions/unreconciled/bank-account/${bankAccountId}`,
+            BY_DATE_RANGE: '/api/v1/internal-transactions/date-range',
+            BY_TYPE: (transactionType) => `/api/v1/internal-transactions/type/${transactionType}`,
+            MARK_RECONCILED: (id) => `/api/v1/internal-transactions/${id}/reconcile`,
+            POTENTIAL_MATCHES: '/api/v1/internal-transactions/potential-matches'
+        },
+
+        // Transaction Match endpoints
+        TRANSACTION_MATCHES: {
+            BASE: '/api/v1/transaction-matches',
+            BY_ID: (id) => `/api/v1/transaction-matches/${id}`,
+            UNCONFIRMED: '/api/v1/transaction-matches/unconfirmed',
+            BY_BANK_ACCOUNT: (bankAccountId) => `/api/v1/transaction-matches/bank-account/${bankAccountId}`,
+            NEEDS_REVIEW: '/api/v1/transaction-matches/needs-review',
+            CONFIRM: (id) => `/api/v1/transaction-matches/${id}/confirm`,
+            AUTO_MATCH: (bankAccountId) => `/api/v1/transaction-matches/auto-match/bank-account/${bankAccountId}`,
+            POTENTIAL_MATCHES: (bankStatementEntryId) => `/api/v1/transaction-matches/potential-matches/bank-statement-entry/${bankStatementEntryId}`
+        },
+
+        // Discrepancy endpoints
+        DISCREPANCIES: {
+            BASE: '/api/v1/discrepancies',
+            BY_ID: (id) => `/api/v1/discrepancies/${id}`,
+            BY_STATUS: (status) => `/api/v1/discrepancies/status/${status}`,
+            OPEN: '/api/v1/discrepancies/open',
+            HIGH_PRIORITY: '/api/v1/discrepancies/high-priority',
+            ASSIGNED_TO: (assignee) => `/api/v1/discrepancies/assigned-to/${assignee}`,
+            UNASSIGNED: '/api/v1/discrepancies/unassigned',
+            OVERDUE: '/api/v1/discrepancies/overdue',
+            ASSIGN: (id) => `/api/v1/discrepancies/${id}/assign`,
+            UPDATE_NOTES: (id) => `/api/v1/discrepancies/${id}/investigation-notes`,
+            RESOLVE: (id) => `/api/v1/discrepancies/${id}/resolve`,
+            CLOSE: (id) => `/api/v1/discrepancies/${id}/close`,
+            UPDATE_PRIORITY: (id) => `/api/v1/discrepancies/${id}/priority`
+        },
+
+        // Reconciliation Report endpoints
+        RECONCILIATION_REPORTS: {
+            SUMMARY_BY_ACCOUNT: (bankAccountId) => `/api/v1/reconciliation-reports/summary/bank-account/${bankAccountId}`,
+            SUMMARY_ALL_ACCOUNTS: '/api/v1/reconciliation-reports/summary/all-accounts',
+            OUTSTANDING_CHECKS: (bankAccountId) => `/api/v1/reconciliation-reports/outstanding-checks/bank-account/${bankAccountId}`,
+            DEPOSITS_IN_TRANSIT: (bankAccountId) => `/api/v1/reconciliation-reports/deposits-in-transit/bank-account/${bankAccountId}`,
+            STATUS: (bankAccountId) => `/api/v1/reconciliation-reports/status/bank-account/${bankAccountId}`,
+            EXPORT_CSV: (bankAccountId) => `/api/v1/reconciliation-reports/export/csv/bank-account/${bankAccountId}`,
+            TREND: (bankAccountId) => `/api/v1/reconciliation-reports/trend/bank-account/${bankAccountId}`
+        }
     }
 };
 
@@ -240,6 +322,7 @@ export const SITE_ENDPOINTS = {
     UNASSIGNED_PARTNERS: (siteId) => `/api/v1/site/${siteId}/unassigned-partners`,
     EMPLOYEES: (siteId) => `/api/v1/site/${siteId}/employees`,
     EQUIPMENT: (siteId) => `/api/v1/site/${siteId}/equipment`,
+    UNASSIGNED_EQUIPMENT: `/api/v1/site/unassigned-equipment`,
     WAREHOUSES: (siteId) => `/api/v1/site/${siteId}/warehouses`,
     MERCHANTS: (siteId) => `/api/v1/site/${siteId}/merchants`,
     FIXED_ASSETS: (siteId) => `/api/v1/site/${siteId}/fixedassets`,
@@ -279,15 +362,62 @@ export const WORK_TYPE_ENDPOINTS = {
 
 // Job Position module endpoints
 export const JOB_POSITION_ENDPOINTS = {
+    // Basic CRUD endpoints
     BASE: '/api/v1/job-positions',
+    CREATE: '/api/v1/job-positions',
     CREATE_DTO: '/api/v1/job-positions/dto',
     BY_ID: (id) => `/api/v1/job-positions/${id}`,
     DTO_BY_ID: (id) => `/api/v1/job-positions/dto/${id}`,
+    UPDATE: (id) => `/api/v1/job-positions/${id}`,
     UPDATE_DTO: (id) => `/api/v1/job-positions/dto/${id}`,
     DELETE: (id) => `/api/v1/job-positions/${id}`,
+
+    // Employee-related endpoints
     EMPLOYEES: (id) => `/api/v1/job-positions/${id}/employees`,
-    CREATE: '/api/v1/job-positions',
-    UPDATE: (id) => `/api/v1/job-positions/${id}`
+
+    // Enhanced endpoints for details view
+    DETAILS: (id) => `/api/v1/job-positions/${id}/details`,
+    PROMOTION_STATISTICS: (id) => `/api/v1/job-positions/${id}/promotion-statistics`,
+    PROMOTIONS_FROM: (id) => `/api/v1/job-positions/${id}/promotions/from`,
+    PROMOTIONS_TO: (id) => `/api/v1/job-positions/${id}/promotions/to`,
+    PROMOTIONS_FROM_PENDING: (id) => `/api/v1/job-positions/${id}/promotions/from/pending`,
+    PROMOTIONS_TO_PENDING: (id) => `/api/v1/job-positions/${id}/promotions/to/pending`,
+    CAREER_PATH_SUGGESTIONS: (id) => `/api/v1/job-positions/${id}/career-path-suggestions`,
+    EMPLOYEES_ELIGIBLE_FOR_PROMOTION: (id) => `/api/v1/job-positions/${id}/employees/eligible-for-promotion`,
+    SALARY_STATISTICS: (id) => `/api/v1/job-positions/${id}/salary-statistics`,
+    VALIDATION: (id) => `/api/v1/job-positions/${id}/validation`,
+    ANALYTICS: (id) => `/api/v1/job-positions/${id}/analytics`,
+    CAN_DELETE: (id) => `/api/v1/job-positions/${id}/can-delete`,
+    PROMOTION_DESTINATIONS: (id) => `/api/v1/job-positions/${id}/promotion-destinations`,
+    PROMOTION_SOURCES: (id) => `/api/v1/job-positions/${id}/promotion-sources`,
+    EMPLOYEE_ANALYTICS: (id) => `/api/v1/job-positions/${id}/employee-analytics`,
+
+    // NEW: Hierarchy and Organization Structure endpoints
+    HIERARCHY: '/api/v1/job-positions/hierarchy',
+    CHILDREN: (id) => `/api/v1/job-positions/${id}/children`,
+    PROMOTION_TARGETS: (id) => `/api/v1/job-positions/${id}/promotion-targets`,
+    VALIDATE_PROMOTION_TARGET: (currentId, targetId) => `/api/v1/job-positions/${currentId}/validate-promotion/${targetId}`,
+    HIERARCHY_PATH: (id) => `/api/v1/job-positions/${id}/hierarchy-path`,
+    BY_HIERARCHY_LEVEL: (level) => `/api/v1/job-positions/hierarchy/level/${level}`,
+    ORGANIZATION_STRUCTURE: '/api/v1/job-positions/organization-structure',
+
+    // NEW: Promotion eligibility endpoints
+    ELIGIBLE_FOR_PROMOTION_FROM: '/api/v1/job-positions/eligible-for-promotion/from',
+    ELIGIBLE_FOR_PROMOTION_TO: '/api/v1/job-positions/eligible-for-promotion/to',
+
+    // NEW: Department and validation endpoints
+    DEPARTMENT_HIERARCHY: '/api/v1/job-positions/department-hierarchy',
+    VALIDATE_HIERARCHY: '/api/v1/job-positions/validate-hierarchy',
+
+    // NEW: Promotion path and navigation endpoints
+    PROMOTION_PATH: (fromId, toId) => `/api/v1/job-positions/promotion-path/${fromId}/${toId}`,
+    NEXT_PROMOTION_STEPS: (id) => `/api/v1/job-positions/${id}/next-promotion-steps`,
+    POSITIONS_AT_RISK: '/api/v1/job-positions/at-risk',
+
+    // NEW: Simplified promotion endpoints
+    PROMOTION_STATS_SIMPLE: (id) => `/api/v1/job-positions/${id}/promotion-stats-simple`,
+    PROMOTIONS_FROM_SIMPLE: (id) => `/api/v1/job-positions/${id}/promotions-from-simple`,
+    PROMOTIONS_TO_SIMPLE: (id) => `/api/v1/job-positions/${id}/promotions-to-simple`
 };
 
 // Document module endpoints
@@ -345,9 +475,9 @@ export const ITEM_CATEGORY_ENDPOINTS = {
 export const REQUEST_ORDER_ENDPOINTS = {
     BASE: '/api/v1/requestOrders',
     BY_ID: (id) => `/api/v1/requestOrders/${id}`,
-    CREATE: '/api/v1/requestOrders'
+    CREATE: '/api/v1/requestOrders',
+    VALIDATE_RESTOCK: '/api/v1/requestOrders/validate-restock'
 };
-
 // Offer module endpoints
 // Add these to your OFFER_ENDPOINTS in api.config.js
 

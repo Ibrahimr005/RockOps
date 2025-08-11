@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import { itemService } from '../../../../services/warehouse/itemService';
+import "./DiscrepancyModal.scss";
 
 const DiscrepancyItems= ({
                              warehouseId,

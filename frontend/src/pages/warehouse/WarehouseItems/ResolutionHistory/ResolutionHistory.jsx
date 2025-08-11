@@ -101,6 +101,13 @@ const ResolutionHistory = ({ warehouseId, showSnackbar }) => {
         setSelectedResolution(null);
     };
 
+    // Helper function to get batch number from resolution data
+    const getBatchNumber = (resolution) => {
+        return resolution?.item?.transaction?.batchNumber ||
+            resolution?.item?.batchNumber ||
+            'N/A';
+    };
+
     // Table columns for resolution history
     const historyColumns = [
         {
@@ -139,7 +146,7 @@ const ResolutionHistory = ({ warehouseId, showSnackbar }) => {
             width: '150px',
             render: (row) => (
                 <span className="batch-number">
-                    {row.item?.transaction?.batchNumber || row.item?.batchNumber || 'N/A'}
+                    {getBatchNumber(row)}
                 </span>
             )
         },
@@ -250,57 +257,9 @@ const ResolutionHistory = ({ warehouseId, showSnackbar }) => {
                                     Overview
                                 </h3>
                                 <div className="resolution-history-modal-overview-grid">
-                                    <div className="resolution-history-modal-overview-item">
-                                        <div className="resolution-history-modal-overview-icon">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 0 1 0 2.828l-7 7a2 2 0 0 1-2.828 0l-7-7A1.994 1.994 0 0 1 3 12V7a4 4 0 0 1 4-4z" />
-                                            </svg>
-                                        </div>
-                                        <div className="resolution-history-modal-overview-content">
-                                            <span className="resolution-history-modal-label">Parent Category</span>
-                                            <span className="resolution-history-modal-value">{selectedResolution.item?.itemType?.itemCategory?.parentCategory?.name || 'No Parent'}</span>
-                                        </div>
-                                    </div>
 
-                                    <div className="resolution-history-modal-overview-item">
-                                        <div className="resolution-history-modal-overview-icon">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 0 1 0 2.828l-7 7a2 2 0 0 1-2.828 0l-7-7A1.994 1.994 0 0 1 3 12V7a4 4 0 0 1 4-4z" />
-                                            </svg>
-                                        </div>
-                                        <div className="resolution-history-modal-overview-content">
-                                            <span className="resolution-history-modal-label">Category</span>
-                                            <span className="resolution-history-modal-value">{selectedResolution.item?.itemType?.itemCategory?.name || 'No Category'}</span>
-                                        </div>
-                                    </div>
 
-                                    <div className="resolution-history-modal-overview-item">
-                                        <div className="resolution-history-modal-overview-icon">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                                            </svg>
-                                        </div>
-                                        <div className="resolution-history-modal-overview-content">
-                                            <span className="resolution-history-modal-label">Item Name</span>
-                                            <span className="resolution-history-modal-value">{selectedResolution.item?.itemType?.name || 'N/A'}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="resolution-history-modal-overview-item">
-                                        <div className="resolution-history-modal-overview-icon">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                                                <line x1="9" y1="9" x2="15" y2="15" />
-                                                <line x1="15" y1="9" x2="9" y2="15" />
-                                            </svg>
-                                        </div>
-                                        <div className="resolution-history-modal-overview-content">
-                                            <span className="resolution-history-modal-label">Original Quantity</span>
-                                            <span className="resolution-history-modal-value">{selectedResolution.originalQuantity || 'N/A'}</span>
-                                        </div>
-                                    </div>
-
-                                    {selectedResolution.item?.transaction?.batchNumber && (
+                                    {getBatchNumber(selectedResolution) !== 'N/A' && (
                                         <div className="resolution-history-modal-overview-item">
                                             <div className="resolution-history-modal-overview-icon">
                                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -313,10 +272,36 @@ const ResolutionHistory = ({ warehouseId, showSnackbar }) => {
                                             </div>
                                             <div className="resolution-history-modal-overview-content">
                                                 <span className="resolution-history-modal-label">Batch Number</span>
-                                                <span className="resolution-history-modal-value">#{selectedResolution.item.transaction.batchNumber}</span>
+                                                <span className="resolution-history-modal-value">#{getBatchNumber(selectedResolution)}</span>
                                             </div>
                                         </div>
                                     )}
+
+                                    <div className="resolution-history-modal-overview-item">
+                                        <div className="resolution-history-modal-overview-icon">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                                <circle cx="12" cy="7" r="4" />
+                                            </svg>
+                                        </div>
+                                        <div className="resolution-history-modal-overview-content">
+                                            <span className="resolution-history-modal-label">Resolved By</span>
+                                            <span className="resolution-history-modal-value">{selectedResolution.resolvedBy || 'N/A'}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="resolution-history-modal-overview-item">
+                                        <div className="resolution-history-modal-overview-icon">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <polyline points="12,6 12,12 16,14" />
+                                            </svg>
+                                        </div>
+                                        <div className="resolution-history-modal-overview-content">
+                                            <span className="resolution-history-modal-label">Resolved At</span>
+                                            <span className="resolution-history-modal-value">{selectedResolution.resolvedAt ? formatDateTime(selectedResolution.resolvedAt) : 'N/A'}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

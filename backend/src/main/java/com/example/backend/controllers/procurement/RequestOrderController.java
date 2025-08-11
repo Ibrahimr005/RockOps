@@ -112,4 +112,20 @@ public class RequestOrderController {
         }
     }
 
+    // In RequestOrderController.java
+    @PostMapping("/validate-restock")
+    public ResponseEntity<Map<String, Object>> validateRestockItems(
+            @RequestParam UUID warehouseId,
+            @RequestBody List<UUID> itemTypeIds) {
+        try {
+            Map<String, Object> validation = requestOrderService.getRestockValidationInfo(warehouseId, itemTypeIds);
+            return ResponseEntity.ok(validation);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("error", "Validation failed");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
 }

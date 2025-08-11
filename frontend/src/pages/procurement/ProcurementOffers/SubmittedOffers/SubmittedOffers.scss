@@ -1,7 +1,7 @@
 // submitted-offers.scss - Enhanced design with simplified summary section
 
-// Submitted offers list items
-.procurement-items-list-submitted {
+// SubmittedOffers cards - Same design as Unstarted
+.procurement-items-list {
   padding: 1rem;
   max-height: calc(100vh - 250px);
   overflow-y: auto;
@@ -24,6 +24,7 @@
       background: linear-gradient(to right, rgba(72, 128, 255, 0.08), var(--color-surface-hover));
     }
 
+
     &.selected {
       border: 2px solid var(--color-primary);
       border-left: 5px solid var(--color-primary);
@@ -34,7 +35,7 @@
       z-index: 5;
     }
 
-    .procurement-item-header-submitted {
+    .procurement-item-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
@@ -49,7 +50,7 @@
       }
     }
 
-    .procurement-item-footer-submitted {
+    .procurement-item-footer {
       display: flex;
       justify-content: space-between;
       font-size: 0.8rem;
@@ -60,13 +61,28 @@
         margin-right: 0.3rem;
         vertical-align: -1px;
       }
+
+      .procurement-item-status {
+        color: #f59e0b;
+        font-weight: var(--bold-font-weight);
+
+        svg {
+          color: #f59e0b;
+        }
+      }
+
+      .procurement-item-date {
+        color: var(--color-text-muted);
+        font-weight: 500;
+      }
     }
 
-    .procurement-item-date-submitted {
+    .procurement-item-date {
       margin-bottom: 0.5rem;
     }
   }
 }
+
 
 // Request summary card
 .procurement-request-summary-card-submitted {
@@ -96,6 +112,7 @@
   }
 }
 
+// Professional Timeline Design
 // Professional Timeline Design
 .procurement-timeline-submitted {
   margin-top: 2rem;
@@ -164,28 +181,31 @@
     }
   }
 
-  // Remove the old timeline icon container
+  // Hide the icon containers for the new design
   .timeline-icon-submitted {
     display: none;
   }
 
   .timeline-content-submitted {
     padding-left: 0;
+    display: flex;
+    flex-direction: column; // This stacks the meta lines vertically
+    gap: 0.65rem; // Adjusts the spacing between stacked lines
 
     h5 {
-      margin: 0 0 0.5rem 0;
+      margin: 0;
       font-size: 1rem;
       font-weight: var(--bold-font-weight);
-      color: var(--head-title-color);
+      color: var(--head-title-color); // This is the dark, larger title
       transition: color var(--transition-normal) ease;
     }
 
-    .timeline-date-submitted {
+    .timeline-meta-submitted {
       margin: 0;
-      font-size: 0.8rem;
-      color: var(--color-text-muted);
+      font-size: 0.8rem; // Small font size
+      color: var(--color-text-muted); // Grey text color
       font-weight: 500;
-      display: inline-flex;
+      display: flex; // Keeps the icon and text together on the same line
       align-items: center;
       gap: 0.375rem;
 
@@ -193,28 +213,9 @@
         opacity: 0.7;
       }
     }
-
-    .rejection-reason-submitted {
-      background: var(--color-surface-secondary);
-      border-left: 3px solid var(--color-danger);
-      border-radius: var(--radius-sm);
-      padding: 0.875rem 1rem;
-      margin-top: 0.75rem;
-
-      p {
-        margin: 0;
-        color: var(--color-text-dark);
-        font-size: 0.85rem;
-        line-height: 1.4;
-
-        strong {
-          color: var(--color-danger);
-          font-weight: var(--bold-font-weight);
-        }
-      }
-    }
   }
 }
+
 
 // Submitted details section
 .procurement-submitted-details-submitted {
@@ -470,6 +471,8 @@
     background: linear-gradient(135deg, var(--color-success), var(--color-success-light));
     color: var(--color-text-inverse);
   }
+
+
 
   &.status-managerrejected {
     background: linear-gradient(135deg, var(--color-danger), var(--color-danger-light));

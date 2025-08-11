@@ -114,6 +114,8 @@ export const siteService = {
         }
     },
 
+
+
     addWarehouse: async (siteId, warehouseData) => {
         try {
             return await apiClient.post(SITE_ENDPOINTS.ADMIN.ADD_WAREHOUSE(siteId), warehouseData);
@@ -122,6 +124,7 @@ export const siteService = {
             throw error;
         }
     },
+
 
     assignEquipment: async (siteId, equipmentId) => {
         try {
@@ -229,6 +232,15 @@ export const siteService = {
             return await apiClient.get(EMPLOYEE_ENDPOINTS.UNASSIGNED);
         } catch (error) {
             console.error('Error fetching unassigned employees:', error);
+            throw error;
+        }
+    },
+
+    getUnassignedEquipment: async ()  => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.UNASSIGNED_EQUIPMENT);
+        } catch (error) {
+            console.error(`Error fetching unassigned equipment:`, error);
             throw error;
         }
     },

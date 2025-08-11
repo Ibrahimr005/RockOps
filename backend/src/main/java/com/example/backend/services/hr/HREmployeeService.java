@@ -1,7 +1,7 @@
 package com.example.backend.services.hr;
 
-import com.example.backend.dto.hr.EmployeeDistributionDTO;
-import com.example.backend.dto.hr.EmployeeRequestDTO;
+import com.example.backend.dto.hr.employee.EmployeeDistributionDTO;
+import com.example.backend.dto.hr.employee.EmployeeRequestDTO;
 import com.example.backend.dto.hr.SalaryStatisticsDTO;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.repositories.warehouse.WarehouseRepository;

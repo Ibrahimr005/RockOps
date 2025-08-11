@@ -1,292 +1,507 @@
-// FinalizeOffers.scss
+/* FinalizeOffers.scss */
+/* ... (existing styles) ... */
 
-// Header Layout - Fixed Structure
+// FinalizeOffers cards - Same design as Unstarted
+.procurement-items-list {
+  padding: 1rem;
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
 
-
-// Finalize All Offer Button
-.finalize-all-offer-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover:not(:disabled) {
-    background: #1d4ed8;
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    background: #9ca3af;
-    cursor: not-allowed;
-    transform: none;
-  }
-}
-
-// Purchase Order Notification Banner
-.purchase-order-notification {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-  border: 1px solid #0ea5e9;
-  border-radius: 12px;
-  margin-bottom: 24px;
-
-  .notification-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: #0ea5e9;
-    color: white;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .notification-content {
-    flex: 1;
-
-    h4 {
-      font-size: 16px;
-      font-weight: 600;
-      color: #0f172a;
-      margin: 0 0 4px 0;
-    }
-
-    p {
-      font-size: 14px;
-      color: #475569;
-      margin: 0;
-    }
-  }
-
-  .view-purchase-order-button {
-    padding: 8px 16px;
-    background: #0ea5e9;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 600;
+  .procurement-item-card-finalize {
+    border: 1px solid var(--border-color-light);
+    border-left: 3px solid var(--color-primary);
+    background: linear-gradient(to right, rgba(72, 128, 255, 0.05), var(--section-background-color));
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
     cursor: pointer;
-    transition: background 0.2s ease;
-    flex-shrink: 0;
+    transition: all var(--transition-normal) ease;
+    position: relative;
+
+
+
+
 
     &:hover {
-      background: #0284c7;
+      border-color: var(--color-primary-hover);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+      background: linear-gradient(to right, rgba(72, 128, 255, 0.08), var(--color-surface-hover));
     }
-  }
-}
 
-// Finalize Checkbox Styling
-.finalize-checkbox-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  position: relative;
+    &.selected {
+      border: 2px solid var(--color-primary);
+      border-left: 5px solid var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.2), var(--shadow-md);
+      background-color: var(--color-surface);
+      transform: translateY(-1px);
+      position: relative;
+      z-index: 5;
+    }
 
-  input[type="checkbox"] {
-    position: absolute;
-    opacity: 0;
-    cursor: pointer;
+    .procurement-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
 
-    &:checked + .finalize-checkmark {
-      background: #059669;
-      border-color: #059669;
-
-      &::after {
-        opacity: 1;
-        transform: rotate(45deg) scale(1);
+      h4 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-dark);
+        margin-right: 1rem;
       }
     }
 
-    &:disabled + .finalize-checkmark {
-      background: #f3f4f6;
-      border-color: #d1d5db;
-      cursor: not-allowed;
+    .procurement-item-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+
+      svg {
+        margin-right: 0.3rem;
+        vertical-align: -1px;
+      }
+
+      .status-finalized {
+        color: #10b981;
+        font-weight: var(--bold-font-weight);
+
+        svg {
+          color: #10b981;
+        }
+      }
+
+      .status-finalizing {
+        color: var(--color-warning);
+        font-weight: var(--bold-font-weight);
+
+        svg {
+          color: var(--color-warning);
+        }
+      }
+
+      .status-ready {
+        color: var(--color-success);
+        font-weight: var(--bold-font-weight);
+
+        svg {
+          color: var(--color-success);
+        }
+      }
+
+      .procurement-item-date {
+        color: var(--color-text-muted);
+        font-weight: 500;
+      }
     }
-  }
 
-  .finalize-checkmark {
-    width: 20px;
-    height: 20px;
-    background: white;
-    border: 2px solid #d1d5db;
-    border-radius: 4px;
-    position: relative;
-    transition: all 0.2s ease;
-
-    &::after {
-      content: "";
-      position: absolute;
-      left: 6px;
-      top: 2px;
-      width: 4px;
-      height: 8px;
-      border: solid white;
-      border-width: 0 2px 2px 0;
-      transform: rotate(45deg) scale(0);
-      opacity: 0;
-      transition: all 0.2s ease;
+    .procurement-item-date {
+      margin-bottom: 0.5rem;
     }
-  }
-
-  &:hover input:not(:disabled) + .finalize-checkmark {
-    border-color: #059669;
   }
 }
 
-// Table Row Styling for Finalized Items
-.procurement-offer-entries-table {
-  tbody {
-    tr {
-      &.item-finalized {
-        background-color: #f0fdf4;
-        border-left: 3px solid #22c55e;
 
-        td {
-          position: relative;
 
-          &::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(34, 197, 94, 0.1);
-            pointer-events: none;
-          }
+// Add new timeline styles with -finalize postfix
+.procurement-request-summary-card-finalize {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 2rem;
+  margin-bottom: 0;
+  box-shadow: none;
+
+  h4 {
+    font-size: 1.125rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--head-title-color);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color-light);
+  }
+
+  .procurement-section-description-finalize {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+    font-style: italic;
+    font-weight: 400;
+  }
+}
+
+.procurement-timeline-finalize {
+  margin-top: 2rem;
+  position: relative;
+  padding: 0;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 12px;
+    bottom: 0;
+    width: 2px;
+    background: var(--border-color-medium);
+  }
+}
+
+.procurement-timeline-item-finalize {
+  position: relative;
+  padding: 0 0 2rem 2rem;
+  margin: 0;
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 3px solid var(--border-color-medium);
+    transition: all var(--transition-normal) ease;
+    z-index: 2;
+  }
+
+  &.active-finalize {
+    &::before {
+      background: var(--color-success);
+      border-color: var(--color-success);
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+    }
+
+    .timeline-content-finalize {
+      h5 {
+        color: var(--color-success);
+        font-weight: var(--bold-font-weight);
+      }
+
+    }
+  }
+
+  &.rejected-finalize {
+    &::before {
+      background: var(--color-danger);
+      border-color: var(--color-danger);
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+    }
+
+    .timeline-content-finalize {
+      h5 {
+        color: var(--color-danger);
+        font-weight: var(--bold-font-weight);
+      }
+      .timeline-date-finalize {
+        color: var(--color-danger);
+      }
+    }
+  }
+
+  .timeline-content-finalize {
+    padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+
+    h5 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: var(--bold-font-weight);
+      color: var(--head-title-color);
+      transition: color var(--transition-normal) ease;
+    }
+
+    .timeline-date-finalize {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+
+      svg {
+        opacity: 0.7;
+      }
+    }
+  }
+}
+
+/* ================================== */
+/* Item Finalization Section SCSS   */
+/* ================================== */
+
+// This is the new style for the item finalization part
+// which matches the manager validated offers design.
+
+.procurement-submitted-details-finalize {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 2rem;
+  margin-bottom: 0;
+  box-shadow: none;
+  border-top: 1px solid var(--border-color-light);
+
+  h4 {
+    font-size: 1.125rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--head-title-color);
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color-light);
+  }
+}
+
+.procurement-submitted-items-finalize {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.procurement-submitted-item-card-finalize {
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal) ease;
+
+  &:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: var(--color-primary);
+  }
+
+  .submitted-item-header-finalize {
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--color-surface-secondary);
+    border-bottom: 1px solid var(--border-color-light);
+
+    .item-icon-name-finalize {
+      display: flex;
+      align-items: center;
+
+      .item-icon-container-finalize {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+        border-radius: var(--radius-sm);
+        color: var(--color-text-inverse);
+        margin-right: 1rem;
+        box-shadow: var(--shadow-sm);
+      }
+
+      h5 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--head-title-color);
+      }
+    }
+
+    .submitted-item-quantity-finalize {
+      font-weight: var(--bold-font-weight);
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      box-shadow: var(--shadow-sm);
+      border: none;
+    }
+  }
+
+  .submitted-offer-solutions-finalize {
+    padding: 1.5rem;
+
+    .procurement-offer-entries-table-finalize {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      background: var(--color-surface);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+
+      th {
+        background: var(--color-surface-secondary);
+        text-align: left;
+        padding: 1rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-medium);
+        border-bottom: 2px solid var(--border-color-light);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color-light);
+        color: var(--color-text-dark);
+        font-weight: 500;
+
+        // Center the finalize checkbox with proper alignment
+        &:last-child {
+          text-align: center;
+          vertical-align: middle;
+          padding: 1rem 1.5rem;
+        }
+      }
+
+      tbody tr {
+        transition: all var(--transition-normal) ease;
+
+        &:hover {
+          background-color: var(--color-surface-hover);
+          transform: scale(1.001);
+        }
+
+        &:last-child td {
+          border-bottom: none;
+        }
+
+        // Finalize status row highlighting
+        &.item-finalized-finalize {
+          background-color: rgba(34, 197, 94, 0.05); // Use a green background for finalized items
         }
       }
     }
   }
 }
 
-// Card styling for different statuses
-.procurement-item-card {
-  &.card-success {
-    border-left: 4px solid #2563eb;
-    background: linear-gradient(to right, #dbeafe, #ffffff);
+// Checkbox for finalization
+.finalize-checkbox-container-finalize {
+  display: inline-block;
+  position: relative;
+  padding-left: 25px;
+  margin: 0;
+  cursor: pointer;
+  font-size: 14px;
+  user-select: none;
+  font-weight: 500;
+  vertical-align: middle;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
   }
 
-  &.card-partial {
-    border-left: 4px solid #2563eb;
-    background: linear-gradient(to right, #dbeafe, #ffffff);
+  .finalize-checkmark-finalize {
+    position: absolute;
+    top: -10px;
+    left: -32px;
+    height: 20px;
+    width: 20px;
+    background-color: var(--color-surface-secondary);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-normal) ease;
+
+    &:after {
+      content: "";
+      position: absolute;
+      display: none;
+    }
+  }
+
+  input:checked ~ .finalize-checkmark-finalize {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  input:disabled ~ .finalize-checkmark-finalize {
+    background-color: var(--border-color-light);
+    border-color: var(--border-color);
+    cursor: not-allowed;
+  }
+
+  input:checked ~ .finalize-checkmark-finalize:after {
+    display: block;
+  }
+
+  .finalize-checkmark-finalize:after {
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 3px 3px 0;
+    transform: rotate(45deg);
   }
 }
 
-// Finance Review Summary Section
-.finance-review-summary {
-  margin-bottom: 24px;
+// Summary section - exactly like manager validated offers with -finalize postfix
+.procurement-submitted-summary-finalize {
+  margin-top: 2rem;
+  padding: 0 1.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 
-  h4 {
-    font-size: 18px;
-    font-weight: 600;
-    color: #111827;
-    margin: 0 0 8px 0;
-  }
-
-  .finance-review-description {
-    font-size: 14px;
-    color: #6b7280;
-    margin: 0 0 24px 0;
-    line-height: 1.5;
-  }
-}
-
-// Summary Section Adjustments
-.procurement-submitted-summary {
-  .submitted-summary-row {
+  .summary-item-finalize {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid #f3f4f6;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color-light);
+    background: transparent;
 
     &:last-child {
-      border-bottom: none;
-      font-weight: 600;
+      border-bottom: 1px solid var(--border-color-light);
+    }
 
-      .submitted-total-value {
-        font-size: 16px;
-        font-weight: 700;
+    &.total-value-finalize {
+      border-top: 1px solid var(--border-color-light);
+      border-bottom: 1px solid var(--border-color-light);
+      padding: 1.25rem 0;
+      margin-top: 0.5rem;
+      font-weight: var(--bold-font-weight);
+    }
+
+    svg {
+      color: var(--color-text-muted);
+      flex-shrink: 0;
+    }
+
+    .summary-label-finalize {
+      color: var(--color-text-medium);
+      font-weight: 500;
+      flex: 1;
+      font-size: 0.95rem;
+    }
+
+    .summary-value-finalize {
+      color: var(--color-text-dark);
+      font-weight: 500;
+      font-size: 0.9rem;
+
+      &.total-finalize {
+        color: var(--color-primary);
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
       }
-    }
-
-    span:first-child {
-      color: #6b7280;
-      font-size: 14px;
-    }
-
-    span:last-child {
-      color: #111827;
-      font-weight: 600;
-    }
-  }
-}
-
-// Button spinner animation
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.button-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-// Notification styling
-.procurement-notification {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  position: relative;
-
-  &.procurement-notification-success {
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    color: #166534;
-  }
-
-  &.procurement-notification-error {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #dc2626;
-  }
-
-  .procurement-notification-close {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: inherit;
-    opacity: 0.7;
-    padding: 4px;
-
-    &:hover {
-      opacity: 1;
     }
   }
 }

@@ -1,33 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import {
     FiPackage, FiCheck, FiClock, FiCheckCircle, FiX, FiFileText, FiList,
-    FiUser, FiCalendar, FiFlag  // Added these icons for Request Order Information
+    FiUser, FiCalendar, FiDollarSign, FiTrendingUp
 } from 'react-icons/fi';
-import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx"
+import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx"
+import ConfirmationDialog from "../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
+import { offerService } from '../../../../services/procurement/offerService.js';
 import "../ProcurementOffers.scss";
 import "./FinalizeOffers.scss";
+import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 
 const FinalizeOffers = ({
                             offers,
                             activeOffer,
                             setActiveOffer,
                             getTotalPrice,
-                            fetchWithAuth,
-                            API_URL,
                             setError,
                             setSuccess,
-                            onOfferFinalized  // Add this new prop
+                            onOfferFinalized, // This should switch to completed tab
+                            onOfferCompleted // New callback for completed offers
                         }) => {
     const [loading, setLoading] = useState(false);
     const [finalizedItems, setFinalizedItems] = useState({});
     const [purchaseOrder, setPurchaseOrder] = useState(null);
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
     // Snackbar states
     const [showSnackbar, setShowSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarType, setSnackbarType] = useState('success');
 
-    // Function to show snackbar
     const showNotification = (message, type = 'success') => {
         setSnackbarMessage(message);
         setSnackbarType(type);
@@ -38,7 +40,6 @@ const FinalizeOffers = ({
         setShowSnackbar(false);
     };
 
-    // Use snackbar for notifications, fallback to props if available
     const handleError = (message) => {
         if (typeof setError === 'function') {
             setError(message);
@@ -55,9 +56,6 @@ const FinalizeOffers = ({
         }
     };
 
-    // Remove the old local error/success useEffect hooks since we're using Snackbar now
-
-    // Function to handle finalizing an item
     const handleFinalizeItem = (offerItemId) => {
         setFinalizedItems(prev => ({
             ...prev,
@@ -65,13 +63,20 @@ const FinalizeOffers = ({
         }));
     };
 
-    // Function to save the finalized offer
+    const handleConfirmFinalization = () => {
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmDialogCancel = () => {
+        setShowConfirmDialog(false);
+    };
+
     const saveFinalizedOffer = async () => {
         if (!activeOffer) return;
 
         setLoading(true);
+        setShowConfirmDialog(false);
         try {
-            // Create an array of finalized item IDs
             const finalizedItemIds = Object.entries(finalizedItems)
                 .filter(([_, isFinalized]) => isFinalized)
                 .map(([id, _]) => id);
@@ -82,15 +87,13 @@ const FinalizeOffers = ({
                 return;
             }
 
-            // Get token from localStorage
-            const token = localStorage.getItem("token");
-
-            // Log what we're sending to help debug
             console.log('Finalizing offer with ID:', activeOffer.id);
             console.log('Finalized item IDs:', finalizedItemIds);
 
-            // Send the finalized items to the backend
-            const response = await fetch(`${API_URL}/purchaseOrders/offers/${activeOffer.id}/finalize`, {
+            // Use a direct API call for finalization (since offerService may not have this endpoint)
+            const token = localStorage.getItem("token");
+
+            const response = await fetch(`http://localhost:8080/api/v1/purchaseOrders/offers/${activeOffer.id}/finalize`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -99,7 +102,6 @@ const FinalizeOffers = ({
                 body: JSON.stringify({ finalizedItemIds })
             });
 
-            // Get the response data
             if (!response.ok) {
                 const errorData = await response.text();
                 console.error('Server error response:', errorData);
@@ -109,38 +111,25 @@ const FinalizeOffers = ({
             const responseData = await response.json();
             console.log('Response data:', responseData);
 
-            // If we have a purchase order in the response, store it
-            if (responseData.purchaseOrder) {
-                setPurchaseOrder(responseData.purchaseOrder);
-            }
-
-            // Update the offer status in the UI by modifying the active offer
-            const updatedActiveOffer = {
+            // Create the completed offer object
+            const completedOffer = {
                 ...activeOffer,
-                status: 'FINALIZED'
+                status: 'COMPLETED',
+                finalizedAt: new Date().toISOString(),
+                finalizedBy: 'Current User' // Replace with actual user info
             };
-            setActiveOffer(updatedActiveOffer);
-
-            // Update the offers list to remove the finalized offer or update its status
-            // This is typically handled by the parent component, but we can trigger a callback
-            // or filter out finalized offers locally if needed
-
-            // If there's a parent callback to refresh offers, call it
-            if (typeof window !== 'undefined' && window.refreshFinalizePage) {
-                window.refreshFinalizePage();
-            }
 
             handleSuccess(responseData.message || 'Offer finalized successfully! A purchase order has been created.');
 
-            // Call the parent callback to remove this offer from the list
+            // Call the callback to switch to completed tab with this offer
+            if (onOfferCompleted) {
+                onOfferCompleted(completedOffer);
+            }
+
+            // Remove the offer from current list
             if (onOfferFinalized) {
                 onOfferFinalized(activeOffer.id);
             }
-
-            // Clear the active offer since it's no longer available for finalization
-            setTimeout(() => {
-                setActiveOffer(null);
-            }, 1500); // Give user time to see the success message
 
         } catch (err) {
             console.error('Error finalizing offer:', err);
@@ -150,7 +139,6 @@ const FinalizeOffers = ({
         }
     };
 
-    // Format status for display
     const formatStatus = (status) => {
         if (!status) return 'Unknown Status';
         return status.replace(/_/g, ' ').toLowerCase()
@@ -159,34 +147,31 @@ const FinalizeOffers = ({
             .join(' ');
     };
 
-    // Get offer items for a specific request item - only show ACCEPTED items
     const getOfferItemsForRequestItem = (requestItemId) => {
         if (!activeOffer || !activeOffer.offerItems) return [];
         return activeOffer.offerItems.filter(
             item => (item.requestOrderItem?.id === requestItemId || item.requestOrderItemId === requestItemId) &&
-                item.financeStatus === 'FINANCE_ACCEPTED'  // Only show finance accepted items
+                item.financeStatus === 'FINANCE_ACCEPTED'
         );
     };
 
-    // Count total accepted items and finalized items
     const totalAcceptedItems = activeOffer?.offerItems?.filter(item =>
         item.financeStatus === 'FINANCE_ACCEPTED'
     ).length || 0;
 
     const totalFinalizedItems = Object.values(finalizedItems).filter(v => v).length;
 
+    const getFinalizedTotalValue = () => {
+        return Object.entries(finalizedItems)
+            .filter(([_, isFinalized]) => isFinalized)
+            .reduce((acc, [id, _]) => {
+                const item = activeOffer.offerItems.find(o => o.id.toString() === id);
+                return acc + (item ? parseFloat(item.totalPrice) : 0);
+            }, 0);
+    };
+
     return (
         <div className="procurement-offers-main-content">
-            {/* Snackbar Notification */}
-            <Snackbar
-                type={snackbarType}
-                text={snackbarMessage}
-                isVisible={showSnackbar}
-                onClose={handleSnackbarClose}
-                duration={4000}
-            />
-
-            {/* Offers List */}
             <div className="procurement-list-section">
                 <div className="procurement-list-header">
                     <h3>Finalize Offers</h3>
@@ -203,30 +188,33 @@ const FinalizeOffers = ({
                         <p>No offers to finalize yet. Offers accepted by finance will appear here.</p>
                     </div>
                 ) : (
+                    // Replace the offers list section in FinalizeOffers with this:
+
                     <div className="procurement-items-list">
                         {offers.map(offer => (
                             <div
                                 key={offer.id}
-                                className={`procurement-item-card ${activeOffer?.id === offer.id ? 'selected' : ''} 
-                                           ${offer.status === 'FINANCE_ACCEPTED' || offer.status === 'FINANCE_PARTIALLY_ACCEPTED' ? 'card-accepted' :
+                                className={`procurement-item-card-finalize ${activeOffer?.id === offer.id ? 'selected' : ''}
+                       ${offer.status === 'FINANCE_ACCEPTED' || offer.status === 'FINANCE_PARTIALLY_ACCEPTED' ? 'card-accepted' :
                                     offer.status === 'FINALIZING' ? 'card-partial' :
                                         offer.status === 'FINALIZED' ? 'card-success' : ''}`}
                                 onClick={() => {
-                                    // Don't allow selecting offers that are already finalized
                                     if (offer.status === 'FINALIZED') return;
-
                                     setActiveOffer(offer);
-                                    setFinalizedItems({}); // Reset finalized items when changing offers
-                                    setPurchaseOrder(null); // Reset purchase order
+                                    setFinalizedItems({});
+                                    setPurchaseOrder(null);
                                 }}
                             >
                                 <div className="procurement-item-header">
                                     <h4>{offer.title}</h4>
                                 </div>
                                 <div className="procurement-item-footer">
-                                    <span className="procurement-item-date">
-                                        <FiClock /> {new Date(offer.updatedAt).toLocaleDateString()}
-                                    </span>
+                <span className="procurement-item-date">
+                    <FiClock />{new Date(offer.createdAt).toLocaleDateString()}
+                </span>
+                                </div>
+                                <div className="procurement-item-footer">
+
                                 </div>
                             </div>
                         ))}
@@ -234,7 +222,6 @@ const FinalizeOffers = ({
                 )}
             </div>
 
-            {/* Offer Details Section */}
             <div className="procurement-details-section">
                 {activeOffer ? (
                     <div className="procurement-details-content">
@@ -247,21 +234,20 @@ const FinalizeOffers = ({
                                             {formatStatus(activeOffer.status)}
                                         </span>
                                         <span className="procurement-meta-item">
-                                            <FiClock /> Updated: {new Date(activeOffer.updatedAt).toLocaleDateString()}
+                                            <FiClock /> Created: {new Date(activeOffer.createdAt).toLocaleDateString()}
                                         </span>
                                     </div>
                                 </div>
                             </div>
                             <div className="procurement-header-actions">
-                                {/* Only show button if offer is not finalized and no purchase order exists */}
                                 {activeOffer.status !== 'FINALIZED' && !purchaseOrder && (
                                     <button
-                                        className="finalize-all-offer-button"
-                                        onClick={saveFinalizedOffer}
+                                        className="btn-primary"
+                                        onClick={handleConfirmFinalization}
                                         disabled={
                                             loading ||
                                             totalFinalizedItems === 0 ||
-                                            purchaseOrder !== null // Disable if purchase order already created
+                                            purchaseOrder !== null
                                         }
                                     >
                                         {loading ? (
@@ -278,82 +264,94 @@ const FinalizeOffers = ({
                             </div>
                         </div>
 
-                        {/* Request Order Information Card */}
-                        <div className="procurement-request-order-info-card">
-                            <h4>Request Order Information</h4>
+                        <RequestOrderDetails requestOrder={activeOffer.requestOrder} />
 
-                            <div className="procurement-request-order-details-grid">
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiUser size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Requester</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.requesterName || 'Unknown'}</span>
+                        <div className="procurement-request-summary-card-finalize">
+                            <h4>Offer Timeline</h4>
+                            <p className="procurement-section-description-finalize">
+                                This timeline shows the key milestones in the finalization process.
+                            </p>
+
+                            {/* NEW TIMELINE DESIGN */}
+                            <div className="procurement-timeline-finalize">
+                                {/* Request Order Approved Step */}
+                                <div className="procurement-timeline-item-finalize active-finalize">
+                                    <div className="timeline-content-finalize">
+                                        <h5>Request Order Approved</h5>
+                                        <p className="timeline-date-finalize">
+                                            <FiCalendar size={14} /> Approved at: {activeOffer.requestOrder?.approvedAt ? new Date(activeOffer.requestOrder.approvedAt).toLocaleDateString() : 'N/A'}
+                                        </p>
+                                        <p className="timeline-date-finalize">
+                                            <FiUser size={14} /> Approved by: {activeOffer.requestOrder?.approvedBy || 'N/A'}
+                                        </p>
                                     </div>
                                 </div>
 
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiCalendar size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Request Date</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.createdAt ? new Date(activeOffer.requestOrder.createdAt).toLocaleDateString() : 'N/A'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiCalendar size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Deadline</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.deadline ? new Date(activeOffer.requestOrder.deadline).toLocaleDateString() : 'N/A'}</span>
+                                {/* Offer Submitted Step */}
+                                <div className="procurement-timeline-item-finalize active-finalize">
+                                    <div className="timeline-content-finalize">
+                                        <h5>Offer Submitted</h5>
+                                        <p className="timeline-date-finalize">
+                                            <FiCalendar size={14} /> Submitted at: {new Date(activeOffer.createdAt).toLocaleDateString()}
+                                        </p>
+                                        <p className="timeline-date-finalize">
+                                            <FiUser size={14} /> Submitted by: {activeOffer.createdBy || 'N/A'}
+                                        </p>
                                     </div>
                                 </div>
 
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiUser size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Created By</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.createdBy || 'Unknown'}</span>
+                                {/* Manager Accepted Step */}
+                                <div className="procurement-timeline-item-finalize active-finalize">
+                                    <div className="timeline-content-finalize">
+                                        <h5>Manager Accepted</h5>
+                                        <p className="timeline-date-finalize">
+                                            <FiCalendar size={14} /> Accepted at: {activeOffer.updatedAt ? new Date(activeOffer.updatedAt).toLocaleDateString() : 'N/A'}
+                                        </p>
+                                        <p className="timeline-date-finalize">
+                                            <FiUser size={14} /> Accepted by: {activeOffer.managerApprovedBy || 'N/A'}
+                                        </p>
                                     </div>
                                 </div>
 
-                                {activeOffer.requestOrder?.priority && (
-                                    <div className="request-order-detail-item">
-                                        <div className="request-order-detail-icon">
-                                            <FiFlag size={18} />
-                                        </div>
-                                        <div className="request-order-detail-content">
-                                            <span className="request-order-detail-label">Priority</span>
-                                            <span className={`request-order-detail-value request-priority ${activeOffer.requestOrder.priority.toLowerCase()}`}>
-                                                {activeOffer.requestOrder.priority}
-                                            </span>
-                                        </div>
+                                {/* Finance Accepted Step */}
+                                <div className="procurement-timeline-item-finalize active-finalize">
+                                    <div className="timeline-content-finalize">
+                                        <h5>Finance Accepted</h5>
+                                        <p className="timeline-date-finalize">
+                                            <FiCalendar size={14} /> Accepted at: {activeOffer.updatedAt ? new Date(activeOffer.updatedAt).toLocaleDateString() : 'N/A'}
+                                        </p>
+                                        <p className="timeline-date-finalize">
+                                            <FiUser size={14} /> Accepted by: {activeOffer.financeApprovedBy || 'N/A'}
+                                        </p>
                                     </div>
-                                )}
+                                </div>
 
-                                {activeOffer.requestOrder?.description && (
-                                    <div className="request-order-detail-item description-item">
-                                        <div className="request-order-detail-icon">
-                                            <FiFileText size={18} />
-                                        </div>
-                                        <div className="request-order-detail-content">
-                                            <span className="request-order-detail-label">Description</span>
-                                            <p className="request-order-detail-value description-text">
-                                                {activeOffer.requestOrder.description}
+                                {/* Awaiting Finalization / Finalized Step */}
+                                <div className={`procurement-timeline-item-finalize ${activeOffer.status === 'FINALIZED' ? 'active-finalize' : ''}`}>
+                                    <div className="timeline-content-finalize">
+                                        <h5>
+                                            {activeOffer.status === 'FINALIZED' ? 'Offer Finalized' : 'Awaiting Finalization'}
+                                        </h5>
+                                        {activeOffer.status === 'FINALIZED' ? (
+                                            <>
+                                                <p className="timeline-date-finalize">
+                                                    <FiCalendar size={14} /> Finalized at: {new Date(activeOffer.finalizedAt || activeOffer.updatedAt).toLocaleDateString()}
+                                                </p>
+                                                <p className="timeline-date-finalize">
+                                                    <FiUser size={14} /> Finalized by: {activeOffer.finalizedBy || 'N/A'}
+                                                </p>
+                                            </>
+                                        ) : (
+                                            <p className="timeline-date-finalize">
+                                                <FiClock size={14} /> Pending finalization from procurement.
                                             </p>
-                                        </div>
+                                        )}
                                     </div>
-                                )}
+                                </div>
                             </div>
+                            {/* END OF NEW TIMELINE DESIGN */}
                         </div>
 
-                        {/* If purchase order was created, show a success banner */}
                         {purchaseOrder && (
                             <div className="purchase-order-notification">
                                 <div className="notification-icon">
@@ -372,7 +370,6 @@ const FinalizeOffers = ({
                             </div>
                         )}
 
-                        {/* If offer is already finalized but no purchase order is shown yet, fetch it */}
                         {activeOffer.status === 'FINALIZED' && !purchaseOrder && !loading && (
                             <div className="purchase-order-notification">
                                 <div className="notification-icon">
@@ -397,109 +394,98 @@ const FinalizeOffers = ({
                                 <p>Loading details...</p>
                             </div>
                         ) : (
-                            <div className="procurement-submitted-info">
-                                <div className="finance-review-summary">
+                            <div className="procurement-submitted-info-finalize">
+                                {/* Item Review Details Section */}
+                                <div className="procurement-submitted-details-finalize">
                                     <h4>Finalize Offer Items</h4>
-                                    <p className="finance-review-description">
-                                        Please confirm each item that has been verified with the merchant.
-                                        Check the box for each item once you've confirmed availability and delivery details.
-                                        Only finance-accepted items are shown below.
-                                    </p>
-                                </div>
-
-                                {/* Procurement Items with Finalize Checkboxes */}
-                                <div className="procurement-submitted-details">
-                                    <h4>Item Finalization</h4>
-                                    <div className="procurement-submitted-items">
+                                    <div className="procurement-submitted-items-finalize">
                                         {activeOffer.requestOrder?.requestItems?.map(requestItem => {
                                             const offerItems = getOfferItemsForRequestItem(requestItem.id);
 
-                                            // Skip request items that don't have finance-accepted offer items
+                                            // Only render if there are finance-accepted items for this request item
                                             if (offerItems.length === 0) return null;
 
                                             return (
-                                                <div key={requestItem.id} className="procurement-submitted-item-card">
-                                                    <div className="submitted-item-header">
-                                                        <div className="item-icon-name">
-                                                            <div className="item-icon-container">
-                                                                <FiPackage size={20} />
+                                                <div key={requestItem.id} className="procurement-submitted-item-card-finalize">
+                                                    <div className="submitted-item-header-finalize">
+                                                        <div className="item-icon-name-finalize">
+                                                            <div className="item-icon-container-finalize">
+                                                                <FiPackage size={22} />
                                                             </div>
                                                             <h5>{requestItem.itemType?.name || 'Item'}</h5>
                                                         </div>
-                                                        <div className="submitted-item-quantity">
+                                                        <div className="submitted-item-quantity-finalize">
                                                             {requestItem.quantity} {requestItem.itemType.measuringUnit}
                                                         </div>
                                                     </div>
 
-                                                    {offerItems.length > 0 && (
-                                                        <div className="submitted-offer-solutions">
-                                                            <table className="procurement-offer-entries-table">
-                                                                <thead>
-                                                                <tr>
-                                                                    <th>Merchant</th>
-                                                                    <th>Quantity</th>
-                                                                    <th>Unit Price</th>
-                                                                    <th>Total</th>
-                                                                    <th>Finalize</th>
+                                                    <div className="submitted-offer-solutions-finalize">
+                                                        <table className="procurement-offer-entries-table-finalize">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>Merchant</th>
+                                                                <th>Quantity</th>
+                                                                <th>Unit Price</th>
+                                                                <th>Total</th>
+                                                                <th>Finalize</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            {offerItems.map((offerItem) => (
+                                                                <tr
+                                                                    key={offerItem.id}
+                                                                    className={finalizedItems[offerItem.id] ? 'item-finalized-finalize' : ''}
+                                                                >
+                                                                    <td>{offerItem.merchant?.name || 'Unknown'}</td>
+                                                                    <td>{offerItem.quantity} {requestItem.itemType.measuringUnit}</td>
+                                                                    <td>${parseFloat(offerItem.unitPrice).toFixed(2)}</td>
+                                                                    <td>${parseFloat(offerItem.totalPrice).toFixed(2)}</td>
+                                                                    <td>
+                                                                        <label className="finalize-checkbox-container-finalize">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={!!finalizedItems[offerItem.id]}
+                                                                                onChange={() => handleFinalizeItem(offerItem.id)}
+                                                                                disabled={
+                                                                                    activeOffer.status === 'FINALIZED' ||
+                                                                                    purchaseOrder !== null ||
+                                                                                    loading
+                                                                                }
+                                                                            />
+                                                                            <span className="finalize-checkmark-finalize"></span>
+                                                                        </label>
+                                                                    </td>
                                                                 </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                {offerItems.map((offerItem, idx) => (
-                                                                    <tr key={offerItem.id || idx}
-                                                                        className={finalizedItems[offerItem.id] ? 'item-finalized' : ''}
-                                                                    >
-                                                                        <td>{offerItem.merchant?.name || 'Unknown'}</td>
-                                                                        <td>{offerItem.quantity} {requestItem.itemType.measuringUnit}</td>
-                                                                        <td>${parseFloat(offerItem.unitPrice).toFixed(2)}</td>
-                                                                        <td>${parseFloat(offerItem.totalPrice).toFixed(2)}</td>
-                                                                        <td>
-                                                                            <label className="finalize-checkbox-container">
-                                                                                <input
-                                                                                    type="checkbox"
-                                                                                    checked={!!finalizedItems[offerItem.id]}
-                                                                                    onChange={() => handleFinalizeItem(offerItem.id)}
-                                                                                    disabled={
-                                                                                        activeOffer.status === 'FINALIZED' ||
-                                                                                        purchaseOrder !== null ||
-                                                                                        loading
-                                                                                    }
-                                                                                />
-                                                                                <span className="finalize-checkmark"></span>
-                                                                            </label>
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    )}
+                                                            ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
                                             );
                                         })}
                                     </div>
                                 </div>
+                                {/* End of Item Review Details Section */}
 
                                 {/* Total Summary */}
-                                <div className="procurement-submitted-summary">
-                                    <div className="submitted-summary-row">
-                                        <span>Total Finance-Accepted Items:</span>
-                                        <span>
-                                            {totalAcceptedItems}
-                                        </span>
-                                    </div>
-                                    <div className="submitted-summary-row">
-                                        <span>Items Finalized:</span>
-                                        <span>
+                                <div className="procurement-submitted-summary-finalize">
+                                    <div className="summary-item-finalize">
+                                        <FiCheck size={16} />
+                                        <span className="summary-label-finalize">Total Items Finalized:</span>
+                                        <span className="summary-value-finalize">
                                             {totalFinalizedItems}
                                         </span>
                                     </div>
-                                    <div className="submitted-summary-row">
-                                        <span>Total Value of Finance-Accepted Items:</span>
-                                        <span className="submitted-total-value text-success">
-                                            ${getTotalPrice(activeOffer).toFixed(2)}
+
+                                    <div className="summary-item-finalize total-value-finalize">
+                                        <FiDollarSign size={18} />
+                                        <span className="summary-label-finalize">Total Value to be Finalized:</span>
+                                        <span className="summary-value-finalize total-finalize">
+                                            ${getFinalizedTotalValue().toFixed(2)}
                                         </span>
                                     </div>
                                 </div>
+                                {/* End of Total Summary */}
                             </div>
                         )}
                     </div>
@@ -518,13 +504,27 @@ const FinalizeOffers = ({
                 )}
             </div>
 
-            {/* Snackbar Notification */}
             <Snackbar
                 type={snackbarType}
                 text={snackbarMessage}
                 isVisible={showSnackbar}
                 onClose={handleSnackbarClose}
                 duration={4000}
+            />
+
+            {/* Confirmation Dialog for Finalizing an Offer */}
+            <ConfirmationDialog
+                isVisible={showConfirmDialog}
+                type="success"
+                title="Finalize Offer"
+                message={`Are you sure you want to finalize ${totalFinalizedItems} item${totalFinalizedItems !== 1 ? 's' : ''} from this offer? The total value to be finalized is ${getFinalizedTotalValue().toFixed(2)}. This action will create a purchase order and cannot be undone.`}
+                confirmText="Finalize Offer"
+                cancelText="Cancel"
+                onConfirm={saveFinalizedOffer}
+                onCancel={handleConfirmDialogCancel}
+                isLoading={loading}
+                showIcon={true}
+                size="large"
             />
         </div>
     );

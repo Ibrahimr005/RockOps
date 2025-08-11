@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
@@ -365,6 +366,48 @@ public class RequestOrderService {
             System.err.println("Error fetching requests by warehouse and status: " + e.getMessage());
             throw new RuntimeException("Failed to fetch request orders", e);
         }
+    }
+
+    // In RequestOrderService.java
+    public Map<String, Object> getRestockValidationInfo(UUID warehouseId, List<UUID> itemTypeIds) {
+        Map<String, Object> result = new HashMap<>();
+        Map<String, Object> itemValidations = new HashMap<>();
+
+        LocalDateTime threeDaysAgo = LocalDateTime.now().minusDays(3);
+
+        for (UUID itemTypeId : itemTypeIds) {
+            // Check for pending or approved requests in last 3 days
+            List<RequestOrder> recentRequests = requestOrderRepository
+                    .findByWarehouseAndItemTypeAndStatusInAndCreatedAtAfter(
+                            warehouseId,
+                            itemTypeId,
+                            Arrays.asList("PENDING", "APPROVED"),
+                            threeDaysAgo
+                    );
+
+            Map<String, Object> itemInfo = new HashMap<>();
+            itemInfo.put("hasRecentRequest", !recentRequests.isEmpty());
+            itemInfo.put("canStillRestock", true); // Always allow, but warn
+
+            if (!recentRequests.isEmpty()) {
+                RequestOrder mostRecent = recentRequests.get(0);
+                Map<String, Object> requestInfo = new HashMap<>();
+                requestInfo.put("id", mostRecent.getId());
+                requestInfo.put("status", mostRecent.getStatus());
+                requestInfo.put("createdAt", mostRecent.getCreatedAt());
+                requestInfo.put("title", mostRecent.getTitle());
+                requestInfo.put("daysSince", ChronoUnit.DAYS.between(mostRecent.getCreatedAt(), LocalDateTime.now()));
+
+                itemInfo.put("mostRecentRequest", requestInfo);
+            }
+
+            itemValidations.put(itemTypeId.toString(), itemInfo);
+        }
+
+        result.put("validations", itemValidations);
+        result.put("validationPeriodDays", 3);
+
+        return result;
     }
 
     }
