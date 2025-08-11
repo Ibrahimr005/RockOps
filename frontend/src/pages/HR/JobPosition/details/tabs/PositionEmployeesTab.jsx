@@ -39,7 +39,7 @@ const PositionEmployeesTab = ({
                     <div className="salary-cell">
                         <div className="salary">{formatCurrency(salary)}/month</div>
                         {row.jobPosition?.contractType && (
-                            <div className="contract-type">{getContractTypeDisplay(row.jobPosition.contractType)}</div>
+                            <div className="status-badge info">{getContractTypeDisplay(row.jobPosition.contractType)}</div>
                         )}
                     </div>
                 );

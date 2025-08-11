@@ -9,7 +9,7 @@ import com.example.backend.dto.equipment.EquipmentSarkyAnalyticsDTO;
 import com.example.backend.dto.equipment.WorkTypeAnalyticsDTO;
 import com.example.backend.dto.equipment.DriverAnalyticsDTO;
 import com.example.backend.dto.equipment.MonthlyWorkHoursDTO;
-import com.example.backend.dto.hr.EmployeeSummaryDTO;
+import com.example.backend.dto.hr.employee.EmployeeSummaryDTO;
 import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.equipment.*;
 import com.example.backend.models.merchant.Merchant;

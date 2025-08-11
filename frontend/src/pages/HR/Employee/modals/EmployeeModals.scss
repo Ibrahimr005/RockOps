@@ -436,3 +436,30 @@
         font-size: 0.9rem;
     }
 }
+
+/* Add this to EmployeeModals.scss */
+
+// Required field indicator - makes asterisks red
+.r4m-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    font-size: 0.95rem;
+
+    // Style for required field asterisks
+    &:has(+ input[required])::after,
+    &:has(+ select[required])::after {
+        content: ' *';
+        color: var(--color-danger);
+        font-weight: bold;
+    }
+}
+
+/* Alternative approach if the above doesn't work in all browsers */
+/* You can manually add a class to required field labels */
+.r4m-required-field::after {
+    content: ' *';
+    color: var(--color-danger);
+    font-weight: bold;
+}

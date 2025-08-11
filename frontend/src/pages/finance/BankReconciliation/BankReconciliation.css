@@ -14,41 +14,6 @@
     margin-top: 20px;
 }
 
-.tabs-header {
-    display: flex;
-    margin-bottom: 20px;
-    border-bottom: 1px solid var(--border-color);
-    gap: 4px;
-}
-
-.tab-button {
-    padding: 12px 20px;
-    border: none;
-    background-color: transparent;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    font-size: 15px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-bottom: 2px solid transparent;
-    transition: all var(--transition-fast);
-}
-
-.tab-button:hover {
-    color: var(--color-primary);
-    background-color: var(--color-surface-hover);
-}
-
-.tab-button.active {
-    color: var(--color-primary);
-    border-bottom: 2px solid var(--color-primary);
-    font-weight: var(--bold-font-weight);
-}
-
-.tab-button svg {
-    font-size: 16px;
-}
 
 .tab-count {
     background: var(--color-primary);
@@ -580,41 +545,6 @@
     margin-top: 20px;
 }
 
-.tabs-header {
-    display: flex;
-    margin-bottom: 20px;
-    border-bottom: 1px solid var(--border-color);
-    gap: 4px;
-}
-
-.tab-button {
-    padding: 12px 20px;
-    border: none;
-    background-color: transparent;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    font-size: 15px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-bottom: 2px solid transparent;
-    transition: all var(--transition-fast);
-}
-
-.tab-button:hover {
-    color: var(--color-primary);
-    background-color: var(--color-surface-hover);
-}
-
-.tab-button.active {
-    color: var(--color-primary);
-    border-bottom: 2px solid var(--color-primary);
-    font-weight: var(--bold-font-weight);
-}
-
-.tab-button svg {
-    font-size: 16px;
-}
 
 .bank-reconciliation-content {
     min-height: 400px;

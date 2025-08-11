@@ -528,24 +528,6 @@ public class Employee
                 .orElse(null);
     }
 
-    /**
-     * Calculate time since last promotion
-     * @return Number of months since last promotion, or months since hire date if never promoted
-     */
-    public long getMonthsSinceLastPromotion() {
-        PromotionRequest lastPromotion = getLastPromotion();
-        LocalDate referenceDate;
-
-        if (lastPromotion != null && lastPromotion.getImplementedAt() != null) {
-            referenceDate = lastPromotion.getImplementedAt().toLocalDate();
-        } else if (hireDate != null) {
-            referenceDate = hireDate;
-        } else {
-            return 0;
-        }
-
-        return java.time.temporal.ChronoUnit.MONTHS.between(referenceDate, LocalDate.now());
-    }
 
     /**
      * Check if employee is eligible for promotion based on business rules
@@ -679,15 +661,65 @@ public class Employee
     }
 
 
+
+
     /**
-     * Calculate months since hire date
+     * Get months since hire date
+     * Add this method to your Employee model
      */
     public Integer getMonthsSinceHire() {
-        if (hireDate == null) {
+        if (this.hireDate == null) {
             return 0;
         }
 
-        LocalDate now = LocalDate.now();
-        return (int) java.time.temporal.ChronoUnit.MONTHS.between(hireDate, now);
+        try {
+            return (int) java.time.temporal.ChronoUnit.MONTHS.between(this.hireDate, LocalDate.now());
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+
+
+
+    /**
+     * Get employee status as string
+     * Add this method to your Employee model if you don't have it
+     */
+    public String getStatus() {
+        return this.isActive() ? "ACTIVE" : "INACTIVE";
+    }
+
+
+// ✅ FIX for your Employee model - Replace the getMonthsSinceLastPromotion method
+
+    /**
+     * Calculate time since last promotion
+     * @return Number of months since last promotion, or months since hire date if never promoted
+     * ✅ FIXED: Return type should be long (primitive) to match usage in DTO
+     */
+    public long getMonthsSinceLastPromotion() {
+        PromotionRequest lastPromotion = getLastPromotion();
+        LocalDate referenceDate;
+
+        if (lastPromotion != null && lastPromotion.getImplementedAt() != null) {
+            referenceDate = lastPromotion.getImplementedAt().toLocalDate();
+        } else if (hireDate != null) {
+            referenceDate = hireDate;
+        } else {
+            return 0L; // ✅ FIXED: Return 0L instead of 0
+        }
+
+        return java.time.temporal.ChronoUnit.MONTHS.between(referenceDate, LocalDate.now());
+    }
+
+    // ✅ ALSO ADD this overloaded method if you need Integer return type elsewhere
+    public Integer getMonthsSinceLastPromotionAsInteger() {
+        return (int) getMonthsSinceLastPromotion();
+    }
+
+    // ✅ FIX for isActive method - handle null status
+    public boolean isActive() {
+        return status != null && status.equals("ACTIVE");
     }
 }
