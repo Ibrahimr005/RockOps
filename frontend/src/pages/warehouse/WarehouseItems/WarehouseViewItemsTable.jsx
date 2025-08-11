@@ -51,15 +51,23 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
     setLoading(true);
     try {
       const data = await itemService.getItemsByWarehouse(warehouseId);
-      setTableData(data);
+      // Ensure data is always an array
+      const itemsArray = Array.isArray(data) ? data : [];
+      setTableData(itemsArray);
     } catch (error) {
       console.error("Failed to fetch items:", error);
+      setTableData([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
   };
 
   const getDiscrepancyCounts = () => {
+    // Ensure tableData is always an array
+    if (!Array.isArray(tableData)) {
+      return { missingCount: 0, excessCount: 0, totalDiscrepancies: 0 };
+    }
+    
     const missingCount = tableData.filter(item => item.itemStatus === 'MISSING' && !item.resolved).length;
     const excessCount = tableData.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved).length;
     return { missingCount, excessCount, totalDiscrepancies: missingCount + excessCount };
@@ -100,6 +108,12 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
 
   // Function to get filtered data for current tab
   const getFilteredData = () => {
+    // Ensure tableData is always an array
+    if (!Array.isArray(tableData)) {
+      console.warn('tableData is not an array:', tableData);
+      return [];
+    }
+    
     return tableData.filter((item) => {
       if (activeTab === 'inWarehouse') {
         return item.itemStatus === 'IN_WAREHOUSE' && !item.resolved;
@@ -131,7 +145,7 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
               onClick={() => setActiveTab('missingItems')}
           >
             Missing Items
-            {tableData.filter(item => item.itemStatus === 'MISSING' && !item.resolved).length > 0 && (
+            {Array.isArray(tableData) && tableData.filter(item => item.itemStatus === 'MISSING' && !item.resolved).length > 0 && (
                 <span className="tab-badge">
               {tableData.filter(item => item.itemStatus === 'MISSING' && !item.resolved).length}
             </span>
@@ -142,7 +156,7 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
               onClick={() => setActiveTab('excessItems')}
           >
             Excess Items
-            {tableData.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved).length > 0 && (
+            {Array.isArray(tableData) && tableData.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved).length > 0 && (
                 <span className="tab-badge">
               {tableData.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved).length}
             </span>

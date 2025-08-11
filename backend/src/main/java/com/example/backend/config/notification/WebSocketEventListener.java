@@ -20,8 +20,7 @@ public class WebSocketEventListener {
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
 
-        if (headerAccessor.getUser() instanceof UsernamePasswordAuthenticationToken) {
-            UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) headerAccessor.getUser();
+        if (headerAccessor.getUser() instanceof UsernamePasswordAuthenticationToken auth) {
             User user = (User) auth.getPrincipal();
 
             System.out.println("🔌 User connected: " + user.getUsername() + " (ID: " + user.getId() + ")");
@@ -39,8 +38,7 @@ public class WebSocketEventListener {
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
 
-        if (headerAccessor.getUser() instanceof UsernamePasswordAuthenticationToken) {
-            UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) headerAccessor.getUser();
+        if (headerAccessor.getUser() instanceof UsernamePasswordAuthenticationToken auth) {
             User user = (User) auth.getPrincipal();
 
             // Remove user session from WebSocketController

@@ -247,6 +247,17 @@ export const equipmentService = {
 
     // Create transaction with equipment as receiver
     receiveTransaction: (equipmentId, senderId, senderType, batchNumber, purpose, items, transactionDate, description) => {
+        console.log('🔧 EquipmentService.receiveTransaction called with:', {
+            equipmentId,
+            senderId,
+            senderType,
+            batchNumber,
+            purpose,
+            items,
+            transactionDate,
+            description
+        });
+        
         const params = new URLSearchParams({
             senderId: senderId,
             senderType: senderType,
@@ -262,10 +273,11 @@ export const equipmentService = {
             params.append('description', description);
         }
 
-        return apiClient.post(
-            `${EQUIPMENT_ENDPOINTS.RECEIVE_TRANSACTION(equipmentId)}?${params.toString()}`,
-            items
-        );
+        const url = `${EQUIPMENT_ENDPOINTS.RECEIVE_TRANSACTION(equipmentId)}?${params.toString()}`;
+        console.log('🌐 EquipmentService: Making POST request to:', url);
+        console.log('📦 EquipmentService: Request body (items):', items);
+
+        return apiClient.post(url, items);
     },
 
     // Accept equipment transaction
@@ -275,6 +287,43 @@ export const equipmentService = {
             acceptanceData
         );
     },
+
+    // Enhanced unified transaction processing
+    processUnifiedTransaction: async (equipmentId, transactionId, processingData) => {
+        const {
+            receivedQuantities,
+            itemsNotReceived,
+            comments,
+            purpose,
+            maintenanceId,
+            createMaintenance,
+            resolutionData
+        } = processingData;
+
+        // Prepare comprehensive acceptance data
+        const acceptancePayload = {
+            receivedQuantities,
+            itemsNotReceived,
+            comments,
+            purpose,
+            ...(maintenanceId && { maintenanceId }),
+            ...(createMaintenance && { createMaintenance }),
+            ...(resolutionData && { resolutionData })
+        };
+
+        return apiClient.post(
+            EQUIPMENT_ENDPOINTS.ACCEPT_TRANSACTION(equipmentId, transactionId),
+            acceptancePayload
+        );
+    },
+
+    // Get warehouse details for transaction processing
+    getWarehouseById: (warehouseId) => {
+        return apiClient.get(`/api/warehouses/${warehouseId}`);
+    },
+
+    // Get equipment details by ID
+
 
     // Reject equipment transaction
     rejectEquipmentTransaction: (equipmentId, transactionId, rejectionData) => {

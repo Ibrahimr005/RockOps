@@ -5,7 +5,7 @@ import com.example.backend.models.finance.fixedAssets.AssetStatus;
 import com.example.backend.models.finance.fixedAssets.DisposalMethod;
 import com.example.backend.models.user.User;
 import com.example.backend.repositories.user.UserRepository;
-import com.example.backend.services.MinioService;
+import com.example.backend.services.FileStorageService;
 import com.example.backend.services.finance.fixedAssets.FixedAssetsService;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -33,7 +33,7 @@ import java.util.UUID;
 public class FixedAssetsController {
 
     private final FixedAssetsService fixedAssetsService;
-    private final MinioService minioService;
+    private final FileStorageService fileStorageService;
     private final UserRepository userRepository;
 
 
@@ -151,8 +151,8 @@ public class FixedAssetsController {
 
             // Upload document if provided
             if (document != null && !document.isEmpty()) {
-                String fileName = minioService.uploadFile(document);
-                String fileUrl = minioService.getFileUrl(fileName);
+                String fileName = fileStorageService.uploadFile(document);
+                String fileUrl = fileStorageService.getFileUrl(fileName);
                 requestDTO.setDocumentPath(fileUrl);
             }
 

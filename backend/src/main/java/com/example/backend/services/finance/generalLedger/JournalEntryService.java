@@ -27,10 +27,10 @@ import java.util.stream.Collectors;
 @Service
 public class JournalEntryService {
 
-    private JournalEntryRepository journalEntryRepository;
-    private UserRepository userRepository;
-    private AccountingPeriodService accountingPeriodService;
-    private AuditService auditService;
+    private final JournalEntryRepository journalEntryRepository;
+    private final UserRepository userRepository;
+    private final AccountingPeriodService accountingPeriodService;
+    private final AuditService auditService;
 
     @Autowired
     public JournalEntryService(JournalEntryRepository journalEntryRepository, UserRepository userRepository, AccountingPeriodService accountingPeriodService, AuditService auditService) {

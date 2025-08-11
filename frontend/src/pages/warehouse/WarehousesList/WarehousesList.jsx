@@ -261,6 +261,9 @@ const WarehousesList = () => {
                 itemService.getItemsByWarehouse(warehouseId)
             ]);
 
+            // Ensure items is always an array
+            const itemsArray = Array.isArray(items) ? items : [];
+
             // Count incoming transactions (same logic as IncomingTransactionsTable)
             const incomingTransactionsCount = transactions.filter(transaction =>
                 transaction.status === "PENDING" &&
@@ -269,8 +272,8 @@ const WarehousesList = () => {
             ).length;
 
             // Count actual discrepancy items like in DiscrepancyItems component
-            const missingItems = items.filter(item => item.itemStatus === 'MISSING' && !item.resolved);
-            const excessItems = items.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved);
+            const missingItems = itemsArray.filter(item => item.itemStatus === 'MISSING' && !item.resolved);
+            const excessItems = itemsArray.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved);
             const discrepancyCount = missingItems.length + excessItems.length;
 
             return {
@@ -653,7 +656,9 @@ const WarehousesList = () => {
     const fetchTotalItemsInWarehouse = async (warehouseId) => {
         try {
             const items = await itemService.getItemsByWarehouse(warehouseId);
-            const inWarehouseItems = items.filter(item => item.itemStatus === 'IN_WAREHOUSE');
+            // Ensure items is always an array
+            const itemsArray = Array.isArray(items) ? items : [];
+            const inWarehouseItems = itemsArray.filter(item => item.itemStatus === 'IN_WAREHOUSE');
             const total = inWarehouseItems.reduce((sum, item) => sum + item.quantity, 0);
 
             setTotalItemsMap(prevState => ({

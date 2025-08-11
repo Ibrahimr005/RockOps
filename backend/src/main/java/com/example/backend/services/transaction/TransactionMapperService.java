@@ -3,12 +3,14 @@ package com.example.backend.services.transaction;
 import com.example.backend.dto.transaction.TransactionDTO;
 import com.example.backend.dto.transaction.TransactionItemDTO;
 import com.example.backend.models.PartyType;
+import com.example.backend.models.equipment.ConsumableResolution;
 import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.transaction.Transaction;
 import com.example.backend.models.transaction.TransactionItem;
 import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.repositories.equipment.EquipmentRepository;
+import com.example.backend.repositories.equipment.ConsumableResolutionRepository;
 import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,9 @@ public class TransactionMapperService {
 
     @Autowired
     private MerchantRepository merchantRepository;
+
+    @Autowired
+    private ConsumableResolutionRepository consumableResolutionRepository;
 
     /**
      * Converts a Transaction entity to TransactionDTO with enhanced sender and receiver names
@@ -97,6 +102,35 @@ public class TransactionMapperService {
             return null;
         }
 
+        // Get resolution information for this transaction item
+        List<ConsumableResolution> resolutions = consumableResolutionRepository.findByTransactionId(item.getTransaction().getId().toString());
+        
+        // Find the relevant resolution for this item type (if any)
+        ConsumableResolution relevantResolution = null;
+        if (resolutions != null && !resolutions.isEmpty() && item.getItemType() != null) {
+            relevantResolution = resolutions.stream()
+                    .filter(resolution -> resolution.getConsumable() != null && 
+                            resolution.getConsumable().getItemType() != null &&
+                            resolution.getConsumable().getItemType().getId().equals(item.getItemType().getId()))
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        System.out.println("🔄 [MAPPER] Mapping transaction item: " + item.getId() + " for item type: " + (item.getItemType() != null ? item.getItemType().getName() : "null"));
+        System.out.println("📊 [MAPPER] Item resolution data - isResolved: " + item.getIsResolved() + ", resolutionType: " + item.getResolutionType() + ", fullyResolved: " + item.getFullyResolved());
+        System.out.println("📊 [MAPPER] Relevant resolution: " + (relevantResolution != null ? relevantResolution.getResolutionType() : "null"));
+        
+        // Handle null/undefined values properly - database might have NULL values
+        Boolean itemIsResolvedBoolean = item.getIsResolved(); // Get Boolean field directly
+        Boolean itemIsFullyResolvedBoolean = item.getFullyResolved(); // Get Boolean field directly
+        
+        boolean finalIsResolved = Boolean.TRUE.equals(itemIsResolvedBoolean) || relevantResolution != null;
+        boolean finalFullyResolved = Boolean.TRUE.equals(itemIsFullyResolvedBoolean) || (relevantResolution != null ? relevantResolution.isFullyResolved() : false);
+        
+        System.out.println("📊 [MAPPER] Raw item values - isResolved: " + itemIsResolvedBoolean + ", fullyResolved: " + itemIsFullyResolvedBoolean + ", final: isResolved=" + finalIsResolved + ", fullyResolved=" + finalFullyResolved);
+        
+        System.out.println("📊 [MAPPER] Final resolution status - isResolved: " + finalIsResolved + ", fullyResolved: " + finalFullyResolved);
+        
         return TransactionItemDTO.builder()
                 .id(item.getId())
                 .itemTypeId(item.getItemType() != null ? item.getItemType().getId() : null)
@@ -106,8 +140,15 @@ public class TransactionMapperService {
                 .itemUnit(item.getItemType() != null ? item.getItemType().getMeasuringUnit() : null)
                 .quantity(item.getQuantity())
                 .receivedQuantity(item.getReceivedQuantity())
+                .equipmentReceivedQuantity(item.getEquipmentReceivedQuantity())
                 .status(item.getStatus())
                 .rejectionReason(item.getRejectionReason())
+                .isResolved(finalIsResolved) // Use item's resolution status first
+                .resolutionType(item.getResolutionType() != null ? item.getResolutionType() : (relevantResolution != null ? relevantResolution.getResolutionType() : null))
+                .resolutionNotes(item.getResolutionNotes() != null ? item.getResolutionNotes() : (relevantResolution != null ? relevantResolution.getNotes() : null))
+                .resolvedBy(item.getResolvedBy() != null ? item.getResolvedBy() : (relevantResolution != null ? relevantResolution.getResolvedBy() : null))
+                .correctedQuantity(item.getCorrectedQuantity() != null ? item.getCorrectedQuantity() : (relevantResolution != null ? relevantResolution.getCorrectedQuantity() : null))
+                .fullyResolved(finalFullyResolved)
                 .build();
     }
 

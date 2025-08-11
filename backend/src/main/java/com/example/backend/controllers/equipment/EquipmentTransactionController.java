@@ -311,6 +311,7 @@ public class EquipmentTransactionController {
                 });
             }
 
+
             // Accept the transaction
             Transaction updatedTransaction = transactionService.acceptEquipmentTransaction(
                     transactionId,

@@ -13,7 +13,7 @@ import java.util.List;
 @RequestMapping("/api/v1/partner")
 public class PartnerController
 {
-    private PartnerService partnerService;
+    private final PartnerService partnerService;
 
     @Autowired
     public PartnerController(PartnerService partnerService) {

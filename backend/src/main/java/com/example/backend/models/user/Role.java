@@ -15,6 +15,6 @@ public enum Role
     FINANCE_EMPLOYEE,
     MAINTENANCE_EMPLOYEE,
     MAINTENANCE_MANAGER,
-    ADMIN;
+    ADMIN
 
 }
