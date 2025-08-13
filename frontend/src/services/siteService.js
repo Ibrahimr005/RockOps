@@ -105,6 +105,15 @@ export const siteService = {
         }
     },
 
+    deleteSite: async (id) => {
+        try {
+            return await apiClient.delete(SITE_ENDPOINTS.ADMIN.DELETE_SITE(id));
+        } catch (error) {
+            console.error('Error deleting site:', error);
+            throw error;
+        }
+    },
+
     updateSite: async (id, siteData) => {
         try {
             return await apiClient.put(SITE_ENDPOINTS.ADMIN.UPDATE_SITE(id), siteData);

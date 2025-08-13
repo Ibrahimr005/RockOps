@@ -89,6 +89,37 @@ public class SiteAdminService
         }
     }
 
+    public void deleteSite(UUID id)
+    {
+        try {
+            Site site = siteRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Site not found"));
+            if(site.getEmployees() != null && !site.getEmployees().isEmpty())
+            {
+                throw new RuntimeException("Site already has employees");
+            }
+            if(site.getEquipment() != null && !site.getEquipment().isEmpty())
+            {
+                throw new RuntimeException("Site already has equipment");
+            }
+            if(site.getWarehouses() != null && !site.getWarehouses().isEmpty())
+            {
+                throw new RuntimeException("Site already has warehouses");
+            }
+            if(site.getFixedAssets() != null && !site.getFixedAssets().isEmpty())
+            {
+                throw new RuntimeException("Site already has fixed assets");
+            }
+            siteRepository.delete(site);
+            System.out.println("Successfully deleted site with id: " + id);
+        }
+        catch (Exception e) {
+            System.err.println("Error deleting site: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to delete site: " + e.getMessage(), e);
+        }
+}
+
     // Helper method to create default assignment
     private void createDefaultPartnerAssignment(UUID siteId) {
         try {

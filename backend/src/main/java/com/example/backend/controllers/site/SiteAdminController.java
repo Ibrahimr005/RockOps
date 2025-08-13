@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -59,6 +60,29 @@ public class SiteAdminController
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
     }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String,Object>> deleteSite(@PathVariable UUID id) {
+        try{
+            siteAdminService.deleteSite(id);
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Site deleted successfully");
+            response.put("deletedId", id);
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        } catch (Exception e) {
+            System.err.println("Error deleting site: " + e.getMessage());
+            e.printStackTrace();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Internal server error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
 
     @PostMapping(value = "/{siteId}/add-warehouse", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Warehouse> addWarehouse(

@@ -321,6 +321,7 @@ export const SITE_ENDPOINTS = {
     // Site Admin endpoints
     ADMIN: {
         ADD_SITE: '/siteadmin/addsite',
+        DELETE_SITE: (id)=> `siteadmin/${id}`,
         UPDATE_SITE: (id) => `/siteadmin/updatesite/${id}`,
         ADD_WAREHOUSE: (siteId) => `/siteadmin/${siteId}/add-warehouse`,
         ASSIGN_EQUIPMENT: (siteId, equipmentId) => `/siteadmin/${siteId}/assign-equipment/${equipmentId}`,
