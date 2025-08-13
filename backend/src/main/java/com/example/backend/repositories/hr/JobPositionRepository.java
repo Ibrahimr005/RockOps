@@ -55,4 +55,9 @@ public interface JobPositionRepository extends JpaRepository<JobPosition, UUID> 
     // Find by department name
     @Query("SELECT jp FROM JobPosition jp LEFT JOIN FETCH jp.department d WHERE d.name = :departmentName")
     List<JobPosition> findByDepartmentName(@Param("departmentName") String departmentName);
+
+    // Add these repository methods:
+    List<JobPosition> findByParentJobPositionId(UUID parentId);
+    List<JobPosition> findByParentJobPositionIsNull(); // Root positions
+
 }

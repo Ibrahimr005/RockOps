@@ -351,21 +351,6 @@ $info-color: var(--color-info);
 }
 
 // Button styles
-.btn-primary {
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 0.75rem 1.5rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background-color: var(--color-primary-dark);
-    transform: translateY(-1px);
-  }
-}
 
 // Responsive design
 @media (max-width: 768px) {

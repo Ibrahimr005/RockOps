@@ -242,30 +242,6 @@
   }
 }
 
-// Close button styling (uses .btn-close from modal-styles.scss)
-.promotion-form-modal .btn-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  padding: 0.25rem;
-  line-height: 1;
-  transition: all var(--transition-fast);
-  border-radius: var(--radius-sm);
-  width: auto;
-  height: auto;
-
-  &:hover {
-    color: var(--color-text-primary);
-    background-color: var(--color-surface-hover);
-  }
-
-  &:focus {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-  }
-}
 
 // Animation keyframes
 @keyframes spin {

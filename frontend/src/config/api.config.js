@@ -367,7 +367,7 @@ export const JOB_POSITION_ENDPOINTS = {
     // Employee-related endpoints
     EMPLOYEES: (id) => `/api/v1/job-positions/${id}/employees`,
 
-    // NEW: Enhanced endpoints for details view
+    // Enhanced endpoints for details view
     DETAILS: (id) => `/api/v1/job-positions/${id}/details`,
     PROMOTION_STATISTICS: (id) => `/api/v1/job-positions/${id}/promotion-statistics`,
     PROMOTIONS_FROM: (id) => `/api/v1/job-positions/${id}/promotions/from`,
@@ -382,7 +382,34 @@ export const JOB_POSITION_ENDPOINTS = {
     CAN_DELETE: (id) => `/api/v1/job-positions/${id}/can-delete`,
     PROMOTION_DESTINATIONS: (id) => `/api/v1/job-positions/${id}/promotion-destinations`,
     PROMOTION_SOURCES: (id) => `/api/v1/job-positions/${id}/promotion-sources`,
-    EMPLOYEE_ANALYTICS: (id) => `/api/v1/job-positions/${id}/employee-analytics`
+    EMPLOYEE_ANALYTICS: (id) => `/api/v1/job-positions/${id}/employee-analytics`,
+
+    // NEW: Hierarchy and Organization Structure endpoints
+    HIERARCHY: '/api/v1/job-positions/hierarchy',
+    CHILDREN: (id) => `/api/v1/job-positions/${id}/children`,
+    PROMOTION_TARGETS: (id) => `/api/v1/job-positions/${id}/promotion-targets`,
+    VALIDATE_PROMOTION_TARGET: (currentId, targetId) => `/api/v1/job-positions/${currentId}/validate-promotion/${targetId}`,
+    HIERARCHY_PATH: (id) => `/api/v1/job-positions/${id}/hierarchy-path`,
+    BY_HIERARCHY_LEVEL: (level) => `/api/v1/job-positions/hierarchy/level/${level}`,
+    ORGANIZATION_STRUCTURE: '/api/v1/job-positions/organization-structure',
+
+    // NEW: Promotion eligibility endpoints
+    ELIGIBLE_FOR_PROMOTION_FROM: '/api/v1/job-positions/eligible-for-promotion/from',
+    ELIGIBLE_FOR_PROMOTION_TO: '/api/v1/job-positions/eligible-for-promotion/to',
+
+    // NEW: Department and validation endpoints
+    DEPARTMENT_HIERARCHY: '/api/v1/job-positions/department-hierarchy',
+    VALIDATE_HIERARCHY: '/api/v1/job-positions/validate-hierarchy',
+
+    // NEW: Promotion path and navigation endpoints
+    PROMOTION_PATH: (fromId, toId) => `/api/v1/job-positions/promotion-path/${fromId}/${toId}`,
+    NEXT_PROMOTION_STEPS: (id) => `/api/v1/job-positions/${id}/next-promotion-steps`,
+    POSITIONS_AT_RISK: '/api/v1/job-positions/at-risk',
+
+    // NEW: Simplified promotion endpoints
+    PROMOTION_STATS_SIMPLE: (id) => `/api/v1/job-positions/${id}/promotion-stats-simple`,
+    PROMOTIONS_FROM_SIMPLE: (id) => `/api/v1/job-positions/${id}/promotions-from-simple`,
+    PROMOTIONS_TO_SIMPLE: (id) => `/api/v1/job-positions/${id}/promotions-to-simple`
 };
 
 // Document module endpoints

@@ -479,16 +479,7 @@
         transform: none !important;
       }
 
-      &.btn-primary {
-        background: var(--color-primary);
-        color: var(--color-text-inverse);
 
-        &:hover:not(:disabled) {
-          background: var(--color-primary-hover);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(72, 128, 255, 0.3);
-        }
-      }
 
       &.btn-secondary {
         background: var(--color-surface-secondary);

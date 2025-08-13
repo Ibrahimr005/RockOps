@@ -1,7 +1,7 @@
 package com.example.backend.controllers.hr;
 
-import com.example.backend.dto.hr.EmployeeDistributionDTO;
-import com.example.backend.dto.hr.EmployeeRequestDTO;
+import com.example.backend.dto.hr.employee.EmployeeDistributionDTO;
+import com.example.backend.dto.hr.employee.EmployeeRequestDTO;
 import com.example.backend.dto.hr.SalaryStatisticsDTO;
 import com.example.backend.services.hr.HREmployeeService;
 import com.example.backend.services.MinioService;
@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
