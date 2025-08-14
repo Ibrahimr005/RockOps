@@ -60,7 +60,8 @@ const WarehouseManagerDashboard = () => {
     const fetchWarehouseItems = async (warehouseId) => {
         try {
             const data = await itemService.getItemsByWarehouse(warehouseId);
-            return data;
+            // Ensure data is always an array
+            return Array.isArray(data) ? data : [];
         } catch (error) {
             console.error(`Error fetching items for warehouse ${warehouseId}:`, error);
             return [];

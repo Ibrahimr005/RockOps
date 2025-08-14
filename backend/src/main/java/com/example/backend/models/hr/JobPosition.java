@@ -165,7 +165,7 @@ public class JobPosition {
     // NEW: Helper method to format time range as string
     public String getWorkingTimeRange() {
         if (contractType == ContractType.MONTHLY && startTime != null && endTime != null) {
-            return startTime.toString() + " - " + endTime.toString();
+            return startTime + " - " + endTime;
         }
         return null;
     }

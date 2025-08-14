@@ -29,13 +29,13 @@ import java.util.*;
 public class SiteAdminService
 {
 //    private final FixedAssetRepository fixedAssetRepository;
-    private SiteRepository siteRepository;
-    private PartnerRepository partnerRepository;
-    private EquipmentRepository equipmentRepository;
-    private EmployeeRepository employeeRepository;
-    private WarehouseRepository warehouseRepository;
-    private FixedAssetsRepository fixedAssetsRepository;
-    private SitePartnerRepository sitePartnerRepository;
+    private final SiteRepository siteRepository;
+    private final PartnerRepository partnerRepository;
+    private final EquipmentRepository equipmentRepository;
+    private final EmployeeRepository employeeRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final FixedAssetsRepository fixedAssetsRepository;
+    private final SitePartnerRepository sitePartnerRepository;
 
     @Autowired
     private EntityManager entityManager;

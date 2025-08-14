@@ -6,7 +6,7 @@ import com.example.backend.models.hr.Employee;
 import com.example.backend.models.site.Site;
 import com.example.backend.models.site.SitePartner;
 import com.example.backend.models.warehouse.Warehouse;
-import com.example.backend.services.MinioService;
+import com.example.backend.services.FileStorageService;
 import com.example.backend.services.site.SiteAdminService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,13 +26,15 @@ import java.util.UUID;
 @RequestMapping("/siteadmin")
 public class SiteAdminController
 {
-    private SiteAdminService siteAdminService;
-    private MinioService minioService;
+    private final SiteAdminService siteAdminService;
+    //private final fileStorageService fileStorageService;
+    private final FileStorageService fileStorageService;
 
     @Autowired
-    public SiteAdminController(SiteAdminService siteAdminService, MinioService minioService) {
+    public SiteAdminController(SiteAdminService siteAdminService, FileStorageService fileStorageService) {
         this.siteAdminService = siteAdminService;
-        this.minioService = minioService;
+        //this.fileStorageService = fileStorageService;
+        this.fileStorageService = fileStorageService;
     }
 
     @PostMapping(value = "/addsite", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -46,8 +48,8 @@ public class SiteAdminController
 
             // Upload photo if provided
             if (photo != null && !photo.isEmpty()) {
-                String fileName = minioService.uploadFile(photo);
-                String fileUrl = minioService.getFileUrl(fileName);
+                String fileName = fileStorageService.uploadFile(photo);
+                String fileUrl = fileStorageService.getFileUrl(fileName);
                 siteData.put("photoUrl", fileUrl); // Save URL in the data map
             }
 
@@ -96,8 +98,8 @@ public class SiteAdminController
 
             // Upload photo if provided
             if (photo != null && !photo.isEmpty()) {
-                String fileName = minioService.uploadFile(photo);
-                String fileUrl = minioService.getFileUrl(fileName);
+                String fileName = fileStorageService.uploadFile(photo);
+                String fileUrl = fileStorageService.getFileUrl(fileName);
                 warehouseData.put("photoUrl", fileUrl); // Save URL in the data map
             }
 
@@ -125,8 +127,8 @@ public class SiteAdminController
 
             // Handle photo update if a new photo is uploaded
             if (photo != null && !photo.isEmpty()) {
-                String fileName = minioService.uploadFile(photo);
-                String fileUrl = minioService.getFileUrl(fileName);
+                String fileName = fileStorageService.uploadFile(photo);
+                String fileUrl = fileStorageService.getFileUrl(fileName);
                 updates.put("photoUrl", fileUrl); // Update photo URL in the map
             }
 

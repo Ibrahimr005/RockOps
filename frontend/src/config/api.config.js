@@ -47,6 +47,15 @@ export const EQUIPMENT_ENDPOINTS = {
     CHECK_BATCH_EXISTS: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`
 };
 
+// Batch Validation endpoints
+export const BATCH_VALIDATION_ENDPOINTS = {
+    BASE: '/api/v1/batch-validation',
+    VALIDATE_FOR_EQUIPMENT: (equipmentId, batchNumber) => `/api/v1/batch-validation/equipment/${equipmentId}/batch/${batchNumber}`,
+    VALIDATE_FOR_MAINTENANCE: (equipmentId, maintenanceId, batchNumber) => `/api/v1/batch-validation/equipment/${equipmentId}/maintenance/${maintenanceId}/batch/${batchNumber}`,
+    CHECK_AVAILABILITY: (batchNumber) => `/api/v1/batch-validation/batch/${batchNumber}/available`,
+    VALIDATE_UNIQUENESS: (batchNumber) => `/api/v1/batch-validation/batch/${batchNumber}/validate-uniqueness`
+};
+
 // Consumable Resolution endpoints
 export const CONSUMABLE_ENDPOINTS = {
     RESOLVE_DISCREPANCY: '/api/v1/consumables/resolve-discrepancy',
@@ -672,7 +681,8 @@ export const NOTIFICATION_ENDPOINTS = {
     SEND: '/api/notifications/send',
     BROADCAST: '/api/notifications/broadcast',
     MARK_AS_READ: (id) => `/api/notifications/${id}/read`,
-    DELETE: (id) => `/api/notifications/${id}`
+    DELETE: (id) => `/api/notifications/${id}`,
+    WEBSOCKET: '/ws-native'
 };
 
 export const PROCUREMENT_ENDPOINTS = {

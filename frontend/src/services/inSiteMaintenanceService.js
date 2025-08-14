@@ -66,5 +66,35 @@ export const inSiteMaintenanceService = {
             INSITE_MAINTENANCE_ENDPOINTS.VALIDATE_TRANSACTION(equipmentId, maintenanceId, transactionId), 
             validationData
         );
+    },
+
+    // Create transaction for maintenance (new batch validation workflow)
+    createTransactionForMaintenance: (equipmentId, maintenanceId, transactionData) => {
+        const params = new URLSearchParams({
+            senderId: transactionData.senderId,
+            senderType: transactionData.senderType,
+            batchNumber: transactionData.batchNumber.toString()
+        });
+
+        if (transactionData.transactionDate) {
+            params.append('transactionDate', transactionData.transactionDate);
+        }
+
+        if (transactionData.description) {
+            params.append('description', transactionData.description);
+        }
+
+        return apiClient.post(
+            `${INSITE_MAINTENANCE_ENDPOINTS.CREATE_TRANSACTION(equipmentId, maintenanceId)}?${params.toString()}`,
+            transactionData.items
+        );
+    },
+
+    // Validate transaction for maintenance (new batch validation workflow)
+    validateTransactionForMaintenance: (equipmentId, maintenanceId, transactionId, validationData) => {
+        return apiClient.post(
+            INSITE_MAINTENANCE_ENDPOINTS.VALIDATE_TRANSACTION(equipmentId, maintenanceId, transactionId),
+            validationData
+        );
     }
 }; 
