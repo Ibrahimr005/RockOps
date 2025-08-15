@@ -5,7 +5,12 @@ import TransactionViewModal from "../../warehouse/WarehouseViewTransactions/Tran
 import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx";
 import { FaPlus } from 'react-icons/fa';
-import "../../warehouse/WarehouseViewTransactions/PendingTransactions/PendingTransactions.scss"
+import "../../warehouse/WarehouseViewTransactions/PendingTransactions/PendingTransactions.scss";
+import { equipmentService } from "../../../services/equipmentService";
+import { siteService } from "../../../services/siteService";
+import { warehouseService } from "../../../services/warehouse/warehouseService.js";
+import { itemTypeService } from "../../../services/warehouse/itemTypeService.js";
+import { itemCategoryService } from "../../../services/warehouse/itemCategoryService.js";
 
 const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
     const [loading, setLoading] = useState(false);
@@ -184,19 +189,8 @@ const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
 
     const fetchAllSites = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/site`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setAllSites(data);
-            } else {
-                console.error("Failed to fetch sites, status:", response.status);
-            }
+            const response = await siteService.getAllSites();
+            setAllSites(response.data);
         } catch (error) {
             console.error("Failed to fetch sites:", error);
         }
@@ -204,19 +198,8 @@ const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
 
     const fetchEquipmentDetails = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/equipment/${equipmentId}`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setEquipmentData(data);
-            } else {
-                console.error("Failed to fetch equipment details, status:", response.status);
-            }
+            const response = await equipmentService.getEquipmentById(equipmentId);
+            setEquipmentData(response.data);
         } catch (error) {
             console.error("Failed to fetch equipment details:", error);
         }
@@ -224,19 +207,8 @@ const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
 
     const fetchItems = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/equipment/${equipmentId}/items`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setItems(data);
-            } else {
-                console.error("Failed to fetch items, status:", response.status);
-            }
+            const response = await equipmentService.getEquipmentItems(equipmentId);
+            setItems(response.data);
         } catch (error) {
             console.error("Failed to fetch items:", error);
         }
@@ -244,19 +216,8 @@ const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
 
     const fetchAllItemTypes = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/item-types`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setAllItemTypes(data);
-            } else {
-                console.error("Failed to fetch item types, status:", response.status);
-            }
+            const response = await itemTypeService.getAllTypes();
+            setAllItemTypes(response.data);
         } catch (error) {
             console.error("Failed to fetch item types:", error);
         }
@@ -264,30 +225,17 @@ const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
 
     const fetchEntitiesByTypeAndSite = async (entityType, siteId) => {
         try {
-            const token = localStorage.getItem("token");
-            let endpoint;
+            let response;
 
             if (entityType === "WAREHOUSE") {
-                endpoint = `http://localhost:8080/api/v1/warehouses/site/${siteId}`;
+                response = await warehouseService.getBySite(siteId);
             } else if (entityType === "EQUIPMENT") {
-                endpoint = `http://localhost:8080/api/equipment/site/${siteId}`;
+                response = await equipmentService.getEquipmentBySite(siteId);
             } else {
                 return [];
             }
 
-            const response = await fetch(endpoint, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                return data;
-            } else {
-                console.error(`Failed to fetch ${entityType} by site, status:`, response.status);
-                return [];
-            }
+            return response.data;
         } catch (error) {
             console.error(`Failed to fetch ${entityType} by site:`, error);
             return [];
@@ -302,36 +250,26 @@ const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
 
         setLoading(true);
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/equipment/${equipmentId}/transactions`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                const pendingData = await Promise.all(
-                    data
-                        .filter(transaction =>
-                            transaction.status === "PENDING" &&
-                            (transaction.receiverId === equipmentId || transaction.senderId === equipmentId) &&
-                            transaction.sentFirst === equipmentId
-                        )
-                        .map(async (transaction) => {
-                            const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
-                            const receiver = await fetchEntityDetails(transaction.receiverType, transaction.receiverId);
-                            return {
-                                ...transaction,
-                                sender,
-                                receiver
-                            };
-                        })
-                );
-                setPendingTransactions(pendingData);
-            } else {
-                console.error("Failed to fetch transactions, status:", response.status);
-                showSnackbar("Failed to fetch pending transactions", "error");
-            }
+            const response = await equipmentService.getEquipmentTransactions(equipmentId);
+            const data = response.data;
+            const pendingData = await Promise.all(
+                data
+                    .filter(transaction =>
+                        transaction.status === "PENDING" &&
+                        (transaction.receiverId === equipmentId || transaction.senderId === equipmentId) &&
+                        transaction.sentFirst === equipmentId
+                    )
+                    .map(async (transaction) => {
+                        const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
+                        const receiver = await fetchEntityDetails(transaction.receiverType, transaction.receiverId);
+                        return {
+                            ...transaction,
+                            sender,
+                            receiver
+                        };
+                    })
+            );
+            setPendingTransactions(pendingData);
         } catch (error) {
             console.error("Failed to fetch transactions:", error);
             showSnackbar("Failed to fetch pending transactions", "error");
@@ -342,32 +280,19 @@ const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
 
     const fetchEntityDetails = async (entityType, entityId) => {
         try {
-            const token = localStorage.getItem("token");
-            let endpoint;
+            let response;
 
             if (entityType === "WAREHOUSE") {
-                endpoint = `http://localhost:8080/api/v1/warehouses/${entityId}`;
+                response = await warehouseService.getById(entityId);
             } else if (entityType === "EQUIPMENT") {
-                endpoint = `http://localhost:8080/api/equipment/${entityId}`;
+                response = await equipmentService.getEquipmentById(entityId);
             } else if (entityType === "SITE") {
-                endpoint = `http://localhost:8080/api/v1/sites/${entityId}`;
+                response = await siteService.getSiteById(entityId);
             } else {
                 return null;
             }
 
-            const response = await fetch(endpoint, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                return data;
-            } else {
-                console.error(`Failed to fetch ${entityType} details, status:`, response.status);
-                return null;
-            }
+            return response.data;
         } catch (error) {
             console.error(`Failed to fetch ${entityType} details:`, error);
             return null;
@@ -404,19 +329,8 @@ const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
 
     const fetchParentCategories = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/item-categories/parent`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setParentCategories(data);
-            } else {
-                console.error("Failed to fetch parent categories, status:", response.status);
-            }
+            const response = await itemCategoryService.getParentCategories();
+            setParentCategories(response.data);
         } catch (error) {
             console.error("Failed to fetch parent categories:", error);
         }
@@ -540,6 +454,22 @@ const EquipmentPendingTransactionsTable = ({ equipmentId, refreshTrigger }) => {
                 addButtonText="Add Transaction"
                 addButtonIcon={<FaPlus />}
                 onAddClick={handleAddTransaction}
+                showExportButton={true}
+                exportButtonText="Export Pending Transactions"
+                exportFileName="equipment_pending_transactions"
+                exportAllData={true}
+                excludeColumnsFromExport={['actions']}
+                customExportHeaders={{
+                    'sender.name': 'Sender Name',
+                    'sender.type': 'Sender Type',
+                    'receiver.name': 'Receiver Name',
+                    'receiver.type': 'Receiver Type',
+                    'batchNumber': 'Batch Number',
+                    'transactionDate': 'Transaction Date'
+                }}
+                onExportStart={() => showSnackbar("Exporting pending transactions...", "info")}
+                onExportComplete={(result) => showSnackbar(`Exported ${result.rowCount} records to Excel`, "success")}
+                onExportError={(error) => showSnackbar("Failed to export pending transactions", "error")}
             />
 
             {/* View Transaction Modal - Show quantities for pending transactions since they can be edited */}

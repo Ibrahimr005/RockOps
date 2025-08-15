@@ -1,0 +1,11 @@
+[phases.build]
+dependsOn = []
+
+[phases.setup]
+nixPkgs = []
+
+[build]
+cmd = "echo 'Using Dockerfile instead of Nixpacks'"
+
+[start]
+cmd = "echo 'This should not run - use Dockerfile'" 

@@ -8,6 +8,7 @@ import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx"
 import IncomingRequestOrders from './IncomingRequests/IncomingRequestOrders';
 import ApprovedRequestOrders from './ApprovedRequests/ApprovedRequestOrders';
 import ProcurementIntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
+import { requestOrderService } from '../../../services/procurement/requestOrderService.js';
 
 const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
     const { theme } = useTheme(); // Use the same theme context as Sidebar
@@ -32,20 +33,7 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
     const fetchRequestOrders = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/requestOrders', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to load request orders');
-            }
-
-            const data = await response.json();
+            const data = await requestOrderService.getAll();
             setRequestOrders(data);
             setError(null);
         } catch (err) {
@@ -61,18 +49,6 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
         console.log('Info button clicked');
     };
 
-    // Prepare stats data for the intro card
-    const statsData = [
-        {
-            value: requestOrders.filter(order => order.status === 'PENDING').length,
-            label: 'Pending Requests'
-        },
-        {
-            value: requestOrders.filter(order => order.status === 'APPROVED').length,
-            label: 'Approved Requests'
-        }
-    ];
-
     const pendingOrders = useMemo(() =>
             requestOrders.filter(order => order.status === 'PENDING'),
         [requestOrders]
@@ -82,6 +58,18 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
             requestOrders.filter(order => order.status === 'APPROVED'),
         [requestOrders]
     );
+
+    // Prepare stats data for the intro card
+    const statsData = [
+        {
+            value: pendingOrders.length,
+            label: 'Pending Requests'
+        },
+        {
+            value: approvedOrders.length,
+            label: 'Approved Requests'
+        }
+    ];
 
     return (
         <div className="pro-ro-procurement-requests-container">
@@ -102,6 +90,9 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
                     onClick={() => setActiveTab('incoming')}
                 >
                     Incoming Requests
+                    {pendingOrders.length > 0 && (
+                        <span className="notification-dot"></span>
+                    )}
                 </button>
                 <button
                     className={`pro-ro-procurement-tab ${activeTab === 'approved' ? 'active' : ''}`}

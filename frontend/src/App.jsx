@@ -38,13 +38,13 @@ import WarehouseViewItemCategoriesTable from "./pages/warehouse/WarehouseCategor
 import WarehouseViewItemTypesTable from "./pages/warehouse/WarehouseItemTypes/WarehouseViewItemTypesTable.jsx";
 
 // ===================== Merchant & Procurement Components =====================
-import MerchantDetails from "./pages/merchant/MerchantDetails/MerchantDetails.jsx";
+
 import ProcurementOffers from "./pages/procurement/ProcurementOffers/ProcurementOffers.jsx";
 import ProcurementRequestOrderDetails
     from "./pages/procurement/ProcurementRequestOrderDetails/ProcurementRequestOrderDetails.jsx";
 import ProcurementMerchants from "./pages/merchant/MerchantList/ProcurementMerchants.jsx";
 import ProcurementRequestOrders from "./pages/procurement/ProcurementRequestOrders/ProcurementRequestOrders.jsx";
-import PurchaseOrders from "./pages/procurement/ProcurementPurchaseOrders/ProcurementPurchaseOrders/PurchaseOrders.jsx";
+import PurchaseOrders from "./pages/procurement/ProcurementPurchaseOrders/PurchaseOrders.jsx";
 import PurchaseOrderDetails
     from "./pages/procurement/ProcurementPurchaseOrders/PurchaseOrderDetails/PurchaseOrderDetails.jsx";
 
@@ -57,6 +57,17 @@ import Notifications from './pages/notification/Notifications.jsx';
 import FixedAssets from "./pages/finance/FixedAssets/FixedAssets.jsx";
 
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ROLES } from './utils/roles';
+import PayrollDashboard from "./pages/payroll/PayrollDashboard/PayrollDashboard.jsx";
+import PayslipList from "./pages/payroll/PayslipList/PayslipList.jsx";
+import LoanManagement from "./pages/payroll/Loans/LoanManagement/LoanManagement.jsx";
+import PayrollLayout from "./pages/payroll/PayrollLayout.jsx";
+import LoanDetails from "./pages/payroll/Loans/LoanDetails/LoanDetails.jsx";
+import PayrollReports from "./pages/payroll/PayrollReports/PayrollReports.jsx";
+import PayslipDetails from "./pages/payroll/PayslipDetails/PayslipDetails.jsx";
+import EmployeeOnboarding from "./pages/HR/Vacancy/EmployeeOnboarding.jsx";
+import PromotionList from "./pages/HR/Promotion/PromotionList.jsx";
+import JobPositionDetails from "./pages/HR/JobPosition/details/JobPositionDetails.jsx";
+import BankReconciliation from "./pages/finance/BankReconciliation/BankReconciliation.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -134,7 +145,7 @@ function App() {
 
                                     {/* Merchant Routes */}
                                     <Route path="/merchants" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN, WAREHOUSE_MANAGER]}><ProcurementMerchants/></RoleRoute>}/>
-                                    <Route path="/merchants/:id" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN]}><MerchantDetails/></RoleRoute>}/>
+
 
                                     {/* Procurement Routes */}
                                     <Route path="/procurement" element={<RoleRoute allowedRoles={[PROCUREMENT, SITE_ADMIN, ADMIN]}><SitesLayout/></RoleRoute>}>
@@ -149,11 +160,25 @@ function App() {
                                     <Route path="/hr" element={<RoleRoute allowedRoles={[HR_MANAGER, HR_EMPLOYEE, ADMIN]}><HRLayout/></RoleRoute>}>
                                         <Route path="vacancies" element={<VacancyList/>}/>
                                         <Route path="positions" element={<PositionsList/>}/>
+                                        <Route path="positions/:id" element={<JobPositionDetails/>}/>
                                         <Route path="employees" element={<EmployeesList/>}/>
+                                        <Route path="employees/add" element={<EmployeeOnboarding/>}/>
                                         <Route path="employee-details/:id" element={<EmployeeDetails/>}/>
                                         <Route path="attendance" element={<AttendancePage/>}/>
                                         <Route path="vacancies/:id" element={<VacancyDetails/>}/>
                                         <Route path="departments" element={<DepartmentsList/>}/>
+                                        <Route path="promotions/*" element={<PromotionList/>}/>
+                                    </Route>
+
+
+                                    {/* Payroll Routes */}
+                                    <Route path="/payroll" element={<RoleRoute allowedRoles={[HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ADMIN]}><PayrollLayout/></RoleRoute>}>
+                                        <Route index element={<PayrollDashboard/>}/>
+                                        <Route path="payslips" element={<PayslipList/>}/>
+                                        <Route path="payslips/:id" element={<PayslipDetails/>}/>
+                                        <Route path="loans" element={<LoanManagement/>}/>
+                                        <Route path="loans/:id" element={<LoanDetails/>}/>
+                                        <Route path="reports" element={<PayrollReports/>}/>
                                     </Route>
 
                                     {/* Equipment Management Routes */}
@@ -171,6 +196,7 @@ function App() {
                                     <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={allRoles}><GeneralLedger/></RoleRoute>} />
                                     <Route path="/finance/payables" element={<RoleRoute allowedRoles={allRoles}><Payables/></RoleRoute>} />
                                     <Route path="/finance/fixed-assets" element={<RoleRoute allowedRoles={allRoles}><FixedAssets/></RoleRoute>} />
+                                    <Route path="/finance/bank-reconciliation" element={<RoleRoute allowedRoles={allRoles}><BankReconciliation/></RoleRoute>} />
 
 
 

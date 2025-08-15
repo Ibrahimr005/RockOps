@@ -395,6 +395,23 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                             showInfo("Opening maintenance creation form...");
                             onAddMaintenanceClick();
                         }}
+                        showExportButton={true}
+                        exportButtonText="Export Maintenance Records"
+                        exportFileName="equipment_maintenance_records"
+                        exportAllData={true}
+                        excludeColumnsFromExport={['actions']}
+                        customExportHeaders={{
+                            'technicianName': 'Technician Name',
+                            'maintenanceDate': 'Maintenance Date',
+                            'maintenanceType': 'Maintenance Type',
+                            'description': 'Description',
+                            'status': 'Status',
+                            'batchNumber': 'Batch Number',
+                            'transactionCount': 'Transaction Count'
+                        }}
+                        onExportStart={() => showInfo("Exporting maintenance records...")}
+                        onExportComplete={(result) => showSuccess(`Exported ${result.rowCount} maintenance records to Excel`)}
+                        onExportError={(error) => showError("Failed to export maintenance records")}
                     />
                 ) }
             </div>

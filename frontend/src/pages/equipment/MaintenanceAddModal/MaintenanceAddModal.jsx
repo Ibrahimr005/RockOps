@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { inSiteMaintenanceService } from '../../../services/inSiteMaintenanceService';
 import { maintenanceTypeService } from '../../../services/maintenanceTypeService';
 import { siteService } from '../../../services/siteService';
-import { itemTypeService } from '../../../services/itemTypeService';
-import { warehouseService } from '../../../services/warehouseService';
+import { itemTypeService } from '../../../services/warehouse/itemTypeService.js';
+import { warehouseService } from '../../../services/warehouse/warehouseService.js';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import InlineTransactionValidation from './InlineTransactionValidation';
 import './MaintenanceAddModal.scss';
@@ -367,7 +367,8 @@ const MaintenanceAddModal = ({
             .map((item, index) => index !== currentIndex ? item.itemTypeId : null)
             .filter(id => id);
         
-        return itemTypes.filter(itemType => !selectedItemTypeIds.includes(itemType.id));
+        // Ensure itemTypes is always an array before filtering
+        return (itemTypes || []).filter(itemType => !selectedItemTypeIds.includes(itemType.id));
     };
 
 

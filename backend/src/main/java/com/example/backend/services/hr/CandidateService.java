@@ -330,7 +330,7 @@ public class CandidateService {
                     "Candidate to Employee Conversion",
                     "Employee data prepared for candidate " + candidateName + ". Please complete the employee creation process.",
                     NotificationType.INFO,
-                    "/employees/create?candidateId=" + candidateId,
+                    "hr/employees/add" + candidateId,
                     "candidate-to-employee-" + candidateId
             );
 

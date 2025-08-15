@@ -7,6 +7,7 @@ import ConfirmationDialog from "../../../components/common/ConfirmationDialog/Co
 import ProcurementIntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 import itemCategoryImg from "../../../assets/imgs/itemCategoryLight.png";
 import itemCategoryDarkImg from "../../../assets/imgs/itemCategoryDarky.png";
+import { itemCategoryService } from '../../../services/warehouse/itemCategoryService';
 
 const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => {
   const [allCategories, setAllCategories] = useState([]);
@@ -45,26 +46,9 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem("token");
 
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
 
-      const response = await fetch('http://localhost:8080/api/v1/itemCategories', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("API error response:", errorText);
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-      }
-
-      const data = await response.json();
+      const data = await itemCategoryService.getAll();
       setAllCategories(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -99,40 +83,8 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
 
     try {
       setDeleteLoading(true);
-      const token = localStorage.getItem("token");
 
-      const response = await fetch(`http://localhost:8080/api/v1/itemCategories/${categoryToDelete.id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Delete error response:", errorText);
-        console.log("Raw error text:", errorText);
-        console.log("Looking for CHILD_CATEGORIES_EXIST:", errorText.includes("CHILD_CATEGORIES_EXIST"));
-        console.log("Looking for ITEM_TYPES_EXIST:", errorText.includes("ITEM_TYPES_EXIST"));
-
-        // Check for specific dependency errors from backend
-        if (errorText.includes("CHILD_CATEGORIES_EXIST")) {
-          throw new Error("Cannot delete category: has child categories. Remove child categories first.");
-        }
-        else if (errorText.includes("ITEM_TYPES_EXIST")) {
-          throw new Error("Cannot delete category: has item types assigned. Remove item types first.");
-        }
-        else if (errorText.includes("ItemCategory not found")) {
-          throw new Error("Category not found. It may have already been deleted.");
-        }
-        else if (response.status === 500) {
-          // Handle generic 500 errors - provide helpful guidance
-          throw new Error("Cannot delete category: has dependencies. Remove child categories and item types first.");
-        }
-        else {
-          throw new Error(`Failed to delete category: ${response.status} - ${errorText}`);
-        }
-      }
+      await itemCategoryService.delete(categoryToDelete.id);
 
       // Success - update UI
       setAllCategories(prevCategories => prevCategories.filter(cat => cat.id !== categoryToDelete.id));
@@ -144,7 +96,21 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
 
     } catch (error) {
       console.error("Error deleting item category:", error);
-      displaySnackbar(error.message, "error");
+
+      // Handle specific error messages from the API
+      let errorMessage = error.message;
+
+      if (errorMessage.includes("CHILD_CATEGORIES_EXIST")) {
+        errorMessage = "Cannot delete category: has child categories. Remove child categories first.";
+      } else if (errorMessage.includes("ITEM_TYPES_EXIST")) {
+        errorMessage = "Cannot delete category: has item types assigned. Remove item types first.";
+      } else if (errorMessage.includes("ItemCategory not found")) {
+        errorMessage = "Category not found. It may have already been deleted.";
+      } else if (errorMessage.includes("500")) {
+        errorMessage = "Cannot delete category: has dependencies. Remove child categories and item types first.";
+      }
+
+      displaySnackbar(errorMessage, "error");
     } finally {
       setDeleteLoading(false);
       setShowConfirmDialog(false);

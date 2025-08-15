@@ -16,6 +16,7 @@ import {
 import { BiRefresh } from "react-icons/bi";
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
+import { financeService } from '../../../../services/financeService.js';
 import './AgingReport.css';
 
 const AgingReport = () => {
@@ -46,15 +47,10 @@ const AgingReport = () => {
     const fetchAgingData = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
 
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
+            console.log('=== FETCHING AGING DATA ===');
 
-            console.log('Fetching aging data...');
-
-            // Fetch all aging data in parallel
+            // Fetch all aging data in parallel using financeService
             const [
                 summaryResponse,
                 invoices0To30Response,
@@ -62,59 +58,35 @@ const AgingReport = () => {
                 invoices61To90Response,
                 invoicesOver90Response
             ] = await Promise.all([
-                fetch('http://localhost:8080/api/v1/invoices/aging/summary', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch('http://localhost:8080/api/v1/invoices/aging/0-30', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch('http://localhost:8080/api/v1/invoices/aging/31-60', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch('http://localhost:8080/api/v1/invoices/aging/61-90', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch('http://localhost:8080/api/v1/invoices/aging/over-90', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                })
+                financeService.invoices.getAgingSummary('json'),
+                financeService.invoices.getAged0To30(),
+                financeService.invoices.getAged31To60(),
+                financeService.invoices.getAged61To90(),
+                financeService.invoices.getAgedOver90()
             ]);
 
-            // Check if all responses are ok
-            if (!summaryResponse.ok || !invoices0To30Response.ok || !invoices31To60Response.ok ||
-                !invoices61To90Response.ok || !invoicesOver90Response.ok) {
-                throw new Error('One or more aging report requests failed');
-            }
+            console.log('Raw aging responses:', {
+                summaryResponse,
+                invoices0To30Response,
+                invoices31To60Response,
+                invoices61To90Response,
+                invoicesOver90Response
+            });
 
-            const [
+            // Extract data from Axios responses
+            const summary = summaryResponse.data || summaryResponse;
+            const invoices0To30 = invoices0To30Response.data || invoices0To30Response;
+            const invoices31To60 = invoices31To60Response.data || invoices31To60Response;
+            const invoices61To90 = invoices61To90Response.data || invoices61To90Response;
+            const invoicesOver90 = invoicesOver90Response.data || invoicesOver90Response;
+
+            console.log('Extracted aging data:', {
                 summary,
                 invoices0To30,
                 invoices31To60,
                 invoices61To90,
                 invoicesOver90
-            ] = await Promise.all([
-                summaryResponse.json(),
-                invoices0To30Response.json(),
-                invoices31To60Response.json(),
-                invoices61To90Response.json(),
-                invoicesOver90Response.json()
-            ]);
-
-            console.log('Aging data fetched:', { summary, invoices0To30, invoices31To60, invoices61To90, invoicesOver90 });
+            });
 
             // Debug: Log the detailed breakdown
             console.log('Summary amounts:', {
@@ -125,10 +97,10 @@ const AgingReport = () => {
             });
 
             console.log('Invoice counts:', {
-                invoices0To30: invoices0To30.length,
-                invoices31To60: invoices31To60.length,
-                invoices61To90: invoices61To90.length,
-                invoicesOver90: invoicesOver90.length
+                invoices0To30: Array.isArray(invoices0To30) ? invoices0To30.length : 0,
+                invoices31To60: Array.isArray(invoices31To60) ? invoices31To60.length : 0,
+                invoices61To90: Array.isArray(invoices61To90) ? invoices61To90.length : 0,
+                invoicesOver90: Array.isArray(invoicesOver90) ? invoicesOver90.length : 0
             });
 
             setAgingData({
@@ -139,16 +111,16 @@ const AgingReport = () => {
                     agedOver90: 0,
                     asOfDate: new Date().toISOString().split('T')[0]
                 },
-                invoices0To30: invoices0To30 || [],
-                invoices31To60: invoices31To60 || [],
-                invoices61To90: invoices61To90 || [],
-                invoicesOver90: invoicesOver90 || []
+                invoices0To30: Array.isArray(invoices0To30) ? invoices0To30 : [],
+                invoices31To60: Array.isArray(invoices31To60) ? invoices31To60 : [],
+                invoices61To90: Array.isArray(invoices61To90) ? invoices61To90 : [],
+                invoicesOver90: Array.isArray(invoicesOver90) ? invoicesOver90 : []
             });
 
             showSuccess('Aging report data loaded successfully');
         } catch (error) {
             console.error('Error fetching aging data:', error);
-            showError('Could not load aging report data. Please try again.');
+            showError('Could not load aging report data: ' + error.message);
 
             // Set default empty data
             setAgingData({
@@ -174,22 +146,16 @@ const AgingReport = () => {
             setDownloadingPdf(true);
             showInfo('Generating PDF report...');
 
-            const token = localStorage.getItem('token');
+            console.log('=== EXPORTING AGING REPORT PDF ===');
 
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
+            const response = await financeService.invoices.exportAgingToPDF();
 
-            const response = await fetch('http://localhost:8080/api/v1/invoices/aging/export/pdf', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/pdf'
-                }
-            });
+            console.log('PDF export response:', response);
 
-            if (response.ok) {
-                const blob = await response.blob();
+            // Extract blob from response
+            const blob = response.data || response;
+
+            if (blob instanceof Blob) {
                 const url = window.URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
@@ -201,7 +167,7 @@ const AgingReport = () => {
 
                 showSuccess('PDF report downloaded successfully');
             } else {
-                throw new Error(`Failed to generate PDF: ${response.status} ${response.statusText}`);
+                throw new Error('Invalid response format for PDF download');
             }
         } catch (error) {
             console.error('Error downloading PDF:', error);

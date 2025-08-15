@@ -166,7 +166,7 @@ public class DocumentService {
         if (document.getFileUrl() != null && !document.getFileUrl().isEmpty()) {
             try {
                 String bucketName = document.getEntityType().name().toLowerCase() + "-" + document.getEntityId().toString();
-                String fileName = "document-" + id.toString();
+                String fileName = "document-" + id;
                 minioService.deleteFile(bucketName, fileName);
             } catch (Exception e) {
                 // Log error but continue with deletion

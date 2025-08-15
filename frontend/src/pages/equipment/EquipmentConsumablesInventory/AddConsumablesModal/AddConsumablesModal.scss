@@ -303,6 +303,30 @@
       }
     }
 
+    .add-consumables-loading-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+      font-style: italic;
+
+      &::before {
+        content: '';
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--color-primary);
+        border-top: 2px solid transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      span {
+        font-family: var(--font-family);
+      }
+    }
+
     .add-consumables-modal-footer {
       display: flex;
       justify-content: flex-end;

@@ -6,6 +6,7 @@ import DepartmentSalaryChart from './components/DepartmentSalaryChart.jsx';
 import MonthlySalaryChart from './components/MonthlySalaryChart.jsx';
 import EmployeePositionChart from './components/EmployeePositionChart.jsx';
 import './HRDashboard.css';
+import { hrDashboardService } from '../../../services/hrDashboardService';
 
 const HRDashboard = () => {
     const { t } = useTranslation();
@@ -19,36 +20,15 @@ const HRDashboard = () => {
             try {
                 setLoading(true);
 
-                // Get token from localStorage
-                const token = localStorage.getItem('token');
-
-                // Fetch salary statistics
-                const salaryResponse = await fetch('http://localhost:8080/api/v1/hr/dashboard/salary-statistics', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!salaryResponse.ok) {
-                    throw new Error(`Error fetching salary statistics: ${salaryResponse.status}`);
-                }
-
-                // Fetch employee distribution
-                const distributionResponse = await fetch('http://localhost:8080/api/v1/hr/dashboard/employee-distribution', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!distributionResponse.ok) {
-                    throw new Error(`Error fetching employee distribution: ${distributionResponse.status}`);
-                }
+                // Fetch salary statistics and employee distribution
+                const [salaryResponse, distributionResponse] = await Promise.all([
+                    hrDashboardService.getSalaryStatistics(),
+                    hrDashboardService.getEmployeeDistribution()
+                ]);
 
                 // Parse responses
-                const salaryData = await salaryResponse.json();
-                const distributionData = await distributionResponse.json();
+                const salaryData = salaryResponse.data;
+                const distributionData = distributionResponse.data;
 
                 setSalaryStats(salaryData);
                 setEmployeeDistribution(distributionData);

@@ -3,6 +3,10 @@ import "../WarehouseViewTransactions.scss";
 import TransactionViewModal from "../TransactionViewModal/TransactionViewModal.jsx";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx";
+import { transactionService } from '../../../../services/transaction/transactionService.js';
+import { warehouseService } from '../../../../services/warehouse/warehouseService';
+import { siteService } from '../../../../services/siteService';
+import { equipmentService } from '../../../../services/equipmentService';
 
 const ValidatedTransactionsTable = ({
                                         warehouseId,
@@ -50,48 +54,39 @@ const ValidatedTransactionsTable = ({
         setLoading(true);
 
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/transactions/warehouse/${warehouseId}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
+            const data = await transactionService.getTransactionsForWarehouse(warehouseId);
+            const validatedData = await Promise.all(
+                data
+                    .filter(tx =>
+                        (tx.status === "ACCEPTED" || tx.status === "REJECTED" || tx.status === "RESOLVING" || tx.status === "RESOLVED") &&
+                        (tx.senderId === warehouseId || tx.receiverId === warehouseId)
+                    )
+                    .map(async (tx) => {
+                        const sender = await fetchEntityDetails(tx.senderType, tx.senderId);
+                        const receiver = await fetchEntityDetails(tx.receiverType, tx.receiverId);
 
-            if (response.ok) {
-                const data = await response.json();
-                const validatedData = await Promise.all(
-                    data
-                        .filter(tx =>
-                            (tx.status === "ACCEPTED" || tx.status === "REJECTED" || tx.status === "RESOLVING" || tx.status === "RESOLVED") &&
-                            (tx.senderId === warehouseId || tx.receiverId === warehouseId)
-                        )
-                        .map(async (tx) => {
-                            const sender = await fetchEntityDetails(tx.senderType, tx.senderId);
-                            const receiver = await fetchEntityDetails(tx.receiverType, tx.receiverId);
+                        // Process entity data for consistent display
+                        const processedSender = processEntityData(tx.senderType, sender);
+                        const processedReceiver = processEntityData(tx.receiverType, receiver);
 
-                            // Process entity data for consistent display
-                            const processedSender = processEntityData(tx.senderType, sender);
-                            const processedReceiver = processEntityData(tx.receiverType, receiver);
+                        // Preserve all original transaction data and only add processed sender/receiver
+                        return {
+                            ...tx, // Keep all original transaction properties
+                            sender: processedSender,
+                            receiver: processedReceiver,
+                            // Explicitly preserve important properties that might be getting lost
+                            items: tx.items || [],
+                            quantity: tx.quantity,
+                            receivedQuantity: tx.receivedQuantity,
+                            sentFirst: tx.sentFirst,
+                            senderId: tx.senderId,
+                            receiverId: tx.receiverId
+                        };
+                    })
+            );
 
-                            // Preserve all original transaction data and only add processed sender/receiver
-                            return {
-                                ...tx, // Keep all original transaction properties
-                                sender: processedSender,
-                                receiver: processedReceiver,
-                                // Explicitly preserve important properties that might be getting lost
-                                items: tx.items || [],
-                                quantity: tx.quantity,
-                                receivedQuantity: tx.receivedQuantity,
-                                sentFirst: tx.sentFirst,
-                                senderId: tx.senderId,
-                                receiverId: tx.receiverId
-                            };
-                        })
-                );
-
-                console.log('Validated transactions data:', validatedData);
-                setValidatedTransactions(validatedData);
-            } else {
-                showSnackbar("Failed to fetch validated transactions", "error");
-            }
+            console.log('Validated transactions data:', validatedData);
+            setValidatedTransactions(validatedData);
         } catch (err) {
             console.error("Error fetching validated transactions:", err);
             showSnackbar("Error fetching validated transactions", "error");
@@ -135,25 +130,20 @@ const ValidatedTransactionsTable = ({
 
     const fetchEntityDetails = async (entityType, entityId) => {
         if (!entityType || !entityId) return null;
+
         try {
-            const token = localStorage.getItem("token");
-            let endpoint;
             if (entityType === "WAREHOUSE") {
-                endpoint = `http://localhost:8080/api/v1/warehouses/${entityId}`;
+                return await warehouseService.getById(entityId);
             } else if (entityType === "SITE") {
-                endpoint = `http://localhost:8080/api/v1/sites/${entityId}`;
+                return await siteService.getById(entityId);
             } else if (entityType === "EQUIPMENT") {
-                endpoint = `http://localhost:8080/api/equipment/${entityId}`;
+                return await equipmentService.getEquipmentById(entityId);
             } else {
-                endpoint = `http://localhost:8080/api/${entityType.toLowerCase()}/${entityId}`;
+                console.error(`Unsupported entity type: ${entityType}`);
+                return null;
             }
-
-            const response = await fetch(endpoint, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-
-            return response.ok ? await response.json() : null;
-        } catch {
+        } catch (error) {
+            console.error(`Failed to fetch ${entityType} details:`, error);
             return null;
         }
     };
@@ -357,9 +347,7 @@ const ValidatedTransactionsTable = ({
     return (
         <div className="transaction-table-section">
             <div className="table-header-section">
-                <div className="left-section3">
-                    <div className="item-count3">{validatedTransactions.length} validated transactions</div>
-                </div>
+
             </div>
 
             {/* 🎯 DataTable Component with Excel Export */}

@@ -8,6 +8,7 @@
 @import url('./styles/modal-styles.scss');
 @import url('./styles/textarea-styles.scss');
 @import url("./styles/tabs.scss");
+@import url("./styles/cancel-modal-button.scss");
 
 /* Base styles */
 body {

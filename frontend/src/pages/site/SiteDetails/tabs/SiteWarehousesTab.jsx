@@ -3,9 +3,11 @@ import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import {useTranslation} from 'react-i18next';
 import {useAuth} from "../../../../contexts/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
 import Snackbar from "../../../../components/common/Snackbar/Snackbar";
+import ConfirmationDialog from "../../../../components/common/ConfirmationDialog/ConfirmationDialog";
 import { siteService } from "../../../../services/siteService";
+import { warehouseService } from "../../../../services/warehouseService";
 
 const SiteWarehousesTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -25,6 +27,29 @@ const SiteWarehousesTab = ({siteId}) => {
     const [previewImage, setPreviewImage] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formError, setFormError] = useState(null);
+
+    // Edit modal states
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingWarehouse, setEditingWarehouse] = useState(null);
+    const [editPreviewImage, setEditPreviewImage] = useState(null);
+    const [editFormData, setEditFormData] = useState({
+        id: "",
+        name: "",
+        photoUrl: "",
+        managerId: ""
+    });
+    const [editManagers, setEditManagers] = useState([]);
+    const [selectedEditManagerId, setSelectedEditManagerId] = useState("");
+
+    // Confirmation dialog state
+    const [confirmDialog, setConfirmDialog] = useState({
+        isVisible: false,
+        type: 'warning',
+        title: '',
+        message: '',
+        onConfirm: null
+    });
+
     const [snackbar, setSnackbar] = useState({
         show: false,
         message: '',
@@ -34,7 +59,7 @@ const SiteWarehousesTab = ({siteId}) => {
     const workersDropdownRef = useRef(null);
     const {currentUser} = useAuth();
 
-    const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || "ADMIN";
+    const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || currentUser?.role === "ADMIN";
 
     // Define columns for DataTable
     const columns = [
@@ -48,17 +73,43 @@ const SiteWarehousesTab = ({siteId}) => {
             accessor: 'name',
             sortable: true
         },
-        // {
-        //     header: 'Capacity',
-        //     accessor: 'capacity',
-        //     sortable: true
-        // },
         {
             header: 'Manager',
             accessor: 'manager',
             sortable: true
         }
     ];
+
+    // Define actions for DataTable
+    const actions = isSiteAdmin ? [
+        {
+            label: 'Edit',
+            icon: <FaEdit />,
+            onClick: (row) => handleOpenEditModal(row),
+            className: 'edit'
+        },
+        {
+            label: 'Delete',
+            icon: <FaTrash />,
+            onClick: (row) => handleOpenDeleteModal(row),
+            className: 'danger'
+        }
+    ] : [];
+
+    // Confirmation dialog helper functions
+    const showConfirmDialog = (type, title, message, onConfirm) => {
+        setConfirmDialog({
+            isVisible: true,
+            type,
+            title,
+            message,
+            onConfirm
+        });
+    };
+
+    const hideConfirmDialog = () => {
+        setConfirmDialog(prev => ({ ...prev, isVisible: false }));
+    };
 
     // Helper function to find and format manager name consistently
     const findManagerName = (warehouse) => {
@@ -108,14 +159,22 @@ const SiteWarehousesTab = ({siteId}) => {
             const response = await siteService.getSiteWarehouses(siteId);
             const data = response.data;
 
+            // Add this debug line
+            console.log("Warehouse data from API:", data);
+
             if (Array.isArray(data)) {
-                const transformedData = data.map((item, index) => ({
-                    conventionalId: `WH-${String(index + 1).padStart(3, '0')}`,
-                    name:item.name,
-                    warehouseID: item.id,
-                    // capacity: `${item.capacity} m²`,
-                    manager: findManagerName(item),
-                }));
+                const transformedData = data.map((item, index) => {
+                    // Add this debug line too
+                    console.log("Individual warehouse:", item);
+
+                    return {
+                        conventionalId: `WH-${String(index + 1).padStart(3, '0')}`,
+                        name: item.name,
+                        warehouseID: item.id,
+                        manager: findManagerName(item),
+                        originalData: item
+                    };
+                });
 
                 setWarehouseData(transformedData);
             } else {
@@ -170,6 +229,21 @@ const SiteWarehousesTab = ({siteId}) => {
         }
     };
 
+    const fetchEditManagers = async () => {
+        try {
+            const response = await siteService.getWarehouseManagers();
+            setEditManagers(response.data || []);
+        } catch (error) {
+            console.error("Error fetching managers:", error);
+            setSnackbar({
+                show: true,
+                message: 'Failed to load managers',
+                type: 'error'
+            });
+            setEditManagers([]);
+        }
+    };
+
     // Handle opening the Add Warehouse modal
     const handleOpenAddModal = () => {
         setShowAddModal(true);
@@ -192,6 +266,168 @@ const SiteWarehousesTab = ({siteId}) => {
         const file = e.target.files[0];
         if (file) {
             setPreviewImage(URL.createObjectURL(file));
+        }
+    };
+
+    // Handle edit file change
+    const handleEditFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setEditFormData({ ...editFormData, photo: file });
+            setEditPreviewImage(URL.createObjectURL(file));
+        }
+    };
+
+    // Handle edit input changes
+    const handleEditInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditFormData({ ...editFormData, [name]: value });
+
+        if (name === 'managerId') {
+            setSelectedEditManagerId(value);
+        }
+    };
+
+    // Open edit modal
+    const handleOpenEditModal = async (row) => {
+        try {
+            setEditPreviewImage(null);
+            const warehouse = row.originalData;
+
+            // Find current manager
+            const currentManager = warehouse.employees?.find(
+                (emp) => emp.jobPosition?.positionName?.toLowerCase() === "warehouse manager"
+            );
+
+            setEditFormData({
+                id: warehouse.id,
+                name: warehouse.name || "",
+                photoUrl: warehouse.photoUrl || "",
+                managerId: currentManager?.id || ""
+            });
+
+            setSelectedEditManagerId(currentManager?.id || "");
+
+            if (warehouse.photoUrl) {
+                setEditPreviewImage(warehouse.photoUrl);
+            }
+
+            setEditingWarehouse(warehouse);
+            setShowEditModal(true);
+
+            // Fetch managers for dropdown
+            await fetchEditManagers();
+        } catch (error) {
+            console.error("Error opening edit modal:", error);
+            setSnackbar({
+                show: true,
+                message: "Error opening edit form",
+                type: 'error'
+            });
+        }
+    };
+
+    // Open delete confirmation dialog
+    const handleOpenDeleteModal = (row) => {
+        const warehouse = row.originalData;
+        const hasEmployees = warehouse.employees && warehouse.employees.length > 0;
+        const employeeCount = warehouse.employees ? warehouse.employees.length : 0;
+
+        const message = hasEmployees
+            ? `This action will permanently delete "${warehouse.name}" and cannot be undone.\n\n⚠️ This warehouse has ${employeeCount} assigned employee(s). Please reassign them before deleting.`
+            : `This action will permanently delete "${warehouse.name}" and cannot be undone.`;
+
+        showConfirmDialog(
+            'danger',
+            'Delete Warehouse',
+            message,
+            () => handleDeleteWarehouse(warehouse.id)
+        );
+    };
+
+    // Close edit modal
+    const handleCloseEditModal = () => {
+        setShowEditModal(false);
+        setEditingWarehouse(null);
+        setEditPreviewImage(null);
+        setEditManagers([]);
+        setSelectedEditManagerId("");
+        setEditFormData({
+            id: "",
+            name: "",
+            photoUrl: "",
+            managerId: ""
+        });
+    };
+
+    // Handle update warehouse
+    const handleUpdateWarehouse = async (e) => {
+        e.preventDefault();
+
+        try {
+            const formDataToSend = new FormData();
+
+            // Create warehouse data object
+            const warehouseData = {
+                name: editFormData.name,
+                photoUrl: editFormData.photoUrl
+            };
+
+            // Add manager if selected
+            if (editFormData.managerId) {
+                warehouseData.managerId = editFormData.managerId;
+            }
+
+            formDataToSend.append("warehouseData", JSON.stringify(warehouseData));
+
+            // Add photo if uploaded
+            if (editFormData.photo) {
+                formDataToSend.append("photo", editFormData.photo);
+            }
+
+            await warehouseService.update(editFormData.id, formDataToSend);
+
+            // Refresh warehouse list
+            fetchWarehouses();
+            handleCloseEditModal();
+            setSnackbar({
+                show: true,
+                message: "Warehouse updated successfully!",
+                type: 'success'
+            });
+
+        } catch (error) {
+            console.error("Failed to update warehouse:", error);
+            setSnackbar({
+                show: true,
+                message: `Failed to update warehouse: ${error.message}`,
+                type: 'error'
+            });
+        }
+    };
+
+    // Handle delete warehouse
+    const handleDeleteWarehouse = async (warehouseId) => {
+        try {
+            await warehouseService.delete(warehouseId);
+
+            // Refresh warehouse list
+            fetchWarehouses();
+            hideConfirmDialog();
+            setSnackbar({
+                show: true,
+                message: "Warehouse deleted successfully!",
+                type: 'success'
+            });
+
+        } catch (error) {
+            console.error("Failed to delete warehouse:", error);
+            hideConfirmDialog();
+            setSnackbar({
+                show: true,
+                message: `Failed to delete warehouse: ${error.message}`,
+                type: 'error'
+            });
         }
     };
 
@@ -256,7 +492,6 @@ const SiteWarehousesTab = ({siteId}) => {
 
         const warehouseData = {
             name: formElements.name.value,
-            // capacity: parseInt(formElements.capacity.value, 10),
         };
 
         const employees = [];
@@ -324,16 +559,6 @@ const SiteWarehousesTab = ({siteId}) => {
                 onClose={handleCloseSnackbar}
                 duration={3000}
             />
-            {/*<div className="departments-header">*/}
-            {/*    <h3>{t('site.siteWarehousesReport')}</h3>*/}
-            {/*    {isSiteAdmin && (*/}
-            {/*        <div className="btn-primary-container">*/}
-            {/*            <button className="assign-button" onClick={handleOpenAddModal}>*/}
-            {/*                Add Warehouse*/}
-            {/*            </button>*/}
-            {/*        </div>*/}
-            {/*    )}*/}
-            {/*</div>*/}
 
             {error ? (
                 <div className="error-container">{error}</div>
@@ -342,6 +567,7 @@ const SiteWarehousesTab = ({siteId}) => {
                     <DataTable
                         data={warehouseData}
                         columns={columns}
+                        actions={actions}
                         loading={loading}
                         showSearch={true}
                         showFilters={true}
@@ -358,11 +584,14 @@ const SiteWarehousesTab = ({siteId}) => {
                         addButtonProps={{
                             className: 'assign-button',
                         }}
+                        showExportButton={true}
+                        exportButtonText="Export Warehouses"
+                        exportFileName="site_warehouses"
                     />
                 </div>
             )}
 
-            {/* Updated Add Warehouse Modal JSX - Replace the existing modal section in your component */}
+            {/* Add Warehouse Modal */}
             {showAddModal && (
                 <div className="add-warehouse-modal-overlay">
                     <div className="add-warehouse-modal-content">
@@ -415,11 +644,6 @@ const SiteWarehousesTab = ({siteId}) => {
                                                     <label>Warehouse Name</label>
                                                     <input type="text" name="name" required />
                                                 </div>
-
-                                                {/*<div className="add-warehouse-form-group">*/}
-                                                {/*    <label>Warehouse Capacity (m²)</label>*/}
-                                                {/*    <input type="number" name="capacity" required min="1" />*/}
-                                                {/*</div>                       */}
 
                                                 <div className="add-warehouse-form-group">
                                                     <label>Warehouse Manager</label>
@@ -516,6 +740,112 @@ const SiteWarehousesTab = ({siteId}) => {
                     </div>
                 </div>
             )}
+
+            {/* Edit Warehouse Modal */}
+            {showEditModal && (
+                <div className="warehouse-modal-overlay">
+                    <div className="warehouse-modal-content">
+                        <div className="warehouse-modal-header">
+                            <h2>Edit Warehouse</h2>
+                            <button className="warehouse-modal-close-button" onClick={handleCloseEditModal}>×</button>
+                        </div>
+
+                        <div className="warehouse-modal-body">
+                            <div className="warehouse-form-container">
+                                <div className="warehouse-form-card">
+                                    <div className="warehouse-profile-section">
+                                        <label htmlFor="warehouseEditImageUpload" className="warehouse-image-upload-label">
+                                            {editPreviewImage ? (
+                                                <img src={editPreviewImage} alt="Warehouse" className="warehouse-image-preview" />
+                                            ) : (
+                                                <div className="warehouse-image-placeholder"></div>
+                                            )}
+                                            <span className="warehouse-upload-text">Upload Photo</span>
+                                        </label>
+                                        <input
+                                            type="file"
+                                            id="warehouseEditImageUpload"
+                                            name="photo"
+                                            accept="image/*"
+                                            onChange={handleEditFileChange}
+                                            style={{ display: "none" }}
+                                        />
+                                    </div>
+
+                                    <div className="warehouse-form-fields-section">
+                                        <form onSubmit={handleUpdateWarehouse}>
+                                            <div className="warehouse-form-grid">
+                                                <div className="warehouse-form-group">
+                                                    <label>Warehouse Name</label>
+                                                    <input
+                                                        type="text"
+                                                        name="name"
+                                                        value={editFormData.name}
+                                                        onChange={handleEditInputChange}
+                                                        required
+                                                    />
+                                                </div>
+
+                                                <div className="warehouse-form-group">
+                                                    <label>Warehouse Manager</label>
+                                                    <select
+                                                        name="managerId"
+                                                        value={selectedEditManagerId}
+                                                        onChange={handleEditInputChange}
+                                                    >
+                                                        <option value="">Select Manager</option>
+                                                        {editManagers.map(manager => (
+                                                            <option key={manager.id} value={manager.id}>
+                                                                {manager.firstName} {manager.lastName}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+
+                                                {/*/!* Display current site as read-only info *!/*/}
+                                                {/*<div className="warehouse-form-group">*/}
+                                                {/*    <label>Current Site</label>*/}
+                                                {/*    <div className="warehouse-readonly-field">*/}
+                                                {/*        {currentSiteName || "Current Site"}*/}
+                                                {/*    </div>*/}
+                                                {/*</div>*/}
+                                            </div>
+
+                                            <div className="warehouse-form-actions">
+                                                <button
+                                                    type="button"
+                                                    className="warehouse-cancel-button"
+                                                    onClick={handleCloseEditModal}
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    type="submit"
+                                                    className="warehouse-submit-button"
+                                                >
+                                                    Update Warehouse
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={confirmDialog.isVisible}
+                type={confirmDialog.type}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={hideConfirmDialog}
+                confirmText="Yes, Delete"
+                cancelText="Cancel"
+            />
         </div>
     );
 };

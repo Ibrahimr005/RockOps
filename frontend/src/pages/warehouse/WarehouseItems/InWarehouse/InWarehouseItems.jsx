@@ -1,6 +1,35 @@
 import React, { useState, useEffect } from "react";
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import "./InWarehouseItems.scss";
+import { itemService } from '../../../../services/warehouse/itemService';
+import { itemTypeService } from '../../../../services/warehouse/itemTypeService';
+import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
+import { warehouseService } from '../../../../services/warehouse/warehouseService';
+
+// Helper functions for quantity color coding
+const getQuantityColorClass = (currentQuantity, minQuantity) => {
+    if (!minQuantity || minQuantity === 0) return 'quantity-no-min';
+
+    const ratio = currentQuantity / minQuantity;
+
+    if (ratio >= 4) return 'quantity-excellent';    // 4x+ minimum - Dark Green
+    if (ratio >= 3) return 'quantity-very-good';   // 3x minimum - Green
+    if (ratio >= 2) return 'quantity-good';        // 2x minimum - Blue
+    if (ratio >= 1) return 'quantity-adequate';    // 1x minimum - Orange
+    return 'quantity-critical';                     // Below minimum - Red
+};
+
+const getQuantityStatus = (currentQuantity, minQuantity) => {
+    if (!minQuantity || minQuantity === 0) return 'No minimum set';
+
+    const ratio = currentQuantity / minQuantity;
+
+    if (ratio >= 4) return 'Excellent stock';
+    if (ratio >= 3) return 'Very good stock';
+    if (ratio >= 2) return 'Good stock';
+    if (ratio >= 1) return 'Adequate stock';
+    return 'Critical - Below minimum';
+};
 
 const InWarehouseItems = ({
                               warehouseId,
@@ -32,8 +61,12 @@ const InWarehouseItems = ({
     const [childCategories, setChildCategories] = useState([]);
     const [itemTypes, setItemTypes] = useState([]);
 
-    // NEW: Filter toggle state
+    // Filter toggle state
     const [showFilters, setShowFilters] = useState(false);
+
+    // NEW: Collapsible states for alerts and legend
+    const [showLowStockAlert, setShowLowStockAlert] = useState(false);
+    const [showStockLegend, setShowStockLegend] = useState(false);
 
     // Helper function to aggregate items by type
     const aggregateItemsByType = (items) => {
@@ -60,37 +93,39 @@ const InWarehouseItems = ({
         return Object.values(aggregated);
     };
 
-    // Fetch functions
     const fetchItemTypes = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/itemTypes`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setItemTypes(data);
-            }
+            const data = await itemTypeService.getAll();
+            setItemTypes(data);
         } catch (error) {
             console.error("Failed to fetch item types:", error);
         }
     };
 
+    // Replace the fetchParentCategories method:
     const fetchParentCategories = async () => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/itemCategories/parents`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setParentCategories(data);
-            }
+            const data = await itemCategoryService.getParents();
+            setParentCategories(data);
         } catch (error) {
             console.error("Failed to fetch parent categories:", error);
         }
     };
 
+    useEffect(() => {
+        if (isAddItemModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isAddItemModalOpen]);
+
+
+// Replace the fetchChildCategories method:
     const fetchChildCategories = async (parentCategoryId) => {
         if (!parentCategoryId) {
             setChildCategories([]);
@@ -98,17 +133,12 @@ const InWarehouseItems = ({
         }
 
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/itemCategories/children/${parentCategoryId}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setChildCategories(data);
-            } else {
-                setChildCategories([]);
-            }
+            const data = await itemCategoryService.getChildren();
+            // Filter by parent category since the endpoint returns all children
+            const filteredChildren = data.filter(category =>
+                category.parentCategory?.id === parentCategoryId
+            );
+            setChildCategories(filteredChildren);
         } catch (error) {
             console.error("Failed to fetch child categories:", error);
             setChildCategories([]);
@@ -117,18 +147,12 @@ const InWarehouseItems = ({
 
     const fetchWarehouseName = async (warehouseId) => {
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/warehouses/${warehouseId}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const warehouse = await response.json();
-                return warehouse.name;
-            }
+            const warehouse = await warehouseService.getById(warehouseId);
+            return warehouse.name;
         } catch (error) {
             console.error("Error fetching warehouse name:", error);
+            return "Unknown Warehouse";
         }
-        return "Unknown Warehouse";
     };
 
     // Initialize data
@@ -260,38 +284,37 @@ const InWarehouseItems = ({
         setAddItemLoading(true);
 
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/items`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    itemTypeId: addItemData.itemTypeId,
-                    warehouseId: warehouseId,
-                    initialQuantity: parseInt(addItemData.initialQuantity),
-                    username: username,
-                    createdAt: addItemData.createdAt
-                }),
+            await itemService.createItem({
+                itemTypeId: addItemData.itemTypeId,
+                warehouseId: warehouseId,
+                initialQuantity: parseInt(addItemData.initialQuantity),
+                username: username,
+                createdAt: addItemData.createdAt
             });
 
-            if (response.ok) {
-                refreshItems();
-                setIsAddItemModalOpen(false);
-                showSnackbar("Item added successfully", "success");
-            } else {
-                const errorText = await response.text();
-                console.error("Failed to add item:", response.status, errorText);
-                showSnackbar("Failed to add item", "error");
-            }
+            refreshItems();
+            setIsAddItemModalOpen(false);
+            showSnackbar("Item added successfully", "success");
         } catch (error) {
             console.error("Error adding item:", error);
-            showSnackbar("Error adding item", "error");
+            showSnackbar("Failed to add item", "error");
         } finally {
             setAddItemLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (isTransactionDetailsModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isTransactionDetailsModalOpen]);
+
 
     const handleOpenTransactionDetailsModal = async (item) => {
         setSelectedItem(item);
@@ -299,50 +322,39 @@ const InWarehouseItems = ({
         setTransactionDetailsLoading(true);
 
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(
-                `http://localhost:8080/api/v1/items/transaction-details/${warehouseId}/${item.itemType.id}`,
-                { headers: { "Authorization": `Bearer ${token}` } }
+            const details = await itemService.getItemTransactionDetails(warehouseId, item.itemType.id);
+
+            const detailsWithWarehouseNames = await Promise.all(
+                details.map(async (detail) => {
+                    if (detail.transactionItem?.transaction) {
+                        const transaction = detail.transactionItem.transaction;
+                        let senderName = "Unknown";
+                        let receiverName = "Unknown";
+
+                        if (transaction.senderType === 'WAREHOUSE' && transaction.senderId) {
+                            senderName = await fetchWarehouseName(transaction.senderId);
+                        }
+                        if (transaction.receiverType === 'WAREHOUSE' && transaction.receiverId) {
+                            receiverName = await fetchWarehouseName(transaction.receiverId);
+                        }
+
+                        return {
+                            ...detail,
+                            senderWarehouseName: senderName,
+                            receiverWarehouseName: receiverName
+                        };
+                    }
+                    return detail;
+                })
             );
 
-            if (response.ok) {
-                const details = await response.json();
+            const sortedDetails = detailsWithWarehouseNames.sort((a, b) => {
+                const dateA = new Date(a.createdAt || 0);
+                const dateB = new Date(b.createdAt || 0);
+                return dateA - dateB;
+            });
 
-                const detailsWithWarehouseNames = await Promise.all(
-                    details.map(async (detail) => {
-                        if (detail.transactionItem?.transaction) {
-                            const transaction = detail.transactionItem.transaction;
-                            let senderName = "Unknown";
-                            let receiverName = "Unknown";
-
-                            if (transaction.senderType === 'WAREHOUSE' && transaction.senderId) {
-                                senderName = await fetchWarehouseName(transaction.senderId);
-                            }
-                            if (transaction.receiverType === 'WAREHOUSE' && transaction.receiverId) {
-                                receiverName = await fetchWarehouseName(transaction.receiverId);
-                            }
-
-                            return {
-                                ...detail,
-                                senderWarehouseName: senderName,
-                                receiverWarehouseName: receiverName
-                            };
-                        }
-                        return detail;
-                    })
-                );
-
-                const sortedDetails = detailsWithWarehouseNames.sort((a, b) => {
-                    const dateA = new Date(a.createdAt || 0);
-                    const dateB = new Date(b.createdAt || 0);
-                    return dateA - dateB;
-                });
-
-                setTransactionDetails(sortedDetails);
-            } else {
-                console.error("Failed to fetch transaction details:", response.status);
-                showSnackbar("Failed to load transaction details", "error");
-            }
+            setTransactionDetails(sortedDetails);
         } catch (error) {
             console.error("Error fetching transaction details:", error);
             showSnackbar("Error loading transaction details", "error");
@@ -360,16 +372,26 @@ const InWarehouseItems = ({
     const aggregatedData = aggregateItemsByType(filteredData);
     const lowStockItems = aggregatedData.filter(item => isLowStock(item));
 
-    // Table columns
+    // Table columns with enhanced quantity rendering
     const itemColumns = [
         {
+            accessor: 'itemType.itemCategory.parentCategory.name',
+            header: 'PARENT CATEGORY',
+            width: '10px',
+            render: (row) => (
+                <span className="parent-category-tag">
+                {row.itemType?.itemCategory?.parentCategory?.name || "No Parent"}
+            </span>
+            )
+        },
+        {
             accessor: 'itemType.itemCategory.name',
-            header: 'CATEGORY',
-            width: '255px',
+            header: 'CHILD CATEGORY',
+            width: '180px',
             render: (row) => (
                 <span className="category-tag">
-                    {row.itemType?.itemCategory?.name || "No Category"}
-                </span>
+                {row.itemType?.itemCategory?.name || "No Category"}
+            </span>
             )
         },
         {
@@ -383,23 +405,37 @@ const InWarehouseItems = ({
             width: '250px',
             render: (row) => {
                 if (row.isAggregated) {
-                    const lowStock = isLowStock(row);
+                    const colorClass = getQuantityColorClass(row.quantity, row.itemType?.minQuantity);
+                    const status = getQuantityStatus(row.quantity, row.itemType?.minQuantity);
+
                     return (
                         <div className="quantity-cell">
-                            <div className="quantity-main">
-                                <span className={`total-quantity ${lowStock ? 'low-stock' : ''}`}>
-                                    {row.quantity}
-                                </span>
-                            </div>
+                            <span
+                                className={`quantity-badge ${colorClass}`}
+                                title={`${status} (${row.quantity}/${row.itemType?.minQuantity || 'No min'})`}
+                            >
+                                {row.quantity}
+                            </span>
                             {row.individualItems && row.individualItems.length > 1 && (
                                 <span className="quantity-breakdown" title={`From ${row.individualItems.length} transactions`}>
-                                    {` (${row.individualItems.length} entries)`}
+                                    ({row.individualItems.length} entries)
                                 </span>
                             )}
                         </div>
                     );
                 }
-                return row.quantity || 0;
+
+                const colorClass = getQuantityColorClass(row.quantity, row.itemType?.minQuantity);
+                const status = getQuantityStatus(row.quantity, row.itemType?.minQuantity);
+
+                return (
+                    <span
+                        className={`quantity-badge ${colorClass}`}
+                        title={`${status} (${row.quantity}/${row.itemType?.minQuantity || 'No min'})`}
+                    >
+                        {row.quantity || 0}
+                    </span>
+                );
             },
             // Custom export formatter for Excel
             exportFormatter: (value, row) => {
@@ -413,7 +449,7 @@ const InWarehouseItems = ({
         {
             accessor: 'itemType.measuringUnit',
             header: 'UNIT',
-            width: '230px',
+            width: '200px',
             render: (row) => row.itemType?.measuringUnit || "N/A"
         }
     ];
@@ -436,45 +472,124 @@ const InWarehouseItems = ({
 
     return (
         <>
-            {/* Low Stock Warning Banner */}
-            {lowStockItems.length > 0 && (
-                <div className="low-stock-warning-banner">
-                    <div className="warning-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                            <line x1="12" y1="9" x2="12" y2="13"/>
-                            <line x1="12" y1="17" x2="12.01" y2="17"/>
-                        </svg>
+            {/* NEW: Full-width Alerts and Legend Container */}
+            <div className="alerts-legend-container">
+                {/* Low Stock Warning Banner - Full Width & Collapsible */}
+                {lowStockItems.length > 0 && (
+                    <div className="low-stock-warning-banner">
+                        <div className="alert-header" onClick={() => setShowLowStockAlert(!showLowStockAlert)}>
+                            <div className="alert-title-section">
+                                <div className="warning-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                        <line x1="12" y1="9" x2="12" y2="13"/>
+                                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                    </svg>
+                                </div>
+                                <h4 className="alert-title">Low Stock Alert</h4>
+                                <span className="alert-count">({lowStockItems.length} item{lowStockItems.length > 1 ? 's' : ''})</span>
+                            </div>
+                            <div className="alert-toggle">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    className={showLowStockAlert ? 'rotated' : ''}
+                                >
+                                    <polyline points="6,9 12,15 18,9"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+
+                        {showLowStockAlert && (
+                            <div className="alert-content">
+                                <div className="warning-content">
+                                    <div className="low-stock-items-list">
+                                        {lowStockItems.slice(0, 6).map((item, index) => (
+                                            <span key={index} className="low-stock-item">
+                                                {item.itemType?.name} ({item.quantity}/{item.itemType?.minQuantity})
+                                            </span>
+                                        ))}
+                                        {lowStockItems.length > 6 && (
+                                            <span className="low-stock-more">
+                                                +{lowStockItems.length - 6} more items
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="warning-actions">
+                                    <button
+                                        className="restock-button"
+                                        onClick={handleRestockButtonClick}
+                                        title="Create request order for low stock items"
+                                    >
+                                        Restock Items
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                    <div className="warning-content">
-                        <h3 className="warning-title">Low Stock Alert</h3>
-                        <p className="warning-message">
-                            {lowStockItems.length} item{lowStockItems.length > 1 ? 's are' : ' is'} below minimum quantity threshold:
-                        </p>
-                        <div className="low-stock-items-list">
-                            {lowStockItems.slice(0, 3).map((item, index) => (
-                                <span key={index} className="low-stock-item">
-                                    {item.itemType?.name} ({item.quantity}/{item.itemType?.minQuantity})
-                                </span>
-                            ))}
-                            {lowStockItems.length > 3 && (
-                                <span className="low-stock-more">
-                                    +{lowStockItems.length - 3} more
-                                </span>
-                            )}
+                )}
+
+                {/* Stock Level Legend - Full Width & Collapsible */}
+                <div className="stock-level-legend">
+                    <div className="legend-header" onClick={() => setShowStockLegend(!showStockLegend)}>
+                        <div className="legend-title-section">
+                            <div className="legend-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M12 1v6m0 6v6"/>
+                                    <path d="M21 12h-6m-6 0H3"/>
+                                </svg>
+                            </div>
+                            <h4 className="legend-title">Stock Level Guide</h4>
+                        </div>
+                        <div className="legend-toggle">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                className={showStockLegend ? 'rotated' : ''}
+                            >
+                                <polyline points="6,9 12,15 18,9"></polyline>
+                            </svg>
                         </div>
                     </div>
-                    <div className="warning-actions">
-                        <button
-                            className="restock-button"
-                            onClick={handleRestockButtonClick}
-                            title="Create request order for low stock items"
-                        >
-                            Restock Items
-                        </button>
-                    </div>
+
+                    {showStockLegend && (
+                        <div className="legend-content">
+                            <div className="legend-items">
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-excellent"></span>
+                                    <span className="legend-text">Excellent (4x+ minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-very-good"></span>
+                                    <span className="legend-text">Very Good (3x minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-good"></span>
+                                    <span className="legend-text">Good (2x minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-adequate"></span>
+                                    <span className="legend-text">Adequate (1x minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-critical"></span>
+                                    <span className="legend-text">Critical (Below minimum)</span>
+                                </div>
+                                <div className="legend-item">
+                                    <span className="legend-color quantity-no-min"></span>
+                                    <span className="legend-text">No minimum set</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
 
             {/* DataTable */}
             <DataTable
@@ -487,8 +602,9 @@ const InWarehouseItems = ({
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={[
-                    { accessor: 'itemType.name', header: 'Item' },
+                    { accessor: 'itemType.itemCategory.parentCategory.name', header: 'Parent Category' },
                     { accessor: 'itemType.itemCategory.name', header: 'Category' },
+                    { accessor: 'itemType.name', header: 'Item' },
                     { accessor: 'itemType.measuringUnit', header: 'Unit' }
                 ]}
                 actions={actions}
@@ -501,7 +617,6 @@ const InWarehouseItems = ({
                     </svg>
                 }
                 onAddClick={handleOpenAddItemModal}
-
                 // Excel Export functionality
                 showExportButton={true}
                 exportButtonText="Export Items"
@@ -518,6 +633,7 @@ const InWarehouseItems = ({
                 exportAllData={false}
                 excludeColumnsFromExport={[]}
                 customExportHeaders={{
+                    'itemType.itemCategory.parentCategory.name': 'Parent Category',
                     'itemType.itemCategory.name': 'Category',
                     'itemType.name': 'Item Name',
                     'quantity': 'Current Quantity',

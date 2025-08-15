@@ -22,11 +22,11 @@ import java.util.*;
 @Service
 public class SiteService
 {
-    private SiteRepository siteRepository;
-    private PartnerRepository partnerRepository;
-    private EmployeeRepository employeeRepository;
-    private EquipmentRepository equipmentRepository;
-    private FixedAssetsRepository fixedAssetsRepository;
+    private final SiteRepository siteRepository;
+    private final PartnerRepository partnerRepository;
+    private final EmployeeRepository employeeRepository;
+    private final EquipmentRepository equipmentRepository;
+    private final FixedAssetsRepository fixedAssetsRepository;
 
     @Autowired
     public SiteService(SiteRepository siteRepository, PartnerRepository partnerRepository, EmployeeRepository employeeRepository, EquipmentRepository equipmentRepository, FixedAssetsRepository fixedAssetsRepository)

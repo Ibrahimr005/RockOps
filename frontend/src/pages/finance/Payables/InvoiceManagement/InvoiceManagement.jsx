@@ -15,6 +15,7 @@ import {
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { useAuth } from "../../../../contexts/AuthContext";
+import { financeService } from '../../../../services/financeService.js';
 import './InvoiceManagement.css';
 
 const InvoiceManagement = () => {
@@ -45,38 +46,41 @@ const InvoiceManagement = () => {
     const fetchInvoices = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
 
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
+            console.log('=== FETCHING INVOICES ===');
 
-            console.log('Fetching invoices from: http://localhost:8080/api/v1/invoices');
+            const response = await financeService.invoices.getAll(0, 100); // page=0, size=100 to get more invoices
 
-            const response = await fetch('http://localhost:8080/api/v1/invoices', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            console.log('Raw invoices response:', response);
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
+            // Extract data from Axios response
+            const data = response.data || response;
 
-            const data = await response.json();
-            console.log('Fetched invoices:', data);
+            console.log('Extracted invoices data:', data);
 
             // Handle both paginated and non-paginated responses
-            const invoiceList = data.content || data || [];
+            let invoiceList = [];
+            if (Array.isArray(data)) {
+                invoiceList = data;
+            } else if (data && Array.isArray(data.content)) {
+                invoiceList = data.content;
+            } else if (data && Array.isArray(data.data)) {
+                invoiceList = data.data;
+            }
+
+            console.log('Final invoices list:', invoiceList);
+            console.log('Invoices count:', invoiceList.length);
+
             setInvoices(invoiceList);
 
             if (invoiceList.length === 0) {
                 showSuccess('No invoices found. You can create your first invoice using the "Create Invoice" button.');
+            } else {
+                console.log('Sample invoice:', invoiceList[0]);
             }
         } catch (error) {
             console.error('Error fetching invoices:', error);
-            showError('Could not fetch invoices. Please try again.');
+            showError('Could not fetch invoices: ' + error.message);
             setInvoices([]);
         } finally {
             setLoading(false);
@@ -86,45 +90,25 @@ const InvoiceManagement = () => {
     const handleCreateInvoice = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-
-            if (!token) {
-                showError('Authentication token not found. Please log in again.');
-                return;
-            }
-
             if (!currentUser) {
                 showError('User information not found. Please log in again.');
                 return;
             }
 
-            const response = await fetch('http://localhost:8080/api/v1/invoices', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...invoiceForm,
-                    totalAmount: parseFloat(invoiceForm.totalAmount),
-                    createdBy: currentUser.username || currentUser.name || currentUser.email
-                }),
-            });
+            const invoiceData = {
+                ...invoiceForm,
+                totalAmount: parseFloat(invoiceForm.totalAmount),
+                createdBy: currentUser.username || currentUser.name || currentUser.email
+            };
 
-            if (response.ok) {
-                showSuccess('Invoice created successfully');
-                setShowCreateModal(false);
-                resetForm();
-                fetchInvoices();
-            } else {
-                const errorText = await response.text();
-                try {
-                    const error = JSON.parse(errorText);
-                    showError(error.error || 'Failed to create invoice');
-                } catch (parseError) {
-                    showError(`Failed to create invoice: ${response.status} ${response.statusText}`);
-                }
-            }
+            console.log('Creating invoice with data:', invoiceData);
+
+            await financeService.invoices.create(invoiceData);
+
+            showSuccess('Invoice created successfully');
+            setShowCreateModal(false);
+            resetForm();
+            fetchInvoices();
         } catch (error) {
             console.error('Error creating invoice:', error);
             showError('Failed to create invoice: ' + error.message);
@@ -134,46 +118,26 @@ const InvoiceManagement = () => {
     const handleEditInvoice = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
-
-            if (!token) {
-                showError('Authentication token not found. Please log in again.');
-                return;
-            }
-
             if (!currentUser) {
                 showError('User information not found. Please log in again.');
                 return;
             }
 
-            const response = await fetch(`http://localhost:8080/api/v1/invoices/${selectedInvoice.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...invoiceForm,
-                    totalAmount: parseFloat(invoiceForm.totalAmount),
-                    updatedBy: currentUser.username || currentUser.name || currentUser.email
-                }),
-            });
+            const invoiceData = {
+                ...invoiceForm,
+                totalAmount: parseFloat(invoiceForm.totalAmount),
+                updatedBy: currentUser.username || currentUser.name || currentUser.email
+            };
 
-            if (response.ok) {
-                showSuccess('Invoice updated successfully');
-                setShowEditModal(false);
-                setSelectedInvoice(null);
-                resetForm();
-                fetchInvoices();
-            } else {
-                const errorText = await response.text();
-                try {
-                    const error = JSON.parse(errorText);
-                    showError(error.error || 'Failed to update invoice');
-                } catch (parseError) {
-                    showError(`Failed to update invoice: ${response.status} ${response.statusText}`);
-                }
-            }
+            console.log('Updating invoice with data:', invoiceData);
+
+            await financeService.invoices.update(selectedInvoice.id, invoiceData);
+
+            showSuccess('Invoice updated successfully');
+            setShowEditModal(false);
+            setSelectedInvoice(null);
+            resetForm();
+            fetchInvoices();
         } catch (error) {
             console.error('Error updating invoice:', error);
             showError('Failed to update invoice: ' + error.message);
@@ -183,27 +147,12 @@ const InvoiceManagement = () => {
     const handleDeleteInvoice = async (invoice) => {
         if (window.confirm(`Are you sure you want to delete invoice ${invoice.invoiceNumber}?`)) {
             try {
-                const token = localStorage.getItem('token');
+                console.log('Deleting invoice:', invoice.id);
 
-                if (!token) {
-                    showError('Authentication token not found. Please log in again.');
-                    return;
-                }
+                await financeService.invoices.delete(invoice.id);
 
-                const response = await fetch(`http://localhost:8080/api/v1/invoices/${invoice.id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    showSuccess('Invoice deleted successfully');
-                    fetchInvoices();
-                } else {
-                    showError(`Failed to delete invoice: ${response.status} ${response.statusText}`);
-                }
+                showSuccess('Invoice deleted successfully');
+                fetchInvoices();
             } catch (error) {
                 console.error('Error deleting invoice:', error);
                 showError('Failed to delete invoice: ' + error.message);

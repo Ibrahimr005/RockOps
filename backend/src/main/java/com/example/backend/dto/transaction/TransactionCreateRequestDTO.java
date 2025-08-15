@@ -19,10 +19,11 @@ public class TransactionCreateRequestDTO {
     private UUID senderId;
     private PartyType receiverType;
     private UUID receiverId;
+    private String description;
     private String username;
+    private String handledBy;
     private Integer batchNumber;
     private UUID sentFirst;
     private LocalDateTime transactionDate;
-    private String description;
     private List<TransactionItemRequestDTO> items;
 } 

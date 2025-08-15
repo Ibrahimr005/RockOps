@@ -130,7 +130,9 @@ const ProcurementSolutionModal = ({
                 <div className="procurement-modal-body-inprogress">
                     {/* Merchant Selection */}
                     <div className="procurement-form-group-inprogress">
-                        <label className="procurement-form-label-inprogress">Merchant</label>
+                        <label className="procurement-form-label-inprogress">
+                            Merchant <span className="required-asterisk">*</span>
+                        </label>
                         <select
                             className="procurement-form-select-inprogress"
                             value={formData.merchantId}
@@ -148,7 +150,9 @@ const ProcurementSolutionModal = ({
 
                     {/* Currency Selection */}
                     <div className="procurement-form-group-inprogress">
-                        <label className="procurement-form-label-inprogress">Currency</label>
+                        <label className="procurement-form-label-inprogress">
+                            Currency <span className="required-asterisk">*</span>
+                        </label>
                         <select
                             className="procurement-form-select-inprogress"
                             value={formData.currency}
@@ -172,7 +176,9 @@ const ProcurementSolutionModal = ({
                     {/* Quantity and Unit Price Row */}
                     <div className="procurement-form-row-inprogress">
                         <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
-                            <label className="procurement-form-label-inprogress">Quantity</label>
+                            <label className="procurement-form-label-inprogress">
+                                Quantity <span className="required-asterisk">*</span>
+                            </label>
                             <div className="procurement-form-input-container-inprogress procurement-form-input-with-unit-inprogress">
                                 <input
                                     type="number"
@@ -189,7 +195,9 @@ const ProcurementSolutionModal = ({
                         </div>
 
                         <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
-                            <label className="procurement-form-label-inprogress">Unit Price</label>
+                            <label className="procurement-form-label-inprogress">
+                                Unit Price <span className="required-asterisk">*</span>
+                            </label>
                             <div className="procurement-form-input-container-inprogress">
                                 <input
                                     type="number"
@@ -220,7 +228,9 @@ const ProcurementSolutionModal = ({
                         </div>
 
                         <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
-                            <label className="procurement-form-label-inprogress">Est. Delivery (days)</label>
+                            <label className="procurement-form-label-inprogress">
+                                Est. Delivery (days) <span className="required-asterisk">*</span>
+                            </label>
                             <div className="procurement-form-input-container-inprogress">
                                 <input
                                     type="number"
@@ -263,16 +273,15 @@ const ProcurementSolutionModal = ({
                 <div className="procurement-modal-footer-inprogress">
                     <button
                         type="button"
-                        className="procurement-button-secondary-inprogress"
+                        className="btn-cancel"
                         onClick={onClose}
                     >
                         Cancel
                     </button>
                     <button
                         type="button"
-                        className="procurement-button-primary-inprogress"
+                        className="btn-primary"
                         onClick={handleSubmit}
-                        disabled={!isFormValid()}
                     >
                         <FiPlusCircle size={16} />
                         {mode === 'edit' ? 'Save Changes' : 'Add to Offer'}

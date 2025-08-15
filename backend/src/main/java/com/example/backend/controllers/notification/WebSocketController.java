@@ -47,8 +47,7 @@ public class WebSocketController {
                                               Principal principal) {
         try {
             // Get user from Spring Security context (from JWT)
-            if (principal instanceof UsernamePasswordAuthenticationToken) {
-                UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) principal;
+            if (principal instanceof UsernamePasswordAuthenticationToken auth) {
                 User user = (User) auth.getPrincipal();
 
                 // Store session mapping

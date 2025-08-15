@@ -3,8 +3,11 @@ package com.example.backend.services;
 import com.example.backend.authentication.AuthenticationResponse;
 import com.example.backend.authentication.AuthenticationService;
 import com.example.backend.authentication.RegisterRequest;
+import com.example.backend.dto.user.UserDTO;
+import com.example.backend.dto.warehouse.WarehouseDTO;
 import com.example.backend.models.user.Role;
 import com.example.backend.models.user.User;
+import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.repositories.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -52,31 +56,37 @@ public class AdminService {
     }
 
     /**
-     * Get all users in the system
+     * Get all users in the system - returns DTOs to avoid circular references
      */
-    public List<User> getAllUsers() {
+    public List<UserDTO> getAllUsers() {
         checkAdminAccess();
-        return userRepository.findAll();
+        List<User> users = userRepository.findAll();
+        return users.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     /**
-     * Get user by their ID
+     * Get user by their ID - returns DTO
      */
-    public Optional<User> getUserById(UUID userId) {
+    public Optional<UserDTO> getUserById(UUID userId) {
         checkAdminAccess();
         Optional<User> user = userRepository.findById(userId);
         if (user.isEmpty()) {
             throw new ResourceNotFoundException("User not found with ID: " + userId);
         }
-        return user;
+        return user.map(this::convertToDTO);
     }
 
     /**
-     * Get users by role
+     * Get users by role - returns DTOs
      */
-    public List<User> getUsersByRole(Role role) {
+    public List<UserDTO> getUsersByRole(Role role) {
         checkAdminAccess();
-        return userRepository.findByRole(role);
+        List<User> users = userRepository.findByRole(role);
+        return users.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -89,21 +99,58 @@ public class AdminService {
 
     /**
      * Remove a user from the system
-     * @param userId The ID of the user to remove
-     * @return true if the user was successfully removed
-     * @throws ResourceNotFoundException if user not found
-     * @throws AccessDeniedException if caller doesn't have admin rights
      */
     @Transactional
     public boolean removeUser(UUID userId) {
         checkAdminAccess();
 
-        if (!userRepository.existsById(Long.valueOf(userId.toString()))) {
+        if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("User not found with ID: " + userId);
         }
 
-        userRepository.deleteById(Long.valueOf(userId.toString()));
+        userRepository.deleteById(userId);
         return true;
+    }
+
+    /**
+     * Delete user method
+     */
+    public void deleteUser(UUID userId) throws ResourceNotFoundException {
+        checkAdminAccess();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User with ID " + userId + " not found"));
+        userRepository.delete(user);
+    }
+
+    /**
+     * Convert User entity to UserDTO
+     */
+    private UserDTO convertToDTO(User user) {
+        List<WarehouseDTO> warehouseDTOs = user.getAssignedWarehouses().stream()
+                .map(this::convertWarehouseToDTO)
+                .collect(Collectors.toList());
+
+        return UserDTO.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .role(user.getRole())
+                .enabled(user.isEnabled())
+                .assignedWarehouses(warehouseDTOs)
+                .build();
+    }
+
+    /**
+     * Convert Warehouse entity to WarehouseDTO
+     */
+    private WarehouseDTO convertWarehouseToDTO(Warehouse warehouse) {
+        return WarehouseDTO.builder()
+                .id(warehouse.getId())
+                .name(warehouse.getName())
+                .photoUrl(warehouse.getPhotoUrl())
+                .site(warehouse.getSite())
+                .build();
     }
 
     /**
@@ -117,13 +164,6 @@ public class AdminService {
         }
     }
 
-
-    public void deleteUser(UUID userId) throws ResourceNotFoundException {
-        // Implement the deletion logic here, e.g.:
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User with ID " + userId + " not found"));
-        userRepository.delete(user);
-    }
     /**
      * Custom exception for resource not found
      */

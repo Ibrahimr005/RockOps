@@ -13,7 +13,14 @@ const ConfirmationDialog = ({
                                 onCancel,
                                 isLoading = false,
                                 showIcon = true,
-                                size = 'large' // 'small', 'medium', 'large'
+                                size = 'large', // 'small', 'medium', 'large'
+                                // New props for input functionality
+                                showInput = false,
+                                inputLabel = '',
+                                inputPlaceholder = '',
+                                inputRequired = false,
+                                inputValue = '',
+                                onInputChange = null
                             }) => {
     if (!isVisible) return null;
 
@@ -42,8 +49,19 @@ const ConfirmationDialog = ({
     };
 
     const handleConfirm = () => {
+        // Check if input is required and empty
+        if (showInput && inputRequired && !inputValue.trim()) {
+            return; // Don't proceed if required input is empty
+        }
+
         document.body.style.overflow = 'unset'; // Reset overflow immediately
-        onConfirm?.();
+
+        // Pass input value to confirm handler if input is shown
+        if (showInput) {
+            onConfirm?.(inputValue);
+        } else {
+            onConfirm?.();
+        }
     };
 
     // Handle backdrop click
@@ -91,7 +109,7 @@ const ConfirmationDialog = ({
             aria-labelledby="dialog-title"
             aria-describedby="dialog-description"
         >
-            <div className={`confirmation-dialog confirmation-dialog--${type} confirmation-dialog--${size}`}>
+            <div className={`confirmation-dialog confirmation-dialog--${type} confirmation-dialog--${size} ${showInput ? 'confirmation-dialog--with-input' : ''}`}>
                 {/* Header with Icon and Title */}
                 <div className="confirmation-dialog-header">
                     {showIcon && (
@@ -115,6 +133,27 @@ const ConfirmationDialog = ({
                     </div>
                 )}
 
+                {/* Input Field */}
+                {showInput && (
+                    <div className="confirmation-dialog-input-section">
+                        {inputLabel && (
+                            <label className="confirmation-dialog-input-label">
+                                {inputLabel}
+                                {inputRequired && <span className="required-asterisk">*</span>}
+                            </label>
+                        )}
+                        <textarea
+                            className={`confirmation-dialog-input ${inputRequired && !inputValue.trim() ? 'error' : ''}`}
+                            placeholder={inputPlaceholder}
+                            value={inputValue}
+                            onChange={(e) => onInputChange?.(e.target.value)}
+                            rows={3}
+                            disabled={isLoading}
+                        />
+                    
+                    </div>
+                )}
+
                 {/* Action Buttons */}
                 <div className="confirmation-dialog-actions">
                     <button
@@ -129,7 +168,7 @@ const ConfirmationDialog = ({
                         type="button"
                         className={`btn-primary2 confirmation-dialog-confirm confirmation-dialog-confirm--${type}`}
                         onClick={handleConfirm}
-                        disabled={isLoading}
+                        disabled={isLoading || (showInput && inputRequired && !inputValue.trim())}
                     >
                         {isLoading ? (
                             <>

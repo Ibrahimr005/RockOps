@@ -37,20 +37,6 @@ const RequestOrderDetails = ({ requestOrder }) => {
                     </div>
                 </div>
 
-                {requestOrder.description && (
-                    <div className="r0-details-request-detail-item">
-                        <div className="r0-details-request-detail-icon">
-                            <FiFileText size={18} />
-                        </div>
-                        <div className="r0-details-request-detail-content">
-                            <span className="r0-details-request-detail-label">Description</span>
-                            <p className="r0-details-request-detail-value r0-details-description-text">
-                                {requestOrder.description}
-                            </p>
-                        </div>
-                    </div>
-                )}
-
                 <div className="r0-details-request-detail-item">
                     <div className="r0-details-request-detail-icon">
                         <FiCalendar size={18} />
@@ -71,6 +57,21 @@ const RequestOrderDetails = ({ requestOrder }) => {
                             <span className={`r0-details-request-detail-value r0-details-request-priority ${requestOrder.priority ? requestOrder.priority.toLowerCase() : ''}`}>
                                 {requestOrder.priority}
                             </span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Description moved to the end and given full width class */}
+                {requestOrder.description && (
+                    <div className="r0-details-request-detail-item r0-details-request-detail-item-full-width">
+                        <div className="r0-details-request-detail-icon">
+                            <FiFileText size={18} />
+                        </div>
+                        <div className="r0-details-request-detail-content">
+                            <span className="r0-details-request-detail-label">Description</span>
+                            <p className="r0-details-request-detail-value r0-details-description-text">
+                                {requestOrder.description}
+                            </p>
                         </div>
                     </div>
                 )}
