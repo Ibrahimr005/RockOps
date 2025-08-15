@@ -11,66 +11,80 @@
 // 1. UNSTARTED TAB CUSTOMIZATIONS
 // ===================================
 
-// Override item card colors for unstarted offers
-
-.procurement-item-card-unstarted {
-  border: 1px solid var(--border-color-light);
-  border-left: 3px solid var(--color-primary); // Default color, tabs can override
-  background: linear-gradient(to right, rgba(72, 128, 255, 0.05), var(--section-background-color));
-  border-radius: var(--radius-md);
+// Unstarted specific list items
+.procurement-items-list {
   padding: 1rem;
-  margin-bottom: 1.5rem;
-  cursor: pointer;
-  transition: all var(--transition-normal) ease;
-  position: relative;
+  max-height: calc(100vh - 250px);
+  overflow-y: auto;
 
-  &:hover {
-    border-color: var(--color-primary-hover);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-    background: linear-gradient(to right, rgba(72, 128, 255, 0.08), var(--color-surface-hover));
-  }
-
-  &.selected {
-    border: 2px solid var(--color-primary);
-    border-left: 5px solid var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.2), var(--shadow-md);
-    background-color: var(--color-surface);
-    transform: translateY(-1px);
+  .procurement-item-card-unstarted {
+    border: 1px solid var(--border-color-light);
+    border-left: 3px solid var(--color-primary);
+    background: linear-gradient(to right, rgba(72, 128, 255, 0.05), var(--section-background-color));
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    cursor: pointer;
+    transition: all var(--transition-normal) ease;
     position: relative;
-    z-index: 5;
-  }
 
-  .procurement-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.75rem;
-
-    h4 {
-      margin: 0;
-      font-size: 1rem;
-      font-weight: var(--bold-font-weight);
-      color: var(--color-text-dark);
-      margin-right: 1rem;
+    &:hover {
+      border-color: var(--color-primary-hover);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+      background: linear-gradient(to right, rgba(72, 128, 255, 0.08), var(--color-surface-hover));
     }
-  }
 
-  .procurement-item-footer {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    color: var(--color-text-muted);
-    font-weight: 500;
-
-    svg {
-      margin-right: 0.3rem;
-      vertical-align: -1px;
+    &.selected {
+      border: 2px solid var(--color-primary);
+      border-left: 5px solid var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.2), var(--shadow-md);
+      background-color: var(--color-surface);
+      transform: translateY(-1px);
+      position: relative;
+      z-index: 5;
     }
-  }
 
-  .procurement-item-date {
-    margin-bottom: 0.5rem;
+    .procurement-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+
+      h4 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-dark);
+        margin-right: 1rem;
+      }
+    }
+
+    .procurement-item-footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      font-weight: 500;
+
+      svg {
+        margin-right: 0.3rem;
+        vertical-align: -1px;
+      }
+
+      .procurement-item-status {
+        color: var(--color-primary);
+        font-weight: var(--bold-font-weight);
+
+        svg {
+          color: var(--color-primary);
+        }
+      }
+    }
+
+    .procurement-item-date {
+      margin-bottom: 0.5rem;
+    }
   }
 }
 
@@ -247,48 +261,25 @@
   }
 
   .procurement-unstarted-offers-item-notes {
-    padding: 1.25rem;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 197, 253, 0.1) 100%);
-    border-radius: var(--radius-md);
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    position: relative;
     margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color-light);
 
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 4px;
-      height: 100%;
-      background: linear-gradient(180deg, var(--color-info-light) 0%, var(--color-primary) 100%);
-      border-radius: 2px;
-    }
-
-    .procurement-unstarted-offers-item-notes-label {
+    .procurement-unstarted-offers-item-notes-title {
       font-size: 0.8125rem;
-      font-weight: 700;
-      color: var(--color-primary);
-      margin-bottom: 0.625rem;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      margin-bottom: 0.5rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      display: flex;
-      align-items: center;
-
-      &::before {
-        content: '📝';
-        margin-right: 0.5rem;
-        font-size: 1rem;
-      }
     }
 
     .procurement-unstarted-offers-item-notes-content {
       font-size: 0.875rem;
-      color: var(--color-text-medium);
-      line-height: 1.6;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+      margin: 0;
       font-weight: 500;
-      margin-left: 1.5rem;
-      font-style: italic;
     }
   }
 }
@@ -322,11 +313,15 @@
     }
 
     .procurement-unstarted-offers-item-notes {
-      padding: 1rem;
-      margin-left: 0;
+      padding-top: 0.5rem;
+
+      .procurement-unstarted-offers-item-notes-title {
+        font-size: 0.75rem;
+        margin-bottom: 0.375rem;
+      }
 
       .procurement-unstarted-offers-item-notes-content {
-        margin-left: 1rem;
+        font-size: 0.8125rem;
       }
     }
   }
@@ -338,8 +333,7 @@
 
 [data-theme="dark"] {
   .procurement-unstarted-offers-item-notes {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(147, 197, 253, 0.08) 100%);
-    border-color: rgba(59, 130, 246, 0.3);
+    border-top-color: var(--border-color-medium);
   }
 
   .procurement-unstarted-offers-item-preview-card {

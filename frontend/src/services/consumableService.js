@@ -20,5 +20,10 @@ export const consumableService = {
     // Get resolved consumables
     getResolved: (equipmentId) => {
         return apiClient.get(CONSUMABLE_ENDPOINTS.RESOLVED(equipmentId));
+    },
+
+    // Get consumable history by consumable ID
+    getConsumableHistory: (consumableId) => {
+        return apiClient.get(CONSUMABLE_ENDPOINTS.HISTORY_BY_CONSUMABLE(consumableId));
     }
 }; 

@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
+import { financeService } from '../../../../services/financeService.js';
 import './PayablesDashboard.css';
 
 const PayablesDashboard = () => {
@@ -39,69 +40,10 @@ const PayablesDashboard = () => {
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
 
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
+            console.log('=== FETCHING DASHBOARD DATA ===');
 
-            console.log('Fetching dashboard data...');
-
-            // Fetch all dashboard data with authentication headers
-            const [
-                outstandingResponse,
-                overdueResponse,
-                dueWeekResponse,
-                recentInvoicesResponse,
-                recentPaymentsResponse,
-                agingSummaryResponse
-            ] = await Promise.all([
-                fetch('http://localhost:8080/api/v1/invoices/outstanding-total', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch('http://localhost:8080/api/v1/invoices/overdue', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch('http://localhost:8080/api/v1/invoices/due-soon?days=7', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch('http://localhost:8080/api/v1/invoices?page=0&size=5', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch('http://localhost:8080/api/v1/payments?page=0&size=5', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                fetch('http://localhost:8080/api/v1/invoices/aging/summary', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                })
-            ]);
-
-            // Check if any requests failed
-            const responses = [outstandingResponse, overdueResponse, dueWeekResponse, recentInvoicesResponse, recentPaymentsResponse, agingSummaryResponse];
-            for (let response of responses) {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-            }
-
+            // Fetch all dashboard data using financeService
             const [
                 outstanding,
                 overdue,
@@ -110,46 +52,116 @@ const PayablesDashboard = () => {
                 recentPayments,
                 agingSummary
             ] = await Promise.all([
-                outstandingResponse.json(),
-                overdueResponse.json(),
-                dueWeekResponse.json(),
-                recentInvoicesResponse.json(),
-                recentPaymentsResponse.json(),
-                agingSummaryResponse.json()
+                financeService.invoices.getOutstandingTotal(),
+                financeService.invoices.getOverdue(),
+                financeService.invoices.getDueSoon(7), // 7 days
+                financeService.invoices.getAll(0, 5), // page=0, size=5
+                financeService.payments.getAll(0, 5), // page=0, size=5
+                financeService.invoices.getAgingSummary() // JSON format
             ]);
 
             console.log('Dashboard data fetched:', {
                 outstanding,
-                overdue: overdue.length,
-                dueWeek: dueWeek.length,
-                recentInvoices: recentInvoices.content?.length || 0,
-                recentPayments: recentPayments.content?.length || 0,
+                overdue,
+                dueWeek,
+                recentInvoices,
+                recentPayments,
                 agingSummary
             });
 
-            // Calculate total paid this month from recent payments
+// Extract data from Axios responses
+            const outstandingData = outstanding.data || outstanding;
+            const overdueData = overdue.data || overdue;
+            const dueWeekData = dueWeek.data || dueWeek;
+            const invoicesData = recentInvoices.data || recentInvoices;
+            const paymentsData = recentPayments.data || recentPayments;
+            const agingData = agingSummary.data || agingSummary;
+
+            console.log('=== EXTRACTED DASHBOARD DATA ===');
+            console.log('Outstanding data:', outstandingData);
+            console.log('Overdue data:', overdueData);
+            console.log('DueWeek data:', dueWeekData);
+            console.log('Invoices data:', invoicesData);
+            console.log('Payments data:', paymentsData);
+            console.log('Aging data:', agingData);
+
+// Extract arrays from responses safely
+            let overdueArray = [];
+            let dueWeekArray = [];
+            let invoicesArray = [];
+            let paymentsArray = [];
+
+// Handle overdue response
+            if (Array.isArray(overdueData)) {
+                overdueArray = overdueData;
+            } else if (overdueData && Array.isArray(overdueData.content)) {
+                overdueArray = overdueData.content;
+            }
+
+// Handle dueWeek response
+            if (Array.isArray(dueWeekData)) {
+                dueWeekArray = dueWeekData;
+            } else if (dueWeekData && Array.isArray(dueWeekData.content)) {
+                dueWeekArray = dueWeekData.content;
+            }
+
+// Handle recentInvoices response
+            if (Array.isArray(invoicesData)) {
+                invoicesArray = invoicesData;
+            } else if (invoicesData && Array.isArray(invoicesData.content)) {
+                invoicesArray = invoicesData.content;
+            }
+
+// Handle recentPayments response
+            if (Array.isArray(paymentsData)) {
+                paymentsArray = paymentsData;
+            } else if (paymentsData && Array.isArray(paymentsData.content)) {
+                paymentsArray = paymentsData.content;
+            }
+
+            console.log('Final extracted arrays:', {
+                overdueArray: overdueArray.length,
+                dueWeekArray: dueWeekArray.length,
+                invoicesArray: invoicesArray.length,
+                paymentsArray: paymentsArray.length
+            });
+
+// Calculate total paid this month from recent payments
             const currentMonth = new Date().getMonth();
             const currentYear = new Date().getFullYear();
-            const paymentsThisMonth = (recentPayments.content || recentPayments || []).filter(payment => {
+
+            const paymentsThisMonth = paymentsArray.filter(payment => {
                 try {
+                    if (!payment || !payment.paymentDate) return false;
                     const paymentDate = new Date(payment.paymentDate);
-                    return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+                    return paymentDate.getMonth() === currentMonth &&
+                        paymentDate.getFullYear() === currentYear &&
+                        payment.status === 'PROCESSED';
                 } catch (e) {
+                    console.error('Error filtering payment:', payment, e);
                     return false;
                 }
             });
-            const totalPaidThisMonth = paymentsThisMonth.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+
+            const totalPaidThisMonth = paymentsThisMonth.reduce((sum, payment) => {
+                return sum + (parseFloat(payment.amount) || 0);
+            }, 0);
+
+            console.log('Calculated totals:', {
+                paymentsThisMonth: paymentsThisMonth.length,
+                totalPaidThisMonth
+            });
 
             setDashboardData({
                 summary: {
-                    totalOutstanding: outstanding.totalOutstandingAmount || 0,
-                    overdueInvoices: overdue.length || 0,
-                    dueThisWeek: dueWeek.length || 0,
+                    totalOutstanding: outstandingData?.totalOutstandingAmount || 0,
+                    overdueInvoices: overdueArray.length,
+                    dueThisWeek: dueWeekArray.length,
                     totalPaidThisMonth
                 },
-                recentInvoices: recentInvoices.content || [],
-                recentPayments: recentPayments.content || recentPayments || [],
-                agingSummary: agingSummary || {
+                recentInvoices: invoicesArray,
+                recentPayments: paymentsArray,
+                agingSummary: agingData || {
                     aged0To30: 0,
                     aged31To60: 0,
                     aged61To90: 0,
@@ -160,7 +172,7 @@ const PayablesDashboard = () => {
             showSuccess('Dashboard data loaded successfully');
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
-            showError('Could not load dashboard data. Please try again.');
+            showError('Could not load dashboard data: ' + error.message);
 
             // Set default empty data on error
             setDashboardData({

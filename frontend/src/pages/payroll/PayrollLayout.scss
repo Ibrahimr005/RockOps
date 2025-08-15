@@ -1,0 +1,60 @@
+// PayrollLayout.scss - Layout styles for payroll module
+.payroll-layout {
+
+
+  // Ensure proper spacing from sidebar and navbar
+  margin-left: var(--sidebar-width-collapsed);
+  transition: margin-left var(--transition-normal) ease;
+
+  // When sidebar is expanded
+  body:not(.sidebar-collapsed) & {
+    margin-left: var(--sidebar-width-expanded);
+  }
+
+  // Mobile responsiveness
+  @media (max-width: 768px) {
+    margin-left: 0;
+    padding-top: var(--mobile-navbar-height, 60px);
+  }
+}
+
+.payroll-layout__container {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
+  position: relative;
+}
+
+.payroll-layout__content {
+  width: 100%;
+  overflow-x: hidden;
+
+  // Ensure content doesn't interfere with fixed elements
+  z-index: 1;
+
+  // Add padding for navbar if needed
+  padding-top: var(--navbar-height, 0);
+
+  @media (max-width: 768px) {
+    padding-top: 0; // Mobile navbar handled by layout margin
+  }
+}
+
+// Dark theme adjustments
+[data-theme="dark"] {
+  .payroll-layout {
+    background-color: var(--page-background-color);
+  }
+}
+
+// Print styles
+@media print {
+  .payroll-layout {
+    margin-left: 0;
+    background: white;
+
+    .payroll-layout__content {
+      padding-top: 0;
+    }
+  }
+}

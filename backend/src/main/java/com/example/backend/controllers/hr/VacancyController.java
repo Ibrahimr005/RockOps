@@ -1,9 +1,12 @@
 package com.example.backend.controllers.hr;
 
+import com.example.backend.dto.hr.CreateVacancyDTO;
 import com.example.backend.models.hr.Vacancy;
 import com.example.backend.models.hr.Candidate;
 import com.example.backend.services.hr.VacancyService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,16 +24,37 @@ public class VacancyController {
 
     // Create a new vacancy
     @PostMapping
-    public ResponseEntity<Vacancy> createVacancy(@RequestBody Map<String, Object> vacancyData) {
+    public ResponseEntity<?> createVacancy(@RequestBody CreateVacancyDTO dto) {
+        System.out.println("=== VacancyController: Received create request ===");
+        System.out.println("DTO: " + dto);
+
         try {
-            Vacancy createdVacancy = vacancyService.createVacancy(vacancyData);
+            Vacancy createdVacancy = vacancyService.createVacancy(dto);
+            System.out.println("Vacancy created successfully with ID: " + createdVacancy.getId());
             return ResponseEntity.ok(createdVacancy);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Validation Error",
+                    "message", e.getMessage(),
+                    "timestamp", java.time.Instant.now().toString()
+            ));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "error", "Entity Not Found",
+                    "message", e.getMessage(),
+                    "timestamp", java.time.Instant.now().toString()
+            ));
         } catch (Exception e) {
-            System.err.println("Error in VacancyController.createVacancy: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(500).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "error", "Internal Server Error",
+                    "message", "An unexpected error occurred while creating the vacancy",
+                    "details", e.getMessage(),
+                    "type", e.getClass().getSimpleName(),
+                    "timestamp", java.time.Instant.now().toString()
+            ));
         }
     }
+
 
     // Get all vacancies
     @GetMapping

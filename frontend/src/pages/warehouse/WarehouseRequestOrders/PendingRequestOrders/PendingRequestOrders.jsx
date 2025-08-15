@@ -3,6 +3,10 @@ import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import { useNavigate } from 'react-router-dom';
 import { FaPlus } from 'react-icons/fa';
 import "./PendingRequestOrders.scss";
+import { requestOrderService } from '../../../../services/procurement/requestOrderService.js';
+import { itemTypeService } from '../../../../services/warehouse/itemTypeService';
+import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
+import { warehouseService } from '../../../../services/warehouse/warehouseService';
 
 const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, onShowSnackbar, userRole }, ref) => {
     const navigate = useNavigate();
@@ -36,6 +40,19 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
             openRestockModal(restockItems);
         }
     }));
+
+    useEffect(() => {
+        if (showAddModal) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [showAddModal]);
+
 
     // Column configuration for pending request orders
     const pendingOrderColumns = [
@@ -169,30 +186,16 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
         }
     };
 
-    // NEW: Fetch parent categories
     const fetchParentCategories = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/itemCategories/parents', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to load parent categories');
-            }
-
-            const data = await response.json();
+            const data = await itemCategoryService.getParents();
             setParentCategories(data);
         } catch (error) {
             console.error('Error fetching parent categories:', error);
         }
     };
 
-    // NEW: Fetch child categories for a specific parent
+// Replace fetchChildCategories:
     const fetchChildCategories = async (parentCategoryId, itemIndex) => {
         if (!parentCategoryId) {
             setChildCategoriesByItem(prev => ({
@@ -203,20 +206,7 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
         }
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/itemCategories/children/${parentCategoryId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to load child categories');
-            }
-
-            const data = await response.json();
+            const data = await itemCategoryService.getChildrenByParent(parentCategoryId);
             setChildCategoriesByItem(prev => ({
                 ...prev,
                 [itemIndex]: data
@@ -253,23 +243,9 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
         return itemTypes;
     };
 
-    // Fetch item types
     const fetchItemTypes = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/itemTypes', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to load item types');
-            }
-
-            const data = await response.json();
+            const data = await itemTypeService.getAll();
             setItemTypes(data);
         } catch (error) {
             console.error('Error fetching item types:', error);
@@ -279,24 +255,10 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
     // Added function to fetch employees
     const fetchEmployees = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/warehouses/${warehouseId}/employees`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to load employees');
-            }
-
-            const data = await response.json();
+            const data = await warehouseService.getEmployees(warehouseId);
             setEmployees(data);
         } catch (error) {
             console.error('Error fetching employees:', error);
-            // If API endpoint doesn't exist yet, you can use dummy data
             setEmployees([
                 { id: '1', name: 'John Doe' },
                 { id: '2', name: 'Jane Smith' },
@@ -309,23 +271,7 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
     const fetchPendingOrders = async () => {
         setIsLoadingPending(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(
-                `http://localhost:8080/api/v1/requestOrders/warehouse?warehouseId=${warehouseId}&status=PENDING`,
-                {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
+            const data = await requestOrderService.getByWarehouseAndStatus(warehouseId, 'PENDING');
             setPendingOrders(data);
         } catch (error) {
             console.error('Error fetching pending orders:', error);
@@ -339,20 +285,8 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
     const handleEditRequest = async (request) => {
         try {
             // Fetch the full request details with items
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/requestOrders/${request.id}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch request details');
-            }
-
-            const requestDetails = await response.json();
+            // Replace the fetch call in handleEditRequest:
+            const requestDetails = await requestOrderService.getById(request.id);
 
             // Set edit mode and populate form
             setIsEditMode(true);
@@ -615,27 +549,14 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
         try {
             const token = localStorage.getItem('token');
 
+            // Replace the API calls in handleCreateRequest:
             let response;
             if (isEditMode && currentEditId) {
                 // Update existing request
-                response = await fetch(`http://localhost:8080/api/v1/requestOrders/${currentEditId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestPayload)
-                });
+                response = await requestOrderService.update(currentEditId, requestPayload);
             } else {
                 // Create new request
-                response = await fetch('http://localhost:8080/api/v1/requestOrders', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestPayload)
-                });
+                response = await requestOrderService.create(requestPayload);
             }
 
             if (!response.ok) {
@@ -654,14 +575,14 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
         }
     };
 
+
+
     return (
         <div className="pending-request-orders-container">
             {/* Pending Orders Section */}
             <div className="request-orders-section">
                 <div className="table-header-section">
-                    <div className="left-section3">
-                        <div className="item-count3">{pendingOrders.length} pending request orders</div>
-                    </div>
+
                 </div>
 
                 <div className="request-orders-table-card">

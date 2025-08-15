@@ -2,7 +2,7 @@ import React, {forwardRef, useEffect, useImperativeHandle, useState} from 'react
 import { FaPlus } from 'react-icons/fa';
 import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
 import { equipmentService } from '../../../services/equipmentService';
-import { transactionService } from '../../../services/transactionService';
+import { transactionService } from '../../../services/transaction/transactionService.js';
 import { consumableService } from '../../../services/consumableService';
 import './EquipmentConsumablesInventory.scss';
 import DataTable from '../../../components/common/DataTable/DataTable';
@@ -22,6 +22,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [selectedConsumable, setSelectedConsumable] = useState(null);
     const [consumableHistory, setConsumableHistory] = useState([]);
+    const [consumableResolutions, setConsumableResolutions] = useState([]);
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [resolutionHistory, setResolutionHistory] = useState([]);
@@ -163,23 +164,45 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
 
     const fetchConsumableHistory = async (consumableId) => {
         try {
-            console.log("🔍 Fetching consumable history for ID:", consumableId);
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/equipment/consumables/${consumableId}/history`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                console.log("✅ Fetched consumable history:", data);
-                setConsumableHistory(data);
+            console.log("🔍 [FETCH-HISTORY] Fetching consumable history for ID:", consumableId);
+            const response = await consumableService.getConsumableHistory(consumableId);
+            console.log("✅ [FETCH-HISTORY] Fetched consumable history raw response:", response.data);
+            
+            // Handle new response format with both transactions and resolutions
+            if (response.data.transactions) {
+                console.log("📊 [FETCH-HISTORY] Found transactions:", response.data.transactions.length);
+                console.log("📊 [FETCH-HISTORY] Found resolutions:", response.data.resolutions?.length || 0);
+                
+                // Log detailed transaction item data
+                response.data.transactions.forEach((transaction, index) => {
+                    console.log(`📊 [FETCH-HISTORY] Transaction ${index + 1}:`, {
+                        id: transaction.id,
+                        batchNumber: transaction.batchNumber,
+                        status: transaction.status,
+                        items: transaction.items?.map(item => ({
+                            id: item.id,
+                            itemTypeName: item.itemTypeName,
+                            status: item.status,
+                            quantity: item.quantity,
+                            receivedQuantity: item.receivedQuantity,
+                            equipmentReceivedQuantity: item.equipmentReceivedQuantity,
+                            isResolved: item.isResolved,
+                            resolutionType: item.resolutionType,
+                            fullyResolved: item.fullyResolved
+                        }))
+                    });
+                });
+                
+                setConsumableHistory(response.data.transactions);
+                setConsumableResolutions(response.data.resolutions || []);
             } else {
-                console.error("Failed to fetch consumable history, status:", response.status);
-                showSnackbar("Failed to fetch consumable history", "error");
+                // Fallback for old format
+                console.log("📊 [FETCH-HISTORY] Using fallback format");
+                setConsumableHistory(response.data);
+                setConsumableResolutions([]);
             }
         } catch (error) {
-            console.error("Failed to fetch consumable history:", error);
+            console.error("❌ [FETCH-HISTORY] Failed to fetch consumable history:", error);
             showSnackbar("Failed to fetch consumable history", "error");
         }
     };
@@ -517,6 +540,21 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                             defaultItemsPerPage={10}
                             emptyMessage="No resolution history found"
                             className="resolution-history-table"
+                            showExportButton={true}
+                            exportButtonText="Export Resolution History"
+                            exportFileName="equipment_resolution_history"
+                            exportAllData={true}
+                            customExportHeaders={{
+                                'consumable.itemType.name': 'Item Name',
+                                'consumable.itemType.itemCategory.name': 'Category',
+                                'resolutionType': 'Resolution Type',
+                                'resolvedBy': 'Resolved By',
+                                'resolvedAt': 'Resolved Date',
+                                'notes': 'Notes'
+                            }}
+                            onExportStart={() => showSnackbar("Exporting resolution history...", "info")}
+                            onExportComplete={(result) => showSnackbar(`Exported ${result.rowCount} records to Excel`, "success")}
+                            onExportError={(error) => showSnackbar("Failed to export resolution history", "error")}
                         />
                     ) : (
                         <DataTable
@@ -534,6 +572,23 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                             addButtonText="Add Consumable"
                             addButtonIcon={<FaPlus />}
                             onAddClick={onAddClick}
+                            showExportButton={true}
+                            exportButtonText={`Export ${activeTab === 'current' ? 'Consumables' : 'Surplus Items'}`}
+                            exportFileName={`equipment_${activeTab === 'current' ? 'consumables' : 'surplus_items'}`}
+                            exportAllData={true}
+                            customExportHeaders={{
+                                'itemTypeName': 'Item Name',
+                                'itemTypeCategory': 'Category',
+                                'quantity': 'Quantity',
+                                'unit': 'Unit',
+                                'status': 'Status',
+                                'batchNumber': 'Batch Number',
+                                'transactionDate': 'Transaction Date',
+                                'lastUpdated': 'Last Updated'
+                            }}
+                            onExportStart={() => showSnackbar(`Exporting ${activeTab === 'current' ? 'consumables' : 'surplus items'}...`, "info")}
+                            onExportComplete={(result) => showSnackbar(`Exported ${result.rowCount} records to Excel`, "success")}
+                            onExportError={(error) => showSnackbar(`Failed to export ${activeTab === 'current' ? 'consumables' : 'surplus items'}`, "error")}
                         />
                     )
                 )}
@@ -544,6 +599,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                 isOpen={isHistoryModalOpen}
                 onClose={() => setIsHistoryModalOpen(false)}
                 consumableHistory={consumableHistory}
+                consumableResolutions={consumableResolutions}
                 itemDetails={selectedConsumable}
             />
 

@@ -138,7 +138,88 @@ public class WarehouseService {
     }
 
 
+// Add these methods to your WarehouseService class
 
+// Update your WarehouseService updateWarehouse method to this:
+
+    public Warehouse updateWarehouse(UUID id, Map<String, Object> warehouseData) {
+        try {
+            Warehouse existingWarehouse = warehouseRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Warehouse not found with id: " + id));
+
+            // Update basic fields
+            if (warehouseData.containsKey("name")) {
+                existingWarehouse.setName((String) warehouseData.get("name"));
+            }
+
+            if (warehouseData.containsKey("photoUrl")) {
+                existingWarehouse.setPhotoUrl((String) warehouseData.get("photoUrl"));
+            }
+
+            // Handle manager assignment
+            if (warehouseData.containsKey("managerId")) {
+                String managerIdStr = (String) warehouseData.get("managerId");
+                if (managerIdStr != null && !managerIdStr.isEmpty()) {
+                    UUID managerId = UUID.fromString(managerIdStr);
+                    Employee manager = employeeRepository.findById(managerId)
+                            .orElseThrow(() -> new RuntimeException("Manager not found with id: " + managerId));
+
+                    // Remove current manager if exists
+                    if (existingWarehouse.getEmployees() != null) {
+                        existingWarehouse.getEmployees().removeIf(emp ->
+                                emp.getJobPosition() != null &&
+                                        "warehouse manager".equalsIgnoreCase(emp.getJobPosition().getPositionName())
+                        );
+                    }
+
+                    // Add new manager
+                    manager.setWarehouse(existingWarehouse);
+                    if (existingWarehouse.getEmployees() == null) {
+                        existingWarehouse.setEmployees(new ArrayList<>());
+                    }
+                    existingWarehouse.getEmployees().add(manager);
+                    employeeRepository.save(manager);
+                }
+            }
+
+            return warehouseRepository.save(existingWarehouse);
+
+        } catch (Exception e) {
+            System.err.println("Error updating warehouse: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to update warehouse", e);
+        }
+    }
+
+    public void deleteWarehouse(UUID id) {
+        try {
+            Warehouse warehouse = warehouseRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Warehouse not found with id: " + id));
+
+            // Check if warehouse has employees
+            if (warehouse.getEmployees() != null && !warehouse.getEmployees().isEmpty()) {
+                throw new RuntimeException("Cannot delete warehouse with assigned employees. Please reassign employees first.");
+            }
+
+            // Check if warehouse has items
+            if (warehouse.getItems() != null && !warehouse.getItems().isEmpty()) {
+                throw new RuntimeException("Cannot delete warehouse with items. Please move or remove items first.");
+            }
+
+            // Check if warehouse has employee assignments
+            if (warehouse.getEmployeeAssignments() != null && !warehouse.getEmployeeAssignments().isEmpty()) {
+                throw new RuntimeException("Cannot delete warehouse with employee assignments. Please remove assignments first.");
+            }
+
+            warehouseRepository.delete(warehouse);
+            System.out.println("Successfully deleted warehouse with id: " + id);
+
+        } catch (Exception e) {
+            System.err.println("Error deleting warehouse: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to delete warehouse: " + e.getMessage(), e);
+        }
+    }
 
 
 

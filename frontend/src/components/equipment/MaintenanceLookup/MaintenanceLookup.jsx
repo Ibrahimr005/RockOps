@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { equipmentService } from '../../../services/equipmentService';
-import { employeeService } from '../../../services/employeeService';
+import { employeeService } from '../../../services/hr/employeeService.js';
 import { maintenanceTypeService } from '../../../services/maintenanceTypeService';
 import './MaintenanceLookup.scss';
 

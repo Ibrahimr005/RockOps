@@ -304,3 +304,287 @@
     }
   }
 }
+
+// Add these styles to your existing IncomingRequestOrders.scss file
+
+// Item header actions
+.pro-ro-item-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pro-ro-filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #4b5563;
+  }
+
+  &.active {
+    background-color: #10b981;
+
+    &:hover {
+      background-color: #059669;
+    }
+  }
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+// Collapsible filters
+.pro-ro-collapsible-filters {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  animation: slideDown 0.3s ease-out;
+
+  &.collapsing {
+    animation: slideUp 0.3s ease-out forwards;
+  }
+
+  [data-theme="dark"] & {
+    background-color: #374151;
+    border-color: #4b5563;
+  }
+
+  .pro-ro-filters-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    svg {
+      width: 14px;
+      height: 14px;
+      color: #10b981;
+    }
+
+    h4 {
+      margin: 0;
+      font-size: 14px;
+      color: #10b981;
+      font-weight: 600;
+    }
+  }
+
+  .pro-ro-filters-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+
+    .pro-ro-form-field {
+      margin-bottom: 0;
+
+      label {
+        font-size: 12px;
+        color: #6b7280;
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 500;
+
+        [data-theme="dark"] & {
+          color: #9ca3af;
+        }
+      }
+
+      select {
+        width: 100%;
+        min-width: 300px;
+        padding: 8px;
+        background-color: white;
+        color: #1f2937;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 14px;
+        transition: border-color 0.2s ease;
+
+        [data-theme="dark"] & {
+          background-color: #4b5563;
+          color: white;
+          border-color: #6b7280;
+        }
+
+        &:focus {
+          outline: none;
+          border-color: #10b981;
+        }
+
+        &:disabled {
+          background-color: #f3f4f6;
+          color: #9ca3af;
+          cursor: not-allowed;
+
+          [data-theme="dark"] & {
+            background-color: #374151;
+            color: #6b7280;
+          }
+        }
+      }
+
+      .pro-ro-form-helper-text {
+        font-size: 11px;
+        color: #6b7280;
+        display: block;
+        margin-top: 2px;
+        line-height: 1.3;
+
+        [data-theme="dark"] & {
+          color: #9ca3af;
+        }
+      }
+    }
+  }
+}
+
+// Helper link styling (if needed)
+.pro-ro-form-helper-text {
+  .pro-ro-form-helper-link {
+    color: #10b981;
+    cursor: pointer;
+    margin-left: 8px;
+    font-weight: 500;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: #059669;
+      text-decoration: underline;
+    }
+
+    [data-theme="dark"] & {
+      color: #34d399;
+
+      &:hover {
+        color: #10b981;
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 200px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 200px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
+}
+
+// Update existing item header styles
+.pro-ro-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+
+  [data-theme="dark"] & {
+    border-bottom-color: #4b5563;
+  }
+
+  span {
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+
+    [data-theme="dark"] & {
+      color: #d1d5db;
+    }
+  }
+}
+
+// Update remove button to work alongside filter toggle
+.pro-ro-remove-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #dc2626;
+  }
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .pro-ro-item-header-actions {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .pro-ro-filter-toggle,
+  .pro-ro-remove-button {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+
+  .pro-ro-filters-content {
+    grid-template-columns: 1fr;
+  }
+
+  .pro-ro-collapsible-filters {
+    .pro-ro-form-field {
+      select {
+        min-width: auto;
+      }
+    }
+  }
+}

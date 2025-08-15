@@ -3,6 +3,7 @@ import { FaFileInvoiceDollar, FaMoneyBillWave, FaChartLine, FaClipboardList } fr
 import './Payables.css';
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
+import { financeService } from '../../../services/financeService.js';
 
 // Import your components
 import InvoiceManagement from './InvoiceManagement/InvoiceManagement.jsx';
@@ -31,97 +32,94 @@ const Payables = () => {
     const fetchPayablesStats = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
 
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
+            console.log('=== FETCHING PAYABLES STATS ===');
 
-            // Use the same endpoints as PayablesDashboard
-            const [
-                outstandingResponse,
-                overdueResponse,
-                recentPaymentsResponse,
-                pendingInvoicesResponse
-            ] = await Promise.all([
-                // 1. Total Outstanding
-                fetch('http://localhost:8080/api/v1/invoices/outstanding-total', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                // 2. Overdue Invoices
-                fetch('http://localhost:8080/api/v1/invoices/overdue', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                // 3. Recent Payments (for monthly calculation)
-                fetch('http://localhost:8080/api/v1/payments?page=0&size=100', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }),
-                // 4. Pending Invoices (using status filter)
-                fetch('http://localhost:8080/api/v1/invoices/status?status=PENDING', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                })
-            ]);
-
-            // Check if requests succeeded
-            const responses = [outstandingResponse, overdueResponse, recentPaymentsResponse, pendingInvoicesResponse];
-            for (let response of responses) {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-            }
-
-            // Parse responses
+            // Use financeService instead of manual fetch calls
             const [
                 outstanding,
                 overdue,
                 recentPayments,
                 pendingInvoices
             ] = await Promise.all([
-                outstandingResponse.json(),
-                overdueResponse.json(),
-                recentPaymentsResponse.json(),
-                pendingInvoicesResponse.json()
+                financeService.invoices.getOutstandingTotal(),
+                financeService.invoices.getOverdue(),
+                financeService.payments.getAll(0, 100), // page=0, size=100
+                financeService.invoices.getByStatus('PENDING')
             ]);
 
-            // Calculate monthly payments (current month)
+            console.log('Stats data received:', {
+                outstanding,
+                overdue,
+                recentPayments,
+                pendingInvoices
+            });
+
+// Extract data from Axios responses
+            const outstandingData = outstanding.data || outstanding;
+            const overdueData = overdue.data || overdue;
+            const paymentsData = recentPayments.data || recentPayments;
+            const pendingData = pendingInvoices.data || pendingInvoices;
+
+            console.log('=== EXTRACTED DATA ===');
+            console.log('Outstanding data:', outstandingData);
+            console.log('Overdue data:', overdueData);
+            console.log('Payments data:', paymentsData);
+            console.log('Pending data:', pendingData);
+
+// Extract arrays safely
+            const overdueArray = Array.isArray(overdueData) ? overdueData : [];
+            const pendingArray = Array.isArray(pendingData) ? pendingData : [];
+
+// Handle payments response structure (could be paginated)
+            let paymentsArray = [];
+            if (Array.isArray(paymentsData)) {
+                paymentsArray = paymentsData;
+            } else if (paymentsData && Array.isArray(paymentsData.content)) {
+                paymentsArray = paymentsData.content;
+            } else if (paymentsData && Array.isArray(paymentsData.data)) {
+                paymentsArray = paymentsData.data;
+            }
+
+            console.log('Final extracted data:', {
+                overdueArray: overdueArray.length,
+                pendingArray: pendingArray.length,
+                paymentsArray: paymentsArray.length
+            });
+
+// Calculate monthly payments (current month)
             const currentMonth = new Date().getMonth();
             const currentYear = new Date().getFullYear();
-            const paymentsThisMonth = (recentPayments.content || recentPayments || []).filter(payment => {
+
+            const paymentsThisMonth = paymentsArray.filter(payment => {
                 try {
+                    if (!payment || !payment.paymentDate) return false;
                     const paymentDate = new Date(payment.paymentDate);
                     return paymentDate.getMonth() === currentMonth &&
                         paymentDate.getFullYear() === currentYear &&
                         payment.status === 'PROCESSED'; // Only count processed payments
                 } catch (e) {
+                    console.error('Error filtering payment:', payment, e);
                     return false;
                 }
             });
-            const monthlyPayments = paymentsThisMonth.reduce((sum, payment) => sum + (payment.amount || 0), 0);
 
-            // Format the data for the IntroCard
+            const monthlyPayments = paymentsThisMonth.reduce((sum, payment) => {
+                return sum + (parseFloat(payment.amount) || 0);
+            }, 0);
+
+// Format the data for the IntroCard
             setStats([
                 {
-                    value: formatCurrency(outstanding.totalOutstandingAmount || 0),
+                    value: formatCurrency(outstandingData?.totalOutstandingAmount || 0),
                     label: 'Total Outstanding'
                 },
                 {
-                    value: (pendingInvoices?.length || 0).toString(),
+                    value: pendingArray.length.toString(),
                     label: 'Pending Invoices'
                 },
                 {
-                    value: (overdue?.length || 0).toString(),
+                    value: overdueArray.length.toString(),
                     label: 'Overdue Invoices'
                 },
                 {
@@ -132,7 +130,7 @@ const Payables = () => {
 
         } catch (err) {
             console.error("Error fetching payables stats:", err);
-            showError('Failed to load payables statistics');
+            showError('Failed to load payables statistics: ' + err.message);
 
             // Set error state stats
             setStats([

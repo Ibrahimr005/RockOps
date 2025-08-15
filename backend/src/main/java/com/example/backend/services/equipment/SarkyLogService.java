@@ -427,7 +427,7 @@ public class SarkyLogService {
                 if (sarkyLog.getFileUrl() != null && !sarkyLog.getFileUrl().isEmpty()) {
                     try {
                         // Extract the filename from the URL (assumes filename is last part of URL)
-                        String oldFileName = "sarky-" + id.toString();
+                        String oldFileName = "sarky-" + id;
                         minioService.deleteEquipmentFile(equipment.getId(), oldFileName);
                     } catch (Exception e) {
                         // Log error but continue
@@ -436,7 +436,7 @@ public class SarkyLogService {
                 }
 
                 // Upload the new file
-                String fileName = "sarky-" + id.toString();
+                String fileName = "sarky-" + id;
                 minioService.uploadEquipmentFile(equipment.getId(), file, fileName);
 
                 // Set the new file URL
@@ -539,7 +539,7 @@ public class SarkyLogService {
                 // Delete old file if it exists
                 if (sarkyLogRange.getFileUrl() != null && !sarkyLogRange.getFileUrl().isEmpty()) {
                     try {
-                        String oldFileName = "sarky-range-" + id.toString();
+                        String oldFileName = "sarky-range-" + id;
                         minioService.deleteEquipmentFile(equipment.getId(), oldFileName);
                     } catch (Exception e) {
                         System.err.println("Error deleting old file from MinIO: " + e.getMessage());
@@ -547,7 +547,7 @@ public class SarkyLogService {
                 }
 
                 // Upload the new file
-                String fileName = "sarky-range-" + id.toString();
+                String fileName = "sarky-range-" + id;
                 minioService.uploadEquipmentFile(equipment.getId(), file, fileName);
 
                 // Set the new file URL
@@ -573,7 +573,7 @@ public class SarkyLogService {
         // Delete the file from MinIO if exists
         if (sarkyLog.getFileUrl() != null && !sarkyLog.getFileUrl().isEmpty()) {
             try {
-                String fileName = "sarky-" + id.toString();
+                String fileName = "sarky-" + id;
                 minioService.deleteEquipmentFile(sarkyLog.getEquipment().getId(), fileName);
             } catch (Exception e) {
                 // Log error but continue with deletion
@@ -595,7 +595,7 @@ public class SarkyLogService {
         // Delete the file from MinIO if exists
         if (sarkyLogRange.getFileUrl() != null && !sarkyLogRange.getFileUrl().isEmpty()) {
             try {
-                String fileName = "sarky-range-" + id.toString();
+                String fileName = "sarky-range-" + id;
                 minioService.deleteEquipmentFile(sarkyLogRange.getEquipment().getId(), fileName);
             } catch (Exception e) {
                 // Log error but continue with deletion

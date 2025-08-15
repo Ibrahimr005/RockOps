@@ -1,5 +1,6 @@
 // src/config/api.config.js
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
 // Equipment module endpoints
 export const EQUIPMENT_ENDPOINTS = {
     BASE: '/api/equipment',
@@ -41,7 +42,18 @@ export const EQUIPMENT_ENDPOINTS = {
     // Maintenance integration endpoints
     MAINTENANCE_SEARCH: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/search`,
     MAINTENANCE_FOR_LINKING: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/for-linking`,
-    ACCEPT_TRANSACTION_WITH_MAINTENANCE: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept-with-maintenance`
+    ACCEPT_TRANSACTION_WITH_MAINTENANCE: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept-with-maintenance`,
+    ITEMS: (equipmentId) => `/api/equipment/${equipmentId}/items`,
+    CHECK_BATCH_EXISTS: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`
+};
+
+// Batch Validation endpoints
+export const BATCH_VALIDATION_ENDPOINTS = {
+    BASE: '/api/v1/batch-validation',
+    VALIDATE_FOR_EQUIPMENT: (equipmentId, batchNumber) => `/api/v1/batch-validation/equipment/${equipmentId}/batch/${batchNumber}`,
+    VALIDATE_FOR_MAINTENANCE: (equipmentId, maintenanceId, batchNumber) => `/api/v1/batch-validation/equipment/${equipmentId}/maintenance/${maintenanceId}/batch/${batchNumber}`,
+    CHECK_AVAILABILITY: (batchNumber) => `/api/v1/batch-validation/batch/${batchNumber}/available`,
+    VALIDATE_UNIQUENESS: (batchNumber) => `/api/v1/batch-validation/batch/${batchNumber}/validate-uniqueness`
 };
 
 // Consumable Resolution endpoints
@@ -49,7 +61,8 @@ export const CONSUMABLE_ENDPOINTS = {
     RESOLVE_DISCREPANCY: '/api/v1/consumables/resolve-discrepancy',
     RESOLUTION_HISTORY: (equipmentId) => `/api/v1/consumables/resolution-history/equipment/${equipmentId}`,
     DISCREPANCIES: (equipmentId) => `/api/v1/consumables/equipment/${equipmentId}/discrepancies`,
-    RESOLVED: (equipmentId) => `/api/v1/consumables/equipment/${equipmentId}/resolved`
+    RESOLVED: (equipmentId) => `/api/v1/consumables/equipment/${equipmentId}/resolved`,
+    HISTORY_BY_CONSUMABLE: (consumableId) => `/api/v1/equipment/consumables/${consumableId}/history`
 };
 
 // Equipment Types module endpoints
@@ -84,23 +97,186 @@ export const SARKY_ENDPOINTS = {
     DELETE_RANGE: (id) => `/api/v1/sarky/range/${id}`,
 };
 
-// Finance module endpoints
+// Replace your existing FINANCE_ENDPOINTS in api.config.js with this:
 export const FINANCE_ENDPOINTS = {
-    ACCOUNTS: {
-        BASE: '/api/accounts',
-        BY_ID: (id) => `/api/accounts/${id}`,
-        TYPES: '/api/accounts/types',
-        HIERARCHY: '/api/accounts/hierarchy',
-        DEACTIVATE: (id) => `/api/accounts/${id}/deactivate`
+    // Journal Entry endpoints
+    JOURNAL_ENTRIES: {
+        BASE: '/api/v1/journal-entries',
+        BY_ID: (id) => `/api/v1/journal-entries/${id}`,
+        APPROVE: (id) => `/api/v1/journal-entries/${id}/approve`,
+        REJECT: (id) => `/api/v1/journal-entries/${id}/reject`,
+        PENDING: '/api/v1/journal-entries/pending'
     },
+
+    // Audit Log endpoints
+    AUDIT_LOGS: {
+        BASE: '/api/v1/audit-logs',
+        BY_ENTITY: (entityType, entityId) => `/api/v1/audit-logs/entity/${entityType}/${entityId}`,
+        BY_USER: (userId) => `/api/v1/audit-logs/user/${userId}`,
+        BY_DATE_RANGE: '/api/v1/audit-logs/date-range',
+        BY_ENTITY_TYPE: (entityType) => `/api/v1/audit-logs/entity-type/${entityType}`,
+        EXPORT: '/api/v1/audit-logs/export'
+    },
+
+    // Invoice endpoints (Payables)
     INVOICES: {
-        BASE: '/api/invoices',
-        BY_ID: (id) => `/api/invoices/${id}`,
-        STATUS: (id) => `/api/invoices/${id}/status`,
-        SEARCH: '/api/invoices/search',
-        OVERDUE: '/api/invoices/overdue',
-        BY_MERCHANT: (merchantId) => `/api/invoices/merchant/${merchantId}`,
-        BY_SITE: (siteId) => `/api/invoices/site/${siteId}`
+        BASE: '/api/v1/invoices',
+        BY_ID: (id) => `/api/v1/invoices/${id}`,
+        BY_NUMBER: (invoiceNumber) => `/api/v1/invoices/number/${invoiceNumber}`,
+        UNPAID: '/api/v1/invoices/unpaid',
+        OVERDUE: '/api/v1/invoices/overdue',
+        DUE_SOON: '/api/v1/invoices/due-soon',
+        BY_VENDOR: '/api/v1/invoices/vendor',
+        BY_STATUS: '/api/v1/invoices/status',
+        BY_DATE_RANGE: '/api/v1/invoices/date-range',
+        SEARCH: '/api/v1/invoices/search',
+        OUTSTANDING_TOTAL: '/api/v1/invoices/outstanding-total',
+        PERIOD_TOTAL: '/api/v1/invoices/period-total',
+        TOP_VENDORS: '/api/v1/invoices/top-vendors',
+        VENDOR_STATS: '/api/v1/invoices/vendor-stats',
+
+        // Aging report endpoints
+        AGING: {
+            AGED_0_30: '/api/v1/invoices/aging/0-30',
+            AGED_31_60: '/api/v1/invoices/aging/31-60',
+            AGED_61_90: '/api/v1/invoices/aging/61-90',
+            AGED_OVER_90: '/api/v1/invoices/aging/over-90',
+            SUMMARY: '/api/v1/invoices/aging/summary',
+            EXPORT_PDF: '/api/v1/invoices/aging/export/pdf'
+        }
+    },
+
+    // Payment endpoints
+    PAYMENTS: {
+        BASE: '/api/v1/payments',
+        BY_ID: (id) => `/api/v1/payments/${id}`,
+        BY_INVOICE: (invoiceId) => `/api/v1/payments/invoice/${invoiceId}`,
+        UPDATE_STATUS: (id) => `/api/v1/payments/${id}/status`,
+        BY_DATE_RANGE: '/api/v1/payments/date-range',
+        BY_VENDOR: '/api/v1/payments/vendor',
+        BY_STATUS: '/api/v1/payments/status',
+        SEARCH_BY_REFERENCE: '/api/v1/payments/search/reference',
+        SEARCH: '/api/v1/payments/search',
+        RECENT: '/api/v1/payments/recent',
+        LARGEST: '/api/v1/payments/largest',
+        TOTALS: '/api/v1/payments/totals',
+        VENDOR_REPORT: '/api/v1/payments/vendor-report',
+        VALIDATE: '/api/v1/payments/validate'
+    },
+
+    // Fixed Assets endpoints
+    FIXED_ASSETS: {
+        BASE: '/api/v1/fixed-assets',
+        BY_ID: (id) => `/api/v1/fixed-assets/${id}`,
+        BY_STATUS: (status) => `/api/v1/fixed-assets/status/${status}`,
+        BY_SITE: (siteId) => `/api/v1/fixed-assets/site/${siteId}`,
+        SEARCH: '/api/v1/fixed-assets/search',
+
+        // Depreciation endpoints
+        MONTHLY_DEPRECIATION: (id) => `/api/v1/fixed-assets/${id}/depreciation/monthly`,
+        ACCUMULATED_DEPRECIATION: (id) => `/api/v1/fixed-assets/${id}/depreciation/accumulated`,
+        BOOK_VALUE: (id) => `/api/v1/fixed-assets/${id}/book-value`,
+
+        // Disposal endpoints
+        DISPOSE: (id) => `/api/v1/fixed-assets/${id}/dispose`,
+        DISPOSAL_BY_ASSET: (id) => `/api/v1/fixed-assets/${id}/disposal`,
+        ALL_DISPOSALS: '/api/v1/fixed-assets/disposals',
+        DISPOSALS_BY_METHOD: (method) => `/api/v1/fixed-assets/disposals/method/${method}`,
+        DISPOSALS_BY_DATE_RANGE: '/api/v1/fixed-assets/disposals/date-range',
+        PROFITABLE_DISPOSALS: '/api/v1/fixed-assets/disposals/profitable',
+        LOSS_DISPOSALS: '/api/v1/fixed-assets/disposals/losses',
+        RECENT_DISPOSALS: '/api/v1/fixed-assets/disposals/recent',
+        DISPOSAL_SUMMARY: '/api/v1/fixed-assets/disposals/summary',
+        TOTAL_GAIN_LOSS: '/api/v1/fixed-assets/disposals/total-gain-loss'
+    },
+
+    // Accounting Period endpoints
+    ACCOUNTING_PERIODS: {
+        BASE: '/api/v1/accounting-periods',
+        BY_ID: (id) => `/api/v1/accounting-periods/${id}`,
+        CLOSE: (id) => `/api/v1/accounting-periods/${id}/close`
+    },
+
+    // Add this to your existing FINANCE_ENDPOINTS in src/config/api.config.js
+
+// Bank Reconciliation submodule endpoints
+    BANK_RECONCILIATION: {
+        // Bank Account endpoints
+        BANK_ACCOUNTS: {
+            BASE: '/api/v1/bank-accounts',
+            BY_ID: (id) => `/api/v1/bank-accounts/${id}`,
+            UPDATE_BALANCE: (id) => `/api/v1/bank-accounts/${id}/balance`,
+            SEARCH: '/api/v1/bank-accounts/search',
+            BALANCE_ABOVE: '/api/v1/bank-accounts/balance-above'
+        },
+
+        // Bank Statement Entry endpoints
+        BANK_STATEMENT_ENTRIES: {
+            BASE: '/api/v1/bank-statement-entries',
+            BY_ID: (id) => `/api/v1/bank-statement-entries/${id}`,
+            IMPORT: '/api/v1/bank-statement-entries/import',
+            BY_BANK_ACCOUNT: (bankAccountId) => `/api/v1/bank-statement-entries/bank-account/${bankAccountId}`,
+            UNMATCHED: '/api/v1/bank-statement-entries/unmatched',
+            UNMATCHED_BY_ACCOUNT: (bankAccountId) => `/api/v1/bank-statement-entries/unmatched/bank-account/${bankAccountId}`,
+            BY_DATE_RANGE: '/api/v1/bank-statement-entries/date-range',
+            BY_CATEGORY: (category) => `/api/v1/bank-statement-entries/category/${category}`,
+            MARK_MATCHED: (id) => `/api/v1/bank-statement-entries/${id}/match`,
+            POTENTIAL_MATCHES: '/api/v1/bank-statement-entries/potential-matches',
+            SEARCH: '/api/v1/bank-statement-entries/search'
+        },
+
+        // Internal Transaction endpoints
+        INTERNAL_TRANSACTIONS: {
+            BASE: '/api/v1/internal-transactions',
+            BY_ID: (id) => `/api/v1/internal-transactions/${id}`,
+            BY_BANK_ACCOUNT: (bankAccountId) => `/api/v1/internal-transactions/bank-account/${bankAccountId}`,
+            UNRECONCILED: '/api/v1/internal-transactions/unreconciled',
+            UNRECONCILED_BY_ACCOUNT: (bankAccountId) => `/api/v1/internal-transactions/unreconciled/bank-account/${bankAccountId}`,
+            BY_DATE_RANGE: '/api/v1/internal-transactions/date-range',
+            BY_TYPE: (transactionType) => `/api/v1/internal-transactions/type/${transactionType}`,
+            MARK_RECONCILED: (id) => `/api/v1/internal-transactions/${id}/reconcile`,
+            POTENTIAL_MATCHES: '/api/v1/internal-transactions/potential-matches'
+        },
+
+        // Transaction Match endpoints
+        TRANSACTION_MATCHES: {
+            BASE: '/api/v1/transaction-matches',
+            BY_ID: (id) => `/api/v1/transaction-matches/${id}`,
+            UNCONFIRMED: '/api/v1/transaction-matches/unconfirmed',
+            BY_BANK_ACCOUNT: (bankAccountId) => `/api/v1/transaction-matches/bank-account/${bankAccountId}`,
+            NEEDS_REVIEW: '/api/v1/transaction-matches/needs-review',
+            CONFIRM: (id) => `/api/v1/transaction-matches/${id}/confirm`,
+            AUTO_MATCH: (bankAccountId) => `/api/v1/transaction-matches/auto-match/bank-account/${bankAccountId}`,
+            POTENTIAL_MATCHES: (bankStatementEntryId) => `/api/v1/transaction-matches/potential-matches/bank-statement-entry/${bankStatementEntryId}`
+        },
+
+        // Discrepancy endpoints
+        DISCREPANCIES: {
+            BASE: '/api/v1/discrepancies',
+            BY_ID: (id) => `/api/v1/discrepancies/${id}`,
+            BY_STATUS: (status) => `/api/v1/discrepancies/status/${status}`,
+            OPEN: '/api/v1/discrepancies/open',
+            HIGH_PRIORITY: '/api/v1/discrepancies/high-priority',
+            ASSIGNED_TO: (assignee) => `/api/v1/discrepancies/assigned-to/${assignee}`,
+            UNASSIGNED: '/api/v1/discrepancies/unassigned',
+            OVERDUE: '/api/v1/discrepancies/overdue',
+            ASSIGN: (id) => `/api/v1/discrepancies/${id}/assign`,
+            UPDATE_NOTES: (id) => `/api/v1/discrepancies/${id}/investigation-notes`,
+            RESOLVE: (id) => `/api/v1/discrepancies/${id}/resolve`,
+            CLOSE: (id) => `/api/v1/discrepancies/${id}/close`,
+            UPDATE_PRIORITY: (id) => `/api/v1/discrepancies/${id}/priority`
+        },
+
+        // Reconciliation Report endpoints
+        RECONCILIATION_REPORTS: {
+            SUMMARY_BY_ACCOUNT: (bankAccountId) => `/api/v1/reconciliation-reports/summary/bank-account/${bankAccountId}`,
+            SUMMARY_ALL_ACCOUNTS: '/api/v1/reconciliation-reports/summary/all-accounts',
+            OUTSTANDING_CHECKS: (bankAccountId) => `/api/v1/reconciliation-reports/outstanding-checks/bank-account/${bankAccountId}`,
+            DEPOSITS_IN_TRANSIT: (bankAccountId) => `/api/v1/reconciliation-reports/deposits-in-transit/bank-account/${bankAccountId}`,
+            STATUS: (bankAccountId) => `/api/v1/reconciliation-reports/status/bank-account/${bankAccountId}`,
+            EXPORT_CSV: (bankAccountId) => `/api/v1/reconciliation-reports/export/csv/bank-account/${bankAccountId}`,
+            TREND: (bankAccountId) => `/api/v1/reconciliation-reports/trend/bank-account/${bankAccountId}`
+        }
     }
 };
 
@@ -146,6 +322,7 @@ export const SITE_ENDPOINTS = {
     UNASSIGNED_PARTNERS: (siteId) => `/api/v1/site/${siteId}/unassigned-partners`,
     EMPLOYEES: (siteId) => `/api/v1/site/${siteId}/employees`,
     EQUIPMENT: (siteId) => `/api/v1/site/${siteId}/equipment`,
+    UNASSIGNED_EQUIPMENT: `/api/v1/site/unassigned-equipment`,
     WAREHOUSES: (siteId) => `/api/v1/site/${siteId}/warehouses`,
     MERCHANTS: (siteId) => `/api/v1/site/${siteId}/merchants`,
     FIXED_ASSETS: (siteId) => `/api/v1/site/${siteId}/fixedassets`,
@@ -185,15 +362,62 @@ export const WORK_TYPE_ENDPOINTS = {
 
 // Job Position module endpoints
 export const JOB_POSITION_ENDPOINTS = {
+    // Basic CRUD endpoints
     BASE: '/api/v1/job-positions',
+    CREATE: '/api/v1/job-positions',
     CREATE_DTO: '/api/v1/job-positions/dto',
     BY_ID: (id) => `/api/v1/job-positions/${id}`,
     DTO_BY_ID: (id) => `/api/v1/job-positions/dto/${id}`,
+    UPDATE: (id) => `/api/v1/job-positions/${id}`,
     UPDATE_DTO: (id) => `/api/v1/job-positions/dto/${id}`,
     DELETE: (id) => `/api/v1/job-positions/${id}`,
+
+    // Employee-related endpoints
     EMPLOYEES: (id) => `/api/v1/job-positions/${id}/employees`,
-    CREATE: '/api/v1/job-positions',
-    UPDATE: (id) => `/api/v1/job-positions/${id}`
+
+    // Enhanced endpoints for details view
+    DETAILS: (id) => `/api/v1/job-positions/${id}/details`,
+    PROMOTION_STATISTICS: (id) => `/api/v1/job-positions/${id}/promotion-statistics`,
+    PROMOTIONS_FROM: (id) => `/api/v1/job-positions/${id}/promotions/from`,
+    PROMOTIONS_TO: (id) => `/api/v1/job-positions/${id}/promotions/to`,
+    PROMOTIONS_FROM_PENDING: (id) => `/api/v1/job-positions/${id}/promotions/from/pending`,
+    PROMOTIONS_TO_PENDING: (id) => `/api/v1/job-positions/${id}/promotions/to/pending`,
+    CAREER_PATH_SUGGESTIONS: (id) => `/api/v1/job-positions/${id}/career-path-suggestions`,
+    EMPLOYEES_ELIGIBLE_FOR_PROMOTION: (id) => `/api/v1/job-positions/${id}/employees/eligible-for-promotion`,
+    SALARY_STATISTICS: (id) => `/api/v1/job-positions/${id}/salary-statistics`,
+    VALIDATION: (id) => `/api/v1/job-positions/${id}/validation`,
+    ANALYTICS: (id) => `/api/v1/job-positions/${id}/analytics`,
+    CAN_DELETE: (id) => `/api/v1/job-positions/${id}/can-delete`,
+    PROMOTION_DESTINATIONS: (id) => `/api/v1/job-positions/${id}/promotion-destinations`,
+    PROMOTION_SOURCES: (id) => `/api/v1/job-positions/${id}/promotion-sources`,
+    EMPLOYEE_ANALYTICS: (id) => `/api/v1/job-positions/${id}/employee-analytics`,
+
+    // NEW: Hierarchy and Organization Structure endpoints
+    HIERARCHY: '/api/v1/job-positions/hierarchy',
+    CHILDREN: (id) => `/api/v1/job-positions/${id}/children`,
+    PROMOTION_TARGETS: (id) => `/api/v1/job-positions/${id}/promotion-targets`,
+    VALIDATE_PROMOTION_TARGET: (currentId, targetId) => `/api/v1/job-positions/${currentId}/validate-promotion/${targetId}`,
+    HIERARCHY_PATH: (id) => `/api/v1/job-positions/${id}/hierarchy-path`,
+    BY_HIERARCHY_LEVEL: (level) => `/api/v1/job-positions/hierarchy/level/${level}`,
+    ORGANIZATION_STRUCTURE: '/api/v1/job-positions/organization-structure',
+
+    // NEW: Promotion eligibility endpoints
+    ELIGIBLE_FOR_PROMOTION_FROM: '/api/v1/job-positions/eligible-for-promotion/from',
+    ELIGIBLE_FOR_PROMOTION_TO: '/api/v1/job-positions/eligible-for-promotion/to',
+
+    // NEW: Department and validation endpoints
+    DEPARTMENT_HIERARCHY: '/api/v1/job-positions/department-hierarchy',
+    VALIDATE_HIERARCHY: '/api/v1/job-positions/validate-hierarchy',
+
+    // NEW: Promotion path and navigation endpoints
+    PROMOTION_PATH: (fromId, toId) => `/api/v1/job-positions/promotion-path/${fromId}/${toId}`,
+    NEXT_PROMOTION_STEPS: (id) => `/api/v1/job-positions/${id}/next-promotion-steps`,
+    POSITIONS_AT_RISK: '/api/v1/job-positions/at-risk',
+
+    // NEW: Simplified promotion endpoints
+    PROMOTION_STATS_SIMPLE: (id) => `/api/v1/job-positions/${id}/promotion-stats-simple`,
+    PROMOTIONS_FROM_SIMPLE: (id) => `/api/v1/job-positions/${id}/promotions-from-simple`,
+    PROMOTIONS_TO_SIMPLE: (id) => `/api/v1/job-positions/${id}/promotions-to-simple`
 };
 
 // Document module endpoints
@@ -243,23 +467,49 @@ export const ITEM_CATEGORY_ENDPOINTS = {
     BASE: '/api/v1/itemCategories',
     CREATE: '/api/v1/itemCategories',
     PARENTS: '/api/v1/itemCategories/parents',
-    CHILDREN: '/api/v1/itemCategories/children'
+    CHILDREN: '/api/v1/itemCategories/children',
+    PARENT_CATEGORIES: '/api/v1/item-categories/parent'
 };
 
 // Request Order module endpoints
 export const REQUEST_ORDER_ENDPOINTS = {
     BASE: '/api/v1/requestOrders',
     BY_ID: (id) => `/api/v1/requestOrders/${id}`,
-    CREATE: '/api/v1/requestOrders'
+    CREATE: '/api/v1/requestOrders',
+    VALIDATE_RESTOCK: '/api/v1/requestOrders/validate-restock'
 };
-
 // Offer module endpoints
+// Add these to your OFFER_ENDPOINTS in api.config.js
+
 export const OFFER_ENDPOINTS = {
     BASE: '/api/v1/offers',
     BY_ID: (id) => `/api/v1/offers/${id}`,
     CREATE: '/api/v1/offers',
     UPDATE: (id) => `/api/v1/offers/${id}`,
-    DELETE: (id) => `/api/v1/offers/${id}`
+    DELETE: (id) => `/api/v1/offers/${id}`,
+
+    // Status operations
+    BY_STATUS: (status) => `/api/v1/offers?status=${status}`,
+    UPDATE_STATUS: (id) => `/api/v1/offers/${id}/status`,
+
+    // Request Order operations
+    REQUEST_ORDER: (offerId) => `/api/v1/offers/${offerId}/request-order`,
+
+    // Items operations
+    ADD_ITEMS: (offerId) => `/api/v1/offers/${offerId}/items`,
+    GET_ITEMS: (offerId) => `/api/v1/offers/${offerId}/items`,
+    UPDATE_ITEM: (itemId) => `/api/v1/offers/items/${itemId}`,
+    DELETE_ITEM: (itemId) => `/api/v1/offers/items/${itemId}`,
+
+    // Finance operations
+    UPDATE_FINANCE_STATUS: (offerId) => `/api/v1/offers/${offerId}/finance-status`,
+    UPDATE_ITEM_FINANCE_STATUS: (itemId) => `/api/v1/offers/offer-items/${itemId}/financeStatus`,
+    BY_FINANCE_STATUS: (status) => `/api/v1/offers/finance-status/${status}`,
+    COMPLETED_FINANCE: '/api/v1/offers/completed-offers',
+    COMPLETE_FINANCE_REVIEW: (offerId) => `/api/v1/offers/${offerId}/complete-review`,
+
+    // Retry operation
+    RETRY: (offerId) => `/api/v1/offers/${offerId}/retry`
 };
 
 // Candidate module endpoints
@@ -276,10 +526,23 @@ export const CANDIDATE_ENDPOINTS = {
 // Vacancy module endpoints
 export const VACANCY_ENDPOINTS = {
     BASE: '/api/v1/vacancies',
-    BY_ID: (id) => `/api/v1/vacancies/${id}`,
-    CREATE: '/api/v1/vacancies',
-    UPDATE: (id) => `/api/v1/vacancies/${id}`,
-    DELETE: (id) => `/api/v1/vacancies/${id}`
+
+    // Basic CRUD operations
+    CREATE: '/api/v1/vacancies',                              // POST - Create new vacancy
+    GET_ALL: '/api/v1/vacancies',                            // GET - Get all vacancies
+    BY_ID: (id) => `/api/v1/vacancies/${id}`,                // GET - Get vacancy by ID
+    UPDATE: (id) => `/api/v1/vacancies/${id}`,               // PUT - Update vacancy
+    DELETE: (id) => `/api/v1/vacancies/${id}`,               // DELETE - Delete vacancy
+
+    // Statistics and reporting
+    STATISTICS: (id) => `/api/v1/vacancies/${id}/statistics`, // GET - Get vacancy statistics
+
+    // Candidate management
+    HIRE_CANDIDATE: (candidateId) => `/api/v1/vacancies/hire-candidate/${candidateId}`, // POST - Hire a candidate
+
+    // Potential candidates management
+    MOVE_TO_POTENTIAL: (id) => `/api/v1/vacancies/${id}/move-to-potential`, // POST - Move candidates to potential list
+    GET_POTENTIAL_CANDIDATES: '/api/v1/vacancies/potential-candidates'       // GET - Get all potential candidates
 };
 
 // Department module endpoints
@@ -324,7 +587,8 @@ export const ITEM_TYPE_ENDPOINTS = {
     BY_ID: (id) => `/api/v1/itemTypes/${id}`,
     CREATE: '/api/v1/itemTypes',
     UPDATE: (id) => `/api/v1/itemTypes/${id}`,
-    DELETE: (id) => `/api/v1/itemTypes/${id}`
+    DELETE: (id) => `/api/v1/itemTypes/${id}`,
+    ALL_TYPES: '/api/v1/item-types'
 };
 
 // Warehouse module endpoints
@@ -335,7 +599,9 @@ export const WAREHOUSE_ENDPOINTS = {
     ITEMS: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}`,
     CREATE: '/api/v1/warehouses',
     UPDATE: (id) => `/api/v1/warehouses/${id}`,
-    DELETE: (id) => `/api/v1/warehouses/${id}`
+    DELETE: (id) => `/api/v1/warehouses/${id}`,
+    BY_EMPLOYEES: (warehouseId) => `/api/v1/warehouses/${warehouseId}/employees`
+
 };
 
 // Maintenance Type module endpoints
@@ -362,3 +628,82 @@ export const INSITE_MAINTENANCE_ENDPOINTS = {
     VALIDATE_TRANSACTION: (equipmentId, maintenanceId, transactionId) => `/api/equipment/${equipmentId}/maintenance/${maintenanceId}/validate-transaction/${transactionId}`,
     ANALYTICS: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/analytics`
 };
+
+// Item module endpoints
+export const ITEM_ENDPOINTS = {
+    BASE: '/api/v1/items',
+    BY_ID: (itemId) => `/api/v1/items/${itemId}`,
+    CREATE: '/api/v1/items',
+    DELETE: (itemId) => `/api/v1/items/${itemId}`,
+
+    // Warehouse-related endpoints
+    BY_WAREHOUSE: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}`,
+    WAREHOUSE_DISCREPANCIES: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/discrepancies`,
+    WAREHOUSE_RESOLVED: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/resolved`,
+    WAREHOUSE_STOLEN: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/stolen`,
+    WAREHOUSE_OVERRECEIVED: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/overreceived`,
+    WAREHOUSE_COUNTS: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/counts`,
+    WAREHOUSE_ACTIVE: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/active`,
+    WAREHOUSE_SUMMARY: (warehouseId) => `/api/v1/items/warehouse/${warehouseId}/summary`,
+
+    // Resolution endpoints
+    RESOLVE_DISCREPANCY: '/api/v1/items/resolve-discrepancy',
+    ITEM_RESOLUTIONS: (itemId) => `/api/v1/items/${itemId}/resolutions`,
+    RESOLUTIONS_BY_USER: (username) => `/api/v1/items/resolutions/user/${username}`,
+    RESOLUTION_HISTORY_BY_WAREHOUSE: (warehouseId) => `/api/v1/items/resolution-history/warehouse/${warehouseId}`,
+
+    // Item capabilities
+    CAN_RESOLVE: (itemId) => `/api/v1/items/${itemId}/can-resolve`,
+
+    // Transaction details
+    TRANSACTION_DETAILS: (warehouseId, itemTypeId) => `/api/v1/items/transaction-details/${warehouseId}/${itemTypeId}`
+};
+
+export const WAREHOUSE_EMPLOYEE_ENDPOINTS = {
+    BASE: '/api/v1/warehouseEmployees',
+    WAREHOUSE_EMPLOYEES: '/api/v1/warehouseEmployees/warehouse-employees',
+    ASSIGN_WAREHOUSE: (employeeId) => `/api/v1/warehouseEmployees/${employeeId}/assign-warehouse`,
+    UNASSIGN_WAREHOUSE: (employeeId) => `/api/v1/warehouseEmployees/${employeeId}/unassign-warehouse`,
+    BY_USERNAME_ASSIGNMENTS: (username) => `/api/v1/warehouseEmployees/by-username/${username}/assignments`,
+    WAREHOUSE_ASSIGNED_USERS: (warehouseId) => `/api/v1/warehouses/${warehouseId}/assigned-users-dto`,
+    EMPLOYEE_WAREHOUSES: (employeeId) => `/api/v1/warehouseEmployees/${employeeId}/warehouses`,
+    ASSIGNMENT_DETAILS: (employeeId, warehouseId) => `/api/v1/warehouseEmployees/${employeeId}/warehouses/${warehouseId}/assignment`,
+    EMPLOYEE_ASSIGNMENTS: (employeeId) => `/api/v1/warehouseEmployees/${employeeId}/assignments`,
+    CHECK_WAREHOUSE_ACCESS: (employeeId, warehouseId) => `/api/v1/warehouseEmployees/${employeeId}/warehouses/${warehouseId}/access`
+};
+
+export const NOTIFICATION_ENDPOINTS = {
+    BASE: '/api/notifications',
+    UNREAD: '/api/notifications/unread',
+    UNREAD_COUNT: '/api/notifications/unread/count',
+    READ_ALL: '/api/notifications/read-all',
+    SEND: '/api/notifications/send',
+    BROADCAST: '/api/notifications/broadcast',
+    MARK_AS_READ: (id) => `/api/notifications/${id}/read`,
+    DELETE: (id) => `/api/notifications/${id}`,
+    WEBSOCKET: '/ws-native'
+};
+
+export const PROCUREMENT_ENDPOINTS = {
+    BASE: '/api/v1/procurement',
+    BY_ID: (id) => `/api/v1/procurement/${id}`,
+    CREATE: '/api/v1/procurement',
+    UPDATE: (id) => `/api/v1/procurement/${id}`,
+    DELETE: (id) => `/api/v1/procurement/${id}`,
+    BY_SITE: (siteId) => `/api/v1/procurement/site/${siteId}`,
+    BY_TYPE: (type) => `/api/v1/procurement/type/${type}`,
+    SEARCH: '/api/v1/procurement/search'
+};
+
+// Add this to your existing api.config.js file
+
+export const PURCHASE_ORDER_ENDPOINTS = {
+    BASE: '/api/v1/purchaseOrders',
+    BY_ID: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}`,
+    PENDING_OFFERS: '/api/v1/purchaseOrders/pending-offers',
+    BY_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/purchase-order`,
+    UPDATE_STATUS: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}/status`,
+    FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`
+};
+
+

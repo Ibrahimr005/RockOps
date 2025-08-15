@@ -483,7 +483,9 @@ public class ItemService {
         transactionItem.setStatus(TransactionStatus.RESOLVED);
         transactionItem.setRejectionReason(null); // Clear rejection reason
 
-        System.out.println("✅ TransactionItem status set to RESOLVED");
+        // 🆕 CRITICAL FIX: Save the transaction item to persist the status change
+        transactionRepository.save(transactionItem.getTransaction());
+        System.out.println("✅ TransactionItem status set to RESOLVED and saved to database");
     }
 
     // 🆕 NEW METHOD: Step 2 - Check all TransactionItems and update Transaction status

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import { useNavigate } from 'react-router-dom';
+import { requestOrderService } from '../../../../services/procurement/requestOrderService.js';
 
 const ValidatedRequestOrders = ({ warehouseId, refreshTrigger, onShowSnackbar, userRole }) => {
     const navigate = useNavigate();
@@ -119,23 +120,7 @@ const ValidatedRequestOrders = ({ warehouseId, refreshTrigger, onShowSnackbar, u
     const fetchValidatedOrders = async () => {
         setIsLoadingValidated(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(
-                `http://localhost:8080/api/v1/requestOrders/warehouse?warehouseId=${warehouseId}&status=APPROVED`,
-                {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
+            const data = await requestOrderService.getByWarehouseAndStatus(warehouseId, 'APPROVED');
             setValidatedOrders(data);
         } catch (error) {
             console.error('Error fetching validated orders:', error);
@@ -156,9 +141,7 @@ const ValidatedRequestOrders = ({ warehouseId, refreshTrigger, onShowSnackbar, u
             {/* Validated Orders Section */}
             <div className="request-orders-section">
                 <div className="table-header-section">
-                    <div className="left-section3">
-                        <div className="item-count3">{validatedOrders.length} validated request orders</div>
-                    </div>
+
                 </div>
 
 

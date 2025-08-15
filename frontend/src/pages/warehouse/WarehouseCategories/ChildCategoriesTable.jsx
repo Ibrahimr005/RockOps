@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import "./WarehouseViewItemCategories.scss";
+import { itemCategoryService } from '../../../services/warehouse/itemCategoryService';
 
 const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
     const [childCategories, setChildCategories] = useState([]);
@@ -23,25 +24,7 @@ const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
             setLoading(true);
             setError(null);
             try {
-                const token = localStorage.getItem("token");
-                if (!token) {
-                    throw new Error("No authentication token found");
-                }
-
-                const response = await fetch(`http://localhost:8080/api/v1/itemCategories/children`, {
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
-                });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error("Error response:", errorText);
-                    throw new Error(`Failed to fetch child categories: ${response.status} ${errorText}`);
-                }
-
-                const data = await response.json();
+                const data = await itemCategoryService.getChildren();
                 setChildCategories(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error("Error fetching child categories:", error);
@@ -55,22 +38,29 @@ const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
         fetchChildCategories();
     }, []);
 
+
+
+
+    useEffect(() => {
+        if (isModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        // Cleanup when component unmounts
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isModalOpen]);
+
+
     // Fetch parent categories for dropdown
     useEffect(() => {
         const fetchParentCategories = async () => {
             try {
-                const token = localStorage.getItem("token");
-                const response = await fetch(`http://localhost:8080/api/v1/itemCategories/parents`, {
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setValidParentCategories(Array.isArray(data) ? data : []);
-                }
+                const data = await itemCategoryService.getParents();
+                setValidParentCategories(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error("Error fetching parent categories:", error);
             }
@@ -106,6 +96,7 @@ const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
     };
 
     // Handle form submission
+    // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -132,9 +123,8 @@ const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
         }
 
         try {
-            const token = localStorage.getItem("token");
             const requestBody = {
-                name: newCategoryName.trim(), // Trim whitespace
+                name: newCategoryName.trim(),
                 description: newCategoryDescription.trim()
             };
 
@@ -142,67 +132,10 @@ const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
                 requestBody.parentCategoryId = selectedParentCategory;
             }
 
-            let response;
             if (categoryAction === "create") {
-                response = await fetch(`http://localhost:8080/api/v1/itemCategories`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`,
-                    },
-                    body: JSON.stringify(requestBody),
-                });
+                await itemCategoryService.create(requestBody);
             } else {
-                response = await fetch(`http://localhost:8080/api/v1/itemCategories/${selectedCategory.id}`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`,
-                    },
-                    body: JSON.stringify(requestBody),
-                });
-            }
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Server response:", errorText);
-
-                let errorMessage = "Failed to save category";
-
-                // Enhanced error handling for different response formats
-                if (response.status === 409) {
-                    errorMessage = "A category with this name already exists. Please choose a different name.";
-                } else if (response.status === 400) {
-                    // Try to parse JSON error response
-                    try {
-                        const errorData = JSON.parse(errorText);
-                        if (errorData.message && (
-                            errorData.message.toLowerCase().includes('already exists') ||
-                            errorData.message.toLowerCase().includes('duplicate') ||
-                            errorData.message.toLowerCase().includes('name')
-                        )) {
-                            errorMessage = "A category with this name already exists. Please choose a different name.";
-                        } else {
-                            errorMessage = errorData.message || "Invalid category data. Please check your input.";
-                        }
-                    } catch {
-                        // If not JSON, check the text response
-                        if (errorText.toLowerCase().includes('already exists') ||
-                            errorText.toLowerCase().includes('duplicate') ||
-                            errorText.toLowerCase().includes('name')) {
-                            errorMessage = "A category with this name already exists. Please choose a different name.";
-                        } else {
-                            errorMessage = "Invalid category data. Please check your input.";
-                        }
-                    }
-                } else if (response.status === 422) {
-                    // Unprocessable Entity - often used for validation errors
-                    errorMessage = "A category with this name already exists. Please choose a different name.";
-                } else {
-                    errorMessage = `Failed to save category: ${response.status} - ${errorText}`;
-                }
-
-                throw new Error(errorMessage);
+                await itemCategoryService.update(selectedCategory.id, requestBody);
             }
 
             closeModal();
@@ -216,17 +149,8 @@ const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
             // Refresh local list
             const fetchData = async () => {
                 try {
-                    const token = localStorage.getItem("token");
-                    const response = await fetch(`http://localhost:8080/api/v1/itemCategories/children`, {
-                        headers: {
-                            "Authorization": `Bearer ${token}`,
-                            "Content-Type": "application/json"
-                        }
-                    });
-                    if (response.ok) {
-                        const data = await response.json();
-                        setChildCategories(Array.isArray(data) ? data : []);
-                    }
+                    const data = await itemCategoryService.getChildren();
+                    setChildCategories(Array.isArray(data) ? data : []);
                 } catch (error) {
                     console.error("Error refreshing categories:", error);
                 }
@@ -235,7 +159,19 @@ const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
 
         } catch (error) {
             console.error("Error saving category:", error);
-            displaySnackbar(`${error.message}`, "error");
+
+            // Handle specific error messages
+            let errorMessage = error.message;
+            if (errorMessage.includes('already exists') ||
+                errorMessage.includes('duplicate') ||
+                errorMessage.includes('409') ||
+                errorMessage.includes('422')) {
+                errorMessage = "A category with this name already exists. Please choose a different name.";
+            } else if (errorMessage.includes('400')) {
+                errorMessage = "Invalid category data. Please check your input.";
+            }
+
+            displaySnackbar(errorMessage, "error");
         }
     };
 

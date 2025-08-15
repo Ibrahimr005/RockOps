@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaBuilding, FaChartLine, FaCalculator, FaTrash, FaMoneyBillWave, FaClock, FaExclamationTriangle } from 'react-icons/fa';
 import './FixedAssetsDashboard.css';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
+import { financeService } from '../../../../services/financeService.js';
 
 const FixedAssetsDashboard = () => {
     const [dashboardData, setDashboardData] = useState({
@@ -24,96 +25,68 @@ const FixedAssetsDashboard = () => {
         try {
             setLoading(true);
 
-            // Fetch all assets to calculate dashboard metrics
-            const assetsResponse = await fetch(`http://localhost:8080/api/v1/fixed-assets`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            console.log('=== FETCHING FIXED ASSETS DASHBOARD DATA ===');
 
-            if (!assetsResponse.ok) {
-                throw new Error('Failed to fetch assets');
-            }
+            // Fetch all assets and disposals using financeService
+            const [assetsResponse, disposalsResponse] = await Promise.all([
+                financeService.fixedAssets.getAll(),
+                financeService.fixedAssets.getAllDisposals()
+            ]);
 
-            const assets = await assetsResponse.json();
+            console.log('Raw responses:', { assetsResponse, disposalsResponse });
 
-            // Fetch all disposals for recent activity and counts
-            const disposalsResponse = await fetch(`http://localhost:8080/api/v1/fixed-assets/disposals`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            // Extract data from Axios responses
+            const assets = assetsResponse.data || assetsResponse;
+            const disposals = disposalsResponse.data || disposalsResponse;
 
-            const disposals = disposalsResponse.ok ? await disposalsResponse.json() : [];
+            console.log('Extracted data:', { assets, disposals });
+
+            // Ensure we have arrays
+            const assetsArray = Array.isArray(assets) ? assets : [];
+            const disposalsArray = Array.isArray(disposals) ? disposals : [];
 
             // Calculate metrics from the data
-            const totalAssets = assets.length;
-            const activeAssets = assets.filter(asset => asset.status === 'ACTIVE').length;
-            const disposedAssets = disposals.length;
+            const totalAssets = assetsArray.length;
+            const activeAssets = assetsArray.filter(asset => asset.status === 'ACTIVE').length;
+            const disposedAssets = disposalsArray.length;
+
+            console.log('Basic metrics:', { totalAssets, activeAssets, disposedAssets });
 
             // Calculate total value (sum of current book values)
             let totalValue = 0;
             let totalDepreciation = 0;
             let monthlyDepreciation = 0;
 
-            // For each asset, get its current book value and depreciation
-            for (const asset of assets) {
-                if (asset.status === 'ACTIVE') {
-                    try {
-                        // Get current book value
-                        const bookValueResponse = await fetch(
-                            `http://localhost:8080/api/v1/fixed-assets/${asset.id}/book-value`,
-                            {
-                                headers: {
-                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                    'Content-Type': 'application/json'
-                                }
-                            }
-                        );
+            // For each active asset, get its current book value and depreciation
+            const activeAssetsList = assetsArray.filter(asset => asset.status === 'ACTIVE');
 
-                        if (bookValueResponse.ok) {
-                            const bookValue = await bookValueResponse.json();
-                            totalValue += bookValue;
-                        }
+            for (const asset of activeAssetsList) {
+                try {
+                    // Get current book value, accumulated depreciation, and monthly depreciation
+                    const [bookValueResponse, accDepResponse, monthlyDepResponse] = await Promise.all([
+                        financeService.fixedAssets.getBookValue(asset.id),
+                        financeService.fixedAssets.getAccumulatedDepreciation(asset.id),
+                        financeService.fixedAssets.getMonthlyDepreciation(asset.id)
+                    ]);
 
-                        // Get accumulated depreciation
-                        const accDepResponse = await fetch(
-                            `http://localhost:8080/api/v1/fixed-assets/${asset.id}/depreciation/accumulated`,
-                            {
-                                headers: {
-                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                    'Content-Type': 'application/json'
-                                }
-                            }
-                        );
+                    // Extract data from responses
+                    const bookValue = bookValueResponse.data || bookValueResponse || 0;
+                    const accDep = accDepResponse.data || accDepResponse || 0;
+                    const monthlyDep = monthlyDepResponse.data || monthlyDepResponse || 0;
 
-                        if (accDepResponse.ok) {
-                            const accDep = await accDepResponse.json();
-                            totalDepreciation += accDep;
-                        }
-
-                        // Get monthly depreciation
-                        const monthlyDepResponse = await fetch(
-                            `http://localhost:8080/api/v1/fixed-assets/${asset.id}/depreciation/monthly`,
-                            {
-                                headers: {
-                                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                    'Content-Type': 'application/json'
-                                }
-                            }
-                        );
-
-                        if (monthlyDepResponse.ok) {
-                            const monthlyDep = await monthlyDepResponse.json();
-                            monthlyDepreciation += monthlyDep;
-                        }
-                    } catch (error) {
-                        console.error(`Error fetching data for asset ${asset.id}:`, error);
-                    }
+                    totalValue += parseFloat(bookValue) || 0;
+                    totalDepreciation += parseFloat(accDep) || 0;
+                    monthlyDepreciation += parseFloat(monthlyDep) || 0;
+                } catch (error) {
+                    console.error(`Error fetching data for asset ${asset.id}:`, error);
                 }
             }
+
+            console.log('Calculated totals:', {
+                totalValue,
+                totalDepreciation,
+                monthlyDepreciation
+            });
 
             setDashboardData({
                 totalAssets,
@@ -128,8 +101,8 @@ const FixedAssetsDashboard = () => {
             const activities = [];
 
             // Recent disposals (if any)
-            if (disposals.length > 0) {
-                const recentDisposals = disposals
+            if (disposalsArray.length > 0) {
+                const recentDisposals = disposalsArray
                     .sort((a, b) => new Date(b.disposalDate) - new Date(a.disposalDate))
                     .slice(0, 2);
 
@@ -143,7 +116,7 @@ const FixedAssetsDashboard = () => {
             }
 
             // Assets requiring attention (maintenance status)
-            const maintenanceAssets = assets.filter(asset => asset.status === 'MAINTENANCE');
+            const maintenanceAssets = assetsArray.filter(asset => asset.status === 'MAINTENANCE');
             if (maintenanceAssets.length > 0) {
                 activities.push({
                     type: 'maintenance_needed',
@@ -154,54 +127,18 @@ const FixedAssetsDashboard = () => {
                 });
             }
 
-            // High depreciation assets (assets with high monthly depreciation)
-            const sortedByDepreciation = [];
-            for (const asset of assets.filter(a => a.status === 'ACTIVE').slice(0, 5)) {
-                try {
-                    const monthlyDepResponse = await fetch(
-                        `http://localhost:8080/api/v1/fixed-assets/${asset.id}/depreciation/monthly`,
-                        {
-                            headers: {
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                                'Content-Type': 'application/json'
-                            }
-                        }
-                    );
-                    if (monthlyDepResponse.ok) {
-                        const monthlyDep = await monthlyDepResponse.json();
-                        if (monthlyDep > 500) { // Assets with high monthly depreciation
-                            sortedByDepreciation.push({ asset, monthlyDep });
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error fetching depreciation for asset ${asset.id}:`, error);
-                }
-            }
-
-            if (sortedByDepreciation.length > 0) {
-                const highestDepAsset = sortedByDepreciation[0];
+            // High depreciation assets
+            if (monthlyDepreciation > 500) {
                 activities.push({
                     type: 'high_depreciation',
                     title: 'High Depreciation Alert',
-                    description: `${highestDepAsset.asset.name} has monthly depreciation of $${highestDepAsset.monthlyDep.toLocaleString()}`,
+                    description: `Total monthly depreciation: $${monthlyDepreciation.toLocaleString()}`,
                     time: 'Current month',
                     icon: 'calculator'
                 });
             }
 
-            // Recent status changes (inactive assets that might have been recently changed)
-            const inactiveAssets = assets.filter(asset => asset.status === 'INACTIVE');
-            if (inactiveAssets.length > 0 && inactiveAssets.length < totalAssets * 0.3) { // Only if reasonable number
-                activities.push({
-                    type: 'status_change',
-                    title: 'Asset Status Updates',
-                    description: `${inactiveAssets.length} asset${inactiveAssets.length > 1 ? 's' : ''} marked as inactive`,
-                    time: 'Recent',
-                    icon: 'clock'
-                });
-            }
-
-            // Asset portfolio summary
+            // Asset portfolio summary if no other activities
             if (activities.length === 0) {
                 activities.push({
                     type: 'portfolio_summary',
@@ -226,7 +163,7 @@ const FixedAssetsDashboard = () => {
 
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
-            showError('Failed to load dashboard data');
+            showError('Failed to load dashboard data: ' + error.message);
         } finally {
             setLoading(false);
         }

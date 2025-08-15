@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -228,7 +229,7 @@ public class ExportUtil {
     private void addToZip(ZipOutputStream zos, String entryName, String content) throws IOException {
         ZipEntry entry = new ZipEntry(entryName);
         zos.putNextEntry(entry);
-        zos.write(content.getBytes("UTF-8"));
+        zos.write(content.getBytes(StandardCharsets.UTF_8));
         zos.closeEntry();
     }
 

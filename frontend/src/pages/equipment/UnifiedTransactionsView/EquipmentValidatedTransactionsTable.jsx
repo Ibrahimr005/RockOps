@@ -3,6 +3,9 @@ import "../../warehouse/WarehouseViewTransactions/WarehouseViewTransactions.scss
 import TransactionViewModal from "../../warehouse/WarehouseViewTransactions/TransactionViewModal/TransactionViewModal.jsx";
 import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx";
+import { equipmentService } from "../../../services/equipmentService";
+import { siteService } from "../../../services/siteService";
+import { warehouseService } from "../../../services/warehouse/warehouseService.js";
 
 const EquipmentValidatedTransactionsTable = ({ equipmentId }) => {
     const [loading, setLoading] = useState(false);
@@ -44,40 +47,31 @@ const EquipmentValidatedTransactionsTable = ({ equipmentId }) => {
         setLoading(true);
 
         try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/equipment/${equipmentId}/transactions`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
+            const response = await equipmentService.getEquipmentTransactions(equipmentId);
+            const data = response.data;
+            // Filter for validated transactions (ACCEPTED or REJECTED)
+            const validatedData = await Promise.all(
+                data
+                    .filter(transaction => 
+                        (transaction.status === "ACCEPTED" || transaction.status === "REJECTED") &&
+                        (transaction.receiverId === equipmentId || transaction.senderId === equipmentId)
+                    )
+                    .map(async (transaction) => {
+                        const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
+                        const receiver = await fetchEntityDetails(transaction.receiverType, transaction.receiverId);
 
-            if (response.ok) {
-                const data = await response.json();
-                // Filter for validated transactions (ACCEPTED or REJECTED)
-                const validatedData = await Promise.all(
-                    data
-                        .filter(transaction => 
-                            (transaction.status === "ACCEPTED" || transaction.status === "REJECTED") &&
-                            (transaction.receiverId === equipmentId || transaction.senderId === equipmentId)
-                        )
-                        .map(async (transaction) => {
-                            const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
-                            const receiver = await fetchEntityDetails(transaction.receiverType, transaction.receiverId);
+                        // Process entity data for consistent display
+                        const processedSender = processEntityData(transaction.senderType, sender);
+                        const processedReceiver = processEntityData(transaction.receiverType, receiver);
 
-                            // Process entity data for consistent display
-                            const processedSender = processEntityData(transaction.senderType, sender);
-                            const processedReceiver = processEntityData(transaction.receiverType, receiver);
-
-                            return {
-                                ...transaction,
-                                sender: processedSender,
-                                receiver: processedReceiver
-                            };
-                        })
-                );
-                setValidatedTransactions(validatedData);
-            } else {
-                console.error("Failed to fetch validated transactions, status:", response.status);
-                showSnackbar("Failed to fetch validated transactions", "error");
-            }
+                        return {
+                            ...transaction,
+                            sender: processedSender,
+                            receiver: processedReceiver
+                        };
+                    })
+            );
+            setValidatedTransactions(validatedData);
         } catch (error) {
             console.error("Failed to fetch validated transactions:", error);
             showSnackbar("Failed to fetch validated transactions", "error");
@@ -98,32 +92,19 @@ const EquipmentValidatedTransactionsTable = ({ equipmentId }) => {
 
     const fetchEntityDetails = async (entityType, entityId) => {
         try {
-            const token = localStorage.getItem("token");
-            let endpoint;
+            let response;
 
             if (entityType === "WAREHOUSE") {
-                endpoint = `http://localhost:8080/api/v1/warehouses/${entityId}`;
+                response = await warehouseService.getById(entityId);
             } else if (entityType === "EQUIPMENT") {
-                endpoint = `http://localhost:8080/api/equipment/${entityId}`;
+                response = await equipmentService.getEquipmentById(entityId);
             } else if (entityType === "SITE") {
-                endpoint = `http://localhost:8080/api/v1/sites/${entityId}`;
+                response = await siteService.getSiteById(entityId);
             } else {
                 return null;
             }
 
-            const response = await fetch(endpoint, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                return data;
-            } else {
-                console.error(`Failed to fetch ${entityType} details, status:`, response.status);
-                return null;
-            }
+            return response.data;
         } catch (error) {
             console.error(`Failed to fetch ${entityType} details:`, error);
             return null;
@@ -256,6 +237,23 @@ const EquipmentValidatedTransactionsTable = ({ equipmentId }) => {
                 itemsPerPageOptions={[5, 10, 15, 20]}
                 defaultItemsPerPage={10}
                 actionsColumnWidth="150px"
+                showExportButton={true}
+                exportButtonText="Export Validated Transactions"
+                exportFileName="equipment_validated_transactions"
+                exportAllData={true}
+                excludeColumnsFromExport={['actions']}
+                customExportHeaders={{
+                    'sender.name': 'Sender Name',
+                    'sender.type': 'Sender Type',
+                    'receiver.name': 'Receiver Name',
+                    'receiver.type': 'Receiver Type',
+                    'batchNumber': 'Batch Number',
+                    'transactionDate': 'Transaction Date',
+                    'status': 'Status'
+                }}
+                onExportStart={() => showSnackbar("Exporting validated transactions...", "info")}
+                onExportComplete={(result) => showSnackbar(`Exported ${result.rowCount} records to Excel`, "success")}
+                onExportError={(error) => showSnackbar("Failed to export validated transactions", "error")}
             />
 
             {/* View Transaction Modal */}

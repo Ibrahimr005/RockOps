@@ -1,49 +1,36 @@
 import React, { useState } from 'react';
 import {
     FiPackage, FiCheck, FiClock, FiCheckCircle,
-    FiX, FiRefreshCw, FiUser, FiCalendar, FiFlag, FiFileText  // Added these icons
+    FiX, FiRefreshCw, FiUser, FiCalendar, FiDollarSign, FiInbox,
+    FiShoppingCart, FiTrash2, FiTrendingUp
 } from 'react-icons/fi';
 
 import "../ProcurementOffers.scss"
 import "./ManagerValidatedOffers.scss"
+
+import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import Snackbar from '../../../../components/common/Snackbar/Snackbar.jsx';
+import { offerService } from '../../../../services/procurement/offerService.js';
 
 const ValidatedOffers = ({
                              offers,
                              activeOffer,
                              setActiveOffer,
                              getTotalPrice,
-                             onRetryOffer
+                             onRetryOffer,
+                             onDeleteOffer
                          }) => {
-    // Add state for success and error messages
-    const [success, setSuccess] = useState('');
-    const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    // Snackbar state
+    const [showNotification, setShowNotification] = useState(false);
+    const [notificationMessage, setNotificationMessage] = useState('');
+    const [notificationType, setNotificationType] = useState('success');
 
-
-    // Define API_URL constant
-    const API_URL = 'http://localhost:8080/api/v1';
-
-    // Define fetchWithAuth utility function if it doesn't exist elsewhere
-    const fetchWithAuth = async (url, options = {}) => {
-        const token = localStorage.getItem('token');
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            ...(options.headers || {})
-        };
-
-        const response = await fetch(url, {
-            ...options,
-            headers
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'An error occurred');
-        }
-
-        return response.json();
-    };
+    // Confirmation dialog states
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showRetryConfirm, setShowRetryConfirm] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isRetrying, setIsRetrying] = useState(false);
 
     // Get offer items for a specific request item
     const getOfferItemsForRequestItem = (requestItemId) => {
@@ -53,62 +40,92 @@ const ValidatedOffers = ({
         );
     };
 
-    const handleRetryOffer = async (offer) => {
+    // Show delete confirmation dialog
+    const handleDeleteClick = () => {
+        setShowDeleteConfirm(true);
+    };
+
+    // Show retry confirmation dialog
+    const handleRetryClick = () => {
+        setShowRetryConfirm(true);
+    };
+
+    // Handle confirmed deletion
+    const confirmDelete = async () => {
+        setIsDeleting(true);
         try {
-            // Set loading state
-            setIsLoading(true);
+            await offerService.delete(activeOffer.id);
 
-            // Clear any previous messages
-            setSuccess('');
-            setError('');
+            if (onDeleteOffer) {
+                onDeleteOffer(activeOffer.id);
+            }
 
-            // Call backend to create a new offer from the rejected one
-            const response = await fetchWithAuth(`${API_URL}/offers/${offer.id}/retry`, {
-                method: 'POST'
-            });
+            setNotificationMessage(`Offer "${activeOffer.title}" deleted successfully`);
+            setNotificationType('success');
+            setShowNotification(true);
+            setShowDeleteConfirm(false);
+        } catch (error) {
+            console.error('Error deleting offer:', error);
+            setNotificationMessage('Failed to delete offer. Please try again.');
+            setNotificationType('error');
+            setShowNotification(true);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
-            // If successful, redirect to the in-progress tab with the new offer
+    // Handle confirmed retry
+// Handle confirmed retry
+    const confirmRetry = async () => {
+        setIsRetrying(true);
+        try {
+            const response = await offerService.retryOffer(activeOffer.id);
+
             if (response && response.id) {
-                setSuccess('New offer created successfully.');
+                // Delete the old offer since we're replacing it with a new one
+                await offerService.delete(activeOffer.id);
 
-                // Call the callback to navigate to the in-progress tab
+                setNotificationMessage(`New offer created successfully. Old offer has been removed.`);
+                setNotificationType('success');
+                setShowNotification(true);
+
+                // Remove the old offer from the current offers list
+                if (onDeleteOffer) {
+                    onDeleteOffer(activeOffer.id);
+                }
+
+                // Switch to the new offer in inprogress tab
                 if (onRetryOffer) {
                     onRetryOffer(response);
                 }
             }
+
+            setShowRetryConfirm(false);
         } catch (error) {
             console.error('Error retrying offer:', error);
 
-            // Handle the specific error for already existing retry
-            if (error.message && error.message.includes("A retry for this offer is already in progress. Please complete or delete the existing retry before creating a new one.")) {
-                setError('A retry for this offer is already in progress. Please complete the existing retry first.');
-                setTimeout(() => setError(null), 3000);
+            if (error.message && error.message.includes("A retry for this offer is already in progress")) {
+                setNotificationMessage('A retry for this offer is already in progress. Please complete the existing retry first.');
             } else {
-                console.log("messsss:" + error.message);
-                setError('Failed to create new offer. Please try again.');
-                setTimeout(() => setError(null), 3000);
+                setNotificationMessage('Failed to create new offer. Please try again.');
             }
+            setNotificationType('error');
+            setShowNotification(true);
         } finally {
-            setIsLoading(false);
-            setTimeout(() => setSuccess(null), 3000);
-
+            setIsRetrying(false);
         }
     };
+
+    const cancelDelete = () => {
+        setShowDeleteConfirm(false);
+    };
+
+    const cancelRetry = () => {
+        setShowRetryConfirm(false);
+    };
+
     return (
         <div className="procurement-offers-main-content">
-            {success && (
-                <div className="procurement-notification procurement-notification-success">
-                    <FiCheckCircle /> {success}
-                </div>
-            )}
-            {error && (
-                <div className="procurement-notification procurement-notification-error">
-                    <FiX /> {error}
-                </div>
-            )}
-
-
-
             {/* Offers List */}
             <div className="procurement-list-section">
                 <div className="procurement-list-header">
@@ -117,27 +134,39 @@ const ValidatedOffers = ({
 
                 {offers.length === 0 ? (
                     <div className="procurement-empty-state">
-                        <FiCheck size={48} className="empty-icon" />
+                        <FiInbox size={48} className="empty-icon" />
                         <p>No validated offers yet. Offers will appear here once they are accepted or rejected.</p>
                     </div>
                 ) : (
+                    // Replace the offers list section in ValidatedOffers with this:
+
                     <div className="procurement-items-list">
                         {offers.map(offer => (
                             <div
                                 key={offer.id}
-                                className={`procurement-item-card ${activeOffer?.id === offer.id ? 'selected' : ''} ${offer.status === 'MANAGERACCEPTED' ? 'card-accepted' : 'card-rejected'}`}
+                                className={`procurement-item-card-manager ${activeOffer?.id === offer.id ? 'selected' : ''} ${offer.status === 'MANAGERACCEPTED' ? 'card-accepted' : 'card-rejected'}`}
                                 onClick={() => setActiveOffer(offer)}
                             >
                                 <div className="procurement-item-header">
                                     <h4>{offer.title}</h4>
-                                    {/*<span className={`procurement-status-badge status-${offer.status.toLowerCase()}`}>*/}
-                                    {/*    {offer.status}*/}
-                                    {/*</span>*/}
                                 </div>
                                 <div className="procurement-item-footer">
-                                    <span className="procurement-item-date">
-                                        <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
-                                    </span>
+                <span className="procurement-item-date">
+                    <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
+                </span>
+                                </div>
+                                <div className="procurement-item-footer">
+                <span className={`procurement-item-status ${offer.status === 'MANAGERACCEPTED' ? 'status-accepted' : 'status-rejected'}`}>
+                    {offer.status === 'MANAGERACCEPTED' ? (
+                        <>
+                            <FiCheckCircle /> Accepted
+                        </>
+                    ) : (
+                        <>
+                            <FiX /> Rejected
+                        </>
+                    )}
+                </span>
                                 </div>
                             </div>
                         ))}
@@ -154,104 +183,34 @@ const ValidatedOffers = ({
                                 <div className="procurement-title-section">
                                     <h2 className="procurement-main-title">{activeOffer.title}</h2>
                                     <div className="procurement-header-meta">
-                                        <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
-                                            {activeOffer.status.replace("MANAGER", "MANAGER ")}
-                                        </span>
+                                    <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
+                                        {activeOffer.status.replace("MANAGER", "MANAGER ")}
+                                    </span>
                                         <span className="procurement-meta-item">
-                                            <FiClock /> Created: {new Date(activeOffer.createdAt).toLocaleDateString()}
-                                        </span>
+                                        <FiClock /> Created: {new Date(activeOffer.createdAt).toLocaleDateString()}
+                                    </span>
                                     </div>
                                 </div>
                             </div>
                             <div className="procurement-header-actions">
-                                {/* Retry button moved to the right end of the header */}
+                                {/* Action buttons for rejected offers */}
                                 {activeOffer.status === 'MANAGERREJECTED' && (
-                                    <button
-                                        className="procurement-button primary"
-                                        onClick={() => handleRetryOffer(activeOffer)}
-                                        disabled={isLoading}
-                                    >
-                                        {isLoading ? (
-                                            <div className="button-spinner"></div>
-                                        ) : (
+                                    <>
+                                        <button
+                                            className="btn-primary"
+                                            onClick={handleRetryClick}
+                                            title="Retry Offer"
+                                        >
                                             <FiRefreshCw size={16} />
-                                        )}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Request Order Information Card - ADDED HERE */}
-                        <div className="procurement-request-order-info-card">
-                            <h4>Request Order Information</h4>
-
-                            <div className="procurement-request-order-details-grid">
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiUser size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Requester</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.requesterName || 'Unknown'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiCalendar size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Request Date</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.createdAt ? new Date(activeOffer.requestOrder.createdAt).toLocaleDateString() : 'N/A'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiCalendar size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Deadline</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.deadline ? new Date(activeOffer.requestOrder.deadline).toLocaleDateString() : 'N/A'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiUser size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Created By</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder?.createdBy || 'Unknown'}</span>
-                                    </div>
-                                </div>
-
-                                {activeOffer.requestOrder?.priority && (
-                                    <div className="request-order-detail-item">
-                                        <div className="request-order-detail-icon">
-                                            <FiFlag size={18} />
-                                        </div>
-                                        <div className="request-order-detail-content">
-                                            <span className="request-order-detail-label">Priority</span>
-                                            <span className={`request-order-detail-value request-priority ${activeOffer.requestOrder.priority.toLowerCase()}`}>
-                                                {activeOffer.requestOrder.priority}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {activeOffer.requestOrder?.description && (
-                                    <div className="request-order-detail-item description-item">
-                                        <div className="request-order-detail-icon">
-                                            <FiFileText size={18} />
-                                        </div>
-                                        <div className="request-order-detail-content">
-                                            <span className="request-order-detail-label">Description</span>
-                                            <p className="request-order-detail-value description-text">
-                                                {activeOffer.requestOrder.description}
-                                            </p>
-                                        </div>
-                                    </div>
+                                        </button>
+                                        <button
+                                            className="btn-primary"
+                                            onClick={handleDeleteClick}
+                                            title="Delete Offer"
+                                        >
+                                            <FiTrash2 size={16} />
+                                        </button>
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -263,87 +222,119 @@ const ValidatedOffers = ({
                             </div>
                         ) : (
                             <div className="procurement-submitted-info">
-                                <div className="procurement-request-summary-card">
+                                {/* Use RequestOrderDetails component exactly like in UnstartedOffers */}
+                                <RequestOrderDetails requestOrder={activeOffer.requestOrder} />
 
-
-
-                                    <h4>Validated Offer Details</h4>
-                                    <p className="procurement-section-description">
+                                <div className="procurement-request-summary-card-manager">
+                                    <h4>Offer Timeline</h4>
+                                    <p className="procurement-section-description-manager">
                                         {activeOffer.status === 'MANAGERACCEPTED'
                                             ? 'This offer has been accepted and is now being processed by the finance.'
                                             : 'This offer has been rejected by the manager.'}
                                     </p>
 
-                                    {/* Status Timeline */}
-                                    <div className="procurement-timeline">
-                                        <div className="procurement-timeline-item active">
-                                            <div className="timeline-icon">
-                                                <FiCheckCircle size={18} />
+                                    {/* Status Timeline - matching submitted offers design */}
+                                    <div className="procurement-timeline-manager">
+                                        {/* Request Order Approved Step */}
+                                        <div className="procurement-timeline-item-manager active">
+                                            <div className="timeline-content-manager">
+                                                <h5>Request Order Approved</h5>
+                                                <p className="timeline-meta-manager">
+                                                    <FiCalendar size={14} /> Approved at: {activeOffer.requestOrder?.approvedAt ? new Date(activeOffer.requestOrder.approvedAt).toLocaleDateString() : 'N/A'}
+                                                </p>
+                                                <p className="timeline-meta-manager">
+                                                    <FiUser size={14} /> Approved by: {activeOffer.requestOrder?.approvedBy || 'N/A'}
+                                                </p>
                                             </div>
-                                            <div className="timeline-content">
+                                        </div>
+
+                                        {/* Offer Submitted Step */}
+                                        <div className="procurement-timeline-item-manager active">
+                                            <div className="timeline-content-manager">
                                                 <h5>Offer Submitted</h5>
-                                                <p className="timeline-date">{new Date(activeOffer.createdAt).toLocaleDateString()}</p>
+                                                <p className="timeline-meta-manager">
+                                                    <FiCalendar size={14} /> Submitted at: {new Date(activeOffer.createdAt).toLocaleDateString()}
+                                                </p>
+                                                <p className="timeline-meta-manager">
+                                                    <FiUser size={14} /> Submitted by: {activeOffer.createdBy || 'N/A'}
+                                                </p>
                                             </div>
                                         </div>
 
-                                        <div className={`procurement-timeline-item ${activeOffer.status === 'MANAGERACCEPTED' ? 'active' : 'rejected'}`}>
-                                            <div className="timeline-icon">
-                                                {activeOffer.status === 'MANAGERACCEPTED' ? <FiCheckCircle size={18} /> : <FiX size={18} />}
-                                            </div>
-                                            <div className="timeline-content">
-                                                <h5>{activeOffer.status === 'MANAGERACCEPTED' ? 'Offer Accepted' : 'Offer Rejected'}</h5>
-                                                <p className="timeline-date">{new Date(activeOffer.updatedAt).toLocaleDateString()}</p>
+                                        {/* Manager Decision Step */}
+                                        <div className={`procurement-timeline-item-manager ${
+                                            activeOffer.status === 'MANAGERACCEPTED' ? 'active' :
+                                                activeOffer.status === 'MANAGERREJECTED' ? 'rejected' : ''
+                                        }`}>
+                                            <div className="timeline-content-manager">
+                                                <h5>
+                                                    {activeOffer.status === 'MANAGERACCEPTED' ? 'Manager Accepted' :
+                                                        activeOffer.status === 'MANAGERREJECTED' ? 'Manager Rejected' : ''}
+                                                </h5>
+                                                <p className="timeline-meta-manager">
+                                                    {activeOffer.status === 'MANAGERACCEPTED' ? (
+                                                        <>
+                                                            <FiCalendar size={14} /> Accepted at: {new Date(activeOffer.updatedAt).toLocaleDateString()}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FiCalendar size={14} /> Rejected at: {new Date(activeOffer.updatedAt).toLocaleDateString()}
+                                                        </>
+                                                    )}
+                                                </p>
+                                                {activeOffer.status === 'MANAGERACCEPTED' && (
+                                                    <p className="timeline-meta-manager">
+                                                        <FiUser size={14} /> Accepted by: {activeOffer.managerApprovedBy || 'N/A'}
+                                                    </p>
+                                                )}
+
+                                                {/* Enhanced rejection reason display */}
+                                                {activeOffer.status === 'MANAGERREJECTED' && activeOffer.rejectionReason && (
+                                                    <div className="rejection-reason-manager">
+                                                        <p><strong>Rejection Reason:</strong> {activeOffer.rejectionReason}</p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
+                                        {/* Finance Processing Step */}
                                         {activeOffer.status === 'MANAGERACCEPTED' && (
-                                            <div className="procurement-timeline-item">
-                                                <div className="timeline-icon">
-                                                    <FiRefreshCw size={18} />
-                                                </div>
-                                                <div className="timeline-content">
+                                            <div className="procurement-timeline-item-manager">
+                                                <div className="timeline-content-manager">
                                                     <h5>Finance Processing</h5>
+                                                    <p className="timeline-meta-manager">
+                                                        <FiTrendingUp size={14} /> Sent to finance department
+                                                    </p>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
-
-
-
-                                    {activeOffer.status === 'MANAGERREJECTED' && (
-                                        <div className="validated-rejection-reason">
-                                            <h6>Rejection Reason:</h6>
-                                            <p>{activeOffer.rejectionReason || 'No rejection reason provided'}</p>
-                                        </div>
-                                    )}
-
-
                                 </div>
 
-                                {/* Rest of the component remains the same */}
-                                <div className="procurement-submitted-details">
+                                {/* Procurement Solutions */}
+                                <div className="procurement-submitted-details-manager">
                                     <h4>Procurement Solutions</h4>
-                                    <div className="procurement-submitted-items">
+                                    <div className="procurement-submitted-items-manager">
                                         {activeOffer.requestOrder?.requestItems?.map(requestItem => {
                                             const offerItems = getOfferItemsForRequestItem(requestItem.id);
 
                                             return (
-                                                <div key={requestItem.id} className="procurement-submitted-item-card">
-                                                    <div className="submitted-item-header">
-                                                        <div className="item-icon-name">
-                                                            <div className="item-icon-container">
-                                                                <FiPackage size={20} />
+                                                <div key={requestItem.id} className="procurement-submitted-item-card-manager">
+                                                    <div className="submitted-item-header-manager">
+                                                        <div className="item-icon-name-manager">
+                                                            <div className="item-icon-container-manager">
+                                                                <FiPackage size={22} />
                                                             </div>
                                                             <h5>{requestItem.itemType?.name || 'Item'}</h5>
                                                         </div>
-                                                        <div className="submitted-item-quantity">
+                                                        <div className="submitted-item-quantity-manager">
                                                             {requestItem.quantity} {requestItem.itemType.measuringUnit}
                                                         </div>
                                                     </div>
 
                                                     {offerItems.length > 0 && (
-                                                        <div className="submitted-offer-solutions">
-                                                            <table className="procurement-offer-entries-table">
+                                                        <div className="submitted-offer-solutions-manager">
+                                                            <table className="procurement-offer-entries-table-manager">
                                                                 <thead>
                                                                 <tr>
                                                                     <th>Merchant</th>
@@ -373,17 +364,18 @@ const ValidatedOffers = ({
                                     </div>
                                 </div>
 
-                                {/* Total Summary */}
-                                <div className="procurement-submitted-summary">
-                                    <div className="submitted-summary-row">
-                                        <span>Total Items:</span>
-                                        <span>{activeOffer.requestOrder?.requestItems?.length || 0}</span>
+                                {/* Total Summary - exactly like submitted offers */}
+                                <div className="procurement-submitted-summary-manager">
+                                    <div className="summary-item">
+                                        <FiPackage size={16} />
+                                        <span className="summary-label">Total Items:</span>
+                                        <span className="summary-value">{activeOffer.requestOrder?.requestItems?.length || 0}</span>
                                     </div>
-                                    <div className="submitted-summary-row">
-                                        <span>Total Value:</span>
-                                        <span className={`submitted-total-value ${activeOffer.status === 'MANAGERACCEPTED' ? 'text-success' : 'text-danger'}`}>
-                                            ${getTotalPrice(activeOffer).toFixed(2)}
-                                        </span>
+
+                                    <div className="summary-item total-value">
+                                        <FiDollarSign size={18} />
+                                        <span className="summary-label">Total Value:</span>
+                                        <span className="summary-value total">${getTotalPrice(activeOffer).toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -409,6 +401,45 @@ const ValidatedOffers = ({
                     </div>
                 )}
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={showDeleteConfirm}
+                type="delete"
+                title="Delete Offer"
+                message={`Are you sure you want to delete the offer "${activeOffer?.title}"? This action cannot be undone.`}
+                confirmText="Delete Offer"
+                cancelText="Cancel"
+                onConfirm={confirmDelete}
+                onCancel={cancelDelete}
+                isLoading={isDeleting}
+                showIcon={true}
+                size="large"
+            />
+
+            {/* Retry Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={showRetryConfirm}
+                type="warning"
+                title="Retry Offer"
+                message={`Are you sure you want to create a new offer based on "${activeOffer?.title}"? This will create a duplicate offer that you can modify.`}
+                confirmText="Create New Offer"
+                cancelText="Cancel"
+                onConfirm={confirmRetry}
+                onCancel={cancelRetry}
+                isLoading={isRetrying}
+                showIcon={true}
+                size="large"
+            />
+
+            {/* Snackbar Component */}
+            <Snackbar
+                type={notificationType}
+                message={notificationMessage}
+                show={showNotification}
+                onClose={() => setShowNotification(false)}
+                duration={3000}
+            />
         </div>
     );
 };
