@@ -2003,3 +2003,18 @@
       background-color: rgba(255, 255, 255, 0.05) !important;
     }
   }
+.site-danger {
+  background-color: var(--color-danger);
+  color: var(--text-hover);
+  border: none;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.site-danger:hover {
+  background-color: var(--color-danger-dark);
+}
