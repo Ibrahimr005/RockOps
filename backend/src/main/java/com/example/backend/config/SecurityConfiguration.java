@@ -25,6 +25,7 @@ public class SecurityConfiguration {
 
     @Value("${cors.allowed.origins:http://localhost:5173,http://localhost:5174,http://localhost:3000,https://rockops.vercel.app}")
     private String allowedOrigins;
+    //testing re-commit
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
