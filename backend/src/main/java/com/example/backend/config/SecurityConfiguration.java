@@ -25,7 +25,6 @@ public class SecurityConfiguration {
 
     @Value("${cors.allowed.origins:http://localhost:5173,http://localhost:5174,http://localhost:3000,https://rockops.vercel.app}")
     private String allowedOrigins;
-    //testing re-commit
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -44,8 +43,8 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAuthority(Role.ADMIN.name())
-                        .requestMatchers("/ws/**").permitAll()  // Allow WebSocket endpoint
-                        .requestMatchers("/ws-native/**").permitAll()  // Allow native WebSocket endpoint
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/ws-native/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
