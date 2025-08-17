@@ -2,6 +2,7 @@ package com.example.backend.config;
 
 import com.example.backend.models.user.Role;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -22,12 +23,15 @@ public class SecurityConfiguration {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
 
+    @Value("${cors.allowed.origins:http://localhost:5173,http://localhost:5174,http://localhost:3000,https://rockops.vercel.app}")
+    private String allowedOrigins;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration configuration = new CorsConfiguration();
-                    configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:5174","http://localhost:3000", "https://rockops.vercel.app"));
+                    configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
                     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
                     configuration.setAllowCredentials(true);
@@ -37,7 +41,7 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/actuator/**").permitAll() 
+                        .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAuthority(Role.ADMIN.name())
                         .requestMatchers("/ws/**").permitAll()  // Allow WebSocket endpoint
                         .requestMatchers("/ws-native/**").permitAll()  // Allow native WebSocket endpoint
