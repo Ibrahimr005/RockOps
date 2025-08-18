@@ -152,7 +152,7 @@
 
   /* When there are 2 buttons, use different column sizes */
   &.has-two-buttons {
-    grid-template-columns: 1fr 1.3fr; /* Left button smaller, right button bigger */
+    grid-template-columns: 1fr 1fr; /* Left button smaller, right button bigger */
   }
 }
 

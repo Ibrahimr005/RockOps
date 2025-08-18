@@ -43,6 +43,7 @@ public class ProcurementTeamService {
             String address = (String) merchantData.get("address");
             String preferredPaymentMethod = (String) merchantData.get("preferredPaymentMethod");
             String taxIdentificationNumber = (String) merchantData.get("taxIdentificationNumber");
+            String photoUrl = (String) merchantData.get("photoUrl"); // Add photoUrl support
             Double reliabilityScore = merchantData.get("reliabilityScore") != null ? Double.valueOf(merchantData.get("reliabilityScore").toString()) : null;
             Double averageDeliveryTime = merchantData.get("averageDeliveryTime") != null ? Double.valueOf(merchantData.get("averageDeliveryTime").toString()) : null;
 
@@ -86,6 +87,7 @@ public class ProcurementTeamService {
                     .address(address)
                     .preferredPaymentMethod(preferredPaymentMethod)
                     .taxIdentificationNumber(taxIdentificationNumber)
+                    .photoUrl(photoUrl) // Add photoUrl to builder
                     .reliabilityScore(reliabilityScore)
                     .averageDeliveryTime(averageDeliveryTime)
                     .lastOrderDate(lastOrderDate)
@@ -104,7 +106,6 @@ public class ProcurementTeamService {
             throw new RuntimeException("Failed to create merchant: " + e.getMessage(), e);
         }
     }
-
 
     public Merchant updateMerchant(UUID id, Map<String, Object> merchantData) {
         try {
@@ -192,6 +193,13 @@ public class ProcurementTeamService {
                 if (taxId != null && !taxId.trim().isEmpty()) {
                     merchant.setTaxIdentificationNumber(taxId.trim());
                 }
+            }
+
+            // Handle photo URL update
+            if (merchantData.containsKey("photoUrl")) {
+                String photoUrl = (String) merchantData.get("photoUrl");
+                merchant.setPhotoUrl(photoUrl); // This can be null if photo was removed
+                System.out.println("Updated photo URL: " + (photoUrl != null ? "Set" : "Cleared"));
             }
 
             // Handle numeric fields with proper null safety
@@ -320,8 +328,4 @@ public class ProcurementTeamService {
             throw new RuntimeException("Failed to delete merchant due to unexpected error: " + e.getMessage(), e);
         }
     }
-
-
-
-
 }

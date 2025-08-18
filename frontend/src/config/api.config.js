@@ -47,6 +47,15 @@ export const EQUIPMENT_ENDPOINTS = {
     CHECK_BATCH_EXISTS: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`
 };
 
+// Batch Validation endpoints
+export const BATCH_VALIDATION_ENDPOINTS = {
+    BASE: '/api/v1/batch-validation',
+    VALIDATE_FOR_EQUIPMENT: (equipmentId, batchNumber) => `/api/v1/batch-validation/equipment/${equipmentId}/batch/${batchNumber}`,
+    VALIDATE_FOR_MAINTENANCE: (equipmentId, maintenanceId, batchNumber) => `/api/v1/batch-validation/equipment/${equipmentId}/maintenance/${maintenanceId}/batch/${batchNumber}`,
+    CHECK_AVAILABILITY: (batchNumber) => `/api/v1/batch-validation/batch/${batchNumber}/available`,
+    VALIDATE_UNIQUENESS: (batchNumber) => `/api/v1/batch-validation/batch/${batchNumber}/validate-uniqueness`
+};
+
 // Consumable Resolution endpoints
 export const CONSUMABLE_ENDPOINTS = {
     RESOLVE_DISCREPANCY: '/api/v1/consumables/resolve-discrepancy',
@@ -321,6 +330,7 @@ export const SITE_ENDPOINTS = {
     // Site Admin endpoints
     ADMIN: {
         ADD_SITE: '/siteadmin/addsite',
+        DELETE_SITE: (id)=> `siteadmin/${id}`,
         UPDATE_SITE: (id) => `/siteadmin/updatesite/${id}`,
         ADD_WAREHOUSE: (siteId) => `/siteadmin/${siteId}/add-warehouse`,
         ASSIGN_EQUIPMENT: (siteId, equipmentId) => `/siteadmin/${siteId}/assign-equipment/${equipmentId}`,
@@ -336,9 +346,10 @@ export const SITE_ENDPOINTS = {
 };
 
 // Merchant module endpoints
+// Fix this in your api.config.js
 export const MERCHANT_ENDPOINTS = {
     BASE: '/api/v1/merchants',
-    BY_ID: (id) => `/api/merchants/${id}`
+    BY_ID: (id) => `/api/v1/merchants/${id}`  // ✅ Added /v1/
 };
 
 // Work Type module endpoints
@@ -471,7 +482,6 @@ export const REQUEST_ORDER_ENDPOINTS = {
 };
 // Offer module endpoints
 // Add these to your OFFER_ENDPOINTS in api.config.js
-
 export const OFFER_ENDPOINTS = {
     BASE: '/api/v1/offers',
     BY_ID: (id) => `/api/v1/offers/${id}`,
@@ -500,7 +510,13 @@ export const OFFER_ENDPOINTS = {
     COMPLETE_FINANCE_REVIEW: (offerId) => `/api/v1/offers/${offerId}/complete-review`,
 
     // Retry operation
-    RETRY: (offerId) => `/api/v1/offers/${offerId}/retry`
+    RETRY: (offerId) => `/api/v1/offers/${offerId}/retry`,
+
+    // NEW: Timeline operations
+    TIMELINE: (offerId) => `/api/v1/offers/${offerId}/timeline`,
+    TIMELINE_RETRYABLE: (offerId) => `/api/v1/offers/${offerId}/timeline/retryable`,
+    TIMELINE_ATTEMPT: (offerId, attemptNumber) => `/api/v1/offers/${offerId}/timeline/attempt/${attemptNumber}`,
+    TIMELINE_STATS: (offerId) => `/api/v1/offers/${offerId}/timeline/stats`
 };
 
 // Candidate module endpoints
@@ -671,7 +687,8 @@ export const NOTIFICATION_ENDPOINTS = {
     SEND: '/api/notifications/send',
     BROADCAST: '/api/notifications/broadcast',
     MARK_AS_READ: (id) => `/api/notifications/${id}/read`,
-    DELETE: (id) => `/api/notifications/${id}`
+    DELETE: (id) => `/api/notifications/${id}`,
+    WEBSOCKET: '/ws-native'
 };
 
 export const PROCUREMENT_ENDPOINTS = {

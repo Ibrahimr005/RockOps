@@ -200,6 +200,13 @@ const Sidebar = () => {
         }));
     };
 
+
+    const handleLogoClick = () => {
+        const defaultPage = userRole === 'ADMIN' ? '/admin' : '/dashboard';
+        navigate(defaultPage);
+    };
+
+
     // Menu items with role-based access control
     const menuItems = [
         {
@@ -505,7 +512,7 @@ const Sidebar = () => {
                 )}
 
                 <div className="sidebar-header">
-                    <div className="logo-container">
+                    <div className="logo-container" onClick={handleLogoClick} style={{ cursor: 'pointer' }}>
                         <img
                             src={currentLogo}
                             alt="Logo"

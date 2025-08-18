@@ -1,2 +1,5 @@
 deployment/
 
+
+# Cursor AI context file
+.cursor-context.md

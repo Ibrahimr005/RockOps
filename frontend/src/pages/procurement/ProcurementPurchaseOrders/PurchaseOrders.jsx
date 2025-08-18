@@ -46,10 +46,7 @@ const PurchaseOrders = () => {
             value: stats.total,
             label: 'Total Orders'
         },
-        {
-            value: purchaseOrderService.utils.formatCurrency(stats.totalValue),
-            label: 'Total Value'
-        }
+
     ];
 
     return (
@@ -61,8 +58,7 @@ const PurchaseOrders = () => {
                 lightModeImage={offersImage}
                 darkModeImage={offersImageDark} // Uncomment if dark mode image is available
                 stats={introStats}
-                onInfoClick={() => navigate('/procurement')}
-                className="purchase-orders-intro-card"
+                icon={false}
             />
 
 

@@ -1,6 +1,5 @@
 package com.example.backend.services.procurement;
 
-
 import com.example.backend.dto.OfferDTO;
 import com.example.backend.dto.OfferItemDTO;
 import com.example.backend.models.merchant.Merchant;
@@ -32,13 +31,17 @@ public class OfferService {
     private final MerchantRepository merchantRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
+    private final OfferTimelineService timelineService;
 
     @Autowired
     public OfferService(OfferRepository offerRepository,
                         OfferItemRepository offerItemRepository,
                         RequestOrderRepository requestOrderRepository,
                         RequestOrderItemRepository requestOrderItemRepository,
-                        MerchantRepository merchantRepository,PurchaseOrderRepository purchaseOrderRepository, PurchaseOrderItemRepository purchaseOrderItemRepository) {
+                        MerchantRepository merchantRepository,
+                        PurchaseOrderRepository purchaseOrderRepository,
+                        PurchaseOrderItemRepository purchaseOrderItemRepository,
+                        OfferTimelineService timelineService) {
         this.offerRepository = offerRepository;
         this.offerItemRepository = offerItemRepository;
         this.requestOrderRepository = requestOrderRepository;
@@ -46,6 +49,7 @@ public class OfferService {
         this.merchantRepository = merchantRepository;
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.purchaseOrderItemRepository = purchaseOrderItemRepository;
+        this.timelineService = timelineService;
     }
 
     @Transactional
@@ -65,6 +69,9 @@ public class OfferService {
                 .notes(createOfferDTO.getNotes())
                 .requestOrder(requestOrder)
                 .offerItems(new ArrayList<>())
+                .timelineEvents(new ArrayList<>())
+                .currentAttemptNumber(1)
+                .totalRetries(0)
                 .build();
 
         // Save the offer
@@ -111,7 +118,6 @@ public class OfferService {
         return savedItems;
     }
 
-
     @Transactional
     public List<OfferItem> addOfferItems(UUID offerId, List<OfferItemDTO> offerItemDTOs) {
         if (offerItemDTOs == null || offerItemDTOs.isEmpty()) {
@@ -153,26 +159,32 @@ public class OfferService {
         return savedItems;
     }
 
+    /**
+     * Updated method to use timeline service
+     */
     @Transactional
     public Offer updateOfferStatus(UUID offerId, String status, String username, String rejectionReason) {
+        // Use timeline service for key status changes
+        switch (status) {
+            case "SUBMITTED":
+                return timelineService.submitOffer(offerId, username);
+            case "MANAGERACCEPTED":
+                return timelineService.acceptOfferByManager(offerId, username);
+            case "MANAGERREJECTED":
+                return timelineService.rejectOfferByManager(offerId, username, rejectionReason);
+            case "FINANCE_ACCEPTED":
+            case "FINANCE_REJECTED":
+            case "FINANCE_PARTIALLY_ACCEPTED":
+                return timelineService.processFinanceDecision(offerId, status, username, rejectionReason);
+        }
+
+        // Fallback for other statuses
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
         offer.setStatus(status);
-        offer.setUpdatedAt(LocalDateTime.now());
-        offer.setUpdatedBy(username);
-
-        // Only set rejection reason if status is REJECTED and reason is provided
-        if ("MANAGERREJECTED".equals(status) && rejectionReason != null && !rejectionReason.trim().isEmpty()) {
-            offer.setRejectionReason(rejectionReason);
-        }
-        if ("SUBMITTED".equals(status)) {
-            offer.setSubmittedAtM(LocalDateTime.now());
-        }
-
         return offerRepository.save(offer);
     }
-
 
     @Transactional
     public OfferItem updateOfferItem(UUID offerItemId, OfferItemDTO offerItemDTO) {
@@ -227,35 +239,24 @@ public class OfferService {
         return offerItemRepository.save(offerItem);
     }
 
-
     @Transactional
     public void deleteOfferItem(UUID offerItemId) {
         try {
-            // Log the start of the operation
-            System.out.println("Starting deletion of offer item with ID: " + offerItemId);
-
             // Find the offer item first
             OfferItem offerItem = offerItemRepository.findById(offerItemId)
                     .orElseThrow(() -> new RuntimeException("Offer Item not found with ID: " + offerItemId));
-
-            System.out.println("Found offer item: " + offerItem.getId());
 
             // Store the parent offer ID before deleting
             UUID offerId = null;
             if (offerItem.getOffer() != null) {
                 offerId = offerItem.getOffer().getId();
-                System.out.println("Parent offer ID: " + offerId);
-            } else {
-                System.out.println("Warning: Offer item has no parent offer");
             }
 
             // Delete the offer item directly
-            System.out.println("Deleting offer item from database");
             offerItemRepository.delete(offerItem);
 
             // If we have a parent offer ID, update its cache
             if (offerId != null) {
-                System.out.println("Refreshing parent offer cache");
                 Offer parentOffer = offerRepository.findById(offerId)
                         .orElse(null);
 
@@ -263,31 +264,25 @@ public class OfferService {
                     // Force refresh the cache by removing any reference to the deleted item
                     parentOffer.getOfferItems().removeIf(item -> item.getId().equals(offerItemId));
                     offerRepository.save(parentOffer);
-                    System.out.println("Parent offer updated successfully");
                 }
             }
-
-            System.out.println("Offer item deletion completed successfully");
         } catch (Exception e) {
-            System.err.println("Error in deleteOfferItem method: " + e.getMessage());
-            e.printStackTrace();
             throw new RuntimeException("Failed to delete offer item: " + e.getMessage(), e);
         }
     }
+
     @Transactional
     public void deleteOffer(UUID offerId) {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
-        // Delete the offer (and all its items due to cascade)
+        // Delete the offer (and all its items and timeline events due to cascade)
         offerRepository.delete(offer);
     }
-
 
     public List<Offer> getAllOffers() {
         return offerRepository.findAll();
     }
-
 
     public List<Offer> getOffersByRequestOrder(UUID requestOrderId) {
         RequestOrder requestOrder = requestOrderRepository.findById(requestOrderId)
@@ -307,8 +302,6 @@ public class OfferService {
 
         return offer.getOfferItems();
     }
-
-
 
     public List<OfferItem> getOfferItemsByRequestOrderItem(UUID requestOrderItemId) {
         RequestOrderItem requestOrderItem = requestOrderItemRepository.findById(requestOrderItemId)
@@ -332,101 +325,44 @@ public class OfferService {
         return offer.getRequestOrder();
     }
 
+    /**
+     * Updated retry method to use timeline service - SIMPLIFIED VERSION
+     */
     @Transactional
     public Offer retryOffer(UUID offerId, String username) {
-        // Find the original offer that needs to be retried
-        Offer originalOffer = offerRepository.findById(offerId)
+        // Find the rejected offer
+        Offer rejectedOffer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
         // Verify that the offer is in a REJECTED status
-        if (!"MANAGERREJECTED".equals(originalOffer.getStatus())) {
+        if (!rejectedOffer.canRetry()) {
             throw new IllegalStateException("Only rejected offers can be retried");
         }
 
-        // Check if there's already a retry in progress for this offer
-        List<Offer> existingOffers = getOffersByRequestOrder(originalOffer.getRequestOrder().getId());
+        // Check if there's already an active offer in progress for this request order
+        List<Offer> existingOffers = getOffersByRequestOrder(rejectedOffer.getRequestOrder().getId());
+        boolean activeOfferExists = existingOffers.stream()
+                .filter(offer -> !offer.getId().equals(offerId))
+                .anyMatch(offer -> "UNSTARTED".equals(offer.getStatus()) || "INPROGRESS".equals(offer.getStatus()));
 
-        // Filter to find any offers that are retries of the current one
-        boolean retryExists = existingOffers.stream()
-                .filter(offer -> !offer.getId().equals(offerId)) // Exclude the original offer
-                .filter(offer -> offer.getTitle().contains(originalOffer.getTitle() + " (Retry)"))
-                .filter(offer -> offer.getStatus().equals("UNSTARTED") || offer.getStatus().equals("INPROGRESS"))
-                .findAny()
-                .isPresent();
-
-        if (retryExists) {
-            System.out.println("retryyyyyyyy");
-            throw new IllegalStateException("A retry for this offer is already in progress. Please complete or delete the existing retry before creating a new one.");
+        if (activeOfferExists) {
+            throw new IllegalStateException("A retry for this offer is already in progress.");
         }
 
-        // Create a new offer using setters instead of builder
-        Offer newOffer = new Offer();
-        newOffer.setTitle(originalOffer.getTitle() + " (Retry)");
-        newOffer.setDescription(originalOffer.getDescription());
-        newOffer.setCreatedAt(LocalDateTime.now());
-        newOffer.setCreatedBy(username);
-        newOffer.setStatus("INPROGRESS");
-        newOffer.setValidUntil(LocalDateTime.now().plusDays(7));
-        newOffer.setNotes(originalOffer.getNotes());
-        newOffer.setRequestOrder(originalOffer.getRequestOrder());
-        newOffer.setOfferItems(new ArrayList<>());
+        // Use timeline service to handle the retry - NO MORE CREATING NEW OFFERS!
+        Offer retriedOffer = timelineService.retryOffer(offerId, username);
 
-        // Save the new offer first
-        Offer savedOffer = offerRepository.save(newOffer);
+        // Update the title to reflect retry
+        String baseTitle = rejectedOffer.getTitle()
+                .replaceAll("\\s*\\(Retry\\s*\\d*\\)\\s*$", "")
+                .replaceAll("\\s*\\(Retry\\s*#\\d+\\)\\s*$", "")
+                .trim();
 
-        // Copy all the offer items from the original offer
-        if (originalOffer.getOfferItems() != null && !originalOffer.getOfferItems().isEmpty()) {
-            for (OfferItem originalItem : originalOffer.getOfferItems()) {
-                // Create a new offer item using setters instead of builder
-                OfferItem newItem = new OfferItem();
-                newItem.setQuantity(originalItem.getQuantity());
-                newItem.setUnitPrice(originalItem.getUnitPrice());
-                newItem.setTotalPrice(originalItem.getTotalPrice());
-                newItem.setCurrency(originalItem.getCurrency());
-                newItem.setMerchant(originalItem.getMerchant());
-                newItem.setOffer(savedOffer); // Link to the new offer
-                newItem.setRequestOrderItem(originalItem.getRequestOrderItem());
-                newItem.setEstimatedDeliveryDays(originalItem.getEstimatedDeliveryDays());
-                newItem.setDeliveryNotes(originalItem.getDeliveryNotes());
-                newItem.setComment(originalItem.getComment());
+        String newTitle = baseTitle + " (Retry " + retriedOffer.getTotalRetries() + ")";
+        retriedOffer.setTitle(newTitle);
 
-                // Save the new item
-                OfferItem savedItem = offerItemRepository.save(newItem);
-                savedOffer.getOfferItems().add(savedItem);
-            }
-        }
-
-        return savedOffer;
+        return offerRepository.save(retriedOffer);
     }
-//
-//    @Transactional
-//    public OfferItem updateOfferItemStatus(UUID offerItemId, String status, String username, String rejectionReason) {
-//        OfferItem offerItem = offerItemRepository.findById(offerItemId)
-//                .orElseThrow(() -> new RuntimeException("Offer Item not found"));
-//
-//        offerItem.setStatus(status);
-//
-//        // Only set rejection reason if status is REJECTED and reason is provided
-//        if ("REJECTED".equals(status) && rejectionReason != null && !rejectionReason.trim().isEmpty()) {
-//            offerItem.setRejectionReason(rejectionReason);
-//        }
-//
-//        return offerItemRepository.save(offerItem);
-//    }
-
-
-//    @Transactional
-//    public List<OfferItem> updateMultipleOfferItemStatus(List<UUID> offerItemIds, String status,
-//                                                         String username, String rejectionReason) {
-//        List<OfferItem> updatedItems = new ArrayList<>();
-//
-//        for (UUID itemId : offerItemIds) {
-//            OfferItem updatedItem = updateOfferItemStatus(itemId, status, username, rejectionReason);
-//            updatedItems.add(updatedItem);
-//        }
-//
-//        return updatedItems;
-//    }
 
     @Transactional
     public Offer updateFinanceStatus(UUID offerId, String financeStatus) {
@@ -434,9 +370,6 @@ public class OfferService {
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
         offer.setFinanceStatus(financeStatus);
-//        offer.setUpdatedAt(LocalDateTime.now());
-//        offer.setUpdatedBy(username);
-
         return offerRepository.save(offer);
     }
 
@@ -500,27 +433,24 @@ public class OfferService {
                 .count();
 
         // Determine the final status
+        String finalStatus;
         if (acceptedItemsCount == 0) {
-            // All items rejected
-            offer.setFinanceStatus("FINANCE_REJECTED");
+            finalStatus = "FINANCE_REJECTED";
         } else if (rejectedItemsCount == 0) {
-            // All items accepted
-            offer.setFinanceStatus("FINANCE_ACCEPTED");
+            finalStatus = "FINANCE_ACCEPTED";
         } else {
-            // Some items accepted, some rejected
-            offer.setFinanceStatus("FINANCE_PARTIALLY_ACCEPTED");
+            finalStatus = "FINANCE_PARTIALLY_ACCEPTED";
         }
 
-        offer.setUpdatedAt(LocalDateTime.now());
-        offer.setUpdatedBy(username);
+        // Use the main updateOfferStatus method to set status and timeline fields
+        offer = updateOfferStatus(offer.getId(), finalStatus, username, null);
 
         // If there are accepted items, create a purchase order
         if (acceptedItemsCount > 0) {
             createPurchaseOrder(offer, username);
         }
 
-        // Save updated offer
-        return offerRepository.save(offer);
+        return offer;
     }
 
     @Transactional
@@ -593,5 +523,35 @@ public class OfferService {
         savedPO.setExpectedDeliveryDate(LocalDateTime.now().plusDays(maxDeliveryDays));
 
         return purchaseOrderRepository.save(savedPO);
+    }
+
+    /**
+     * NEW METHODS FOR TIMELINE FUNCTIONALITY
+     */
+
+    /**
+     * Get timeline for an offer
+     */
+    public List<OfferTimelineEvent> getOfferTimeline(UUID offerId) {
+        return timelineService.getCompleteTimeline(offerId);
+    }
+
+    /**
+     * Get events that can be retried from
+     */
+    public List<OfferTimelineEvent> getRetryableEvents(UUID offerId) {
+        return timelineService.getRetryableEvents(offerId);
+    }
+
+    // Add this method to your OfferService class
+
+    /**
+     * Get timeline for a specific attempt
+     */
+    public List<OfferTimelineEvent> getTimelineForAttempt(UUID offerId, int attemptNumber) {
+        return timelineService.getCompleteTimeline(offerId)
+                .stream()
+                .filter(event -> event.getAttemptNumber() == attemptNumber)
+                .toList();
     }
 }

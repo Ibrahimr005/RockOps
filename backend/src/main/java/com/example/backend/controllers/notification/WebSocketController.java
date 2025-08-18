@@ -46,12 +46,11 @@ public class WebSocketController {
                                               SimpMessageHeaderAccessor headerAccessor,
                                               Principal principal) {
         try {
-            // Get user from Spring Security context (from JWT)
             if (principal instanceof UsernamePasswordAuthenticationToken) {
                 UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) principal;
                 User user = (User) auth.getPrincipal();
 
-                // Store session mapping
+                // Use the user ID from the authenticated user (not from message)
                 String sessionId = headerAccessor.getSessionId();
                 activeSessions.put(user.getId(), sessionId);
 
@@ -72,7 +71,6 @@ public class WebSocketController {
             return new WebSocketResponse("AUTH_FAILED", "Authentication error: " + e.getMessage());
         }
     }
-
     /**
      * Handle marking notifications as read
      * Client sends message to /app/markAsRead

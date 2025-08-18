@@ -20,18 +20,26 @@ public class WebSocketEventListener {
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
 
-        if (headerAccessor.getUser() instanceof UsernamePasswordAuthenticationToken) {
-            UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) headerAccessor.getUser();
-            User user = (User) auth.getPrincipal();
+        try {
+            if (headerAccessor.getUser() instanceof UsernamePasswordAuthenticationToken) {
+                UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) headerAccessor.getUser();
+                User user = (User) auth.getPrincipal();
 
-            System.out.println("🔌 User connected: " + user.getUsername() + " (ID: " + user.getId() + ")");
-            System.out.println("🔍 Session ID: " + headerAccessor.getSessionId());
+                System.out.println("🔌 User connected: " + user.getUsername() + " (ID: " + user.getId() + ")");
+                System.out.println("🔍 Session ID: " + headerAccessor.getSessionId());
 
-            // 🎯 KEY ADDITION: Register the user session for real-time notifications
-            webSocketController.registerUserSession(user.getId(), headerAccessor.getSessionId());
+                // Register the user session for real-time notifications
+                webSocketController.registerUserSession(user.getId(), headerAccessor.getSessionId());
 
-            // 🎯 KEY ADDITION: Send unread notifications to newly connected user
-            webSocketController.sendUnreadNotificationsToUser(user);
+                // Send unread notifications to newly connected user
+                webSocketController.sendUnreadNotificationsToUser(user);
+            } else {
+                System.out.println("🔌 Anonymous WebSocket connection established");
+                System.out.println("🔍 Session ID: " + headerAccessor.getSessionId());
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error handling WebSocket connection: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -39,15 +47,23 @@ public class WebSocketEventListener {
     public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
 
-        if (headerAccessor.getUser() instanceof UsernamePasswordAuthenticationToken) {
-            UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) headerAccessor.getUser();
-            User user = (User) auth.getPrincipal();
+        try {
+            if (headerAccessor.getUser() instanceof UsernamePasswordAuthenticationToken) {
+                UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) headerAccessor.getUser();
+                User user = (User) auth.getPrincipal();
 
-            // Remove user session from WebSocketController
-            webSocketController.removeUserSession(user.getId());
+                // Remove user session from WebSocketController
+                webSocketController.removeUserSession(user.getId());
 
-            System.out.println("🔌 User disconnected: " + user.getUsername() + " (ID: " + user.getId() + ")");
-            System.out.println("🔍 Session ID: " + headerAccessor.getSessionId());
+                System.out.println("🔌 User disconnected: " + user.getUsername() + " (ID: " + user.getId() + ")");
+                System.out.println("🔍 Session ID: " + headerAccessor.getSessionId());
+            } else {
+                System.out.println("🔌 Anonymous WebSocket connection disconnected");
+                System.out.println("🔍 Session ID: " + headerAccessor.getSessionId());
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error handling WebSocket disconnection: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

@@ -29,13 +29,13 @@ import java.util.*;
 public class SiteAdminService
 {
 //    private final FixedAssetRepository fixedAssetRepository;
-    private SiteRepository siteRepository;
-    private PartnerRepository partnerRepository;
-    private EquipmentRepository equipmentRepository;
-    private EmployeeRepository employeeRepository;
-    private WarehouseRepository warehouseRepository;
-    private FixedAssetsRepository fixedAssetsRepository;
-    private SitePartnerRepository sitePartnerRepository;
+    private final SiteRepository siteRepository;
+    private final PartnerRepository partnerRepository;
+    private final EquipmentRepository equipmentRepository;
+    private final EmployeeRepository employeeRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final FixedAssetsRepository fixedAssetsRepository;
+    private final SitePartnerRepository sitePartnerRepository;
 
     @Autowired
     private EntityManager entityManager;
@@ -88,6 +88,37 @@ public class SiteAdminService
             throw new RuntimeException("Failed to create site: " + e.getMessage(), e);
         }
     }
+
+    public void deleteSite(UUID id)
+    {
+        try {
+            Site site = siteRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Site not found"));
+            if(site.getEmployees() != null && !site.getEmployees().isEmpty())
+            {
+                throw new RuntimeException("Site already has employees");
+            }
+            if(site.getEquipment() != null && !site.getEquipment().isEmpty())
+            {
+                throw new RuntimeException("Site already has equipment");
+            }
+            if(site.getWarehouses() != null && !site.getWarehouses().isEmpty())
+            {
+                throw new RuntimeException("Site already has warehouses");
+            }
+            if(site.getFixedAssets() != null && !site.getFixedAssets().isEmpty())
+            {
+                throw new RuntimeException("Site already has fixed assets");
+            }
+            siteRepository.delete(site);
+            System.out.println("Successfully deleted site with id: " + id);
+        }
+        catch (Exception e) {
+            System.err.println("Error deleting site: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to delete site: " + e.getMessage(), e);
+        }
+}
 
     // Helper method to create default assignment
     private void createDefaultPartnerAssignment(UUID siteId) {
@@ -324,41 +355,93 @@ public class SiteAdminService
                 // Continue without failing the entire operation
             }
 
-            // Handle main driver assignment
+            // Replace the driver assignment section in assignEquipmentToSite method
+// Handle main driver assignment
             if (equipment.getMainDriver() != null) {
-                try {
-                    Employee mainDriver = equipment.getMainDriver();
-                    System.out.println("Processing main driver: " + mainDriver.getFirstName());
+                Employee mainDriver = equipment.getMainDriver();
+                System.out.println("=== PROCESSING MAIN DRIVER ===");
+                System.out.println("Driver ID: " + mainDriver.getId());
+                System.out.println("Driver Name: " + mainDriver.getFirstName() + " " + mainDriver.getLastName());
+                System.out.println("Driver Current Site: " + (mainDriver.getSite() != null ? mainDriver.getSite().getName() : "NULL"));
+                System.out.println("Target Site: " + site.getName() + " (ID: " + site.getId() + ")");
 
-                    if (mainDriver.getSite() == null) {
+                if (mainDriver.getSite() == null) {
+                    try {
+                        // Set the site
                         mainDriver.setSite(site);
-                        employeeRepository.save(mainDriver);
-                        System.out.println("Main driver assigned to site");
-                    } else {
-                        System.out.println("Main driver already assigned to site: " + mainDriver.getSite().getName());
+                        System.out.println("Setting driver site to: " + site.getName());
+
+                        // Save the employee explicitly
+                        Employee savedEmployee = employeeRepository.save(mainDriver);
+                        System.out.println("Employee saved successfully. New site: " +
+                                (savedEmployee.getSite() != null ? savedEmployee.getSite().getName() : "NULL"));
+
+                        // Verify the save worked by checking the database
+                        Employee verifyEmployee = employeeRepository.findById(mainDriver.getId()).orElse(null);
+                        if (verifyEmployee != null && verifyEmployee.getSite() != null) {
+                            System.out.println("✅ VERIFICATION PASSED: Employee site assignment confirmed in database");
+                            System.out.println("Verified Site: " + verifyEmployee.getSite().getName());
+                        } else {
+                            System.err.println("❌ VERIFICATION FAILED: Employee site not found in database after save");
+                            throw new RuntimeException("Failed to verify employee site assignment");
+                        }
+
+                    } catch (Exception e) {
+                        System.err.println("❌ CRITICAL ERROR assigning main driver to site:");
+                        System.err.println("Error Type: " + e.getClass().getSimpleName());
+                        System.err.println("Error Message: " + e.getMessage());
+                        e.printStackTrace();
+
+                        // Don't continue silently - this is critical for data consistency
+                        throw new RuntimeException("Failed to assign main driver to site: " + e.getMessage(), e);
                     }
-                } catch (Exception e) {
-                    System.err.println("Error assigning main driver: " + e.getMessage());
-                    // Log but don't fail the entire operation
+                } else {
+                    System.out.println("Main driver already assigned to site: " + mainDriver.getSite().getName());
+                    if (!mainDriver.getSite().getId().equals(site.getId())) {
+                        System.out.println("⚠️  WARNING: Driver is assigned to different site than equipment target!");
+                    }
                 }
             }
 
-            // Handle sub driver assignment
+// Handle sub driver assignment (similar logic)
             if (equipment.getSubDriver() != null) {
-                try {
-                    Employee subDriver = equipment.getSubDriver();
-                    System.out.println("Processing sub driver: " + subDriver.getFirstName());
+                Employee subDriver = equipment.getSubDriver();
+                System.out.println("=== PROCESSING SUB DRIVER ===");
+                System.out.println("Sub Driver ID: " + subDriver.getId());
+                System.out.println("Sub Driver Name: " + subDriver.getFirstName() + " " + subDriver.getLastName());
+                System.out.println("Sub Driver Current Site: " + (subDriver.getSite() != null ? subDriver.getSite().getName() : "NULL"));
+                System.out.println("Target Site: " + site.getName() + " (ID: " + site.getId() + ")");
 
-                    if (subDriver.getSite() == null) {
+                if (subDriver.getSite() == null) {
+                    try {
                         subDriver.setSite(site);
-                        employeeRepository.save(subDriver);
-                        System.out.println("Sub driver assigned to site");
-                    } else {
-                        System.out.println("Sub driver already assigned to site: " + subDriver.getSite().getName());
+                        System.out.println("Setting sub driver site to: " + site.getName());
+
+                        Employee savedEmployee = employeeRepository.save(subDriver);
+                        System.out.println("Sub driver saved successfully. New site: " +
+                                (savedEmployee.getSite() != null ? savedEmployee.getSite().getName() : "NULL"));
+
+                        // Verify the save worked
+                        Employee verifyEmployee = employeeRepository.findById(subDriver.getId()).orElse(null);
+                        if (verifyEmployee != null && verifyEmployee.getSite() != null) {
+                            System.out.println("✅ VERIFICATION PASSED: Sub driver site assignment confirmed in database");
+                        } else {
+                            System.err.println("❌ VERIFICATION FAILED: Sub driver site not found in database after save");
+                            throw new RuntimeException("Failed to verify sub driver site assignment");
+                        }
+
+                    } catch (Exception e) {
+                        System.err.println("❌ CRITICAL ERROR assigning sub driver to site:");
+                        System.err.println("Error Type: " + e.getClass().getSimpleName());
+                        System.err.println("Error Message: " + e.getMessage());
+                        e.printStackTrace();
+                        throw new RuntimeException("Failed to assign sub driver to site: " + e.getMessage(), e);
                     }
-                } catch (Exception e) {
-                    System.err.println("Error assigning sub driver: " + e.getMessage());
-                    // Log but don't fail the entire operation
+                } else {
+                    System.out.println("Sub driver already assigned to site: " + subDriver.getSite().getName());
+                    if (!subDriver.getSite().getId().equals(site.getId())) {
+                        System.out.println("⚠️  WARNING: Sub driver is assigned to different site than equipment target!");
+                    }
                 }
             }
 

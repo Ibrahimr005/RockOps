@@ -4,8 +4,12 @@ import { ITEM_ENDPOINTS } from '../../config/api.config';
 export const itemService = {
     // Get all items by warehouse
     getItemsByWarehouse: async (warehouseId) => {
+        console.log('🔗 ItemService: Making API call to:', ITEM_ENDPOINTS.BY_WAREHOUSE(warehouseId));
         const response = await apiClient.get(ITEM_ENDPOINTS.BY_WAREHOUSE(warehouseId));
-        return response.data || response;
+        console.log('🔗 ItemService: Raw API response:', response);
+        console.log('🔗 ItemService: Response status:', response.status);
+        console.log('🔗 ItemService: Response data:', response.data);
+        return response.data || response; // Return response.data, fallback to response if data is undefined
     },
 
     // Create a new item

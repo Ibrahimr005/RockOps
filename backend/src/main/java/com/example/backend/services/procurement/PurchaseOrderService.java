@@ -76,8 +76,7 @@ public class PurchaseOrderService {
 
         // Update offer status to FINALIZED
         offer.setStatus("COMPLETED");
-        offer.setUpdatedAt(LocalDateTime.now());
-        offer.setUpdatedBy(username);
+
         offerRepository.save(offer);
 
         // Create purchase order

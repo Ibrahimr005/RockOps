@@ -11,7 +11,7 @@ import DocumentUpload from '../../../../../components/equipment/DocumentUpload';
 import "./EquipmentModal.scss";
 
 const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => {
-    const { showSuccess, showError, showInfo, showWarning, hideSnackbar } = useSnackbar();
+    const { showSuccess, showError, showInfo, showWarning, hideSnackbar, showConfirmation } = useSnackbar();
     const contentRef = useRef(null);
 
     // Helper functions for formatting
@@ -117,7 +117,6 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
     });
     const [showValidationHint, setShowValidationHint] = useState(true);
     const [formTouched, setFormTouched] = useState(false);
-    const confirmClearRef = useRef(null);
 
     // Define tabs with required fields based on database schema
     const tabs = [
@@ -167,56 +166,19 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
     // Clear form data with snackbar confirmation
     const handleClearForm = () => {
         if (formTouched) {
-            showWarning("Are you sure you want to clear all form data?", 0, true);
-
-            // Create action buttons for the snackbar
-            setTimeout(() => {
-                const snackbar = document.querySelector('.global-notification');
-                if (snackbar) {
-                    const actionContainer = document.createElement('div');
-                    actionContainer.className = 'snackbar-actions';
-
-                    // Yes button
-                    const yesButton = document.createElement('button');
-                    yesButton.innerText = 'YES';
-                    yesButton.className = 'snackbar-action-button confirm';
-                    yesButton.onclick = () => {
-                        performClearForm();
-                        hideSnackbar();
-                    };
-
-                    // No button
-                    const noButton = document.createElement('button');
-                    noButton.innerText = 'NO';
-                    noButton.className = 'snackbar-action-button cancel';
-                    noButton.onclick = () => {
-                        hideSnackbar();
-                    };
-
-                    actionContainer.appendChild(yesButton);
-                    actionContainer.appendChild(noButton);
-                    snackbar.appendChild(actionContainer);
-
-                    // Store reference for cleanup
-                    confirmClearRef.current = actionContainer;
-                }
-            }, 100);
+            showConfirmation(
+                "Are you sure you want to clear all form data?",
+                performClearForm,
+                () => hideSnackbar()
+            );
         } else {
             performClearForm();
         }
     };
 
-    // Hide snackbar action buttons
-    const hideSnackbarActions = () => {
-        if (confirmClearRef.current) {
-            confirmClearRef.current.remove();
-            confirmClearRef.current = null;
-        }
-        hideSnackbar();
-    };
-
     // Actually clear the form
     const performClearForm = () => {
+        // Reset all form state
         setFormData(initialFormState);
         setDisplayValues({
             egpPrice: "",
@@ -224,19 +186,42 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             shipping: "",
             customs: "",
             taxes: "",
-            workedHours: "0"
+            workedHours: "0",
+            purchasedDate: "",
+            deliveredDate: ""
         });
         setImageFile(null);
         setPreviewImage(null);
         setTypeChangeWarning(false);
         setTabIndex(0); // Return to first tab
         setFormTouched(false);
+        setFormValid(false);
+        setError(null);
+        
+        // Reset validation state
+        setTabValidation({
+            0: false,
+            1: false,
+            2: false
+        });
+        
+        // Reset documents
         setDocumentsByFieldType({
             SHIPPING: [],
             CUSTOMS: [],
             TAXES: []
         });
-        showInfo("Form has been cleared");
+        
+        // Reset file input element
+        const fileInput = document.getElementById('equipmentImage');
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        
+        // Hide any existing snackbars
+        hideSnackbar();
+        
+        showSuccess("Form has been cleared successfully");
     };
 
     // Handle document changes
@@ -280,10 +265,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             }
         }
         return () => {
-            if (confirmClearRef.current) {
-                confirmClearRef.current.remove();
-                confirmClearRef.current = null;
-            }
+            // Cleanup function - no longer needed since we use showConfirmation
         };
     }, [isOpen, equipmentToEdit]);
 
@@ -571,8 +553,21 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         }
     };
 
+    const handleRemoveImage = () => {
+        setImageFile(null);
+        setPreviewImage(null);
+        const fileInput = document.getElementById('equipmentImage');
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        setFormTouched(true);
+        showInfo('Image removed successfully');
+    };
+
     const handleTabChange = (index) => {
         setTabIndex(index);
+        // Clear any existing snackbars when changing tabs
+        hideSnackbar();
         // The useEffect will handle scrolling to top
     };
 
@@ -1167,6 +1162,14 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         {previewImage && (
                                             <div className="equipment-image-preview">
                                                 <img src={previewImage} alt="Equipment preview" />
+                                                <button
+                                                    type="button"
+                                                    className="remove-image-btn"
+                                                    onClick={handleRemoveImage}
+                                                    title="Remove image"
+                                                >
+                                                    <FaTimes />
+                                                </button>
                                             </div>
                                         )}
                                     </div>
@@ -1514,7 +1517,8 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                             <button
                                 type="submit"
                                 className="equipment-modal-submit"
-                                disabled={loading}
+                                disabled={loading || !formValid}
+                                title={!formValid ? "Please complete all required fields before submitting" : ""}
                             >
                                 {loading ? 'Saving...' : equipmentToEdit ? 'Update Equipment' : 'Add Equipment'}
                             </button>

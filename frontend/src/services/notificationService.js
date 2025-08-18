@@ -57,6 +57,19 @@ export const notificationService = {
     },
 
     /**
+     * Mark all notifications as read
+     * @returns {Promise} API response
+     */
+    markAllAsRead: async () => {
+        try {
+            return await apiClient.put('/api/notifications/read-all');
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+            throw error;
+        }
+    },
+
+    /**
      * Mark notification as unread
      * @param {string} id - Notification ID
      * @returns {Promise} API response
@@ -77,7 +90,7 @@ export const notificationService = {
      */
     delete: async (id) => {
         try {
-            return await apiClient.delete(NOTIFICATION_ENDPOINTS.DELETE(id));
+            return await apiClient.delete(`/api/notifications/${id}`);
         } catch (error) {
             console.error(`Error deleting notification ${id}:`, error);
             throw error;
@@ -89,6 +102,6 @@ export const notificationService = {
      * @returns {string} WebSocket URL
      */
     getWebSocketUrl: () => {
-        return `${API_BASE_URL.replace('http', 'ws')}${NOTIFICATION_ENDPOINTS.WEBSOCKET}`;
+        return 'ws://localhost:8080/ws';
     }
-}; 
+};

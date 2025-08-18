@@ -10,7 +10,7 @@ import java.util.List;
 @Service
 public class PartnerService
 {
-    private PartnerRepository partnerRepository;
+    private final PartnerRepository partnerRepository;
 
     @Autowired
     public PartnerService(PartnerRepository partnerRepository) {

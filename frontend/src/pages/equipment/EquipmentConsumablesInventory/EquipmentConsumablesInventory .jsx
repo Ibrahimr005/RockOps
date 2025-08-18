@@ -22,6 +22,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [selectedConsumable, setSelectedConsumable] = useState(null);
     const [consumableHistory, setConsumableHistory] = useState([]);
+    const [consumableResolutions, setConsumableResolutions] = useState([]);
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [resolutionHistory, setResolutionHistory] = useState([]);
@@ -163,12 +164,45 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
 
     const fetchConsumableHistory = async (consumableId) => {
         try {
-            console.log("🔍 Fetching consumable history for ID:", consumableId);
+            console.log("🔍 [FETCH-HISTORY] Fetching consumable history for ID:", consumableId);
             const response = await consumableService.getConsumableHistory(consumableId);
-            console.log("✅ Fetched consumable history:", response.data);
-            setConsumableHistory(response.data);
+            console.log("✅ [FETCH-HISTORY] Fetched consumable history raw response:", response.data);
+            
+            // Handle new response format with both transactions and resolutions
+            if (response.data.transactions) {
+                console.log("📊 [FETCH-HISTORY] Found transactions:", response.data.transactions.length);
+                console.log("📊 [FETCH-HISTORY] Found resolutions:", response.data.resolutions?.length || 0);
+                
+                // Log detailed transaction item data
+                response.data.transactions.forEach((transaction, index) => {
+                    console.log(`📊 [FETCH-HISTORY] Transaction ${index + 1}:`, {
+                        id: transaction.id,
+                        batchNumber: transaction.batchNumber,
+                        status: transaction.status,
+                        items: transaction.items?.map(item => ({
+                            id: item.id,
+                            itemTypeName: item.itemTypeName,
+                            status: item.status,
+                            quantity: item.quantity,
+                            receivedQuantity: item.receivedQuantity,
+                            equipmentReceivedQuantity: item.equipmentReceivedQuantity,
+                            isResolved: item.isResolved,
+                            resolutionType: item.resolutionType,
+                            fullyResolved: item.fullyResolved
+                        }))
+                    });
+                });
+                
+                setConsumableHistory(response.data.transactions);
+                setConsumableResolutions(response.data.resolutions || []);
+            } else {
+                // Fallback for old format
+                console.log("📊 [FETCH-HISTORY] Using fallback format");
+                setConsumableHistory(response.data);
+                setConsumableResolutions([]);
+            }
         } catch (error) {
-            console.error("Failed to fetch consumable history:", error);
+            console.error("❌ [FETCH-HISTORY] Failed to fetch consumable history:", error);
             showSnackbar("Failed to fetch consumable history", "error");
         }
     };
@@ -565,6 +599,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                 isOpen={isHistoryModalOpen}
                 onClose={() => setIsHistoryModalOpen(false)}
                 consumableHistory={consumableHistory}
+                consumableResolutions={consumableResolutions}
                 itemDetails={selectedConsumable}
             />
 
