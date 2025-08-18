@@ -335,8 +335,6 @@ $info-color: var(--color-info);
   font-size: 0.875rem;
 }
 
-
-
 .tooltip-entry {
   display: flex;
   align-items: center;
@@ -352,6 +350,7 @@ $info-color: var(--color-info);
   flex-shrink: 0;
 }
 
+// Button styles
 
 // Responsive design
 @media (max-width: 768px) {
@@ -369,7 +368,5 @@ $info-color: var(--color-info);
 
   .rockops-insights-content {
     grid-template-columns: 1fr;
-
   }
-
 } 

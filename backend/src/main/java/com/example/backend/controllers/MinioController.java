@@ -1,6 +1,6 @@
 package com.example.backend.controllers;
 
-import com.example.backend.services.MinioService;
+import com.example.backend.services.FileStorageService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,10 +14,10 @@ import java.util.UUID;
 @CrossOrigin(origins = "http://localhost:3000")
 public class MinioController {
 
-    private final MinioService minioService;
+    private final FileStorageService fileStorageService;
 
-    public MinioController(MinioService minioService) {
-        this.minioService = minioService;
+    public MinioController(FileStorageService fileStorageService) {
+        this.fileStorageService = fileStorageService;
     }
 
     @PostMapping("/upload")
@@ -41,7 +41,7 @@ public class MinioController {
                     "Content Type = " + file.getContentType());
 
             // Call service to upload file
-            String fileName = minioService.uploadFile(file);
+            String fileName = fileStorageService.uploadFile(file);
 
             System.out.println("File uploaded successfully: " + fileName);
             return ResponseEntity.ok("File uploaded successfully: " + fileName);
@@ -57,7 +57,7 @@ public class MinioController {
             @PathVariable UUID equipmentId,
             @RequestParam("file") MultipartFile file) {
         try {
-            String fileName = minioService.uploadEquipmentFile(equipmentId, file, "");
+            String fileName = fileStorageService.uploadEquipmentFile(equipmentId, file, "");
             return ResponseEntity.ok("File uploaded successfully to equipment bucket: " + fileName);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error uploading file: " + e.getMessage());
@@ -67,7 +67,7 @@ public class MinioController {
     @GetMapping("/equipment/{equipmentId}/main-photo")
     public ResponseEntity<String> getEquipmentMainPhoto(@PathVariable UUID equipmentId) {
         try {
-            String imageUrl = minioService.getEquipmentMainPhoto(equipmentId);
+            String imageUrl = fileStorageService.getEquipmentMainPhoto(equipmentId);
             return ResponseEntity.ok(imageUrl);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
@@ -82,7 +82,7 @@ public class MinioController {
             @RequestParam("file") MultipartFile file) {
         try {
             String fileName = "maintenance_" + maintenanceId + "_" + file.getOriginalFilename();
-            minioService.uploadEntityFile("equipment", equipmentId, file, fileName);
+            fileStorageService.uploadEntityFile("equipment", equipmentId, file, fileName);
             return ResponseEntity.ok("File uploaded successfully: " + fileName);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error uploading file: " + e.getMessage());
@@ -96,7 +96,7 @@ public class MinioController {
             @PathVariable UUID maintenanceId,
             @PathVariable String fileName) {
         try {
-            String url = minioService.getEntityFileUrl("equipment", equipmentId, fileName);
+            String url = fileStorageService.getEntityFileUrl("equipment", equipmentId, fileName);
             return ResponseEntity.ok(url);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error generating URL: " + e.getMessage());
@@ -106,7 +106,7 @@ public class MinioController {
     @GetMapping("/download/{fileName}")
     public ResponseEntity<byte[]> downloadFile(@PathVariable String fileName) {
         try {
-            InputStream inputStream = minioService.downloadFile(fileName);
+            InputStream inputStream = fileStorageService.downloadFile(fileName);
             return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM).body(inputStream.readAllBytes());
         } catch (Exception e) {
             return ResponseEntity.status(500).body(null);
@@ -116,7 +116,7 @@ public class MinioController {
     @GetMapping("/url/{fileName}")
     public ResponseEntity<String> getFileUrl(@PathVariable String fileName) {
         try {
-            String url = minioService.getFileUrl(fileName);
+            String url = fileStorageService.getFileUrl(fileName);
             return ResponseEntity.ok(url);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error generating URL: " + e.getMessage());

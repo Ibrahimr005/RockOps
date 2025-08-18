@@ -444,3 +444,129 @@
         font-size: 1.2rem;
     }
 }
+.position-name-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .position-title {
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+        font-size: 0.95rem;
+    }
+
+    .hierarchy-path {
+        font-size: 0.75rem;
+        color: var(--color-text-secondary);
+        font-style: italic;
+        opacity: 0.8;
+    }
+}
+
+// Hierarchy Info Column
+.hierarchy-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+
+    .hierarchy-level {
+        .level-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: var(--bold-font-weight);
+            background-color: var(--color-primary);
+            color: var(--color-text-inverse);
+
+            // Different colors for different levels
+            &.level-0 {
+                background-color: var(--color-success);
+            }
+            &.level-1 {
+                background-color: var(--color-primary);
+            }
+            &.level-2 {
+                background-color: var(--color-warning);
+            }
+            &.level-3 {
+                background-color: var(--color-danger);
+            }
+        }
+    }
+
+    .hierarchy-details {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+
+        .position-type {
+            padding: 0.15rem 0.4rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.7rem;
+            font-weight: 500;
+
+            &.root {
+                background-color: rgba(76, 175, 80, 0.1);
+                color: var(--color-success);
+                border: 1px solid var(--color-success);
+            }
+
+            &.child {
+                background-color: rgba(72, 128, 255, 0.1);
+                color: var(--color-primary);
+                border: 1px solid var(--color-primary);
+            }
+        }
+
+        .child-count {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            color: var(--color-text-secondary);
+            font-size: 0.7rem;
+        }
+    }
+}
+
+// Reporting Info Column
+.reporting-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+
+    .manager-name {
+        color: var(--color-text-primary);
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .parent-position {
+        color: var(--color-text-secondary);
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-style: italic;
+    }
+}
+[data-theme="dark"] {
+    .hierarchy-info {
+        .hierarchy-details {
+            .position-type {
+                &.root {
+                    background-color: rgba(76, 175, 80, 0.2);
+                }
+
+                &.child {
+                    background-color: rgba(72, 128, 255, 0.2);
+                }
+            }
+        }
+    }
+}

@@ -60,7 +60,7 @@ const SiteMerchantsTab = ({ siteId }) => {
 
     const fetchMerchants = async () => {
         try {
-            const response = await siteService.getMerchants(siteId);
+            const response = await siteService.getSiteMerchants(siteId);
             const data = response.data;
 
             if (Array.isArray(data)) {

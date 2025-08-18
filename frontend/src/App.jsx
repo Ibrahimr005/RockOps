@@ -68,6 +68,7 @@ import PayslipDetails from "./pages/payroll/PayslipDetails/PayslipDetails.jsx";
 import EmployeeOnboarding from "./pages/HR/Vacancy/EmployeeOnboarding.jsx";
 import PromotionList from "./pages/HR/Promotion/PromotionList.jsx";
 import JobPositionDetails from "./pages/HR/JobPosition/details/JobPositionDetails.jsx";
+import BankReconciliation from "./pages/finance/BankReconciliation/BankReconciliation.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -198,6 +199,7 @@ function App() {
                                     <Route path="/finance/general-ledger" element={<RoleRoute allowedRoles={allRoles}><GeneralLedger/></RoleRoute>} />
                                     <Route path="/finance/payables" element={<RoleRoute allowedRoles={allRoles}><Payables/></RoleRoute>} />
                                     <Route path="/finance/fixed-assets" element={<RoleRoute allowedRoles={allRoles}><FixedAssets/></RoleRoute>} />
+                                    <Route path="/finance/bank-reconciliation" element={<RoleRoute allowedRoles={allRoles}><BankReconciliation/></RoleRoute>} />
 
 
 

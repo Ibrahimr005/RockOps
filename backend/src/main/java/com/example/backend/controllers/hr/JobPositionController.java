@@ -2,6 +2,7 @@ package com.example.backend.controllers.hr;
 
 import com.example.backend.dto.hr.JobPositionDTO;
 import com.example.backend.dto.hr.JobPositionDetailsDTO;
+import com.example.backend.dto.hr.employee.EmployeeSummaryDTO;
 import com.example.backend.dto.hr.promotions.PromotionStatsDTO;
 import com.example.backend.dto.hr.promotions.PromotionSummaryDTO;
 import com.example.backend.models.hr.Employee;
@@ -13,9 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/job-positions")
@@ -72,8 +72,61 @@ public class JobPositionController {
      * Get employees by job position ID
      */
     @GetMapping("/{id}/employees")
-    public ResponseEntity<List<Employee>> getEmployeesByJobPositionId(@PathVariable UUID id) {
+    public ResponseEntity<List<EmployeeSummaryDTO>> getEmployeesByJobPositionId(@PathVariable UUID id) {
         return ResponseEntity.ok(jobPositionService.getEmployeesByJobPositionId(id));
+    }
+
+    // ✅ ALTERNATIVE SOLUTION: Super simple approach - return basic data as Map
+
+    /**
+     * Simple version that returns Map instead of DTO to avoid any serialization issues
+     */
+    @GetMapping("/{id}/employees-simple")
+    public ResponseEntity<List<Map<String, Object>>> getEmployeesSimple(@PathVariable UUID id) {
+        try {
+            JobPosition jobPosition = jobPositionRepository.findByIdWithEmployees(id).orElse(null);
+            if (jobPosition == null) {
+                return ResponseEntity.notFound().build();
+            }
+
+            if (jobPosition.getEmployees() == null || jobPosition.getEmployees().isEmpty()) {
+                return ResponseEntity.ok(Collections.emptyList());
+            }
+
+            List<Map<String, Object>> employees = new ArrayList<>();
+
+            for (Employee employee : jobPosition.getEmployees()) {
+                if (employee == null) continue;
+
+                Map<String, Object> empMap = new HashMap<>();
+                empMap.put("id", employee.getId());
+                empMap.put("firstName", employee.getFirstName());
+                empMap.put("lastName", employee.getLastName());
+                empMap.put("fullName", employee.getFullName());
+                empMap.put("email", employee.getEmail());
+                empMap.put("phoneNumber", employee.getPhoneNumber());
+                empMap.put("status", employee.getStatus());
+                empMap.put("hireDate", employee.getHireDate());
+                empMap.put("monthlySalary", employee.getMonthlySalary());
+                empMap.put("eligibleForPromotion", employee.isEligibleForPromotion());
+                empMap.put("monthsSinceHire", employee.getMonthsSinceHire());
+                empMap.put("monthsSinceLastPromotion", employee.getMonthsSinceLastPromotion());
+                empMap.put("promotionCount", employee.getPromotionCount());
+                empMap.put("siteName", employee.getSite() != null ? employee.getSite().getName() : null);
+                empMap.put("position", employee.getJobPosition() != null ? employee.getJobPosition().getPositionName() : null);
+                empMap.put("departmentName", employee.getJobPosition() != null && employee.getJobPosition().getDepartment() != null ?
+                        employee.getJobPosition().getDepartment().getName() : null);
+                empMap.put("contractType", employee.getJobPosition() != null && employee.getJobPosition().getContractType() != null ?
+                        employee.getJobPosition().getContractType().toString() : null);
+
+                employees.add(empMap);
+            }
+
+            return ResponseEntity.ok(employees);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Collections.emptyList());
+        }
     }
 
     // ======================================
@@ -207,10 +260,10 @@ public class JobPositionController {
     /**
      * Get detailed employee analytics for this position
      */
-    @GetMapping("/{id}/employee-analytics")
-    public ResponseEntity<Map<String, Object>> getEmployeeAnalytics(@PathVariable UUID id) {
-        return ResponseEntity.ok(jobPositionService.getEmployeeAnalytics(id));
-    }
+//    @GetMapping("/{id}/employee-analytics")
+//    public ResponseEntity<Map<String, Object>> getEmployeeAnalytics(@PathVariable UUID id) {
+//        return ResponseEntity.ok(jobPositionService.getEmployeeAnalytics(id));
+//    }
 
     /**
      * Get simplified promotion statistics
@@ -234,5 +287,119 @@ public class JobPositionController {
     @GetMapping("/{id}/promotions-to-simple")
     public ResponseEntity<List<PromotionSummaryDTO>> getSimplifiedPromotionsTo(@PathVariable UUID id) {
         return ResponseEntity.ok(jobPositionService.getSimplifiedPromotionsTo(id));
+    }
+    /**
+     * Get job position hierarchy
+     */
+    @GetMapping("/hierarchy")
+    public ResponseEntity<List<JobPositionDTO>> getJobPositionHierarchy() {
+        List<JobPosition> rootPositions = jobPositionRepository.findByParentJobPositionIsNull();
+        return ResponseEntity.ok(convertToDTOList(rootPositions));
+    }
+
+    /**
+     * Get child positions
+     */
+    @GetMapping("/{id}/children")
+    public ResponseEntity<List<JobPositionDTO>> getChildPositions(@PathVariable UUID id) {
+        List<JobPosition> childPositions = jobPositionRepository.findByParentJobPositionId(id);
+        return ResponseEntity.ok(convertToDTOList(childPositions));
+    }
+
+    /**
+     * Get valid promotion targets for a position
+     */
+    @GetMapping("/{id}/promotion-targets")
+    public ResponseEntity<List<JobPositionDTO>> getPromotionTargets(@PathVariable UUID id) {
+        JobPosition position = jobPositionService.getJobPositionById(id);
+        List<JobPosition> targets = position.getEligiblePromotionTargets();
+        return ResponseEntity.ok(convertToDTOList(targets));
+    }
+    /**
+     * Convert list of JobPosition entities to list of JobPositionDTOs
+     */
+    private List<JobPositionDTO> convertToDTOList(List<JobPosition> jobPositions) {
+        if (jobPositions == null) {
+            return new ArrayList<>();
+        }
+
+        return jobPositions.stream()
+                .filter(Objects::nonNull) // Filter out null positions
+                .map(this::convertToDTO)
+                .filter(Objects::nonNull) // Filter out any failed conversions
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Convert JobPosition entity to JobPositionDTO
+     */
+    private JobPositionDTO convertToDTO(JobPosition jobPosition) {
+        if (jobPosition == null) {
+            return null;
+        }
+
+        JobPositionDTO dto = new JobPositionDTO();
+        dto.setId(jobPosition.getId());
+        dto.setPositionName(jobPosition.getPositionName());
+        dto.setDepartment(jobPosition.getDepartment() != null ? jobPosition.getDepartment().getName() : null);
+        dto.setHead(jobPosition.getHead());
+        dto.setBaseSalary(jobPosition.getBaseSalary());
+        dto.setProbationPeriod(jobPosition.getProbationPeriod());
+        dto.setContractType(jobPosition.getContractType());
+        dto.setExperienceLevel(jobPosition.getExperienceLevel());
+        dto.setActive(jobPosition.getActive());
+
+        // Contract type specific fields
+        switch (jobPosition.getContractType()) {
+            case HOURLY:
+                dto.setWorkingDaysPerWeek(jobPosition.getWorkingDaysPerWeek());
+                dto.setHoursPerShift(jobPosition.getHoursPerShift());
+                dto.setHourlyRate(jobPosition.getHourlyRate());
+                dto.setOvertimeMultiplier(jobPosition.getOvertimeMultiplier());
+                dto.setTrackBreaks(jobPosition.getTrackBreaks());
+                dto.setBreakDurationMinutes(jobPosition.getBreakDurationMinutes());
+                break;
+            case DAILY:
+                dto.setDailyRate(jobPosition.getDailyRate());
+                dto.setWorkingDaysPerMonth(jobPosition.getWorkingDaysPerMonth());
+                dto.setIncludesWeekends(jobPosition.getIncludesWeekends());
+                break;
+            case MONTHLY:
+                dto.setMonthlyBaseSalary(jobPosition.getMonthlyBaseSalary());
+                dto.setWorkingDaysPerMonth(jobPosition.getWorkingDaysPerMonth());
+                dto.setShifts(jobPosition.getShifts());
+                dto.setWorkingHours(jobPosition.getWorkingHours());
+                dto.setVacations(jobPosition.getVacations());
+
+                // Set time fields for MONTHLY contracts
+                dto.setStartTime(jobPosition.getStartTime());
+                dto.setEndTime(jobPosition.getEndTime());
+                break;
+        }
+
+        // Calculate derived fields
+        dto.calculateFields();
+
+        // Hierarchy fields
+        dto.setParentJobPositionId(jobPosition.getParentJobPosition() != null ?
+                jobPosition.getParentJobPosition().getId() : null);
+        dto.setParentJobPositionName(jobPosition.getParentJobPosition() != null ?
+                jobPosition.getParentJobPosition().getPositionName() : null);
+
+        List<UUID> childIds = jobPosition.getChildPositions().stream()
+                .map(JobPosition::getId)
+                .collect(Collectors.toList());
+        dto.setChildPositionIds(childIds);
+
+        List<String> childNames = jobPosition.getChildPositions().stream()
+                .map(JobPosition::getPositionName)
+                .collect(Collectors.toList());
+        dto.setChildPositionNames(childNames);
+
+        dto.setIsRootPosition(jobPosition.isRootPosition());
+        dto.setHierarchyLevel(jobPosition.getHierarchyLevel());
+        dto.setHierarchyPath(jobPosition.getHierarchyPath());
+
+        return dto;
     }
 }

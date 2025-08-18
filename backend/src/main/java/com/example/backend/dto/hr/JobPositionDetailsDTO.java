@@ -4,16 +4,15 @@
 
 package com.example.backend.dto.hr;
 
+import com.example.backend.dto.hr.employee.EmployeeSummaryDTO;
 import com.example.backend.dto.hr.promotions.PositionPromotionsDTO;
 import com.example.backend.models.hr.Department;
 import com.example.backend.models.hr.JobPosition;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Data

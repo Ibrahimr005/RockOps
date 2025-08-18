@@ -17,8 +17,8 @@ import java.util.stream.Collectors;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(exclude = {"employees", "vacancies", "promotionsFromThisPosition", "promotionsToThisPosition"})
-@ToString(exclude = {"employees", "vacancies", "promotionsFromThisPosition", "promotionsToThisPosition"})
+@EqualsAndHashCode(exclude = {"employees", "vacancies", "promotionsFromThisPosition", "promotionsToThisPosition", "parentJobPosition", "childPositions"})
+@ToString(exclude = {"employees", "vacancies", "promotionsFromThisPosition", "promotionsToThisPosition", "parentJobPosition", "childPositions"})
 public class JobPosition {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -165,7 +165,7 @@ public class JobPosition {
     // NEW: Helper method to format time range as string
     public String getWorkingTimeRange() {
         if (contractType == ContractType.MONTHLY && startTime != null && endTime != null) {
-            return startTime.toString() + " - " + endTime.toString();
+            return startTime + " - " + endTime;
         }
         return null;
     }
@@ -531,4 +531,74 @@ public class JobPosition {
     public List<Employee> getEmployees() {
         return employees != null ? employees : new ArrayList<>();
     }
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_job_position_id")
+    @JsonIgnoreProperties({"employees", "vacancies", "promotionsFromThisPosition", "promotionsToThisPosition", "childPositions"})
+    private JobPosition parentJobPosition;
+
+    @OneToMany(mappedBy = "parentJobPosition", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<JobPosition> childPositions = new ArrayList<>();
+
+    // Add these helper methods
+    @JsonIgnore
+    public boolean isRootPosition() {
+        return parentJobPosition == null;
+    }
+
+    @JsonIgnore
+    public boolean hasChildPositions() {
+        return childPositions != null && !childPositions.isEmpty();
+    }
+
+    @JsonIgnore
+    public List<JobPosition> getDirectChildPositions() {
+        return getChildPositions().stream()
+                .filter(child -> child.getActive())
+                .collect(Collectors.toList());
+    }
+
+    @JsonIgnore
+    public boolean isValidPromotionTo(JobPosition targetPosition) {
+        if (targetPosition == null) return false;
+
+        // Can only promote to parent position
+        return targetPosition.equals(this.parentJobPosition);
+    }
+
+    @JsonIgnore
+    public List<JobPosition> getEligiblePromotionTargets() {
+        List<JobPosition> targets = new ArrayList<>();
+        if (parentJobPosition != null && parentJobPosition.getActive()) {
+            targets.add(parentJobPosition);
+        }
+        return targets;
+    }
+
+    @JsonIgnore
+    public int getHierarchyLevel() {
+        int level = 0;
+        JobPosition current = this.parentJobPosition;
+        while (current != null) {
+            level++;
+            current = current.getParentJobPosition();
+        }
+        return level;
+    }
+
+    @JsonIgnore
+    public String getHierarchyPath() {
+        List<String> path = new ArrayList<>();
+        JobPosition current = this;
+
+        while (current != null) {
+            path.add(0, current.getPositionName());
+            current = current.getParentJobPosition();
+        }
+
+        return String.join(" → ", path);
+    }
+
 }

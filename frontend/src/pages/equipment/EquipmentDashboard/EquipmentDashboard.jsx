@@ -4,6 +4,8 @@ import { Clock, Package, Wrench, TrendingUp, Activity, AlertTriangle, CheckCircl
 import axios from 'axios';
 import './EquipmentDashboard.scss';
 import { equipmentService } from '../../../services/equipmentService';
+import { sarkyService } from '../../../services/sarkyService';
+import { inSiteMaintenanceService } from '../../../services/inSiteMaintenanceService';
 
 const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
     const [loading, setLoading] = useState(true);
@@ -38,11 +40,11 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                 maintenanceResponse
             ] = await Promise.allSettled([
                 // Fetch consumables data
-                equipmentService.getConsumables(equipmentId),
+                equipmentService.getEquipmentConsumables(equipmentId),
                 // Fetch work hours (sarky) data
-                equipmentService.getSarky(equipmentId),
-                // Fetch maintenance data (using same endpoint as InSiteMaintenanceLog)
-                equipmentService.getMaintenance(equipmentId)
+                sarkyService.getByEquipment(equipmentId),
+                // Fetch maintenance data (using inSiteMaintenanceService)
+                inSiteMaintenanceService.getByEquipmentId(equipmentId)
             ]);
 
             // Process consumables data

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import './AddPositionForm.scss';
+import {employeeService} from "../../../../services/hr/employeeService.js";
+import {departmentService} from "../../../../services/hr/departmentService.js";
+import {jobPositionService} from "../../../../services/hr/jobPositionService.js";
 
 const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
     const { showError, showWarning } = useSnackbar();
@@ -12,6 +15,9 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
         experienceLevel: 'ENTRY_LEVEL',
         probationPeriod: 90,
         active: true,
+
+        // NEW: Hierarchy fields
+        parentJobPositionId: '',
 
         // HOURLY fields
         workingDaysPerWeek: 5,
@@ -41,8 +47,10 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
     const [error, setError] = useState(null);
     const [employees, setEmployees] = useState([]);
     const [departments, setDepartments] = useState([]);
+    const [jobPositions, setJobPositions] = useState([]); // NEW: For parent position selection
     const [loadingEmployees, setLoadingEmployees] = useState(false);
     const [loadingDepartments, setLoadingDepartments] = useState(false);
+    const [loadingPositions, setLoadingPositions] = useState(false); // NEW: Loading state for positions
     const [calculatedSalary, setCalculatedSalary] = useState({
         daily: 0,
         monthly: 0,
@@ -63,11 +71,12 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
         { value: 'EXPERT_LEVEL', label: 'Expert Level' }
     ];
 
-    // Fetch employees and departments when modal opens
+    // Fetch employees, departments, and job positions when modal opens
     useEffect(() => {
         if (isOpen) {
             fetchEmployees();
             fetchDepartments();
+            fetchJobPositions(); // NEW: Fetch positions for hierarchy
         }
     }, [isOpen]);
 
@@ -95,6 +104,9 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                 experienceLevel: position.experienceLevel || 'ENTRY_LEVEL',
                 probationPeriod: position.probationPeriod || 90,
                 active: position.active !== undefined ? position.active : true,
+
+                // NEW: Map hierarchy fields
+                parentJobPositionId: position.parentJobPositionId || '',
 
                 // HOURLY fields
                 workingDaysPerWeek: position.workingDaysPerWeek || 5,
@@ -191,20 +203,8 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
     const fetchEmployees = async () => {
         setLoadingEmployees(true);
         try {
-            const response = await fetch('http://localhost:8080/api/v1/employees', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch employees');
-            }
-
-            const data = await response.json();
-            setEmployees(Array.isArray(data) ? data : []);
+            const response = await employeeService.getAll();
+            setEmployees(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error('Error fetching employees:', err);
             showError('Failed to load employees. Please try again.');
@@ -217,20 +217,8 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
     const fetchDepartments = async () => {
         setLoadingDepartments(true);
         try {
-            const response = await fetch('http://localhost:8080/api/v1/departments', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch departments');
-            }
-
-            const data = await response.json();
-            setDepartments(Array.isArray(data) ? data : []);
+            const response = await departmentService.getAll();
+            setDepartments(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error('Error fetching departments:', err);
             showError('Failed to load departments. Please try again.');
@@ -238,6 +226,49 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
         } finally {
             setLoadingDepartments(false);
         }
+    };
+
+    // NEW: Fetch job positions for hierarchy selection
+    const fetchJobPositions = async () => {
+        try {
+            setLoadingPositions(true);
+            const response = await jobPositionService.getAll();
+            setJobPositions(Array.isArray(response.data) ? response.data : []);
+        } catch (err) {
+            console.error('Error fetching job positions:', err);
+            showError('Failed to load job positions. Please try again.');
+            setError(prev => prev || 'Failed to load job positions');
+        } finally {
+            setLoadingPositions(false);
+        }
+    };
+
+    // NEW: Get hierarchy path for selected parent position
+    const getSelectedParentHierarchyInfo = () => {
+        if (!formData.parentJobPositionId) return null;
+
+        const parentPosition = jobPositions.find(pos => pos.id === formData.parentJobPositionId);
+        if (!parentPosition) return null;
+
+        return {
+            name: parentPosition.positionName,
+            department: parentPosition.department,
+            hierarchyPath: parentPosition.hierarchyPath || parentPosition.positionName,
+            hierarchyLevel: (parentPosition.hierarchyLevel || 0) + 1
+        };
+    };
+
+    // NEW: Get current position hierarchy info for display
+    const getCurrentHierarchyInfo = () => {
+        if (!position) return null;
+
+        return {
+            currentLevel: position.hierarchyLevel || 0,
+            isRootPosition: position.isRootPosition || false,
+            hierarchyPath: position.hierarchyPath || position.positionName,
+            parentPositionName: position.parentJobPositionName || null,
+            childCount: position.childPositionIds ? position.childPositionIds.length : 0
+        };
     };
 
     const handleChange = (e) => {
@@ -259,6 +290,19 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
 
         if (!formData.department) {
             errors.push('Department is required');
+        }
+
+        // NEW: Hierarchy validation - prevent circular references
+        if (formData.parentJobPositionId && position) {
+            if (formData.parentJobPositionId === position.id) {
+                errors.push('A position cannot be its own parent');
+            }
+
+            // Check if the selected parent is currently a child of this position
+            const parentPosition = jobPositions.find(pos => pos.id === formData.parentJobPositionId);
+            if (parentPosition && position.childPositionIds && position.childPositionIds.includes(formData.parentJobPositionId)) {
+                errors.push('Cannot select a child position as parent (would create circular reference)');
+            }
         }
 
         // Contract-specific validation
@@ -335,6 +379,9 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                 experienceLevel: formData.experienceLevel,
                 probationPeriod: formData.probationPeriod,
                 active: formData.active,
+
+                // NEW: Include hierarchy fields
+                parentJobPositionId: formData.parentJobPositionId || null,
 
                 // Contract-specific fields
                 ...(formData.contractType === 'HOURLY' && {
@@ -661,6 +708,7 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
         }
     };
 
+
     if (!isOpen) return null;
 
     return (
@@ -668,7 +716,7 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
             <div className="jp-modal-content">
                 <div className="jp-modal-header">
                     <h2>Edit Position</h2>
-                    <button className="jp-modal-close" onClick={onClose}>×</button>
+                    <button className="btn-close" onClick={onClose}>×</button>
                 </div>
 
                 {error && (
@@ -677,7 +725,7 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                     </div>
                 )}
 
-                {(loadingDepartments || loadingEmployees) ? (
+                {(loadingDepartments || loadingEmployees || loadingPositions) ? (
                     <div className="jp-loading">Loading form data...</div>
                 ) : (
                     <form onSubmit={handleSubmit}>
@@ -793,6 +841,140 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                             </div>
                         </div>
 
+                        {/* NEW: Current Hierarchy Information */}
+                        {getCurrentHierarchyInfo() && (
+                            <div className="jp-section">
+                                <h3>Current Hierarchy Information</h3>
+                                <div className="jp-current-hierarchy">
+                                    <div className="jp-hierarchy-item">
+                                        <span className="jp-hierarchy-label">Current Level:</span>
+                                        <span className="jp-hierarchy-value">
+                                            Level {getCurrentHierarchyInfo().currentLevel}
+                                        </span>
+                                    </div>
+                                    <div className="jp-hierarchy-item">
+                                        <span className="jp-hierarchy-label">Position Type:</span>
+                                        <span className="jp-hierarchy-value">
+                                            {getCurrentHierarchyInfo().isRootPosition ? 'Root Position' : 'Child Position'}
+                                        </span>
+                                    </div>
+                                    {getCurrentHierarchyInfo().parentPositionName && (
+                                        <div className="jp-hierarchy-item">
+                                            <span className="jp-hierarchy-label">Current Parent:</span>
+                                            <span className="jp-hierarchy-value">
+                                                {getCurrentHierarchyInfo().parentPositionName}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="jp-hierarchy-item">
+                                        <span className="jp-hierarchy-label">Hierarchy Path:</span>
+                                        <span className="jp-hierarchy-value">
+                                            {getCurrentHierarchyInfo().hierarchyPath}
+                                        </span>
+                                    </div>
+                                    {getCurrentHierarchyInfo().childCount > 0 && (
+                                        <div className="jp-hierarchy-item">
+                                            <span className="jp-hierarchy-label">Child Positions:</span>
+                                            <span className="jp-hierarchy-value">
+                                                {getCurrentHierarchyInfo().childCount} position(s)
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                                {getCurrentHierarchyInfo().childCount > 0 && (
+                                    <div className="jp-hierarchy-warning">
+                                        <strong>⚠️ Warning:</strong> This position has child positions.
+                                        Changing the parent will affect the entire hierarchy structure.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* NEW: Position Hierarchy Section */}
+                        <div className="jp-section">
+                            <h3>Update Position Hierarchy</h3>
+                            <div className="jp-form-row">
+                                <div className="jp-form-group">
+                                    <label htmlFor="parentJobPositionId">Parent Position</label>
+                                    <div className="jp-select-wrapper">
+                                        <select
+                                            id="parentJobPositionId"
+                                            name="parentJobPositionId"
+                                            value={formData.parentJobPositionId}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="">Make Root Position (No Parent)</option>
+                                            {jobPositions
+                                                .filter(pos =>
+                                                    pos.active &&
+                                                    pos.id !== position?.id && // Can't be parent of itself
+                                                    !(position?.childPositionIds || []).includes(pos.id) // Can't select current children
+                                                )
+                                                .map(jobPosition => (
+                                                    <option key={jobPosition.id} value={jobPosition.id}>
+                                                        {jobPosition.positionName} ({jobPosition.department})
+                                                        {jobPosition.hierarchyLevel !== undefined &&
+                                                            ` - Level ${jobPosition.hierarchyLevel}`}
+                                                    </option>
+                                                ))}
+                                        </select>
+                                    </div>
+                                    <small className="jp-field-hint">
+                                        Select a parent position to update the hierarchical relationship.
+                                        This will determine promotion paths and organizational structure.
+                                        Note: Child positions cannot be selected as parents.
+                                    </small>
+                                </div>
+                            </div>
+
+                            {/* NEW: Show hierarchy preview if parent is selected */}
+                            {getSelectedParentHierarchyInfo() && (
+                                <div className="jp-hierarchy-preview">
+                                    <h5>New Hierarchy Preview</h5>
+                                    <div className="jp-hierarchy-info">
+                                        <div className="jp-hierarchy-item">
+                                            <span className="jp-hierarchy-label">New Parent Position:</span>
+                                            <span className="jp-hierarchy-value">
+                                                {getSelectedParentHierarchyInfo().name}
+                                            </span>
+                                        </div>
+                                        <div className="jp-hierarchy-item">
+                                            <span className="jp-hierarchy-label">Parent Department:</span>
+                                            <span className="jp-hierarchy-value">
+                                                {getSelectedParentHierarchyInfo().department}
+                                            </span>
+                                        </div>
+                                        <div className="jp-hierarchy-item">
+                                            <span className="jp-hierarchy-label">New Position Level:</span>
+                                            <span className="jp-hierarchy-value">
+                                                Level {getSelectedParentHierarchyInfo().hierarchyLevel}
+                                            </span>
+                                        </div>
+                                        <div className="jp-hierarchy-item">
+                                            <span className="jp-hierarchy-label">New Hierarchy Path:</span>
+                                            <span className="jp-hierarchy-value">
+                                                {getSelectedParentHierarchyInfo().hierarchyPath} → {formData.positionName || position?.positionName}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="jp-hierarchy-note">
+                                        <strong>Note:</strong> Employees in this position will only be able to be promoted to the parent position.
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Show warning when removing parent */}
+                            {!formData.parentJobPositionId && position?.parentJobPositionName && (
+                                <div className="jp-hierarchy-preview">
+                                    <h5>Hierarchy Change Warning</h5>
+                                    <div className="jp-hierarchy-warning">
+                                        <strong>⚠️ Warning:</strong> You are removing the parent relationship.
+                                        This position will become a root position, and current promotion paths may be affected.
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         {/* Contract Type Selection */}
                         <div className="jp-section">
                             <h3>Contract Type</h3>
@@ -852,7 +1034,7 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                         <div className="jp-form-actions">
                             <button
                                 type="button"
-                                className="jp-cancel-button"
+                                className="btn-cancel"
                                 onClick={onClose}
                                 disabled={loading}
                             >
@@ -860,7 +1042,7 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                             </button>
                             <button
                                 type="submit"
-                                className="jp-submit-button"
+                                className="btn-primary"
                                 disabled={loading}
                             >
                                 {loading ? 'Updating...' : 'Update Position'}

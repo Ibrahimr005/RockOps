@@ -422,7 +422,7 @@ const PaymentManagement = () => {
                                 ×
                             </button>
                         </div>
-                        <form onSubmit={handleCreatePayment} className="modal-content">
+                        <form onSubmit={handleCreatePayment} className="modal-body">
                             {/* Invoice Selection */}
                             <div className="payables-form-group">
                                 <label className="payables-form-label">Select Invoice *</label>

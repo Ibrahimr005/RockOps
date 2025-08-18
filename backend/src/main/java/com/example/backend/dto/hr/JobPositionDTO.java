@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -139,4 +140,13 @@ public class JobPositionDTO {
             }
         }
     }
+    // Add these fields to JobPositionDTO
+    private UUID parentJobPositionId;
+    private String parentJobPositionName;
+    private List<UUID> childPositionIds;
+    private List<String> childPositionNames;
+    private Boolean isRootPosition;
+    private Integer hierarchyLevel;
+    private String hierarchyPath;
+
 }

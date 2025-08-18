@@ -9,6 +9,7 @@ import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.services.site.SiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
 @RequestMapping("api/v1/site")
 public class SiteController
 {
-    private SiteService siteService;
+    private final SiteService siteService;
     @Autowired
     public SiteController(SiteService siteService) {
         this.siteService = siteService;
@@ -134,10 +135,38 @@ public class SiteController
         return ResponseEntity.ok(partnersList != null ? partnersList : Collections.emptyList());
     }
 
+// In SiteController.java, fix the getUnassignedEmployees method:
+
     @GetMapping("/unassigned-employees")
-    public ResponseEntity<?> getUnassignedEmployees() {
+    public ResponseEntity<List<Employee>> getUnassignedEmployees() {
+        try {
+            System.out.println("=== Fetching unassigned employees ===");
+
             List<Employee> unassignedEmployees = siteService.getUnassignedEmployees();
-        return ResponseEntity.ok(unassignedEmployees != null ? unassignedEmployees : Collections.emptyList());
+
+            System.out.println("Found " + (unassignedEmployees != null ? unassignedEmployees.size() : 0) + " unassigned employees");
+
+            if (unassignedEmployees != null) {
+                for (Employee emp : unassignedEmployees) {
+                    System.out.println("Employee: " + emp.getFirstName() + " " + emp.getLastName() +
+                            ", Site: " + (emp.getSite() != null ? emp.getSite().getName() : "None"));
+                }
+            }
+
+            List<Employee> result = unassignedEmployees != null ? unassignedEmployees : Collections.emptyList();
+
+            // IMPORTANT: Ensure proper JSON response
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(result);
+
+        } catch (Exception e) {
+            System.err.println("Error fetching unassigned employees: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Collections.emptyList());
+        }
     }
 
     @GetMapping("/unassigned-equipment")

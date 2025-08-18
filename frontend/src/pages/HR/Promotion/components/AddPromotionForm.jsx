@@ -1,6 +1,6 @@
 // src/pages/HR/Promotion/components/AddPromotionForm.jsx
 import React, {useEffect, useState} from 'react';
-import {Building, Calendar, DollarSign, FileText, TrendingUp, User} from 'lucide-react';
+import {Building, Calendar, DollarSign, FileText, TrendingUp, User, ArrowUp, AlertTriangle} from 'lucide-react';
 import {useSnackbar} from '../../../../contexts/SnackbarContext';
 import {employeeService} from '../../../../services/hr/employeeService';
 import {jobPositionService} from '../../../../services/hr/jobPositionService';
@@ -27,18 +27,18 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
     });
 
     const [employees, setEmployees] = useState([]);
-    const [positions, setPositions] = useState([]);
+    const [availablePromotionTargets, setAvailablePromotionTargets] = useState([]); // NEW: Hierarchy-based targets
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [selectedPosition, setSelectedPosition] = useState(null);
+    const [currentPositionInfo, setCurrentPositionInfo] = useState(null); // NEW: Current position hierarchy info
     const [loading, setLoading] = useState(false);
     const [loadingEmployees, setLoadingEmployees] = useState(false);
-    const [loadingPositions, setLoadingPositions] = useState(false);
+    const [loadingPromotionTargets, setLoadingPromotionTargets] = useState(false); // NEW: Loading state for targets
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
         if (isOpen) {
             fetchEmployees();
-            fetchPositions();
             resetForm();
         }
     }, [isOpen]);
@@ -64,24 +64,44 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
         }
     };
 
-    const fetchPositions = async () => {
+    // NEW: Fetch available promotion targets based on hierarchy
+    const fetchPromotionTargets = async (employeeId) => {
         try {
-            setLoadingPositions(true);
-            const response = await jobPositionService.getAll();
-            // Handle response structure - check if data is nested
-            const positionsData = response.data?.data || response.data || response;
+            setLoadingPromotionTargets(true);
 
-            // Filter only active positions
-            const activePositions = Array.isArray(positionsData)
-                ? positionsData.filter(pos => pos.active !== false)
-                : [];
+            // Get employee details first
+            const employee = employees.find(emp => emp.id === employeeId);
+            if (!employee) return;
 
-            setPositions(activePositions);
+            // Get current position details
+            let currentPositionId = employee.jobPosition?.id || employee.jobPositionId;
+            if (!currentPositionId) {
+                showWarning('Employee does not have a current position assigned');
+                setAvailablePromotionTargets([]);
+                return;
+            }
+
+            // Get current position details with hierarchy info
+            const currentPositionResponse = await jobPositionService.getById(currentPositionId);
+            const currentPosition = currentPositionResponse.data;
+            setCurrentPositionInfo(currentPosition);
+
+            // Get valid promotion targets (parent position only in hierarchy system)
+            const targetsResponse = await jobPositionService.getValidPromotionTargets(currentPositionId);
+            const targets = targetsResponse.data || [];
+
+            if (targets.length === 0) {
+                showInfo(`No promotion targets available for ${currentPosition.positionName}. This may be a root position in the hierarchy.`);
+            }
+
+            setAvailablePromotionTargets(targets);
+
         } catch (error) {
-            console.error('Error fetching positions:', error);
-            showError('Failed to load job positions');
+            console.error('Error fetching promotion targets:', error);
+            showError('Failed to load available promotion targets');
+            setAvailablePromotionTargets([]);
         } finally {
-            setLoadingPositions(false);
+            setLoadingPromotionTargets(false);
         }
     };
 
@@ -103,6 +123,8 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
         });
         setSelectedEmployee(null);
         setSelectedPosition(null);
+        setCurrentPositionInfo(null); // NEW: Reset current position info
+        setAvailablePromotionTargets([]); // NEW: Reset targets
         setErrors({});
     };
 
@@ -120,8 +142,13 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
             setFormData(prev => ({
                 ...prev,
                 employeeId: employeeId,
-                requestTitle: requestTitle
+                requestTitle: requestTitle,
+                promotedToJobPositionId: '', // Reset position selection
+                proposedSalary: '' // Reset salary
             }));
+
+            // NEW: Fetch promotion targets based on hierarchy
+            await fetchPromotionTargets(employeeId);
 
             // Check eligibility
             try {
@@ -148,18 +175,29 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
             setFormData(prev => ({
                 ...prev,
                 employeeId: employeeId,
-                requestTitle: ''
+                requestTitle: '',
+                promotedToJobPositionId: '',
+                proposedSalary: ''
             }));
+            setCurrentPositionInfo(null);
+            setAvailablePromotionTargets([]);
         }
     };
 
     const handlePositionChange = (positionId) => {
-        const position = positions.find(pos => pos.id === positionId);
+        const position = availablePromotionTargets.find(pos => pos.id === positionId);
         setSelectedPosition(position);
 
         let proposedSalary = '';
-        if (position && position.baseSalary) {
-            proposedSalary = position.baseSalary.toString();
+        if (position) {
+            // Use different salary fields based on contract type
+            if (position.monthlyBaseSalary) {
+                proposedSalary = position.monthlyBaseSalary.toString();
+            } else if (position.baseSalary) {
+                proposedSalary = position.baseSalary.toString();
+            } else if (position.calculatedMonthlySalary) {
+                proposedSalary = position.calculatedMonthlySalary.toString();
+            }
         }
 
         setFormData(prev => ({
@@ -225,11 +263,12 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
             newErrors.justification = 'Justification must be at least 50 characters';
         }
 
-        // Business logic validations
-        if (selectedEmployee && selectedPosition) {
-            const currentPositionId = selectedEmployee.jobPosition?.id || selectedEmployee.jobPositionId;
-            if (currentPositionId === formData.promotedToJobPositionId) {
-                newErrors.promotedToJobPositionId = 'Cannot promote employee to the same position';
+        // NEW: Hierarchy-specific validations
+        if (selectedEmployee && selectedPosition && currentPositionInfo) {
+            // Verify that the selected position is actually a valid promotion target
+            const isValidTarget = availablePromotionTargets.some(target => target.id === formData.promotedToJobPositionId);
+            if (!isValidTarget) {
+                newErrors.promotedToJobPositionId = 'Selected position is not a valid promotion target based on organizational hierarchy';
             }
         }
 
@@ -328,7 +367,7 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
                                 Create Promotion Request
                             </h2>
                             <p className="modal-subtitle">
-                                Submit a new promotion request for employee advancement
+                                Submit a new promotion request for employee advancement within organizational hierarchy
                             </p>
                         </div>
                         <button
@@ -380,13 +419,48 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
                                             <span className="error-message">{errors.employeeId}</span>
                                         )}
                                     </div>
+                                </div>
 
+                                {/* NEW: Current Position Hierarchy Information */}
+                                {currentPositionInfo && (
+                                    <div className="current-position-info">
+                                        <h4>Current Position Information</h4>
+                                        <div className="position-hierarchy">
+                                            <div className="hierarchy-item">
+                                                <span className="label">Current Position:</span>
+                                                <span className="value">{currentPositionInfo.positionName}</span>
+                                            </div>
+                                            <div className="hierarchy-item">
+                                                <span className="label">Department:</span>
+                                                <span className="value">{currentPositionInfo.department || 'N/A'}</span>
+                                            </div>
+                                            <div className="hierarchy-item">
+                                                <span className="label">Hierarchy Level:</span>
+                                                <span className="value">Level {currentPositionInfo.hierarchyLevel || 0}</span>
+                                            </div>
+                                            {currentPositionInfo.hierarchyPath && (
+                                                <div className="hierarchy-item">
+                                                    <span className="label">Hierarchy Path:</span>
+                                                    <span className="value hierarchy-path">{currentPositionInfo.hierarchyPath}</span>
+                                                </div>
+                                            )}
+                                            {currentPositionInfo.isRootPosition && (
+                                                <div className="hierarchy-warning">
+                                                    <AlertTriangle size={16}/>
+                                                    This is a root position - no further promotion targets may be available
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="form-row">
                                     <div className="form-group">
                                         <label htmlFor="promotedToJobPositionId" className="required">
-                                            Proposed Position
+                                            Promotion Target Position
                                         </label>
                                         <div className="input-with-icon">
-                                            <Building size={18}/>
+                                            <ArrowUp size={18}/>
                                             <select
                                                 id="promotedToJobPositionId"
                                                 name="promotedToJobPositionId"
@@ -394,14 +468,18 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
                                                 onChange={(e) => handlePositionChange(e.target.value)}
                                                 className={`form-control ${errors.promotedToJobPositionId ? 'error' : ''}`}
                                                 required
-                                                disabled={loadingPositions}
+                                                disabled={loadingPromotionTargets || !formData.employeeId}
                                             >
                                                 <option value="">
-                                                    {loadingPositions ? 'Loading positions...' : 'Select Position'}
+                                                    {loadingPromotionTargets ? 'Loading promotion targets...' :
+                                                        !formData.employeeId ? 'Select employee first' :
+                                                            availablePromotionTargets.length === 0 ? 'No promotion targets available' :
+                                                                'Select Promotion Target'}
                                                 </option>
-                                                {positions.map(position => (
+                                                {availablePromotionTargets.map(position => (
                                                     <option key={position.id} value={position.id}>
                                                         {position.positionName} - {position.department || 'No Department'}
+                                                        {position.hierarchyLevel !== undefined && ` (Level ${position.hierarchyLevel})`}
                                                     </option>
                                                 ))}
                                             </select>
@@ -409,8 +487,36 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
                                         {errors.promotedToJobPositionId && (
                                             <span className="error-message">{errors.promotedToJobPositionId}</span>
                                         )}
+                                        <small className="field-hint">
+                                            Only positions that are valid promotion targets within the organizational hierarchy are shown
+                                        </small>
                                     </div>
                                 </div>
+
+                                {/* NEW: Promotion Target Information */}
+                                {selectedPosition && (
+                                    <div className="target-position-info">
+                                        <h4>Promotion Target Information</h4>
+                                        <div className="position-details">
+                                            <div className="detail-item">
+                                                <span className="label">Target Position:</span>
+                                                <span className="value">{selectedPosition.positionName}</span>
+                                            </div>
+                                            <div className="detail-item">
+                                                <span className="label">Target Department:</span>
+                                                <span className="value">{selectedPosition.department || 'N/A'}</span>
+                                            </div>
+                                            <div className="detail-item">
+                                                <span className="label">Target Level:</span>
+                                                <span className="value">Level {selectedPosition.hierarchyLevel || 0}</span>
+                                            </div>
+                                            <div className="detail-item">
+                                                <span className="label">Contract Type:</span>
+                                                <span className="value">{selectedPosition.contractType?.replace('_', ' ') || 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="form-row">
                                     <div className="form-group">
@@ -661,7 +767,7 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
                             type="submit"
                             onClick={handleSubmit}
                             className="btn-primary"
-                            disabled={loading}
+                            disabled={loading || !formData.employeeId || availablePromotionTargets.length === 0}
                         >
                             {loading ? (
                                 <>

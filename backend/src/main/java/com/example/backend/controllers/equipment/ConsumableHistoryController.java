@@ -1,6 +1,7 @@
 package com.example.backend.controllers.equipment;
 
 import com.example.backend.dto.transaction.TransactionDTO;
+import com.example.backend.dto.equipment.ConsumableHistoryDTO;
 import com.example.backend.models.equipment.Consumable;
 import com.example.backend.models.transaction.Transaction;
 import com.example.backend.services.equipment.ConsumablesService;
@@ -37,18 +38,21 @@ public class ConsumableHistoryController {
      * Endpoint: GET /api/v1/equipment/consumables/{consumableId}/history
      */
     @GetMapping("/consumables/{consumableId}/history")
-    public ResponseEntity<List<TransactionDTO>> getConsumableHistory(@PathVariable UUID consumableId) {
+    public ResponseEntity<ConsumableHistoryDTO> getConsumableHistory(@PathVariable UUID consumableId) {
         try {
             System.out.println("🔍 Fetching consumable history for consumable: " + consumableId);
             System.out.println("   Rebuilding history based on transaction relationships (not unreliable transaction field)");
             System.out.println("   Including proper sender/receiver names and specific quantities contributed");
+            System.out.println("   Including resolution information if available");
             
-            List<TransactionDTO> transactionHistory = consumablesService.getConsumableHistory(consumableId);
+            ConsumableHistoryDTO history = consumablesService.getConsumableHistoryWithResolutions(consumableId);
             
-            System.out.println("✅ Found " + transactionHistory.size() + " transactions that contributed to this consumable");
+            System.out.println("✅ Found " + history.getTransactions().size() + " transactions that contributed to this consumable");
+            System.out.println("✅ Found " + history.getResolutions().size() + " resolutions for this consumable");
             System.out.println("   Each transaction shows: batch number, quantity contributed, sender/receiver names");
+            System.out.println("   Resolution information shows: resolution type, notes, resolved by, date");
             
-            return ResponseEntity.ok(transactionHistory);
+            return ResponseEntity.ok(history);
             
         } catch (IllegalArgumentException e) {
             System.out.println("❌ Consumable not found: " + e.getMessage());
@@ -58,6 +62,24 @@ public class ConsumableHistoryController {
             System.out.println("💥 Error fetching consumable history: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * EMERGENCY ENDPOINT: Manually trigger backfill for all resolved transaction items
+     * This fixes historical data that was resolved before the transaction item update fix
+     */
+    @PostMapping("/consumables/backfill-resolved-items")
+    public ResponseEntity<String> backfillResolvedTransactionItems() {
+        try {
+            System.out.println("🚨 Manual backfill triggered via API endpoint");
+            consumablesService.manualBackfillAllResolvedTransactionItems();
+            return ResponseEntity.ok("Backfill completed successfully. Check logs for details.");
+        } catch (Exception e) {
+            System.out.println("💥 Backfill failed: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Backfill failed: " + e.getMessage());
         }
     }
 } 
