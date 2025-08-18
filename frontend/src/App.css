@@ -10,6 +10,8 @@
 @import url("./styles/tabs.scss");
 @import url("./styles/cancel-modal-button.scss");
 
+
+
 /* Base styles */
 body {
   background-color: var(--main-background-color);

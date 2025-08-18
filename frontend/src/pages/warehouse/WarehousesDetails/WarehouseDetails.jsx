@@ -99,6 +99,7 @@ const WarehouseDetails = () => {
         if (userInfo && userInfo.role) {
           setUserRole(userInfo.role);
         }
+        console.log("role is:" + userRole);
 
         const data = await warehouseService.getById(id);
         setWarehouseData(data);
