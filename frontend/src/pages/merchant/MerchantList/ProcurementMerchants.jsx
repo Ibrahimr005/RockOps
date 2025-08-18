@@ -467,7 +467,7 @@ const ProcurementMerchants = () => {
                 lightModeImage={merchantsImage}
                 darkModeImage={merchantsImagedark}
                 stats={getMerchantStats()}
-                onInfoClick={handleInfoClick}
+                onInfoClick={false}
             />
 
             {/* DataTable */}
