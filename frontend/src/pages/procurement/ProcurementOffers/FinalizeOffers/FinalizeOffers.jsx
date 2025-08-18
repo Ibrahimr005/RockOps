@@ -5,10 +5,11 @@ import {
 } from 'react-icons/fi';
 import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx"
 import ConfirmationDialog from "../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
+import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
+import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
 import { offerService } from '../../../../services/procurement/offerService.js';
 import "../ProcurementOffers.scss";
 import "./FinalizeOffers.scss";
-import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 
 const FinalizeOffers = ({
                             offers,
@@ -188,8 +189,6 @@ const FinalizeOffers = ({
                         <p>No offers to finalize yet. Offers accepted by finance will appear here.</p>
                     </div>
                 ) : (
-                    // Replace the offers list section in FinalizeOffers with this:
-
                     <div className="procurement-items-list">
                         {offers.map(offer => (
                             <div
@@ -266,90 +265,13 @@ const FinalizeOffers = ({
 
                         <RequestOrderDetails requestOrder={activeOffer.requestOrder} />
 
+                        {/* Replace the timeline section with the OfferTimeline component */}
                         <div className="procurement-request-summary-card-finalize">
-                            <h4>Offer Timeline</h4>
-                            <p className="procurement-section-description-finalize">
-                                This timeline shows the key milestones in the finalization process.
-                            </p>
-
-                            {/* NEW TIMELINE DESIGN */}
-                            <div className="procurement-timeline-finalize">
-                                {/* Request Order Approved Step */}
-                                <div className="procurement-timeline-item-finalize active-finalize">
-                                    <div className="timeline-content-finalize">
-                                        <h5>Request Order Approved</h5>
-                                        <p className="timeline-date-finalize">
-                                            <FiCalendar size={14} /> Approved at: {activeOffer.requestOrder?.approvedAt ? new Date(activeOffer.requestOrder.approvedAt).toLocaleDateString() : 'N/A'}
-                                        </p>
-                                        <p className="timeline-date-finalize">
-                                            <FiUser size={14} /> Approved by: {activeOffer.requestOrder?.approvedBy || 'N/A'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Offer Submitted Step */}
-                                <div className="procurement-timeline-item-finalize active-finalize">
-                                    <div className="timeline-content-finalize">
-                                        <h5>Offer Submitted</h5>
-                                        <p className="timeline-date-finalize">
-                                            <FiCalendar size={14} /> Submitted at: {new Date(activeOffer.createdAt).toLocaleDateString()}
-                                        </p>
-                                        <p className="timeline-date-finalize">
-                                            <FiUser size={14} /> Submitted by: {activeOffer.createdBy || 'N/A'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Manager Accepted Step */}
-                                <div className="procurement-timeline-item-finalize active-finalize">
-                                    <div className="timeline-content-finalize">
-                                        <h5>Manager Accepted</h5>
-                                        <p className="timeline-date-finalize">
-                                            <FiCalendar size={14} /> Accepted at: {activeOffer.updatedAt ? new Date(activeOffer.updatedAt).toLocaleDateString() : 'N/A'}
-                                        </p>
-                                        <p className="timeline-date-finalize">
-                                            <FiUser size={14} /> Accepted by: {activeOffer.managerApprovedBy || 'N/A'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Finance Accepted Step */}
-                                <div className="procurement-timeline-item-finalize active-finalize">
-                                    <div className="timeline-content-finalize">
-                                        <h5>Finance Accepted</h5>
-                                        <p className="timeline-date-finalize">
-                                            <FiCalendar size={14} /> Accepted at: {activeOffer.updatedAt ? new Date(activeOffer.updatedAt).toLocaleDateString() : 'N/A'}
-                                        </p>
-                                        <p className="timeline-date-finalize">
-                                            <FiUser size={14} /> Accepted by: {activeOffer.financeApprovedBy || 'N/A'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Awaiting Finalization / Finalized Step */}
-                                <div className={`procurement-timeline-item-finalize ${activeOffer.status === 'FINALIZED' ? 'active-finalize' : ''}`}>
-                                    <div className="timeline-content-finalize">
-                                        <h5>
-                                            {activeOffer.status === 'FINALIZED' ? 'Offer Finalized' : 'Awaiting Finalization'}
-                                        </h5>
-                                        {activeOffer.status === 'FINALIZED' ? (
-                                            <>
-                                                <p className="timeline-date-finalize">
-                                                    <FiCalendar size={14} /> Finalized at: {new Date(activeOffer.finalizedAt || activeOffer.updatedAt).toLocaleDateString()}
-                                                </p>
-                                                <p className="timeline-date-finalize">
-                                                    <FiUser size={14} /> Finalized by: {activeOffer.finalizedBy || 'N/A'}
-                                                </p>
-                                            </>
-                                        ) : (
-                                            <p className="timeline-date-finalize">
-                                                <FiClock size={14} /> Pending finalization from procurement.
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                            {/* END OF NEW TIMELINE DESIGN */}
+                            <OfferTimeline
+                                offer={activeOffer}
+                                variant="finalize"
+                                showRetryInfo={false}
+                            />
                         </div>
 
                         {purchaseOrder && (

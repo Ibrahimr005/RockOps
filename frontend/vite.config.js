@@ -30,6 +30,7 @@ export default defineConfig({
     host: true,
   },
   define: {
-    __API_URL__: JSON.stringify(process.env.VITE_API_BASE_URL)
+    __API_URL__: JSON.stringify(process.env.VITE_API_BASE_URL),
+    global: 'globalThis', // Add this line to fix SockJS
   }
 })

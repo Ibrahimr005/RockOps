@@ -78,7 +78,7 @@ const WarehouseDetails = () => {
     try {
       const data = await transactionService.getTransactionsForWarehouse(id);
 
-      // Filter for incoming transactions (same logic as IncomingTransactionsTable)
+      // Just count, don't fetch entity details
       const incomingCount = data.filter(transaction =>
           transaction.status === "PENDING" &&
           (transaction.receiverId === id || transaction.senderId === id) &&
@@ -88,6 +88,7 @@ const WarehouseDetails = () => {
       setIncomingTransactionsCount(incomingCount);
     } catch (error) {
       console.error("Failed to fetch incoming transactions count:", error);
+      setIncomingTransactionsCount(0); // Add fallback
     }
   }, [id]);
 
@@ -310,7 +311,7 @@ const WarehouseDetails = () => {
           />
 
           {/* Show tabs only for warehouse managers */}
-          {userRole === 'WAREHOUSE_MANAGER' && (
+          {(userRole === 'WAREHOUSE_MANAGER' || userRole === 'ADMIN') && (
               <div className="new-tabs-container">
                 <div className="new-tabs-header">
                   <button
@@ -358,7 +359,7 @@ const WarehouseDetails = () => {
           )}
 
           {/* For non-warehouse managers, show inventory with same structure but no top tabs */}
-          {userRole !== 'WAREHOUSE_MANAGER' && (
+          {(userRole !== 'WAREHOUSE_MANAGER' && userRole !== 'ADMIN')  && (
               <div className="new-tabs-container">
                 <div className="unified-tab-content-container">
                   <div className="tab-content-header">

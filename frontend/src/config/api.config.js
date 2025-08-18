@@ -346,9 +346,10 @@ export const SITE_ENDPOINTS = {
 };
 
 // Merchant module endpoints
+// Fix this in your api.config.js
 export const MERCHANT_ENDPOINTS = {
     BASE: '/api/v1/merchants',
-    BY_ID: (id) => `/api/merchants/${id}`
+    BY_ID: (id) => `/api/v1/merchants/${id}`  // ✅ Added /v1/
 };
 
 // Work Type module endpoints
@@ -481,7 +482,6 @@ export const REQUEST_ORDER_ENDPOINTS = {
 };
 // Offer module endpoints
 // Add these to your OFFER_ENDPOINTS in api.config.js
-
 export const OFFER_ENDPOINTS = {
     BASE: '/api/v1/offers',
     BY_ID: (id) => `/api/v1/offers/${id}`,
@@ -510,7 +510,13 @@ export const OFFER_ENDPOINTS = {
     COMPLETE_FINANCE_REVIEW: (offerId) => `/api/v1/offers/${offerId}/complete-review`,
 
     // Retry operation
-    RETRY: (offerId) => `/api/v1/offers/${offerId}/retry`
+    RETRY: (offerId) => `/api/v1/offers/${offerId}/retry`,
+
+    // NEW: Timeline operations
+    TIMELINE: (offerId) => `/api/v1/offers/${offerId}/timeline`,
+    TIMELINE_RETRYABLE: (offerId) => `/api/v1/offers/${offerId}/timeline/retryable`,
+    TIMELINE_ATTEMPT: (offerId, attemptNumber) => `/api/v1/offers/${offerId}/timeline/attempt/${attemptNumber}`,
+    TIMELINE_STATS: (offerId) => `/api/v1/offers/${offerId}/timeline/stats`
 };
 
 // Candidate module endpoints

@@ -65,105 +65,114 @@ const Navbar = () => {
         }
     };
 
-    // Connect to WebSocket for real-time updates
+// Fixed connectWebSocket function for Navbar.jsx
+// Replace the existing connectWebSocket function with this improved version
+
     const connectWebSocket = async () => {
+        // Check for username (not ID)
+        if (!currentUser || !currentUser.username || !token) {
+            console.log('❌ Cannot connect WebSocket: Missing auth data');
+            console.log('  - currentUser:', !!currentUser);
+            console.log('  - currentUser.username:', currentUser?.username);
+            console.log('  - token:', !!token);
+            return;
+        }
+
         if (stompClientRef.current?.connected) {
+            console.log('⚠️ WebSocket already connected');
             return;
         }
 
         setConnectionStatus('connecting');
 
         try {
+            // Import both STOMP and SockJS
             const { Client } = await import('@stomp/stompjs');
+            const SockJS = (await import('sockjs-client')).default;
 
             const stompClient = new Client({
-                brokerURL: notificationService.getWebSocketUrl(),
+                // Use SockJS factory instead of raw WebSocket
+                webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
                 connectHeaders: {
                     'Authorization': `Bearer ${token}`
                 },
-                debug: () => {}, // Silent debug for navbar
+                debug: (str) => {
+                    // Only log important debug messages
+                    if (str.includes('ERROR') || str.includes('RECEIPT')) {
+                        console.log('Navbar STOMP Debug:', str);
+                    }
+                },
                 reconnectDelay: 5000,
-                heartbeatIncoming: 4000,
-                heartbeatOutgoing: 4000,
+                heartbeatIncoming: 10000,
+                heartbeatOutgoing: 10000,
             });
 
             stompClient.onConnect = (frame) => {
-                console.log('🔗 Navbar WebSocket Connected');
+                console.log('✅ Navbar WebSocket Connected');
                 setConnectionStatus('connected');
 
-                // 🎯 ONLY Subscribe to unread count updates (server-side calculated)
-                stompClient.subscribe('/user/queue/unread-count', (message) => {
-                    const response = JSON.parse(message.body);
-                    console.log('📊 Navbar received unread count update:', response);
+                try {
+                    // Subscribe to unread count updates
+                    stompClient.subscribe('/user/queue/unread-count', (message) => {
+                        try {
+                            const response = JSON.parse(message.body);
+                            console.log('📊 Navbar received unread count update:', response);
 
-                    // Handle different response formats
-                    let newCount = 0;
-                    if (response.data !== undefined) {
-                        newCount = response.data;
-                    } else if (response.unreadCount !== undefined) {
-                        newCount = response.unreadCount;
-                    } else if (response.count !== undefined) {
-                        newCount = response.count;
-                    }
+                            let newCount = 0;
+                            if (response.data !== undefined) {
+                                newCount = response.data;
+                            } else if (response.unreadCount !== undefined) {
+                                newCount = response.unreadCount;
+                            } else if (response.count !== undefined) {
+                                newCount = response.count;
+                            }
 
-                    console.log('🔔 Setting unread notifications to:', newCount);
-                    setUnreadNotifications(newCount);
-                });
+                            setUnreadNotifications(newCount);
+                        } catch (error) {
+                            console.error('Error parsing unread count message:', error);
+                        }
+                    });
 
-                // 🔔 Subscribe to new notifications ONLY for immediate visual feedback (no counting)
-                stompClient.subscribe('/user/queue/notifications', (message) => {
-                    const notification = JSON.parse(message.body);
-                    console.log('🔔 Navbar received new notification (refreshing count):', notification.title);
+                    // Subscribe to new notifications (just for count updates)
+                    stompClient.subscribe('/user/queue/notifications', (message) => {
+                        try {
+                            console.log('🔔 Navbar: New notification received, refreshing count');
+                            // Refresh unread count after a short delay
+                            setTimeout(() => {
+                                fetchUnreadCount();
+                            }, 100);
+                        } catch (error) {
+                            console.error('Error handling new notification:', error);
+                        }
+                    });
 
-                    // Just refresh the count from server instead of manual increment
-                    setTimeout(() => {
-                        fetchUnreadCount();
-                    }, 100);
-                });
+                    // Subscribe to broadcast notifications
+                    stompClient.subscribe('/topic/notifications', (message) => {
+                        try {
+                            console.log('📢 Navbar: Broadcast notification received, refreshing count');
+                            // Refresh unread count after a short delay
+                            setTimeout(() => {
+                                fetchUnreadCount();
+                            }, 100);
+                        } catch (error) {
+                            console.error('Error handling broadcast notification:', error);
+                        }
+                    });
 
-                // 📢 Subscribe to broadcast notifications ONLY for immediate visual feedback (no counting)
-                stompClient.subscribe('/topic/notifications', (message) => {
-                    const notification = JSON.parse(message.body);
-                    console.log('📢 Navbar received broadcast notification (refreshing count):', notification.title);
+                    console.log('✅ Navbar WebSocket subscriptions established');
 
-                    // Just refresh the count from server instead of manual increment
-                    setTimeout(() => {
-                        fetchUnreadCount();
-                    }, 100);
-                });
-
-                // 🗑️ OPERATIONS: Subscribe to operation responses for immediate count refresh
-                stompClient.subscribe('/user/queue/responses', (message) => {
-                    const response = JSON.parse(message.body);
-                    console.log('📬 Navbar received operation response:', response);
-
-                    // Refresh count from server after any operation
-                    if (response.type === 'SUCCESS') {
-                        setTimeout(() => {
-                            fetchUnreadCount();
-                        }, 100);
-                    }
-                });
-
-                // 🔐 Authenticate with the server
-                stompClient.publish({
-                    destination: '/app/authenticate',
-                    body: JSON.stringify({
-                        token: token,
-                        userId: currentUser.id,
-                        sessionId: Date.now().toString()
-                    })
-                });
-
-                console.log('✅ Navbar WebSocket subscriptions established');
+                } catch (subscriptionError) {
+                    console.error('❌ Error setting up navbar subscriptions:', subscriptionError);
+                    setConnectionStatus('disconnected');
+                }
             };
 
             stompClient.onStompError = (frame) => {
-                console.error('❌ Navbar WebSocket STOMP Error:', frame);
+                console.error('❌ Navbar WebSocket STOMP Error:', frame.headers.message || 'Unknown STOMP error');
                 setConnectionStatus('disconnected');
             };
 
-            stompClient.onDisconnect = () => {
+            stompClient.onDisconnect = (frame) => {
                 console.log('📴 Navbar WebSocket Disconnected');
                 setConnectionStatus('disconnected');
             };
@@ -173,11 +182,16 @@ const Navbar = () => {
                 setConnectionStatus('disconnected');
             };
 
+            stompClient.onWebSocketClose = (event) => {
+                console.log('🔌 Navbar WebSocket connection closed:', event.code, event.reason);
+                setConnectionStatus('disconnected');
+            };
+
             stompClient.activate();
             stompClientRef.current = stompClient;
 
         } catch (error) {
-            console.error('Failed to connect WebSocket in navbar:', error);
+            console.error('Failed to initialize WebSocket in navbar:', error);
             setConnectionStatus('disconnected');
         }
     };

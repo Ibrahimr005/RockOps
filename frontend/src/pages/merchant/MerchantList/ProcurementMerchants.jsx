@@ -6,9 +6,9 @@ import merchantsImagedark from "../../../assets/imgs/pro_icon_dark.png";
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
 import Snackbar from '../../../components/common/Snackbar/Snackbar.jsx'
 import MerchantModal from './MerchantModal.jsx';
-import MerchantViewModal from './MerchantViewModal.jsx'; // Add this import
 import IntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import EmployeeAvatar from '../../../components/common/EmployeeAvatar/EmployeeAvatar.jsx';
 import { procurementService } from '../../../services/procurement/procurementService.js';
 import { siteService } from '../../../services/siteService.js';
 
@@ -19,6 +19,7 @@ const ProcurementMerchants = () => {
     const navigate = useNavigate();
     const [showAddModal, setShowAddModal] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
+    const [selectedFile, setSelectedFile] = useState(null); // Added for file handling
     const [sites, setSites] = useState([]);
     const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
     const [currentMerchantId, setCurrentMerchantId] = useState(null);
@@ -26,10 +27,6 @@ const ProcurementMerchants = () => {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarType, setSnackbarType] = useState("success");
     const [userRole, setUserRole] = useState('');
-
-    // Add view modal states
-    const [showViewModal, setShowViewModal] = useState(false);
-    const [selectedMerchant, setSelectedMerchant] = useState(null);
 
     // Add confirmation dialog states
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -99,16 +96,10 @@ const ProcurementMerchants = () => {
         }
     }, []);
 
-    // Handle view merchant
-    const onView = (merchant) => {
-        console.log("Viewing merchant:", merchant);
-        setSelectedMerchant(merchant);
-        setShowViewModal(true);
-    };
-
-    const handleCloseViewModal = () => {
-        setShowViewModal(false);
-        setSelectedMerchant(null);
+    // Handle row click to navigate to merchant details page
+    const handleRowClick = (merchant) => {
+        console.log("Navigating to merchant details:", merchant);
+        navigate(`/merchants/${merchant.id}`);
     };
 
     const onEdit = (merchant) => {
@@ -132,14 +123,21 @@ const ProcurementMerchants = () => {
             notes: merchant.notes || ''
         });
 
+        // Set existing photo if available
+        if (merchant.photoUrl) {
+            setPreviewImage(merchant.photoUrl);
+        } else {
+            setPreviewImage(null);
+        }
+
+        // Reset selected file since we're showing existing photo
+        setSelectedFile(null);
+
         // Set modal mode to edit
         setModalMode('edit');
         setCurrentMerchantId(merchant.id);
         setShowAddModal(true);
     };
-
-    // REMOVED THE CONFLICTING useEffect FOR showAddModal
-    // Let the MerchantModal component handle its own body class management
 
     // Updated onDelete function to show confirmation dialog
     const onDelete = (merchant) => {
@@ -191,6 +189,8 @@ const ProcurementMerchants = () => {
         setShowAddModal(false);
         setModalMode('add');
         setCurrentMerchantId(null);
+        setSelectedFile(null); // Reset file
+        setPreviewImage(null);
         // Reset form data when closing modal
         setFormData({
             name: '',
@@ -208,17 +208,20 @@ const ProcurementMerchants = () => {
             lastOrderDate: '',
             notes: ''
         });
-        setPreviewImage(null);
     };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            setSelectedFile(file); // Store the actual file
             const reader = new FileReader();
             reader.onload = (e) => {
                 setPreviewImage(e.target.result);
             };
             reader.readAsDataURL(file);
+        } else {
+            setSelectedFile(null);
+            setPreviewImage(null);
         }
     };
 
@@ -265,7 +268,7 @@ const ProcurementMerchants = () => {
                 merchantData.siteId = formData.siteId;
             }
 
-            const response = await procurementService.addMerchant(merchantData);
+            const response = await procurementService.addMerchant(merchantData, selectedFile);
             const newMerchant = response.data || response;
 
             // Add the new merchant to the list
@@ -318,7 +321,7 @@ const ProcurementMerchants = () => {
                 merchantData.siteId = formData.siteId;
             }
 
-            const response = await procurementService.updateMerchant(currentMerchantId, merchantData);
+            const response = await procurementService.updateMerchant(currentMerchantId, merchantData, selectedFile);
             const updatedMerchant = response.data || response;
 
             // Update the merchant in the list
@@ -339,8 +342,23 @@ const ProcurementMerchants = () => {
         }
     };
 
-    // Define columns for DataTable
+    // Define columns for DataTable - Updated with photo column and removed address
     const columns = [
+        {
+            id: 'photo',
+            header: 'Photo',
+            accessor: 'photoUrl',
+            sortable: false,
+            width: '80px',
+            render: (merchant, photoUrl) => (
+                <EmployeeAvatar
+                    photoUrl={photoUrl}
+                    firstName={merchant.name}
+                    lastName=""
+                    size="medium"
+                />
+            )
+        },
         {
             id: 'name',
             header: 'MERCHANT',
@@ -373,15 +391,6 @@ const ProcurementMerchants = () => {
             render: (row, value) => value || '-'
         },
         {
-            id: 'address',
-            header: 'ADDRESS',
-            accessor: 'address',
-            sortable: true,
-            minWidth: '150px',
-            flexWeight: 2,
-            render: (row, value) => value || '-'
-        },
-        {
             id: 'site',
             header: 'SITE',
             accessor: 'site.name',
@@ -410,19 +419,8 @@ const ProcurementMerchants = () => {
         }
     ];
 
-    // Define actions for each row
+    // Define actions for each row - Removed the View action
     const actions = [
-        {
-            label: 'View',
-            icon: (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                </svg>
-            ),
-            onClick: onView,
-            className: 'view'
-        },
         {
             label: 'Edit',
             icon: (
@@ -447,8 +445,6 @@ const ProcurementMerchants = () => {
             className: 'delete'
         }
     ];
-
-    // Remove the old handleRowClick function since we're using the View action now
 
     const handleInfoClick = () => {
         // Add info click functionality here if needed
@@ -480,7 +476,6 @@ const ProcurementMerchants = () => {
                     data={merchants}
                     columns={columns}
                     loading={loading}
-                    // Remove onRowClick since we're using the View action button
                     showSearch={true}
                     showFilters={true}
                     filterableColumns={filterableColumns}
@@ -492,12 +487,15 @@ const ProcurementMerchants = () => {
                     emptyMessage="No merchants found"
                     className="procurement-merchants-datatable"
                     // DataTable's built-in add button
-                    showAddButton={userRole === 'PROCUREMENT'}
+                    showAddButton={userRole === 'PROCUREMENT' || userRole === 'ADMIN'}
                     addButtonText="Add Merchant"
                     addButtonIcon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M12 5v14M5 12h14" />
                     </svg>}
                     onAddClick={handleOpenModal}
+                    // Add row click handler to make rows clickable
+                    onRowClick={handleRowClick}
+                    clickableRows={true}
                 />
             </div>
 
@@ -513,13 +511,6 @@ const ProcurementMerchants = () => {
                 handleCloseModals={handleCloseModals}
                 handleAddMerchant={handleAddMerchant}
                 handleUpdateMerchant={handleUpdateMerchant}
-            />
-
-            {/* Merchant View Modal */}
-            <MerchantViewModal
-                merchant={selectedMerchant}
-                isOpen={showViewModal}
-                onClose={handleCloseViewModal}
             />
 
             {/* Confirmation Dialog for Delete */}
