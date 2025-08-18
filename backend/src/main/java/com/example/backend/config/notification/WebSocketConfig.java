@@ -1,52 +1,51 @@
 package com.example.backend.config.notification;
 
-import com.example.backend.controllers.notification.WebSocketController;
-import com.example.backend.models.user.User;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
-import org.springframework.web.socket.messaging.SessionConnectEvent;
-import org.springframework.web.socket.messaging.SessionDisconnectEvent;
-import org.springframework.web.socket.messaging.SessionSubscribeEvent;
-
-import java.security.Principal;
 
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
+    @Bean
+    public TaskScheduler heartBeatScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(2);
+        scheduler.setThreadNamePrefix("websocket-heartbeat-");
+        scheduler.initialize();
+        return scheduler;
+    }
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Enable a simple message broker for sending messages to clients
-        // "/topic" - for broadcasting to multiple users (like "all users in chat room")
-        // "/queue" - for sending to specific users (like "personal notifications")
-        config.enableSimpleBroker("/topic", "/queue");
+        // Enable simple broker with proper configuration and heartbeat
+        config.enableSimpleBroker("/topic", "/queue")
+                .setHeartbeatValue(new long[]{10000, 10000}) // Server sends every 10s, expects client every 10s
+                .setTaskScheduler(heartBeatScheduler()); // Use our custom scheduler
 
-        // Set prefix for messages FROM client TO server
-        // When client sends message, it must start with "/app"
-        // Example: client sends to "/app/notify" -> goes to @MessageMapping("/notify")
+        // Set application destination prefix
         config.setApplicationDestinationPrefixes("/app");
 
-        // Set prefix for user-specific destinations
-        // Allows sending to specific users like "/user/john/queue/notifications"
+        // Set user destination prefix
         config.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // This is the URL where clients connect to establish WebSocket connection
-        // Your frontend will connect to: ws://localhost:8080/ws
+        // Register STOMP endpoint with proper CORS configuration
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*") // Allow connections from any origin (for development)
-                .withSockJS(); // Enable SockJS fallback for browsers that don't support WebSockets
+                .setAllowedOriginPatterns("http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:*")
+                .withSockJS()
+                .setHeartbeatTime(25000); // SockJS heartbeat (backup to STOMP heartbeat)
 
-        // Alternative endpoint without SockJS (for modern browsers)
+        // Native WebSocket endpoint (without SockJS)
         registry.addEndpoint("/ws-native")
-                .setAllowedOriginPatterns("*");
+                .setAllowedOriginPatterns("http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:*");
     }
 }

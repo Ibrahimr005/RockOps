@@ -16,8 +16,10 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
     const [showViewModal, setShowViewModal] = useState(false);
     const [selectedRequestOrder, setSelectedRequestOrder] = useState(null);
 
+    // Update the handleRowClick function to open the view modal instead of navigating
     const handleRowClick = (row) => {
-        navigate(`/procurement/request-orders/${row.id}`);
+        setSelectedRequestOrder(row);
+        setShowViewModal(true);
     };
 
     const handleViewClick = (row, e) => {
@@ -83,27 +85,7 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
                 </span>
             )
         },
-        {
-            id: 'createdBy',
-            header: 'CREATED BY',
-            accessor: 'createdBy',
-            sortable: true,
-            filterable: true,
-            minWidth: '200px',
-            render: (row) => row.createdBy || '-'
-        },
-        {
-            id: 'createdAt',
-            header: 'CREATED AT',
-            accessor: 'createdAt',
-            sortable: true,
-            minWidth: '200px',
-            render: (row) => (
-                <span className="pro-roa-date-cell">
-                    {new Date(row.createdAt).toLocaleDateString()}
-                </span>
-            )
-        },
+
         {
             id: 'approvedAt',
             header: 'APPROVED AT',
@@ -129,17 +111,7 @@ const ApprovedRequestOrders = ({ onDataChange, requestOrders, loading }) => {
 
     // Define actions for DataTable
     const actions = [
-        {
-            label: 'View',
-            icon: (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                </svg>
-            ),
-            onClick: (row) => handleViewClick(row, { stopPropagation: () => {} }),
-            className: 'view'
-        }
+
     ];
 
     // Define filterable columns
