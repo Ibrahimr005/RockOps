@@ -365,7 +365,7 @@ const ProcurementOffers = () => {
                 lightModeImage={offersImage}
                 darkModeImage={offersImageDark}
                 stats={statsData}
-                onInfoClick={handleInfoClick}
+                icon={false}
             />
 
             {/* Tabs Navigation */}

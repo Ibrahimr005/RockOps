@@ -19,10 +19,13 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
 
     public AuthenticationResponse register(RegisterRequest request) {
-        var user = User.builder().firstName(request.getFirstName()).
-                lastName(request.getLastName()).
-                username(request.getUsername()).
-                password(passwordEncoder.encode(request.getPassword())).role(request.getRole()).build();
+        var user = User.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(request.getRole())
+                .build();
         userRepository.save(user);
         var jwtToken = jwtsService.generateToken(user);
 

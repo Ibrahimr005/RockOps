@@ -43,6 +43,7 @@ import ProcurementOffers from "./pages/procurement/ProcurementOffers/Procurement
 import ProcurementRequestOrderDetails
     from "./pages/procurement/ProcurementRequestOrderDetails/ProcurementRequestOrderDetails.jsx";
 import ProcurementMerchants from "./pages/merchant/MerchantList/ProcurementMerchants.jsx";
+import MerchantDetails from "./pages/merchant/MerchantDetails/MerchantDetails.jsx";
 import ProcurementRequestOrders from "./pages/procurement/ProcurementRequestOrders/ProcurementRequestOrders.jsx";
 import PurchaseOrders from "./pages/procurement/ProcurementPurchaseOrders/PurchaseOrders.jsx";
 import PurchaseOrderDetails
@@ -144,6 +145,8 @@ function App() {
 
                                     {/* Merchant Routes */}
                                     <Route path="/merchants" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN, WAREHOUSE_MANAGER]}><ProcurementMerchants/></RoleRoute>}/>
+                                    <Route path="/merchants/:id" element={<RoleRoute allowedRoles={[ADMIN, PROCUREMENT, SITE_ADMIN, WAREHOUSE_MANAGER]}><MerchantDetails/></RoleRoute>}/>
+
 
 
                                     {/* Procurement Routes */}

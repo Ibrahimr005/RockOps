@@ -353,23 +353,60 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
         setLoading(true);
         try {
             const data = await transactionService.getTransactionsForWarehouse(warehouseId);
-            const pendingData = await Promise.all(
-                data
-                    .filter(transaction =>
-                        transaction.status === "PENDING" &&
-                        (transaction.receiverId === warehouseId || transaction.senderId === warehouseId) &&
-                        transaction.sentFirst === warehouseId
-                    )
-                    .map(async (transaction) => {
-                        const sender = await fetchEntityDetails(transaction.senderType, transaction.senderId);
-                        const receiver = await fetchEntityDetails(transaction.receiverType, transaction.receiverId);
-                        return {
-                            ...transaction,
-                            sender,
-                            receiver
-                        };
-                    })
+
+            // Filter first to reduce work
+            const filteredTransactions = data.filter(transaction =>
+                transaction.status === "PENDING" &&
+                (transaction.receiverId === warehouseId || transaction.senderId === warehouseId) &&
+                transaction.sentFirst === warehouseId
             );
+
+            if (filteredTransactions.length === 0) {
+                setPendingTransactions([]);
+                return;
+            }
+
+            // Collect unique entity IDs to avoid duplicate fetches
+            const entityMap = new Map();
+
+            filteredTransactions.forEach(transaction => {
+                const senderKey = `${transaction.senderType}-${transaction.senderId}`;
+                const receiverKey = `${transaction.receiverType}-${transaction.receiverId}`;
+
+                if (!entityMap.has(senderKey)) {
+                    entityMap.set(senderKey, { type: transaction.senderType, id: transaction.senderId });
+                }
+                if (!entityMap.has(receiverKey)) {
+                    entityMap.set(receiverKey, { type: transaction.receiverType, id: transaction.receiverId });
+                }
+            });
+
+            // Fetch all unique entities in parallel
+            const entityPromises = Array.from(entityMap.entries()).map(async ([key, entity]) => {
+                try {
+                    const details = await fetchEntityDetails(entity.type, entity.id);
+                    return [key, details];
+                } catch (error) {
+                    console.error(`Failed to fetch ${entity.type} ${entity.id}:`, error);
+                    return [key, null];
+                }
+            });
+
+            const entityResults = await Promise.all(entityPromises);
+            const entityCache = new Map(entityResults);
+
+            // Map transactions with cached entity details
+            const pendingData = filteredTransactions.map(transaction => {
+                const senderKey = `${transaction.senderType}-${transaction.senderId}`;
+                const receiverKey = `${transaction.receiverType}-${transaction.receiverId}`;
+
+                return {
+                    ...transaction,
+                    sender: entityCache.get(senderKey),
+                    receiver: entityCache.get(receiverKey)
+                };
+            });
+
             setPendingTransactions(pendingData);
         } catch (error) {
             console.error("Failed to fetch transactions:", error);

@@ -344,6 +344,11 @@ $gray-900: var(--color-text-dark);
     color: var(--section-background-color);
   }
 
+  &.status-finance_partially_accepted {
+    background-color: var(--color-warning-light);
+    color: var(--section-background-color);
+  }
+
   &.status-complete {
     background-color: var(--color-success-light);
     color: var(--section-background-color);
