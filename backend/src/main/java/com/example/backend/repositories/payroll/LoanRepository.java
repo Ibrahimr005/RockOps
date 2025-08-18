@@ -49,4 +49,6 @@ public interface LoanRepository extends JpaRepository<Loan, UUID> {
     BigDecimal getAverageLoanAmount();
 
     List<Loan> findByEmployeeIdAndStatus(UUID id, Loan.LoanStatus loanStatus);
+
+    List<Loan> findByStatus(Loan.LoanStatus loanStatus);
 }

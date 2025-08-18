@@ -384,7 +384,7 @@ public class VacancyService {
                         "Vacancy Update",
                         vacancyTitle + " - " + remaining + " position(s) still available",
                         NotificationType.INFO,
-                        "/vacancies/" + vacancy.getId(),
+                        "hr/vacancies/" + vacancy.getId(),
                         "positions-remaining-" + vacancy.getId()
                 );
             }
@@ -396,7 +396,7 @@ public class VacancyService {
                         "New Hire for " + departmentName,
                         candidateName + " will be joining " + departmentName + " as " + vacancy.getJobPosition().getPositionName(),
                         NotificationType.SUCCESS,
-                        "/employees/onboarding",
+                        "/hr/:id/onboarding",
                         "new-hire-dept-" + candidateId
                 );
             }
@@ -407,7 +407,7 @@ public class VacancyService {
                     "Hiring Process Failed",
                     "Failed to hire candidate: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/candidates/" + candidateId,
+                    "hr/candidates/" + candidateId,
                     "hire-error-" + candidateId
             );
             throw e;
@@ -437,7 +437,7 @@ public class VacancyService {
                         "Candidates Moved to Potential List",
                         candidatesMoved + " candidates have been moved to the potential candidates list",
                         NotificationType.INFO,
-                        "/candidates/potential",
+                        "hr/candidates/potential",
                         "moved-to-potential-" + vacancyId + "-" + candidatesMoved
                 );
             }
@@ -447,7 +447,7 @@ public class VacancyService {
                     "Error Moving Candidates",
                     "Failed to move candidates to potential list: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/candidates",
+                    "hr/candidates",
                     "move-error-" + vacancyId
             );
         }

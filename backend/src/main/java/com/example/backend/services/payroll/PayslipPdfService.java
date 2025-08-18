@@ -24,56 +24,201 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class PayslipPdfService {
-    
+
     @Value("${app.payslip.pdf.storage-path:/opt/payroll/payslips}")
     private String pdfStoragePath;
-    
+
     @Value("${app.company.name:Your Company Name}")
     private String companyName;
-    
+
     @Value("${app.company.address:Company Address}")
     private String companyAddress;
-    
+
     @Value("${app.company.phone:+1-555-0123}")
     private String companyPhone;
-    
+
     @Value("${app.company.email:hr@company.com}")
     private String companyEmail;
-    
+
     /**
      * Generate PDF for payslip
      */
     public String generatePayslipPdf(Payslip payslip) {
         log.info("Generating PDF for payslip ID: {}", payslip.getId());
-        
+
         try {
             // Ensure directory exists
             createDirectoryIfNotExists();
-            
+
             // Generate filename
             String filename = generateFilename(payslip);
             String fullPath = Paths.get(pdfStoragePath, filename).toString();
-            
+
             // Generate PDF content
             String htmlContent = generateHtmlContent(payslip);
-            
+
             // Convert HTML to PDF (using a library like iText, Flying Saucer, or wkhtmltopdf)
             // For this example, I'll create a simple HTML file that can be converted to PDF
             generateHtmlFile(htmlContent, fullPath.replace(".pdf", ".html"));
-            
+
             // In a real implementation, you would use a PDF generation library here
             // For now, we'll simulate PDF generation
             generateSimulatedPdf(htmlContent, fullPath);
-            
+
             log.info("PDF generated successfully: {}", fullPath);
             return fullPath;
-            
+
         } catch (Exception e) {
             log.error("Error generating PDF for payslip {}: {}", payslip.getId(), e.getMessage(), e);
             throw new RuntimeException("Failed to generate payslip PDF", e);
         }
     }
-    
+
+    /**
+     * NEW: Download PDF file as byte array
+     */
+    public byte[] downloadPdf(String pdfPath) {
+        log.info("Downloading PDF from path: {}", pdfPath);
+
+        try {
+            Path filePath = Paths.get(pdfPath);
+
+            // Check if file exists
+            if (!Files.exists(filePath)) {
+                log.error("PDF file not found at path: {}", pdfPath);
+                throw new RuntimeException("PDF file not found: " + pdfPath);
+            }
+
+            // Read file as byte array
+            byte[] pdfBytes = Files.readAllBytes(filePath);
+
+            log.info("PDF downloaded successfully: {} bytes", pdfBytes.length);
+            return pdfBytes;
+
+        } catch (IOException e) {
+            log.error("Error reading PDF file {}: {}", pdfPath, e.getMessage(), e);
+            throw new RuntimeException("Failed to download PDF file", e);
+        }
+    }
+
+    /**
+     * NEW: Get PDF file info
+     */
+    public PdfFileInfo getPdfFileInfo(String pdfPath) {
+        try {
+            Path filePath = Paths.get(pdfPath);
+
+            if (!Files.exists(filePath)) {
+                return null;
+            }
+
+            return PdfFileInfo.builder()
+                    .filePath(pdfPath)
+                    .fileName(filePath.getFileName().toString())
+                    .fileSize(Files.size(filePath))
+                    .lastModified(Files.getLastModifiedTime(filePath).toInstant())
+                    .exists(true)
+                    .build();
+
+        } catch (IOException e) {
+            log.error("Error getting PDF file info for {}: {}", pdfPath, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * NEW: Delete PDF file
+     */
+    public boolean deletePdf(String pdfPath) {
+        log.info("Deleting PDF file: {}", pdfPath);
+
+        try {
+            Path filePath = Paths.get(pdfPath);
+
+            if (Files.exists(filePath)) {
+                Files.delete(filePath);
+                log.info("PDF file deleted successfully: {}", pdfPath);
+                return true;
+            } else {
+                log.warn("PDF file not found for deletion: {}", pdfPath);
+                return false;
+            }
+
+        } catch (IOException e) {
+            log.error("Error deleting PDF file {}: {}", pdfPath, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * NEW: Check if PDF exists
+     */
+    public boolean pdfExists(String pdfPath) {
+        return pdfPath != null && Files.exists(Paths.get(pdfPath));
+    }
+
+    /**
+     * NEW: Get PDF filename from full path
+     */
+    public String extractFilename(String pdfPath) {
+        if (pdfPath == null || pdfPath.isEmpty()) {
+            return null;
+        }
+
+        Path path = Paths.get(pdfPath);
+        return path.getFileName().toString();
+    }
+
+    /**
+     * NEW: Clean up old PDF files (cleanup utility)
+     */
+    public int cleanupOldPdfs(int daysOld) {
+        log.info("Cleaning up PDF files older than {} days", daysOld);
+
+        try {
+            Path directory = Paths.get(pdfStoragePath);
+
+            if (!Files.exists(directory)) {
+                log.warn("PDF storage directory does not exist: {}", pdfStoragePath);
+                return 0;
+            }
+
+            long cutoffTime = System.currentTimeMillis() - (daysOld * 24 * 60 * 60 * 1000L);
+            int deletedCount = 0;
+
+            try (var stream = Files.list(directory)) {
+                var oldFiles = stream
+                        .filter(Files::isRegularFile)
+                        .filter(path -> path.toString().endsWith(".pdf"))
+                        .filter(path -> {
+                            try {
+                                return Files.getLastModifiedTime(path).toMillis() < cutoffTime;
+                            } catch (IOException e) {
+                                return false;
+                            }
+                        })
+                        .toList();
+
+                for (Path oldFile : oldFiles) {
+                    try {
+                        Files.delete(oldFile);
+                        deletedCount++;
+                        log.debug("Deleted old PDF file: {}", oldFile);
+                    } catch (IOException e) {
+                        log.warn("Failed to delete old PDF file {}: {}", oldFile, e.getMessage());
+                    }
+                }
+            }
+
+            log.info("Cleanup completed: {} old PDF files deleted", deletedCount);
+            return deletedCount;
+
+        } catch (IOException e) {
+            log.error("Error during PDF cleanup: {}", e.getMessage());
+            return 0;
+        }
+    }
+
     private void createDirectoryIfNotExists() throws IOException {
         Path directory = Paths.get(pdfStoragePath);
         if (!Files.exists(directory)) {
@@ -81,176 +226,176 @@ public class PayslipPdfService {
             log.info("Created payslip storage directory: {}", pdfStoragePath);
         }
     }
-    
+
     private String generateFilename(Payslip payslip) {
         String employeeName = payslip.getEmployee().getFirstName() + "_" + payslip.getEmployee().getLastName();
         String payPeriod = payslip.getPayPeriodStart().format(DateTimeFormatter.ofPattern("yyyy-MM"));
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        
-        return String.format("payslip_%s_%s_%s.pdf", 
-                employeeName.replaceAll("[^a-zA-Z0-9]", "_"), 
-                payPeriod, 
+
+        return String.format("payslip_%s_%s_%s.pdf",
+                employeeName.replaceAll("[^a-zA-Z0-9]", "_"),
+                payPeriod,
                 timestamp);
     }
-    
+
     private String generateHtmlContent(Payslip payslip) {
         StringBuilder html = new StringBuilder();
-        
+
         html.append("<!DOCTYPE html>\n")
-            .append("<html>\n")
-            .append("<head>\n")
-            .append("    <meta charset=\"UTF-8\">\n")
-            .append("    <title>Payslip</title>\n")
-            .append("    <style>\n")
-            .append(getCssStyles())
-            .append("    </style>\n")
-            .append("</head>\n")
-            .append("<body>\n");
-        
+                .append("<html>\n")
+                .append("<head>\n")
+                .append("    <meta charset=\"UTF-8\">\n")
+                .append("    <title>Payslip</title>\n")
+                .append("    <style>\n")
+                .append(getCssStyles())
+                .append("    </style>\n")
+                .append("</head>\n")
+                .append("<body>\n");
+
         // Header
         html.append("    <div class=\"header\">\n")
-            .append("        <h1>").append(companyName).append("</h1>\n")
-            .append("        <div class=\"company-info\">\n")
-            .append("            <p>").append(companyAddress).append("</p>\n")
-            .append("            <p>Phone: ").append(companyPhone).append(" | Email: ").append(companyEmail).append("</p>\n")
-            .append("        </div>\n")
-            .append("    </div>\n");
-        
+                .append("        <h1>").append(companyName).append("</h1>\n")
+                .append("        <div class=\"company-info\">\n")
+                .append("            <p>").append(companyAddress).append("</p>\n")
+                .append("            <p>Phone: ").append(companyPhone).append(" | Email: ").append(companyEmail).append("</p>\n")
+                .append("        </div>\n")
+                .append("    </div>\n");
+
         // Payslip Title
         html.append("    <div class=\"payslip-title\">\n")
-            .append("        <h2>PAYSLIP</h2>\n")
-            .append("        <p>Pay Period: ").append(formatDate(payslip.getPayPeriodStart()))
-            .append(" to ").append(formatDate(payslip.getPayPeriodEnd())).append("</p>\n")
-            .append("        <p>Pay Date: ").append(formatDate(payslip.getPayDate())).append("</p>\n")
-            .append("    </div>\n");
-        
+                .append("        <h2>PAYSLIP</h2>\n")
+                .append("        <p>Pay Period: ").append(formatDate(payslip.getPayPeriodStart()))
+                .append(" to ").append(formatDate(payslip.getPayPeriodEnd())).append("</p>\n")
+                .append("        <p>Pay Date: ").append(formatDate(payslip.getPayDate())).append("</p>\n")
+                .append("    </div>\n");
+
         // Employee Information
         html.append("    <div class=\"employee-info\">\n")
-            .append("        <h3>Employee Information</h3>\n")
-            .append("        <div class=\"info-grid\">\n")
-            .append("            <div class=\"info-item\">\n")
-            .append("                <label>Name:</label>\n")
-            .append("                <span>").append(payslip.getEmployee().getFirstName())
-            .append(" ").append(payslip.getEmployee().getLastName()).append("</span>\n")
-            .append("            </div>\n")
-            .append("            <div class=\"info-item\">\n")
-            .append("                <label>Employee ID:</label>\n")
-            .append("                <span>").append(payslip.getEmployee().getId()).append("</span>\n")
-            .append("            </div>\n")
-            .append("            <div class=\"info-item\">\n")
-            .append("                <label>Position:</label>\n")
-            .append("                <span>").append(getJobPositionName(payslip)).append("</span>\n")
-            .append("            </div>\n")
-            .append("            <div class=\"info-item\">\n")
-            .append("                <label>Department:</label>\n")
-            .append("                <span>").append(getDepartmentName(payslip)).append("</span>\n")
-            .append("            </div>\n")
-            .append("        </div>\n")
-            .append("    </div>\n");
-        
+                .append("        <h3>Employee Information</h3>\n")
+                .append("        <div class=\"info-grid\">\n")
+                .append("            <div class=\"info-item\">\n")
+                .append("                <label>Name:</label>\n")
+                .append("                <span>").append(payslip.getEmployee().getFirstName())
+                .append(" ").append(payslip.getEmployee().getLastName()).append("</span>\n")
+                .append("            </div>\n")
+                .append("            <div class=\"info-item\">\n")
+                .append("                <label>Employee ID:</label>\n")
+                .append("                <span>").append(payslip.getEmployee().getId()).append("</span>\n")
+                .append("            </div>\n")
+                .append("            <div class=\"info-item\">\n")
+                .append("                <label>Position:</label>\n")
+                .append("                <span>").append(getJobPositionName(payslip)).append("</span>\n")
+                .append("            </div>\n")
+                .append("            <div class=\"info-item\">\n")
+                .append("                <label>Department:</label>\n")
+                .append("                <span>").append(getDepartmentName(payslip)).append("</span>\n")
+                .append("            </div>\n")
+                .append("        </div>\n")
+                .append("    </div>\n");
+
         // Attendance Summary
         html.append("    <div class=\"attendance-summary\">\n")
-            .append("        <h3>Attendance Summary</h3>\n")
-            .append("        <div class=\"info-grid\">\n")
-            .append("            <div class=\"info-item\">\n")
-            .append("                <label>Days Worked:</label>\n")
-            .append("                <span>").append(payslip.getDaysWorked()).append("</span>\n")
-            .append("            </div>\n")
-            .append("            <div class=\"info-item\">\n")
-            .append("                <label>Days Absent:</label>\n")
-            .append("                <span>").append(payslip.getDaysAbsent()).append("</span>\n")
-            .append("            </div>\n")
-            .append("            <div class=\"info-item\">\n")
-            .append("                <label>Overtime Hours:</label>\n")
-            .append("                <span>").append(payslip.getOvertimeHours()).append("</span>\n")
-            .append("            </div>\n")
-            .append("        </div>\n")
-            .append("    </div>\n");
-        
+                .append("        <h3>Attendance Summary</h3>\n")
+                .append("        <div class=\"info-grid\">\n")
+                .append("            <div class=\"info-item\">\n")
+                .append("                <label>Days Worked:</label>\n")
+                .append("                <span>").append(payslip.getDaysWorked()).append("</span>\n")
+                .append("            </div>\n")
+                .append("            <div class=\"info-item\">\n")
+                .append("                <label>Days Absent:</label>\n")
+                .append("                <span>").append(payslip.getDaysAbsent()).append("</span>\n")
+                .append("            </div>\n")
+                .append("            <div class=\"info-item\">\n")
+                .append("                <label>Overtime Hours:</label>\n")
+                .append("                <span>").append(payslip.getOvertimeHours()).append("</span>\n")
+                .append("            </div>\n")
+                .append("        </div>\n")
+                .append("    </div>\n");
+
         // Earnings Table
         html.append("    <div class=\"earnings-section\">\n")
-            .append("        <h3>Earnings</h3>\n")
-            .append("        <table>\n")
-            .append("            <thead>\n")
-            .append("                <tr>\n")
-            .append("                    <th>Description</th>\n")
-            .append("                    <th>Amount</th>\n")
-            .append("                </tr>\n")
-            .append("            </thead>\n")
-            .append("            <tbody>\n")
-            .append("                <tr>\n")
-            .append("                    <td>Base Salary</td>\n")
-            .append("                    <td class=\"amount\">").append(formatCurrency(payslip.getGrossSalary())).append("</td>\n")
-            .append("                </tr>\n");
-        
+                .append("        <h3>Earnings</h3>\n")
+                .append("        <table>\n")
+                .append("            <thead>\n")
+                .append("                <tr>\n")
+                .append("                    <th>Description</th>\n")
+                .append("                    <th>Amount</th>\n")
+                .append("                </tr>\n")
+                .append("            </thead>\n")
+                .append("            <tbody>\n")
+                .append("                <tr>\n")
+                .append("                    <td>Base Salary</td>\n")
+                .append("                    <td class=\"amount\">").append(formatCurrency(payslip.getGrossSalary())).append("</td>\n")
+                .append("                </tr>\n");
+
         // Add other earnings
         if (payslip.getEarnings() != null) {
             for (Earning earning : payslip.getEarnings()) {
                 html.append("                <tr>\n")
-                    .append("                    <td>").append(earning.getDescription()).append("</td>\n")
-                    .append("                    <td class=\"amount\">").append(formatCurrency(earning.getAmount())).append("</td>\n")
-                    .append("                </tr>\n");
+                        .append("                    <td>").append(earning.getDescription()).append("</td>\n")
+                        .append("                    <td class=\"amount\">").append(formatCurrency(earning.getAmount())).append("</td>\n")
+                        .append("                </tr>\n");
             }
         }
-        
+
         html.append("                <tr class=\"total-row\">\n")
-            .append("                    <td><strong>Total Earnings</strong></td>\n")
-            .append("                    <td class=\"amount\"><strong>").append(formatCurrency(payslip.getGrossSalary().add(payslip.getTotalEarnings()))).append("</strong></td>\n")
-            .append("                </tr>\n")
-            .append("            </tbody>\n")
-            .append("        </table>\n")
-            .append("    </div>\n");
-        
+                .append("                    <td><strong>Total Earnings</strong></td>\n")
+                .append("                    <td class=\"amount\"><strong>").append(formatCurrency(payslip.getGrossSalary().add(payslip.getTotalEarnings()))).append("</strong></td>\n")
+                .append("                </tr>\n")
+                .append("            </tbody>\n")
+                .append("        </table>\n")
+                .append("    </div>\n");
+
         // Deductions Table
         html.append("    <div class=\"deductions-section\">\n")
-            .append("        <h3>Deductions</h3>\n")
-            .append("        <table>\n")
-            .append("            <thead>\n")
-            .append("                <tr>\n")
-            .append("                    <th>Description</th>\n")
-            .append("                    <th>Amount</th>\n")
-            .append("                </tr>\n")
-            .append("            </thead>\n")
-            .append("            <tbody>\n");
-        
+                .append("        <h3>Deductions</h3>\n")
+                .append("        <table>\n")
+                .append("            <thead>\n")
+                .append("                <tr>\n")
+                .append("                    <th>Description</th>\n")
+                .append("                    <th>Amount</th>\n")
+                .append("                </tr>\n")
+                .append("            </thead>\n")
+                .append("            <tbody>\n");
+
         if (payslip.getDeductions() != null) {
             for (Deduction deduction : payslip.getDeductions()) {
                 html.append("                <tr>\n")
-                    .append("                    <td>").append(deduction.getDescription()).append("</td>\n")
-                    .append("                    <td class=\"amount\">").append(formatCurrency(deduction.getAmount())).append("</td>\n")
-                    .append("                </tr>\n");
+                        .append("                    <td>").append(deduction.getDescription()).append("</td>\n")
+                        .append("                    <td class=\"amount\">").append(formatCurrency(deduction.getAmount())).append("</td>\n")
+                        .append("                </tr>\n");
             }
         }
-        
+
         html.append("                <tr class=\"total-row\">\n")
-            .append("                    <td><strong>Total Deductions</strong></td>\n")
-            .append("                    <td class=\"amount\"><strong>").append(formatCurrency(payslip.getTotalDeductions())).append("</strong></td>\n")
-            .append("                </tr>\n")
-            .append("            </tbody>\n")
-            .append("        </table>\n")
-            .append("    </div>\n");
-        
+                .append("                    <td><strong>Total Deductions</strong></td>\n")
+                .append("                    <td class=\"amount\"><strong>").append(formatCurrency(payslip.getTotalDeductions())).append("</strong></td>\n")
+                .append("                </tr>\n")
+                .append("            </tbody>\n")
+                .append("        </table>\n")
+                .append("    </div>\n");
+
         // Net Pay Summary
         html.append("    <div class=\"net-pay-summary\">\n")
-            .append("        <h3>Net Pay Summary</h3>\n")
-            .append("        <div class=\"net-pay-amount\">\n")
-            .append("            <label>Net Pay:</label>\n")
-            .append("            <span class=\"net-amount\">").append(formatCurrency(payslip.getNetPay())).append("</span>\n")
-            .append("        </div>\n")
-            .append("    </div>\n");
-        
+                .append("        <h3>Net Pay Summary</h3>\n")
+                .append("        <div class=\"net-pay-amount\">\n")
+                .append("            <label>Net Pay:</label>\n")
+                .append("            <span class=\"net-amount\">").append(formatCurrency(payslip.getNetPay())).append("</span>\n")
+                .append("        </div>\n")
+                .append("    </div>\n");
+
         // Footer
         html.append("    <div class=\"footer\">\n")
-            .append("        <p>This is a computer-generated payslip and does not require a signature.</p>\n")
-            .append("        <p>Generated on: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("</p>\n")
-            .append("    </div>\n");
-        
+                .append("        <p>This is a computer-generated payslip and does not require a signature.</p>\n")
+                .append("        <p>Generated on: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("</p>\n")
+                .append("    </div>\n");
+
         html.append("</body>\n")
-            .append("</html>");
-        
+                .append("</html>");
+
         return html.toString();
     }
-    
+
     private String getCssStyles() {
         return """
                 body {
@@ -376,21 +521,21 @@ public class PayslipPdfService {
                 }
                 """;
     }
-    
+
     private void generateHtmlFile(String htmlContent, String filePath) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(filePath)) {
             fos.write(htmlContent.getBytes());
         }
         log.info("HTML file generated: {}", filePath);
     }
-    
+
     private void generateSimulatedPdf(String htmlContent, String pdfPath) throws IOException {
         // In a real implementation, you would use a library like:
         // 1. iText (commercial license required for commercial use)
         // 2. Flying Saucer + iText
         // 3. wkhtmltopdf (command line tool)
         // 4. Puppeteer with Chrome headless
-        
+
         // For this example, we'll create a placeholder PDF file
         try (FileOutputStream fos = new FileOutputStream(pdfPath)) {
             // Write minimal PDF header (this won't be a valid PDF, just for demonstration)
@@ -429,29 +574,44 @@ public class PayslipPdfService {
                     "startxref\n" +
                     "210\n" +
                     "%%EOF";
-            
+
             fos.write(pdfHeader.getBytes());
         }
-        
+
         log.warn("Generated placeholder PDF file. In production, use a proper PDF generation library.");
     }
-    
+
     private String formatDate(java.time.LocalDate date) {
         return date.format(DateTimeFormatter.ofPattern("MMM dd, yyyy"));
     }
-    
+
     private String formatCurrency(BigDecimal amount) {
         return String.format("$%.2f", amount);
     }
-    
+
     private String getJobPositionName(Payslip payslip) {
-        return payslip.getEmployee().getJobPosition() != null ? 
-               payslip.getEmployee().getJobPosition().getPositionName() : "N/A";
+        return payslip.getEmployee().getJobPosition() != null ?
+                payslip.getEmployee().getJobPosition().getPositionName() : "N/A";
     }
-    
+
     private String getDepartmentName(Payslip payslip) {
-        return payslip.getEmployee().getJobPosition() != null && 
-               payslip.getEmployee().getJobPosition().getDepartment() != null ?
-               payslip.getEmployee().getJobPosition().getDepartment().getName() : "N/A";
+        return payslip.getEmployee().getJobPosition() != null &&
+                payslip.getEmployee().getJobPosition().getDepartment() != null ?
+                payslip.getEmployee().getJobPosition().getDepartment().getName() : "N/A";
+    }
+
+    /**
+     * NEW: PDF File Information DTO
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class PdfFileInfo {
+        private String filePath;
+        private String fileName;
+        private long fileSize;
+        private java.time.Instant lastModified;
+        private boolean exists;
     }
 }

@@ -39,4 +39,7 @@ public class LoanDTO {
     private String rejectedBy;
     private String rejectionReason;
     private LocalDateTime rejectionDate;
+    private LocalDateTime createdAt;
+    private LocalDateTime approvedAt;
+
 }

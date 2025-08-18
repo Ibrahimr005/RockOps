@@ -19,211 +19,82 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RepaymentSchedule {
-
+    public enum ScheduleStatus {
+        PENDING,     // Awaiting payslip processing
+        PAID,        // Processed through payslip
+        OVERDUE,     // Due date passed, not processed
+        DEFERRED,    // Temporarily postponed
+        CANCELLED    // Cancelled (loan cancelled/modified)
+    }
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "loan_id", nullable = false)
-    @JsonBackReference("loan-repayment-schedules")
+    @JsonBackReference
     private Loan loan;
 
-    @Column(nullable = false)
+    @Column(name = "installment_number", nullable = false)
     private Integer installmentNumber;
 
-    @Column(nullable = false)
+    @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
 
-    @Column(nullable = false, precision = 15, scale = 2)
+    @Column(name = "scheduled_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal scheduledAmount;
 
-    @Column(precision = 15, scale = 2)
-    private BigDecimal paidAmount;
+    @Column(name = "principal_amount", precision = 12, scale = 2)
+    private BigDecimal principalAmount;
 
-    private LocalDateTime paymentDate;
+    @Column(name = "interest_amount", precision = 12, scale = 2)
+    private BigDecimal interestAmount;
+
+    @Column(name = "actual_amount", precision = 12, scale = 2)
+    private BigDecimal actualAmount;
+
+    @Column(name = "paid_date")
+    private LocalDate paidDate;
+
+    /**
+     * NEW: Link to payslip where this repayment was processed
+     * Ensures traceability between loan repayments and payslips
+     */
+    @Column(name = "payslip_id")
+    private UUID payslipId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RepaymentStatus status;
 
-    private String paymentMethod;
-
-    private String transactionReference;
-
+    @Column(name = "notes")
     private String notes;
 
-    @Column(nullable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    /**
+     * ENHANCED: Repayment schedule status
+     * Aligns with payslip-only processing
+     * RENAMED to RepaymentStatus to match existing Loan model references
+     */
     public enum RepaymentStatus {
-        PENDING,
-        PAID,
-        OVERDUE,
-        PARTIAL,
-        CANCELLED
+        PENDING,     // Awaiting payslip processing
+        PAID,        // Processed through payslip
+        OVERDUE,     // Due date passed, not processed
+        DEFERRED,    // Temporarily postponed
+        CANCELLED    // Cancelled (loan cancelled/modified)
     }
 
-    // Helper methods
-
-    /**
-     * Check if this repayment is overdue
-     * @return true if due date has passed and not paid
-     */
-    public boolean isOverdue() {
-        return dueDate.isBefore(LocalDate.now()) &&
-                (status == RepaymentStatus.PENDING || status == RepaymentStatus.PARTIAL);
-    }
-
-    /**
-     * Check if this repayment is partially paid
-     * @return true if some amount has been paid but not the full amount
-     */
-    public boolean isPartiallyPaid() {
-        return paidAmount != null &&
-                paidAmount.compareTo(BigDecimal.ZERO) > 0 &&
-                paidAmount.compareTo(scheduledAmount) < 0;
-    }
-
-    /**
-     * Check if this repayment is fully paid
-     * @return true if paid amount equals or exceeds scheduled amount
-     */
-    public boolean isFullyPaid() {
-        return paidAmount != null &&
-                paidAmount.compareTo(scheduledAmount) >= 0 &&
-                status == RepaymentStatus.PAID;
-    }
-
-    /**
-     * Get the remaining amount to be paid
-     * @return remaining amount (scheduled - paid)
-     */
-    public BigDecimal getRemainingAmount() {
-        if (paidAmount == null) {
-            return scheduledAmount;
-        }
-        BigDecimal remaining = scheduledAmount.subtract(paidAmount);
-        return remaining.compareTo(BigDecimal.ZERO) > 0 ? remaining : BigDecimal.ZERO;
-    }
-
-    /**
-     * Calculate days overdue
-     * @return number of days overdue (0 if not overdue)
-     */
-    public long getDaysOverdue() {
-        if (!isOverdue()) {
-            return 0;
-        }
-        return java.time.temporal.ChronoUnit.DAYS.between(dueDate, LocalDate.now());
-    }
-
-    /**
-     * Get payment completion percentage
-     * @return percentage of payment completed (0-100)
-     */
-    public BigDecimal getPaymentCompletionPercentage() {
-        if (paidAmount == null || scheduledAmount.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
-        return paidAmount.divide(scheduledAmount, 4, java.math.RoundingMode.HALF_UP)
-                .multiply(BigDecimal.valueOf(100));
-    }
-
-    /**
-     * Check if payment is due within specified days
-     * @param days number of days to check
-     * @return true if due within specified days
-     */
-    public boolean isDueWithinDays(int days) {
-        LocalDate cutoffDate = LocalDate.now().plusDays(days);
-        return dueDate.isAfter(LocalDate.now()) && dueDate.isBefore(cutoffDate.plusDays(1));
-    }
-
-    /**
-     * Process a payment for this repayment schedule
-     * @param amount amount being paid
-     * @param paymentMethod method of payment
-     * @param transactionRef transaction reference
-     */
-    public void processPayment(BigDecimal amount, String paymentMethod, String transactionRef) {
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Payment amount must be positive");
-        }
-
-        if (this.paidAmount == null) {
-            this.paidAmount = BigDecimal.ZERO;
-        }
-
-        // Add to existing paid amount
-        this.paidAmount = this.paidAmount.add(amount);
-        this.paymentMethod = paymentMethod;
-        this.transactionReference = transactionRef;
-        this.paymentDate = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-
-        // Update status based on payment
-        if (this.paidAmount.compareTo(this.scheduledAmount) >= 0) {
-            this.status = RepaymentStatus.PAID;
-        } else {
-            this.status = RepaymentStatus.PARTIAL;
-        }
-    }
-
-    /**
-     * Mark as overdue
-     */
-    public void markAsOverdue() {
-        if (status == RepaymentStatus.PENDING || status == RepaymentStatus.PARTIAL) {
-            this.status = RepaymentStatus.OVERDUE;
-            this.updatedAt = LocalDateTime.now();
-        }
-    }
-
-    /**
-     * Cancel this repayment schedule
-     */
-    public void cancel() {
-        this.status = RepaymentStatus.CANCELLED;
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Get a human-readable description of this repayment
-     * @return description string
-     */
-    public String getDescription() {
-        return String.format("Installment %d of %d - Due: %s - Amount: $%.2f",
-                installmentNumber,
-                loan != null ? loan.getTotalInstallments() : 0,
-                dueDate,
-                scheduledAmount);
-    }
-
-    /**
-     * Check if this repayment can be processed (not already paid or cancelled)
-     * @return true if can be processed
-     */
-    public boolean canBeProcessed() {
-        return status != RepaymentStatus.PAID && status != RepaymentStatus.CANCELLED;
-    }
-
-    // JPA lifecycle callbacks
     @PrePersist
     protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
-        }
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
         if (status == null) {
             status = RepaymentStatus.PENDING;
-        }
-        if (paidAmount == null) {
-            paidAmount = BigDecimal.ZERO;
         }
     }
 
@@ -231,4 +102,113 @@ public class RepaymentSchedule {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    /**
+     * NEW: Check if repayment is due within payslip period
+     */
+    public boolean isDueInPeriod(LocalDate periodStart, LocalDate periodEnd) {
+        return dueDate != null &&
+                !dueDate.isBefore(periodStart) &&
+                !dueDate.isAfter(periodEnd);
+    }
+
+    /**
+     * NEW: Check if repayment was processed in payslip
+     */
+    public boolean isProcessedInPayslip() {
+        return payslipId != null && status.equals(ScheduleStatus.PAID);
+    }
+
+    /**
+     * Check if repayment is overdue
+     */
+    public boolean isOverdue() {
+        return status == RepaymentStatus.PENDING &&
+                dueDate != null &&
+                dueDate.isBefore(LocalDate.now());
+    }
+
+    /**
+     * Get payment variance (difference between scheduled and actual)
+     */
+    public BigDecimal getPaymentVariance() {
+        if (actualAmount == null || scheduledAmount == null) {
+            return BigDecimal.ZERO;
+        }
+        return actualAmount.subtract(scheduledAmount);
+    }
+
+    /**
+     * Check if payment has variance
+     */
+    public boolean hasPaymentVariance() {
+        return getPaymentVariance().compareTo(BigDecimal.ZERO) != 0;
+    }
+
+    /**
+     * Get remaining principal after this payment
+     */
+    public BigDecimal getRemainingPrincipalAfterPayment() {
+        if (loan == null || principalAmount == null) {
+            return BigDecimal.ZERO;
+        }
+
+        // This would need to be calculated based on loan balance
+        // and previous payments - simplified here
+        return loan.getRemainingBalance().subtract(principalAmount);
+    }
+
+    /**
+     * Mark as paid through payslip
+     */
+    public void markAsPaidThroughPayslip(UUID payslipId, BigDecimal actualAmount, LocalDate paidDate) {
+        this.payslipId = payslipId;
+        this.actualAmount = actualAmount;
+        this.paidDate = paidDate;
+        this.status = RepaymentStatus.PAID;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * Mark as overdue
+     */
+    public void markAsOverdue() {
+        if (this.status == RepaymentStatus.PENDING && isOverdue()) {
+            this.status = RepaymentStatus.OVERDUE;
+            this.updatedAt = LocalDateTime.now();
+        }
+    }
+
+    /**
+     * Check if this repayment can be processed in current payslip period
+     */
+    public boolean canBeProcessedInPeriod(LocalDate payslipStart, LocalDate payslipEnd) {
+        return status == RepaymentStatus.PENDING &&
+                isDueInPeriod(payslipStart, payslipEnd) &&
+                loan != null &&
+                loan.getStatus() == Loan.LoanStatus.ACTIVE;
+    }
+
+    /**
+     * Get description for payslip deduction
+     */
+    public String getDeductionDescription() {
+        StringBuilder description = new StringBuilder();
+        description.append("Loan Repayment");
+
+        if (installmentNumber != null) {
+            description.append(" - Installment #").append(installmentNumber);
+
+            if (loan != null && loan.getTotalInstallments() != null) {
+                description.append("/").append(loan.getTotalInstallments());
+            }
+        }
+
+        if (dueDate != null) {
+            description.append(" (Due: ").append(dueDate).append(")");
+        }
+
+        return description.toString();
+    }
+
 }

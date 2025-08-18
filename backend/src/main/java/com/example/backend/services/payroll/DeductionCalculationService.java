@@ -13,7 +13,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,42 +26,148 @@ public class DeductionCalculationService {
     private final EmployeeDeductionRepository employeeDeductionRepository;
     private final LoanService loanService;
 
+    // Maximum deduction percentage of gross salary
+    private static final BigDecimal MAX_DEDUCTION_PERCENTAGE = new BigDecimal("0.50"); // 50%
+
     /**
-     * Calculate all deductions for an employee
+     * Calculate all deductions for an employee - ENHANCED VERSION
+     * Merges manual and automatic deductions with 50% gross salary limit
      */
     public List<Deduction> calculateDeductions(Employee employee, BigDecimal grossSalary,
                                                AttendanceData attendanceData,
                                                LocalDate payPeriodStart, LocalDate payPeriodEnd) {
-        List<Deduction> deductions = new ArrayList<>();
+        List<Deduction> allDeductions = new ArrayList<>();
 
         try {
             log.info("Calculating deductions for employee: {} for period: {} to {}",
                     employee.getFullName(), payPeriodStart, payPeriodEnd);
 
-            // Calculate mandatory deductions
-            deductions.addAll(calculateMandatoryDeductions(employee, grossSalary));
+            // 1. Calculate mandatory deductions (taxes, social security)
+            allDeductions.addAll(calculateMandatoryDeductions(employee, grossSalary));
 
-            // Calculate employee-specific deductions
-            deductions.addAll(calculateEmployeeSpecificDeductions(employee, grossSalary, payPeriodStart));
+            // 2. Calculate employee-specific manual deductions
+            allDeductions.addAll(calculateEmployeeSpecificDeductions(employee, grossSalary, payPeriodStart));
 
-            // Calculate attendance-based deductions
+            // 3. Calculate attendance-based deductions (late penalties, absences)
             if (attendanceData != null) {
-                deductions.addAll(calculateAttendanceDeductions(employee, attendanceData, grossSalary));
+                allDeductions.addAll(calculateAttendanceDeductions(employee, attendanceData, grossSalary));
             }
 
-            // Calculate loan repayment deductions
-            deductions.addAll(calculateLoanRepaymentDeductions(employee, payPeriodStart, payPeriodEnd));
+            // 4. Calculate loan repayment deductions (NEW: only for payslip period)
+            allDeductions.addAll(calculateLoanRepaymentDeductions(employee, payPeriodStart, payPeriodEnd));
 
-            log.info("Total deductions calculated: {} for employee: {}", deductions.size(), employee.getFullName());
+            // 5. Enforce maximum deduction limit (50% of gross salary)
+            allDeductions = enforceMaximumDeductionLimit(allDeductions, grossSalary);
+
+            log.info("Total deductions calculated: {} for employee: {} (Total: ${})",
+                    allDeductions.size(), employee.getFullName(),
+                    getTotalDeductionAmount(allDeductions));
 
         } catch (Exception e) {
             log.error("Error calculating deductions for employee {}: {}", employee.getFullName(), e.getMessage(), e);
             throw new RuntimeException("Failed to calculate deductions for employee: " + employee.getFullName(), e);
         }
 
-        return deductions;
+        return allDeductions;
     }
 
+    /**
+     * ENHANCED: Enforce 50% maximum deduction limit with prioritization
+     */
+    private List<Deduction> enforceMaximumDeductionLimit(List<Deduction> deductions, BigDecimal grossSalary) {
+        BigDecimal maxAllowed = grossSalary.multiply(MAX_DEDUCTION_PERCENTAGE);
+        BigDecimal totalDeductions = getTotalDeductionAmount(deductions);
+
+        if (totalDeductions.compareTo(maxAllowed) <= 0) {
+            log.debug("Total deductions ${} within limit ${}", totalDeductions, maxAllowed);
+            return deductions; // Within limit, return as-is
+        }
+
+        log.warn("Total deductions ${} exceed limit ${}. Applying prioritization.", totalDeductions, maxAllowed);
+
+        // Prioritize deductions: mandatory > loans > attendance > manual
+        List<Deduction> prioritizedDeductions = prioritizeDeductions(deductions);
+        List<Deduction> finalDeductions = new ArrayList<>();
+        BigDecimal runningTotal = BigDecimal.ZERO;
+
+        for (Deduction deduction : prioritizedDeductions) {
+            if (runningTotal.add(deduction.getAmount()).compareTo(maxAllowed) <= 0) {
+                finalDeductions.add(deduction);
+                runningTotal = runningTotal.add(deduction.getAmount());
+            } else {
+                // Check if we can partially include this deduction
+                BigDecimal remainingLimit = maxAllowed.subtract(runningTotal);
+                if (remainingLimit.compareTo(BigDecimal.ZERO) > 0 && isPartiallyApplicable(deduction)) {
+                    // Apply partial deduction
+                    Deduction partialDeduction = createPartialDeduction(deduction, remainingLimit);
+                    finalDeductions.add(partialDeduction);
+                    break; // Limit reached
+                }
+                // Deduction deferred due to limit
+                log.warn("Deduction deferred due to 50% limit: {} - ${}",
+                        deduction.getDescription(), deduction.getAmount());
+            }
+        }
+
+        return finalDeductions;
+    }
+
+    /**
+     * Prioritize deductions based on type importance
+     */
+    private List<Deduction> prioritizeDeductions(List<Deduction> deductions) {
+        return deductions.stream()
+                .sorted(Comparator.comparing(this::getDeductionPriority))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get priority order for deductions (lower number = higher priority)
+     */
+    private int getDeductionPriority(Deduction deduction) {
+        if (deduction.getDeductionType() != null) {
+            switch (deduction.getDeductionType().getType()) {
+                case TAX:
+                case SOCIAL_INSURANCE:
+                    return 1; // Highest priority - mandatory
+                case LOAN_REPAYMENT:
+                    return 2; // High priority - contractual obligation
+                case ATTENDANCE_PENALTY:
+                    return 3; // Medium priority - attendance-based
+                case ADVANCE:
+                case CUSTOM:
+                default:
+                    return 4; // Lower priority - discretionary
+            }
+        }
+        return 5; // Unknown type, lowest priority
+    }
+
+    /**
+     * Check if deduction can be partially applied
+     */
+    private boolean isPartiallyApplicable(Deduction deduction) {
+        // Only manual/custom deductions can be partially applied
+        return deduction.getDeductionType() != null &&
+                (deduction.getDeductionType().getType() == DeductionType.DeductionTypeEnum.CUSTOM ||
+                        deduction.getDeductionType().getType() == DeductionType.DeductionTypeEnum.ADVANCE);
+    }
+
+    /**
+     * Create partial deduction with reduced amount
+     */
+    private Deduction createPartialDeduction(Deduction original, BigDecimal maxAmount) {
+        return Deduction.builder()
+                .deductionType(original.getDeductionType())
+                .description(original.getDescription() + " (Partial)")
+                .amount(maxAmount)
+                .isPreTax(original.getIsPreTax())
+                .build();
+    }
+
+    /**
+     * Calculate mandatory deductions (taxes, social security, etc.)
+     */
     private List<Deduction> calculateMandatoryDeductions(Employee employee, BigDecimal grossSalary) {
         List<Deduction> deductions = new ArrayList<>();
 
@@ -85,6 +193,9 @@ public class DeductionCalculationService {
         return deductions;
     }
 
+    /**
+     * Calculate employee-specific manual deductions
+     */
     private List<Deduction> calculateEmployeeSpecificDeductions(Employee employee, BigDecimal grossSalary, LocalDate payDate) {
         List<Deduction> deductions = new ArrayList<>();
 
@@ -98,7 +209,7 @@ public class DeductionCalculationService {
                 if (amount.compareTo(BigDecimal.ZERO) > 0) {
                     deductions.add(Deduction.builder()
                             .deductionType(employeeDeduction.getDeductionType())
-                            .description(employeeDeduction.getDeductionType().getName())
+                            .description(buildEmployeeDeductionDescription(employeeDeduction))
                             .amount(amount)
                             .isPreTax(employeeDeduction.getDeductionType().getType() == DeductionType.DeductionTypeEnum.TAX)
                             .build());
@@ -111,6 +222,9 @@ public class DeductionCalculationService {
         return deductions;
     }
 
+    /**
+     * Calculate attendance-based deductions (late penalties, absences)
+     */
     private List<Deduction> calculateAttendanceDeductions(Employee employee, AttendanceData attendanceData, BigDecimal grossSalary) {
         List<Deduction> deductions = new ArrayList<>();
 
@@ -146,8 +260,8 @@ public class DeductionCalculationService {
     }
 
     /**
-     * Calculate loan repayment deductions for the pay period
-     * ENHANCED VERSION with better error handling and validation
+     * ENHANCED: Calculate loan repayment deductions - only for payslip period
+     * NEW: Loan repayments only deducted when payslip covers repayment date
      */
     private List<Deduction> calculateLoanRepaymentDeductions(Employee employee, LocalDate payPeriodStart, LocalDate payPeriodEnd) {
         List<Deduction> deductions = new ArrayList<>();
@@ -167,7 +281,7 @@ public class DeductionCalculationService {
                 return deductions;
             }
 
-            // Get due loan repayments for this period
+            // Get ONLY repayments due within this exact payslip period
             List<RepaymentSchedule> dueRepayments = loanService.getDueRepaymentsForEmployee(
                     employee.getId(), payPeriodStart, payPeriodEnd);
 
@@ -179,24 +293,30 @@ public class DeductionCalculationService {
 
             log.info("Found {} due loan repayments for employee: {}", dueRepayments.size(), employee.getFullName());
 
-            // Create deductions for each due repayment
+            // Create deductions for each due repayment within the payslip period
             for (RepaymentSchedule repayment : dueRepayments) {
                 try {
-                    if (repayment.getScheduledAmount() != null && repayment.getScheduledAmount().compareTo(BigDecimal.ZERO) > 0) {
+                    // NEW: Only include if repayment due date falls within payslip period
+                    if (isRepaymentDueInPeriod(repayment, payPeriodStart, payPeriodEnd)) {
+                        if (repayment.getScheduledAmount() != null && repayment.getScheduledAmount().compareTo(BigDecimal.ZERO) > 0) {
 
-                        // Build loan description with loan details
-                        String loanDescription = buildLoanDeductionDescription(repayment);
+                            String loanDescription = buildLoanDeductionDescription(repayment);
 
-                        Deduction loanDeduction = Deduction.builder()
-                                .description(loanDescription)
-                                .amount(repayment.getScheduledAmount())
-                                .isPreTax(false) // Loan repayments are post-tax deductions
-                                .build();
+                            Deduction loanDeduction = Deduction.builder()
+                                    .deductionType(getLoanRepaymentDeductionType())
+                                    .description(loanDescription)
+                                    .amount(repayment.getScheduledAmount())
+                                    .isPreTax(false) // Loan repayments are post-tax deductions
+                                    .build();
 
-                        deductions.add(loanDeduction);
+                            deductions.add(loanDeduction);
 
-                        log.debug("Added loan deduction: {} - Amount: ${}",
-                                loanDescription, repayment.getScheduledAmount());
+                            log.debug("Added loan deduction: {} - Amount: ${}",
+                                    loanDescription, repayment.getScheduledAmount());
+                        }
+                    } else {
+                        log.debug("Loan repayment due {} is outside payslip period {} to {}, skipping",
+                                repayment.getDueDate(), payPeriodStart, payPeriodEnd);
                     }
                 } catch (Exception e) {
                     log.error("Error processing loan repayment {}: {}", repayment.getId(), e.getMessage());
@@ -217,7 +337,37 @@ public class DeductionCalculationService {
     }
 
     /**
-     * Build a descriptive deduction description for loan repayments
+     * NEW: Check if repayment due date falls within payslip period
+     */
+    private boolean isRepaymentDueInPeriod(RepaymentSchedule repayment, LocalDate periodStart, LocalDate periodEnd) {
+        LocalDate dueDate = repayment.getDueDate();
+        return dueDate != null &&
+                !dueDate.isBefore(periodStart) &&
+                !dueDate.isAfter(periodEnd);
+    }
+
+    /**
+     * Get or create loan repayment deduction type
+     */
+    private DeductionType getLoanRepaymentDeductionType() {
+        DeductionType loanType = deductionTypeRepository.findByNameIgnoreCase("Loan Repayment");
+        if (loanType == null) {
+            // Create default loan repayment type if not exists
+            loanType = DeductionType.builder()
+                    .name("Loan Repayment")
+                    .type(DeductionType.DeductionTypeEnum.LOAN_REPAYMENT)
+                    .isPercentage(false)
+                    .isMandatory(false)
+                    .isActive(true)
+                    .description("Employee loan repayment deduction")
+                    .build();
+            loanType = deductionTypeRepository.save(loanType);
+        }
+        return loanType;
+    }
+
+    /**
+     * Build descriptive deduction description for loan repayments
      */
     private String buildLoanDeductionDescription(RepaymentSchedule repayment) {
         try {
@@ -249,7 +399,24 @@ public class DeductionCalculationService {
     }
 
     /**
-     * Get total loan deductions amount for an employee in a period
+     * Build description for employee-specific deductions
+     */
+    private String buildEmployeeDeductionDescription(EmployeeDeduction employeeDeduction) {
+        StringBuilder description = new StringBuilder();
+        description.append(employeeDeduction.getDeductionType().getName());
+
+        // Add custom details if applicable
+        if (employeeDeduction.getCustomAmount() != null) {
+            description.append(" (Custom Amount)");
+        } else if (employeeDeduction.getCustomPercentage() != null) {
+            description.append(" (").append(employeeDeduction.getCustomPercentage()).append("%)");
+        }
+
+        return description.toString();
+    }
+
+    /**
+     * ENHANCED: Get total loan deductions amount for an employee in a period
      */
     public BigDecimal getTotalLoanDeductionsForPeriod(Employee employee, LocalDate payPeriodStart, LocalDate payPeriodEnd) {
         try {
@@ -266,7 +433,7 @@ public class DeductionCalculationService {
     }
 
     /**
-     * Check if employee can afford loan deductions based on salary
+     * ENHANCED: Check if employee can afford loan deductions based on salary
      */
     public boolean canAffordLoanDeductions(Employee employee, BigDecimal grossSalary,
                                            LocalDate payPeriodStart, LocalDate payPeriodEnd) {
@@ -274,7 +441,7 @@ public class DeductionCalculationService {
             BigDecimal totalLoanDeductions = getTotalLoanDeductionsForPeriod(employee, payPeriodStart, payPeriodEnd);
 
             // Ensure loan deductions don't exceed 50% of gross salary (business rule)
-            BigDecimal maxAllowedDeduction = grossSalary.multiply(new BigDecimal("0.50"));
+            BigDecimal maxAllowedDeduction = grossSalary.multiply(MAX_DEDUCTION_PERCENTAGE);
 
             return totalLoanDeductions.compareTo(maxAllowedDeduction) <= 0;
 
@@ -294,9 +461,7 @@ public class DeductionCalculationService {
 
         try {
             List<Deduction> loanDeductions = calculateLoanRepaymentDeductions(employee, payPeriodStart, payPeriodEnd);
-            BigDecimal totalAmount = loanDeductions.stream()
-                    .map(Deduction::getAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal totalAmount = getTotalDeductionAmount(loanDeductions);
 
             summary.put("totalLoanDeductions", loanDeductions.size());
             summary.put("totalAmount", totalAmount);
@@ -314,7 +479,16 @@ public class DeductionCalculationService {
         return summary;
     }
 
-    // Existing helper methods remain the same
+    /**
+     * Get total amount of all deductions
+     */
+    private BigDecimal getTotalDeductionAmount(List<Deduction> deductions) {
+        return deductions.stream()
+                .map(Deduction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    // Helper calculation methods
     private BigDecimal calculateDeductionAmount(DeductionType deductionType, BigDecimal grossSalary) {
         if (deductionType.getIsPercentage()) {
             return grossSalary.multiply(deductionType.getPercentageRate().divide(BigDecimal.valueOf(100)))
