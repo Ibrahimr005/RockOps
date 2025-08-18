@@ -35,7 +35,7 @@ import {
     FaTags,
     FaListAlt,
     FaArrowLeft,
-    FaBook, FaBalanceScale, FaReceipt, FaPiggyBank, FaFileAlt, FaMoneyBillWave, FaChartBar, FaArrowUp,
+    FaBook, FaBalanceScale, FaReceipt, FaPiggyBank, FaFileAlt, FaMoneyBillWave, FaChartBar, FaArrowUp, FaMinusCircle,
 } from 'react-icons/fa';
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE } from '../../../utils/roles';
 
@@ -343,6 +343,7 @@ const Sidebar = () => {
                 },
             ]
         },
+
         {
             title: 'Payroll',
             icon: <FaMoneyBillWave/>,
@@ -357,25 +358,32 @@ const Sidebar = () => {
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
-                    title: 'Payslips',
+                    title: 'Payslip Management',
                     icon: <FaReceipt/>,
                     path: '/payroll/payslips',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
-                    title: 'Loans',
+                    title: 'Deduction Management',
+                    icon: <FaMinusCircle/>, // You'll need to import this
+                    path: '/payroll/deductions',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                },
+                {
+                    title: 'Loan Management',
                     icon: <FaPiggyBank/>,
                     path: '/payroll/loans',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
                 {
-                    title: 'Reports',
+                    title: 'Reports & History',
                     icon: <FaFileAlt/>,
                     path: '/payroll/reports',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
             ]
         },
+
         {
             title: 'Finance',
             icon: <FaFileInvoiceDollar/>,

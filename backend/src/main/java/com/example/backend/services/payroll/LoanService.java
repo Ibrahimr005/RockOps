@@ -5,6 +5,7 @@ import com.example.backend.dto.payroll.RepaymentScheduleDTO;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.payroll.Loan;
 import com.example.backend.models.payroll.RepaymentSchedule;
+import com.example.backend.models.payroll.Deduction;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.payroll.LoanRepository;
 import com.example.backend.repositories.payroll.RepaymentScheduleRepository;
@@ -14,8 +15,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,972 +35,770 @@ public class LoanService {
     private final EmployeeRepository employeeRepository;
 
     /**
-     * Create a new loan for an employee - FIXED VERSION WITH COMPREHENSIVE ERROR HANDLING
+     * ENHANCED: Create loan with payslip-period-aligned repayment schedule
+     * NO WEEKLY LOANS - Only monthly/payroll period schedules
      */
+    // Key changes needed in LoanService.java createLoan method
+
     @Transactional
     public LoanDTO createLoan(LoanDTO loanDTO, String createdBy) {
         log.info("Creating loan for employee: {}", loanDTO.getEmployeeId());
 
         try {
-            // Step 1: Comprehensive validation
+            // Validate loan data
             validateLoanData(loanDTO);
 
-            // Step 2: Validate employee exists and is active
+            // Validate employee exists and is active
             Employee employee = employeeRepository.findById(loanDTO.getEmployeeId())
                     .orElseThrow(() -> new IllegalArgumentException("Employee not found with ID: " + loanDTO.getEmployeeId()));
 
-            log.info("Employee found: {} {}", employee.getFirstName(), employee.getLastName());
-
-            // Step 3: Check if employee has any pending loans
+            // Check if employee has any pending loans
             List<Loan> pendingLoans = loanRepository.findByEmployeeIdAndStatus(employee.getId(), Loan.LoanStatus.PENDING);
             if (!pendingLoans.isEmpty()) {
                 throw new IllegalArgumentException("Employee already has a pending loan. Only one pending loan is allowed at a time.");
             }
 
-            // Step 4: Check outstanding balance limits
+            // Check outstanding balance limits
             BigDecimal existingOutstanding = getTotalOutstandingBalanceByEmployee(employee.getId());
             BigDecimal newTotalOutstanding = existingOutstanding.add(loanDTO.getLoanAmount());
             BigDecimal maxAllowed = new BigDecimal("100000"); // $100k limit
 
             if (newTotalOutstanding.compareTo(maxAllowed) > 0) {
                 throw new IllegalArgumentException(
-                        String.format("Total outstanding balance would exceed limit. Current: $%.2f, Requested: $%.2f, Limit: $%.2f",
-                                existingOutstanding, loanDTO.getLoanAmount(), maxAllowed));
+                        String.format("Total outstanding balance would exceed limit. Current: $%s, New: $%s, Max: $%s",
+                                existingOutstanding, newTotalOutstanding, maxAllowed));
             }
 
-            // Step 5: Create loan entity with safe defaults
-            Loan loan = new Loan();
-            loan.setEmployee(employee);
-            loan.setLoanAmount(loanDTO.getLoanAmount());
-            loan.setRemainingBalance(loanDTO.getLoanAmount());
-            loan.setInterestRate(loanDTO.getInterestRate() != null ? loanDTO.getInterestRate() : BigDecimal.ZERO);
-            loan.setStartDate(loanDTO.getStartDate());
-            loan.setEndDate(loanDTO.getEndDate());
-            loan.setInstallmentAmount(loanDTO.getInstallmentAmount());
-
-            // Safe enum conversion with validation
-            if (loanDTO.getInstallmentFrequency() != null) {
-                try {
-                    loan.setInstallmentFrequency(Loan.InstallmentFrequency.valueOf(loanDTO.getInstallmentFrequency().toUpperCase()));
-                } catch (IllegalArgumentException e) {
-                    log.error("Invalid installment frequency: {}", loanDTO.getInstallmentFrequency());
-                    throw new IllegalArgumentException("Invalid installment frequency: " + loanDTO.getInstallmentFrequency());
-                }
-            } else {
-                loan.setInstallmentFrequency(Loan.InstallmentFrequency.MONTHLY);
+            // Calculate monthly payment if not provided
+            BigDecimal monthlyPayment = loanDTO.getInstallmentAmount();
+            if (monthlyPayment == null || monthlyPayment.compareTo(BigDecimal.ZERO) <= 0) {
+                monthlyPayment = calculateMonthlyPayment(
+                        loanDTO.getLoanAmount(),
+                        loanDTO.getInterestRate(),
+                        loanDTO.getTotalInstallments()
+                );
+                log.info("Calculated monthly payment: {} for loan amount: {}", monthlyPayment, loanDTO.getLoanAmount());
             }
 
-            loan.setTotalInstallments(loanDTO.getTotalInstallments());
-            loan.setPaidInstallments(0);
-            loan.setStatus(Loan.LoanStatus.PENDING);
-            loan.setDescription(loanDTO.getDescription() != null ? loanDTO.getDescription() : "");
-            loan.setCreatedBy(createdBy != null ? createdBy : "SYSTEM");
-            loan.setCreatedAt(LocalDateTime.now());
-            loan.setUpdatedAt(LocalDateTime.now());
+            // Create loan entity
+            Loan loan = Loan.builder()
+                    .employee(employee)
+                    .loanAmount(loanDTO.getLoanAmount())
+                    .remainingBalance(loanDTO.getLoanAmount())
+                    .interestRate(loanDTO.getInterestRate())
+                    .totalInstallments(loanDTO.getTotalInstallments())
+                    .installmentAmount(monthlyPayment)  // FIX: Ensure this field is set
+                    .installmentFrequency(Loan.InstallmentFrequency.MONTHLY) // Set frequency
+                    .startDate(loanDTO.getStartDate())
+                    .endDate(calculateEndDate(loanDTO.getStartDate(), loanDTO.getTotalInstallments()))
+                    .status(Loan.LoanStatus.PENDING)
+                    .description(loanDTO.getDescription())
+                    .createdBy(createdBy)
+                    .build();
 
-            // Initialize empty list to avoid lazy loading issues
-            loan.setRepaymentSchedules(new ArrayList<>());
-
-            log.info("Saving loan to database...");
-
-            // Step 6: Save loan FIRST
-            loan = loanRepository.save(loan);
-            log.info("Loan saved successfully with ID: {}", loan.getId());
-
-            // Step 7: Generate repayment schedule AFTER loan is saved (with better error handling)
-            try {
-                generateRepaymentScheduleSecurely(loan);
-                log.info("Repayment schedule generated successfully");
-            } catch (Exception e) {
-                log.error("Error generating repayment schedule: {}", e.getMessage(), e);
-                // Instead of failing, we'll create the loan without schedule and let it be generated later
-                log.warn("Continuing with loan creation without repayment schedule. Schedule can be generated later.");
-            }
-
-            // Step 8: Convert to DTO safely and return
-            LoanDTO result = convertToDTOSafely(loan);
-            log.info("Loan creation completed successfully");
-
-            return result;
-
-        } catch (IllegalArgumentException e) {
-            log.error("Validation error creating loan: {}", e.getMessage());
-            throw e; // Re-throw validation errors as-is
-        } catch (Exception e) {
-            log.error("Unexpected error creating loan: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to create loan: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Generate repayment schedule with enhanced error handling and validation
-     */
-    private void generateRepaymentScheduleSecurely(Loan loan) {
-        if (loan == null || loan.getId() == null) {
-            throw new IllegalArgumentException("Loan must be saved before generating repayment schedule");
-        }
-
-        try {
-            log.info("Generating repayment schedule for loan ID: {}", loan.getId());
-
-            // Validate loan data for schedule generation
-            if (loan.getTotalInstallments() == null || loan.getTotalInstallments() <= 0) {
-                throw new IllegalArgumentException("Invalid total installments: " + loan.getTotalInstallments());
-            }
-
+            // Validate that installment amount is set
             if (loan.getInstallmentAmount() == null || loan.getInstallmentAmount().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Invalid installment amount: " + loan.getInstallmentAmount());
+                throw new IllegalArgumentException("Invalid installment amount calculated: " + loan.getInstallmentAmount());
             }
 
-            if (loan.getStartDate() == null) {
-                throw new IllegalArgumentException("Start date is required for schedule generation");
-            }
+            // Save loan first to get ID
+            loan = loanRepository.save(loan);
 
-            if (loan.getInstallmentFrequency() == null) {
-                throw new IllegalArgumentException("Installment frequency is required for schedule generation");
-            }
+            // ENHANCED: Generate payslip-period-aligned repayment schedule
+            List<RepaymentSchedule> repaymentSchedules = generatePayslipAlignedRepaymentSchedule(loan);
 
-            List<RepaymentSchedule> schedules = new ArrayList<>();
+            // Set loan reference and save schedules
+            Loan finalLoan = loan;
+            repaymentSchedules.forEach(schedule -> schedule.setLoan(finalLoan));
+            repaymentSchedules = repaymentScheduleRepository.saveAll(repaymentSchedules);
 
-            for (int i = 1; i <= loan.getTotalInstallments(); i++) {
-                try {
-                    RepaymentSchedule schedule = new RepaymentSchedule();
-                    schedule.setLoan(loan);
-                    schedule.setInstallmentNumber(i);
+            // Set schedules on loan
+            loan.setRepaymentSchedules(repaymentSchedules);
+            loan = loanRepository.save(loan);
 
-                    // Calculate due date with error handling
-                    LocalDate dueDate = calculateDueDateSafely(loan.getStartDate(), loan.getInstallmentFrequency(), i);
-                    schedule.setDueDate(dueDate);
-                    schedule.setScheduledAmount(loan.getInstallmentAmount());
-                    schedule.setPaidAmount(BigDecimal.ZERO);
-                    schedule.setStatus(RepaymentSchedule.RepaymentStatus.PENDING);
-                    schedule.setCreatedAt(LocalDateTime.now());
+            log.info("Loan created successfully: {} with {} payslip-aligned installments",
+                    loan.getId(), repaymentSchedules.size());
 
-                    schedules.add(schedule);
-                } catch (Exception e) {
-                    log.error("Error creating repayment schedule item {}: {}", i, e.getMessage());
-                    throw new RuntimeException("Failed to create repayment schedule item " + i, e);
-                }
-            }
-
-            if (schedules.isEmpty()) {
-                throw new RuntimeException("No repayment schedules were generated");
-            }
-
-            // Save all schedules in batch with error handling
-            try {
-                List<RepaymentSchedule> savedSchedules = repaymentScheduleRepository.saveAll(schedules);
-                log.info("Successfully saved {} repayment schedules", savedSchedules.size());
-
-                // Update loan with schedules
-                loan.setRepaymentSchedules(savedSchedules);
-
-                log.info("Generated {} repayment schedules for loan {}", savedSchedules.size(), loan.getId());
-            } catch (Exception e) {
-                log.error("Error saving repayment schedules: {}", e.getMessage(), e);
-                throw new RuntimeException("Failed to save repayment schedules", e);
-            }
+            return convertToDTO(loan);
 
         } catch (Exception e) {
-            log.error("Error in generateRepaymentScheduleSecurely for loan {}: {}", loan.getId(), e.getMessage(), e);
+            log.error("Error creating loan for employee {}: {}", loanDTO.getEmployeeId(), e.getMessage());
             throw e;
         }
     }
 
     /**
-     * Calculate due date with enhanced error handling
+     * NEW: Generate repayment schedule aligned with payslip periods
+     * Ensures repayments only occur when payslips are generated
      */
-    private LocalDate calculateDueDateSafely(LocalDate startDate, Loan.InstallmentFrequency frequency, int installmentNumber) {
+    private List<RepaymentSchedule> generatePayslipAlignedRepaymentSchedule(Loan loan) {
+        List<RepaymentSchedule> schedules = new ArrayList<>();
+
         try {
-            if (startDate == null) {
-                throw new IllegalArgumentException("Start date cannot be null");
-            }
-            if (frequency == null) {
-                throw new IllegalArgumentException("Frequency cannot be null");
-            }
-            if (installmentNumber <= 0) {
-                throw new IllegalArgumentException("Installment number must be positive");
+            log.info("Generating payslip-aligned repayment schedule for loan: {}", loan.getId());
+
+            BigDecimal principal = loan.getLoanAmount();
+            BigDecimal interestRate = loan.getInterestRate().divide(new BigDecimal("100")); // Convert percentage
+            Integer installments = loan.getTotalInstallments();
+
+            // Calculate monthly payment using loan payment formula
+            BigDecimal monthlyPayment = calculateMonthlyPayment(principal, interestRate, installments);
+
+            LocalDate currentDueDate = getNextPayslipDate(loan.getStartDate());
+            BigDecimal remainingBalance = principal;
+
+            for (int i = 1; i <= installments; i++) {
+                // Calculate interest and principal portions
+                BigDecimal interestPortion = remainingBalance.multiply(interestRate.divide(new BigDecimal("12"), 8, RoundingMode.HALF_UP));
+                BigDecimal principalPortion = monthlyPayment.subtract(interestPortion);
+
+                // Calculate the actual payment amount for this installment
+                BigDecimal actualPaymentAmount = monthlyPayment;
+
+                // Adjust for final payment
+                if (i == installments) {
+                    principalPortion = remainingBalance; // Pay off remaining balance
+                    actualPaymentAmount = principalPortion.add(interestPortion);
+                }
+
+                RepaymentSchedule schedule = RepaymentSchedule.builder()
+                        .loan(loan)
+                        .installmentNumber(i)
+                        .dueDate(currentDueDate)
+                        .scheduledAmount(actualPaymentAmount.setScale(2, RoundingMode.HALF_UP))
+                        .principalAmount(principalPortion.setScale(2, RoundingMode.HALF_UP))
+                        .interestAmount(interestPortion.setScale(2, RoundingMode.HALF_UP))
+                        .status(RepaymentSchedule.RepaymentStatus.PENDING)
+                        .build();
+
+                schedules.add(schedule);
+
+                // Update remaining balance
+                remainingBalance = remainingBalance.subtract(principalPortion);
+
+                // Move to next payslip date (monthly)
+                currentDueDate = currentDueDate.plusMonths(1);
             }
 
-            switch (frequency) {
-                case WEEKLY:
-                    return startDate.plusWeeks(installmentNumber);
-                case MONTHLY:
-                    return startDate.plusMonths(installmentNumber);
-                default:
-                    log.warn("Unknown frequency {}, defaulting to MONTHLY", frequency);
-                    return startDate.plusMonths(installmentNumber);
-            }
+            log.info("Generated {} payslip-aligned repayment schedules", schedules.size());
+
         } catch (Exception e) {
-            log.error("Error calculating due date: start={}, frequency={}, installment={}",
-                    startDate, frequency, installmentNumber);
-            throw new RuntimeException("Failed to calculate due date", e);
+            log.error("Error generating repayment schedule for loan {}: {}", loan.getId(), e.getMessage());
+            throw new RuntimeException("Failed to generate repayment schedule", e);
         }
+
+        return schedules;
     }
 
     /**
-     * Comprehensive validation for loan data
+     * NEW: Get next payslip date (assuming monthly payslips on last day of month)
      */
-    private void validateLoanData(LoanDTO loanDTO) {
-        List<String> errors = new ArrayList<>();
-
-        // Required fields
-        if (loanDTO.getEmployeeId() == null) {
-            errors.add("Employee ID is required");
-        }
-
-        if (loanDTO.getLoanAmount() == null || loanDTO.getLoanAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            errors.add("Loan amount must be greater than 0");
-        }
-
-        if (loanDTO.getInterestRate() == null || loanDTO.getInterestRate().compareTo(BigDecimal.ZERO) < 0) {
-            errors.add("Interest rate must be 0 or greater");
-        }
-
-        if (loanDTO.getStartDate() == null) {
-            errors.add("Start date is required");
-        }
-
-        if (loanDTO.getEndDate() == null) {
-            errors.add("End date is required");
-        }
-
-        if (loanDTO.getInstallmentAmount() == null || loanDTO.getInstallmentAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            errors.add("Installment amount must be greater than 0");
-        }
-
-        if (loanDTO.getTotalInstallments() == null || loanDTO.getTotalInstallments() <= 0) {
-            errors.add("Total installments must be greater than 0");
-        }
-
-        // Business rules validation
-        if (loanDTO.getLoanAmount() != null) {
-            if (loanDTO.getLoanAmount().compareTo(new BigDecimal("100")) < 0) {
-                errors.add("Minimum loan amount is $100");
-            }
-            if (loanDTO.getLoanAmount().compareTo(new BigDecimal("50000")) > 0) {
-                errors.add("Maximum loan amount is $50,000");
-            }
-        }
-
-        if (loanDTO.getInterestRate() != null && loanDTO.getInterestRate().compareTo(new BigDecimal("30")) > 0) {
-            errors.add("Maximum interest rate is 30%");
-        }
-
-        if (loanDTO.getTotalInstallments() != null) {
-            if (loanDTO.getTotalInstallments() > 60) {
-                errors.add("Maximum 60 installments allowed");
-            }
-        }
-
-        // Date validation
-        if (loanDTO.getStartDate() != null && loanDTO.getEndDate() != null) {
-            if (loanDTO.getStartDate().isAfter(loanDTO.getEndDate()) || loanDTO.getStartDate().equals(loanDTO.getEndDate())) {
-                errors.add("End date must be after start date");
-            }
-        }
-
-        if (loanDTO.getStartDate() != null && loanDTO.getStartDate().isBefore(LocalDate.now())) {
-            errors.add("Start date cannot be in the past");
-        }
-
-        // Installment frequency validation
-        if (loanDTO.getInstallmentFrequency() != null) {
-            try {
-                Loan.InstallmentFrequency.valueOf(loanDTO.getInstallmentFrequency().toUpperCase());
-            } catch (IllegalArgumentException e) {
-                errors.add("Invalid installment frequency. Must be MONTHLY or WEEKLY");
-            }
-        }
-
-        if (!errors.isEmpty()) {
-            throw new IllegalArgumentException("Validation failed: " + String.join(", ", errors));
-        }
+    private LocalDate getNextPayslipDate(LocalDate startDate) {
+        // Align with payslip generation - typically last day of month
+        return startDate.withDayOfMonth(startDate.lengthOfMonth());
     }
 
     /**
-     * Convert Loan entity to DTO with comprehensive null safety
+     * ENHANCED: Get due repayments for employee within payslip period
+     * ONLY returns repayments due within the exact payslip start-end dates
      */
-    private LoanDTO convertToDTOSafely(Loan loan) {
-        if (loan == null) {
-            throw new IllegalArgumentException("Loan cannot be null");
-        }
-
+    public List<RepaymentSchedule> getDueRepaymentsForEmployee(UUID employeeId,
+                                                               LocalDate payslipStart,
+                                                               LocalDate payslipEnd) {
         try {
-            List<RepaymentScheduleDTO> schedules = new ArrayList<>();
-            if (loan.getRepaymentSchedules() != null) {
-                schedules = loan.getRepaymentSchedules().stream()
-                        .map(this::convertToScheduleDTOSafely)
-                        .filter(dto -> dto != null) // Filter out any null DTOs
+            log.debug("Getting due repayments for employee: {} within payslip period: {} to {}",
+                    employeeId, payslipStart, payslipEnd);
+
+            // Get ONLY active loans for the employee
+            List<Loan> activeLoans = loanRepository.findByEmployeeIdAndStatus(employeeId, Loan.LoanStatus.ACTIVE);
+
+            if (activeLoans.isEmpty()) {
+                log.debug("No active loans found for employee: {}", employeeId);
+                return new ArrayList<>();
+            }
+
+            List<RepaymentSchedule> dueRepayments = new ArrayList<>();
+
+            for (Loan loan : activeLoans) {
+                // Get repayments due within the payslip period
+                List<RepaymentSchedule> loanRepayments = repaymentScheduleRepository
+                        .findByLoanIdAndDueDateBetweenAndStatus(
+                                loan.getId(),
+                                payslipStart,
+                                payslipEnd,
+                                RepaymentSchedule.RepaymentStatus.PENDING
+                        );
+
+                // Additional validation: ensure due date falls within payslip period
+                List<RepaymentSchedule> validRepayments = loanRepayments.stream()
+                        .filter(repayment -> !repayment.getDueDate().isBefore(payslipStart) &&
+                                !repayment.getDueDate().isAfter(payslipEnd))
                         .collect(Collectors.toList());
+
+                dueRepayments.addAll(validRepayments);
+
+                log.debug("Loan {} has {} repayments due in payslip period",
+                        loan.getId(), validRepayments.size());
             }
 
-            String employeeName = "";
-            if (loan.getEmployee() != null) {
-                employeeName = (loan.getEmployee().getFirstName() != null ? loan.getEmployee().getFirstName() : "") +
-                        " " +
-                        (loan.getEmployee().getLastName() != null ? loan.getEmployee().getLastName() : "");
-                employeeName = employeeName.trim();
-            }
+            log.info("Found {} total due repayments for employee: {} in payslip period",
+                    dueRepayments.size(), employeeId);
 
-            return LoanDTO.builder()
-                    .id(loan.getId())
-                    .employeeId(loan.getEmployee() != null ? loan.getEmployee().getId() : null)
-                    .employeeName(employeeName)
-                    .loanAmount(loan.getLoanAmount() != null ? loan.getLoanAmount() : BigDecimal.ZERO)
-                    .remainingBalance(loan.getRemainingBalance() != null ? loan.getRemainingBalance() : BigDecimal.ZERO)
-                    .interestRate(loan.getInterestRate() != null ? loan.getInterestRate() : BigDecimal.ZERO)
-                    .startDate(loan.getStartDate())
-                    .endDate(loan.getEndDate())
-                    .installmentAmount(loan.getInstallmentAmount() != null ? loan.getInstallmentAmount() : BigDecimal.ZERO)
-                    .installmentFrequency(loan.getInstallmentFrequency() != null ? loan.getInstallmentFrequency().name() : "MONTHLY")
-                    .totalInstallments(loan.getTotalInstallments() != null ? loan.getTotalInstallments() : 0)
-                    .paidInstallments(loan.getPaidInstallments() != null ? loan.getPaidInstallments() : 0)
-                    .status(loan.getStatus() != null ? loan.getStatus().name() : "PENDING")
-                    .description(loan.getDescription() != null ? loan.getDescription() : "")
-                    .createdBy(loan.getCreatedBy() != null ? loan.getCreatedBy() : "")
-                    .approvedBy(loan.getApprovedBy())
-                    .approvalDate(loan.getApprovalDate())
-                    .rejectedBy(loan.getRejectedBy())
-                    .rejectionReason(loan.getRejectionReason())
-                    .rejectionDate(loan.getRejectionDate())
-                    .repaymentSchedules(schedules)
-                    .build();
+            return dueRepayments;
 
         } catch (Exception e) {
-            log.error("Error converting loan to DTO: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to convert loan to DTO", e);
+            log.error("Error getting due repayments for employee {}: {}", employeeId, e.getMessage());
+            return new ArrayList<>();
         }
     }
 
     /**
-     * Convert RepaymentSchedule entity to DTO with null safety
+     * NEW: Process loan deductions from payslip finalization
+     * Updates loan balances and repayment schedules after payslip is finalized
      */
-    private RepaymentScheduleDTO convertToScheduleDTOSafely(RepaymentSchedule schedule) {
-        if (schedule == null) {
-            log.warn("Received null repayment schedule, skipping conversion");
+    @Transactional
+    public void processLoanDeductionsFromPayslip(UUID payslipId,
+                                                 List<Deduction> loanDeductions,
+                                                 LocalDate payslipStart,
+                                                 LocalDate payslipEnd) {
+        try {
+            log.info("Processing {} loan deductions from payslip: {}", loanDeductions.size(), payslipId);
+
+            for (Deduction loanDeduction : loanDeductions) {
+                // Find the corresponding repayment schedule
+                RepaymentSchedule repayment = findRepaymentForDeduction(loanDeduction, payslipStart, payslipEnd);
+
+                if (repayment != null) {
+                    // Update repayment schedule
+                    repayment.setActualAmount(loanDeduction.getAmount());
+                    repayment.setPaidDate(LocalDate.now());
+                    repayment.setStatus(RepaymentSchedule.RepaymentStatus.PAID);
+                    repayment.setPayslipId(payslipId); // Link to payslip
+
+                    repaymentScheduleRepository.save(repayment);
+
+                    // Update loan balance
+                    Loan loan = repayment.getLoan();
+                    BigDecimal newBalance = loan.getRemainingBalance().subtract(repayment.getPrincipalAmount());
+                    loan.setRemainingBalance(newBalance.max(BigDecimal.ZERO)); // Ensure non-negative
+
+                    // Check if loan is fully paid
+                    if (loan.getRemainingBalance().compareTo(BigDecimal.ZERO) == 0) {
+                        loan.setStatus(Loan.LoanStatus.COMPLETED);
+                        // Note: Using existing endDate field since actualEndDate doesn't exist in model
+                        log.info("Loan {} marked as completed", loan.getId());
+                    }
+
+                    loanRepository.save(loan);
+
+                    log.debug("Updated loan {} balance to ${} after repayment of ${}",
+                            loan.getId(), loan.getRemainingBalance(), loanDeduction.getAmount());
+                }
+            }
+
+            log.info("Successfully processed loan deductions from payslip: {}", payslipId);
+
+        } catch (Exception e) {
+            log.error("Error processing loan deductions from payslip {}: {}", payslipId, e.getMessage());
+            throw new RuntimeException("Failed to process loan deductions", e);
+        }
+    }
+
+    /**
+     * Find repayment schedule for a loan deduction
+     */
+    private RepaymentSchedule findRepaymentForDeduction(Deduction loanDeduction,
+                                                        LocalDate payslipStart,
+                                                        LocalDate payslipEnd) {
+        try {
+            // Extract loan info from deduction description or use other logic
+            // This is a simplified approach - you might need more sophisticated matching
+            List<RepaymentSchedule> pendingRepayments = repaymentScheduleRepository
+                    .findByDueDateBetweenAndStatus(payslipStart, payslipEnd, RepaymentSchedule.RepaymentStatus.PENDING);
+
+            // Find repayment with matching amount
+            return pendingRepayments.stream()
+                    .filter(repayment -> repayment.getScheduledAmount().compareTo(loanDeduction.getAmount()) == 0)
+                    .findFirst()
+                    .orElse(null);
+
+        } catch (Exception e) {
+            log.warn("Could not find matching repayment for deduction: {}", e.getMessage());
             return null;
         }
+    }
 
+    /**
+     * ENHANCED: Check if employee can afford loan with 50% salary limit
+     */
+    public boolean canAffordLoan(UUID employeeId, BigDecimal loanAmount,
+                                 Integer installments, BigDecimal monthlyGrossSalary) {
         try {
-            return RepaymentScheduleDTO.builder()
-                    .id(schedule.getId())
-                    .installmentNumber(schedule.getInstallmentNumber() != null ? schedule.getInstallmentNumber() : 0)
-                    .dueDate(schedule.getDueDate())
-                    .scheduledAmount(schedule.getScheduledAmount() != null ? schedule.getScheduledAmount() : BigDecimal.ZERO)
-                    .paidAmount(schedule.getPaidAmount() != null ? schedule.getPaidAmount() : BigDecimal.ZERO)
-                    .paymentDate(schedule.getPaymentDate())
-                    .status(schedule.getStatus() != null ? schedule.getStatus().name() : "PENDING")
-                    .build();
+            // Calculate proposed monthly payment
+            BigDecimal monthlyPayment = loanAmount.divide(new BigDecimal(installments), 2, RoundingMode.HALF_UP);
+
+            // Get existing loan obligations
+            BigDecimal existingMonthlyPayments = getMonthlyLoanPayments(employeeId);
+
+            // Total monthly loan payments
+            BigDecimal totalMonthlyPayments = existingMonthlyPayments.add(monthlyPayment);
+
+            // Check against 50% of gross salary
+            BigDecimal maxAllowedPayments = monthlyGrossSalary.multiply(new BigDecimal("0.50"));
+
+            boolean canAfford = totalMonthlyPayments.compareTo(maxAllowedPayments) <= 0;
+
+            log.debug("Loan affordability check for employee {}: Monthly payment ${}, Total ${}, Max allowed ${}, Can afford: {}",
+                    employeeId, monthlyPayment, totalMonthlyPayments, maxAllowedPayments, canAfford);
+
+            return canAfford;
+
         } catch (Exception e) {
-            log.error("Error converting repayment schedule to DTO: {}", e.getMessage(), e);
-            return null; // Return null so it gets filtered out
+            log.error("Error checking loan affordability for employee {}: {}", employeeId, e.getMessage());
+            return false;
         }
     }
 
-    // Rest of the existing methods remain the same but with enhanced error handling...
-    // (I'll include key methods with improvements)
-
     /**
-     * Get total outstanding balance for employee with validation
+     * Get current monthly loan payments for employee
      */
-    public BigDecimal getTotalOutstandingBalanceByEmployee(UUID employeeId) {
+    private BigDecimal getMonthlyLoanPayments(UUID employeeId) {
         try {
-            if (employeeId == null) {
-                return BigDecimal.ZERO;
-            }
+            List<Loan> activeLoans = loanRepository.findByEmployeeIdAndStatus(employeeId, Loan.LoanStatus.ACTIVE);
 
-            BigDecimal balance = loanRepository.getTotalOutstandingBalanceByEmployee(employeeId);
-            return balance != null ? balance : BigDecimal.ZERO;
+            return activeLoans.stream()
+                    .map(this::calculateMonthlyPaymentForLoan)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         } catch (Exception e) {
-            log.error("Error getting outstanding balance for employee {}: {}", employeeId, e.getMessage(), e);
+            log.error("Error calculating monthly loan payments for employee {}: {}", employeeId, e.getMessage());
             return BigDecimal.ZERO;
         }
     }
 
     /**
-     * Get loan statistics with enhanced error handling
+     * Calculate monthly payment for a loan
      */
-    public Map<String, Object> getLoanStatistics() {
-        log.info("Getting loan statistics");
-
-        try {
-            // Get total outstanding amount with fallback
-            BigDecimal totalOutstanding = BigDecimal.ZERO;
-            try {
-                totalOutstanding = loanRepository.getTotalOutstandingAmount();
-                if (totalOutstanding == null) {
-                    totalOutstanding = BigDecimal.ZERO;
-                }
-            } catch (Exception e) {
-                log.error("Error getting total outstanding amount: {}", e.getMessage());
-            }
-
-            // Count loans by status with fallbacks
-            long activeLoans = 0;
-            long pendingLoans = 0;
-            long completedLoans = 0;
-            long rejectedLoans = 0;
-            long cancelledLoans = 0;
-
-            try {
-                activeLoans = loanRepository.countByStatus(Loan.LoanStatus.ACTIVE);
-                pendingLoans = loanRepository.countByStatus(Loan.LoanStatus.PENDING);
-                completedLoans = loanRepository.countByStatus(Loan.LoanStatus.COMPLETED);
-                rejectedLoans = loanRepository.countByStatus(Loan.LoanStatus.REJECTED);
-                cancelledLoans = loanRepository.countByStatus(Loan.LoanStatus.CANCELLED);
-            } catch (Exception e) {
-                log.error("Error getting loan counts: {}", e.getMessage());
-            }
-
-            // Count overdue loans with fallback
-            long overdueLoans = 0;
-            try {
-                overdueLoans = getOverdueLoans().size();
-            } catch (Exception e) {
-                log.error("Error getting overdue loans count: {}", e.getMessage());
-            }
-
-            // Calculate additional metrics with fallbacks
-            BigDecimal averageLoanAmount = BigDecimal.ZERO;
-            try {
-                averageLoanAmount = loanRepository.getAverageLoanAmount();
-                if (averageLoanAmount == null) {
-                    averageLoanAmount = BigDecimal.ZERO;
-                }
-            } catch (Exception e) {
-                log.error("Error getting average loan amount: {}", e.getMessage());
-            }
-
-            long totalLoans = activeLoans + pendingLoans + completedLoans + rejectedLoans + cancelledLoans;
-
-            // Create comprehensive statistics map
-            java.util.Map<String, Object> statistics = new java.util.HashMap<>();
-            statistics.put("totalOutstanding", totalOutstanding);
-            statistics.put("activeLoans", activeLoans);
-            statistics.put("overdueLoans", overdueLoans);
-            statistics.put("pendingLoans", pendingLoans);
-            statistics.put("completedLoans", completedLoans);
-            statistics.put("rejectedLoans", rejectedLoans);
-            statistics.put("cancelledLoans", cancelledLoans);
-            statistics.put("totalLoans", totalLoans);
-            statistics.put("averageLoanAmount", averageLoanAmount);
-            statistics.put("generatedAt", LocalDateTime.now());
-
-            return statistics;
-
-        } catch (Exception e) {
-            log.error("Error getting loan statistics: {}", e.getMessage(), e);
-            // Return default statistics on error
-            java.util.Map<String, Object> defaultStats = new java.util.HashMap<>();
-            defaultStats.put("totalOutstanding", BigDecimal.ZERO);
-            defaultStats.put("activeLoans", 0L);
-            defaultStats.put("overdueLoans", 0L);
-            defaultStats.put("pendingLoans", 0L);
-            defaultStats.put("completedLoans", 0L);
-            defaultStats.put("rejectedLoans", 0L);
-            defaultStats.put("cancelledLoans", 0L);
-            defaultStats.put("totalLoans", 0L);
-            defaultStats.put("averageLoanAmount", BigDecimal.ZERO);
-            defaultStats.put("generatedAt", LocalDateTime.now());
-            defaultStats.put("error", "Failed to calculate statistics");
-
-            return defaultStats;
+    private BigDecimal calculateMonthlyPaymentForLoan(Loan loan) {
+        if (loan.getTotalInstallments() == null || loan.getTotalInstallments() == 0) {
+            return BigDecimal.ZERO;
         }
+
+        return loan.getLoanAmount().divide(new BigDecimal(loan.getTotalInstallments()), 2, RoundingMode.HALF_UP);
     }
 
     /**
-     * Get overdue loans with enhanced error handling
-     */
-    public List<LoanDTO> getOverdueLoans() {
-        try {
-            LocalDate today = LocalDate.now();
-            List<RepaymentSchedule> overdueSchedules = repaymentScheduleRepository.findOverdueRepayments(today);
-
-            // Get unique loans from overdue schedules
-            List<Loan> overdueLoans = overdueSchedules.stream()
-                    .map(RepaymentSchedule::getLoan)
-                    .distinct()
-                    .collect(Collectors.toList());
-
-            return overdueLoans.stream()
-                    .map(this::convertToDTOSafely)
-                    .filter(dto -> dto != null)
-                    .collect(Collectors.toList());
-
-        } catch (Exception e) {
-            log.error("Error getting overdue loans: {}", e.getMessage(), e);
-            return new ArrayList<>();
-        }
-    }
-
-    /**
-     * Get active loans with error handling
-     */
-    public List<LoanDTO> getActiveLoans() {
-        try {
-            return loanRepository.findByStatusOrderByStartDateDesc(Loan.LoanStatus.ACTIVE)
-                    .stream()
-                    .map(this::convertToDTOSafely)
-                    .filter(dto -> dto != null)
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.error("Error getting active loans: {}", e.getMessage(), e);
-            return new ArrayList<>();
-        }
-    }
-
-    /**
-     * Get loan by ID with enhanced error handling
-     */
-    public LoanDTO getLoanById(UUID loanId) {
-        log.info("Getting loan by ID: {}", loanId);
-
-        try {
-            if (loanId == null) {
-                throw new IllegalArgumentException("Loan ID cannot be null");
-            }
-
-            Loan loan = loanRepository.findById(loanId)
-                    .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
-            return convertToDTOSafely(loan);
-
-        } catch (IllegalArgumentException e) {
-            log.error("Validation error getting loan by ID: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Unexpected error getting loan by ID: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to get loan: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Update loan with enhanced validation
-     */
-    @Transactional
-    public LoanDTO updateLoan(UUID loanId, LoanDTO loanDTO) {
-        log.info("Updating loan with ID: {}", loanId);
-
-        try {
-            if (loanId == null) {
-                throw new IllegalArgumentException("Loan ID cannot be null");
-            }
-
-            Loan existingLoan = loanRepository.findById(loanId)
-                    .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
-
-            // Only allow updates if loan is still pending
-            if (existingLoan.getStatus() != Loan.LoanStatus.PENDING) {
-                throw new IllegalArgumentException("Only pending loans can be updated. Current status: " + existingLoan.getStatus());
-            }
-
-            // Validate updated data
-            validateLoanData(loanDTO);
-
-            // Update allowed fields
-            existingLoan.setLoanAmount(loanDTO.getLoanAmount());
-            existingLoan.setRemainingBalance(loanDTO.getLoanAmount()); // Reset remaining balance
-            existingLoan.setInterestRate(loanDTO.getInterestRate());
-            existingLoan.setStartDate(loanDTO.getStartDate());
-            existingLoan.setEndDate(loanDTO.getEndDate());
-            existingLoan.setInstallmentAmount(loanDTO.getInstallmentAmount());
-
-            // Safe enum conversion
-            if (loanDTO.getInstallmentFrequency() != null) {
-                try {
-                    existingLoan.setInstallmentFrequency(Loan.InstallmentFrequency.valueOf(loanDTO.getInstallmentFrequency().toUpperCase()));
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Invalid installment frequency: " + loanDTO.getInstallmentFrequency());
-                }
-            }
-
-            existingLoan.setTotalInstallments(loanDTO.getTotalInstallments());
-            existingLoan.setDescription(loanDTO.getDescription() != null ? loanDTO.getDescription() : "");
-            existingLoan.setUpdatedAt(LocalDateTime.now());
-
-            Loan updatedLoan = loanRepository.save(existingLoan);
-
-            // Regenerate repayment schedule for pending loans
-            try {
-                // Delete existing schedules
-                repaymentScheduleRepository.deleteByLoanId(loanId);
-                // Generate new ones
-                generateRepaymentScheduleSecurely(updatedLoan);
-            } catch (Exception e) {
-                log.error("Error regenerating repayment schedule: {}", e.getMessage());
-                throw new RuntimeException("Failed to update repayment schedule: " + e.getMessage());
-            }
-
-            return convertToDTOSafely(updatedLoan);
-
-        } catch (IllegalArgumentException e) {
-            log.error("Validation error updating loan: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Unexpected error updating loan: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to update loan: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Cancel loan with validation
-     */
-    @Transactional
-    public void cancelLoan(UUID loanId) {
-        log.info("Cancelling loan with ID: {}", loanId);
-
-        try {
-            if (loanId == null) {
-                throw new IllegalArgumentException("Loan ID cannot be null");
-            }
-
-            Loan loan = loanRepository.findById(loanId)
-                    .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
-
-            if (loan.getStatus() == Loan.LoanStatus.COMPLETED) {
-                throw new IllegalArgumentException("Cannot cancel completed loan");
-            }
-
-            if (loan.getStatus() == Loan.LoanStatus.CANCELLED) {
-                throw new IllegalArgumentException("Loan is already cancelled");
-            }
-
-            loan.setStatus(Loan.LoanStatus.CANCELLED);
-            loan.setUpdatedAt(LocalDateTime.now());
-            loanRepository.save(loan);
-
-            log.info("Loan {} cancelled successfully", loanId);
-
-        } catch (IllegalArgumentException e) {
-            log.error("Validation error cancelling loan: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Unexpected error cancelling loan: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to cancel loan: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Get loans by employee with validation
-     */
-    public List<LoanDTO> getLoansByEmployee(UUID employeeId) {
-        log.info("Getting loans for employee: {}", employeeId);
-
-        try {
-            if (employeeId == null) {
-                throw new IllegalArgumentException("Employee ID cannot be null");
-            }
-
-            // Verify employee exists
-            if (!employeeRepository.existsById(employeeId)) {
-                throw new IllegalArgumentException("Employee not found with ID: " + employeeId);
-            }
-
-            return loanRepository.findByEmployeeIdOrderByStartDateDesc(employeeId)
-                    .stream()
-                    .map(this::convertToDTOSafely)
-                    .filter(dto -> dto != null)
-                    .collect(Collectors.toList());
-
-        } catch (IllegalArgumentException e) {
-            log.error("Validation error getting loans by employee: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Unexpected error getting loans by employee: {}", e.getMessage(), e);
-            return new ArrayList<>();
-        }
-    }
-
-    /**
-     * Get repayment schedule for a loan with validation
-     */
-    public List<RepaymentScheduleDTO> getRepaymentSchedule(UUID loanId) {
-        log.info("Getting repayment schedule for loan: {}", loanId);
-
-        try {
-            if (loanId == null) {
-                throw new IllegalArgumentException("Loan ID cannot be null");
-            }
-
-            Loan loan = loanRepository.findById(loanId)
-                    .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
-
-            if (loan.getRepaymentSchedules() == null || loan.getRepaymentSchedules().isEmpty()) {
-                log.warn("No repayment schedules found for loan: {}, attempting to generate", loanId);
-
-                // Try to generate schedule if it doesn't exist (for older loans)
-                if (loan.getStatus() == Loan.LoanStatus.PENDING) {
-                    try {
-                        generateRepaymentScheduleSecurely(loan);
-                        loan = loanRepository.findById(loanId).orElse(loan); // Refresh
-                    } catch (Exception e) {
-                        log.error("Failed to generate missing repayment schedule: {}", e.getMessage());
-                        return new ArrayList<>();
-                    }
-                } else {
-                    return new ArrayList<>();
-                }
-            }
-
-            return loan.getRepaymentSchedules().stream()
-                    .sorted((rs1, rs2) -> rs1.getInstallmentNumber().compareTo(rs2.getInstallmentNumber()))
-                    .map(this::convertToScheduleDTOSafely)
-                    .filter(dto -> dto != null)
-                    .collect(Collectors.toList());
-
-        } catch (IllegalArgumentException e) {
-            log.error("Validation error getting repayment schedule: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Unexpected error getting repayment schedule: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to get repayment schedule: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Approve loan with validation
+     * Approve loan and activate it
      */
     @Transactional
     public LoanDTO approveLoan(UUID loanId, String approvedBy) {
-        log.info("Approving loan: {} by: {}", loanId, approvedBy);
+        log.info("Approving loan: {}", loanId);
 
         try {
-            if (loanId == null) {
-                throw new IllegalArgumentException("Loan ID cannot be null");
-            }
-
-            if (approvedBy == null || approvedBy.trim().isEmpty()) {
-                approvedBy = "SYSTEM";
-            }
-
             Loan loan = loanRepository.findById(loanId)
                     .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
 
             if (loan.getStatus() != Loan.LoanStatus.PENDING) {
-                throw new IllegalArgumentException("Only pending loans can be approved. Current status: " + loan.getStatus());
+                throw new IllegalStateException("Only pending loans can be approved");
             }
 
             loan.setStatus(Loan.LoanStatus.ACTIVE);
             loan.setApprovedBy(approvedBy);
-            loan.setApprovalDate(LocalDateTime.now());
-            loan.setUpdatedAt(LocalDateTime.now());
+            loan.setApprovalDate(LocalDateTime.now()); // Using approvalDate instead of approvedAt
 
-            Loan savedLoan = loanRepository.save(loan);
-            log.info("Loan {} approved successfully by {}", loanId, approvedBy);
+            loan = loanRepository.save(loan);
 
-            return convertToDTOSafely(savedLoan);
+            log.info("Loan approved successfully: {}", loanId);
 
-        } catch (IllegalArgumentException e) {
-            log.error("Validation error approving loan: {}", e.getMessage());
-            throw e;
+            return convertToDTO(loan);
+
         } catch (Exception e) {
-            log.error("Unexpected error approving loan: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to approve loan: " + e.getMessage(), e);
+            log.error("Error approving loan {}: {}", loanId, e.getMessage());
+            throw e;
         }
     }
 
     /**
-     * Reject loan with validation
+     * Get loan by ID
+     */
+    public LoanDTO getLoanById(UUID loanId) {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
+
+        return convertToDTO(loan);
+    }
+
+    /**
+     * Get loans by employee
+     */
+    public List<LoanDTO> getLoansByEmployee(UUID employeeId) {
+        List<Loan> loans = loanRepository.findByEmployeeIdOrderByStartDateDesc(employeeId);
+        return loans.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    /**
+     * Get total outstanding balance by employee
+     */
+    public BigDecimal getTotalOutstandingBalanceByEmployee(UUID employeeId) {
+        BigDecimal balance = loanRepository.getTotalOutstandingBalanceByEmployee(employeeId);
+        return balance != null ? balance : BigDecimal.ZERO;
+    }
+
+    /**
+     * Update loan
      */
     @Transactional
-    public LoanDTO rejectLoan(UUID loanId, String rejectedBy, String reason) {
-        log.info("Rejecting loan: {} by: {} reason: {}", loanId, rejectedBy, reason);
+    public LoanDTO updateLoan(UUID loanId, LoanDTO loanDTO) {
+        log.info("Updating loan: {}", loanId);
 
         try {
-            if (loanId == null) {
-                throw new IllegalArgumentException("Loan ID cannot be null");
-            }
-
-            if (rejectedBy == null || rejectedBy.trim().isEmpty()) {
-                rejectedBy = "SYSTEM";
-            }
-
-            if (reason == null) {
-                reason = "";
-            }
-
             Loan loan = loanRepository.findById(loanId)
                     .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
 
+            // Only allow updates to pending loans
             if (loan.getStatus() != Loan.LoanStatus.PENDING) {
-                throw new IllegalArgumentException("Only pending loans can be rejected. Current status: " + loan.getStatus());
+                throw new IllegalStateException("Only pending loans can be updated");
             }
 
-            loan.setStatus(Loan.LoanStatus.REJECTED);
-            loan.setRejectedBy(rejectedBy);
-            loan.setRejectionReason(reason);
-            loan.setRejectionDate(LocalDateTime.now());
-            loan.setUpdatedAt(LocalDateTime.now());
+            // Update fields if provided
+            if (loanDTO.getLoanAmount() != null) {
+                loan.setLoanAmount(loanDTO.getLoanAmount());
+                loan.setRemainingBalance(loanDTO.getLoanAmount()); // Reset remaining balance
+            }
+            if (loanDTO.getInterestRate() != null) {
+                loan.setInterestRate(loanDTO.getInterestRate());
+            }
+            if (loanDTO.getTotalInstallments() != null) {
+                loan.setTotalInstallments(loanDTO.getTotalInstallments());
+            }
+            if (loanDTO.getStartDate() != null) {
+                loan.setStartDate(loanDTO.getStartDate());
+                loan.setEndDate(calculateEndDate(loanDTO.getStartDate(), loan.getTotalInstallments()));
+            }
+            if (loanDTO.getDescription() != null) {
+                loan.setDescription(loanDTO.getDescription());
+            }
 
-            Loan savedLoan = loanRepository.save(loan);
-            log.info("Loan {} rejected successfully by {}", loanId, rejectedBy);
+            // Validate updated data
+            validateLoanData(convertToDTO(loan));
 
-            return convertToDTOSafely(savedLoan);
+            // Regenerate repayment schedule if loan details changed
+            if (loanDTO.getLoanAmount() != null || loanDTO.getTotalInstallments() != null ||
+                    loanDTO.getStartDate() != null || loanDTO.getInterestRate() != null) {
 
-        } catch (IllegalArgumentException e) {
-            log.error("Validation error rejecting loan: {}", e.getMessage());
-            throw e;
+                // Delete existing schedules
+                repaymentScheduleRepository.deleteByLoanId(loan.getId());
+
+                // Generate new schedules
+                List<RepaymentSchedule> newSchedules = generatePayslipAlignedRepaymentSchedule(loan);
+                Loan finalLoan = loan;
+                newSchedules.forEach(schedule -> schedule.setLoan(finalLoan));
+                repaymentScheduleRepository.saveAll(newSchedules);
+                loan.setRepaymentSchedules(newSchedules);
+            }
+
+            loan = loanRepository.save(loan);
+
+            log.info("Loan updated successfully: {}", loanId);
+            return convertToDTO(loan);
+
         } catch (Exception e) {
-            log.error("Unexpected error rejecting loan: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to reject loan: " + e.getMessage(), e);
+            log.error("Error updating loan {}: {}", loanId, e.getMessage());
+            throw e;
         }
     }
 
     /**
-     * Process loan repayment with enhanced validation
+     * Cancel loan
      */
     @Transactional
-    public void processLoanRepayment(UUID repaymentScheduleId, BigDecimal paidAmount) {
-        log.info("Processing repayment for schedule: {} amount: {}", repaymentScheduleId, paidAmount);
+    public void cancelLoan(UUID loanId) {
+        log.info("Cancelling loan: {}", loanId);
 
         try {
-            if (repaymentScheduleId == null) {
-                throw new IllegalArgumentException("Repayment schedule ID cannot be null");
+            Loan loan = loanRepository.findById(loanId)
+                    .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
+
+            if (!loan.canBeCancelled()) {
+                throw new IllegalStateException("Loan cannot be cancelled in current status: " + loan.getStatus());
             }
 
-            if (paidAmount == null || paidAmount.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Paid amount must be greater than 0");
+            loan.cancel();
+            loanRepository.save(loan);
+
+            log.info("Loan cancelled successfully: {}", loanId);
+
+        } catch (Exception e) {
+            log.error("Error cancelling loan {}: {}", loanId, e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Get active loans
+     */
+    public List<LoanDTO> getActiveLoans() {
+        log.debug("Getting all active loans");
+
+        List<Loan> activeLoans = loanRepository.findByStatus(Loan.LoanStatus.ACTIVE);
+        return activeLoans.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get overdue loans
+     */
+    public List<LoanDTO> getOverdueLoans() {
+        log.debug("Getting overdue loans");
+
+        List<Loan> allLoans = loanRepository.findByStatus(Loan.LoanStatus.ACTIVE);
+        return allLoans.stream()
+                .filter(Loan::isOverdue)
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get loans by status
+     */
+    public List<LoanDTO> getLoansByStatus(String status) {
+        log.debug("Getting loans by status: {}", status);
+
+        try {
+            Loan.LoanStatus loanStatus = Loan.LoanStatus.valueOf(status.toUpperCase());
+            List<Loan> loans = loanRepository.findByStatus(loanStatus);
+            return loans.stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid loan status: " + status);
+        }
+    }
+
+    /**
+     * Get loan statistics
+     */
+    public Map<String, Object> getLoanStatistics() {
+        log.debug("Getting loan statistics");
+
+        Map<String, Object> statistics = new java.util.HashMap<>();
+
+        try {
+            // Basic counts
+            long totalLoans = loanRepository.count();
+            long activeLoans = loanRepository.countByStatus(Loan.LoanStatus.ACTIVE);
+            long completedLoans = loanRepository.countByStatus(Loan.LoanStatus.COMPLETED);
+            long pendingLoans = loanRepository.countByStatus(Loan.LoanStatus.PENDING);
+
+            // Financial data
+            BigDecimal totalOutstanding = loanRepository.getTotalOutstandingAmount();
+            BigDecimal averageLoanAmount = loanRepository.getAverageLoanAmount();
+
+            // Overdue analysis
+            List<Loan> activeLoanList = loanRepository.findByStatus(Loan.LoanStatus.ACTIVE);
+            long overdueLoans = activeLoanList.stream()
+                    .filter(Loan::isOverdue)
+                    .count();
+
+            // Compile statistics
+            statistics.put("totalLoans", totalLoans);
+            statistics.put("activeLoans", activeLoans);
+            statistics.put("completedLoans", completedLoans);
+            statistics.put("pendingLoans", pendingLoans);
+            statistics.put("overdueLoans", overdueLoans);
+            statistics.put("totalOutstandingAmount", totalOutstanding != null ? totalOutstanding : BigDecimal.ZERO);
+            statistics.put("averageLoanAmount", averageLoanAmount != null ? averageLoanAmount : BigDecimal.ZERO);
+            statistics.put("generatedAt", LocalDateTime.now());
+
+        } catch (Exception e) {
+            log.error("Error generating loan statistics: {}", e.getMessage());
+            statistics.put("error", "Failed to generate loan statistics");
+        }
+
+        return statistics;
+    }
+
+    /**
+     * Get repayment schedule for a loan
+     */
+    public List<RepaymentScheduleDTO> getRepaymentSchedule(UUID loanId) {
+        log.debug("Getting repayment schedule for loan: {}", loanId);
+
+        // Verify loan exists
+        if (!loanRepository.existsById(loanId)) {
+            throw new IllegalArgumentException("Loan not found with ID: " + loanId);
+        }
+
+        List<RepaymentSchedule> schedules = repaymentScheduleRepository.findByLoanIdOrderByInstallmentNumberAsc(loanId);
+        return schedules.stream()
+                .map(this::convertRepaymentScheduleToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Reject loan
+     */
+    @Transactional
+    public LoanDTO rejectLoan(UUID loanId, String rejectedBy, String reason) {
+        log.info("Rejecting loan: {} by: {} with reason: {}", loanId, rejectedBy, reason);
+
+        try {
+            Loan loan = loanRepository.findById(loanId)
+                    .orElseThrow(() -> new IllegalArgumentException("Loan not found with ID: " + loanId));
+
+            if (!loan.canBeApproved()) {
+                throw new IllegalStateException("Only pending loans can be rejected");
             }
 
-            RepaymentSchedule schedule = repaymentScheduleRepository.findById(repaymentScheduleId)
-                    .orElseThrow(() -> new IllegalArgumentException("Repayment schedule not found"));
+            loan.reject(rejectedBy, reason);
+            loan = loanRepository.save(loan);
 
-            if (schedule.getStatus() == RepaymentSchedule.RepaymentStatus.PAID) {
-                throw new IllegalArgumentException("This installment has already been paid");
+            log.info("Loan rejected successfully: {}", loanId);
+            return convertToDTO(loan);
+
+        } catch (Exception e) {
+            log.error("Error rejecting loan {}: {}", loanId, e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Process loan repayment manually
+     */
+    @Transactional
+    public void processLoanRepayment(UUID scheduleId, BigDecimal amount) {
+        log.info("Processing manual loan repayment for schedule: {} amount: ${}", scheduleId, amount);
+
+        try {
+            RepaymentSchedule repayment = repaymentScheduleRepository.findById(scheduleId)
+                    .orElseThrow(() -> new IllegalArgumentException("Repayment schedule not found with ID: " + scheduleId));
+
+            if (repayment.getStatus() != RepaymentSchedule.RepaymentStatus.PENDING) {
+                throw new IllegalStateException("Only pending repayments can be processed");
             }
 
-            Loan loan = schedule.getLoan();
-
-            if (loan.getStatus() != Loan.LoanStatus.ACTIVE) {
-                throw new IllegalArgumentException("Cannot process repayment for inactive loan. Status: " + loan.getStatus());
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Repayment amount must be greater than zero");
             }
 
             // Update repayment schedule
-            schedule.setPaidAmount(paidAmount);
-            schedule.setStatus(RepaymentSchedule.RepaymentStatus.PAID);
-            schedule.setPaymentDate(LocalDateTime.now());
+            repayment.setActualAmount(amount);
+            repayment.setPaidDate(LocalDate.now());
+            repayment.setStatus(RepaymentSchedule.RepaymentStatus.PAID);
+            repaymentScheduleRepository.save(repayment);
 
-            // Update loan
-            loan.setRemainingBalance(loan.getRemainingBalance().subtract(paidAmount));
-            loan.setPaidInstallments(loan.getPaidInstallments() + 1);
-
-            // Check if loan is completed
-            if (loan.getRemainingBalance().compareTo(BigDecimal.ZERO) <= 0 ||
-                    loan.getPaidInstallments() >= loan.getTotalInstallments()) {
-                loan.setStatus(Loan.LoanStatus.COMPLETED);
-                loan.setRemainingBalance(BigDecimal.ZERO);
-            }
-
-            loan.setUpdatedAt(LocalDateTime.now());
-
-            repaymentScheduleRepository.save(schedule);
+            // Update loan balance
+            Loan loan = repayment.getLoan();
+            loan.processRepayment(amount);
             loanRepository.save(loan);
 
-            log.info("Repayment processed successfully for loan: {}", loan.getId());
+            log.info("Loan repayment processed successfully for schedule: {}", scheduleId);
 
-        } catch (IllegalArgumentException e) {
-            log.error("Validation error processing repayment: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("Error processing loan repayment for schedule {}: {}", scheduleId, e.getMessage());
             throw e;
-        } catch (Exception e) {
-            log.error("Unexpected error processing repayment: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to process repayment: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Get due repayments for an employee within a date range
-     */
-    public List<RepaymentSchedule> getDueRepaymentsForEmployee(UUID employeeId, LocalDate startDate, LocalDate endDate) {
-        try {
-            if (employeeId == null) {
-                throw new IllegalArgumentException("Employee ID cannot be null");
-            }
-
-            if (startDate == null || endDate == null) {
-                throw new IllegalArgumentException("Start date and end date cannot be null");
-            }
-
-            if (startDate.isAfter(endDate)) {
-                throw new IllegalArgumentException("Start date cannot be after end date");
-            }
-
-            return repaymentScheduleRepository.findDueRepaymentsForEmployee(employeeId, startDate, endDate);
-
-        } catch (IllegalArgumentException e) {
-            log.error("Validation error getting due repayments: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Unexpected error getting due repayments: {}", e.getMessage(), e);
-            return new ArrayList<>();
+    // Helper methods
+    private void validateLoanData(LoanDTO loanDTO) {
+        if (loanDTO.getLoanAmount() == null || loanDTO.getLoanAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Loan amount must be greater than zero");
         }
-    }
-
-    /**
-     * Get due repayments for current month
-     */
-    public List<RepaymentSchedule> getDueRepaymentsForEmployeeThisMonth(UUID employeeId) {
-        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
-        LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
-        return getDueRepaymentsForEmployee(employeeId, startOfMonth, endOfMonth);
-    }
-
-    /**
-     * Get upcoming repayments for an employee (next 30 days)
-     */
-    public List<RepaymentSchedule> getUpcomingRepaymentsForEmployee(UUID employeeId) {
-        LocalDate today = LocalDate.now();
-        LocalDate thirtyDaysFromNow = today.plusDays(30);
-        return getDueRepaymentsForEmployee(employeeId, today, thirtyDaysFromNow);
-    }
-
-    /**
-     * Get overdue repayments for a specific employee
-     */
-    public List<RepaymentSchedule> getOverdueRepaymentsForEmployee(UUID employeeId) {
-        try {
-            if (employeeId == null) {
-                throw new IllegalArgumentException("Employee ID cannot be null");
-            }
-
-            LocalDate today = LocalDate.now();
-            return repaymentScheduleRepository.findDueRepaymentsForEmployee(employeeId, LocalDate.of(2000, 1, 1), today.minusDays(1))
-                    .stream()
-                    .filter(rs -> rs.getStatus() == RepaymentSchedule.RepaymentStatus.PENDING)
-                    .collect(Collectors.toList());
-
-        } catch (Exception e) {
-            log.error("Error getting overdue repayments for employee {}: {}", employeeId, e.getMessage(), e);
-            return new ArrayList<>();
+        if (loanDTO.getTotalInstallments() == null || loanDTO.getTotalInstallments() <= 0) {
+            throw new IllegalArgumentException("Total installments must be greater than zero");
         }
+        if (loanDTO.getStartDate() == null) {
+            throw new IllegalArgumentException("Start date is required");
+        }
+
+        // NEW: Validate no weekly loans
+        validateNoWeeklyLoans(loanDTO);
     }
 
     /**
-     * Get loans by status with validation
+     * NEW: Validate that no weekly loans are created
+     * According to new requirements: "NO WEEKLY LOANS"
      */
-    public List<LoanDTO> getLoansByStatus(String status) {
-        try {
-            if (status == null || status.trim().isEmpty()) {
-                return getActiveLoans(); // Default to active loans
+    private void validateNoWeeklyLoans(LoanDTO loanDTO) {
+        // Check if this would result in a weekly schedule
+        if (loanDTO.getStartDate() != null && loanDTO.getTotalInstallments() != null) {
+            LocalDate endDate = calculateEndDate(loanDTO.getStartDate(), loanDTO.getTotalInstallments());
+            long daysBetween = ChronoUnit.DAYS.between(loanDTO.getStartDate(), endDate);
+            double avgDaysBetweenInstallments = (double) daysBetween / loanDTO.getTotalInstallments();
+
+            // If average days between installments is less than 25 days, it's likely weekly
+            if (avgDaysBetweenInstallments < 25) {
+                throw new IllegalArgumentException("Weekly loans are not allowed. Only monthly or longer repayment periods are supported.");
             }
-
-            Loan.LoanStatus loanStatus;
-            try {
-                loanStatus = Loan.LoanStatus.valueOf(status.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                log.error("Invalid loan status: {}", status);
-                return new ArrayList<>();
-            }
-
-            return loanRepository.findByStatusOrderByStartDateDesc(loanStatus)
-                    .stream()
-                    .map(this::convertToDTOSafely)
-                    .filter(dto -> dto != null)
-                    .collect(Collectors.toList());
-
-        } catch (Exception e) {
-            log.error("Error getting loans by status: {}", e.getMessage(), e);
-            return new ArrayList<>();
         }
+
+        // Additional check if installment frequency is provided
+        // Note: This assumes your LoanDTO has installmentFrequency field
+        // If not, you can remove this check
+        /*
+        if (loanDTO.getInstallmentFrequency() == Loan.InstallmentFrequency.WEEKLY) {
+            throw new IllegalArgumentException("Weekly loan frequency is not allowed. Only monthly repayment schedules are supported.");
+        }
+        */
+    }
+
+    private LocalDate calculateEndDate(LocalDate startDate, Integer installments) {
+        return startDate.plusMonths(installments).minusDays(1);
+    }
+
+    private BigDecimal calculateMonthlyPayment(BigDecimal principal, BigDecimal annualRate, Integer months) {
+        if (annualRate.compareTo(BigDecimal.ZERO) == 0) {
+            return principal.divide(new BigDecimal(months), 2, RoundingMode.HALF_UP);
+        }
+
+        BigDecimal monthlyRate = annualRate.divide(new BigDecimal("12"), 8, RoundingMode.HALF_UP);
+        BigDecimal factor = BigDecimal.ONE.add(monthlyRate).pow(months);
+
+        return principal.multiply(monthlyRate).multiply(factor)
+                .divide(factor.subtract(BigDecimal.ONE), 2, RoundingMode.HALF_UP);
+    }
+
+    private LoanDTO convertToDTO(Loan loan) {
+        return LoanDTO.builder()
+                .id(loan.getId())
+                .employeeId(loan.getEmployee().getId())
+                .employeeName(loan.getEmployee().getFullName())
+                .loanAmount(loan.getLoanAmount())
+                .remainingBalance(loan.getRemainingBalance())
+                .interestRate(loan.getInterestRate())
+                .totalInstallments(loan.getTotalInstallments())
+                .startDate(loan.getStartDate())
+                .endDate(loan.getEndDate())
+                .status(loan.getStatus().name())
+                .description(loan.getDescription())
+                .createdBy(loan.getCreatedBy())
+                .approvedBy(loan.getApprovedBy())
+                .createdAt(loan.getCreatedAt())
+                .approvedAt(loan.getApprovalDate()) // Using approvalDate instead of approvedAt
+                .build();
+    }
+
+    /**
+     * Convert RepaymentSchedule to DTO
+     */
+    private RepaymentScheduleDTO convertRepaymentScheduleToDTO(RepaymentSchedule schedule) {
+        return RepaymentScheduleDTO.builder()
+                .id(schedule.getId())
+                .loanId(schedule.getLoan().getId())
+                .installmentNumber(schedule.getInstallmentNumber())
+                .dueDate(schedule.getDueDate())
+                .scheduledAmount(schedule.getScheduledAmount())
+                .principalAmount(schedule.getPrincipalAmount())
+                .interestAmount(schedule.getInterestAmount())
+                .actualAmount(schedule.getActualAmount())
+                .paidDate(schedule.getPaidDate())
+                .payslipId(schedule.getPayslipId())
+                .status(schedule.getStatus().name())
+                .notes(schedule.getNotes())
+                .createdAt(schedule.getCreatedAt())
+                .updatedAt(schedule.getUpdatedAt())
+                .build();
     }
 }

@@ -697,3 +697,19 @@ export const PURCHASE_ORDER_ENDPOINTS = {
 };
 
 
+
+export const LOAN_ENDPOINTS = {
+    BASE: '/api/v1/payroll/loans',
+    BY_ID: (id) => `/api/v1/payroll/loans/${id}`,
+    BY_EMPLOYEE: (employeeId) => `/api/v1/payroll/loans/employee/${employeeId}`,
+    CREATE: '/api/v1/payroll/loans',
+    UPDATE: (id) => `/api/v1/payroll/loans/${id}`,
+    DELETE: (id) => `/api/v1/payroll/loans/${id}`,
+    CANCEL: (id) => `/api/v1/payroll/loans/${id}/cancel`,
+    REPAYMENT_SCHEDULE: (id) => `/api/v1/payroll/loans/${id}/repayment-schedule`,
+    VALIDATE_LOAN_ELIGIBILITY: (employeeId) => `/api/v1/payroll/loans/validate-eligibility/${employeeId}`,
+    ACTIVE_LOANS: '/api/v1/payroll/loans/active',
+    PENDING_LOANS: '/api/v1/payroll/loans/pending',
+    STATISTICS: '/api/v1/payroll/loans/statistics'
+};
+

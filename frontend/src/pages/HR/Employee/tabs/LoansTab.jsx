@@ -3,7 +3,7 @@ import { FaPlus, FaEye, FaSpinner, FaExclamationTriangle, FaMoneyBillWave, FaCal
 import {loanService} from "../../../../services/payroll/loanService.js";
 import {useSnackbar} from "../../../../contexts/SnackbarContext.jsx";
 import LoanDetailsModal from "../../../payroll/Loans/components/LoanDetailsModal.jsx";
-import LoanFormModal from "../../../payroll/Loans/components/LoanFormModal.jsx";
+import CreateLoanModal from "../../../payroll/Loans/components/CreateLoanModal/CreateLoanModal.jsx";
 
 const LoansTab = ({ employee, formatCurrency }) => {
     const { showSuccess, showError, showWarning } = useSnackbar();
@@ -398,7 +398,7 @@ const LoansTab = ({ employee, formatCurrency }) => {
 
             {/* Modals */}
             {showAddModal && (
-                <LoanFormModal
+                <CreateLoanModal
                     loan={selectedLoan}
                     onClose={() => setShowAddModal(false)}
                     onSave={handleLoanSaved}

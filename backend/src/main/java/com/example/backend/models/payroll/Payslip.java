@@ -81,6 +81,13 @@ public class Payslip {
     @Column(name = "acknowledged_at")
     private LocalDateTime acknowledgedAt;
 
+    // FIXED: Moved these fields inside the class
+    @Column(name = "approved_by")
+    private String approvedBy;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -118,6 +125,6 @@ public class Payslip {
     }
 
     public enum PayslipStatus {
-        DRAFT, GENERATED, SENT, ACKNOWLEDGED
+        DRAFT, GENERATED, SENT, APPROVED, ACKNOWLEDGED
     }
 }

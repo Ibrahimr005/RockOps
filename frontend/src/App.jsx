@@ -68,6 +68,9 @@ import EmployeeOnboarding from "./pages/HR/Vacancy/EmployeeOnboarding.jsx";
 import PromotionList from "./pages/HR/Promotion/PromotionList.jsx";
 import JobPositionDetails from "./pages/HR/JobPosition/details/JobPositionDetails.jsx";
 import BankReconciliation from "./pages/finance/BankReconciliation/BankReconciliation.jsx";
+import PayslipManagement from "./pages/payroll/payslip/PayslipManagement.jsx";
+import PayslipEdit from "./pages/payroll/payslip/PayslipEdit.jsx";
+import DeductionManagement from "./pages/payroll/deduction/DeductionManagement.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -163,6 +166,7 @@ function App() {
                                         <Route path="positions/:id" element={<JobPositionDetails/>}/>
                                         <Route path="employees" element={<EmployeesList/>}/>
                                         <Route path="employees/add" element={<EmployeeOnboarding/>}/>
+                                        <Route path="employees/:id/onboarding" element={<EmployeeOnboarding/>}/>
                                         <Route path="employee-details/:id" element={<EmployeeDetails/>}/>
                                         <Route path="attendance" element={<AttendancePage/>}/>
                                         <Route path="vacancies/:id" element={<VacancyDetails/>}/>
@@ -171,14 +175,39 @@ function App() {
                                     </Route>
 
 
-                                    {/* Payroll Routes */}
                                     <Route path="/payroll" element={<RoleRoute allowedRoles={[HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ADMIN]}><PayrollLayout/></RoleRoute>}>
+                                        {/* Dashboard */}
                                         <Route index element={<PayrollDashboard/>}/>
-                                        <Route path="payslips" element={<PayslipList/>}/>
+
+                                        {/* Payslip Management */}
+                                        <Route path="payslips" element={<PayslipManagement/>}/>
+                                        {/*<Route path="payslips/create" element={<PayslipCreate/>}/>*/}
+                                        {/*<Route path="payslips/bulk-actions" element={<PayslipBulkActions/>}/>*/}
                                         <Route path="payslips/:id" element={<PayslipDetails/>}/>
+                                        <Route path="payslips/:id/edit" element={<PayslipEdit/>}/>
+
+                                        {/* Deduction Management */}
+                                        <Route path="deductions" element={<DeductionManagement/>}/>
+                                        {/*<Route path="deductions/manual" element={<ManualDeductionManagement/>}/>*/}
+                                        {/*<Route path="deductions/types" element={<DeductionTypeManagement/>}/>*/}
+                                        {/*<Route path="deductions/employee-summary" element={<EmployeeDeductionSummary/>}/>*/}
+                                        {/*<Route path="deductions/types/:id" element={<DeductionTypeDetails/>}/>*/}
+                                        {/*<Route path="deductions/:id" element={<DeductionDetails/>}/>*/}
+
+                                        {/* Loan Management */}
                                         <Route path="loans" element={<LoanManagement/>}/>
+                                        {/*<Route path="loans/active" element={<ActiveLoans/>}/>*/}
+                                        {/*<Route path="loans/overdue" element={<OverdueLoans/>}/>*/}
+                                        {/*<Route path="loans/repayment-schedule" element={<LoanRepaymentSchedule/>}/>*/}
                                         <Route path="loans/:id" element={<LoanDetails/>}/>
+                                        {/*<Route path="loans/:id/edit" element={<LoanEdit/>}/>*/}
+
+                                        {/* Reports & History */}
                                         <Route path="reports" element={<PayrollReports/>}/>
+                                        {/*<Route path="reports/payroll-summary" element={<PayrollSummaryReport/>}/>*/}
+                                        {/*<Route path="reports/deduction-reports" element={<DeductionReports/>}/>*/}
+                                        {/*<Route path="reports/loan-reports" element={<LoanReports/>}/>*/}
+                                        {/*<Route path="reports/period-analysis" element={<PeriodAnalysisReport/>}/>*/}
                                     </Route>
 
                                     {/* Equipment Management Routes */}
