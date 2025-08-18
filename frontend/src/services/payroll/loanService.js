@@ -1,3 +1,4 @@
+// frontend/src/services/payroll/loanService.js
 import apiClient from '../../utils/apiClient.js';
 
 // Loan API endpoints - Matching LoanController.java exactly
@@ -60,6 +61,27 @@ export const loanService = {
         });
     },
 
+    // NEW: Get all loans with optional filters
+    getAllLoans: (filters = {}) => {
+        const params = {};
+
+        // Add filters to params if they exist
+        if (filters.employeeId && filters.employeeId !== '') {
+            params.employeeId = filters.employeeId;
+        }
+        if (filters.status && filters.status !== '') {
+            params.status = filters.status;
+        }
+        if (filters.dateFrom && filters.dateFrom !== '') {
+            params.dateFrom = filters.dateFrom;
+        }
+        if (filters.dateTo && filters.dateTo !== '') {
+            params.dateTo = filters.dateTo;
+        }
+
+        return apiClient.get(LOAN_ENDPOINTS.BASE, { params });
+    },
+
     // Get loan statistics
     getLoanStatistics: () => {
         return apiClient.get(LOAN_ENDPOINTS.STATISTICS);
@@ -96,11 +118,37 @@ export const loanService = {
         });
     },
 
+    // NEW: Validate loan eligibility for employee
+    validateLoanEligibility: (employeeId) => {
+        return apiClient.get(`${LOAN_ENDPOINTS.BASE}/eligibility/${employeeId}`);
+    },
+
+    // NEW: Check if employee can afford loan
+    checkLoanAffordability: (employeeId, loanAmount, installments) => {
+        return apiClient.post(`${LOAN_ENDPOINTS.BASE}/affordability-check`, {
+            employeeId,
+            loanAmount,
+            installments
+        });
+    },
+
     // Export loan report (if needed in the future)
     exportLoanReport: (filters = {}) => {
         return apiClient.get(`${LOAN_ENDPOINTS.BASE}/export`, {
             params: filters,
             responseType: 'blob'
+        });
+    },
+
+    // NEW: Get loan summary/dashboard data
+    getLoanSummary: () => {
+        return apiClient.get(`${LOAN_ENDPOINTS.BASE}/summary`);
+    },
+
+    // NEW: Search loans
+    searchLoans: (searchTerm) => {
+        return apiClient.get(`${LOAN_ENDPOINTS.BASE}/search`, {
+            params: { q: searchTerm }
         });
     }
 };

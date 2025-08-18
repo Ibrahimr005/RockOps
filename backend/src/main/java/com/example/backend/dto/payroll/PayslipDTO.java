@@ -42,4 +42,8 @@ public class PayslipDTO {
     private List<EarningDTO> earnings;
     private List<DeductionDTO> deductions;
     private List<EmployerContributionDTO> employerContributions;
+    private String approvedBy;
+    private LocalDateTime approvedAt;
+    private String createdBy;
+    private LocalDateTime createdAt;
 }

@@ -1,654 +1,407 @@
-import React, { useState, useEffect } from 'react';
+// frontend/src/pages/payroll/LoanManagement/LoanManagement.jsx
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaEye, FaCheck, FaTimes, FaCalendarAlt, FaExclamationTriangle, FaMoneyBillWave, FaFilter, FaSearch, FaEdit, FaHandHoldingUsd } from 'react-icons/fa';
-import { loanService } from '../../../../services/payroll/loanService';
-import { useSnackbar } from '../../../../contexts/SnackbarContext';
+import { FaPlus, FaDollarSign, FaUsers, FaFileInvoice, FaEye, FaEdit, FaCheck, FaTimes } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
-import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
-import IntroCard from '../../../../components/common/IntroCard/IntroCard.jsx';
-import LoanFormModal from '../components/LoanFormModal.jsx';
-import LoanDetailsModal from '../components/LoanDetailsModal.jsx';
+import CreateLoanModal from '../components/CreateLoanModal/CreateLoanModal';
+import { loanService } from '../../../../services/payroll/loanService';
+import { employeeService } from '../../../../services/hr/employeeService';
+import { formatCurrency, formatDate } from '../../../../utils/formatters.js';
 import './LoanManagement.scss';
 
 const LoanManagement = () => {
     const navigate = useNavigate();
-    const { showSuccess, showError, showWarning } = useSnackbar();
-
     const [loans, setLoans] = useState([]);
+    const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [showDetailsModal, setShowDetailsModal] = useState(false);
-    const [selectedLoan, setSelectedLoan] = useState(null);
-    const [filters, setFilters] = useState({
-        status: '',
-        employeeName: '',
-        startDate: '',
-        endDate: '',
-        page: 0,
-        size: 20
-    });
-    const [totalPages, setTotalPages] = useState(0);
-    const [totalElements, setTotalElements] = useState(0);
-    const [loanStats, setLoanStats] = useState(null);
-    const [statsLoading, setStatsLoading] = useState(false);
-
-    // Confirmation dialog state
-    const [confirmDialog, setConfirmDialog] = useState({
-        isVisible: false,
-        type: 'warning',
-        title: '',
-        message: '',
-        onConfirm: null,
-        isLoading: false
-    });
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     useEffect(() => {
-        loadLoans();
-        loadLoanStats();
-    }, [filters.page, filters.size]);
+        loadData();
+    }, []);
 
-    const loadLoans = async () => {
+    const loadData = async () => {
         try {
             setLoading(true);
             setError(null);
-            let response;
 
-            console.log('Loading loans with filters:', filters);
+            // Load employees first
+            const employeesResponse = await employeeService.getAll();
+            setEmployees(employeesResponse.data);
 
-            // Determine which API call to make based on current filter
-            if (filters.status && filters.status !== '' && filters.status !== 'ALL') {
-                console.log('Fetching loans by status:', filters.status);
-                response = await loanService.getLoansByStatus(filters.status);
-            } else {
-                console.log('Fetching all active loans');
-                // For "All Loans" tab, we should get all loans, not just active ones
-                // Let's try getting all loans by fetching each status
-                try {
-                    // Try to get all loans by fetching each status
-                    const [pendingResponse, activeResponse, completedResponse, rejectedResponse, cancelledResponse] = await Promise.all([
-                        loanService.getLoansByStatus('PENDING').catch(() => ({ data: [] })),
-                        loanService.getActiveLoans().catch(() => ({ data: [] })),
-                        loanService.getLoansByStatus('COMPLETED').catch(() => ({ data: [] })),
-                        loanService.getLoansByStatus('REJECTED').catch(() => ({ data: [] })),
-                        loanService.getLoansByStatus('CANCELLED').catch(() => ({ data: [] }))
-                    ]);
+            // Get loans from all statuses and combine them
+            try {
+                const [activeLoans, pendingLoans, completedLoans, cancelledLoans] = await Promise.all([
+                    loanService.getActiveLoans().catch(() => ({ data: [] })),
+                    loanService.getLoansByStatus('PENDING').catch(() => ({ data: [] })),
+                    loanService.getLoansByStatus('COMPLETED').catch(() => ({ data: [] })),
+                    loanService.getLoansByStatus('CANCELLED').catch(() => ({ data: [] }))
+                ]);
 
-                    // Combine all loans
-                    const allLoans = [
-                        ...(pendingResponse.data || []),
-                        ...(activeResponse.data || []),
-                        ...(completedResponse.data || []),
-                        ...(rejectedResponse.data || []),
-                        ...(cancelledResponse.data || [])
-                    ];
+                const allLoans = [
+                    ...(activeLoans.data || []),
+                    ...(pendingLoans.data || []),
+                    ...(completedLoans.data || []),
+                    ...(cancelledLoans.data || [])
+                ];
 
-                    response = { data: allLoans };
-                    console.log('Combined all loans:', allLoans.length);
-                } catch (combineError) {
-                    console.warn('Failed to combine all loans, falling back to active loans only');
-                    response = await loanService.getActiveLoans();
-                }
-            }
-
-            // Handle response data
-            const allLoans = response.data || [];
-            console.log('Received loans from API:', allLoans.length, allLoans);
-
-            // Apply client-side filtering if needed
-            let filteredLoans = allLoans;
-
-            if (filters.employeeName && filters.employeeName.trim()) {
-                filteredLoans = filteredLoans.filter(loan =>
-                    loan.employeeName?.toLowerCase().includes(filters.employeeName.toLowerCase())
+                // Remove duplicates if any (based on loan id)
+                const uniqueLoans = allLoans.filter((loan, index, self) =>
+                    index === self.findIndex(l => l.id === loan.id)
                 );
-                console.log('After employee name filter:', filteredLoans.length);
+
+                setLoans(uniqueLoans);
+            } catch (err) {
+                console.warn('Error fetching all loans, falling back to active loans only:', err);
+                const activeLoans = await loanService.getActiveLoans();
+                setLoans(activeLoans.data || []);
             }
 
-            if (filters.startDate) {
-                filteredLoans = filteredLoans.filter(loan =>
-                    new Date(loan.startDate) >= new Date(filters.startDate)
-                );
-                console.log('After start date filter:', filteredLoans.length);
-            }
-
-            if (filters.endDate) {
-                filteredLoans = filteredLoans.filter(loan =>
-                    new Date(loan.endDate) <= new Date(filters.endDate)
-                );
-                console.log('After end date filter:', filteredLoans.length);
-            }
-
-            // Simple client-side pagination
-            const startIndex = filters.page * filters.size;
-            const endIndex = startIndex + filters.size;
-            const paginatedLoans = filteredLoans.slice(startIndex, endIndex);
-
-            console.log('Final paginated loans:', paginatedLoans.length);
-
-            setLoans(paginatedLoans);
-            setTotalElements(filteredLoans.length);
-            setTotalPages(Math.ceil(filteredLoans.length / filters.size));
-
-        } catch (error) {
-            console.error('Error loading loans:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to load loans';
-            setError(errorMessage);
-            showError(`Failed to load loans: ${errorMessage}`);
-            setLoans([]);
+        } catch (err) {
+            setError('Failed to load loan data');
+            console.error('Error loading loans:', err);
         } finally {
             setLoading(false);
         }
     };
 
-    const loadLoanStats = async () => {
+    const handleCreateLoan = () => {
+        setShowCreateModal(true);
+    };
+
+    const handleLoanCreated = (newLoan) => {
+        setLoans(prev => [newLoan, ...prev]);
+        setShowCreateModal(false);
+        // Use your existing snackbar here
+        // showSnackbar('Loan created successfully', 'success');
+    };
+
+    const handleCloseModal = () => {
+        setShowCreateModal(false);
+    };
+
+    const handleApproveLoan = async (loanId) => {
         try {
-            setStatsLoading(true);
-            const response = await loanService.getLoanStatistics();
-            setLoanStats(response.data);
+            await loanService.approveLoan(loanId, 'ADMIN');
+            setLoans(prev => prev.map(loan =>
+                loan.id === loanId ? { ...loan, status: 'ACTIVE' } : loan
+            ));
+            // showSnackbar('Loan approved successfully', 'success');
         } catch (error) {
-            console.error('Error loading loan statistics:', error);
-            // Don't show error for stats failure, just log it
-            setLoanStats({
-                totalOutstanding: 0,
-                activeLoans: 0,
-                overdueLoans: 0,
-                pendingLoans: 0,
-                completedLoans: 0,
-                rejectedLoans: 0,
-                cancelledLoans: 0
-            });
-        } finally {
-            setStatsLoading(false);
+            console.error('Error approving loan:', error);
+            // showSnackbar('Failed to approve loan', 'error');
         }
     };
 
-    const handleAddLoan = () => {
-        setSelectedLoan(null);
-        setShowAddModal(true);
-    };
-
-    const handleEditLoan = (loan) => {
-        if (loan.status !== 'PENDING') {
-            showWarning('Only pending loans can be edited');
-            return;
-        }
-        setSelectedLoan(loan);
-        setShowAddModal(true);
-    };
-
-    const handleViewLoan = (loan) => {
-        setSelectedLoan(loan);
-        setShowDetailsModal(true);
-    };
-
-    const handleApproveLoan = (loanId) => {
-        setConfirmDialog({
-            isVisible: true,
-            type: 'success',
-            title: 'Approve Loan',
-            message: 'Are you sure you want to approve this loan? This action cannot be undone.',
-            onConfirm: async () => {
-                setConfirmDialog(prev => ({ ...prev, isLoading: true }));
-                try {
-                    await loanService.approveLoan(loanId);
-                    showSuccess('Loan approved successfully');
-                    loadLoans();
-                    loadLoanStats();
-                } catch (error) {
-                    console.error('Error approving loan:', error);
-                    const errorMessage = error.response?.data?.message || error.message || 'Failed to approve loan';
-                    showError(`Failed to approve loan: ${errorMessage}`);
-                } finally {
-                    setConfirmDialog(prev => ({ ...prev, isVisible: false, isLoading: false }));
-                }
-            }
-        });
-    };
-
-    const handleRejectLoan = (loanId) => {
-        const reason = prompt('Please provide a reason for rejection:');
-        if (reason === null) return; // User cancelled
-
-        if (!reason.trim()) {
-            showError('Rejection reason is required');
-            return;
-        }
-
-        setConfirmDialog({
-            isVisible: true,
-            type: 'danger',
-            title: 'Reject Loan',
-            message: `Are you sure you want to reject this loan?\n\nReason: "${reason}"\n\nThis action cannot be undone.`,
-            confirmText: 'Reject',
-            onConfirm: async () => {
-                setConfirmDialog(prev => ({ ...prev, isLoading: true }));
-                try {
-                    await loanService.rejectLoan(loanId, 'SYSTEM', reason);
-                    showSuccess('Loan rejected successfully');
-                    loadLoans();
-                    loadLoanStats();
-                } catch (error) {
-                    console.error('Error rejecting loan:', error);
-                    const errorMessage = error.response?.data?.message || error.message || 'Failed to reject loan';
-                    showError(`Failed to reject loan: ${errorMessage}`);
-                } finally {
-                    setConfirmDialog(prev => ({ ...prev, isVisible: false, isLoading: false }));
-                }
-            }
-        });
-    };
-
-    const handleCancelLoan = (loanId) => {
-        setConfirmDialog({
-            isVisible: true,
-            type: 'warning',
-            title: 'Cancel Loan',
-            message: 'Are you sure you want to cancel this loan? This action cannot be undone.',
-            confirmText: 'Cancel Loan',
-            onConfirm: async () => {
-                setConfirmDialog(prev => ({ ...prev, isLoading: true }));
-                try {
-                    await loanService.cancelLoan(loanId);
-                    showSuccess('Loan cancelled successfully');
-                    loadLoans();
-                    loadLoanStats();
-                } catch (error) {
-                    console.error('Error cancelling loan:', error);
-                    const errorMessage = error.response?.data?.message || error.message || 'Failed to cancel loan';
-                    showError(`Failed to cancel loan: ${errorMessage}`);
-                } finally {
-                    setConfirmDialog(prev => ({ ...prev, isVisible: false, isLoading: false }));
-                }
-            }
-        });
-    };
-
-    const handleProcessRepayment = async (scheduleId, amount) => {
+    const handleRejectLoan = async (loanId) => {
         try {
-            await loanService.processRepayment(scheduleId, amount);
-            showSuccess('Repayment processed successfully');
-            loadLoans();
-            loadLoanStats();
+            await loanService.rejectLoan(loanId, 'ADMIN', 'Rejected from management interface');
+            setLoans(prev => prev.map(loan =>
+                loan.id === loanId ? { ...loan, status: 'REJECTED' } : loan
+            ));
+            // showSnackbar('Loan rejected successfully', 'success');
         } catch (error) {
-            console.error('Error processing repayment:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to process repayment';
-            showError(`Failed to process repayment: ${errorMessage}`);
+            console.error('Error rejecting loan:', error);
+            // showSnackbar('Failed to reject loan', 'error');
         }
     };
 
-    const handleLoanSaved = () => {
-        setShowAddModal(false);
-        setSelectedLoan(null);
-        loadLoans();
-        loadLoanStats();
-        showSuccess(selectedLoan ? 'Loan updated successfully' : 'Loan created successfully');
-    };
-
-    const handleCloseConfirmDialog = () => {
-        setConfirmDialog(prev => ({ ...prev, isVisible: false, isLoading: false }));
-    };
-
-    const handleFilterChange = (field, value) => {
-        setFilters(prev => ({
-            ...prev,
-            [field]: value,
-            page: 0
-        }));
-    };
-
-    const handleSearch = () => {
-        loadLoans();
-    };
-
-    const handlePageChange = (newPage) => {
-        setFilters(prev => ({ ...prev, page: newPage }));
-    };
-
-    const handleStatusFilterChange = (status) => {
-        setFilters(prev => ({
-            ...prev,
-            status,
-            page: 0
-        }));
-    };
-
-    // Calculate loan statistics for IntroCard
-    const calculateStats = () => {
-        const totalOutstanding = loanStats?.totalOutstanding || 0;
-        const activeLoans = loanStats?.activeLoans || 0;
-        const pendingLoans = loanStats?.pendingLoans || 0;
-        const overdueLoans = loanStats?.overdueLoans || 0;
-
-        return [
-            { value: formatCurrency(totalOutstanding), label: 'Total Outstanding' },
-            { value: activeLoans.toString(), label: 'Active Loans' },
-            { value: pendingLoans.toString(), label: 'Pending Approval' },
-            { value: overdueLoans.toString(), label: 'Overdue' }
-        ];
-    };
-
-    // Define table columns
-    const columns = [
-        {
-            id: 'employee',
-            accessor: 'employeeName',
-            header: 'Employee',
-            sortable: true,
-            filterable: true,
-            render: (loan) => (
-                <div className="employee-info">
-                    <div className="employee-name">{loan.employeeName}</div>
-                    <div className="employee-id">ID: {loan.employeeId}</div>
-                </div>
-            )
-        },
-        {
-            id: 'loanAmount',
-            accessor: 'loanAmount',
-            header: 'Loan Amount',
-            sortable: true,
-            filterable: false,
-            render: (loan) => formatCurrency(loan.loanAmount)
-        },
-        {
-            id: 'remainingBalance',
-            accessor: 'remainingBalance',
-            header: 'Remaining',
-            sortable: true,
-            filterable: false,
-            render: (loan) => (
-                <span className="remaining-balance">
-                    {formatCurrency(loan.remainingBalance)}
-                </span>
-            )
-        },
-        {
-            id: 'installmentAmount',
-            accessor: 'installmentAmount',
-            header: 'Monthly Payment',
-            sortable: true,
-            filterable: false,
-            render: (loan) => formatCurrency(loan.installmentAmount)
-        },
-        {
-            id: 'progress',
-            accessor: 'paidInstallments',
-            header: 'Progress',
-            sortable: false,
-            filterable: false,
-            render: (loan) => (
-                <LoanProgress
-                    paid={loan.paidInstallments || 0}
-                    total={loan.totalInstallments}
-                    percentage={((loan.paidInstallments || 0) / loan.totalInstallments) * 100}
-                />
-            )
-        },
-        {
-            id: 'startDate',
-            accessor: 'startDate',
-            header: 'Start Date',
-            sortable: true,
-            filterable: false,
-            render: (loan) => new Date(loan.startDate).toLocaleDateString()
-        },
-        {
-            id: 'endDate',
-            accessor: 'endDate',
-            header: 'End Date',
-            sortable: true,
-            filterable: false,
-            render: (loan) => new Date(loan.endDate).toLocaleDateString()
-        },
-        {
-            id: 'status',
-            accessor: 'status',
-            header: 'Status',
-            sortable: true,
-            filterable: true,
-            render: (loan) => getLoanStatusBadge(loan.status)
-        }
-    ];
-
-    // Define table actions
-    const actions = [
-        {
-            id: 'view',
-            label: 'View Details',
-            icon: <FaEye />,
-            onClick: (loan) => handleViewLoan(loan),
-            className: 'action-view'
-        },
-        {
-            id: 'edit',
-            label: 'Edit',
-            icon: <FaEdit />,
-            onClick: (loan) => handleEditLoan(loan),
-            className: 'action-edit',
-            isDisabled: (loan) => loan.status !== 'PENDING'
-        },
-        {
-            id: 'approve',
-            label: 'Approve',
-            icon: <FaCheck />,
-            onClick: (loan) => handleApproveLoan(loan.id),
-            className: 'action-approve',
-            isDisabled: (loan) => loan.status !== 'PENDING'
-        },
-        {
-            id: 'reject',
-            label: 'Reject',
-            icon: <FaTimes />,
-            onClick: (loan) => handleRejectLoan(loan.id),
-            className: 'action-reject',
-            isDisabled: (loan) => loan.status !== 'PENDING'
-        },
-        {
-            id: 'cancel',
-            label: 'Cancel',
-            icon: <FaTimes />,
-            onClick: (loan) => handleCancelLoan(loan.id),
-            className: 'action-cancel',
-            isDisabled: (loan) => ['COMPLETED', 'CANCELLED'].includes(loan.status)
-        }
-    ];
-
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD'
-        }).format(amount);
-    };
-
-    const getLoanStatusBadge = (status) => {
+    const getStatusBadge = (status) => {
         const statusConfig = {
-            PENDING: { class: 'pending', text: 'Pending' },
-            APPROVED: { class: 'approved', text: 'Approved' },
-            ACTIVE: { class: 'active', text: 'Active' },
-            COMPLETED: { class: 'completed', text: 'Completed' },
-            REJECTED: { class: 'rejected', text: 'Rejected' },
-            CANCELLED: { class: 'cancelled', text: 'Cancelled' }
+            PENDING: { class: 'pending', icon: '', label: 'Pending' },
+            ACTIVE: { class: 'active', icon: '🟢', label: 'Active' },
+            COMPLETED: { class: 'status-completed', icon: '✅', label: 'Completed' },
+            CANCELLED: { class: 'status-cancelled', icon: '🔴', label: 'Cancelled' },
+            REJECTED: { class: 'status-rejected', icon: '❌', label: 'Rejected' }
         };
 
-        const config = statusConfig[status] || { class: 'pending', text: status };
-
+        const config = statusConfig[status] || statusConfig.PENDING;
         return (
             <span className={`status-badge ${config.class}`}>
-                {config.text}
+                {config.icon} {config.label}
             </span>
         );
     };
 
-    if (error) {
-        return (
-            <div className="loan-management">
-                <div className="error-state">
-                    <div className="error-content">
-                        <FaExclamationTriangle className="error-icon" />
-                        <h3>Error Loading Loans</h3>
-                        <p>{error}</p>
-                        <button
-                            className="btn btn-primary"
-                            onClick={loadLoans}
-                        >
-                            Retry
-                        </button>
+    const calculateProgress = (totalAmount, remainingBalance) => {
+        const paidAmount = totalAmount - remainingBalance;
+        return totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
+    };
+
+    const getEmployeeName = (employeeId) => {
+        const employee = employees.find(emp => emp.id === employeeId);
+        return employee ? `${employee.firstName} ${employee.lastName}` : 'Unknown Employee';
+    };
+
+    const getEmployeePosition = (employeeId) => {
+        const employee = employees.find(emp => emp.id === employeeId);
+        return employee ? employee.jobPositionName || 'Unknown Position' : 'Unknown Position';
+    };
+
+    // DataTable columns configuration
+    const columns = [
+        {
+            accessor: 'id',
+            header: 'Loan ID',
+            sortable: true,
+            filterable: true,
+            filterType: 'text',
+            render: (loan) => (
+                <span className="loan-management-loan-id">
+                    #{loan.id ? loan.id.slice(-8) : 'N/A'}
+                </span>
+            )
+        },
+        {
+            accessor: 'employeeName',
+            header: 'Employee',
+            sortable: true,
+            filterable: true,
+            filterType: 'select',
+            render: (loan) => (
+                <div className="loan-management-employee-info">
+                    <div className="loan-management-employee-name">
+                        {loan.employeeName || getEmployeeName(loan.employeeId)}
+                    </div>
+                    <div className="loan-management-employee-position">
+                        {getEmployeePosition(loan.employeeId)}
                     </div>
                 </div>
-            </div>
-        );
-    }
+            )
+        },
+        {
+            accessor: 'loanAmount',
+            header: 'Loan Amount',
+            sortable: true,
+            filterable: true,
+            filterType: 'number',
+            render: (loan) => (
+                <span className="loan-management-loan-amount">{formatCurrency(loan.loanAmount)}</span>
+            )
+        },
+        {
+            accessor: 'remainingBalance',
+            header: 'Remaining Balance',
+            sortable: true,
+            filterable: true,
+            filterType: 'number',
+            render: (loan) => (
+                <div className="loan-management-balance-info">
+                    <span className="loan-management-remaining-amount">{formatCurrency(loan.remainingBalance)}</span>
+                    <div className="loan-management-progress-bar">
+                        <div
+                            className="loan-management-progress-fill"
+                            style={{ width: `${calculateProgress(loan.loanAmount, loan.remainingBalance)}%` }}
+                        ></div>
+                    </div>
+                    <small className="loan-management-progress-text">
+                        {calculateProgress(loan.loanAmount, loan.remainingBalance)}% paid
+                    </small>
+                </div>
+            )
+        },
+        {
+            accessor: 'status',
+            header: 'Status',
+            sortable: true,
+            filterable: true,
+            filterType: 'select',
+            render: (loan) => getStatusBadge(loan.status)
+        },
+        {
+            accessor: 'startDate',
+            header: 'Start Date',
+            sortable: true,
+            filterable: true,
+            filterType: 'text',
+            render: (loan) => formatDate(loan.startDate)
+        },
+        {
+            accessor: 'endDate',
+            header: 'End Date',
+            sortable: true,
+            filterable: true,
+            filterType: 'text',
+            render: (loan) => formatDate(loan.endDate)
+        },
+        {
+            accessor: 'totalInstallments',
+            header: 'Installments',
+            sortable: true,
+            filterable: true,
+            filterType: 'number',
+            render: (loan) => `${loan.totalInstallments} months`
+        }
+    ];
+
+    // DataTable actions configuration
+    const actions = [
+
+        {
+            label: 'Edit',
+            icon: <FaEdit />,
+            onClick: (loan) => navigate(`/payroll/loans/${loan.id}/edit`),
+            isVisible: (loan) => loan.status === 'PENDING',
+            className: 'action-edit'
+        },
+        {
+            label: 'Approve',
+            icon: <FaCheck />,
+            onClick: (loan) => handleApproveLoan(loan.id),
+            isVisible: (loan) => loan.status === 'PENDING',
+            className: 'action-approve'
+        },
+        {
+            label: 'Reject',
+            icon: <FaTimes />,
+            onClick: (loan) => handleRejectLoan(loan.id),
+            isVisible: (loan) => loan.status === 'PENDING',
+            className: 'action-reject'
+        }
+    ];
+
+    // Custom filters for DataTable
+    const customFilters = [
+        {
+            label: 'Date From',
+            component: (
+                <input
+                    type="date"
+                    className="loan-management-filter-input"
+                    onChange={(e) => {
+                        // Handle date filtering logic here if needed
+                        // This would be used for additional client-side filtering
+                    }}
+                />
+            )
+        },
+        {
+            label: 'Date To',
+            component: (
+                <input
+                    type="date"
+                    className="loan-management-filter-input"
+                    onChange={(e) => {
+                        // Handle date filtering logic here if needed
+                    }}
+                />
+            )
+        }
+    ];
+
+    // Filterable columns for DataTable
+    const filterableColumns = columns.filter(col => col.filterable);
+
+    const summaryStats = useMemo(() => {
+        const totalLoans = loans.length;
+        const activeLoans = loans.filter(loan => loan.status === 'ACTIVE').length;
+        const pendingLoans = loans.filter(loan => loan.status === 'PENDING').length;
+        const completedLoans = loans.filter(loan => loan.status === 'COMPLETED').length;
+        const totalOutstanding = loans
+            .filter(loan => loan.status === 'ACTIVE')
+            .reduce((sum, loan) => sum + (loan.remainingBalance || 0), 0);
+
+        return { totalLoans, activeLoans, pendingLoans, completedLoans, totalOutstanding };
+    }, [loans]);
+
+    if (loading) return <div className="loan-management-loading-state">Loading loans...</div>;
+    if (error) return <div className="loan-management-error-state">{error}</div>;
 
     return (
         <div className="loan-management">
-            {/* IntroCard with loan statistics */}
-            <IntroCard
-                title="Employee Loan Management"
-                label="LOAN CENTER"
-                icon={<FaHandHoldingUsd />}
-                stats={calculateStats()}
-                className="loan-intro-card"
-            />
-
-            {/* Filter Tabs */}
-            <div className="loan-management__filters">
-                <div className="filter-tabs">
-                    <button
-                        className={`filter-tab ${filters.status === '' ? 'active' : ''}`}
-                        onClick={() => handleStatusFilterChange('')}
-                    >
-                        All Loans ({(loanStats?.totalLoans || 0)})
-                    </button>
-                    <button
-                        className={`filter-tab ${filters.status === 'PENDING' ? 'active' : ''}`}
-                        onClick={() => handleStatusFilterChange('PENDING')}
-                    >
-                        Pending ({(loanStats?.pendingLoans || 0)})
-                    </button>
-                    <button
-                        className={`filter-tab ${filters.status === 'ACTIVE' ? 'active' : ''}`}
-                        onClick={() => handleStatusFilterChange('ACTIVE')}
-                    >
-                        Active ({(loanStats?.activeLoans || 0)})
-                    </button>
-                    <button
-                        className={`filter-tab ${filters.status === 'COMPLETED' ? 'active' : ''}`}
-                        onClick={() => handleStatusFilterChange('COMPLETED')}
-                    >
-                        Completed ({(loanStats?.completedLoans || 0)})
-                    </button>
+            <div className="loan-management__header">
+                <div className="loan-management-header-content">
+                    <h1>Loan Management</h1>
+                    <p>Manage employee loans and track repayment schedules</p>
                 </div>
             </div>
 
-            {/* Data Table */}
-            <DataTable
-                // Data props
-                data={loans}
-                columns={columns}
-                loading={loading}
-
-                // Table configuration
-                tableTitle="Employee Loans"
-                emptyStateMessage="No loans found"
-                noResultsMessage="No loans match your search criteria"
-                defaultSortField="startDate"
-                defaultSortDirection="desc"
-                defaultItemsPerPage={20}
-                itemsPerPageOptions={[10, 20, 50, 100]}
-
-                // Search and filters
-                showSearch={true}
-                showFilters={true}
-
-                // Actions
-                actions={actions}
-
-                // Add button configuration
-                showAddButton={true}
-                addButtonText="Create New Loan"
-                addButtonIcon={<FaPlus />}
-                onAddClick={handleAddLoan}
-                addButtonDisabled={loading}
-
-                // Export functionality
-                showExportButton={true}
-                exportButtonText="Export Loans"
-                exportFileName={`Employee_Loans_${new Date().toISOString().split('T')[0]}`}
-                exportAllData={true}
-                customExportHeaders={{
-                    employeeName: 'Employee Name',
-                    loanAmount: 'Loan Amount (USD)',
-                    remainingBalance: 'Remaining Balance (USD)',
-                    installmentAmount: 'Monthly Payment (USD)',
-                    startDate: 'Start Date',
-                    endDate: 'End Date',
-                    status: 'Loan Status'
-                }}
-                onExportStart={() => {
-                    console.log('Export started');
-                    showSuccess('Starting loans export...');
-                }}
-                onExportComplete={(data) => {
-                    console.log('Export completed:', data);
-                    showSuccess(`Successfully exported ${data.rowCount} loans to Excel`);
-                }}
-                onExportError={(error) => {
-                    console.error('Export failed:', error);
-                    showError('Failed to export loans. Please try again.');
-                }}
-
-                // Styling
-                className="loan-data-table"
-            />
-
-            {/* Modals */}
-            {showAddModal && (
-                <LoanFormModal
-                    loan={selectedLoan}
-                    onClose={() => setShowAddModal(false)}
-                    onSave={handleLoanSaved}
-                />
-            )}
-
-            {showDetailsModal && selectedLoan && (
-                <LoanDetailsModal
-                    loan={selectedLoan}
-                    onClose={() => setShowDetailsModal(false)}
-                    onProcessRepayment={handleProcessRepayment}
-                />
-            )}
-
-            {/* Confirmation Dialog */}
-            <ConfirmationDialog
-                isVisible={confirmDialog.isVisible}
-                type={confirmDialog.type}
-                title={confirmDialog.title}
-                message={confirmDialog.message}
-                confirmText={confirmDialog.confirmText || 'Confirm'}
-                cancelText="Cancel"
-                onConfirm={confirmDialog.onConfirm}
-                onCancel={handleCloseConfirmDialog}
-                isLoading={confirmDialog.isLoading}
-            />
-        </div>
-    );
-};
-
-// Loan Progress Component
-const LoanProgress = ({ paid, total, percentage }) => {
-    return (
-        <div className="loan-progress">
-            <div className="progress-info">
-                <span className="progress-text">{paid}/{total}</span>
-                <span className="progress-percentage">{Math.round(percentage)}%</span>
+            {/* Summary Cards */}
+            <div className="loan-management__summary">
+                <div className="loan-management-summary-card">
+                    <div className="loan-management-summary-icon">
+                        <FaFileInvoice />
+                    </div>
+                    <div className="loan-management-summary-content">
+                        <h3>{summaryStats.totalLoans}</h3>
+                        <p>Total Loans</p>
+                    </div>
+                </div>
+                <div className="loan-management-summary-card">
+                    <div className="loan-management-summary-icon">
+                        <FaUsers />
+                    </div>
+                    <div className="loan-management-summary-content">
+                        <h3>{summaryStats.activeLoans}</h3>
+                        <p>Active Loans</p>
+                    </div>
+                </div>
+                <div className="loan-management-summary-card">
+                    <div className="loan-management-summary-icon">
+                        <FaDollarSign />
+                    </div>
+                    <div className="loan-management-summary-content">
+                        <h3>{formatCurrency(summaryStats.totalOutstanding)}</h3>
+                        <p>Outstanding Balance</p>
+                    </div>
+                </div>
             </div>
-            <div className="loan-progress-bar">
-                <div
-                    className="loan-progress-fill"
-                    style={{ width: `${Math.min(percentage, 100)}%` }}
+
+            {/* DataTable with built-in filters and actions */}
+            <div className="loan-management__content">
+                <DataTable
+                    data={loans}
+                    columns={columns}
+                    loading={loading}
+                    tableTitle="Employee Loans"
+                    emptyMessage="No loans found"
+
+                    // Search and Filter configuration
+                    showSearch={true}
+                    showFilters={true}
+                    filterableColumns={filterableColumns}
+                    customFilters={customFilters}
+
+                    // Actions configuration
+                    actions={actions}
+                    actionsColumnWidth="50px"
+
+                    // Add button configuration
+                    showAddButton={true}
+                    addButtonText="Create Loan"
+                    addButtonIcon={<FaPlus />}
+                    onAddClick={handleCreateLoan}
+
+                    // Export configuration
+                    showExportButton={true}
+                    exportFileName="loans-report"
+                    exportButtonText="Export Loans"
+
+                    // Pagination configuration
+                    defaultItemsPerPage={15}
+                    itemsPerPageOptions={[10, 15, 25, 50]}
+
+                    // Sorting configuration
+                    defaultSortField="startDate"
+                    defaultSortDirection="desc"
+
+                    // Styling
+                    className="loan-management-table"
+
+                    // Row click handler
+                    onRowClick={(loan) => navigate(`/payroll/loans/${loan.id}`)}
                 />
             </div>
+
+            {/* Create Loan Modal */}
+            {showCreateModal && (
+                <CreateLoanModal
+                    employees={employees}
+                    onClose={handleCloseModal}
+                    onLoanCreated={handleLoanCreated}
+                />
+            )}
         </div>
     );
 };

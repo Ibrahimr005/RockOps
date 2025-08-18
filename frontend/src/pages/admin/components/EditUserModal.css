@@ -1,83 +1,24 @@
 /* EditUserModal.css - Styles for the Edit User Modal component */
 
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    backdrop-filter: blur(4px);
-    animation: fadeIn 0.2s ease-out;
+
 }
 
 .modal-content {
-    background-color: var(--section-background-color);
-    border-radius: var(--radius-md);
-    width: 500px;
-    max-width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: var(--shadow-md);
-    animation: modalSlideIn 0.3s ease-out;
-    border: 1px solid var(--border-color);
+
 }
 
 .modal-header {
-    /*display: flex;*/
-    /*justify-content: space-between;*/
-    /*align-items: center;*/
-    /*padding: 1.25rem 1.5rem;*/
-    /*border-bottom: 1px solid var(--border-color);*/
+
 }
 
 .modal-header h2 {
-    /*font-size: 1.25rem;*/
-    /*color: var(--head-title-color);*/
-    /*margin: 0;*/
-    /*font-weight: var(--bold-font-weight);*/
+
 }
 
-.close-button {
-    background: none;
-    border: none;
-    font-size: 1.25rem;
-    cursor: pointer;
-    color: var(--color-text-secondary);
-    line-height: 1;
-    padding: 0.25rem;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--transition-fast);
-}
 
-.close-button:hover {
-    background-color: var(--color-surface-hover);
-    color: var(--color-primary);
-}
 
-/* Form styles */
-.edit-form {
-    padding: 1.5rem;
-}
 
-.edit-form .form-group {
-    margin-bottom: 1.25rem;
-}
-
-.edit-form label {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--label-color);
-    margin-bottom: 0.5rem;
-}
 
 .edit-form input,
 .edit-form select,
@@ -93,6 +34,14 @@
     color: var(--text-color);
     background-color: var(--section-background-color);
     transition: all var(--transition-fast);
+}
+
+.edit-form input:disabled,
+.edit-form select:disabled,
+.edit-form textarea:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: var(--color-surface-hover);
 }
 
 /* Ensure inputs stand out from their background with proper contrast */
@@ -195,6 +144,14 @@ input::-webkit-calendar-picker-indicator {
     font-style: italic;
 }
 
+/* Form help text */
+.form-help-text {
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+
 /* Form action buttons */
 .form-actions {
     display: flex;
@@ -212,13 +169,20 @@ input::-webkit-calendar-picker-indicator {
     font-weight: 500;
     flex: 1;
     transition: all var(--transition-fast);
+    cursor: pointer;
 }
 
-.save-button:hover {
+.save-button:hover:not(:disabled) {
     background-color: var(--color-success);
     opacity: 0.9;
     transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
+}
+
+.save-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .cancel-button {
@@ -231,13 +195,20 @@ input::-webkit-calendar-picker-indicator {
     font-weight: 500;
     flex: 1;
     transition: all var(--transition-fast);
+    cursor: pointer;
 }
 
-.cancel-button:hover {
+.cancel-button:hover:not(:disabled) {
     background-color: var(--color-text-secondary);
     opacity: 0.9;
     transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
+}
+
+.cancel-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
 }
 
 /* RTL support */
@@ -279,4 +250,16 @@ input::-webkit-calendar-picker-indicator {
     [dir="rtl"] .form-actions {
         flex-direction: column;
     }
+}
+
+/* Ensure other UI elements have lower z-index than modals */
+.dropdown-menu,
+.tooltip,
+.popover {
+    z-index: 9999; /* Lower than modal overlay */
+}
+
+/* Remove any conflicting error display styles since we're using snackbar */
+.error-message {
+    display: none; /* Hide page-level error messages */
 }
