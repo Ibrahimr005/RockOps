@@ -19,41 +19,19 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
     }, [positionId]);
 
     const fetchEmployees = async () => {
+        setLoading(true);
+        showError(null);
         try {
-            setLoading(true);
+            const response = await jobPositionService.getEmployees(positionId);
+            const data = response.data;
 
-            // ✅ FIXED: Use the correct backend endpoint
-            const response = await fetch(`http://localhost:8080/api/v1/job-positions/${positionId}/employees`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const employeeData = await response.json();
-            console.log('Fetched employees:', employeeData); // Debug log
-
-            // ✅ FIXED: Handle the actual response structure
-            const employees = Array.isArray(employeeData) ? employeeData : [];
-            setEmployees(employees);
-
-            // ✅ FIXED: Calculate stats based on actual data structure
-            const total = employees.length;
-            const active = employees.filter(emp => emp.status === 'ACTIVE' || emp.active === true).length;
-            const inactive = total - active;
-
-            setStats({ total, active, inactive });
-
+            console.log(data);
+            setEmployees(Array.isArray(data) ? data : []);
         } catch (err) {
-            console.error('Error fetching position employees:', err);
-            showError('Failed to fetch employees for this position');
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to load employees';
+            showError(errorMessage);
+            showError('Failed to load positions. Please try again.');
             setEmployees([]);
-            setStats({ total: 0, active: 0, inactive: 0 });
         } finally {
             setLoading(false);
         }
