@@ -13,6 +13,7 @@ import SitePartnersTab from './tabs/SitePartnersTab';
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
 import { siteService } from '../../../services/siteService';
 import {warehouseService} from "../../../services/warehouseService.js";
+import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
 import {FaTrash} from "react-icons/fa";
 
@@ -24,11 +25,8 @@ const SiteDetails = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('equipment');
-    const [snackbar, setSnackbar] = useState({
-        show: false,
-        message: '',
-        type: 'success'
-    });
+    const { showSuccess, showError, showWarning } = useSnackbar();
+
     const [confirmDialog, setConfirmDialog] = useState({
         isVisible: false,
         type: 'warning',
@@ -83,21 +81,13 @@ const SiteDetails = () => {
             await siteService.deleteSite(siteId);
 
             hideConfirmDialog();
-            setSnackbar({
-                show: true,
-                message: "Site has been successfully deleted!",
-                type: 'success'
-            });
+            showSuccess("Site has been successfully deleted!")
             navigate('/sites')
         } catch (error) {
             console.error("Failed to delete site:", error);
             const friendlyError = parseErrorMessage(error, 'delete');
             hideConfirmDialog();
-            setSnackbar({
-                show: true,
-                message: friendlyError,
-                type: 'error'
-            });
+            showError(friendlyError);
         }
     };
 

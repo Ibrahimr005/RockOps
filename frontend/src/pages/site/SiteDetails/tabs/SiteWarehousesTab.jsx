@@ -739,7 +739,7 @@ const SiteWarehousesTab = ({siteId}) => {
     };
 
     const handleRowClick = (row) => {
-        navigate(`/warehouses/warehouse-details/${row.warehouseID}`);
+        navigate(`/warehouses/${row.warehouseID}`);
         setSnackbar({
             show: true,
             message: `Navigating to warehouse details: ${row.conventionalId}`,
