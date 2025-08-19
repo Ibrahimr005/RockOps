@@ -41,6 +41,18 @@ const MerchantModal = ({
         }
     };
 
+    // Handle file input change
+    const handleFileInputChange = (e) => {
+        // Clear any previous errors for photo
+        if (errors.photo) {
+            setErrors({
+                ...errors,
+                photo: null
+            });
+        }
+        handleFileChange(e);
+    };
+
     // Validate form
     const validateForm = () => {
         const newErrors = {};
@@ -71,12 +83,10 @@ const MerchantModal = ({
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        if (validateForm()) {
-            if (modalMode === 'add') {
-                handleAddMerchant(e);
-            } else {
-                handleUpdateMerchant(e);
-            }
+        if (modalMode === 'add') {
+            handleAddMerchant(e);
+        } else {
+            handleUpdateMerchant(e);
         }
     };
 
@@ -103,7 +113,7 @@ const MerchantModal = ({
                                             type="file"
                                             name="photo"
                                             accept="image/*"
-                                            onChange={handleFileChange}
+                                            onChange={handleFileInputChange}
                                             style={{ display: 'none' }}
                                         />
                                         {previewImage ? (
@@ -129,6 +139,9 @@ const MerchantModal = ({
                                             </div>
                                         )}
                                     </label>
+                                    {errors.photo && (
+                                        <div className="proc-merchant-error-message">{errors.photo}</div>
+                                    )}
                                 </div>
 
                                 <div className="proc-merchant-form-group">
@@ -140,23 +153,28 @@ const MerchantModal = ({
                                         onChange={handleChange}
                                         className={errors.name ? 'error' : ''}
                                         placeholder="Enter company name"
+                                        required
                                     />
-                                    {errors.name && <span className="proc-merchant-error-message">{errors.name}</span>}
+                                    {errors.name && (
+                                        <div className="proc-merchant-error-message">{errors.name}</div>
+                                    )}
                                 </div>
 
                                 <div className="proc-merchant-form-group">
-                                    <label className="required">Business Type</label>
+                                    <label className="required">Merchant Type</label>
                                     <select
                                         name="merchantType"
                                         value={formData.merchantType}
                                         onChange={handleChange}
                                         className={errors.merchantType ? 'error' : ''}
+                                        required
                                     >
-                                        <option value="">Select Business Type</option>
+                                        <option value="">Select Merchant Type</option>
                                         <option value="SUPPLIER">Supplier</option>
-
                                     </select>
-                                    {errors.merchantType && <span className="proc-merchant-error-message">{errors.merchantType}</span>}
+                                    {errors.merchantType && (
+                                        <div className="proc-merchant-error-message">{errors.merchantType}</div>
+                                    )}
                                 </div>
 
                                 <div className="proc-merchant-form-group">
@@ -167,6 +185,7 @@ const MerchantModal = ({
                                         value={formData.taxIdentificationNumber}
                                         onChange={handleChange}
                                         placeholder="Enter tax ID number"
+                                        required
                                     />
                                 </div>
 
@@ -179,8 +198,11 @@ const MerchantModal = ({
                                         onChange={handleChange}
                                         className={errors.address ? 'error' : ''}
                                         placeholder="Enter company address"
+                                        required
                                     />
-                                    {errors.address && <span className="proc-merchant-error-message">{errors.address}</span>}
+                                    {errors.address && (
+                                        <div className="proc-merchant-error-message">{errors.address}</div>
+                                    )}
                                 </div>
 
                                 <div className="proc-merchant-form-group">
@@ -189,7 +211,7 @@ const MerchantModal = ({
                                         name="siteId"
                                         value={formData.siteId}
                                         onChange={handleChange}
-
+                                        required
                                     >
                                         <option value="">Select a Site</option>
                                         {sites.map(site => (
@@ -212,8 +234,11 @@ const MerchantModal = ({
                                         onChange={handleChange}
                                         className={errors.contactPersonName ? 'error' : ''}
                                         placeholder="Enter contact person name"
+                                        required
                                     />
-                                    {errors.contactPersonName && <span className="proc-merchant-error-message">{errors.contactPersonName}</span>}
+                                    {errors.contactPersonName && (
+                                        <div className="proc-merchant-error-message">{errors.contactPersonName}</div>
+                                    )}
                                 </div>
 
                                 <div className="proc-merchant-form-group">
@@ -225,8 +250,11 @@ const MerchantModal = ({
                                         onChange={handleChange}
                                         className={errors.contactEmail ? 'error' : ''}
                                         placeholder="Enter email address"
+                                        required
                                     />
-                                    {errors.contactEmail && <span className="proc-merchant-error-message">{errors.contactEmail}</span>}
+                                    {errors.contactEmail && (
+                                        <div className="proc-merchant-error-message">{errors.contactEmail}</div>
+                                    )}
                                 </div>
 
                                 <div className="proc-merchant-form-group">
@@ -238,8 +266,11 @@ const MerchantModal = ({
                                         onChange={handleChange}
                                         className={errors.contactPhone ? 'error' : ''}
                                         placeholder="Enter primary phone number"
+                                        required
                                     />
-                                    {errors.contactPhone && <span className="proc-merchant-error-message">{errors.contactPhone}</span>}
+                                    {errors.contactPhone && (
+                                        <div className="proc-merchant-error-message">{errors.contactPhone}</div>
+                                    )}
                                 </div>
 
                                 <div className="proc-merchant-form-group">

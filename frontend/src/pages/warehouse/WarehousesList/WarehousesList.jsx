@@ -326,7 +326,8 @@ const WarehousesList = () => {
             const notifications = {};
 
             // Only fetch notifications for warehouse managers and employees
-            if (currentUser?.role === 'WAREHOUSE_MANAGER' || currentUser?.role === 'WAREHOUSE_EMPLOYEE') {
+// Only fetch notifications for warehouse managers, employees, and admins
+            if (currentUser?.role === 'WAREHOUSE_MANAGER' || currentUser?.role === 'WAREHOUSE_EMPLOYEE' || currentUser?.role === 'ADMIN') {
                 await Promise.all(
                     warehouses.map(async (warehouse) => {
                         const notificationData = await fetchWarehouseNotifications(warehouse.id);

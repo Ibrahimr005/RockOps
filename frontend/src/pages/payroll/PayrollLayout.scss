@@ -1,8 +1,8 @@
-// PayrollLayout.scss - Layout styles for payroll module
+
 .payroll-layout {
+  background-color: var(--page-background-color);
 
-
-  // Ensure proper spacing from sidebar and navbar
+  // Ensure proper spacing from main sidebar and navbar
   margin-left: var(--sidebar-width-collapsed);
   transition: margin-left var(--transition-normal) ease;
 
@@ -21,7 +21,6 @@
 .payroll-layout__container {
   width: 100%;
   max-width: 100%;
-  min-height: 100vh;
   position: relative;
 }
 

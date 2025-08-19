@@ -1,289 +1,60 @@
-// LoanFormModal.scss
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  padding: 20px;
-}
+// LoanModal.scss - Styles for all loan modal components
+// Includes LoanFormModal, LoanDetailsModal, and RepaymentModal
 
-.loan-form-modal {
-  background: var(--color-surface);
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  width: 100%;
-  max-width: 800px;
-  max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+// Common modal styles
+.loan-form-modal,
+.loan-details-modal,
+.repayment-modal {
+  max-width: 900px;
+  max-height: 95vh;
 
-  .modal-header {
-    //padding: 24px 24px 0 24px;
-    //display: flex;
-    //justify-content: space-between;
-    //align-items: center;
-    //border-bottom: 1px solid var(--border-color);
-    //margin-bottom: 24px;
+  @media (max-width: 768px) {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: var(--radius-md);
+  }
 
-    h2 {
-      //margin: 0;
-      //color: var(--color-text-primary);
-      //font-size: 1.5rem;
-      //font-weight: 600;
-    }
-
-    .close-button {
-      background: none;
-      border: none;
-      font-size: 1.25rem;
-      color: var(--color-text-secondary);
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 6px;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background-color: var(--color-surface-hover);
-        color: var(--color-text-primary);
-      }
-
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-    }
+  @media (max-width: 480px) {
+    border-radius: 0;
+    height: 100vh;
   }
 
   .modal-body {
-    //padding: 0 24px;
-    //overflow-y: auto;
-    //flex: 1;
-  }
-
-  .modal-footer {
-    //padding: 24px;
-    //border-top: 1px solid var(--border-color);
-    //display: flex;
-    //justify-content: flex-end;
-    //gap: 12px;
-    //margin-top: 24px;
+    max-height: calc(95vh - 120px);
+    overflow-y: auto;
   }
 }
 
-.loan-form {
-  .form-group {
-    margin-bottom: 20px;
-
-    label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-      font-weight: 500;
-      color: var(--color-text-primary);
-      font-size: 0.875rem;
-
-      svg {
-        color: var(--color-primary);
-        font-size: 0.875rem;
-      }
-    }
-
-    input,
-    select,
-    textarea {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      font-size: 0.875rem;
-      background-color: var(--color-surface);
-      color: var(--color-text-primary);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-
-      &:focus {
-        outline: none;
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
-      }
-
-      &.error {
-        border-color: var(--color-danger);
-        box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
-      }
-
-      &:disabled {
-        background-color: var(--color-surface-secondary);
-        opacity: 0.7;
-        cursor: not-allowed;
-      }
-
-      &::placeholder {
-        color: var(--color-text-tertiary);
-      }
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 80px;
-      font-family: inherit;
-    }
-
-    .error-message {
-      display: block;
-      color: var(--color-danger);
-      font-size: 0.75rem;
-      margin-top: 4px;
-    }
+// ==================== LOAN FORM MODAL ====================
+.loan-form-modal {
+  .loan-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
   }
 
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 1rem;
 
     @media (max-width: 768px) {
       grid-template-columns: 1fr;
     }
   }
 
-  .loan-summary {
-    background: var(--color-surface-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 20px;
-    margin-top: 24px;
-
-    h4 {
-      margin: 0 0 16px 0;
-      color: var(--color-text-primary);
-      font-size: 1rem;
-      font-weight: 600;
-    }
-
-    .summary-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--border-color);
-
-      &:last-child {
-        border-bottom: none;
-        font-weight: 600;
-        padding-top: 12px;
-        margin-top: 8px;
-        border-top: 2px solid var(--border-color);
-      }
-
-      span:first-child {
-        color: var(--color-text-secondary);
-        font-size: 0.875rem;
-      }
-
-      span:last-child {
-        color: var(--color-text-primary);
-        font-weight: 500;
-      }
-    }
-  }
-}
-
-// LoanDetailsModal.scss
-.loan-details-modal {
-  background: var(--color-surface);
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  width: 100%;
-  max-width: 1000px;
-  max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-
-  .modal-header {
-    //padding: 24px;
-    //display: flex;
-    //justify-content: space-between;
-    //align-items: center;
-    //border-bottom: 1px solid var(--border-color);
-
-    h2 {
-      margin: 0;
-      color: var(--color-text-primary);
-      font-size: 1.5rem;
-      font-weight: 600;
-    }
-
-    .close-button {
-      background: none;
-      border: none;
-      font-size: 1.25rem;
-      color: var(--color-text-secondary);
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 6px;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background-color: var(--color-surface-hover);
-        color: var(--color-text-primary);
-      }
-    }
-  }
-
-  .modal-body {
-    //padding: 24px;
-    //overflow-y: auto;
-    //flex: 1;
-  }
-
-  .modal-footer {
-
-  }
-}
-
-.loan-info-section {
-  margin-bottom: 32px;
-
-  h3 {
-    margin: 0 0 20px 0;
-    color: var(--color-text-primary);
-    font-size: 1.25rem;
-    font-weight: 600;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--color-primary);
-  }
-
-  .info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 16px;
-  }
-
-  .info-item {
+  .form-group {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-
-    &.full-width {
-      grid-column: 1 / -1;
-    }
+    gap: 0.5rem;
 
     label {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 0.5rem;
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-primary);
       font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--color-text-secondary);
 
       svg {
         color: var(--color-primary);
@@ -291,278 +62,963 @@
       }
     }
 
-    span {
-      font-size: 0.875rem;
+    .form-control {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background-color: var(--color-surface);
       color: var(--color-text-primary);
-      font-weight: 500;
-
-      &.remaining-balance {
-        color: var(--color-warning);
-        font-weight: 600;
-      }
-    }
-
-    p {
-      margin: 4px 0 0 0;
       font-size: 0.875rem;
-      color: var(--color-text-primary);
-      line-height: 1.5;
-    }
-  }
-}
+      font-family: var(--font-family);
+      transition: all var(--transition-fast) ease;
 
-.progress-section {
-  margin-bottom: 32px;
-
-  h3 {
-    margin: 0 0 20px 0;
-    color: var(--color-text-primary);
-    font-size: 1.25rem;
-    font-weight: 600;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--color-primary);
-  }
-
-  .progress-stats {
-    display: flex;
-    gap: 24px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-
-    .stat-item {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-
-      &.overdue {
-        .stat-label {
-          color: var(--color-danger);
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-        .stat-value {
-          color: var(--color-danger);
-          font-weight: 600;
-        }
+      &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.2);
       }
 
-      .stat-label {
-        font-size: 0.875rem;
+      &::placeholder {
         color: var(--color-text-secondary);
-        font-weight: 500;
       }
 
-      .stat-value {
-        font-size: 1rem;
-        color: var(--color-text-primary);
-        font-weight: 600;
+      &:disabled {
+        background-color: var(--color-surface-secondary);
+        color: var(--color-text-muted);
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+
+      &.error {
+        border-color: var(--color-danger);
+        box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
       }
     }
-  }
 
-  .progress-bar {
-    width: 100%;
-    height: 12px;
-    background-color: var(--color-surface-secondary);
-    border-radius: 6px;
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--color-success), var(--color-primary));
-      transition: width 0.3s ease;
-      border-radius: 6px;
+    textarea.form-control {
+      resize: vertical;
+      min-height: 80px;
     }
-  }
-}
 
-.schedule-section {
-  h3 {
-    margin: 0 0 20px 0;
-    color: var(--color-text-primary);
-    font-size: 1.25rem;
-    font-weight: 600;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--color-primary);
-  }
-
-  .loading {
-    text-align: center;
-    padding: 40px;
-    color: var(--color-text-secondary);
-  }
-
-  .schedule-table {
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    overflow: hidden;
-
-    .table-header {
-      display: grid;
-      grid-template-columns: 80px 120px 130px 130px 130px 100px 80px;
-      background-color: var(--color-surface-secondary);
-      font-weight: 600;
+    .error-message {
+      color: var(--color-danger);
       font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      margin-top: 0.25rem;
+      font-weight: 500;
+    }
 
-      span {
-        padding: 12px 8px;
-        border-right: 1px solid var(--border-color);
-        color: var(--color-text-primary);
+    .character-count {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      text-align: right;
+      margin-top: 0.25rem;
+    }
+  }
+
+  // Employee info card
+  .employee-info-card {
+    background: linear-gradient(135deg, rgba(var(--color-primary-rgb), 0.1) 0%, rgba(var(--color-primary-rgb), 0.05) 100%);
+    border: 1px solid rgba(var(--color-primary-rgb), 0.2);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin: 1rem 0;
+
+    h4 {
+      margin: 0 0 0.75rem 0;
+      color: var(--color-primary);
+      font-size: 1rem;
+      font-weight: var(--bold-font-weight);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+
+      .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        label {
+          font-size: 0.8rem;
+          color: var(--color-text-secondary);
+          font-weight: 500;
+        }
+
+        span {
+          font-size: 0.8rem;
+          color: var(--color-text-primary);
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  // Loan preview card
+  .loan-preview-card {
+    background: linear-gradient(135deg, rgba(var(--color-success-rgb), 0.1) 0%, rgba(var(--color-success-rgb), 0.05) 100%);
+    border: 1px solid rgba(var(--color-success-rgb), 0.2);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin: 1rem 0;
+
+    h4 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0 0 0.75rem 0;
+      color: var(--color-success);
+      font-size: 1rem;
+      font-weight: var(--bold-font-weight);
+
+      svg {
+        color: var(--color-success);
+      }
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75rem;
+
+      .preview-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+
+        label {
+          font-size: 0.75rem;
+          color: var(--color-text-secondary);
+          font-weight: 500;
+        }
+
+        .amount {
+          font-size: 0.9rem;
+          color: var(--color-text-primary);
+          font-weight: var(--bold-font-weight);
+
+          &.total {
+            color: var(--color-success);
+            font-size: 1rem;
+          }
+        }
+      }
+    }
+  }
+
+  // Loan notes
+  .loan-notes {
+    background: var(--color-surface-secondary);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    border-left: 4px solid var(--color-info);
+
+    h4 {
+      margin: 0 0 0.75rem 0;
+      color: var(--color-info);
+      font-size: 0.9rem;
+      font-weight: var(--bold-font-weight);
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 1.25rem;
+      list-style-type: disc;
+
+      li {
+        font-size: 0.8rem;
+        color: var(--color-text-secondary);
+        line-height: 1.5;
+        margin-bottom: 0.25rem;
 
         &:last-child {
-          border-right: none;
+          margin-bottom: 0;
         }
       }
     }
+  }
+}
 
-    .table-body {
-      .table-row {
-        display: grid;
-        grid-template-columns: 80px 120px 130px 130px 130px 100px 80px;
-        border-bottom: 1px solid var(--border-color);
-        transition: background-color 0.2s ease;
+// ==================== LOAN DETAILS MODAL ====================
+.loan-details-modal {
+  .loan-details-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
 
-        &:hover {
-          background-color: var(--color-surface-hover);
-        }
+  .details-section {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    border: 1px solid var(--border-color);
+
+    h4 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0 0 1rem 0;
+      color: var(--color-text-primary);
+      font-size: 1.125rem;
+      font-weight: var(--bold-font-weight);
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border-color-light);
+
+      svg {
+        color: var(--color-primary);
+      }
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+
+      @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+
+      .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--border-color-light);
 
         &:last-child {
           border-bottom: none;
         }
 
-        span {
-          padding: 12px 8px;
-          border-right: 1px solid var(--border-color);
-          font-size: 0.875rem;
-          color: var(--color-text-primary);
+        &.full-width {
+          grid-column: 1 / -1;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+
+          p {
+            margin: 0;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+          }
+        }
+
+        label {
           display: flex;
           align-items: center;
+          gap: 0.5rem;
+          font-size: 0.875rem;
+          color: var(--color-text-secondary);
+          font-weight: 500;
 
-          &:last-child {
-            border-right: none;
+          svg {
+            color: var(--color-text-tertiary);
+            font-size: 0.75rem;
+          }
+        }
+
+        span {
+          font-size: 0.875rem;
+          color: var(--color-text-primary);
+          font-weight: 500;
+
+          &.amount {
+            color: var(--color-success);
+            font-weight: var(--bold-font-weight);
+          }
+
+          &.balance {
+            color: var(--color-warning);
           }
         }
       }
     }
+  }
 
-    @media (max-width: 768px) {
-      .table-header,
-      .table-row {
-        grid-template-columns: 1fr;
+  // Progress container
+  .progress-container {
+    .progress-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+
+      .stat {
+        text-align: center;
+
+        label {
+          display: block;
+          font-size: 0.75rem;
+          color: var(--color-text-secondary);
+          margin-bottom: 0.25rem;
+        }
+
+        .amount-paid {
+          color: var(--color-success);
+          font-weight: var(--bold-font-weight);
+        }
+
+        .amount-remaining {
+          color: var(--color-warning);
+          font-weight: var(--bold-font-weight);
+        }
+      }
+    }
+
+    .loan-progress-bar {
+      height: 12px;
+      background: var(--color-surface-secondary);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+
+      .loan-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--color-success) 0%, var(--color-success-light) 100%);
+        border-radius: 6px;
+        transition: width var(--transition-normal) ease;
+        position: relative;
+
+        &::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+          animation: shimmer 2s infinite;
+        }
+      }
+    }
+  }
+
+  // Payment stats cards
+  .payment-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    .stat-card {
+      background: var(--color-surface-secondary);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border: 1px solid var(--border-color);
+      transition: all var(--transition-fast) ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .stat-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+      }
+
+      .stat-content {
+        flex: 1;
+
+        .stat-value {
+          font-size: 1.125rem;
+          font-weight: var(--bold-font-weight);
+          margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+          font-size: 0.75rem;
+          color: var(--color-text-secondary);
+          line-height: 1.3;
+        }
+      }
+
+      &.paid {
+        .stat-icon {
+          background: rgba(var(--color-success-rgb), 0.15);
+          color: var(--color-success);
+        }
+
+        .stat-value {
+          color: var(--color-success);
+        }
+      }
+
+      &.pending {
+        .stat-icon {
+          background: rgba(var(--color-warning-rgb), 0.15);
+          color: var(--color-warning);
+        }
+
+        .stat-value {
+          color: var(--color-warning);
+        }
+      }
+
+      &.overdue {
+        .stat-icon {
+          background: rgba(var(--color-danger-rgb), 0.15);
+          color: var(--color-danger);
+        }
+
+        .stat-value {
+          color: var(--color-danger);
+        }
+      }
+    }
+  }
+
+  .next-payment {
+    background: linear-gradient(135deg, rgba(var(--color-info-rgb), 0.1) 0%, rgba(var(--color-info-rgb), 0.05) 100%);
+    border: 1px solid rgba(var(--color-info-rgb), 0.2);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    text-align: center;
+  }
+
+  // Repayment schedule table
+  .repayment-schedule-table {
+    .due-date {
+      position: relative;
+
+      .overdue-icon {
+        color: var(--color-danger);
+        margin-left: 0.5rem;
+        font-size: 0.75rem;
+      }
+    }
+
+    .scheduled-amount,
+    .principal-amount,
+    .interest-amount {
+      font-weight: 500;
+    }
+
+    .actual-amount {
+      .paid-date {
+        font-size: 0.7rem;
+        color: var(--color-text-secondary);
+        margin-top: 0.25rem;
+      }
+    }
+
+    .schedule-actions {
+      display: flex;
+      gap: 0.25rem;
+      justify-content: center;
+    }
+  }
+}
+
+// ==================== REPAYMENT MODAL ====================
+.repayment-modal {
+  .repayment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  // Schedule info card
+  .schedule-info-card {
+    background: linear-gradient(135deg, rgba(var(--color-info-rgb), 0.1) 0%, rgba(var(--color-info-rgb), 0.05) 100%);
+    border: 1px solid rgba(var(--color-info-rgb), 0.2);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+
+    h4 {
+      margin: 0 0 0.75rem 0;
+      color: var(--color-info);
+      font-size: 1rem;
+      font-weight: var(--bold-font-weight);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75rem;
+
+      .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        label {
+          font-size: 0.8rem;
+          color: var(--color-text-secondary);
+          font-weight: 500;
+        }
 
         span {
-          border-right: none;
-          border-bottom: 1px solid var(--border-color);
+          font-size: 0.8rem;
+          color: var(--color-text-primary);
+          font-weight: 500;
 
-          &:last-child {
-            border-bottom: none;
+          &.amount {
+            color: var(--color-success);
+            font-weight: var(--bold-font-weight);
           }
+
+          &.overdue {
+            color: var(--color-danger);
+          }
+        }
+
+        .overdue-icon {
+          color: var(--color-danger);
+          margin-left: 0.5rem;
+          font-size: 0.75rem;
+        }
+      }
+    }
+
+    .overdue-warning {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      padding: 0.5rem;
+      background: rgba(var(--color-danger-rgb), 0.1);
+      border: 1px solid rgba(var(--color-danger-rgb), 0.2);
+      border-radius: var(--radius-sm);
+      color: var(--color-danger);
+      font-size: 0.8rem;
+      font-weight: 500;
+
+      svg {
+        color: var(--color-danger);
+      }
+    }
+  }
+
+  // Payment type selection
+  .payment-type-section {
+    h4 {
+      margin: 0 0 1rem 0;
+      color: var(--color-text-primary);
+      font-size: 1rem;
+      font-weight: var(--bold-font-weight);
+    }
+
+    .payment-type-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+
+      .payment-type-option {
+        display: block;
+        cursor: pointer;
+        background: var(--color-surface);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        transition: all var(--transition-fast) ease;
+        user-select: none;
+
+        &:hover {
+          border-color: var(--color-primary);
+          background: var(--color-surface-hover);
+        }
+
+        &.selected {
+          border-color: var(--color-primary);
+          background: linear-gradient(135deg, rgba(var(--color-primary-rgb), 0.08) 0%, rgba(var(--color-primary-rgb), 0.03) 100%);
+
+          .option-header {
+            color: var(--color-primary);
+
+            .option-icon {
+              color: var(--color-primary);
+            }
+          }
+        }
+
+        input[type="radio"] {
+          display: none;
+        }
+
+        .option-content {
+          .option-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+            font-weight: var(--bold-font-weight);
+            color: var(--color-text-primary);
+            transition: all var(--transition-fast) ease;
+
+            .option-icon {
+              font-size: 1.125rem;
+              color: var(--color-text-secondary);
+              transition: all var(--transition-fast) ease;
+            }
+
+            span {
+              font-size: 0.9rem;
+            }
+          }
+
+          .option-description {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+            margin-left: 1.875rem;
+          }
+        }
+      }
+    }
+  }
+
+  // Form group styling
+  .form-group {
+    label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-primary);
+      font-size: 0.875rem;
+
+      svg {
+        color: var(--color-primary);
+        font-size: 0.875rem;
+      }
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background-color: var(--color-surface);
+      color: var(--color-text-primary);
+      font-size: 0.875rem;
+      font-family: var(--font-family);
+      transition: all var(--transition-fast) ease;
+
+      &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.2);
+      }
+
+      &::placeholder {
+        color: var(--color-text-secondary);
+      }
+
+      &:disabled {
+        background-color: var(--color-surface-secondary);
+        color: var(--color-text-muted);
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+
+      &.error {
+        border-color: var(--color-danger);
+        box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
+      }
+    }
+
+    .error-message {
+      color: var(--color-danger);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      font-weight: 500;
+    }
+
+    // Payment difference indicator
+    .payment-difference {
+      margin-top: 0.5rem;
+      padding: 0.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      &.exact {
+        background: rgba(var(--color-success-rgb), 0.1);
+        color: var(--color-success);
+        border: 1px solid rgba(var(--color-success-rgb), 0.2);
+      }
+
+      &.overpayment {
+        background: rgba(var(--color-info-rgb), 0.1);
+        color: var(--color-info);
+        border: 1px solid rgba(var(--color-info-rgb), 0.2);
+      }
+
+      &.underpayment {
+        background: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
+        border: 1px solid rgba(var(--color-warning-rgb), 0.2);
+      }
+    }
+  }
+
+  // Payment summary
+  .payment-summary {
+    background: var(--color-surface-secondary);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+
+    h4 {
+      margin: 0 0 0.75rem 0;
+      color: var(--color-text-primary);
+      font-size: 1rem;
+      font-weight: var(--bold-font-weight);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 0.75rem;
+
+      .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        background: var(--color-surface);
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-color-light);
+
+        label {
+          font-size: 0.8rem;
+          color: var(--color-text-secondary);
+          font-weight: 500;
+        }
+
+        span {
+          font-size: 0.8rem;
+          font-weight: var(--bold-font-weight);
+
+          &.payment-amount {
+            color: var(--color-primary);
+          }
+
+          &.difference {
+            &.exact {
+              color: var(--color-success);
+            }
+
+            &.overpayment {
+              color: var(--color-info);
+            }
+
+            &.underpayment {
+              color: var(--color-warning);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Payment notes
+  .payment-notes {
+    background: var(--color-surface-secondary);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    border-left: 4px solid var(--color-warning);
+
+    h4 {
+      margin: 0 0 0.75rem 0;
+      color: var(--color-warning);
+      font-size: 0.9rem;
+      font-weight: var(--bold-font-weight);
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 1.25rem;
+      list-style-type: disc;
+
+      li {
+        font-size: 0.8rem;
+        color: var(--color-text-secondary);
+        line-height: 1.5;
+        margin-bottom: 0.25rem;
+
+        &:last-child {
+          margin-bottom: 0;
         }
       }
     }
   }
 }
 
-.repayment-modal {
-  background: var(--color-surface);
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  width: 100%;
-  max-width: 500px;
+// ==================== COMMON STYLES ====================
 
-  .modal-header {
-    //padding: 24px 24px 0 24px;
-    //display: flex;
-    //justify-content: space-between;
-    //align-items: center;
-    //border-bottom: 1px solid var(--border-color);
-    //margin-bottom: 24px;
+// Status badges
+.status-badge {
 
-    h3 {
-      margin: 0;
-      color: var(--color-text-primary);
-      font-size: 1.25rem;
-      font-weight: 600;
+
+  &.status-active {
+    background: rgba(var(--color-success-rgb), 0.15);
+    color: var(--color-success);
+    border: 1px solid rgba(var(--color-success-rgb), 0.3);
+  }
+
+  &.status-completed {
+    background: rgba(var(--color-info-rgb), 0.15);
+    color: var(--color-info);
+    border: 1px solid rgba(var(--color-info-rgb), 0.3);
+  }
+
+  &.status-cancelled,
+  &.status-rejected {
+    background: rgba(var(--color-danger-rgb), 0.15);
+    color: var(--color-danger);
+    border: 1px solid rgba(var(--color-danger-rgb), 0.3);
+  }
+
+  &.status-paid {
+    background: rgba(var(--color-success-rgb), 0.15);
+    color: var(--color-success);
+    border: 1px solid rgba(var(--color-success-rgb), 0.3);
+  }
+
+  &.status-overdue {
+    background: rgba(var(--color-danger-rgb), 0.15);
+    color: var(--color-danger);
+    border: 1px solid rgba(var(--color-danger-rgb), 0.3);
+  }
+
+  &.status-partial {
+    background: rgba(var(--color-warning-rgb), 0.15);
+    color: var(--color-warning);
+    border: 1px solid rgba(var(--color-warning-rgb), 0.3);
+  }
+}
+
+// Installment number styling
+.installment-number {
+  font-weight: var(--bold-font-weight);
+  color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb), 0.1);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+
+// Amount styling
+.scheduled-amount,
+.principal-amount,
+.interest-amount,
+.actual-amount {
+  font-family: 'Courier New', monospace;
+  font-weight: 500;
+}
+
+// Dark theme adjustments
+[data-theme="dark"] {
+  .loan-form-modal,
+  .loan-details-modal,
+  .repayment-modal {
+    .employee-info-card,
+    .loan-preview-card,
+    .schedule-info-card {
+      background: rgba(var(--color-primary-rgb), 0.08);
+      border-color: rgba(var(--color-primary-rgb), 0.2);
     }
 
-    .close-button {
-      background: none;
-      border: none;
-      font-size: 1.25rem;
-      color: var(--color-text-secondary);
-      cursor: pointer;
-      padding: 8px;
-      border-radius: 6px;
-      transition: all 0.2s ease;
+    .loan-notes,
+    .payment-notes {
+      background: var(--color-surface-tertiary);
+    }
+
+    .payment-summary {
+      background: var(--color-surface-tertiary);
+    }
+
+    .payment-type-option {
+      background: var(--color-surface-secondary);
 
       &:hover {
-        background-color: var(--color-surface-hover);
-        color: var(--color-text-primary);
+        background: var(--color-surface-hover);
+      }
+
+      &.selected {
+        background: rgba(var(--color-primary-rgb), 0.15);
       }
     }
   }
+}
 
-  .modal-body {
-
-    .repayment-info {
-      background-color: var(--color-surface-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 20px;
-
-      p {
-        margin: 0 0 8px 0;
-        font-size: 0.875rem;
-        color: var(--color-text-primary);
-
-        &:last-child {
-          margin-bottom: 0;
-        }
-
-        strong {
-          color: var(--color-text-primary);
-          font-weight: 600;
-        }
-      }
+// Responsive design
+@media (max-width: 768px) {
+  .loan-form-modal,
+  .loan-details-modal,
+  .repayment-modal {
+    .info-grid,
+    .preview-grid,
+    .summary-grid {
+      grid-template-columns: 1fr;
     }
 
-    .form-group {
-      label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 500;
-        color: var(--color-text-primary);
-        font-size: 0.875rem;
-      }
+    .payment-stats {
+      grid-template-columns: 1fr;
+    }
 
-      input {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        font-size: 0.875rem;
-        background-color: var(--color-surface);
-        color: var(--color-text-primary);
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-
-        &:focus {
-          outline: none;
-          border-color: var(--color-primary);
-          box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+    .payment-type-options {
+      .payment-type-option {
+        .option-content .option-description {
+          margin-left: 0;
+          margin-top: 0.5rem;
         }
       }
     }
   }
+}
 
-  .modal-footer {
-    //padding: 0 24px 24px 24px;
-    //display: flex;
-    //justify-content: flex-end;
-    //gap: 12px;
+// Animations
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+// Print styles
+@media print {
+  .loan-form-modal,
+  .loan-details-modal,
+  .repayment-modal {
+    .modal-header,
+    .modal-footer {
+      display: none !important;
+    }
+
+    .modal-body {
+      padding: 0;
+      max-height: none;
+      overflow: visible;
+    }
+
+    background: white !important;
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
   }
 }

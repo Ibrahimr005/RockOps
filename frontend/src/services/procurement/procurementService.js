@@ -12,19 +12,33 @@ export const procurementService = {
         return apiClient.get(PROCUREMENT_ENDPOINTS.BY_ID(id));
     },
 
-    // Add a new merchant (using procurement endpoint)
-    addMerchant: (merchantData) => {
-        return apiClient.post(PROCUREMENT_ENDPOINTS.CREATE, merchantData);
+    // Add a new merchant with photo support
+    addMerchant: (merchantData, photo = null) => {
+        const formData = new FormData();
+        formData.append('merchantData', JSON.stringify(merchantData));
+        if (photo) {
+            formData.append('photo', photo);
+        }
+        return apiClient.post('/api/v1/procurement', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
     },
 
-    // Update an existing merchant (using procurement endpoint)
-    updateMerchant: (id, merchantData) => {
-        return apiClient.put(PROCUREMENT_ENDPOINTS.UPDATE(id), merchantData);
+    // Update an existing merchant with photo support
+    updateMerchant: (id, merchantData, photo = null) => {
+        const formData = new FormData();
+        formData.append('merchantData', JSON.stringify(merchantData));
+        if (photo) {
+            formData.append('photo', photo);
+        }
+        return apiClient.put(`/api/v1/procurement/${id}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
     },
 
     // Delete a merchant (using procurement endpoint)
     deleteMerchant: (id) => {
-        return apiClient.delete(PROCUREMENT_ENDPOINTS.DELETE(id));
+        return apiClient.delete(`/api/v1/procurement/${id}`);
     },
 
     // Get merchants by site

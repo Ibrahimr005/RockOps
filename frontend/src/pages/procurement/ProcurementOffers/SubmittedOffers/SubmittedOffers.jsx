@@ -2,6 +2,7 @@ import React from 'react';
 import Snackbar from '../../../../components/common/Snackbar2/Snackbar2.jsx'
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
 import { offerService } from '../../../../services/procurement/offerService.js';
 
 import "../ProcurementOffers.scss"
@@ -228,8 +229,6 @@ const SubmittedOffers = ({
                         <p>No submitted offers yet. Complete an offer and submit it.</p>
                     </div>
                 ) : (
-                    // Replace the offers list section in SubmittedOffers with this:
-
                     <div className="procurement-items-list">
                         {offers.map(offer => (
                             <div
@@ -241,12 +240,11 @@ const SubmittedOffers = ({
                                     <h4>{offer.title}</h4>
                                 </div>
                                 <div className="procurement-item-footer">
-                                <span className="procurement-item-date">
-                                    <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
-                                </span>
-                                                </div>
-                                                <div className="procurement-item-footer">
-
+                                    <span className="procurement-item-date">
+                                        <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
+                                    </span>
+                                </div>
+                                <div className="procurement-item-footer">
                                 </div>
                             </div>
                         ))}
@@ -310,102 +308,12 @@ const SubmittedOffers = ({
                             </div>
                         ) : (
                             <div className="procurement-submitted-info">
-                                <div className="procurement-request-summary-card-submitted">
-                                    <h4>Offer Timeline</h4>
-                                    <p className="procurement-section-description-submitted">
-                                        This offer has been submitted to management for review and approval. Track the progress through the timeline below.
-                                    </p>
-
-                                    {/* Enhanced Status Timeline */}
-                                    <div className="procurement-timeline-submitted">
-
-                                        {/* NEW: Request Order Approved Step */}
-                                        <div className="procurement-timeline-item-submitted active">
-                                            <div className="timeline-icon-submitted">
-                                                <FiCheckCircle size={20} />
-                                            </div>
-                                            <div className="timeline-content-submitted">
-                                                <h5>Request Order Approved</h5>
-                                                {/* Note: You need to ensure your activeOffer.requestOrder object has these fields */}
-                                                <p className="timeline-meta-submitted">
-                                                    <FiCalendar size={14} /> Approved at: {activeOffer.requestOrder?.approvedAt ? new Date(activeOffer.requestOrder.approvedAt).toLocaleDateString() : 'N/A'}
-                                                </p>
-                                                <p className="timeline-meta-submitted">
-                                                    <FiUser size={14} /> Approved by: {activeOffer.requestOrder?.approvedBy || 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Offer Submitted Step (Modified) */}
-                                        <div className="procurement-timeline-item-submitted active">
-                                            <div className="timeline-icon-submitted">
-                                                <FiSend size={20} />
-                                            </div>
-                                            <div className="timeline-content-submitted">
-                                                <h5>Offer Submitted</h5>
-                                                <p className="timeline-meta-submitted">
-                                                    <FiCalendar size={14} /> Submitted at: {new Date(activeOffer.createdAt).toLocaleDateString()}
-                                                </p>
-                                                <p className="timeline-meta-submitted">
-                                                    <FiUser size={14} /> Submitted by: {activeOffer.createdBy || 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Awaiting Management Review Step (Modified) */}
-                                        <div className={`procurement-timeline-item-submitted ${
-                                            activeOffer.status === 'MANAGERACCEPTED' ? 'active' :
-                                                activeOffer.status === 'MANAGERREJECTED' ? 'rejected' : ''
-                                        }`}>
-                                            <div className="timeline-icon-submitted">
-                                                {activeOffer.status === 'MANAGERACCEPTED' ? <FiCheckCircle size={20} /> :
-                                                    activeOffer.status === 'MANAGERREJECTED' ? <FiX size={20} /> :
-                                                        <FiClock size={20} />}
-                                            </div>
-                                            <div className="timeline-content-submitted">
-                                                <h5>
-                                                    {activeOffer.status === 'MANAGERACCEPTED' ? 'Offer Accepted' :
-                                                        activeOffer.status === 'MANAGERREJECTED' ? 'Offer Rejected' :
-                                                            'Awaiting Management Review'}
-                                                </h5>
-                                                {activeOffer.status === 'MANAGERACCEPTED' ? (
-                                                    <p className="timeline-meta-submitted">
-                                                        <FiCalendar size={14} /> Accepted at: {new Date(activeOffer.updatedAt).toLocaleDateString()}
-                                                    </p>
-                                                ) : activeOffer.status === 'MANAGERREJECTED' ? (
-                                                    <p className="timeline-meta-submitted">
-                                                        <FiCalendar size={14} /> Rejected at: {new Date(activeOffer.updatedAt).toLocaleDateString()}
-                                                    </p>
-                                                ) : (
-                                                    <p className="timeline-meta-submitted">
-                                                        <FiUser size={14} /> Pending manager decision
-                                                    </p>
-                                                )}
-
-                                                {/* Enhanced rejection reason display */}
-                                                {activeOffer.status === 'MANAGERREJECTED' && activeOffer.rejectionReason && (
-                                                    <div className="rejection-reason-submitted">
-                                                        <p><strong>Rejection Reason:</strong> {activeOffer.rejectionReason}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {activeOffer.status === 'MANAGERACCEPTED' && (
-                                            <div className="procurement-timeline-item-submitted">
-                                                <div className="timeline-icon-submitted">
-                                                    <FiDollarSign size={20} />
-                                                </div>
-                                                <div className="timeline-content-submitted">
-                                                    <h5>Finance Review</h5>
-                                                    <p className="timeline-meta-submitted">
-                                                        <FiTrendingUp size={14} /> Sent to finance department
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+                                {/* Replace the old timeline with the new OfferTimeline component */}
+                                <OfferTimeline
+                                    offer={activeOffer}
+                                    variant="submitted"
+                                    showRetryInfo={true}
+                                />
 
                                 {/* Enhanced Procurement Details */}
                                 <div className="procurement-submitted-details-submitted">
@@ -424,7 +332,6 @@ const SubmittedOffers = ({
                                                             <h5>{requestItem.itemType?.name || 'Item'}</h5>
                                                         </div>
                                                         <div className="submitted-item-quantity-submitted">
-                                                            <FiShoppingCart size={14} />
                                                             {requestItem.quantity} {requestItem.itemType.measuringUnit}
                                                         </div>
                                                     </div>
