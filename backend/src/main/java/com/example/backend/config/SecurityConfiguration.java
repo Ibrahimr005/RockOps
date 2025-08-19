@@ -23,14 +23,24 @@ public class SecurityConfiguration {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
 
-
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration configuration = new CorsConfiguration();
-                    configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:5174","http://localhost:3000", "https://rockops.vercel.app","https://rock-ops.vercel.app"));
+                    configuration.setAllowedOrigins(Arrays.asList(
+                            // Local development
+                            "http://localhost:5173",
+                            "http://localhost:5174",
+                            "http://localhost:3000",
+
+                            // Development deployment - ADD THIS!
+                            "https://dev-rock-ops.vercel.app",
+
+                            // Production deployment
+                            "https://rockops.vercel.app",
+                            "https://rock-ops.vercel.app"
+                    ));
                     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
                     configuration.setAllowCredentials(true);
