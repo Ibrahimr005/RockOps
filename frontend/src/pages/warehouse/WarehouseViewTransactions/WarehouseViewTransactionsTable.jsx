@@ -13,6 +13,7 @@ const WarehouseViewTransactionsTable = ({
   // Tab state
   const [activeTab, setActiveTab] = useState("pending");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
 
   // Snackbar states
   const [snackbar, setSnackbar] = useState({
@@ -45,6 +46,7 @@ const WarehouseViewTransactionsTable = ({
   };
 
   const triggerRefresh = () => {
+    setLastUpdateTime(Date.now());
     setRefreshTrigger(prev => prev + 1);
   };
 
@@ -94,6 +96,7 @@ const WarehouseViewTransactionsTable = ({
     }
   ];
 
+
   // Render the active tab content
   const renderActiveTabContent = () => {
     const activeTabConfig = tabs.find(tab => tab.id === activeTab);
@@ -117,6 +120,8 @@ const WarehouseViewTransactionsTable = ({
     return <TabComponent {...props} />;
   };
 
+
+
   return (
       <div className="warehouse-view3">
         {/* Snackbar Component */}
@@ -129,7 +134,7 @@ const WarehouseViewTransactionsTable = ({
         />
 
         {/* Hidden components to get badge counts for incoming and validated */}
-        <div style={{ display: 'none' }}>
+        <div style={{ display: 'none' }} key={lastUpdateTime}>
           <IncomingTransactionsTable
               warehouseId={warehouseId}
               refreshTrigger={refreshTrigger}

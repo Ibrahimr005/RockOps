@@ -285,7 +285,11 @@
     grid-template-columns: 1fr;
   }
 }
-
+.attendance-content{
+  align-self: center;
+  justify-self: center;
+  max-width: 80vw;
+}
 .attendance-monthly-view {
   background-color: var(--color-surface);
   border-radius: var(--radius-md);

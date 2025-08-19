@@ -17,10 +17,17 @@ import java.util.UUID;
 @AllArgsConstructor
 public class RepaymentScheduleDTO {
     private UUID id;
+    private UUID loanId;
     private Integer installmentNumber;
     private LocalDate dueDate;
     private BigDecimal scheduledAmount;
-    private BigDecimal paidAmount;
-    private LocalDateTime paymentDate;
+    private BigDecimal principalAmount;
+    private BigDecimal interestAmount;
+    private BigDecimal actualAmount;
+    private LocalDate paidDate;
+    private UUID payslipId;
     private String status;
+    private String notes;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

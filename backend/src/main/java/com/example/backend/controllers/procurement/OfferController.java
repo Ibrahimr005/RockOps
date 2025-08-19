@@ -1,10 +1,10 @@
 package com.example.backend.controllers.procurement;
 
-
 import com.example.backend.dto.OfferDTO;
 import com.example.backend.dto.OfferItemDTO;
 import com.example.backend.models.procurement.Offer;
 import com.example.backend.models.procurement.OfferItem;
+import com.example.backend.models.procurement.OfferTimelineEvent;
 import com.example.backend.models.procurement.RequestOrder;
 import com.example.backend.services.procurement.OfferService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -175,8 +175,8 @@ public class OfferController {
 
         try {
             String username = userDetails.getUsername();
-            Offer newOffer = offerService.retryOffer(offerId, username);
-            return ResponseEntity.ok(newOffer);
+            Offer retriedOffer = offerService.retryOffer(offerId, username);
+            return ResponseEntity.ok(retriedOffer);
         } catch (IllegalStateException e) {
             // Return message as JSON
             Map<String, String> error = new HashMap<>();
@@ -254,5 +254,86 @@ public class OfferController {
         }
     }
 
+    // ================================
+    // NEW TIMELINE ENDPOINTS
+    // ================================
 
+    /**
+     * Get complete timeline for an offer
+     * GET /api/v1/offers/{offerId}/timeline
+     */
+    @GetMapping("/{offerId}/timeline")
+    public ResponseEntity<List<OfferTimelineEvent>> getOfferTimeline(@PathVariable UUID offerId) {
+        try {
+            List<OfferTimelineEvent> timeline = offerService.getOfferTimeline(offerId);
+            return ResponseEntity.ok(timeline);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Get retryable events (events that can be retried from)
+     * GET /api/v1/offers/{offerId}/timeline/retryable
+     */
+    @GetMapping("/{offerId}/timeline/retryable")
+    public ResponseEntity<List<OfferTimelineEvent>> getRetryableEvents(@PathVariable UUID offerId) {
+        try {
+            List<OfferTimelineEvent> retryableEvents = offerService.getRetryableEvents(offerId);
+            return ResponseEntity.ok(retryableEvents);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Get timeline events for a specific attempt
+     * GET /api/v1/offers/{offerId}/timeline/attempt/{attemptNumber}
+     */
+    @GetMapping("/{offerId}/timeline/attempt/{attemptNumber}")
+    public ResponseEntity<List<OfferTimelineEvent>> getTimelineForAttempt(
+            @PathVariable UUID offerId,
+            @PathVariable int attemptNumber) {
+        try {
+            List<OfferTimelineEvent> timeline = offerService.getTimelineForAttempt(offerId, attemptNumber);
+            return ResponseEntity.ok(timeline);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Get timeline statistics for an offer
+     * GET /api/v1/offers/{offerId}/timeline/stats
+     */
+    @GetMapping("/{offerId}/timeline/stats")
+    public ResponseEntity<Map<String, Object>> getTimelineStats(@PathVariable UUID offerId) {
+        try {
+            Offer offer = offerService.getOfferById(offerId);
+            List<OfferTimelineEvent> timeline = offerService.getOfferTimeline(offerId);
+
+            long submissionCount = timeline.stream()
+                    .filter(e -> e.getEventType().isSubmissionEvent())
+                    .count();
+
+            long rejectionCount = timeline.stream()
+                    .filter(e -> e.getEventType().isRejectionEvent())
+                    .count();
+
+            long retryCount = timeline.stream()
+                    .filter(e -> e.getEventType().isRetryEvent())
+                    .count();
+
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("totalAttempts", offer.getCurrentAttemptNumber());
+            stats.put("totalRetries", offer.getTotalRetries());
+            stats.put("totalSubmissions", submissionCount);
+            stats.put("totalRejections", rejectionCount);
+            stats.put("currentAttempt", offer.getCurrentAttemptNumber());
+
+            return ResponseEntity.ok(stats);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

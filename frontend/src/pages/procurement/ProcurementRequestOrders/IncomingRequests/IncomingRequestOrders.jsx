@@ -14,6 +14,7 @@ import { offerService } from '../../../../services/procurement/offerService.js';
 import './IncomingRequestOrders.scss';
 import RequestOrderViewModal from "../RequestOrderViewModal/RequestOrderViewModal.jsx";
 
+
 const IncomingRequestOrders = ({
                                    onDataChange,
                                    requestOrders,
@@ -198,8 +199,10 @@ const IncomingRequestOrders = ({
         setShowNotification(true);
     };
 
+// Update the handleRowClick function to open the view modal instead of navigating
     const handleRowClick = (row) => {
-        navigate(`/procurement/request-orders/${row.id}`);
+        setSelectedRequestOrder(row);
+        setShowViewModal(true);
     };
 
     const handleApproveClick = async (row, e) => {
@@ -789,19 +792,7 @@ const IncomingRequestOrders = ({
         }
     ];
 
-    // Define actions for DataTable
     const actions = [
-        {
-            label: 'View',
-            icon: (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                </svg>
-            ),
-            onClick: (row) => handleViewClick(row, { stopPropagation: () => {} }),
-            className: 'view'
-        },
         {
             label: 'Approve',
             icon: (

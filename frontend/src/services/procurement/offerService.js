@@ -114,5 +114,46 @@ export const offerService = {
         const promises = statuses.map(status => offerService.getByStatus(status));
         const results = await Promise.all(promises);
         return results.flat();
+    },
+
+    // NEW: Timeline operations
+    getTimeline: async (offerId) => {
+        const response = await apiClient.get(OFFER_ENDPOINTS.TIMELINE(offerId));
+        return response.data || response;
+    },
+
+    getRetryableEvents: async (offerId) => {
+        const response = await apiClient.get(OFFER_ENDPOINTS.TIMELINE_RETRYABLE(offerId));
+        return response.data || response;
+    },
+
+    getTimelineForAttempt: async (offerId, attemptNumber) => {
+        const response = await apiClient.get(OFFER_ENDPOINTS.TIMELINE_ATTEMPT(offerId, attemptNumber));
+        return response.data || response;
+    },
+
+    getTimelineStats: async (offerId) => {
+        const response = await apiClient.get(OFFER_ENDPOINTS.TIMELINE_STATS(offerId));
+        return response.data || response;
+    },
+
+    // Helper method to get offer with timeline data
+    getOfferWithTimeline: async (offerId) => {
+        try {
+            const [offer, timeline, stats] = await Promise.all([
+                offerService.getById(offerId),
+                offerService.getTimeline(offerId),
+                offerService.getTimelineStats(offerId)
+            ]);
+
+            return {
+                ...offer,
+                timelineEvents: timeline,
+                timelineStats: stats
+            };
+        } catch (error) {
+            console.error('Error fetching offer with timeline:', error);
+            throw error;
+        }
     }
 };

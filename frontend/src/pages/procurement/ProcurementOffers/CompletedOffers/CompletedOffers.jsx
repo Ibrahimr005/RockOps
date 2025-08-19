@@ -15,6 +15,7 @@ import {
 import "../ProcurementOffers.scss";
 import "./CompletedOffers.scss";
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
+import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
 
 const CompletedOffers = ({
                              offers,
@@ -139,95 +140,13 @@ const CompletedOffers = ({
                                 {/* Use the reusable RequestOrderDetails component */}
                                 <RequestOrderDetails requestOrder={activeOffer.requestOrder} />
 
+                                {/* Replace the timeline section with the OfferTimeline component */}
                                 <div className="procurement-request-summary-card-completed">
-                                    <h4>Offer Timeline</h4>
-                                    <p className="procurement-section-description-completed">
-                                        This timeline shows the complete journey of this offer from creation to completion.
-                                    </p>
-
-                                    {/* NEW TIMELINE DESIGN - MATCHING OTHER COMPONENTS */}
-                                    <div className="procurement-timeline-completed">
-                                        {/* Request Order Approved Step */}
-                                        <div className="procurement-timeline-item-completed active-completed">
-                                            <div className="timeline-content-completed">
-                                                <h5>Request Order Approved</h5>
-                                                <p className="timeline-date-completed">
-                                                    <FiCalendar size={14} /> Approved at: {activeOffer.requestOrder?.approvedAt ? new Date(activeOffer.requestOrder.approvedAt).toLocaleDateString() : 'N/A'}
-                                                </p>
-                                                <p className="timeline-date-completed">
-                                                    <FiUser size={14} /> Approved by: {activeOffer.requestOrder?.approvedBy || 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Offer Submitted Step */}
-                                        <div className="procurement-timeline-item-completed active-completed">
-                                            <div className="timeline-content-completed">
-                                                <h5>Offer Submitted</h5>
-                                                <p className="timeline-date-completed">
-                                                    <FiCalendar size={14} /> Submitted at: {new Date(activeOffer.createdAt).toLocaleDateString()}
-                                                </p>
-                                                <p className="timeline-date-completed">
-                                                    <FiUser size={14} /> Submitted by: {activeOffer.createdBy || 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Manager Accepted Step */}
-                                        <div className="procurement-timeline-item-completed active-completed">
-                                            <div className="timeline-content-completed">
-                                                <h5>Manager Accepted</h5>
-                                                <p className="timeline-date-completed">
-                                                    <FiCalendar size={14} /> Accepted at: {activeOffer.managerAcceptedAt ? new Date(activeOffer.managerAcceptedAt).toLocaleDateString() : 'N/A'}
-                                                </p>
-                                                <p className="timeline-date-completed">
-                                                    <FiUser size={14} /> Accepted by: {activeOffer.managerApprovedBy || 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Finance Accepted Step */}
-                                        <div className="procurement-timeline-item-completed active-completed">
-                                            <div className="timeline-content-completed">
-                                                <h5>Finance Accepted</h5>
-                                                <p className="timeline-date-completed">
-                                                    <FiCalendar size={14} /> Accepted at: {activeOffer.financeAcceptedAt ? new Date(activeOffer.financeAcceptedAt).toLocaleDateString() : 'N/A'}
-                                                </p>
-                                                <p className="timeline-date-completed">
-                                                    <FiUser size={14} /> Accepted by: {activeOffer.financeApprovedBy || 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Offer Finalized Step */}
-                                        <div className="procurement-timeline-item-completed active-completed">
-                                            <div className="timeline-content-completed">
-                                                <h5>Offer Finalized</h5>
-                                                <p className="timeline-date-completed">
-                                                    <FiCalendar size={14} /> Finalized at: {activeOffer.finalizedAt ? new Date(activeOffer.finalizedAt).toLocaleDateString() : 'N/A'}
-                                                </p>
-                                                <p className="timeline-date-completed">
-                                                    <FiUser size={14} /> Finalized by: {activeOffer.finalizedBy || 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Completed Step */}
-                                        <div className="procurement-timeline-item-completed active-completed">
-                                            <div className="timeline-content-completed">
-                                                <h5>Offer Completed</h5>
-                                                <p className="timeline-date-completed">
-                                                    <FiCalendar size={14} /> Completed at: {new Date(activeOffer.updatedAt).toLocaleDateString()}
-                                                </p>
-                                                {purchaseOrder && (
-                                                    <p className="timeline-date-completed">
-                                                        <FiFileText size={14} /> PO Number: #{purchaseOrder.poNumber}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {/* END OF NEW TIMELINE DESIGN */}
+                                    <OfferTimeline
+                                        offer={activeOffer}
+                                        variant="completed"
+                                        showRetryInfo={false}
+                                    />
                                 </div>
 
                                 {/* Procurement Items */}

@@ -89,17 +89,9 @@ const ProcurementSolutionModal = ({
     };
 
     // Handle form submission
-    const handleSubmit = () => {
-        if (!isFormValid()) return;
-
+    const handleSubmit = (e) => {
+        e.preventDefault(); // Prevent default form submission
         onSave(formData);
-    };
-
-    // Check if form is valid
-    const isFormValid = () => {
-        return formData.merchantId &&
-            formData.quantity !== '' && formData.quantity > 0 &&
-            formData.unitPrice !== '' && formData.unitPrice >= 0;
     };
 
     // Handle backdrop click
@@ -127,166 +119,170 @@ const ProcurementSolutionModal = ({
                     </button>
                 </div>
 
-                <div className="procurement-modal-body-inprogress">
-                    {/* Merchant Selection */}
-                    <div className="procurement-form-group-inprogress">
-                        <label className="procurement-form-label-inprogress">
-                            Merchant <span className="required-asterisk">*</span>
-                        </label>
-                        <select
-                            className="procurement-form-select-inprogress"
-                            value={formData.merchantId}
-                            onChange={(e) => handleFieldChange('merchantId', e.target.value)}
-                            required
-                        >
-                            <option value="">Select a merchant</option>
-                            {merchants.map(merchant => (
-                                <option key={merchant.id} value={merchant.id}>
-                                    {merchant.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Currency Selection */}
-                    <div className="procurement-form-group-inprogress">
-                        <label className="procurement-form-label-inprogress">
-                            Currency <span className="required-asterisk">*</span>
-                        </label>
-                        <select
-                            className="procurement-form-select-inprogress"
-                            value={formData.currency}
-                            onChange={(e) => handleFieldChange('currency', e.target.value)}
-                            required
-                        >
-                            <option value="EGP">EGP (Egyptian Pound)</option>
-                            <option value="USD">USD (US Dollar)</option>
-                            <option value="EUR">EUR (Euro)</option>
-                            <option value="GBP">GBP (British Pound)</option>
-                            <option value="JPY">JPY (Japanese Yen)</option>
-                            <option value="CAD">CAD (Canadian Dollar)</option>
-                            <option value="AUD">AUD (Australian Dollar)</option>
-                            <option value="CHF">CHF (Swiss Franc)</option>
-                            <option value="CNY">CNY (Chinese Yuan)</option>
-                            <option value="INR">INR (Indian Rupee)</option>
-                            <option value="SGD">SGD (Singapore Dollar)</option>
-                        </select>
-                    </div>
-
-                    {/* Quantity and Unit Price Row */}
-                    <div className="procurement-form-row-inprogress">
-                        <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
+                <form onSubmit={handleSubmit}>
+                    <div className="procurement-modal-body-inprogress">
+                        {/* Merchant Selection */}
+                        <div className="procurement-form-group-inprogress">
                             <label className="procurement-form-label-inprogress">
-                                Quantity <span className="required-asterisk">*</span>
+                                Merchant <span className="required-asterisk">*</span>
                             </label>
-                            <div className="procurement-form-input-container-inprogress procurement-form-input-with-unit-inprogress">
-                                <input
-                                    type="number"
-                                    className="procurement-form-input-inprogress procurement-form-input-with-unit-suffix-inprogress"
-                                    min="1"
-                                    value={formData.quantity}
-                                    onChange={handleQuantityChange}
-                                    placeholder="Enter quantity"
-                                />
-                                <div className="procurement-unit-suffix-inprogress">
-                                    {requestItem.itemType?.measuringUnit || 'units'}
+                            <select
+                                className="procurement-form-select-inprogress"
+                                value={formData.merchantId}
+                                onChange={(e) => handleFieldChange('merchantId', e.target.value)}
+                                required
+                            >
+                                <option value="">Select a merchant</option>
+                                {merchants.map(merchant => (
+                                    <option key={merchant.id} value={merchant.id}>
+                                        {merchant.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Currency Selection */}
+                        <div className="procurement-form-group-inprogress">
+                            <label className="procurement-form-label-inprogress">
+                                Currency <span className="required-asterisk">*</span>
+                            </label>
+                            <select
+                                className="procurement-form-select-inprogress"
+                                value={formData.currency}
+                                onChange={(e) => handleFieldChange('currency', e.target.value)}
+                                required
+                            >
+                                <option value="EGP">EGP (Egyptian Pound)</option>
+                                <option value="USD">USD (US Dollar)</option>
+                                <option value="EUR">EUR (Euro)</option>
+                                <option value="GBP">GBP (British Pound)</option>
+                                <option value="JPY">JPY (Japanese Yen)</option>
+                                <option value="CAD">CAD (Canadian Dollar)</option>
+                                <option value="AUD">AUD (Australian Dollar)</option>
+                                <option value="CHF">CHF (Swiss Franc)</option>
+                                <option value="CNY">CNY (Chinese Yuan)</option>
+                                <option value="INR">INR (Indian Rupee)</option>
+                                <option value="SGD">SGD (Singapore Dollar)</option>
+                            </select>
+                        </div>
+
+                        {/* Quantity and Unit Price Row */}
+                        <div className="procurement-form-row-inprogress">
+                            <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
+                                <label className="procurement-form-label-inprogress">
+                                    Quantity <span className="required-asterisk">*</span>
+                                </label>
+                                <div className="procurement-form-input-container-inprogress procurement-form-input-with-unit-inprogress">
+                                    <input
+                                        type="number"
+                                        className="procurement-form-input-inprogress procurement-form-input-with-unit-suffix-inprogress"
+                                        min="1"
+                                        value={formData.quantity}
+                                        onChange={handleQuantityChange}
+                                        placeholder="Enter quantity"
+                                        required
+                                    />
+                                    <div className="procurement-unit-suffix-inprogress">
+                                        {requestItem.itemType?.measuringUnit || 'units'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
+                                <label className="procurement-form-label-inprogress">
+                                    Unit Price <span className="required-asterisk">*</span>
+                                </label>
+                                <div className="procurement-form-input-container-inprogress">
+                                    <input
+                                        type="number"
+                                        className="procurement-form-input-inprogress"
+                                        step="0.01"
+                                        min="0"
+                                        value={formData.unitPrice}
+                                        onChange={handleUnitPriceChange}
+                                        placeholder="Enter unit price"
+                                        required
+                                    />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
-                            <label className="procurement-form-label-inprogress">
-                                Unit Price <span className="required-asterisk">*</span>
-                            </label>
-                            <div className="procurement-form-input-container-inprogress">
-                                <input
-                                    type="number"
-                                    className="procurement-form-input-inprogress"
-                                    step="0.01"
-                                    min="0"
-                                    value={formData.unitPrice}
-                                    onChange={handleUnitPriceChange}
-                                    placeholder="Enter unit price"
-                                />
+                        {/* Total Price and Delivery Row */}
+                        <div className="procurement-form-row-inprogress">
+                            <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
+                                <label className="procurement-form-label-inprogress">Total Price</label>
+                                <div className="procurement-form-input-container-inprogress procurement-form-input-with-currency-inprogress">
+                                    <input
+                                        type="text"
+                                        className="procurement-form-input-inprogress procurement-form-input-readonly-inprogress"
+                                        value={formData.totalPrice.toFixed(2)}
+                                        readOnly
+                                    />
+                                    <div className="procurement-currency-prefix-inprogress">{formData.currency}</div>
+                                </div>
+                            </div>
+
+                            <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
+                                <label className="procurement-form-label-inprogress">
+                                    Est. Delivery (days) <span className="required-asterisk">*</span>
+                                </label>
+                                <div className="procurement-form-input-container-inprogress">
+                                    <input
+                                        type="number"
+                                        className="procurement-form-input-inprogress"
+                                        min="1"
+                                        value={formData.estimatedDeliveryDays}
+                                        onChange={(e) => handleFieldChange('estimatedDeliveryDays', parseInt(e.target.value) || 7)}
+                                        required
+                                    />
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Total Price and Delivery Row */}
-                    <div className="procurement-form-row-inprogress">
-                        <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
-                            <label className="procurement-form-label-inprogress">Total Price</label>
-                            <div className="procurement-form-input-container-inprogress procurement-form-input-with-currency-inprogress">
-                                <input
-                                    type="text"
-                                    className="procurement-form-input-inprogress procurement-form-input-readonly-inprogress"
-                                    value={formData.totalPrice.toFixed(2)}
-                                    readOnly
-                                />
-                                <div className="procurement-currency-prefix-inprogress">{formData.currency}</div>
-                            </div>
-                        </div>
-
-                        <div className="procurement-form-group-inprogress procurement-form-group-half-inprogress">
-                            <label className="procurement-form-label-inprogress">
-                                Est. Delivery (days) <span className="required-asterisk">*</span>
-                            </label>
-                            <div className="procurement-form-input-container-inprogress">
-                                <input
-                                    type="number"
-                                    className="procurement-form-input-inprogress"
-                                    min="1"
-                                    value={formData.estimatedDeliveryDays}
-                                    onChange={(e) => handleFieldChange('estimatedDeliveryDays', parseInt(e.target.value) || 7)}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Delivery Notes */}
-                    <div className="procurement-form-group-inprogress">
-                        <label className="procurement-form-label-inprogress">Delivery Notes</label>
-                        <textarea
-                            className="procurement-form-textarea-inprogress"
-                            value={formData.deliveryNotes}
-                            onChange={(e) => handleFieldChange('deliveryNotes', e.target.value)}
-                            placeholder="Any special delivery instructions"
-                            rows={3}
-                        />
-                    </div>
-
-                    {/* Comments (only show in edit mode) */}
-                    {mode === 'edit' && (
+                        {/* Delivery Notes */}
                         <div className="procurement-form-group-inprogress">
-                            <label className="procurement-form-label-inprogress">Comments</label>
+                            <label className="procurement-form-label-inprogress">Delivery Notes</label>
                             <textarea
                                 className="procurement-form-textarea-inprogress"
-                                value={formData.comment}
-                                onChange={(e) => handleFieldChange('comment', e.target.value)}
-                                placeholder="Additional comments about this item"
+                                value={formData.deliveryNotes}
+                                onChange={(e) => handleFieldChange('deliveryNotes', e.target.value)}
+                                placeholder="Any special delivery instructions"
                                 rows={3}
                             />
                         </div>
-                    )}
-                </div>
 
-                <div className="procurement-modal-footer-inprogress">
-                    <button
-                        type="button"
-                        className="btn-cancel"
-                        onClick={onClose}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="button"
-                        className="btn-primary"
-                        onClick={handleSubmit}
-                    >
-                        <FiPlusCircle size={16} />
-                        {mode === 'edit' ? 'Save Changes' : 'Add to Offer'}
-                    </button>
-                </div>
+                        {/* Comments (only show in edit mode) */}
+                        {mode === 'edit' && (
+                            <div className="procurement-form-group-inprogress">
+                                <label className="procurement-form-label-inprogress">Comments</label>
+                                <textarea
+                                    className="procurement-form-textarea-inprogress"
+                                    value={formData.comment}
+                                    onChange={(e) => handleFieldChange('comment', e.target.value)}
+                                    placeholder="Additional comments about this item"
+                                    rows={3}
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="procurement-modal-footer-inprogress">
+                        <button
+                            type="button"
+                            className="btn-cancel"
+                            onClick={onClose}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="btn-primary"
+                        >
+                            <FiPlusCircle size={16} />
+                            {mode === 'edit' ? 'Save Changes' : 'Add to Offer'}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );

@@ -15,13 +15,16 @@ import {
     FaInfoCircle,
     FaCheckDouble,
     FaChevronLeft,
-    FaChevronRight
+    FaChevronRight,
+    FaWifi,
+    FaExclamationCircle
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import IntroCard from '../../components/common/IntroCard/IntroCard.jsx';
 import Snackbar from '../../components/common/Snackbar/Snackbar.jsx';
 import ConfirmationDialog from '../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import { notificationService } from '../../services/notification/notificationService';
+import { webSocketService } from '../../services/notification/webSocketService';
 import notificationLight from '../../assets/imgs/notificationlight.png';
 import notificationDark from '../../assets/imgs/notificationdark.png';
 import './Notifications.scss';
@@ -32,9 +35,9 @@ const Notifications = () => {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
-    const [connectionStatus, setConnectionStatus] = useState('disconnected');
     const [currentPage, setCurrentPage] = useState(1);
-    const [notificationsPerPage] = useState(3); // You can make this configurable
+    const [notificationsPerPage] = useState(7);
+    const [wsConnected, setWsConnected] = useState(false);
     const [snackbar, setSnackbar] = useState({
         show: false,
         message: '',
@@ -49,202 +52,104 @@ const Notifications = () => {
         isLoading: false
     });
 
-    const stompClientRef = useRef(null);
-    const reconnectTimeoutRef = useRef(null);
-    const [forceUpdate, setForceUpdate] = useState(0);
+    const wsInitialized = useRef(false);
 
     useEffect(() => {
         if (currentUser && token) {
-            fetchNotifications();
-            connectWebSocket();
+            initializeApp();
         }
 
         return () => {
-            disconnectWebSocket();
-            if (reconnectTimeoutRef.current) {
-                clearTimeout(reconnectTimeoutRef.current);
-            }
+            webSocketService.disconnect();
         };
     }, [currentUser, token]);
 
-    // Reset to first page when filter or search changes
     useEffect(() => {
         setCurrentPage(1);
     }, [filter, searchTerm]);
 
+    const initializeApp = async () => {
+        // First, load notifications via HTTP (fast initial load)
+        await fetchNotifications();
+
+        // Then, set up WebSocket for real-time updates
+        if (!wsInitialized.current) {
+            await initializeWebSocket();
+            wsInitialized.current = true;
+        }
+    };
+
     const fetchNotifications = async () => {
+        if (!currentUser || !token) {
+            console.log('⚠️ Cannot fetch notifications: Missing auth data');
+            return;
+        }
+
         setLoading(true);
         try {
-            const data = await notificationService.getAll();
-            setNotifications(data);
-            console.log('Notifications fetched:', data);
+            const response = await notificationService.getAll();
+            const notificationsData = response.data || response;
+
+            if (Array.isArray(notificationsData)) {
+                setNotifications(notificationsData);
+            } else {
+                console.warn('⚠️ Unexpected notifications data format:', notificationsData);
+                setNotifications([]);
+            }
         } catch (error) {
-            console.error('Failed to fetch notifications:', error);
+            console.error('❌ Failed to fetch notifications:', error);
             showSnackbar('Failed to fetch notifications', 'error');
+            setNotifications([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const connectWebSocket = async () => {
-        if (stompClientRef.current?.connected) {
-            return;
-        }
-
-        setConnectionStatus('connecting');
-
+    const initializeWebSocket = async () => {
         try {
-            const { Client } = await import('@stomp/stompjs');
+            // Set up callbacks
+            webSocketService.onNotification(handleNewNotifications);
+            webSocketService.onConnectionStatus(setWsConnected);
 
-            const stompClient = new Client({
-                brokerURL: 'ws://localhost:8080/ws-native',
-                connectHeaders: {
-                    'Authorization': `Bearer ${token}`
-                },
-                debug: (str) => {
-                    console.log('STOMP Debug:', str);
-                },
-                reconnectDelay: 5000,
-                heartbeatIncoming: 4000,
-                heartbeatOutgoing: 4000,
-            });
-
-            stompClient.onConnect = (frame) => {
-                console.log('WebSocket Connected:', frame);
-                setConnectionStatus('connected');
-
-                stompClient.subscribe('/user/queue/notifications', (message) => {
-                    const notification = JSON.parse(message.body);
-                    console.log('Received notification:', notification);
-                    handleNewNotification(notification);
-                });
-
-                stompClient.subscribe(`/user/${currentUser.id}/queue/notifications`, (message) => {
-                    const notification = JSON.parse(message.body);
-                    console.log('🎯 Received notification via direct user subscription:', notification);
-                    handleNewNotification(notification);
-                });
-
-                stompClient.subscribe('/user/queue/unread-count', (message) => {
-                    const response = JSON.parse(message.body);
-                    console.log('Unread count update:', response);
-                });
-
-                stompClient.subscribe('/user/queue/responses', (message) => {
-                    const response = JSON.parse(message.body);
-                    console.log('Operation response:', response);
-                    if (response.type === 'SUCCESS') {
-                        showSnackbar(response.message, 'success');
-                    } else if (response.type === 'ERROR') {
-                        showSnackbar(response.message, 'error');
-                    }
-                });
-
-                stompClient.subscribe('/user/queue/auth-response', (message) => {
-                    const response = JSON.parse(message.body);
-                    console.log('Auth response:', response);
-                });
-
-                stompClient.subscribe('/topic/notifications', (message) => {
-                    const notification = JSON.parse(message.body);
-                    console.log('Received broadcast notification:', notification);
-                    handleNewNotification(notification);
-                });
-
-                stompClient.publish({
-                    destination: '/app/authenticate',
-                    body: JSON.stringify({
-                        token: token,
-                        userId: currentUser.id,
-                        sessionId: Date.now().toString()
-                    })
-                });
-            };
-
-            stompClient.onStompError = (frame) => {
-                console.error('STOMP Error:', frame);
-                setConnectionStatus('disconnected');
-                showSnackbar('Connection error. Attempting to reconnect...', 'error');
-                scheduleReconnect();
-            };
-
-            stompClient.onDisconnect = () => {
-                console.log('WebSocket Disconnected');
-                setConnectionStatus('disconnected');
-                scheduleReconnect();
-            };
-
-            stompClient.onWebSocketError = (error) => {
-                console.error('WebSocket Error:', error);
-                setConnectionStatus('disconnected');
-                showSnackbar('WebSocket connection failed', 'error');
-                scheduleReconnect();
-            };
-
-            stompClient.activate();
-            stompClientRef.current = stompClient;
+            // Connect
+            await webSocketService.connect(token);
 
         } catch (error) {
-            console.error('Failed to connect WebSocket:', error);
-            setConnectionStatus('disconnected');
-            showSnackbar('Failed to connect to notification service', 'error');
-            scheduleReconnect();
+            showSnackbar('Failed to connect to real-time notifications', 'warning');
         }
     };
 
-    const scheduleReconnect = () => {
-        if (reconnectTimeoutRef.current) {
-            clearTimeout(reconnectTimeoutRef.current);
-        }
+    const handleNewNotifications = (newNotifications) => {
+        console.log('📬 Handling new notifications:', newNotifications);
 
-        reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('Attempting to reconnect WebSocket...');
-            connectWebSocket();
-        }, 5000);
-    };
+        if (Array.isArray(newNotifications) && newNotifications.length > 0) {
+            setNotifications(prevNotifications => {
+                // Check if this is initial load (full notification list) or new notifications
+                const isInitialLoad = newNotifications.length > 5; // Assume if we get many, it's initial load
 
-    const disconnectWebSocket = () => {
-        if (stompClientRef.current) {
-            stompClientRef.current.deactivate();
-            stompClientRef.current = null;
-        }
-        setConnectionStatus('disconnected');
-    };
+                if (isInitialLoad) {
+                    // Replace all notifications (initial load from WebSocket)
+                    return newNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                } else {
+                    // Merge new notifications, avoiding duplicates
+                    const existingIds = new Set(prevNotifications.map(n => n.id));
+                    const uniqueNewNotifications = newNotifications.filter(n => !existingIds.has(n.id));
 
-    const handleNewNotification = React.useCallback((notification) => {
-        console.log('🎯 handleNewNotification called with:', notification);
+                    if (uniqueNewNotifications.length > 0) {
+                        // Show toast for actually new notifications
+                        const message = uniqueNewNotifications.length === 1
+                            ? `New: ${uniqueNewNotifications[0].title}`
+                            : `${uniqueNewNotifications.length} new notifications`;
+                        showSnackbar(message, 'info');
+                    }
 
-        setNotifications(prev => {
-            console.log('🎯 Previous notifications count:', prev.length);
-            const exists = prev.some(n => n.id === notification.id);
-            if (exists) {
-                console.log('⚠️ Notification already exists, skipping:', notification.id);
-                return prev;
-            }
-            console.log('✅ Adding new notification to state');
-            const newNotifications = [notification, ...prev];
-            console.log('🎯 New notifications count:', newNotifications.length);
-            return newNotifications;
-        });
-
-        setForceUpdate(prev => prev + 1);
-
-        if (Notification.permission === 'granted') {
-            new Notification(notification.title, {
-                body: notification.message,
-                icon: '/favicon.ico',
-                tag: notification.id
+                    // Merge and sort
+                    return [...uniqueNewNotifications, ...prevNotifications]
+                        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                }
             });
         }
-    }, []);
-
-    useEffect(() => {
-        if (Notification.permission === 'default') {
-            Notification.requestPermission().then(permission => {
-                console.log('Notification permission:', permission);
-            });
-        }
-    }, []);
+    };
 
     const showSnackbar = (message, type = 'success') => {
         setSnackbar({
@@ -294,20 +199,15 @@ const Notifications = () => {
     };
 
     const toggleReadStatus = async (notificationId) => {
-        if (!stompClientRef.current?.connected) {
-            showSnackbar('Not connected to notification service', 'error');
-            return;
-        }
-
         try {
-            stompClientRef.current.publish({
-                destination: '/app/markAsRead',
-                body: JSON.stringify({
-                    notificationId: notificationId,
-                    userId: currentUser.id
-                })
-            });
+            // Try WebSocket first, fallback to HTTP
+            if (wsConnected) {
+                await webSocketService.markAsRead(notificationId);
+            } else {
+                await notificationService.markAsRead(notificationId);
+            }
 
+            // Update local state optimistically
             setNotifications(prev =>
                 prev.map(notification =>
                     notification.id === notificationId
@@ -315,6 +215,8 @@ const Notifications = () => {
                         : notification
                 )
             );
+
+            showSnackbar('Notification updated successfully');
         } catch (error) {
             console.error('Failed to update notification:', error);
             showSnackbar('Failed to update notification', 'error');
@@ -346,11 +248,6 @@ const Notifications = () => {
     };
 
     const markAllAsRead = async () => {
-        if (!stompClientRef.current?.connected) {
-            showSnackbar('Not connected to notification service', 'error');
-            return;
-        }
-
         try {
             const notificationsToUpdate = filteredNotifications.filter(n => !n.read);
 
@@ -359,22 +256,15 @@ const Notifications = () => {
                 return;
             }
 
-            for (const notification of notificationsToUpdate) {
-                stompClientRef.current.publish({
-                    destination: '/app/markAsRead',
-                    body: JSON.stringify({
-                        notificationId: notification.id,
-                        userId: currentUser.id
-                    })
-                });
+            // Try WebSocket first, fallback to HTTP
+            if (wsConnected) {
+                await webSocketService.markAllAsRead();
+            } else {
+                await notificationService.markAllAsRead();
             }
 
             setNotifications(prev =>
-                prev.map(notification =>
-                    notificationsToUpdate.some(n => n.id === notification.id)
-                        ? { ...notification, read: true }
-                        : notification
-                )
+                prev.map(notification => ({ ...notification, read: true }))
             );
 
             const filterText = filter === 'all' ? 'all' : `${filter}`;
@@ -462,13 +352,31 @@ const Notifications = () => {
 
         return [
             { value: totalCount.toString(), label: "Total Notifications" },
+            { value: unreadCount.toString(), label: "Unread" },
         ];
     };
 
+    // Show loading state while waiting for auth
+    if (!currentUser) {
+        return (
+            <div className="notifications-page">
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '200px',
+                    flexDirection: 'column',
+                    gap: '10px'
+                }}>
+                    <div className="loading-spinner"></div>
+                    <p>Loading user authentication...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="notifications-page">
-
-
             <IntroCard
                 title="Notifications"
                 label="NOTIFICATION CENTER"
@@ -478,9 +386,8 @@ const Notifications = () => {
                 icon={false}
             />
 
-            {/* New Cleaner Toolbar */}
+            {/* Toolbar */}
             <div className="notifications-toolbar-clean">
-                {/* Search Bar */}
                 <div className="search-bar">
                     <FaSearch className="search-icon" />
                     <input
@@ -500,7 +407,6 @@ const Notifications = () => {
                     )}
                 </div>
 
-                {/* Filter Pills */}
                 <div className="filter-pills">
                     {[
                         { key: 'all', label: 'All', count: notifications.length },
@@ -517,11 +423,10 @@ const Notifications = () => {
                     ))}
                 </div>
 
-                {/* Action Buttons */}
                 <div className="toolbar-actions">
                     <button
                         onClick={markAllAsRead}
-                        disabled={filteredNotifications.filter(n => !n.read).length === 0 || connectionStatus !== 'connected'}
+                        disabled={filteredNotifications.filter(n => !n.read).length === 0}
                         className="action-button mark-read"
                     >
                         <FaCheckDouble />
@@ -603,7 +508,6 @@ const Notifications = () => {
                                                             className="action-btn-small toggle"
                                                             onClick={() => toggleReadStatus(notification.id)}
                                                             title={notification.read ? 'Mark as unread' : 'Mark as read'}
-                                                            disabled={connectionStatus !== 'connected'}
                                                         >
                                                             {notification.read ? <FaEyeSlash /> : <FaEye />}
                                                         </button>
@@ -625,7 +529,6 @@ const Notifications = () => {
                             })}
                         </div>
 
-                        {/* Pagination */}
                         {totalPages > 1 && (
                             <div className="pagination">
                                 <button
