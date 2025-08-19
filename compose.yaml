@@ -21,7 +21,7 @@ services:
   postgres:
     image: postgres:latest
     ports:
-      - "5433:5432"  # Using 5433 to avoid conflict with your local postgres
+      - "5432:5432"  # Using 5433 to avoid conflict with your local postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 1234
@@ -32,8 +32,8 @@ services:
   minio:
     image: minio/minio:latest
     ports:
-      - "9002:9000"  # Using 9002 to avoid conflict
-      - "9003:9001"
+      - "9000:9000"  # Using 9002 to avoid conflict
+      - "9001:9001"
     environment:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin
