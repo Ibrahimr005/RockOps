@@ -775,6 +775,7 @@
     font-weight: 500;
   }
 }
+/* Fixed centering for empty state */
 
 .empty-state {
   text-align: center;
@@ -782,24 +783,29 @@
   background: linear-gradient(135deg, var(--section-background-color) 0%, var(--color-surface-secondary) 100%);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color-light);
-  margin: 1rem auto 0 auto; // Changed: minimal top margin, auto horizontal centering
   max-width: 1400px;
 
-  @media (max-width: 768px) {
-    padding: 80px 20px;
-    margin-top: 0.5rem;
-  }
+  /* Perfect centering that works at any zoom level */
+  position: relative;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%); /* Always center horizontally */
+  margin: 0; /* Remove auto margins */
 
-
-
-  // Add responsive margins for different zoom levels
   @media (max-width: 1200px) {
-    margin-top: 6rem; // More space on smaller screens/higher zoom
+    top: 100px;
   }
 
   @media (max-width: 768px) {
-    margin-top: 7rem; // Even more space on mobile/high zoom
-    padding: 80px 20px; // Slightly reduce padding on mobile
+    top: 80px;
+    padding: 80px 20px;
+    max-width: 90%; /* Prevent it from being too wide on mobile */
+  }
+
+  @media (max-width: 600px) {
+    top: 60px;
+    padding: 60px 15px;
+    max-width: 95%;
   }
 
   .empty-icon {
@@ -808,7 +814,6 @@
     margin-bottom: 24px;
     opacity: 0.6;
 
-    // Scale icon appropriately on smaller screens
     @media (max-width: 768px) {
       font-size: 48px;
     }

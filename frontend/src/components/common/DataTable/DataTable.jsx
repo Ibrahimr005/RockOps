@@ -548,6 +548,19 @@ const DataTable = ({
                         </button>
                     )}
                 </div>
+            </div> {/* End of header-container */}
+
+
+
+            {/* Simple Table Count */}
+            <div className="rockops-table__simple-count">
+  <span className="count-text">
+    Showing {sortedData.length} of {data.length} results
+      {activeFiltersCount > 0 && (
+          <span className="filter-indicator"> • {activeFiltersCount} filter{activeFiltersCount !== 1 ? 's' : ''}</span>
+      )}
+  </span>
+
             </div>
 
             {/* Filter Panel - Professional Design */}

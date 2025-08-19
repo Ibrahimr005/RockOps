@@ -38,14 +38,34 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Register STOMP endpoint with proper CORS configuration
+        // Register STOMP endpoint with proper CORS configuration for your deployments
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:*")
+                .setAllowedOriginPatterns(
+                        // Local development
+                        "http://localhost:3000",
+                        "http://localhost:5173",
+                        "http://127.0.0.1:*",
+                        "http://localhost:*",
+
+                        // Your specific Vercel deployments
+                        "https://dev-rock-ops.vercel.app",
+                        "https://rock-ops.vercel.app",
+
+                        // All Vercel subdomains (backup)
+                        "https://*.vercel.app"
+                )
                 .withSockJS()
                 .setHeartbeatTime(25000); // SockJS heartbeat (backup to STOMP heartbeat)
 
         // Native WebSocket endpoint (without SockJS)
         registry.addEndpoint("/ws-native")
-                .setAllowedOriginPatterns("http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:*");
+                .setAllowedOriginPatterns(
+                        "http://localhost:3000",
+                        "http://localhost:5173",
+                        "http://127.0.0.1:*",
+                        "http://localhost:*",
+                        "https://dev-rock-ops.vercel.app",
+                        "https://rock-ops.vercel.app"
+                );
     }
 }
