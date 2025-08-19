@@ -664,9 +664,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
   padding: 1rem 0;
-  gap: 1rem;
 
   .rockops-table__header-left {
     flex: 0 0 auto; // Don't grow or shrink
@@ -1854,5 +1852,67 @@
 
 .rockops-table__action-button {
   z-index: 1 !important;
+}
+
+/* Simple, clean count display */
+.rockops-table__simple-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+
+  [data-theme="dark"] & {
+    border-bottom-color: var(--border-color);
+  }
+
+  .count-text {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-weight: 500;
+
+    [data-theme="dark"] & {
+      color: var(--color-text-secondary);
+    }
+  }
+
+  .filter-indicator {
+    color: #3b82f6;
+
+    [data-theme="dark"] & {
+      color: var(--color-primary);
+    }
+  }
+
+  .clear-link {
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+
+    [data-theme="dark"] & {
+      color: var(--color-danger);
+    }
+
+    &:hover {
+      color: #dc2626;
+      text-decoration: none;
+
+      [data-theme="dark"] & {
+        color: #ff5252;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
 }
 
