@@ -5,14 +5,15 @@ import UserStatsCard from './components/UserStatsCard';
 import EditUserModal from './components/EditUserModal';
 import { FaEdit, FaTrash, FaUserPlus } from 'react-icons/fa';
 import { adminService } from '../../services/adminService';
+import { useSnackbar } from '../../contexts/SnackbarContext';
 import './AdminPage.css';
 
 const AdminPage = () => {
     const { t } = useTranslation();
+    const { showSnackbar } = useSnackbar();
 
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [editingUser, setEditingUser] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState('edit'); // 'edit' or 'add'
@@ -39,10 +40,9 @@ const AdminPage = () => {
             }
 
             setUsers(response.data);
-            setError(null);
         } catch (err) {
-            setError(`${t('common.error')}: ${err.message}`);
             console.error('Error fetching users:', err);
+            showSnackbar(t('admin.fetchUsersError', 'Failed to load users'), 'error');
         } finally {
             setLoading(false);
         }
@@ -57,10 +57,10 @@ const AdminPage = () => {
             await adminService.deleteUser(userId);
             // Remove user from state
             setUsers(users.filter(user => user.id !== userId));
-            setError(null);
+            showSnackbar(t('admin.userDeletedSuccessfully', 'User deleted successfully'), 'success');
         } catch (err) {
-            setError(`${t('common.error')}: ${err.message}`);
             console.error('Error deleting user:', err);
+            showSnackbar(t('admin.deleteUserError', 'Failed to delete user'), 'error');
         }
     };
 
@@ -102,10 +102,10 @@ const AdminPage = () => {
             // Close modal and clear form
             setShowModal(false);
             setEditingUser(null);
-            setError(null);
         } catch (err) {
-            setError(`${t('common.error')}: ${err.message}`);
             console.error('Error updating user:', err);
+            // Re-throw to let modal handle the error display
+            throw err;
         }
     };
 
@@ -118,10 +118,10 @@ const AdminPage = () => {
 
             // Close modal
             setShowModal(false);
-            setError(null);
         } catch (err) {
-            setError(`${t('common.error')}: ${err.message}`);
             console.error('Error creating user:', err);
+            // Re-throw to let modal handle the error display
+            throw err;
         }
     };
 
@@ -196,8 +196,6 @@ const AdminPage = () => {
 
     return (
         <div className="admin-container">
-            {/* Use the new Navbar component */}
-
             <div className="admin-content">
                 <main className="admin-main">
                     <div className="">
@@ -207,14 +205,9 @@ const AdminPage = () => {
                             {/* Add more summary cards here if needed */}
                         </div>
 
-                        {/* Error message */}
-                        {error && (
-                            <div className="error-message">
-                                {error}
-                            </div>
-                        )}
+                        {/* Removed error message display - now handled by snackbar */}
 
-                        {/* Action buttons */}
+                        {/* Data Table */}
                         <DataTable
                             data={users}
                             columns={columns}

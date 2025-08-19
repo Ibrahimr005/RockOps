@@ -8,10 +8,11 @@ import WarehouseViewItemsCategoriesTable from "../../warehouse/WarehouseCategori
 import WarehouseViewTransactionsTable from "../../warehouse/WarehouseViewTransactions/WarehouseViewTransactionsTable";
 import WarehouseRequestOrders from "../../warehouse/WarehouseRequestOrders/WarehouseRequestOrders";
 import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
+import LoadingPage from "../../../components/common/LoadingPage/LoadingPage"; // Add this import
 import "./WarehouseDetails.scss";
 import warehouseImg from "../../../assets/imgs/warehouse1.jpg";
-import { transactionService } from "../../../services/transaction/transactionService.js"; // Add this line
-import { warehouseService } from "../../../services/warehouse/warehouseService"; // Add this line too
+import { transactionService } from "../../../services/transaction/transactionService.js";
+import { warehouseService } from "../../../services/warehouse/warehouseService";
 
 // Simple Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -59,6 +60,7 @@ const WarehouseDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [warehouseData, setWarehouseData] = useState(null);
+  const [loading, setLoading] = useState(true); // Add loading state
   const [activeTab, setActiveTab] = useState("items");
   const [userRole, setUserRole] = useState('');
   const [discrepancyCounts, setDiscrepancyCounts] = useState({
@@ -78,7 +80,7 @@ const WarehouseDetails = () => {
     try {
       const data = await transactionService.getTransactionsForWarehouse(id);
 
-      // Filter for incoming transactions (same logic as IncomingTransactionsTable)
+      // Just count, don't fetch entity details
       const incomingCount = data.filter(transaction =>
           transaction.status === "PENDING" &&
           (transaction.receiverId === id || transaction.senderId === id) &&
@@ -88,26 +90,32 @@ const WarehouseDetails = () => {
       setIncomingTransactionsCount(incomingCount);
     } catch (error) {
       console.error("Failed to fetch incoming transactions count:", error);
+      setIncomingTransactionsCount(0); // Add fallback
     }
   }, [id]);
 
   useEffect(() => {
     const fetchWarehouseDetails = async () => {
       try {
+        setLoading(true); // Set loading to true when starting fetch
+
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
         if (userInfo && userInfo.role) {
           setUserRole(userInfo.role);
         }
+        console.log("role is:" + userRole);
 
         const data = await warehouseService.getById(id);
         setWarehouseData(data);
         console.log("warehouse:", JSON.stringify(data, null, 2));
 
         // Fetch incoming transactions count immediately after warehouse data is loaded
-        fetchIncomingTransactionsCount();
+        await fetchIncomingTransactionsCount();
 
       } catch (error) {
         console.error("Error fetching warehouse details:", error);
+      } finally {
+        setLoading(false); // Set loading to false when done (success or error)
       }
     };
 
@@ -178,8 +186,9 @@ const WarehouseDetails = () => {
     ];
   };
 
-  if (!warehouseData) {
-    return <div>Loading...</div>;
+  // Show loading page while data is being fetched
+  if (loading || !warehouseData) {
+    return <LoadingPage />;
   }
 
   const getTabHeader = () => {
@@ -310,7 +319,7 @@ const WarehouseDetails = () => {
           />
 
           {/* Show tabs only for warehouse managers */}
-          {userRole === 'WAREHOUSE_MANAGER' && (
+          {(userRole === 'WAREHOUSE_MANAGER' || userRole === 'ADMIN') && (
               <div className="new-tabs-container">
                 <div className="new-tabs-header">
                   <button
@@ -358,7 +367,7 @@ const WarehouseDetails = () => {
           )}
 
           {/* For non-warehouse managers, show inventory with same structure but no top tabs */}
-          {userRole !== 'WAREHOUSE_MANAGER' && (
+          {(userRole !== 'WAREHOUSE_MANAGER' && userRole !== 'ADMIN')  && (
               <div className="new-tabs-container">
                 <div className="unified-tab-content-container">
                   <div className="tab-content-header">

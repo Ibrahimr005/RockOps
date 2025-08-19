@@ -80,7 +80,7 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
                 lightModeImage={procurementImage}
                 darkModeImage={procurementImageDark}
                 stats={statsData}
-                onInfoClick={handleInfoClick}
+                icon={false}
             />
 
             {/* Tabs Navigation */}

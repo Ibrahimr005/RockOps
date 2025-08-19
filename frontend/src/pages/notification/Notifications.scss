@@ -9,7 +9,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  margin-top:3rem;
+  margin-top: 3rem;
   margin-bottom: 32px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border-color-light);
@@ -19,6 +19,19 @@
     align-items: center;
     justify-content: space-between;
     gap: 24px;
+  }
+
+  // When screen is smaller and items wrap, increase bottom margin
+  @media (max-width: 1200px) {
+    margin-bottom: 48px; // More space when items might wrap
+  }
+
+  @media (max-width: 968px) {
+    margin-bottom: 64px; // Even more space for smaller screens
+  }
+
+  @media (max-width: 768px) {
+    margin-bottom: 80px; // Maximum space for mobile
   }
 
   // Clean Search Bar
@@ -769,15 +782,36 @@
   background: linear-gradient(135deg, var(--section-background-color) 0%, var(--color-surface-secondary) 100%);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color-light);
-  margin-top: 3rem;
-  max-width: 1400px;  // ← Add this line (adjust the value as needed)
+  margin: 1rem auto 0 auto; // Changed: minimal top margin, auto horizontal centering
+  max-width: 1400px;
 
+  @media (max-width: 768px) {
+    padding: 80px 20px;
+    margin-top: 0.5rem;
+  }
+
+
+
+  // Add responsive margins for different zoom levels
+  @media (max-width: 1200px) {
+    margin-top: 6rem; // More space on smaller screens/higher zoom
+  }
+
+  @media (max-width: 768px) {
+    margin-top: 7rem; // Even more space on mobile/high zoom
+    padding: 80px 20px; // Slightly reduce padding on mobile
+  }
 
   .empty-icon {
     font-size: 64px;
     color: var(--color-text-muted);
     margin-bottom: 24px;
     opacity: 0.6;
+
+    // Scale icon appropriately on smaller screens
+    @media (max-width: 768px) {
+      font-size: 48px;
+    }
   }
 
   h3 {
@@ -785,6 +819,10 @@
     font-weight: var(--bold-font-weight);
     color: var(--color-text-primary);
     margin: 0 0 12px 0;
+
+    @media (max-width: 768px) {
+      font-size: 20px;
+    }
   }
 
   p {
@@ -794,8 +832,14 @@
     line-height: 1.5;
     max-width: 400px;
     margin: 0 auto;
+
+    @media (max-width: 768px) {
+      font-size: 14px;
+      max-width: 300px;
+    }
   }
 }
+
 
 // Animations
 @keyframes pulse {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
     FiPackage, FiCheck, FiClock, FiCheckCircle,
     FiX, FiRefreshCw, FiUser, FiCalendar, FiDollarSign, FiInbox,
-    FiShoppingCart, FiTrash2, FiTrendingUp
+    FiShoppingCart, FiTrash2, FiTrendingUp, FiAlertTriangle
 } from 'react-icons/fi';
 
 import "../ProcurementOffers.scss"
@@ -11,6 +11,7 @@ import "./ManagerValidatedOffers.scss"
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import Snackbar from '../../../../components/common/Snackbar/Snackbar.jsx';
+import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
 import { offerService } from '../../../../services/procurement/offerService.js';
 
 const ValidatedOffers = ({
@@ -31,6 +32,12 @@ const ValidatedOffers = ({
     const [showRetryConfirm, setShowRetryConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isRetrying, setIsRetrying] = useState(false);
+    const [isProcessingFinance, setIsProcessingFinance] = useState(false);
+
+    // Finance review states
+    const [showFinanceReview, setShowFinanceReview] = useState(false);
+    const [financeDecisions, setFinanceDecisions] = useState({});
+    const [rejectionReasons, setRejectionReasons] = useState({});
 
     // Get offer items for a specific request item
     const getOfferItemsForRequestItem = (requestItemId) => {
@@ -40,6 +47,209 @@ const ValidatedOffers = ({
         );
     };
 
+    // Initialize finance decisions when starting finance review
+    const initializeFinanceDecisions = () => {
+        const decisions = {};
+        const reasons = {};
+
+        if (activeOffer?.offerItems) {
+            activeOffer.offerItems.forEach(item => {
+                decisions[item.id] = item.financeStatus || 'PENDING';
+                reasons[item.id] = '';
+            });
+        }
+
+        setFinanceDecisions(decisions);
+        setRejectionReasons(reasons);
+        setShowFinanceReview(true);
+    };
+
+    // Handle finance decision change for an offer item
+    const handleFinanceDecisionChange = (itemId, decision) => {
+        setFinanceDecisions(prev => ({
+            ...prev,
+            [itemId]: decision
+        }));
+
+        // Clear rejection reason if accepting
+        if (decision === 'ACCEPTED') {
+            setRejectionReasons(prev => ({
+                ...prev,
+                [itemId]: ''
+            }));
+        }
+    };
+
+    // Handle rejection reason change
+    const handleRejectionReasonChange = (itemId, reason) => {
+        setRejectionReasons(prev => ({
+            ...prev,
+            [itemId]: reason
+        }));
+    };
+
+    // Calculate overall finance status based on item decisions
+    const calculateOverallFinanceStatus = () => {
+        const decisions = Object.values(financeDecisions);
+        const acceptedCount = decisions.filter(d => d === 'ACCEPTED').length;
+        const rejectedCount = decisions.filter(d => d === 'REJECTED').length;
+
+        if (acceptedCount === decisions.length) {
+            return 'FINANCE_ACCEPTED';
+        } else if (rejectedCount === decisions.length) {
+            return 'FINANCE_REJECTED';
+        } else {
+            return 'FINANCE_PARTIALLY_ACCEPTED';
+        }
+    };
+
+    // Submit finance review
+    // Submit finance review with detailed logging
+    // Fixed handleSubmitFinanceReview function for ValidatedOffers.jsx
+
+    const handleSubmitFinanceReview = async () => {
+        try {
+            setIsProcessingFinance(true);
+            console.log('🔄 Starting finance review for offer:', activeOffer.id);
+            console.log('📋 Finance decisions:', financeDecisions);
+            console.log('📝 Rejection reasons:', rejectionReasons);
+
+            // Update each offer item's finance status
+            let itemUpdateResults = [];
+            for (const [itemId, decision] of Object.entries(financeDecisions)) {
+                const rejectionReason = decision === 'REJECTED' ? rejectionReasons[itemId] : null;
+                console.log(`🔄 Updating item ${itemId} to ${decision}`, rejectionReason ? `with reason: ${rejectionReason}` : '');
+
+                try {
+                    const itemResult = await offerService.updateItemFinanceStatus(itemId, decision, rejectionReason);
+                    console.log(`✅ Item ${itemId} update SUCCESS:`, itemResult);
+                    itemUpdateResults.push({ itemId, success: true, result: itemResult });
+                } catch (itemError) {
+                    console.error(`❌ Item ${itemId} update FAILED:`, itemError);
+                    console.error(`Item ${itemId} error response:`, itemError.response?.data);
+                    console.error(`Item ${itemId} error status:`, itemError.response?.status);
+                    itemUpdateResults.push({ itemId, success: false, error: itemError });
+                    // Continue with other items instead of stopping
+                }
+            }
+
+            console.log('📊 Item update results summary:', itemUpdateResults);
+
+            // Calculate and update overall offer status
+            const overallStatus = calculateOverallFinanceStatus();
+            console.log('🎯 Calculated overall status:', overallStatus);
+            console.log('🆔 Offer ID:', activeOffer.id);
+
+            try {
+                // FIX 1: Try the same method signature as SubmittedOffers (with null as third parameter)
+                console.log('🔄 Method 1: Using same signature as SubmittedOffers with null rejection reason...');
+                const offerResult = await offerService.updateStatus(activeOffer.id, overallStatus, null);
+                console.log('✅ Method 1 SUCCESS:', offerResult);
+
+            } catch (method1Error) {
+                console.error('❌ Method 1 FAILED:', method1Error);
+
+                try {
+                    // FIX 2: Try without the third parameter (original way)
+                    console.log('🔄 Method 2: Using original method without rejection reason...');
+                    const offerResult = await offerService.updateStatus(activeOffer.id, overallStatus);
+                    console.log('✅ Method 2 SUCCESS:', offerResult);
+
+                } catch (method2Error) {
+                    console.error('❌ Method 2 FAILED:', method2Error);
+
+                    try {
+                        // FIX 3: Check if there's a specific method for finance status updates
+                        console.log('🔄 Method 3: Checking for updateFinanceStatus method...');
+                        if (typeof offerService.updateFinanceStatus === 'function') {
+                            const offerResult = await offerService.updateFinanceStatus(activeOffer.id, overallStatus);
+                            console.log('✅ Method 3 SUCCESS:', offerResult);
+                        } else {
+                            throw new Error('updateFinanceStatus method not available');
+                        }
+
+                    } catch (method3Error) {
+                        console.error('❌ Method 3 FAILED:', method3Error);
+
+                        try {
+                            // FIX 4: Try with an empty string as rejection reason
+                            console.log('🔄 Method 4: Using empty string as rejection reason...');
+                            const offerResult = await offerService.updateStatus(activeOffer.id, overallStatus, '');
+                            console.log('✅ Method 4 SUCCESS:', offerResult);
+
+                        } catch (method4Error) {
+                            console.error('❌ Method 4 FAILED:', method4Error);
+
+                            // FIX 5: Log the exact method signature and throw the most descriptive error
+                            console.error('🔍 offerService.updateStatus method:', offerService.updateStatus);
+                            console.error('🔍 All offerService methods:', Object.getOwnPropertyNames(offerService));
+
+                            throw new Error(`All update methods failed. Last error: ${method4Error.message}`);
+                        }
+                    }
+                }
+            }
+
+            // Show success message
+            setNotificationMessage(`Finance review completed successfully! Offer status: ${overallStatus}`);
+            setNotificationType('success');
+            setShowNotification(true);
+
+            // Clean up modal state
+            setShowFinanceReview(false);
+            setFinanceDecisions({});
+            setRejectionReasons({});
+
+            // Remove from current list since it's moved to finance tab
+            if (onDeleteOffer) {
+                console.log('🗑️ Removing offer from current tab');
+                onDeleteOffer(activeOffer.id);
+            }
+
+        } catch (error) {
+            console.error('💥 Overall finance review error:', error);
+            console.error('🔍 Error details:', {
+                message: error.message,
+                stack: error.stack,
+                response: error.response
+            });
+
+            setNotificationMessage(`Failed to submit finance review: ${error.message}`);
+            setNotificationType('error');
+            setShowNotification(true);
+        } finally {
+            setIsProcessingFinance(false);
+            console.log('🏁 Finance review process completed');
+        }
+    };
+
+// Alternative approach: Check your offerService.js file
+// The issue might be in how the updateStatus method is implemented
+// Here's what to look for in your offerService.js:
+
+    /*
+    Expected method signature might be one of these:
+
+    1. updateStatus(offerId, status, rejectionReason = null)
+    2. updateStatus(offerId, status)
+    3. Different method names for different types of updates
+
+    Check your offerService.js file and see which signature it expects!
+    */
+
+// Quick debugging function to add to your component:
+    const debugOfferService = () => {
+        console.log('🔍 Debugging offerService:');
+        console.log('Methods available:', Object.getOwnPropertyNames(offerService));
+        console.log('updateStatus method:', offerService.updateStatus);
+        console.log('updateStatus toString:', offerService.updateStatus.toString());
+
+        // If updateFinanceStatus exists
+        if (offerService.updateFinanceStatus) {
+            console.log('updateFinanceStatus method:', offerService.updateFinanceStatus);
+            console.log('updateFinanceStatus toString:', offerService.updateFinanceStatus.toString());
+        }
+    };
     // Show delete confirmation dialog
     const handleDeleteClick = () => {
         setShowDeleteConfirm(true);
@@ -75,17 +285,13 @@ const ValidatedOffers = ({
     };
 
     // Handle confirmed retry
-// Handle confirmed retry
     const confirmRetry = async () => {
         setIsRetrying(true);
         try {
             const response = await offerService.retryOffer(activeOffer.id);
 
             if (response && response.id) {
-                // Delete the old offer since we're replacing it with a new one
-                await offerService.delete(activeOffer.id);
-
-                setNotificationMessage(`New offer created successfully. Old offer has been removed.`);
+                setNotificationMessage(`New offer created successfully (Retry ${response.retryCount}). Old offer has been removed.`);
                 setNotificationType('success');
                 setShowNotification(true);
 
@@ -124,6 +330,12 @@ const ValidatedOffers = ({
         setShowRetryConfirm(false);
     };
 
+    const cancelFinanceReview = () => {
+        setShowFinanceReview(false);
+        setFinanceDecisions({});
+        setRejectionReasons({});
+    };
+
     return (
         <div className="procurement-offers-main-content">
             {/* Offers List */}
@@ -138,8 +350,6 @@ const ValidatedOffers = ({
                         <p>No validated offers yet. Offers will appear here once they are accepted or rejected.</p>
                     </div>
                 ) : (
-                    // Replace the offers list section in ValidatedOffers with this:
-
                     <div className="procurement-items-list">
                         {offers.map(offer => (
                             <div
@@ -151,22 +361,22 @@ const ValidatedOffers = ({
                                     <h4>{offer.title}</h4>
                                 </div>
                                 <div className="procurement-item-footer">
-                <span className="procurement-item-date">
-                    <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
-                </span>
+                                    <span className="procurement-item-date">
+                                        <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
+                                    </span>
                                 </div>
                                 <div className="procurement-item-footer">
-                <span className={`procurement-item-status ${offer.status === 'MANAGERACCEPTED' ? 'status-accepted' : 'status-rejected'}`}>
-                    {offer.status === 'MANAGERACCEPTED' ? (
-                        <>
-                            <FiCheckCircle /> Accepted
-                        </>
-                    ) : (
-                        <>
-                            <FiX /> Rejected
-                        </>
-                    )}
-                </span>
+                                    <span className={`procurement-item-status ${offer.status === 'MANAGERACCEPTED' ? 'status-accepted' : 'status-rejected'}`}>
+                                        {offer.status === 'MANAGERACCEPTED' ? (
+                                            <>
+                                                <FiCheckCircle /> Accepted
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FiX /> Rejected
+                                            </>
+                                        )}
+                                    </span>
                                 </div>
                             </div>
                         ))}
@@ -183,16 +393,29 @@ const ValidatedOffers = ({
                                 <div className="procurement-title-section">
                                     <h2 className="procurement-main-title">{activeOffer.title}</h2>
                                     <div className="procurement-header-meta">
-                                    <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
-                                        {activeOffer.status.replace("MANAGER", "MANAGER ")}
-                                    </span>
+                                        <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
+                                            {activeOffer.status.replace("MANAGER", "MANAGER ")}
+                                        </span>
                                         <span className="procurement-meta-item">
-                                        <FiClock /> Created: {new Date(activeOffer.createdAt).toLocaleDateString()}
-                                    </span>
+                                            <FiClock /> Created: {new Date(activeOffer.createdAt).toLocaleDateString()}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
                             <div className="procurement-header-actions">
+                                {/* Finance review button for accepted offers */}
+                                {activeOffer.status === 'MANAGERACCEPTED' && (
+                                    <button
+                                        className="btn-primary"
+                                        onClick={initializeFinanceDecisions}
+                                        title="Start Finance Review"
+                                        style={{ marginRight: '10px' }}
+                                    >
+                                        <FiDollarSign size={16} />
+                                        Finance Review
+                                    </button>
+                                )}
+
                                 {/* Action buttons for rejected offers */}
                                 {activeOffer.status === 'MANAGERREJECTED' && (
                                     <>
@@ -225,90 +448,13 @@ const ValidatedOffers = ({
                                 {/* Use RequestOrderDetails component exactly like in UnstartedOffers */}
                                 <RequestOrderDetails requestOrder={activeOffer.requestOrder} />
 
+                                {/* Replace the timeline section with the OfferTimeline component */}
                                 <div className="procurement-request-summary-card-manager">
-                                    <h4>Offer Timeline</h4>
-                                    <p className="procurement-section-description-manager">
-                                        {activeOffer.status === 'MANAGERACCEPTED'
-                                            ? 'This offer has been accepted and is now being processed by the finance.'
-                                            : 'This offer has been rejected by the manager.'}
-                                    </p>
-
-                                    {/* Status Timeline - matching submitted offers design */}
-                                    <div className="procurement-timeline-manager">
-                                        {/* Request Order Approved Step */}
-                                        <div className="procurement-timeline-item-manager active">
-                                            <div className="timeline-content-manager">
-                                                <h5>Request Order Approved</h5>
-                                                <p className="timeline-meta-manager">
-                                                    <FiCalendar size={14} /> Approved at: {activeOffer.requestOrder?.approvedAt ? new Date(activeOffer.requestOrder.approvedAt).toLocaleDateString() : 'N/A'}
-                                                </p>
-                                                <p className="timeline-meta-manager">
-                                                    <FiUser size={14} /> Approved by: {activeOffer.requestOrder?.approvedBy || 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Offer Submitted Step */}
-                                        <div className="procurement-timeline-item-manager active">
-                                            <div className="timeline-content-manager">
-                                                <h5>Offer Submitted</h5>
-                                                <p className="timeline-meta-manager">
-                                                    <FiCalendar size={14} /> Submitted at: {new Date(activeOffer.createdAt).toLocaleDateString()}
-                                                </p>
-                                                <p className="timeline-meta-manager">
-                                                    <FiUser size={14} /> Submitted by: {activeOffer.createdBy || 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Manager Decision Step */}
-                                        <div className={`procurement-timeline-item-manager ${
-                                            activeOffer.status === 'MANAGERACCEPTED' ? 'active' :
-                                                activeOffer.status === 'MANAGERREJECTED' ? 'rejected' : ''
-                                        }`}>
-                                            <div className="timeline-content-manager">
-                                                <h5>
-                                                    {activeOffer.status === 'MANAGERACCEPTED' ? 'Manager Accepted' :
-                                                        activeOffer.status === 'MANAGERREJECTED' ? 'Manager Rejected' : ''}
-                                                </h5>
-                                                <p className="timeline-meta-manager">
-                                                    {activeOffer.status === 'MANAGERACCEPTED' ? (
-                                                        <>
-                                                            <FiCalendar size={14} /> Accepted at: {new Date(activeOffer.updatedAt).toLocaleDateString()}
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <FiCalendar size={14} /> Rejected at: {new Date(activeOffer.updatedAt).toLocaleDateString()}
-                                                        </>
-                                                    )}
-                                                </p>
-                                                {activeOffer.status === 'MANAGERACCEPTED' && (
-                                                    <p className="timeline-meta-manager">
-                                                        <FiUser size={14} /> Accepted by: {activeOffer.managerApprovedBy || 'N/A'}
-                                                    </p>
-                                                )}
-
-                                                {/* Enhanced rejection reason display */}
-                                                {activeOffer.status === 'MANAGERREJECTED' && activeOffer.rejectionReason && (
-                                                    <div className="rejection-reason-manager">
-                                                        <p><strong>Rejection Reason:</strong> {activeOffer.rejectionReason}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Finance Processing Step */}
-                                        {activeOffer.status === 'MANAGERACCEPTED' && (
-                                            <div className="procurement-timeline-item-manager">
-                                                <div className="timeline-content-manager">
-                                                    <h5>Finance Processing</h5>
-                                                    <p className="timeline-meta-manager">
-                                                        <FiTrendingUp size={14} /> Sent to finance department
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                    <OfferTimeline
+                                        offer={activeOffer}
+                                        variant="manager"
+                                        showRetryInfo={true}
+                                    />
                                 </div>
 
                                 {/* Procurement Solutions */}
@@ -342,6 +488,7 @@ const ValidatedOffers = ({
                                                                     <th>Unit Price</th>
                                                                     <th>Total</th>
                                                                     <th>Est. Delivery</th>
+                                                                    <th>Finance Status</th>
                                                                 </tr>
                                                                 </thead>
                                                                 <tbody>
@@ -352,6 +499,11 @@ const ValidatedOffers = ({
                                                                         <td>${parseFloat(offerItem.unitPrice).toFixed(2)}</td>
                                                                         <td>${parseFloat(offerItem.totalPrice).toFixed(2)}</td>
                                                                         <td>{offerItem.estimatedDeliveryDays} days</td>
+                                                                        <td>
+                                                                            <span className={`submitted-offer-finance-status-badge ${(offerItem.financeStatus || 'PENDING').toLowerCase()}`}>
+                                                                                {offerItem.financeStatus || 'PENDING'}
+                                                                            </span>
+                                                                        </td>
                                                                     </tr>
                                                                 ))}
                                                                 </tbody>
@@ -401,6 +553,106 @@ const ValidatedOffers = ({
                     </div>
                 )}
             </div>
+
+            {/* Finance Review Modal */}
+            {showFinanceReview && (
+                <div className="pro-ro-modal-backdrop">
+                    <div className="pro-ro-modal" style={{ maxWidth: '800px' }}>
+                        <div className="pro-ro-modal-header">
+                            <h2>
+                                <FiDollarSign style={{ marginRight: '10px' }} />
+                                Finance Review - {activeOffer?.title}
+                            </h2>
+                            <button className="btn-close" onClick={cancelFinanceReview}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M18 6L6 18M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="pro-ro-modal-content">
+                            <div className="submitted-offer-finance-review-content">
+                                <div className="submitted-offer-finance-review-instructions">
+                                    <FiAlertTriangle style={{ color: '#f59e0b', marginRight: '8px' }} />
+                                    <p>Review each offer item and decide whether to accept or reject it. Rejected items require a reason.</p>
+                                </div>
+
+                                <div className="submitted-offer-finance-review-items">
+                                    {activeOffer?.offerItems?.map(offerItem => (
+                                        <div key={offerItem.id} className="submitted-offer-finance-review-item">
+                                            <div className="submitted-offer-finance-item-header">
+                                                <h4>{offerItem.merchant?.name || 'Unknown Merchant'}</h4>
+                                                <div className="submitted-offer-finance-item-details">
+                                                    <span>Qty: {offerItem.quantity}</span>
+                                                    <span>Unit Price: ${parseFloat(offerItem.unitPrice).toFixed(2)}</span>
+                                                    <span>Total: ${parseFloat(offerItem.totalPrice).toFixed(2)}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="submitted-offer-finance-decision-controls">
+                                                <div className="submitted-offer-finance-decision-buttons">
+                                                    <button
+                                                        className={`submitted-offer-finance-decision-btn accept ${financeDecisions[offerItem.id] === 'ACCEPTED' ? 'selected' : ''}`}
+                                                        onClick={() => handleFinanceDecisionChange(offerItem.id, 'ACCEPTED')}
+                                                    >
+                                                        <FiCheck /> Accept
+                                                    </button>
+                                                    <button
+                                                        className={`submitted-offer-finance-decision-btn reject ${financeDecisions[offerItem.id] === 'REJECTED' ? 'selected' : ''}`}
+                                                        onClick={() => handleFinanceDecisionChange(offerItem.id, 'REJECTED')}
+                                                    >
+                                                        <FiX /> Reject
+                                                    </button>
+                                                </div>
+
+                                                {financeDecisions[offerItem.id] === 'REJECTED' && (
+                                                    <div className="submitted-offer-rejection-reason">
+                                                        <label>Rejection Reason:</label>
+                                                        <textarea
+                                                            value={rejectionReasons[offerItem.id] || ''}
+                                                            onChange={(e) => handleRejectionReasonChange(offerItem.id, e.target.value)}
+                                                            placeholder="Please provide a reason for rejection..."
+                                                            required
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="submitted-offer-finance-review-summary">
+                                    <h4>Review Summary</h4>
+                                    <p>Overall Status: <strong>{calculateOverallFinanceStatus()}</strong></p>
+                                    <p>
+                                        Accepted: {Object.values(financeDecisions).filter(d => d === 'ACCEPTED').length} |
+                                        Rejected: {Object.values(financeDecisions).filter(d => d === 'REJECTED').length} |
+                                        Pending: {Object.values(financeDecisions).filter(d => d === 'PENDING').length}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="pro-ro-modal-footer">
+                                <button
+                                    type="button"
+                                    className="btn-cancel"
+                                    onClick={cancelFinanceReview}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn-primary"
+                                    onClick={handleSubmitFinanceReview}
+                                    disabled={isProcessingFinance || Object.values(financeDecisions).some(d => d === 'PENDING')}
+                                >
+                                    {isProcessingFinance ? 'Processing...' : 'Submit Finance Review'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Delete Confirmation Dialog */}
             <ConfirmationDialog
