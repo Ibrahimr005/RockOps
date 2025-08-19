@@ -202,14 +202,6 @@ const DepartmentsList = () => {
         }
     ];
 
-    if (loading && departments.length === 0) {
-        return (
-            <div className="departments-loading">
-                <div className="loader"></div>
-                <p>Loading departments...</p>
-            </div>
-        );
-    }
 
     return (
         <div className="departments-list-container">

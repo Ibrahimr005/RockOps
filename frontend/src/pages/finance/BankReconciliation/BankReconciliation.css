@@ -31,19 +31,6 @@
     padding: 1rem;
 }
 
-/* Responsive styles */
-@media (max-width: 768px) {
-    .tabs-header {
-        flex-wrap: wrap;
-    }
-
-    .tab-button {
-        flex: 1;
-        min-width: 120px;
-        padding: 10px;
-        justify-content: center;
-    }
-}
 
 /* Modal Styles */
 .modal-overlay {
@@ -553,19 +540,6 @@
     padding: 1rem;
 }
 
-/* Responsive styles */
-@media (max-width: 768px) {
-    .tabs-header {
-        flex-wrap: wrap;
-    }
-
-    .tab-button {
-        flex: 1;
-        min-width: 120px;
-        padding: 10px;
-        justify-content: center;
-    }
-}
 
 /* Common button styles for all bank reconciliation components */
 .bank-reconciliation-btn {

@@ -161,7 +161,7 @@ const PayslipDetails = () => {
                 <div className="header-content">
                     <div className="header-left">
                         <button
-                            className="btn btn-secondary back-button"
+                            className="btn-cancel"
                             onClick={() => navigate('/payroll/payslips')}
                         >
                             <FaArrowLeft /> Back to Payslips

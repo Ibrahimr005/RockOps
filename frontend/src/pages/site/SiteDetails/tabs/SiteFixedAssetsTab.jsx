@@ -264,9 +264,12 @@ const SiteFixedAssetsTab = ({siteId}) => {
                         loading={loading}
                         showSearch={true}
                         showFilters={true}
+                        showExportButton={true}
+                        exportButtonText="Export Fixed Assets"
+                        exportFileName="site_fixed_assets"
                         filterableColumns={columns}
                         itemsPerPageOptions={[10, 25, 50, 100]}
-                        defaultItemsPerPage={10}
+                        defaultItemsPerPage={10} dec
                         tableTitle="Fixed Assets List"
                         showAddButton={isSiteAdmin}
                         addButtonText={t('site.assignFixedAsset')}

@@ -263,7 +263,7 @@ const LoanDetails = () => {
                 <div className="header-content">
                     <div className="header-left">
                         <button
-                            className="btn btn-secondary back-button"
+                            className="btn-cancel"
                             onClick={() => navigate('/payroll/loans')}
                         >
                             <FaArrowLeft /> Back to Loans
@@ -494,9 +494,9 @@ const LoanProgressBar = ({ paid, total, amount, remaining }) => {
                     </div>
                 </div>
             </div>
-            <div className="progress-bar">
+            <div className="loan-progress-bar">
                 <div
-                    className="progress-fill"
+                    className="loan-progress-fill"
                     style={{ width: `${Math.min(percentage, 100)}%` }}
                 />
             </div>

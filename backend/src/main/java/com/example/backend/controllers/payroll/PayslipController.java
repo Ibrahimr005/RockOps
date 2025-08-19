@@ -1,6 +1,7 @@
 package com.example.backend.controllers.payroll;
 
 import com.example.backend.dto.payroll.PayslipDTO;
+import com.example.backend.models.payroll.Payslip;
 import com.example.backend.services.payroll.PayslipService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,8 +14,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -153,12 +156,23 @@ public class PayslipController {
     }
 
     /**
-     * Send payslip via email
+     * Send payslip
      */
-    @PostMapping("/{payslipId}/send-email")
-    public ResponseEntity<Void> sendPayslipEmail(@PathVariable UUID payslipId) {
-        payslipService.sendPayslipEmail(payslipId);
-        return ResponseEntity.ok().build();
+    @PostMapping("/{payslipId}/send")
+    public ResponseEntity<PayslipDTO> sendPayslip(@PathVariable UUID payslipId) {
+        PayslipDTO sentPayslip = payslipService.sendPayslip(payslipId);
+        return ResponseEntity.ok(sentPayslip);
+    }
+
+    /**
+     * Finalize payslip
+     */
+    @PostMapping("/{payslipId}/finalize")
+    public ResponseEntity<PayslipDTO> finalizePayslip(
+            @PathVariable UUID payslipId,
+            @RequestParam(defaultValue = "SYSTEM") String approvedBy) {
+        PayslipDTO finalizedPayslip = payslipService.finalizePayslip(payslipId, approvedBy);
+        return ResponseEntity.ok(finalizedPayslip);
     }
 
     /**
@@ -188,18 +202,9 @@ public class PayslipController {
      * Bulk generate PDFs for multiple payslips
      */
     @PostMapping("/bulk-generate")
-    public ResponseEntity<Void> bulkGeneratePdfs(@RequestBody List<UUID> payslipIds) {
-        payslipService.bulkGeneratePdfs(payslipIds);
-        return ResponseEntity.ok().build();
-    }
-
-    /**
-     * Bulk send emails for multiple payslips
-     */
-    @PostMapping("/bulk-send")
-    public ResponseEntity<Void> bulkSendEmails(@RequestBody List<UUID> payslipIds) {
-        payslipService.bulkSendEmails(payslipIds);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<List<String>> bulkGeneratePdfs(@RequestBody List<UUID> payslipIds) {
+        List<String> results = payslipService.bulkGeneratePdfs(payslipIds);
+        return ResponseEntity.ok(results);
     }
 
     /**
@@ -213,6 +218,40 @@ public class PayslipController {
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("payDate").descending());
         Page<PayslipDTO> payslips = payslipService.searchPayslips(searchCriteria, pageable);
+        return ResponseEntity.ok(payslips);
+    }
+
+    /**
+     * Advanced search payslips with multiple criteria
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Page<PayslipDTO>> searchPayslipsAdvanced(
+            @RequestParam(required = false) String employeeName,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) BigDecimal minAmount,
+            @RequestParam(required = false) BigDecimal maxAmount,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "payDate,desc") String sort) {
+
+        // Parse sort parameter
+        String[] sortParts = sort.split(",");
+        Sort sortOrder = Sort.by(Sort.Direction.fromString(sortParts.length > 1 ? sortParts[1] : "desc"), sortParts[0]);
+        Pageable pageable = PageRequest.of(page, size, sortOrder);
+
+        Payslip.PayslipStatus payslipStatus = null;
+        if (status != null && !status.isEmpty()) {
+            try {
+                payslipStatus = Payslip.PayslipStatus.valueOf(status);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        Page<PayslipDTO> payslips = payslipService.searchPayslips(
+                employeeName, payslipStatus, startDate, endDate, minAmount, maxAmount, pageable);
         return ResponseEntity.ok(payslips);
     }
 
@@ -231,6 +270,15 @@ public class PayslipController {
     @DeleteMapping("/{payslipId}")
     public ResponseEntity<Void> cancelPayslip(@PathVariable UUID payslipId) {
         payslipService.cancelPayslip(payslipId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Delete payslip (only drafts)
+     */
+    @DeleteMapping("/{payslipId}/force")
+    public ResponseEntity<Void> deletePayslip(@PathVariable UUID payslipId) {
+        payslipService.deletePayslip(payslipId);
         return ResponseEntity.ok().build();
     }
 
@@ -255,5 +303,49 @@ public class PayslipController {
         }
 
         return ResponseEntity.ok().headers(headers).body(exportData);
+    }
+
+    /**
+     * Get payslip with loan summary
+     */
+    @GetMapping("/{payslipId}/loan-summary")
+    public ResponseEntity<PayslipDTO> getPayslipWithLoanSummary(@PathVariable UUID payslipId) {
+        PayslipDTO payslip = payslipService.getPayslipWithLoanSummary(payslipId);
+        return ResponseEntity.ok(payslip);
+    }
+
+    /**
+     * Get payslip status info
+     */
+    @GetMapping("/{payslipId}/status-info")
+    public ResponseEntity<Map<String, Object>> getPayslipStatusInfo(@PathVariable UUID payslipId) {
+        Map<String, Object> statusInfo = payslipService.getPayslipStatusInfo(payslipId);
+        return ResponseEntity.ok(statusInfo);
+    }
+
+    /**
+     * Count payslips by search criteria
+     */
+    @GetMapping("/count")
+    public ResponseEntity<Long> countPayslipsBySearchCriteria(
+            @RequestParam(required = false) String employeeName,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) BigDecimal minAmount,
+            @RequestParam(required = false) BigDecimal maxAmount) {
+
+        Payslip.PayslipStatus payslipStatus = null;
+        if (status != null && !status.isEmpty()) {
+            try {
+                payslipStatus = Payslip.PayslipStatus.valueOf(status);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+
+        long count = payslipService.countPayslipsBySearchCriteria(
+                employeeName, payslipStatus, startDate, endDate, minAmount, maxAmount);
+        return ResponseEntity.ok(count);
     }
 }

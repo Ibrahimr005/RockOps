@@ -2,6 +2,7 @@ package com.example.backend.config;
 
 import com.example.backend.models.user.Role;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -22,6 +23,8 @@ public class SecurityConfiguration {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
 
+
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -37,10 +40,10 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers("/actuator/**").permitAll() 
+                        .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAuthority(Role.ADMIN.name())
-                        .requestMatchers("/ws/**").permitAll()  // Allow WebSocket endpoint
-                        .requestMatchers("/ws-native/**").permitAll()  // Allow native WebSocket endpoint
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/ws-native/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

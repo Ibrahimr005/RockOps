@@ -1,11 +1,5 @@
-// Handle offer finalized callback - similar to handleOfferStarted
-const handleOfferSentToFinalize = (finalizedOffer) => {
-    // Switch to finalize tab
-    setActiveTab('finalize');
 
-    // Set the finalized offer as active (it will have FINALIZING status now)
-    setActiveOffer(finalizedOffer);
-};import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     FiPackage, FiCheck, FiClock, FiCheckCircle,
     FiX, FiFileText, FiDollarSign, FiList,
@@ -16,6 +10,7 @@ import "../ProcurementOffers.scss";
 import "./FinanceValidatedOffers.scss"
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
 import { offerService } from '../../../../services/procurement/offerService.js';
 
 // Updated to accept offers, setError, and setSuccess from parent
@@ -140,8 +135,6 @@ const FinanceValidatedOffers = ({
                         <p>No finance validated offers yet. Offers will appear here after finance review.</p>
                     </div>
                 ) : (
-                    // Replace the offers list section in FinanceValidatedOffers with this:
-
                     <div className="procurement-items-list">
                         {offers.map(offer => (
                             <div
@@ -156,7 +149,7 @@ const FinanceValidatedOffers = ({
                                 </div>
                                 <div className="procurement-item-footer">
                 <span className="procurement-item-date">
-                    <FiClock /> Updated: {new Date(offer.updatedAt).toLocaleDateString()}
+                    <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
                 </span>
                                 </div>
                                 <div className="procurement-item-footer">
@@ -199,7 +192,7 @@ const FinanceValidatedOffers = ({
                                             {formatStatus(activeOffer.status)}
                                         </span>
                                         <span className="procurement-meta-item">
-                                            <FiClock /> Updated: {new Date(activeOffer.updatedAt).toLocaleDateString()}
+                                            <FiClock /> Created: {new Date(activeOffer.createdAt).toLocaleDateString()}
                                         </span>
                                     </div>
                                 </div>
@@ -228,76 +221,13 @@ const FinanceValidatedOffers = ({
                                 {/* Use the reusable RequestOrderDetails component */}
                                 <RequestOrderDetails requestOrder={activeOffer.requestOrder} />
 
+                                {/* Replace the timeline section with the OfferTimeline component */}
                                 <div className="procurement-request-summary-card-finance">
-                                    <h4>Offer Timeline</h4>
-                                    <p className="procurement-section-description-finance">
-                                        This timeline shows the key milestones in the finance review process.
-                                    </p>
-
-                                    {/* NEW TIMELINE DESIGN - MATCHING FINALIZE */}
-                                    <div className="procurement-timeline-finance">
-                                        {/* Offer Submitted Step */}
-                                        <div className="procurement-timeline-item-finance active-finance">
-                                            <div className="timeline-content-finance">
-                                                <h5>Offer Submitted</h5>
-                                                <p className="timeline-date-finance">
-                                                    <FiCalendar size={14} /> Submitted at: {new Date(activeOffer.createdAt).toLocaleDateString()}
-                                                </p>
-                                                <p className="timeline-date-finance">
-                                                    <FiUser size={14} /> Submitted by: {activeOffer.createdBy || 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Manager Accepted Step */}
-                                        <div className="procurement-timeline-item-finance active-finance">
-                                            <div className="timeline-content-finance">
-                                                <h5>Manager Accepted</h5>
-                                                <p className="timeline-date-finance">
-                                                    <FiCalendar size={14} /> Accepted at: {activeOffer.updatedAt ? new Date(activeOffer.updatedAt).toLocaleDateString() : 'N/A'}
-                                                </p>
-                                                <p className="timeline-date-finance">
-                                                    <FiUser size={14} /> Approved by: {activeOffer.managerApprovedBy || 'N/A'}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Finance Accepted/Rejected Step */}
-                                        <div className={`procurement-timeline-item-finance ${activeOffer.status === 'FINANCE_REJECTED' ? 'rejected-finance' : 'active-finance'}`}>
-                                            <div className="timeline-content-finance">
-                                                <h5>
-                                                    {activeOffer.status === 'FINANCE_ACCEPTED' ? 'Finance Accepted' :
-                                                        activeOffer.status === 'FINANCE_PARTIALLY_ACCEPTED' ? 'Finance Partially Accepted' :
-                                                            'Finance Rejected'}
-                                                </h5>
-                                                <p className="timeline-date-finance">
-                                                    <FiCalendar size={14} /> Reviewed at: {new Date(activeOffer.updatedAt).toLocaleDateString()}
-                                                </p>
-                                                <p className="timeline-date-finance">
-                                                    <FiUser size={14} /> Reviewed by: {activeOffer.financeApprovedBy || 'N/A'}
-                                                </p>
-                                                {activeOffer.status === 'FINANCE_REJECTED' && activeOffer.rejectionReason && (
-                                                    <p className="timeline-date-finance rejection">
-                                                        <FiX size={14} /> Reason: {activeOffer.rejectionReason}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Awaiting Finalization Step */}
-                                        {(activeOffer.status === 'FINANCE_ACCEPTED' || activeOffer.status === 'FINANCE_PARTIALLY_ACCEPTED') && (
-                                            <div className="procurement-timeline-item-finance">
-                                                <div className="timeline-content-finance">
-                                                    <h5>Awaiting Finalization</h5>
-                                                    <p className="timeline-date-finance">
-                                                        <FiClock size={14} /> Pending finalization from procurement.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                    {/* END OF NEW TIMELINE DESIGN */}
-
+                                    <OfferTimeline
+                                        offer={activeOffer}
+                                        variant="finance"
+                                        showRetryInfo={false}
+                                    />
                                 </div>
 
                                 {/* Procurement Items with Finance Status */}
