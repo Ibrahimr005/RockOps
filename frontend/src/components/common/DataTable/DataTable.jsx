@@ -506,9 +506,6 @@ const DataTable = ({
                             >
                                 <FaFilter />
                                 <span>Filters</span>
-                                {activeFiltersCount > 0 && (
-                                    <span className="rockops-table__filter-count">{activeFiltersCount}</span>
-                                )}
                             </button>
                         )}
                     </div>
