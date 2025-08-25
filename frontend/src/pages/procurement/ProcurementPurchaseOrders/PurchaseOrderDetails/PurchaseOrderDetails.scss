@@ -644,16 +644,15 @@
 
 // Status Badges
 .status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--po-radius);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: capitalize;
-  letter-spacing: 0.025em;
-  white-space: nowrap;
+  //display: inline-flex;
+  //align-items: center;
+  //gap: 0.5rem;
+  //padding: 0.5rem 0.75rem;
+  //border-radius: var(--po-radius);
+  //font-size: 0.75rem;
+  //font-weight: 600;
+  //letter-spacing: 0.025em;
+  //white-space: nowrap;
 
   &.large {
     padding: 0.75rem 1rem;
@@ -674,7 +673,7 @@
 
   // Status colors
   &.status-created,
-  &.status-pending {
+  &.status-pending{
     background: rgba(59, 130, 246, 0.1);
     color: var(--po-primary);
   }
@@ -695,78 +694,77 @@
   }
 
   &.status-finance_pending_review,
-  &.status-finance_in_progress {
+  &.status-finance_in_progress, &.status-badge--pending {
     background: rgba(8, 145, 178, 0.1);
     color: var(--po-info);
   }
 }
 
-// Buttons
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border: none;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: var(--po-transition);
-  text-decoration: none;
-  white-space: nowrap;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  svg {
-    width: 1rem;
-    height: 1rem;
-  }
-
-  &.btn-primary {
-    color: white;
-
-    &:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: var(--po-shadow-md);
-    }
-  }
-
-  &.btn-secondary {
-    background: var(--po-gray-100);
-    color: var(--po-gray-700);
-    border: 1px solid var(--po-gray-200);
-
-    &:hover:not(:disabled) {
-      background: var(--po-gray-200);
-      border-color: var(--po-gray-300);
-    }
-  }
-
-  &.btn-success {
-    background: var(--po-success);
-    color: white;
-
-    &:hover:not(:disabled) {
-      background: var(--po-success-light);
-      transform: translateY(-1px);
-      box-shadow: var(--po-shadow-md);
-    }
-  }
-
-  &.btn-danger {
-    background: var(--po-danger);
-    color: white;
-
-    &:hover:not(:disabled) {
-      background: var(--po-danger-light);
-      transform: translateY(-1px);
-      box-shadow: var(--po-shadow-md);
-    }
-  }
-}
+//// Buttons
+//.btn {
+//  display: inline-flex;
+//  align-items: center;
+//  gap: 0.5rem;
+//  padding: 0.75rem 1rem;
+//  border: none;
+//  font-size: 0.875rem;
+//  font-weight: 500;
+//  cursor: pointer;
+//  transition: var(--po-transition);
+//  text-decoration: none;
+//  white-space: nowrap;
+//
+//  &:disabled {
+//    opacity: 0.5;
+//    cursor: not-allowed;
+//  }
+//
+//  svg {
+//    width: 1rem;
+//    height: 1rem;
+//  }
+//
+//
+//
+//    &:hover:not(:disabled) {
+//      transform: translateY(-1px);
+//      box-shadow: var(--po-shadow-md);
+//
+//  }
+//
+//  &.btn-secondary {
+//    background: var(--po-gray-100);
+//    color: var(--po-gray-700);
+//    border: 1px solid var(--po-gray-200);
+//
+//    &:hover:not(:disabled) {
+//      background: var(--po-gray-200);
+//      border-color: var(--po-gray-300);
+//    }
+//  }
+//
+//  &.btn-success {
+//    background: var(--po-success);
+//    color: white;
+//
+//    &:hover:not(:disabled) {
+//      background: var(--po-success-light);
+//      transform: translateY(-1px);
+//      box-shadow: var(--po-shadow-md);
+//    }
+//  }
+//
+//  &.btn-danger {
+//    background: var(--po-danger);
+//    color: white;
+//
+//    &:hover:not(:disabled) {
+//      background: var(--po-danger-light);
+//      transform: translateY(-1px);
+//      box-shadow: var(--po-shadow-md);
+//    }
+//  }
+//}
 
 // Dropdown
 .action-dropdown {

@@ -1,121 +1,38 @@
-// submitted-offers.scss - Enhanced design matching Unstarted and In Progress
+// submitted-offers.scss - Enhanced design with simplified summary section
 
-// Clean, modern main content layout
-.procurement-main-content {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 2rem;
-  padding: 0;
-  background: #fafbfc;
-
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-
-    .procurement-list-section {
-      margin-bottom: 1.5rem;
-    }
-  }
-}
-
-// Elegant list section
-.procurement-list-section {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e8eaed;
-  overflow: hidden;
-  height: fit-content;
-
-  .procurement-list-header {
-    padding: 1.5rem 1.5rem 1rem 1.5rem;
-    background: #f8f9fa;
-    border-bottom: 1px solid #e8eaed;
-
-    h3 {
-      margin: 0;
-      font-size: 1.125rem;
-      font-weight: 600;
-      color: #1f2937;
-    }
-  }
-}
-
-// Elegant details section
-.procurement-details-section {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e8eaed;
-  overflow: hidden;
-
-  .procurement-details-content {
-    padding: 0;
-  }
-}
-
-// Submitted offers specific list items
+// SubmittedOffers cards - Same design as Unstarted
 .procurement-items-list {
   padding: 1rem;
   max-height: calc(100vh - 250px);
   overflow-y: auto;
 
-  .procurement-item-card {
-    border: 1px solid #e5e7eb;
-    border-left: 3px solid #3b82f6; // Default blue accent
-    background: linear-gradient(to right, #dbeafe, #ffffff); // Add blue gradient
-    border-radius: 0.75rem;
+  .procurement-item-card-submitted {
+    border: 1px solid var(--border-color-light);
+    border-left: 3px solid var(--color-primary);
+    background: linear-gradient(to right, rgba(72, 128, 255, 0.05), var(--section-background-color));
+    border-radius: var(--radius-md);
     padding: 1rem;
     margin-bottom: 1.5rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--transition-normal) ease;
     position: relative;
 
-    // Accepted offers - Green border only
-    &.card-accepted {
-      border-left: 3px solid #22c55e;
-
-      &:hover {
-        border-color: #16a34a;
-        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.08);
-        transform: translateY(-1px);
-      }
-
-      &.selected {
-        border-color: #16a34a;
-        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.08);
-        background-color: #f8fafc;
-      }
-    }
-
-    // Rejected offers - Red border only
-    &.card-rejected {
-      border-left: 3px solid #ef4444;
-
-      &:hover {
-        border-color: #dc2626;
-        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.08);
-        transform: translateY(-1px);
-      }
-
-      &.selected {
-        border-color: #dc2626;
-        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.08);
-        background-color: #f8fafc;
-      }
-    }
-
-    // Default hover and selected states
     &:hover {
-      border-color: #2563eb;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+      border-color: var(--color-primary-hover);
+      box-shadow: var(--shadow-md);
       transform: translateY(-1px);
+      background: linear-gradient(to right, rgba(72, 128, 255, 0.08), var(--color-surface-hover));
     }
+
 
     &.selected {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
-      background-color: #f8fafc;
+      border: 2px solid var(--color-primary);
+      border-left: 5px solid var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.2), var(--shadow-md);
+      background-color: var(--color-surface);
+      transform: translateY(-1px);
+      position: relative;
+      z-index: 5;
     }
 
     .procurement-item-header {
@@ -127,33 +44,9 @@
       h4 {
         margin: 0;
         font-size: 1rem;
-        font-weight: 600;
-        color: #1f2937;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-dark);
         margin-right: 1rem;
-      }
-
-      .procurement-status-badge {
-        font-weight: 500;
-        font-size: 0.75rem;
-        padding: 0.375rem 0.75rem;
-        border-radius: 0.375rem;
-        text-transform: uppercase;
-        letter-spacing: 0.025em;
-
-        &.status-submitted {
-          background-color: #3b82f6;
-          color: white;
-        }
-
-        &.status-manageraccepted {
-          background-color: #22c55e;
-          color: white;
-        }
-
-        &.status-managerrejected {
-          background-color: #ef4444;
-          color: white;
-        }
       }
     }
 
@@ -161,12 +54,26 @@
       display: flex;
       justify-content: space-between;
       font-size: 0.8rem;
-      color: #6b7280;
+      color: var(--color-text-muted);
       font-weight: 500;
 
       svg {
         margin-right: 0.3rem;
         vertical-align: -1px;
+      }
+
+      .procurement-item-status {
+        color: #f59e0b;
+        font-weight: var(--bold-font-weight);
+
+        svg {
+          color: #f59e0b;
+        }
+      }
+
+      .procurement-item-date {
+        color: var(--color-text-muted);
+        font-weight: 500;
       }
     }
 
@@ -176,125 +83,9 @@
   }
 }
 
-// Standardized header matching InProgress design
-.procurement-details-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e8eaed;
 
-  .procurement-header-content {
-    flex: 1;
-  }
-
-  .procurement-title-section {
-    .procurement-main-title {
-      margin: 0 0 0.75rem 0;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #0f172a;
-      line-height: 1.2;
-    }
-
-    .procurement-header-meta {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-
-      .procurement-meta-item {
-        display: flex;
-        align-items: center;
-        font-size: 0.875rem;
-        color: #64748b;
-        font-weight: 500;
-
-        svg {
-          margin-right: 0.5rem;
-          color: #94a3b8;
-        }
-      }
-    }
-  }
-
-  .procurement-header-actions {
-    display: flex;
-    gap: 0.75rem;
-    margin-left: 1.5rem;
-
-    .procurement-button {
-      padding: 0.75rem 1.25rem;
-      font-weight: 600;
-      border-radius: 8px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-      transition: all 0.25s ease;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.875rem;
-
-      &.primary.approve-button {
-        background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-        color: #fff;
-        border: 2px solid transparent;
-
-        &:hover:not(:disabled) {
-          background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-          transform: scale(1.03);
-          box-shadow: 0 6px 16px rgba(34, 197, 94, 0.35);
-        }
-      }
-
-      &.secondary.decline-button {
-        background: #fff;
-        color: #dc2626;
-        border: 2px solid #dc2626;
-
-        &:hover:not(:disabled) {
-          background: #fee2e2;
-          border-color: #b91c1c;
-          color: #b91c1c;
-          transform: scale(1.03);
-          box-shadow: 0 6px 16px rgba(220, 38, 38, 0.2);
-        }
-      }
-
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-      }
-
-      span {
-        font-size: 0.875rem;
-      }
-    }
-
-  }
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    padding: 1.25rem;
-
-    .procurement-header-actions {
-      margin-left: 0;
-      margin-top: 1rem;
-      align-self: stretch;
-
-      .procurement-button {
-        flex: 1;
-        justify-content: center;
-      }
-    }
-  }
-}
-
-// Request Order Information Card - matching enhanced design
-.procurement-request-order-info-card {
+// Request summary card
+.procurement-request-summary-card-submitted {
   background: transparent;
   border: none;
   border-radius: 0;
@@ -304,392 +95,250 @@
 
   h4 {
     font-size: 1.125rem;
-    font-weight: 600;
-    color: #111827;
+    font-weight: var(--bold-font-weight);
+    color: var(--head-title-color);
     margin-bottom: 1.5rem;
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e8eaed;
+    border-bottom: 1px solid var(--border-color-light);
+  }
+
+  .procurement-section-description-submitted {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+    font-style: italic;
+    font-weight: 400;
   }
 }
 
-.procurement-request-order-details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-}
-
-.request-order-detail-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  border-radius: 12px;
-  border: 1px solid #e8eaed;
-  transition: all 0.3s ease;
+// Professional Timeline Design
+// Professional Timeline Design
+.procurement-timeline-submitted {
+  margin-top: 2rem;
   position: relative;
-  overflow: hidden;
+  padding: 0;
 
+  // Timeline vertical line
   &::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease;
-  }
-
-  &:hover {
-    background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
-    border-color: #d2d7db;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-
-    &::before {
-      transform: scaleX(1);
-    }
-
-    .request-order-detail-icon {
-      transform: scale(1.05);
-      box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
-    }
-  }
-
-  &.description-item {
-    grid-column: 1 / -1;
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    border-color: #e8eaed;
-
-    &::before {
-      background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
-    }
-
-    &:hover {
-      background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
-      border-color: #d2d7db;
-
-      .request-order-detail-icon {
-        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
-      }
-    }
-
-    .request-order-detail-icon {
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    }
+    left: 6px;
+    top: 12px;
+    bottom: 0;
+    width: 2px;
+    background: var(--border-color-medium);
   }
 }
 
-.request-order-detail-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border-radius: 10px;
-  color: white;
-  flex-shrink: 0;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-}
-
-.request-order-detail-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.request-order-detail-label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 6px;
-}
-
-.request-order-detail-value {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: #1f2937;
-  line-height: 1.4;
-
-  &.description-text {
-    font-weight: 400;
-    line-height: 1.5;
-    color: #374151;
-    margin-top: 2px;
-  }
-
-  &.request-priority {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
-    &.high {
-      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-      color: #dc2626;
-      border: 1px solid #fecaca;
-    }
-
-    &.medium {
-      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-      color: #d97706;
-      border: 1px solid #fed7aa;
-    }
-
-    &.low {
-      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-      color: #16a34a;
-      border: 1px solid #bbf7d0;
-    }
-
-    &.urgent {
-      background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
-      color: #ffffff;
-      border: 1px solid #991b1b;
-    }
-  }
-}
-
-// Original simple timeline styling
-.procurement-timeline {
-  margin-top: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-}
-
-.procurement-timeline-item {
-  display: flex;
+.procurement-timeline-item-submitted {
   position: relative;
-  align-items: flex-start;
-  gap: 1rem;
+  padding: 0 0 2rem 2rem;
+  margin: 0;
 
-  // Remove the connecting line completely
-  &:not(:last-child):after {
-    display: none;
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  // Timeline dot
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 3px solid var(--border-color-medium);
+    transition: all var(--transition-normal) ease;
+    z-index: 2;
   }
 
   &.active {
-    .timeline-icon {
-      background-color: #10b981;
-      color: white;
-      border: 2px solid #d1fae5;
+    &::before {
+      background: var(--color-success);
+      border-color: var(--color-success);
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
     }
 
-    &:after {
-      background: #e5e7eb; // Remove gradient, use solid gray
+    .timeline-content-submitted h5 {
+      color: var(--color-success);
+      font-weight: var(--bold-font-weight);
     }
   }
 
   &.rejected {
-    .timeline-icon {
-      background-color: #ef4444;
-      color: white;
-      border: 2px solid #fee2e2;
+    &::before {
+      background: var(--color-danger);
+      border-color: var(--color-danger);
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
     }
 
-    &:after {
-      background: linear-gradient(180deg, #ef4444 0%, #e5e7eb 100%);
+    .timeline-content-submitted h5 {
+      color: var(--color-danger);
+      font-weight: var(--bold-font-weight);
     }
   }
 
-  .timeline-icon {
-    height: 2.5rem;
-    width: 2.5rem;
-    border-radius: 50%;
-    background: #f3f4f6;
+  // Hide the icon containers for the new design
+  .timeline-icon-submitted {
+    display: none;
+  }
+
+  .timeline-content-submitted {
+    padding-left: 0;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #e5e7eb;
-    flex-shrink: 0;
-    color: #6b7280;
-    transition: all 0.3s ease;
-  }
-
-  .timeline-content {
-    flex: 1;
-    padding-top: 0.25rem;
-    padding-left:1rem;
+    flex-direction: column; // This stacks the meta lines vertically
+    gap: 0.65rem; // Adjusts the spacing between stacked lines
 
     h5 {
-      margin: 0 0 0.5rem 0;
+      margin: 0;
       font-size: 1rem;
-      font-weight: 600;
-      color: #111827;
+      font-weight: var(--bold-font-weight);
+      color: var(--head-title-color); // This is the dark, larger title
+      transition: color var(--transition-normal) ease;
     }
 
-    .timeline-date {
-      margin: 0 0 0.5rem 0;
-      font-size: 0.875rem;
-      color: #6b7280;
+    .timeline-meta-submitted {
+      margin: 0;
+      font-size: 0.8rem; // Small font size
+      color: var(--color-text-muted); // Grey text color
       font-weight: 500;
-    }
+      display: flex; // Keeps the icon and text together on the same line
+      align-items: center;
+      gap: 0.375rem;
 
-    .rejection-reason {
-      background: #fef2f2;
-      border-left: 3px solid #ef4444;
-      border-radius: 6px;
-      padding: 0.75rem 1rem;
-      margin-top: 0.75rem;
-
-      p {
-        margin: 0;
-        color: #7f1d1d;
-        font-size: 0.9rem;
-        line-height: 1.4;
-
-        strong {
-          color: #991b1b;
-        }
+      svg {
+        opacity: 0.7;
       }
     }
   }
 }
 
-// Clean submitted details cards
-.procurement-submitted-details {
+
+// Submitted details section
+.procurement-submitted-details-submitted {
   background: transparent;
   border: none;
   border-radius: 0;
   padding: 2rem;
   margin-bottom: 0;
   box-shadow: none;
-  border-top: 1px solid #e8eaed;
+  border-top: 1px solid var(--border-color-light);
 
   h4 {
     font-size: 1.125rem;
-    font-weight: 600;
-    color: #111827;
+    font-weight: var(--bold-font-weight);
+    color: var(--head-title-color);
     margin: 0 0 1.5rem 0;
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e8eaed;
+    border-bottom: 1px solid var(--border-color-light);
   }
 }
 
-.procurement-submitted-items {
+.procurement-submitted-items-submitted {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
-.procurement-submitted-item-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+.procurement-submitted-item-card-submitted {
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal) ease;
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: var(--color-primary);
   }
 
-  .submitted-item-header {
-    padding: 1.25rem;
+  .submitted-item-header-submitted {
+    padding: 1.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #f8fafc;
-    border-bottom: 1px solid #e5e7eb;
+    background: var(--color-surface-secondary);
+    border-bottom: 1px solid var(--border-color-light);
 
-    .item-icon-name {
+    .item-icon-name-submitted {
       display: flex;
       align-items: center;
 
-      .item-icon-container {
+      .item-icon-container-submitted {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 44px;
-        height: 44px;
-        background-color: #3b82f6;
-        border-radius: 10px;
-        color: white;
-        margin-right: 12px;
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+        border-radius: var(--radius-sm);
+        color: var(--color-text-inverse);
+        margin-right: 1rem;
+        box-shadow: var(--shadow-sm);
       }
 
       h5 {
         margin: 0;
         font-size: 1.125rem;
-        font-weight: 600;
-        color: #111827;
+        font-weight: var(--bold-font-weight);
+        color: var(--head-title-color);
       }
     }
 
-    .submitted-item-quantity {
-      font-weight: 600;
-      background-color: #f3f4f6;
-      color: #374151;
+    .submitted-item-quantity-submitted {
+      font-weight: var(--bold-font-weight);
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
       padding: 0.5rem 1rem;
       border-radius: 20px;
       font-size: 0.875rem;
-      border: 1px solid #e5e7eb;
+      box-shadow: var(--shadow-sm);
+      border: none;
     }
   }
 
-  .submitted-offer-solutions {
-    padding: 1.25rem;
+  .submitted-offer-solutions-submitted {
+    padding: 1.5rem;
 
-    .procurement-offer-entries-table {
+    .procurement-offer-entries-table-submitted {
       width: 100%;
       border-collapse: collapse;
       font-size: 14px;
-      background: #ffffff;
-      border-radius: 8px;
+      background: var(--color-surface);
+      border-radius: var(--radius-sm);
       overflow: hidden;
+      box-shadow: var(--shadow-sm);
 
       th {
-        background: #f8fafc;
+        background: var(--color-surface-secondary);
         text-align: left;
-        padding: 12px 16px;
-        font-weight: 600;
-        color: #374151;
-        border-bottom: 1px solid #e5e7eb;
+        padding: 1rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-medium);
+        border-bottom: 2px solid var(--border-color-light);
         font-size: 0.8rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
 
       td {
-        padding: 12px 16px;
-        border-bottom: 1px solid #f3f4f6;
-        color: #1f2937;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color-light);
+        color: var(--color-text-dark);
         font-weight: 500;
       }
 
       tbody tr {
-        transition: all 0.2s ease;
+        transition: all var(--transition-normal) ease;
 
         &:hover {
-          background-color: #f8fafc;
+          background-color: var(--color-surface-hover);
+          transform: scale(1.001);
         }
 
         &:last-child td {
@@ -700,142 +349,279 @@
   }
 }
 
-// Professional summary section
-.procurement-submitted-summary {
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+// Action buttons spacing
+.procurement-header-actions {
+  display: flex;
+  gap: 1rem; // Increase gap between approve and decline buttons
+  align-items: center;
 
-  .submitted-summary-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #e5e7eb;
-    font-weight: 500;
+  .procurement-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-weight: var(--bold-font-weight);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all var(--transition-normal) ease;
+    border: none;
+    cursor: pointer;
 
-    &:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-      padding-top: 1rem;
-      margin-top: 0.5rem;
-      border-top: 2px solid #3b82f6;
+    &.primary.approve-button {
+      background: linear-gradient(135deg, var(--color-success), var(--color-success-light));
+      color: var(--color-text-inverse);
+      box-shadow: var(--shadow-sm);
+
+      &:hover {
+        background: linear-gradient(135deg, var(--color-success-dark), var(--color-success));
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+      }
     }
 
-    span:first-child {
-      color: #374151;
-      font-weight: 600;
-    }
+    &.secondary.decline-button {
+      background: linear-gradient(135deg, var(--color-danger), var(--color-danger-light));
+      color: var(--color-text-inverse);
+      box-shadow: var(--shadow-sm);
 
-    .submitted-total-value {
-      font-weight: 700;
-      color: #3b82f6;
-      font-size: 1.25rem;
+      &:hover {
+        background: linear-gradient(135deg, var(--color-danger-dark), var(--color-danger));
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+      }
     }
   }
 }
 
-// Clean request summary card - no container styling
-.procurement-request-summary-card {
+// Simplified Summary Section - No Container
+.procurement-submitted-summary-submitted {
+  margin-top: 2rem;
+  padding: 0 1.5rem;
   background: transparent;
   border: none;
   border-radius: 0;
-  padding: 2rem;
-  margin-bottom: 0;
-  box-shadow: none;
-  border-top: 1px solid #e8eaed;
 
-  h4 {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #111827;
-    margin: 0 0 1.5rem 0;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e8eaed;
-  }
+  .summary-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color-light);
+    background: transparent;
 
-  .procurement-section-description {
-    color: #6b7280;
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-    line-height: 1.5;
+    &:last-child {
+      border-bottom: 1px solid var(--border-color-light);
+    }
+
+    &.total-value {
+      border-top: 1px solid var(--border-color-light);
+      border-bottom: 1px solid var(--border-color-light);
+      padding: 1.25rem 0;
+      margin-top: 0.5rem;
+      font-weight: var(--bold-font-weight);
+    }
+
+    svg {
+      color: var(--color-text-muted);
+      flex-shrink: 0;
+    }
+
+    .summary-label {
+      color: var(--color-text-medium);
+      font-weight: 500;
+      flex: 1;
+      font-size: 0.95rem;
+    }
+
+    .summary-value {
+      color: var(--color-text-dark);
+      font-weight: 500;
+      font-size: 0.9rem;
+
+      &.total {
+        color: var(--color-text-dark);
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+      }
+    }
   }
 }
 
-// Responsive adjustments
-@media (max-width: 1024px) {
-  .procurement-timeline {
-    padding: 1.25rem;
-    gap: 1.25rem;
+// Status badge styling
+.procurement-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: var(--bold-font-weight);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--shadow-sm);
+
+  &.status-submitted {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+    color: var(--color-text-inverse);
   }
 
-  .procurement-submitted-item-card .submitted-item-header {
+  &.status-manageraccepted {
+    background: linear-gradient(135deg, var(--color-success), var(--color-success-light));
+    color: var(--color-text-inverse);
+  }
+
+
+
+  &.status-managerrejected {
+    background: linear-gradient(135deg, var(--color-danger), var(--color-danger-light));
+    color: var(--color-text-inverse);
+  }
+}
+
+// Animations
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.1);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive Design
+@media (max-width: 1024px) {
+  .procurement-timeline-submitted {
+    padding: 1.5rem;
+    gap: 1.25rem;
+
+    &::before {
+      left: 2.75rem;
+    }
+  }
+
+  .procurement-submitted-item-card-submitted .submitted-item-header-submitted {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1rem;
     align-items: flex-start;
 
-    .submitted-item-quantity {
+    .submitted-item-quantity-submitted {
       align-self: flex-end;
+    }
+  }
+
+  .procurement-submitted-summary-submitted {
+    margin-top: 1.5rem;
+    padding: 0 1rem;
+
+    .summary-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding: 0.75rem 0;
+
+      .summary-value {
+        align-self: flex-end;
+        font-size: 0.85rem;
+
+        &.total {
+          font-size: 0.95rem;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .procurement-submitted-details-submitted,
+  .procurement-request-summary-card-submitted,
+  .procurement-submitted-summary-submitted {
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .procurement-timeline-submitted {
+    padding: 1rem;
+
+    &::before {
+      left: 2.25rem;
+    }
+  }
+
+  .procurement-timeline-item-submitted {
+    gap: 1rem;
+
+    .timeline-icon-submitted {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+  }
+
+  .procurement-submitted-item-card-submitted .submitted-item-header-submitted .item-icon-name-submitted {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+
+    .item-icon-container-submitted {
+      margin-right: 0;
+    }
+  }
+
+  .procurement-offer-entries-table-submitted {
+    font-size: 12px;
+
+    th, td {
+      padding: 0.75rem;
     }
   }
 }
 
 @media (max-width: 640px) {
-  .procurement-submitted-details,
-  .procurement-request-summary-card,
-  .procurement-submitted-summary {
-    padding: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  .procurement-timeline {
+  .procurement-request-summary-card-submitted,
+  .procurement-submitted-details-submitted {
     padding: 1rem;
   }
 
-  .procurement-timeline-item {
-    gap: 0.75rem;
+  .procurement-submitted-summary-submitted {
+    margin-top: 1rem;
+    padding: 0 0.75rem;
 
-    .timeline-icon {
+    .summary-item {
+      .summary-value {
+        font-size: 0.8rem;
+
+        &.total {
+          font-size: 0.9rem;
+        }
+      }
+    }
+  }
+
+  .procurement-timeline-submitted {
+    padding: 1rem;
+    gap: 1rem;
+
+    &::before {
+      left: 2rem;
+    }
+  }
+
+  .procurement-timeline-item-submitted {
+    .timeline-icon-submitted {
       width: 2rem;
       height: 2rem;
-    }
-
-    &:not(:last-child):after {
-      left: 0.875rem;
-    }
-  }
-
-  .procurement-submitted-item-card .submitted-item-header .item-icon-name {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-
-    .item-icon-container {
-      margin-right: 0;
-    }
-  }
-
-  .procurement-offer-entries-table {
-    font-size: 12px;
-
-    th, td {
-      padding: 8px 12px;
-    }
-  }
-
-  .request-order-detail-item {
-    padding: 12px;
-    gap: 8px;
-  }
-
-  .request-order-detail-icon {
-    width: 36px;
-    height: 36px;
-
-    svg {
-      width: 16px;
-      height: 16px;
     }
   }
 }

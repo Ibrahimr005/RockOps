@@ -217,27 +217,33 @@ const EquipmentTypeManagement = () => {
 
     return (
         <div className="equipment-types-container">
-            <div className="equipment-types-header">
-                <h1>Equipment Types</h1>
-                {permissions.canCreate && (
-                    <button
-                        className="btn btn-primary"
-                        onClick={() => handleOpenModal()}
-                    >
-                        <FaPlus /> Add Equipment Type
-                    </button>
-                )}
-            </div>
-
             <DataTable
                 data={types}
                 columns={columns}
                 loading={loading}
                 actions={actions}
-                tableTitle="Equipment Types List"
+                tableTitle="Equipment Types"
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={columns}
+                showAddButton={permissions.canCreate}
+                addButtonText="Add Equipment Type"
+                addButtonIcon={<FaPlus />}
+                onAddClick={() => handleOpenModal()}
+                showExportButton={true}
+                exportButtonText="Export Equipment Types"
+                exportFileName="equipment_types"
+                exportAllData={true}
+                excludeColumnsFromExport={['actions']}
+                customExportHeaders={{
+                    'name': 'Equipment Type Name',
+                    'description': 'Description',
+                    'drivable': 'Requires Driver',
+                    'supportedWorkTypes': 'Supported Work Types'
+                }}
+                onExportStart={() => showSuccess("Exporting equipment types...")}
+                onExportComplete={(result) => showSuccess(`Exported ${result.rowCount} equipment types to Excel`)}
+                onExportError={(error) => showError("Failed to export equipment types")}
             />
 
             {/* Modal for adding/editing equipment types */}
@@ -246,7 +252,7 @@ const EquipmentTypeManagement = () => {
                     <div className="modal-content work-type-modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>{editingType ? 'Edit Equipment Type' : 'Add Equipment Type'}</h2>
-                            <button className="modal-close" onClick={() => setShowModal(false)}>
+                            <button className="btn-close" onClick={() => setShowModal(false)}>
                                 &times;
                             </button>
                         </div>
@@ -321,7 +327,7 @@ const EquipmentTypeManagement = () => {
                                 <button type="button" onClick={() => setShowModal(false)}>
                                     Cancel
                                 </button>
-                                <button type="submit" className="save-button">
+                                <button type="submit" className="btn-primary">
                                     {editingType ? 'Update' : 'Add'}
                                 </button>
                             </div>

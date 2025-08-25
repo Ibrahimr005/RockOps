@@ -1,0 +1,619 @@
+// PayslipEdit.scss
+.payslip-edit {
+  padding: 2rem;
+  background-color: var(--page-background-color);
+  min-height: 100vh;
+
+  @media (max-width: 768px) {
+    padding: 1rem;
+  }
+}
+
+// Header Section
+.page-header {
+  margin-bottom: 2rem;
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1.5rem;
+    }
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+  }
+
+  .header-info {
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 2rem;
+      font-weight: var(--bold-font-weight);
+      color: var(--head-title-color);
+      margin: 0 0 0.5rem 0;
+
+      @media (max-width: 768px) {
+        font-size: 1.5rem;
+      }
+
+      .page-icon {
+        color: var(--color-primary);
+        font-size: 1.75rem;
+
+        @media (max-width: 768px) {
+          font-size: 1.25rem;
+        }
+      }
+    }
+
+    .page-description {
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+      margin: 0;
+      font-weight: 500;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+
+    @media (max-width: 768px) {
+      width: 100%;
+      flex-wrap: wrap;
+
+      .btn {
+        flex: 1;
+        min-width: 120px;
+      }
+    }
+  }
+
+  .back-button {
+    white-space: nowrap;
+  }
+}
+
+// Main Edit Form
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+// Edit Section Common Styles
+.edit-section {
+  background: var(--section-background-color);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-color-light);
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--head-title-color);
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-color-light);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &::before {
+      content: '';
+      width: 4px;
+      height: 1.25rem;
+      background: var(--color-primary);
+      border-radius: 2px;
+    }
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    h3 {
+      margin: 0;
+      border: none;
+      padding: 0;
+    }
+  }
+}
+
+// Earnings Section
+.earnings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.earning-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-fast) ease;
+
+  &:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--color-primary);
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .earning-info {
+    flex: 1;
+
+    label {
+      display: block;
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-primary);
+      margin-bottom: 0.25rem;
+      font-size: 0.875rem;
+    }
+
+    .earning-type {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0.2rem 0.5rem;
+      background: rgba(var(--color-success-rgb), 0.1);
+      color: var(--color-success);
+      border-radius: 50px;
+      border: 1px solid rgba(var(--color-success-rgb), 0.3);
+    }
+  }
+
+  .earning-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    @media (max-width: 768px) {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+}
+
+// Deductions Section
+.deductions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.deduction-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-fast) ease;
+
+  &:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--color-primary);
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .deduction-info {
+    flex: 1;
+
+    label {
+      display: block;
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-primary);
+      margin-bottom: 0.25rem;
+      font-size: 0.875rem;
+    }
+
+    .deduction-type {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0.2rem 0.5rem;
+      background: rgba(var(--color-warning-rgb), 0.15);
+      color: var(--color-warning);
+      border-radius: 50px;
+      border: 1px solid rgba(var(--color-warning-rgb), 0.3);
+    }
+  }
+
+  .deduction-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    @media (max-width: 768px) {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+}
+
+// Custom Adjustments Section
+.adjustments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.adjustment-item {
+  padding: 1rem;
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-fast) ease;
+
+  &:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--color-primary);
+  }
+
+  .adjustment-controls {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 1rem;
+    align-items: center;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+  }
+}
+
+// Form Controls
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  font-family: var(--font-family);
+  transition: all var(--transition-fast) ease;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.2);
+  }
+
+  &::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 1;
+  }
+
+  &:disabled {
+    background-color: var(--color-surface-secondary);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+
+  &.amount-input {
+    max-width: 140px;
+    text-align: right;
+    font-weight: 500;
+
+    @media (max-width: 768px) {
+      max-width: 100%;
+    }
+  }
+}
+
+// Checkbox Labels
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+
+  input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+    transform: scale(1.1);
+  }
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+// Totals Section
+.totals-section {
+  border: 2px solid var(--color-primary);
+  background: linear-gradient(135deg, rgba(var(--color-primary-rgb), 0.05) 0%, rgba(var(--color-primary-rgb), 0.02) 100%);
+
+  h3 {
+    color: var(--color-primary);
+
+    &::before {
+      background: var(--color-success);
+    }
+  }
+}
+
+.totals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+.total-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+
+  &.total-final {
+    background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%);
+    color: white;
+    border-color: var(--color-success);
+    font-size: 1.1rem;
+    font-weight: var(--bold-font-weight);
+
+    label,
+    .total-amount {
+      color: white;
+    }
+  }
+
+  label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+  }
+
+  .total-amount {
+    font-size: 1.125rem;
+    font-weight: var(--bold-font-weight);
+
+    &.total-positive {
+      color: var(--color-success);
+    }
+
+    &.total-negative {
+      color: var(--color-warning);
+    }
+
+    &.total-net {
+      color: white;
+      font-size: 1.25rem;
+    }
+  }
+}
+
+// Button Styles (consistent with the project)
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  text-decoration: none;
+  justify-content: center;
+  min-width: fit-content;
+  font-family: var(--font-family);
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &.btn-primary {
+    background-color: var(--color-primary);
+    color: white;
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3);
+    }
+  }
+
+  &.btn-secondary {
+    background: var(--color-surface-secondary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--border-color);
+
+    &:hover:not(:disabled) {
+      background: var(--color-surface-hover);
+      border-color: var(--color-primary);
+    }
+  }
+
+  &.btn-outline-primary {
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary);
+      color: white;
+      transform: translateY(-1px);
+    }
+  }
+
+  &.btn-outline-secondary {
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--border-color);
+
+    &:hover:not(:disabled) {
+      background: var(--color-surface-hover);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+  }
+
+  &.btn-outline-danger {
+    background: transparent;
+    color: var(--color-danger);
+    border: 1px solid var(--color-danger);
+
+    &:hover:not(:disabled) {
+      background: var(--color-danger);
+      color: white;
+      transform: translateY(-1px);
+    }
+  }
+
+  &.btn-sm {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    gap: 0.25rem;
+
+    svg {
+      width: 12px;
+      height: 12px;
+    }
+  }
+}
+
+// Loading and Error States
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 2rem;
+
+  h3 {
+    color: var(--color-danger);
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+  }
+
+  p {
+    color: var(--color-text-secondary);
+    margin: 0;
+    line-height: 1.5;
+  }
+}
+
+// Dark theme adjustments
+[data-theme="dark"] {
+  .edit-section {
+    background-color: var(--section-background-color);
+    border-color: var(--border-color);
+  }
+
+  .earning-item,
+  .deduction-item,
+  .adjustment-item {
+    background: var(--color-surface-secondary);
+  }
+
+  .totals-section {
+    background: linear-gradient(135deg, rgba(var(--color-primary-rgb), 0.1) 0%, rgba(var(--color-primary-rgb), 0.05) 100%);
+  }
+}
+
+// Print styles
+@media print {
+  .payslip-edit {
+    padding: 0;
+    background: white;
+  }
+
+  .page-header .header-actions {
+    display: none;
+  }
+
+  .edit-section {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    break-inside: avoid;
+  }
+}
+
+// Focus styles for accessibility
+.btn:focus-visible,
+.form-control:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+// Animation for success states
+.success-highlight {
+  background-color: rgba(var(--color-success-rgb), 0.1);
+  animation: successFade 2s ease-out;
+}
+
+@keyframes successFade {
+  0% {
+    background-color: rgba(var(--color-success-rgb), 0.3);
+  }
+  100% {
+    background-color: transparent;
+  }
+}

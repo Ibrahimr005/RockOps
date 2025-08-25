@@ -5,6 +5,7 @@ import { BsPrinter } from "react-icons/bs";
 import { IoDocumentOutline } from "react-icons/io5";
 import warehouseimg1 from "../../../assets/imgs/warehouse1.jpg";
 import "./WarehouseInformation.scss";
+import { warehouseService } from "../../../services/warehouse/warehouseService";
 
 const WarehouseInformation = () => {
   const { id } = useParams();
@@ -15,21 +16,8 @@ const WarehouseInformation = () => {
   useEffect(() => {
     const fetchWarehouseDetails = async () => {
       try {
-        const response = await fetch(`http://localhost:8080/api/v1/warehouses/${id}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch warehouse data");
-        }
-
-        const data = await response.json();
+        const data = await warehouseService.getById(id);
         console.log(JSON.stringify(data, null, 2));
-
         setWarehouseData(data);
       } catch (error) {
         setError(error.message);
@@ -50,87 +38,140 @@ const WarehouseInformation = () => {
     window.location.reload();
   };
 
-  // Field component for displaying label/value pairs
-  const FieldItem = ({ label, value }) => {
+  // Simple field component
+  const InfoRow = ({ label, value }) => {
     return (
-        <div className="field-item">
-          <div className="field-label">{label}</div>
-          <div className="field-value">{value || "Not available"}</div>
+        <div className="info-row">
+          <span className="info-label">{label}</span>
+          <span className="info-value">{value || "Not available"}</span>
         </div>
     );
   };
 
-  if (loading) return <div className="warehouse-info-page"><div className="loading-message">Loading warehouse details...</div></div>;
-  if (error) return <div className="warehouse-info-page"><div className="error-message">Error: {error}</div></div>;
+  // Component for displaying worker names in an organized way
+  const WorkersList = ({ workers }) => {
+    if (!workers || workers.length === 0) {
+      return <span className="info-value">No workers assigned</span>;
+    }
+
+    return (
+        <div className="workers-list">
+          {workers.map((worker, index) => (
+              <div key={index} className="info-row worker-row">
+                <span className="info-label">Worker {index + 1}</span>
+                <span className="info-value">{worker.name}</span>
+              </div>
+          ))}
+        </div>
+    );
+  };
+
+  if (loading) {
+    return (
+        <div className="warehouse-info-page">
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p>Loading warehouse details...</p>
+          </div>
+        </div>
+    );
+  }
+
+  if (error) {
+    return (
+        <div className="warehouse-info-page">
+          <div className="error-state">
+            <h3>Error Loading Warehouse</h3>
+            <p>{error}</p>
+            <button onClick={() => window.location.reload()} className="retry-btn">
+              Try Again
+            </button>
+          </div>
+        </div>
+    );
+  }
 
   // Find the Warehouse Manager from employees array
   const manager = warehouseData.employees?.find(emp => emp.position === "Warehouse Manager");
-
   // Find all Warehouse Workers
   const workers = warehouseData.employees?.filter(emp => emp.position === "Warehouse Worker") || [];
 
   return (
       <div className="warehouse-info-page">
         <div id="print-section" className="warehouse-info-container">
+
+          {/* Simple Header */}
           <div className="info-header">
-            <h1>Warehouse Information</h1>
+            <div className="header-left">
+              <h1>Warehouse Information</h1>
+            </div>
             <div className="header-actions">
-              <NavLink to={`../RelatedDocuments/${id}`}>
-                <IoDocumentOutline />
-              </NavLink>
-              <button onClick={handlePrint}>
+
+              <button onClick={handlePrint} className="btn-primary">
                 <BsPrinter />
+                Print
               </button>
             </div>
           </div>
 
-          <div className="warehouse-image">
-            <img
-                src={warehouseData?.photoUrl || warehouseimg1}
-                alt="Warehouse"
-                onError={(e) => {
-                  e.target.src = warehouseimg1;
-                }}
-            />
-          </div>
-
+          {/* Main Content */}
           <div className="info-content">
+
+            {/* Warehouse Image */}
+            <div className="warehouse-image-section">
+              <img
+                  src={warehouseData?.photoUrl || warehouseimg1}
+                  alt="Warehouse"
+                  className="warehouse-image"
+                  onError={(e) => {
+                    e.target.src = warehouseimg1;
+                  }}
+              />
+              <div className="image-info">
+                <h2>{warehouseData.name}</h2>
+              </div>
+            </div>
+
+            {/* Information Sections */}
             <div className="info-sections">
+
+              {/* Basic Details */}
               <div className="info-section">
-                <h2 className="section-title">Warehouse Details</h2>
-                <div className="field-list">
-                  <FieldItem label="Warehouse ID" value={warehouseData.id} />
-                  <FieldItem label="Warehouse Name" value={warehouseData.name} />
-                  <FieldItem label="Capacity" value={warehouseData.capacity} />
+                <h3>Warehouse Details</h3>
+                <div className="info-rows">
+                  <InfoRow label="Warehouse Name" value={warehouseData.name} />
+                  <InfoRow label="Warehouse ID" value={warehouseData.id} />
+                  <InfoRow label="Capacity" value={warehouseData.capacity} />
                 </div>
               </div>
 
+              {/* Site Information */}
               <div className="info-section">
-                <h2 className="section-title">Site Information</h2>
-                <div className="field-list">
-                  <FieldItem label="Site Name" value={warehouseData.site?.name} />
-                  <FieldItem label="Site Address" value={warehouseData.site?.physicalAddress} />
+                <h3>Site Information</h3>
+                <div className="info-rows">
+                  <InfoRow label="Site Name" value={warehouseData.site?.name} />
+                  <InfoRow label="Physical Address" value={warehouseData.site?.physicalAddress} />
                 </div>
               </div>
 
+              {/* Staff Information */}
               <div className="info-section">
-                <h2 className="section-title">Management</h2>
-                <div className="field-list">
-                  <FieldItem
+                <h3>Management & Staff</h3>
+                <div className="info-rows">
+                  <InfoRow
+                      label="Total Staff"
+                      value={warehouseData.employees?.length || 0}
+                  />
+
+                  <InfoRow
                       label="Warehouse Manager"
                       value={manager ? manager.name : "Not Assigned"}
                   />
 
-                  {workers.length > 0 ? (
-                      <FieldItem
-                          label="Workers Count"
-                          value={`${workers.length} worker${workers.length > 1 ? 's' : ''}`}
-                      />
-                  ) : (
-                      <FieldItem label="Workers" value="No workers assigned" />
-                  )}
+                  <WorkersList workers={workers} />
                 </div>
               </div>
+
             </div>
           </div>
         </div>

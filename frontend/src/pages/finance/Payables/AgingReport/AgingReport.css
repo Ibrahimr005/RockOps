@@ -1,0 +1,686 @@
+/* AgingReport.css */
+
+.aging-report {
+    padding: 0;
+}
+
+/* Report Info Bar */
+.report-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.5rem;
+    margin: 1rem 0 1.5rem 0;
+    box-shadow: var(--shadow-sm);
+}
+
+.report-date,
+.total-outstanding {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.report-date svg,
+.total-outstanding svg {
+    color: var(--color-primary);
+    font-size: 1rem;
+}
+
+.total-outstanding {
+    color: var(--color-primary);
+}
+
+/* Aging Summary Cards */
+.aging-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.aging-card {
+    background: var(--section-background-color);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+}
+
+.aging-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    transition: width var(--transition-fast);
+}
+
+.aging-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .aging-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+.aging-card.active {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+    transform: translateY(-2px);
+}
+
+[data-theme="dark"] .aging-card.active {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 15px rgba(72, 128, 255, 0.2);
+}
+
+.aging-card.active::before {
+    width: 8px;
+}
+
+/* Aging Card Variants */
+.aging-card.current::before {
+    background: #10b981;
+}
+
+.aging-card.current.active {
+    border-color: #10b981;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+}
+
+.aging-card.warning::before {
+    background: #f59e0b;
+}
+
+.aging-card.warning.active {
+    border-color: #f59e0b;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+}
+
+.aging-card.danger::before {
+    background: #ef4444;
+}
+
+.aging-card.danger.active {
+    border-color: #ef4444;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
+}
+
+.aging-card.critical::before {
+    background: #7f1d1d;
+}
+
+.aging-card.critical.active {
+    border-color: #7f1d1d;
+    box-shadow: 0 4px 15px rgba(127, 29, 29, 0.3);
+}
+
+[data-theme="dark"] .aging-card.current::before {
+    background: var(--color-success);
+}
+
+[data-theme="dark"] .aging-card.current.active {
+    border-color: var(--color-success);
+    box-shadow: 0 4px 15px rgba(92, 188, 96, 0.2);
+}
+
+[data-theme="dark"] .aging-card.danger::before {
+    background: var(--color-danger);
+}
+
+[data-theme="dark"] .aging-card.danger.active {
+    border-color: var(--color-danger);
+    box-shadow: 0 4px 15px rgba(255, 82, 82, 0.2);
+}
+
+.aging-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.aging-card-header h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.aging-percentage {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    background: var(--color-surface);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.aging-card-content {
+    margin-bottom: 1rem;
+}
+
+.aging-amount {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.aging-count {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.aging-card-status {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-tertiary);
+    text-align: right;
+}
+
+.aging-card.current .aging-card-status {
+    color: #10b981;
+}
+
+.aging-card.warning .aging-card-status {
+    color: #f59e0b;
+}
+
+.aging-card.danger .aging-card-status {
+    color: #ef4444;
+}
+
+.aging-card.critical .aging-card-status {
+    color: #7f1d1d;
+}
+
+[data-theme="dark"] .aging-card.current .aging-card-status {
+    color: var(--color-success);
+}
+
+[data-theme="dark"] .aging-card.danger .aging-card-status {
+    color: var(--color-danger);
+}
+
+[data-theme="dark"] .aging-card.critical .aging-card-status {
+    color: #fca5a5;
+}
+
+/* View Toggle */
+.view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    margin: 2rem 0 1.5rem 0;
+    padding: 0.5rem;
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.view-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.view-btn:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+}
+
+.view-btn.active {
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+[data-theme="dark"] .view-btn.active {
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+    box-shadow: 0 2px 4px rgba(72, 128, 255, 0.2);
+}
+
+.view-btn svg {
+    font-size: 1rem;
+}
+
+/* Summary View */
+.summary-view {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.summary-charts {
+    background: var(--section-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 2rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.chart-placeholder {
+    text-align: center;
+}
+
+.chart-placeholder h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 2rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.chart-placeholder svg {
+    color: var(--color-primary);
+    font-size: 1.5rem;
+}
+
+.chart-bars {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    height: 200px;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.chart-bar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bar-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.bar-container {
+    height: 150px;
+    width: 40px;
+    background: var(--color-surface-hover);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.bar {
+    width: 100%;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    transition: all var(--transition-fast);
+    min-height: 10px;
+}
+
+.bar.current {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 -2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.bar.warning {
+    background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 -2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.bar.danger {
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 -2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.bar.critical {
+    background: linear-gradient(180deg, #7f1d1d 0%, #991b1b 100%);
+    box-shadow: 0 -2px 8px rgba(127, 29, 29, 0.3);
+}
+
+[data-theme="dark"] .bar.current {
+    background: linear-gradient(180deg, var(--color-success) 0%, #059669 100%);
+    box-shadow: 0 -2px 8px rgba(92, 188, 96, 0.3);
+}
+
+[data-theme="dark"] .bar.danger {
+    background: linear-gradient(180deg, var(--color-danger) 0%, #dc2626 100%);
+    box-shadow: 0 -2px 8px rgba(255, 82, 82, 0.3);
+}
+
+.bar-value {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+/* Summary Insights */
+.summary-insights {
+    background: var(--section-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 2rem;
+    box-shadow: var(--shadow-sm);
+    height: fit-content;
+}
+
+.insight-card h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 1.5rem 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.insight-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.insight-card li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+}
+
+.insight-card li:last-child {
+    border-bottom: none;
+}
+
+.insight-card li strong {
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+/* Detail View */
+.detail-view {
+    margin-top: 1rem;
+}
+
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.5rem;
+    background: var(--color-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.detail-header h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.detail-stats {
+    display: flex;
+    gap: 2rem;
+}
+
+.detail-stats .stat {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    padding: 0.5rem 1rem;
+    background: var(--section-background-color);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+/* Table Customizations */
+.aging-detail-table .rockops-table__container {
+    margin: 0;
+    border-radius: var(--radius-md);
+}
+
+.aging-detail-table .remaining-balance {
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+.aging-detail-table .due-date {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.aging-detail-table .due-date.overdue {
+    color: var(--color-danger);
+    font-weight: 600;
+}
+
+.aging-detail-table .overdue-icon {
+    font-size: 0.75rem;
+    color: var(--color-danger);
+}
+
+.aging-detail-table .days-overdue {
+    font-size: 0.75rem;
+    color: var(--color-danger);
+    font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .aging-summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .summary-view {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .chart-bars {
+        height: 150px;
+        gap: 0.5rem;
+    }
+
+    .bar-container {
+        height: 100px;
+        width: 30px;
+    }
+}
+
+@media (max-width: 768px) {
+    .aging-summary-cards {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .aging-card {
+        padding: 1rem;
+    }
+
+    .aging-amount {
+        font-size: 1.5rem;
+    }
+
+    .report-info {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .detail-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .detail-stats {
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .view-toggle {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .view-btn {
+        padding: 0.5rem;
+    }
+
+    .chart-bars {
+        height: 120px;
+        padding: 0.5rem;
+    }
+
+    .bar-container {
+        height: 80px;
+        width: 25px;
+    }
+
+    .summary-charts,
+    .summary-insights {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .payables-card-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .payables-card-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .payables-card-actions .payables-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .aging-card-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: flex-start;
+    }
+
+    .aging-percentage {
+        align-self: flex-end;
+    }
+
+    .detail-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .chart-bar {
+        gap: 0.25rem;
+    }
+
+    .bar-label,
+    .bar-value {
+        font-size: 0.7rem;
+    }
+}
+
+/* Animation for cards */
+@keyframes cardSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.aging-card {
+    animation: cardSlideIn 0.3s ease-out;
+}
+
+.aging-card:nth-child(1) { animation-delay: 0.1s; }
+.aging-card:nth-child(2) { animation-delay: 0.2s; }
+.aging-card:nth-child(3) { animation-delay: 0.3s; }
+.aging-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* Bar animation */
+@keyframes barGrow {
+    from {
+        height: 0;
+    }
+    to {
+        height: var(--bar-height);
+    }
+}
+
+.chart-bars .bar {
+    animation: barGrow 0.8s ease-out;
+}
+
+/* Dark theme specific adjustments */
+[data-theme="dark"] .chart-bars {
+    background: var(--color-surface-hover);
+}
+
+[data-theme="dark"] .bar-container {
+    background: var(--section-background-color);
+}
+
+[data-theme="dark"] .summary-charts,
+[data-theme="dark"] .summary-insights {
+    background: var(--color-surface);
+}
+
+/* Button loading state for PDF export */
+.payables-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.payables-btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}

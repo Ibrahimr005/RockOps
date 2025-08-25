@@ -1,0 +1,304 @@
+// frontend/src/components/common/EmployeeSelector/EmployeeSelector.scss
+.employee-selector-component {
+  position: relative;
+  width: 100%;
+
+  &.employee-selector-has-error {
+    .employee-selector-input {
+      border-color: var(--color-danger);
+      box-shadow: 0 0 0 3px rgba(var(--color-danger-rgb), 0.1);
+    }
+  }
+
+  &.employee-selector-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+
+    .employee-selector-input {
+      background: var(--color-surface-tertiary);
+      cursor: not-allowed;
+    }
+  }
+
+  .employee-selector-input {
+    min-height: 48px;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast) ease;
+
+    &:hover:not(.employee-selector-disabled) {
+      border-color: var(--color-primary);
+    }
+
+    &:focus-within {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+    }
+
+    .employee-selector-selected-employee {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .employee-selector-avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--color-primary);
+        color: white;
+        font-size: 0.875rem;
+        flex-shrink: 0;
+      }
+
+      .employee-selector-details {
+        flex: 1;
+        min-width: 0;
+
+        .employee-selector-name {
+          display: block;
+          font-weight: 500;
+          color: var(--color-text-primary);
+          margin-bottom: 0.125rem;
+        }
+
+        .employee-selector-info {
+          font-size: 0.8rem;
+          color: var(--color-text-secondary);
+        }
+      }
+
+      .employee-selector-clear-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border: none;
+        background: var(--color-surface-tertiary);
+        color: var(--color-text-secondary);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all var(--transition-fast) ease;
+        flex-shrink: 0;
+
+        &:hover {
+          background: var(--color-danger);
+          color: white;
+        }
+      }
+    }
+
+    .employee-selector-search-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .employee-selector-search-icon {
+        color: var(--color-text-secondary);
+        font-size: 0.875rem;
+        flex-shrink: 0;
+      }
+
+      .employee-selector-search-input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        color: var(--color-text-primary);
+        font-size: 0.9rem;
+        outline: none;
+
+        &::placeholder {
+          color: var(--color-text-tertiary);
+        }
+
+        &:disabled {
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  .employee-selector-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    margin-top: 0.25rem;
+    background: var(--color-surface-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+    max-height: 300px;
+    overflow: hidden;
+
+    .employee-selector-list {
+      background-color: var(--section-background-color);
+      max-height: 300px;
+      overflow-y: auto;
+
+      .employee-selector-option {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.875rem;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border-color-light);
+        transition: all var(--transition-fast) ease;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &:hover {
+          background: var(--color-surface-hover);
+        }
+
+        .employee-selector-option-avatar {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: var(--color-primary);
+          color: white;
+          font-size: 1rem;
+          flex-shrink: 0;
+        }
+
+        .employee-selector-option-details {
+          flex: 1;
+          min-width: 0;
+
+          .employee-selector-option-name {
+            font-weight: 500;
+            color: var(--color-text-primary);
+            margin-bottom: 0.25rem;
+          }
+
+          .employee-selector-option-info {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+
+            .employee-selector-position, .employee-selector-department {
+              font-size: 0.8rem;
+              color: var(--color-text-secondary);
+            }
+
+            .employee-selector-position::after {
+              content: '•';
+              margin-left: 0.5rem;
+              color: var(--color-text-tertiary);
+            }
+          }
+
+          .employee-selector-option-id {
+            font-size: 0.75rem;
+            color: var(--color-text-tertiary);
+          }
+        }
+
+        .employee-selector-option-salary {
+          flex-shrink: 0;
+
+          .employee-selector-salary {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--color-success);
+            background: rgba(var(--color-success-rgb), 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius-xs);
+          }
+        }
+      }
+    }
+
+    .employee-selector-no-results {
+      padding: 2rem 1rem;
+      text-align: center;
+      color: var(--color-text-secondary);
+
+      .employee-selector-no-results-text {
+        margin: 0 0 0.5rem 0;
+        font-weight: 500;
+      }
+
+      .employee-selector-no-results-help {
+        color: var(--color-text-tertiary);
+      }
+    }
+  }
+}
+
+// Custom scrollbar for employee list
+.employee-selector-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-text-tertiary) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-text-tertiary);
+    border-radius: 3px;
+
+    &:hover {
+      background: var(--color-text-secondary);
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .employee-selector-component {
+    .employee-selector-dropdown-menu {
+      max-height: 250px;
+
+      .employee-selector-list {
+        max-height: 250px;
+
+        .employee-selector-option {
+          padding: 0.75rem;
+
+          .employee-selector-option-avatar {
+            width: 36px;
+            height: 36px;
+            font-size: 0.875rem;
+          }
+
+          .employee-selector-option-details {
+            .employee-selector-option-info {
+              flex-direction: column;
+              gap: 0.125rem;
+
+              .employee-selector-position::after {
+                display: none;
+              }
+            }
+          }
+
+          .employee-selector-option-salary {
+            .employee-selector-salary {
+              font-size: 0.75rem;
+              padding: 0.125rem 0.375rem;
+            }
+          }
+        }
+      }
+    }
+  }
+}

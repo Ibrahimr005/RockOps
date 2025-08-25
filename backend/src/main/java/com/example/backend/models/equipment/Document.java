@@ -55,6 +55,16 @@ public class Document {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // Sarky-specific fields for monthly document filtering
+    @Column(name = "sarky_month")
+    private Integer sarkyMonth;
+
+    @Column(name = "sarky_year")
+    private Integer sarkyYear;
+
+    @Column(name = "is_sarky_document", nullable = false)
+    private Boolean isSarkyDocument = false;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

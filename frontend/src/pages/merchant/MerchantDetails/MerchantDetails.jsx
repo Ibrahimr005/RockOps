@@ -1,6 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import "./MerchantDetails.scss";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import './MerchantDetails.scss';
+import { FaBuilding, FaArrowLeft } from 'react-icons/fa';
+import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
+import { merchantService } from '../../../services/merchant/merchantService.js';
+
+// Import reorganized tab components
+import BasicInfoTab from './tabs/BasicInfoTab.jsx';
+import ContactDetailsTab from './tabs/ContactDetailsTab.jsx';
+import PerformanceTab from './tabs/PerformanceTab.jsx';
+import DocumentsTab from './tabs/DocumentsTab.jsx';
+import TransactionsTab from './tabs/TransactionsTab.jsx';
 
 const MerchantDetails = () => {
     const { id } = useParams();
@@ -8,175 +18,192 @@ const MerchantDetails = () => {
     const [merchant, setMerchant] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [activeTab, setActiveTab] = useState('basic');
 
     useEffect(() => {
-        const fetchMerchantDetails = async () => {
-            setLoading(true);
-            try {
-                const token = localStorage.getItem("token");
-                const response = await fetch(`http://localhost:8080/api/v1/merchants/${id}`, {
-                    headers: {
-                        "Authorization": `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch merchant details: ${response.status}`);
-                }
-
-                const data = await response.json();
-                setMerchant(data);
-            } catch (error) {
-                console.error("Error fetching merchant details:", error);
-                setError(error.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchMerchantDetails();
     }, [id]);
 
-    const goBack = () => {
-        navigate(-1);
+    const fetchMerchantDetails = async () => {
+        try {
+            setLoading(true);
+            const response = await merchantService.getById(id);
+            console.log('Merchant details response:', response);
+            setMerchant(response.data || response);
+        } catch (error) {
+            console.error('Error fetching merchant details:', error);
+            setError(error.message || 'Failed to fetch merchant details');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // Format date helper
+    // Format date for display
     const formatDate = (dateString) => {
-        if (!dateString) return "-";
-        return new Date(dateString).toLocaleDateString();
+        if (!dateString) return 'Not specified';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) {
+                return 'Not specified';
+            }
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return 'Not specified';
+        }
+    };
+
+    // Calculate days since last order
+    const calculateDaysSinceLastOrder = (lastOrderDate) => {
+        if (!lastOrderDate) return 'N/A';
+        try {
+            const today = new Date();
+            const lastOrder = new Date(lastOrderDate);
+            if (isNaN(lastOrder.getTime())) {
+                return 'N/A';
+            }
+            const diffTime = today - lastOrder;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            return `${diffDays} days ago`;
+        } catch (error) {
+            console.error('Error calculating days since last order:', error);
+            return 'N/A';
+        }
     };
 
     if (loading) {
+        return <LoadingPage />;
+    }
+
+    if (error) {
         return (
-            <div className="merchant-detail-container">
-                <div className="merchant-detail-loading">
-                    <div className="merchant-detail-spinner"></div>
-                    <p>Loading merchant details...</p>
+            <div className="merchant-details-container">
+                <div className="merchant-details-error-message">
+                    <h2>Error Loading Data</h2>
+                    <p>{error}</p>
+                    <div className="merchant-details-error-actions">
+                        <button onClick={() => fetchMerchantDetails()}>Try Again</button>
+                        <button onClick={() => navigate('/procurement/merchants')}>Back to Merchants</button>
+                    </div>
                 </div>
             </div>
         );
     }
 
-    if (error || !merchant) {
+    if (!merchant) {
         return (
-            <div className="merchant-detail-container">
-                <div className="merchant-detail-error">
-                    <h2>Error Loading Merchant</h2>
-                    <p>{error || "Merchant not found"}</p>
-
+            <div className="merchant-details-container">
+                <div className="merchant-details-error-message">
+                    <h2>Merchant Not Found</h2>
+                    <p>The requested merchant could not be found.</p>
+                    <button onClick={() => navigate('/procurement/merchants')}>Back to Merchants</button>
                 </div>
             </div>
         );
     }
+
+    // Helper functions
+    const getMerchantType = () => {
+        return merchant.merchantType || 'Not specified';
+    };
+
+    const getSiteName = () => {
+        return merchant.site?.name || 'No site assigned';
+    };
+
+    const getReliabilityLevel = () => {
+        const score = merchant.reliabilityScore;
+        if (!score) return 'Not rated';
+        if (score >= 4.5) return 'Excellent';
+        if (score >= 3.5) return 'Good';
+        if (score >= 2.5) return 'Fair';
+        return 'Needs Improvement';
+    };
 
     return (
-        <div className="merchant-detail-container">
-            <div className="merchant-detail-header">
-                <h1>{merchant.name}</h1>
-                <div className="merchant-type-badge">{merchant.merchantType}</div>
-            </div>
-
-            <div className="merchant-detail-content">
-                <div className="merchant-detail-section">
-                    <h2>Contact Information</h2>
-                    <div className="merchant-detail-grid">
-                        <div className="merchant-detail-item">
-                            <label>Contact Person</label>
-                            <p>{merchant.contactPersonName || "-"}</p>
-                        </div>
-                        <div className="merchant-detail-item">
-                            <label>Email</label>
-                            <p>{merchant.contactEmail || "-"}</p>
-                        </div>
-                        <div className="merchant-detail-item">
-                            <label>Primary Phone</label>
-                            <p>{merchant.contactPhone || "-"}</p>
-                        </div>
-                        <div className="merchant-detail-item">
-                            <label>Secondary Phone</label>
-                            <p>{merchant.contactSecondPhone || "-"}</p>
-                        </div>
-                        <div className="merchant-detail-item">
-                            <label>Address</label>
-                            <p>{merchant.address || "-"}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="merchant-detail-section">
-                    <h2>Business Information</h2>
-                    <div className="merchant-detail-grid">
-                        <div className="merchant-detail-item">
-                            <label>Tax ID</label>
-                            <p>{merchant.taxIdentificationNumber || "-"}</p>
-                        </div>
-                        <div className="merchant-detail-item">
-                            <label>Preferred Payment Method</label>
-                            <p>{merchant.preferredPaymentMethod || "-"}</p>
-                        </div>
-                        <div className="merchant-detail-item">
-                            <label>Site</label>
-                            <p>{merchant.site ? merchant.site.name : "None"}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="merchant-detail-section">
-                    <h2>Performance Metrics</h2>
-                    <div className="merchant-detail-grid">
-                        <div className="merchant-detail-item">
-                            <label>Reliability Score</label>
-                            <div className="reliability-score">
-                                {merchant.reliabilityScore ? (
-                                    <div className="score-display">
-                                        <div
-                                            className="score-fill"
-                                            style={{ width: `${(merchant.reliabilityScore / 5) * 100}%` }}
-                                        ></div>
-                                        <span>{merchant.reliabilityScore.toFixed(1)}</span>
-                                    </div>
-                                ) : (
-                                    <p>Not Rated</p>
-                                )}
+        <div className="merchant-details-container">
+            <div className="merchant-details-content">
+                {/* Beautiful Merchant Info Bar */}
+                <div className="merchant-details-info-bar">
+                    <div className="merchant-details-info-content">
+                        <div className="merchant-details-avatar">
+                            {merchant.photoUrl ? (
+                                <img
+                                    src={merchant.photoUrl}
+                                    alt={merchant.name}
+                                    onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.nextSibling.style.display = 'flex';
+                                    }}
+                                />
+                            ) : (
+                                <div className="merchant-details-avatar__placeholder">
+                                    <FaBuilding />
+                                </div>
+                            )}
+                            <div className="merchant-details-avatar__placeholder" style={{ display: 'none' }}>
+                                <FaBuilding />
                             </div>
                         </div>
-                        <div className="merchant-detail-item">
-                            <label>Average Delivery Time</label>
-                            <p>{merchant.averageDeliveryTime ? `${merchant.averageDeliveryTime} days` : "-"}</p>
-                        </div>
-                        <div className="merchant-detail-item">
-                            <label>Last Order Date</label>
-                            <p>{formatDate(merchant.lastOrderDate)}</p>
-                        </div>
-                    </div>
-                </div>
 
-                <div className="merchant-detail-section">
-                    <h2>Item Categories</h2>
-                    <div className="merchant-categories">
-                        {merchant.itemCategories && merchant.itemCategories.length > 0 ? (
-                            <div className="category-tags">
-                                {merchant.itemCategories.map((category, index) => (
-                                    <div className="category-tag" key={index}>
-                                        {category.name}
-                                    </div>
-                                ))}
+                        <div className="merchant-details-basic-info">
+                            <h1 className="merchant-details-name">
+                                {merchant.name}
+                            </h1>
+                            <div className="merchant-details-meta">
+                                <span className="merchant-details-site">{getSiteName()}</span>
+                                <span className="merchant-details-separator">•</span>
+                                <span className="merchant-details-contact">{merchant.contactPersonName || 'No contact assigned'}</span>
                             </div>
-                        ) : (
-                            <p>No categories specified</p>
-                        )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="merchant-detail-section">
-                    <h2>Notes</h2>
-                    <div className="merchant-notes">
-                        {merchant.notes ? (
-                            <p>{merchant.notes}</p>
-                        ) : (
-                            <p>No notes available</p>
-                        )}
+                {/* Reorganized Tabs */}
+                <div className="merchant-details-tabs">
+                    <div className="tabs-header">
+                        <button
+                            className={`tab-button ${activeTab === 'basic' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('basic')}
+                        >
+                            Basic Info
+                        </button>
+                        <button
+                            className={`tab-button ${activeTab === 'contact' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('contact')}
+                        >
+                            Contact Details
+                        </button>
+                        <button
+                            className={`tab-button ${activeTab === 'performance' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('performance')}
+                        >
+                            Performance
+                        </button>
+                        <button
+                            className={`tab-button ${activeTab === 'documents' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('documents')}
+                        >
+                            Documents
+                        </button>
+                        <button
+                            className={`tab-button ${activeTab === 'transactions' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('transactions')}
+                        >
+                            Transactions
+                        </button>
+                    </div>
+
+                    <div className="tab-content">
+                        {activeTab === 'basic' && <BasicInfoTab merchant={merchant} formatDate={formatDate} getSiteName={getSiteName} />}
+                        {activeTab === 'contact' && <ContactDetailsTab merchant={merchant} />}
+                        {activeTab === 'performance' && <PerformanceTab merchant={merchant} formatDate={formatDate} />}
+                        {activeTab === 'documents' && <DocumentsTab merchant={merchant} />}
+                        {activeTab === 'transactions' && <TransactionsTab merchant={merchant} />}
                     </div>
                 </div>
             </div>

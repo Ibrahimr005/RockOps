@@ -1,0 +1,709 @@
+// TransactionProcessor.scss - Styling for the unified transaction processing modal
+@import '../../../styles/modal-styles.scss';
+@import '../../../styles/primary-button.scss';
+@import '../../../styles/close-modal-button.scss';
+@import '../../../styles/theme-variables.css';
+
+.transaction-processor-overlay {
+    @extend .modal-backdrop;
+
+    .transaction-processor-modal {
+        @extend .modal-container;
+        max-width: 800px;
+
+        .transaction-processor-header {
+            @extend .modal-header;
+
+            .transaction-processor-title {
+                h2 {
+                    font-size: 1.5rem;
+                    font-weight: var(--bold-font-weight);
+                    color: var(--head-title-color);
+                    font-family: var(--font-family);
+                    margin: 0;
+                    line-height: 1.3;
+                }
+
+                p {
+                    margin: 0;
+                    font-size: 0.875rem;
+                    color: var(--color-text-secondary);
+                }
+            }
+
+            .transaction-processor-close {
+                @extend .btn-close;
+            }
+        }
+
+        .transaction-processor-progress {
+            padding: 1.5rem;
+            background: var(--color-surface-secondary);
+            border-bottom: 1px solid var(--border-color-light);
+
+            .transaction-processor-steps {
+                display: flex;
+                gap: 1rem;
+                overflow-x: auto;
+                padding-bottom: 0.5rem;
+
+                .transaction-processor-step {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    padding: 0.75rem 1rem;
+                    border-radius: var(--radius-md);
+                    min-width: 200px;
+                    transition: all var(--transition-normal) ease;
+
+                    &.completed {
+                        background: var(--color-success-light);
+                        border: 1px solid var(--color-success);
+                        color: white;
+
+                        .transaction-processor-step-indicator {
+                            background: var(--color-success);
+                            color: white;
+                        }
+
+                        .transaction-processor-step-info h4 {
+                            color: white;
+                        }
+                    }
+
+                    &.active {
+                        background: var(--color-primary-light);
+                        border: 2px solid var(--color-primary);
+                        color: white;
+
+                        .transaction-processor-step-indicator {
+                            background: var(--color-primary);
+                            color: white;
+                        }
+
+                        .transaction-processor-step-info h4 {
+                            color: white;
+                        }
+                    }
+
+                    &.pending {
+                        background: var(--section-background-color);
+                        border: 1px solid var(--border-color-light);
+
+                        .transaction-processor-step-indicator {
+                            background: var(--color-surface-tertiary);
+                            color: var(--color-text-secondary);
+                        }
+                    }
+
+                    .transaction-processor-step-indicator {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 2.5rem;
+                        height: 2.5rem;
+                        border-radius: var(--radius-full);
+                        font-weight: 600;
+                        font-size: 0.875rem;
+                        flex-shrink: 0;
+                    }
+
+                    .transaction-processor-step-info {
+                        h4 {
+                            margin: 0 0 0.25rem 0;
+                            font-size: 0.875rem;
+                            font-weight: 600;
+                        }
+
+                        p {
+                            margin: 0;
+                            font-size: 0.75rem;
+                            color: var(--color-text-secondary);
+                        }
+                    }
+                }
+            }
+        }
+
+        .transaction-processor-content {
+            @extend .modal-body;
+            flex: 1;
+            overflow-y: auto;
+
+            .transaction-processor-step-content {
+                .transaction-processor-review-header {
+                    margin-bottom: 1.5rem;
+
+                    h3 {
+                        margin: 0 0 1rem 0;
+                        font-size: 1.25rem;
+                        font-weight: 600;
+                        color: var(--color-text-primary);
+                    }
+
+                    .transaction-processor-review-meta {
+                        display: flex;
+                        gap: 1rem;
+                        flex-wrap: wrap;
+
+                        .transaction-processor-batch,
+                        .transaction-processor-purpose,
+                        .transaction-processor-date {
+                            padding: 0.5rem 0.75rem;
+                            border-radius: var(--radius-sm);
+                            font-size: 0.75rem;
+                            font-weight: 500;
+                        }
+
+                        .transaction-processor-batch {
+                            background: var(--color-text-muted);
+                            color: white;
+                        }
+
+                        .transaction-processor-purpose {
+                            &.consumable {
+                                background: var(--color-success);
+                                color: white;
+                            }
+
+                            &.maintenance {
+                                background: var(--color-warning);
+                                color: white;
+                            }
+
+                            &.general {
+                                background: var(--color-text-muted);
+                                color: white;
+                            }
+                        }
+
+                        .transaction-processor-date {
+                            background: var(--color-info);
+                            color: white;
+                        }
+                    }
+                }
+
+                .transaction-processor-parties {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 1rem;
+                    margin-bottom: 1.5rem;
+
+                    .transaction-processor-party {
+                        padding: 1rem;
+                        background: var(--color-surface-secondary);
+                        border-radius: var(--radius-sm);
+                        border: 1px solid var(--border-color-light);
+
+                        h4 {
+                            margin: 0 0 0.5rem 0;
+                            font-size: 0.875rem;
+                            font-weight: 600;
+                            color: var(--color-text-secondary);
+                            text-transform: uppercase;
+                        }
+
+                        p {
+                            margin: 0;
+                            font-size: 1rem;
+                            font-weight: 500;
+                            color: var(--color-text-primary);
+                        }
+                    }
+                }
+
+                .transaction-processor-items {
+                    h4 {
+                        margin: 0 0 1rem 0;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        color: var(--color-text-primary);
+                    }
+
+                    .transaction-processor-items-list {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 0.75rem;
+
+                        .transaction-processor-item-row {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            padding: 1rem;
+                            background: var(--color-surface-secondary);
+                            border-radius: var(--radius-sm);
+                            border: 1px solid var(--border-color-light);
+
+                            .transaction-processor-item-info {
+                                .transaction-processor-item-name {
+                                    display: block;
+                                    font-weight: 500;
+                                    color: var(--color-text-primary);
+                                    margin-bottom: 0.25rem;
+                                }
+
+                                .transaction-processor-item-category {
+                                    font-size: 0.75rem;
+                                    color: var(--color-text-secondary);
+                                }
+                            }
+
+                            .transaction-processor-item-quantity {
+                                text-align: right;
+
+                                .transaction-processor-quantity-value {
+                                    display: block;
+                                    font-weight: 600;
+                                    color: var(--color-text-primary);
+                                    font-size: 1.125rem;
+                                }
+
+                                .transaction-processor-quantity-unit {
+                                    font-size: 0.75rem;
+                                    color: var(--color-text-secondary);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                .transaction-processor-description {
+                    margin-top: 1.5rem;
+                    padding: 1rem;
+                    background: var(--color-surface-secondary);
+                    border-radius: var(--radius-sm);
+                    border: 1px solid var(--border-color-light);
+
+                    h4 {
+                        margin: 0 0 0.5rem 0;
+                        font-size: 0.875rem;
+                        font-weight: 600;
+                        color: var(--color-text-secondary);
+                    }
+
+                    p {
+                        margin: 0;
+                        color: var(--color-text-primary);
+                    }
+                }
+
+                // Purpose Selection Styles
+                .transaction-processor-purpose-selection {
+                    h3 {
+                        margin: 0 0 0.5rem 0;
+                        font-size: 1.25rem;
+                        font-weight: 600;
+                        color: var(--color-text-primary);
+                    }
+
+                    p {
+                        margin: 0 0 1.5rem 0;
+                        color: var(--color-text-secondary);
+                    }
+
+                    .transaction-processor-purpose-options {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 1rem;
+
+                        .transaction-processor-purpose-option {
+                            cursor: pointer;
+
+                            input[type="radio"] {
+                                display: none;
+                            }
+
+                            .transaction-processor-purpose-card {
+                                display: flex;
+                                align-items: center;
+                                gap: 1rem;
+                                padding: 1.5rem;
+                                border: 2px solid var(--border-color-light);
+                                border-radius: var(--radius-md);
+                                background: var(--section-background-color);
+                                transition: all var(--transition-normal) ease;
+
+                                .transaction-processor-purpose-icon {
+                                    width: 2.5rem;
+                                    height: 2.5rem;
+                                    color: var(--color-text-secondary);
+                                }
+
+                                .transaction-processor-purpose-info {
+                                    h4 {
+                                        margin: 0 0 0.25rem 0;
+                                        font-weight: 600;
+                                        color: var(--color-text-primary);
+                                    }
+
+                                    p {
+                                        margin: 0;
+                                        font-size: 0.875rem;
+                                        color: var(--color-text-secondary);
+                                    }
+                                }
+                            }
+
+                            &.selected .transaction-processor-purpose-card {
+                                border-color: var(--color-primary);
+                                background: var(--color-primary-light);
+                                color: white;
+
+                                .transaction-processor-purpose-icon {
+                                    color: white;
+                                }
+
+                                .transaction-processor-purpose-info h4 {
+                                    color: white;
+                                }
+
+                                .transaction-processor-purpose-info p {
+                                    color: rgba(255, 255, 255, 0.8);
+                                }
+                            }
+
+                            &:hover:not(.selected) .transaction-processor-purpose-card {
+                                border-color: var(--color-primary);
+                            }
+                        }
+                    }
+                }
+
+                // Quantity Verification Styles  
+                .transaction-processor-quantity-verification {
+                    h3 {
+                        margin: 0 0 0.5rem 0;
+                        font-size: 1.25rem;
+                        font-weight: 600;
+                        color: var(--color-text-primary);
+                    }
+
+                    p {
+                        margin: 0 0 1.5rem 0;
+                        color: var(--color-text-secondary);
+                    }
+
+                    .transaction-processor-quantity-list {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1rem;
+
+                        .transaction-processor-quantity-item {
+                            padding: 1.5rem;
+                            border: 1px solid var(--border-color-light);
+                            border-radius: var(--radius-md);
+                            background: var(--section-background-color);
+
+                            .transaction-processor-quantity-item-info {
+                                margin-bottom: 1rem;
+
+                                h4 {
+                                    margin: 0 0 0.25rem 0;
+                                    font-weight: 600;
+                                    color: var(--color-text-primary);
+                                }
+
+                                p {
+                                    margin: 0;
+                                    font-size: 0.875rem;
+                                    color: var(--color-text-secondary);
+                                }
+                            }
+
+                            .transaction-processor-quantity-controls {
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                gap: 1rem;
+
+                                .transaction-processor-quantity-checkbox {
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 0.5rem;
+                                    font-size: 0.875rem;
+                                    color: var(--color-text-primary);
+                                    cursor: pointer;
+
+                                    input[type="checkbox"] {
+                                        accent-color: var(--color-primary);
+                                    }
+                                }
+
+                                .transaction-processor-quantity-input-group {
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 0.5rem;
+
+                                    label {
+                                        font-size: 0.875rem;
+                                        font-weight: 500;
+                                        color: var(--color-text-primary);
+                                    }
+
+                                    .transaction-processor-quantity-input {
+                                        width: 80px;
+                                        padding: 0.5rem;
+                                        border: 1px solid var(--border-color-medium);
+                                        border-radius: var(--radius-sm);
+                                        text-align: center;
+                                        font-weight: 500;
+
+                                        &:focus {
+                                            outline: none;
+                                            border-color: var(--color-primary);
+                                            box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+                                        }
+
+                                        &:disabled {
+                                            background: var(--color-surface-tertiary);
+                                            color: var(--color-text-muted);
+                                        }
+                                    }
+
+                                    .transaction-processor-quantity-unit {
+                                        font-size: 0.875rem;
+                                        color: var(--color-text-secondary);
+                                    }
+                                }
+                            }
+
+                            .transaction-processor-quantity-discrepancy {
+                                display: flex;
+                                align-items: center;
+                                gap: 0.5rem;
+                                margin-top: 0.75rem;
+                                padding: 0.5rem 0.75rem;
+                                background: var(--color-warning-light);
+                                color: white;
+                                border-radius: var(--radius-sm);
+                                font-size: 0.875rem;
+                                font-weight: 500;
+
+                                svg {
+                                    color: white;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Final Review Styles
+                .transaction-processor-final-review {
+                    h3 {
+                        margin: 0 0 0.5rem 0;
+                        font-size: 1.25rem;
+                        font-weight: 600;
+                        color: var(--color-text-primary);
+                    }
+
+                    p {
+                        margin: 0 0 1.5rem 0;
+                        color: var(--color-text-secondary);
+                    }
+
+                    .transaction-processor-final-summary {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1.5rem;
+
+                        .transaction-processor-final-section {
+                            padding: 1rem;
+                            background: var(--color-surface-secondary);
+                            border-radius: var(--radius-sm);
+                            border: 1px solid var(--border-color-light);
+
+                            h4 {
+                                margin: 0 0 0.75rem 0;
+                                font-size: 0.875rem;
+                                font-weight: 600;
+                                color: var(--color-text-secondary);
+                                text-transform: uppercase;
+                            }
+
+                            .transaction-processor-final-purpose {
+                                display: inline-flex;
+                                align-items: center;
+                                padding: 0.5rem 1rem;
+                                border-radius: var(--radius-full);
+                                font-weight: 600;
+                                text-transform: uppercase;
+
+                                &.consumable {
+                                    background: var(--color-success);
+                                    color: white;
+                                }
+
+                                &.maintenance {
+                                    background: var(--color-warning);
+                                    color: white;
+                                }
+                            }
+
+                            .transaction-processor-final-discrepancies {
+                                display: flex;
+                                flex-direction: column;
+                                gap: 0.5rem;
+
+                                .transaction-processor-final-discrepancy {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    padding: 0.5rem 0;
+                                    border-bottom: 1px solid var(--border-color-light);
+                                    font-size: 0.875rem;
+
+                                    &:last-child {
+                                        border-bottom: none;
+                                    }
+                                }
+                            }
+
+                            .transaction-processor-final-comments {
+                                width: 100%;
+                                padding: 0.75rem;
+                                border: 1px solid var(--border-color-medium);
+                                border-radius: var(--radius-sm);
+                                font-family: inherit;
+                                resize: vertical;
+                                min-height: 80px;
+
+                                &:focus {
+                                    outline: none;
+                                    border-color: var(--color-primary);
+                                    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        .transaction-processor-error {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0 1.5rem;
+            padding: 0.75rem 1rem;
+            background: var(--color-danger-light);
+            color: white;
+            border: 1px solid var(--color-danger);
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+
+            svg {
+                color: white;
+            }
+        }
+
+        .transaction-processor-footer {
+            @extend .modal-footer;
+
+            .transaction-processor-nav {
+                display: flex;
+                justify-content: space-between;
+                gap: 1rem;
+
+                .transaction-processor-btn {
+                    @extend .btn;
+
+                    &.secondary {
+                        @extend .btn-secondary;
+                    }
+
+                    &.primary {
+                        @extend .btn-primary;
+                    }
+                }
+            }
+        }
+
+        // Success state
+        .transaction-processor-success {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            text-align: center;
+
+            .transaction-processor-success-icon {
+                width: 4rem;
+                height: 4rem;
+                color: var(--color-success);
+                margin-bottom: 1.5rem;
+            }
+
+            h2 {
+                margin: 0 0 0.5rem 0;
+                font-size: 1.5rem;
+                font-weight: 600;
+                color: var(--color-text-primary);
+            }
+
+            p {
+                margin: 0;
+                color: var(--color-text-secondary);
+            }
+        }
+    }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+    .transaction-processor-overlay {
+        padding: 0.5rem;
+
+        .transaction-processor-modal {
+            max-width: 100%;
+            max-height: 95vh;
+
+            .transaction-processor-progress {
+                .transaction-processor-steps {
+                    flex-direction: column;
+                    gap: 0.5rem;
+
+                    .transaction-processor-step {
+                        min-width: auto;
+                    }
+                }
+            }
+
+            .transaction-processor-content {
+                .transaction-processor-step-content {
+                    .transaction-processor-parties {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .transaction-processor-purpose-selection {
+                        .transaction-processor-purpose-options {
+                            grid-template-columns: 1fr;
+                        }
+                    }
+
+                    .transaction-processor-quantity-verification {
+                        .transaction-processor-quantity-list {
+                            .transaction-processor-quantity-item {
+                                .transaction-processor-quantity-controls {
+                                    flex-direction: column;
+                                    align-items: stretch;
+                                    gap: 0.75rem;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            .transaction-processor-footer {
+                .transaction-processor-nav {
+                    flex-direction: column;
+
+                    .transaction-processor-btn {
+                        justify-content: center;
+                    }
+                }
+            }
+        }
+    }
+} 

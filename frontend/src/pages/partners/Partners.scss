@@ -122,38 +122,8 @@
   z-index: 1000;
 
   .modal {
-    width: 100%;
-    max-width: 500px;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px 20px;
-      border-bottom: 1px solid #dee2e6;
 
-      h3 {
-        margin: 0;
-        font-size: 20px;
-        color: #333;
-      }
-
-      .close-btn {
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        color: #6c757d;
-        transition: color 0.3s;
-
-        &:hover {
-          color: #343a40;
-        }
-      }
-    }
 
     form {
       padding: 20px;

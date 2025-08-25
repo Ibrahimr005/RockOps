@@ -23,4 +23,9 @@ public class DocumentDTO {
     private Long fileSize; // Raw file size in bytes
     private String url;
     private String uploadedBy;
+    
+    // Sarky-specific fields
+    private Integer sarkyMonth;
+    private Integer sarkyYear;
+    private Boolean isSarkyDocument;
 }

@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { FaUserPlus, FaEdit, FaTrash,  FaUser } from 'react-icons/fa';
 import './EmployeesList.scss';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import EmployeeAvatar from '../../../components/common/EmployeeAvatar';
 import AddEmployeeModal from './modals/AddEmployeeModal.jsx';
 import EditEmployeeModal from './modals/EditEmployeeModal.jsx';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
-import { employeeService } from '../../../services/employeeService';
-import { hrEmployeeService } from '../../../services/hrEmployeeService';
-import { departmentService } from '../../../services/departmentService';
-import { jobPositionService } from '../../../services/jobPositionService';
+import { employeeService } from '../../../services/hr/employeeService.js';
+import { hrEmployeeService } from '../../../services/hr/hrEmployeeService.js';
+import { departmentService } from '../../../services/hr/departmentService.js';
+import { jobPositionService } from '../../../services/hr/jobPositionService.js';
+import { siteService } from '../../../services/siteService.js';
 
 const EmployeesList = () => {
     const { showSuccess, showError } = useSnackbar();
@@ -122,25 +124,12 @@ const EmployeesList = () => {
             sortable: false,
             width: '80px',
             render: (employee, photoUrl) => (
-                <div className="employee-avatar">
-                    {photoUrl ? (
-                        <img
-                            src={photoUrl}
-                            alt={`${employee.firstName} ${employee.lastName}`}
-                            onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                            }}
-                        />
-                    ) : (
-                        <div className="employee-avatar__placeholder">
-                            <FaUser />
-                        </div>
-                    )}
-                    <div className="employee-avatar__placeholder" style={{ display: 'none' }}>
-                        <FaUser />
-                    </div>
-                </div>
+                <EmployeeAvatar
+                    photoUrl={photoUrl}
+                    firstName={employee.firstName}
+                    lastName={employee.lastName}
+                    size="medium"
+                />
             )
         },
         {
@@ -197,9 +186,11 @@ const EmployeesList = () => {
                         {formatCurrency(employee.monthlySalary)}
                     </div>
                     <div className="salary-info__period">
-                        {employee.jobPositionType === 'HOURLY' ? 'per hour' :
-                         employee.jobPositionType === 'DAILY' ? 'per day' :
-                         'per month'}
+                        {/* {employee.jobPositionType === 'HOURLY' ? 'per hour' :
+                         employee.jobPositionType === 'DAILY' ? 'per day' : */}
+                         {/* ' */}
+                         per month
+                         {/* '} */}
                     </div>
                 </div>
             )
@@ -232,22 +223,9 @@ const EmployeesList = () => {
     // Fetch sites for the dropdown
     const fetchSites = async () => {
         try {
-            // Note: You'll need to create a site service or use the appropriate endpoint
-            const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:8080/api/v1/site', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            setSites(data);
+            // siteService.getAll() is assumed to return a response with a .data property (like axios)
+            const response = await siteService.getAll();
+            setSites(response.data);
         } catch (error) {
             console.error('Error fetching sites:', error);
             showError('Failed to load sites');
@@ -367,19 +345,42 @@ const EmployeesList = () => {
         try {
             setLoading(true);
 
+            console.log("Updated employee data being sent:", updatedEmployee);
+
             // Create FormData for multipart/form-data request
             const formData = new FormData();
 
-            // Add employee JSON data
-            formData.append('employeeData', JSON.stringify(updatedEmployee));
+            // Add employee data as a JSON blob with proper content type
+            formData.append("employeeData", new Blob([JSON.stringify(updatedEmployee)], {
+                type: "application/json"
+            }));
 
             // Add image files if provided
-            if (photoFile) formData.append('photo', photoFile);
-            if (idFrontFile) formData.append('idFrontImage', idFrontFile);
-            if (idBackFile) formData.append('idBackImage', idBackFile);
+            if (photoFile) {
+                formData.append('photo', photoFile);
+                console.log('Added photo file:', photoFile.name);
+            }
+
+            if (idFrontFile) {
+                formData.append('idFrontImage', idFrontFile);
+                console.log('Added ID front file:', idFrontFile.name);
+            }
+
+            if (idBackFile) {
+                formData.append('idBackImage', idBackFile);
+                console.log('Added ID back file:', idBackFile.name);
+            }
+
+            // Debug FormData contents
+            console.log("FormData contents for update:");
+            for (let pair of formData.entries()) {
+                console.log(pair[0], pair[1] instanceof Blob ? `Blob: ${pair[1].type}, size: ${pair[1].size}` : pair[1]);
+            }
 
             // Use HR employee service for update
             const response = await hrEmployeeService.employee.update(selectedEmployee.id, formData);
+
+            console.log('Employee updated successfully:', response.data);
 
             // Refresh the employee list
             await fetchEmployees();
@@ -391,9 +392,35 @@ const EmployeesList = () => {
 
         } catch (error) {
             console.error('Error updating employee:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to update employee';
+
+            // Enhanced error handling
+            let errorMessage = 'Failed to update employee';
+
+            if (error.response) {
+                // Server responded with an error
+                console.error('Server error:', error.response.status, error.response.data);
+
+                if (error.response.status === 415) {
+                    errorMessage = 'Invalid data format. Please check the form data.';
+                } else if (error.response.status === 400) {
+                    errorMessage = error.response.data?.message || 'Invalid request data';
+                } else if (error.response.status === 404) {
+                    errorMessage = 'Employee not found';
+                } else {
+                    errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
+                }
+            } else if (error.request) {
+                // Network error
+                console.error('Network error:', error.request);
+                errorMessage = 'Network error. Please check your connection.';
+            } else {
+                // Other error
+                console.error('Error:', error.message);
+                errorMessage = error.message || 'An unexpected error occurred';
+            }
+
             setError(`Failed to update employee: ${errorMessage}`);
-            showError('Failed to update employee. Please try again.');
+            showError(errorMessage);
         } finally {
             setLoading(false);
         }

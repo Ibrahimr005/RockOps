@@ -3,6 +3,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Clock, Package, Wrench, TrendingUp, Activity, AlertTriangle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import './EquipmentDashboard.scss';
+import { equipmentService } from '../../../services/equipmentService';
+import { sarkyService } from '../../../services/sarkyService';
+import { inSiteMaintenanceService } from '../../../services/inSiteMaintenanceService';
 
 const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
     const [loading, setLoading] = useState(true);
@@ -37,11 +40,11 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                 maintenanceResponse
             ] = await Promise.allSettled([
                 // Fetch consumables data
-                axiosInstance.get(`http://localhost:8080/api/equipment/${equipmentId}/consumables`),
+                equipmentService.getEquipmentConsumables(equipmentId),
                 // Fetch work hours (sarky) data
-                axiosInstance.get(`http://localhost:8080/api/v1/equipment/${equipmentId}/sarky`),
-                // Fetch maintenance data (using same endpoint as InSiteMaintenanceLog)
-                axiosInstance.get(`http://localhost:8080/api/v1/maintenance/equipment/${equipmentId}`)
+                sarkyService.getByEquipment(equipmentId),
+                // Fetch maintenance data (using inSiteMaintenanceService)
+                inSiteMaintenanceService.getByEquipmentId(equipmentId)
             ]);
 
             // Process consumables data
@@ -232,7 +235,7 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
                 <AlertTriangle size={48} className="error-icon" />
                 <h3>Unable to Load Dashboard</h3>
                 <p>{error}</p>
-                <button onClick={fetchDashboardData} className="rockops-btn rockops-btn--primary">
+                <button onClick={fetchDashboardData} className="btn-primary">
                     <Activity size={16} />
                     Retry
                 </button>

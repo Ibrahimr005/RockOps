@@ -2,8 +2,8 @@ package com.example.backend.controllers;
 
 import com.example.backend.authentication.AuthenticationResponse;
 import com.example.backend.authentication.RegisterRequest;
+import com.example.backend.dto.user.UserDTO;
 import com.example.backend.models.user.Role;
-import com.example.backend.models.user.User;
 import com.example.backend.services.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -62,12 +62,12 @@ public class AdminController {
     }
 
     /**
-     * Get all users
+     * Get all users - CHANGED to return List<UserDTO>
      */
     @GetMapping("/users")
     public ResponseEntity<?> getAllUsers() {
         try {
-            List<User> users = adminService.getAllUsers();
+            List<UserDTO> users = adminService.getAllUsers();
             return ResponseEntity.ok(users);
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -79,7 +79,7 @@ public class AdminController {
     }
 
     /**
-     * Get a specific user by ID
+     * Get a specific user by ID - CHANGED to return UserDTO
      */
     @GetMapping("/users/{userId}")
     public ResponseEntity<?> getUserById(@PathVariable UUID userId) {
@@ -100,12 +100,12 @@ public class AdminController {
     }
 
     /**
-     * Get users by role
+     * Get users by role - CHANGED to return List<UserDTO>
      */
     @GetMapping("/users/by-role")
     public ResponseEntity<?> getUsersByRole(@RequestParam Role role) {
         try {
-            List<User> users = adminService.getUsersByRole(role);
+            List<UserDTO> users = adminService.getUsersByRole(role);
             return ResponseEntity.ok(users);
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
@@ -113,6 +113,26 @@ public class AdminController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Retrieval Failed", e.getMessage()));
+        }
+    }
+
+    /**
+     * Delete user - remains the same
+     */
+    @DeleteMapping("/users/{userId}")
+    public ResponseEntity<?> deleteUser(@PathVariable UUID userId) {
+        try {
+            adminService.deleteUser(userId);
+            return ResponseEntity.ok("User deleted successfully.");
+        } catch (AdminService.ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("User Not Found", e.getMessage()));
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorResponse("Access Denied", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Deletion Failed", e.getMessage()));
         }
     }
 
@@ -128,23 +148,6 @@ public class AdminController {
 
         public void setRole(Role role) {
             this.role = role;
-        }
-    }
-
-    @DeleteMapping("/users/{userId}")
-    public ResponseEntity<?> deleteUser(@PathVariable UUID userId) {
-        try {
-            adminService.deleteUser(userId);
-            return ResponseEntity.ok("User deleted successfully.");
-        } catch (AdminService.ResourceNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorResponse("User Not Found", e.getMessage()));
-        } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new ErrorResponse("Access Denied", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Deletion Failed", e.getMessage()));
         }
     }
 

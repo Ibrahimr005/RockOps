@@ -166,7 +166,6 @@ const ViewEquipmentData = () => {
                         <div className="info-section">
                             <h2 className="section-title">Additional Information</h2>
                             <div className="field-list">
-                                <FieldItem label="Model Number" value={equipment.modelNumber} />
                                 <FieldItem label="Shipping Status" value={equipment.shipping} />
                                 <FieldItem label="Customs Status" value={equipment.customs} />
                                 <FieldItem label="Equipment Complaints" value={equipment.equipmentComplaints} />

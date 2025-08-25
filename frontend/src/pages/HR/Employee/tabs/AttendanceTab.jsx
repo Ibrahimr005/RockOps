@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BsCalendarCheck, BsClockHistory, BsPersonCheck, BsClipboardData } from 'react-icons/bs';
+import { FaEye, FaEdit, FaClock } from 'react-icons/fa';
+import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
+
 import './AttendanceTab.scss';
+import {useSnackbar} from "../../../../contexts/SnackbarContext.jsx";
+import {attendanceService} from "../../../../services/hr/attendanceService.js";
 
 const AttendanceTab = ({ employee, formatDate }) => {
     const [attendanceData, setAttendanceData] = useState([]);
@@ -12,18 +17,24 @@ const AttendanceTab = ({ employee, formatDate }) => {
         daysWorked: 0,
         absentDays: 0,
         lateDays: 0,
-        leaveDays: 0
+        leaveDays: 0,
+        halfDays: 0,
+        earlyOuts: 0,
+        totalHours: 0,
+        overtimeHours: 0
     });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [periodType, setPeriodType] = useState('month'); // 'month', 'week', 'custom'
+    const [periodType, setPeriodType] = useState('month');
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [dateRange, setDateRange] = useState({
         startDate: new Date(new Date().setDate(1)).toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0]
     });
-    const [attendanceType, setAttendanceType] = useState('FULL_TIME'); // Default to FULL_TIME
+    const [contractType, setContractType] = useState('MONTHLY');
+
+    const { showError } = useSnackbar();
 
     const months = [
         { value: 1, label: 'January' },
@@ -43,15 +54,27 @@ const AttendanceTab = ({ employee, formatDate }) => {
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: 3 }, (_, i) => currentYear - 1 + i);
 
+    // Initialize contract type from employee data
     useEffect(() => {
-        // Set job type from employee data if available
-        if (employee && employee.jobPosition && employee.jobPosition.type) {
-            setAttendanceType(employee.jobPosition.type.toUpperCase());
+        if (employee?.jobPosition) {
+            const jobContractType = employee.jobPosition.contractType || employee.jobPosition.type || 'MONTHLY';
+            setContractType(jobContractType.toUpperCase());
         }
     }, [employee]);
 
+    // Update date range when period type or month/year changes
     useEffect(() => {
-        // Update date range when period type or month/year changes
+        updateDateRange();
+    }, [periodType, selectedMonth, selectedYear]);
+
+    // Fetch attendance data when employee or date range changes
+    useEffect(() => {
+        if (employee?.id) {
+            fetchAttendanceData();
+        }
+    }, [employee, dateRange, selectedMonth, selectedYear]);
+
+    const updateDateRange = () => {
         if (periodType === 'month') {
             const startDate = new Date(selectedYear, selectedMonth - 1, 1);
             const endDate = new Date(selectedYear, selectedMonth, 0);
@@ -71,40 +94,35 @@ const AttendanceTab = ({ employee, formatDate }) => {
                 endDate: endOfWeek.toISOString().split('T')[0]
             });
         }
-    }, [periodType, selectedMonth, selectedYear]);
-
-    useEffect(() => {
-        fetchAttendanceData();
-    }, [employee, dateRange]);
+    };
 
     const fetchAttendanceData = async () => {
-        if (!employee || !employee.id) return;
+        if (!employee?.id) return;
 
         try {
             setIsLoading(true);
             setError(null);
 
-            const { startDate, endDate } = dateRange;
+            let response;
 
-            // Fetch attendance data for the employee
-            const token = localStorage.getItem('token');
-            const response = await fetch(
-                `http://localhost:8080/api/v1/attendance/employee/${employee.id}/monthly?year=${selectedYear}&month=${selectedMonth}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+            if (periodType === 'month') {
+                // Use monthly endpoint for better performance
+                response = await attendanceService.getEmployeeMonthlyAttendance(
+                    employee.id,
+                    selectedYear,
+                    selectedMonth
+                );
+            } else {
+                // Use date range endpoint for custom periods
+                response = await attendanceService.getEmployeeAttendance(
+                    employee.id,
+                    dateRange.startDate,
+                    dateRange.endDate
+                );
             }
 
-            const data = await response.json();
+            const data = response.data;
 
-            // Process the attendance data
             if (data && Array.isArray(data)) {
                 // Sort by date (newest first)
                 const sortedData = [...data].sort(
@@ -112,48 +130,95 @@ const AttendanceTab = ({ employee, formatDate }) => {
                 );
 
                 setAttendanceData(sortedData);
-
-                // Calculate statistics
-                const totalDays = sortedData.length;
-                const presentDays = sortedData.filter(r => r.status === 'PRESENT').length;
-                const absentDays = sortedData.filter(r => r.status === 'ABSENT').length;
-                const lateDays = sortedData.filter(r => r.status === 'LATE').length;
-                const leaveDays = sortedData.filter(r => r.status === 'ON_LEAVE').length;
-
-                // Calculate average hours for hourly employees
-                let avgHours = 8.0; // Default for full-time
-
-                if (attendanceType === 'HOURLY') {
-                    const hourlyRecords = sortedData.filter(r => r.startTime && r.endTime);
-                    if (hourlyRecords.length > 0) {
-                        const totalHours = hourlyRecords.reduce((sum, record) => {
-                            const start = new Date(`2000-01-01T${record.startTime}`);
-                            const end = new Date(`2000-01-01T${record.endTime}`);
-                            const diffHours = (end - start) / (1000 * 60 * 60);
-                            return sum + diffHours;
-                        }, 0);
-
-                        avgHours = totalHours / hourlyRecords.length;
-                    }
-                }
-
-                setAttendanceStats({
-                    daysPresent: presentDays,
-                    totalWorkDays: totalDays,
-                    absentDays: absentDays,
-                    lateDays: lateDays,
-                    leaveDays: leaveDays,
-                    punctuality: presentDays > 0 ? ((presentDays - lateDays) / presentDays) * 100 : 0,
-                    averageHours: avgHours,
-                    daysWorked: presentDays + lateDays
-                });
+                calculateAttendanceStats(sortedData);
+            } else {
+                setAttendanceData([]);
+                resetAttendanceStats();
             }
         } catch (err) {
             console.error('Error fetching attendance data:', err);
-            setError(err.message);
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch attendance data';
+            setError(errorMessage);
+            showError(errorMessage);
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const resetAttendanceStats = () => {
+        setAttendanceStats({
+            daysPresent: 0,
+            totalWorkDays: 0,
+            punctuality: 0,
+            averageHours: 0,
+            daysWorked: 0,
+            absentDays: 0,
+            lateDays: 0,
+            leaveDays: 0,
+            halfDays: 0,
+            earlyOuts: 0,
+            totalHours: 0,
+            overtimeHours: 0
+        });
+    };
+
+    const calculateAttendanceStats = (data) => {
+        if (!data || data.length === 0) {
+            resetAttendanceStats();
+            return;
+        }
+
+        const totalDays = data.length;
+        const presentDays = data.filter(r => r.status === 'PRESENT').length;
+        const absentDays = data.filter(r => r.status === 'ABSENT').length;
+        const lateDays = data.filter(r => r.status === 'LATE').length;
+        const leaveDays = data.filter(r => r.status === 'ON_LEAVE').length;
+        const halfDays = data.filter(r => r.status === 'HALF_DAY').length;
+        const earlyOuts = data.filter(r => r.status === 'EARLY_OUT').length;
+
+        let totalHours = 0;
+        let overtimeHours = 0;
+        let avgHours = 8.0;
+
+        if (contractType === 'HOURLY') {
+            const hourlyRecords = data.filter(r => r.hoursWorked != null);
+            if (hourlyRecords.length > 0) {
+                totalHours = hourlyRecords.reduce((sum, record) => sum + (record.hoursWorked || 0), 0);
+                overtimeHours = hourlyRecords.reduce((sum, record) => sum + (record.overtimeHours || 0), 0);
+                avgHours = totalHours / hourlyRecords.length;
+            }
+        } else if (contractType === 'MONTHLY') {
+            const timeRecords = data.filter(r => r.checkIn && r.checkOut);
+            if (timeRecords.length > 0) {
+                totalHours = timeRecords.reduce((sum, record) => {
+                    const hours = calculateHoursFromTimes(record.checkIn, record.checkOut);
+                    return sum + hours;
+                }, 0);
+                avgHours = totalHours / timeRecords.length;
+                overtimeHours = timeRecords.reduce((sum, record) => sum + (record.overtimeHours || 0), 0);
+            }
+        } else if (contractType === 'DAILY') {
+            const workingDays = presentDays + lateDays + halfDays;
+            totalHours = workingDays * 8;
+            avgHours = 8.0;
+        }
+
+        const workingDays = presentDays + lateDays + halfDays + earlyOuts;
+
+        setAttendanceStats({
+            daysPresent: presentDays,
+            totalWorkDays: totalDays,
+            absentDays: absentDays,
+            lateDays: lateDays,
+            leaveDays: leaveDays,
+            halfDays: halfDays,
+            earlyOuts: earlyOuts,
+            punctuality: workingDays > 0 ? ((presentDays) / workingDays) * 100 : 0,
+            averageHours: avgHours,
+            daysWorked: workingDays,
+            totalHours: totalHours,
+            overtimeHours: overtimeHours
+        });
     };
 
     const handlePeriodChange = (type) => {
@@ -176,231 +241,353 @@ const AttendanceTab = ({ employee, formatDate }) => {
         }));
     };
 
-    // Format time for display (either from string or null)
+    const handleApplyCustomRange = () => {
+        if (dateRange.startDate && dateRange.endDate) {
+            fetchAttendanceData();
+        } else {
+            showError('Please select both start and end dates');
+        }
+    };
+
     const formatTime = (timeString) => {
         if (!timeString) return '-';
 
-        // If time string is in format "HH:MM:SS"
-        if (timeString.split(':').length === 3) {
-            return timeString.substring(0, 5);
+        if (typeof timeString === 'string' && timeString.includes(':')) {
+            const parts = timeString.split(':');
+            return `${parts[0]}:${parts[1]}`;
         }
 
         return timeString;
     };
 
-    // Get status badge based on status
-    const getStatusBadge = (status) => {
-        let badgeClass = '';
-        let statusText = status || 'Unknown';
+    const calculateHoursFromTimes = (checkIn, checkOut) => {
+        if (!checkIn || !checkOut) return 0;
 
-        switch (status) {
-            case 'PRESENT':
-                badgeClass = 'present';
-                statusText = 'Present';
-                break;
-            case 'ABSENT':
-                badgeClass = 'absent';
-                statusText = 'Absent';
-                break;
-            case 'LATE':
-                badgeClass = 'late';
-                statusText = 'Late';
-                break;
-            case 'HALF_DAY':
-                badgeClass = 'half-day';
-                statusText = 'Half Day';
-                break;
-            case 'ON_LEAVE':
-                badgeClass = 'leave';
-                statusText = 'On Leave';
-                break;
-            default:
-                badgeClass = 'unknown';
-                break;
+        try {
+            const start = new Date(`1970-01-01T${checkIn}`);
+            const end = new Date(`1970-01-01T${checkOut}`);
+
+            let diffHours = (end - start) / (1000 * 60 * 60);
+
+            if (diffHours < 0) {
+                diffHours += 24;
+            }
+
+            return Math.round(diffHours * 100) / 100;
+        } catch (error) {
+            console.error('Error calculating hours:', error);
+            return 0;
         }
-
-        return <span className={`status-badge ${badgeClass}`}>{statusText}</span>;
     };
 
-    // Calculate percentage for attendance
+    const getStatusBadge = (status) => {
+        const statusConfig = {
+            'PRESENT': { class: 'present', text: 'Present', icon: '✓' },
+            'ABSENT': { class: 'absent', text: 'Absent', icon: '✗' },
+            'LATE': { class: 'late', text: 'Late', icon: '⏰' },
+            'HALF_DAY': { class: 'half-day', text: 'Half Day', icon: '◐' },
+            'ON_LEAVE': { class: 'leave', text: 'On Leave', icon: '📋' },
+            'EARLY_OUT': { class: 'early-out', text: 'Early Out', icon: '⏰' },
+            'OFF': { class: 'off', text: 'Off', icon: '🏠' }
+        };
+
+        const config = statusConfig[status] || { class: 'unknown', text: status || 'Unknown', icon: '?' };
+
+        return (
+            <span className={`attendance-tab-status-badge ${config.class}`}>
+                <span className="status-icon">{config.icon}</span>
+                <span className="status-text">{config.text}</span>
+            </span>
+        );
+    };
+
     const calculateAttendancePercentage = () => {
         if (attendanceStats.totalWorkDays === 0) return 0;
-        return ((attendanceStats.daysPresent / attendanceStats.totalWorkDays) * 100).toFixed(1);
+        return ((attendanceStats.daysWorked / attendanceStats.totalWorkDays) * 100).toFixed(1);
     };
 
-    // Calculate percentage for punctuality
     const calculatePunctualityPercentage = () => {
-        if (attendanceStats.daysPresent + attendanceStats.lateDays === 0) return 0;
-        return (((attendanceStats.daysPresent) / (attendanceStats.daysPresent + attendanceStats.lateDays)) * 100).toFixed(1);
+        if (attendanceStats.daysWorked === 0) return 0;
+        return (((attendanceStats.daysPresent) / attendanceStats.daysWorked) * 100).toFixed(1);
     };
 
-    // Render different attendance records based on job type
-    const renderAttendanceTable = () => {
-        if (attendanceData.length === 0) {
-            return (
-                <div className="no-records">
-                    <p>No attendance records found for the selected period.</p>
-                </div>
-            );
-        }
+    const getTodayAttendanceRecords = () => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        return attendanceData.filter(record => {
+            const recordDate = record.date.split('T')[0];
+            return recordDate === todayStr;
+        });
+    };
 
-        if (attendanceType === 'HOURLY') {
-            return (
-                <table className="attendance-table">
-                    <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Start Time</th>
-                        <th>End Time</th>
-                        <th>Hours</th>
-                        <th>Overtime</th>
-                        <th>Notes</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {attendanceData.slice(0, 7).map((record, index) => (
-                        <tr key={index}>
-                            <td>{formatDate ? formatDate(record.date) : new Date(record.date).toLocaleDateString()}</td>
-                            <td>{formatTime(record.startTime)}</td>
-                            <td>{formatTime(record.endTime)}</td>
-                            <td>
-                                {record.startTime && record.endTime ?
-                                    calculateHours(record.startTime, record.endTime) :
-                                    '-'}
-                            </td>
-                            <td>{record.overtimeHours ? `${record.overtimeHours}h` : '-'}</td>
-                            <td>{record.notes || '-'}</td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
-            );
-        } else if (attendanceType === 'DAILY') {
-            return (
-                <table className="attendance-table">
-                    <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th>Notes</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {attendanceData.slice(0, 7).map((record, index) => (
-                        <tr key={index}>
-                            <td>{formatDate ? formatDate(record.date) : new Date(record.date).toLocaleDateString()}</td>
-                            <td>{getStatusBadge(record.status)}</td>
-                            <td>{record.notes || '-'}</td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
-            );
+    // Define columns based on contract type
+    const getColumns = () => {
+        const baseColumns = [
+            {
+                id: 'date',
+                header: 'Date',
+                accessor: 'date',
+                sortable: true,
+                filterable: true,
+                render: (row) => {
+                    const date = new Date(row.date);
+                    return formatDate ? formatDate(row.date) : date.toLocaleDateString();
+                }
+            },
+            {
+                id: 'day',
+                header: 'Day',
+                accessor: 'day',
+                sortable: false,
+                filterable: false,
+                render: (row) => {
+                    const date = new Date(row.date);
+                    return date.toLocaleDateString('en-US', { weekday: 'short' });
+                }
+            },
+            {
+                id: 'status',
+                header: 'Status',
+                accessor: 'status',
+                sortable: true,
+                filterable: true,
+                render: (row) => getStatusBadge(row.status)
+            }
+        ];
+
+        if (contractType === 'HOURLY') {
+            return [
+                ...baseColumns,
+                {
+                    id: 'checkIn',
+                    header: 'Check In',
+                    accessor: 'checkIn',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => formatTime(row.checkIn)
+                },
+                {
+                    id: 'checkOut',
+                    header: 'Check Out',
+                    accessor: 'checkOut',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => formatTime(row.checkOut)
+                },
+                {
+                    id: 'hoursWorked',
+                    header: 'Hours Worked',
+                    accessor: 'hoursWorked',
+                    sortable: true,
+                    filterable: true,
+                    render: (row) => row.hoursWorked ? `${row.hoursWorked}h` : '-'
+                },
+                {
+                    id: 'expectedHours',
+                    header: 'Expected',
+                    accessor: 'expectedHours',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => row.expectedHours ? `${row.expectedHours}h` : '-'
+                },
+                {
+                    id: 'overtimeHours',
+                    header: 'Overtime',
+                    accessor: 'overtimeHours',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => row.overtimeHours ? `${row.overtimeHours}h` : '-'
+                },
+                {
+                    id: 'notes',
+                    header: 'Notes',
+                    accessor: 'notes',
+                    sortable: false,
+                    filterable: true,
+                    render: (row) => row.notes || '-'
+                }
+            ];
+        } else if (contractType === 'MONTHLY') {
+            return [
+                ...baseColumns,
+                {
+                    id: 'checkIn',
+                    header: 'Check In',
+                    accessor: 'checkIn',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => formatTime(row.checkIn)
+                },
+                {
+                    id: 'checkOut',
+                    header: 'Check Out',
+                    accessor: 'checkOut',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => formatTime(row.checkOut)
+                },
+                {
+                    id: 'workingHours',
+                    header: 'Working Hours',
+                    accessor: 'workingHours',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => {
+                        const hours = calculateHoursFromTimes(row.checkIn, row.checkOut);
+                        return hours > 0 ? `${hours}h` : '-';
+                    }
+                },
+                {
+                    id: 'overtimeHours',
+                    header: 'Overtime',
+                    accessor: 'overtimeHours',
+                    sortable: true,
+                    filterable: false,
+                    render: (row) => row.overtimeHours ? `${row.overtimeHours}h` : '-'
+                },
+                {
+                    id: 'notes',
+                    header: 'Notes',
+                    accessor: 'notes',
+                    sortable: false,
+                    filterable: true,
+                    render: (row) => row.notes || '-'
+                }
+            ];
         } else {
-            // Default for FULL_TIME
-            return (
-                <table className="attendance-table">
-                    <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Day</th>
-                        <th>Status</th>
-                        <th>Notes</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {attendanceData.slice(0, 7).map((record, index) => {
-                        const date = new Date(record.date);
-                        const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
-
-                        return (
-                            <tr key={index}>
-                                <td>{formatDate ? formatDate(record.date) : date.toLocaleDateString()}</td>
-                                <td>{dayOfWeek}</td>
-                                <td>{getStatusBadge(record.status)}</td>
-                                <td>{record.notes || '-'}</td>
-                            </tr>
-                        );
-                    })}
-                    </tbody>
-                </table>
-            );
+            // DAILY contract type
+            return [
+                ...baseColumns,
+                {
+                    id: 'dayType',
+                    header: 'Day Type',
+                    accessor: 'dayType',
+                    sortable: true,
+                    filterable: true,
+                    render: (row) => row.dayType || 'WORKING_DAY'
+                },
+                {
+                    id: 'leaveType',
+                    header: 'Leave Type',
+                    accessor: 'leaveType',
+                    sortable: true,
+                    filterable: true,
+                    render: (row) => row.leaveType || '-'
+                },
+                {
+                    id: 'notes',
+                    header: 'Notes',
+                    accessor: 'notes',
+                    sortable: false,
+                    filterable: true,
+                    render: (row) => row.notes || '-'
+                }
+            ];
         }
     };
 
-    // Helper function to calculate hours between two time strings
-    const calculateHours = (startTime, endTime) => {
-        const startParts = startTime.split(':').map(Number);
-        const endParts = endTime.split(':').map(Number);
-
-        const startMinutes = startParts[0] * 60 + startParts[1];
-        const endMinutes = endParts[0] * 60 + endParts[1];
-
-        // Calculate difference in minutes
-        let diffMinutes = endMinutes - startMinutes;
-
-        // If end time is earlier than start time, assume it spans to the next day
-        if (diffMinutes < 0) {
-            diffMinutes += 24 * 60;
+    // Define actions for DataTable
+    const actions = [
+        {
+            id: 'view',
+            label: 'View Details',
+            icon: <FaEye />,
+            onClick: (row) => {
+                // Handle view attendance record details
+                console.log('View attendance record:', row);
+            }
+        },
+        {
+            id: 'edit',
+            label: 'Edit Record',
+            icon: <FaEdit />,
+            onClick: (row) => {
+                // Handle edit attendance record
+                console.log('Edit attendance record:', row);
+            },
+            isDisabled: (row) => {
+                // Disable editing for old records or certain statuses
+                const recordDate = new Date(row.date);
+                const daysDiff = Math.floor((new Date() - recordDate) / (1000 * 60 * 60 * 24));
+                return daysDiff > 7; // Can't edit records older than 7 days
+            }
         }
+    ];
 
-        // Convert to hours with one decimal place
-        return (diffMinutes / 60).toFixed(1) + 'h';
-    };
-
-    // Render the attendance metrics
     const renderAttendanceMetrics = () => {
         return (
-            <div className="attendance-metrics">
-                <div className="metric-card">
-                    <div className="metric-icon">
+            <div className="attendance-tab-metrics">
+                <div className="attendance-tab-metric-card">
+                    <div className="attendance-tab-metric-icon">
                         <BsCalendarCheck />
                     </div>
-                    <div className="metric-content">
-                        <div className="metric-title">Attendance</div>
-                        <div className="metric-value">{calculateAttendancePercentage()}%</div>
-                        <div className="metric-details">
-                            <span>{attendanceStats.daysPresent} of {attendanceStats.totalWorkDays} days</span>
+                    <div className="attendance-tab-metric-content">
+                        <div className="attendance-tab-metric-title">Attendance</div>
+                        <div className="attendance-tab-metric-value">{calculateAttendancePercentage()}%</div>
+                        <div className="attendance-tab-metric-details">
+                            <span>{attendanceStats.daysWorked} of {attendanceStats.totalWorkDays} days</span>
+                            <small>Present: {attendanceStats.daysPresent} | Absent: {attendanceStats.absentDays}</small>
                         </div>
                     </div>
                 </div>
 
-                <div className="metric-card">
-                    <div className="metric-icon">
+                <div className="attendance-tab-metric-card">
+                    <div className="attendance-tab-metric-icon">
                         <BsClockHistory />
                     </div>
-                    <div className="metric-content">
-                        <div className="metric-title">Punctuality</div>
-                        <div className="metric-value">{calculatePunctualityPercentage()}%</div>
-                        <div className="metric-details">
+                    <div className="attendance-tab-metric-content">
+                        <div className="attendance-tab-metric-title">Punctuality</div>
+                        <div className="attendance-tab-metric-value">{calculatePunctualityPercentage()}%</div>
+                        <div className="attendance-tab-metric-details">
                             <span>{attendanceStats.lateDays} late days</span>
+                            {attendanceStats.earlyOuts > 0 && (
+                                <small>Early outs: {attendanceStats.earlyOuts}</small>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                {attendanceType === 'HOURLY' ? (
-                    <div className="metric-card">
-                        <div className="metric-icon">
+                {(contractType === 'HOURLY' || contractType === 'MONTHLY') ? (
+                    <div className="attendance-tab-metric-card">
+                        <div className="attendance-tab-metric-icon">
                             <BsClipboardData />
                         </div>
-                        <div className="metric-content">
-                            <div className="metric-title">Hours</div>
-                            <div className="metric-value">{attendanceStats.averageHours.toFixed(1)}h</div>
-                            <div className="metric-details">
+                        <div className="attendance-tab-metric-content">
+                            <div className="attendance-tab-metric-title">Working Hours</div>
+                            <div className="attendance-tab-metric-value">{attendanceStats.averageHours.toFixed(1)}h</div>
+                            <div className="attendance-tab-metric-details">
                                 <span>Avg. per day</span>
+                                <small>Total: {attendanceStats.totalHours.toFixed(1)}h</small>
                             </div>
                         </div>
                     </div>
                 ) : (
-                    <div className="metric-card">
-                        <div className="metric-icon">
+                    <div className="attendance-tab-metric-card">
+                        <div className="attendance-tab-metric-icon">
                             <BsPersonCheck />
                         </div>
-                        <div className="metric-content">
-                            <div className="metric-title">Leaves</div>
-                            <div className="metric-value">{attendanceStats.leaveDays}</div>
-                            <div className="metric-details">
-                                <span>Days this period</span>
+                        <div className="attendance-tab-metric-content">
+                            <div className="attendance-tab-metric-title">Leave Days</div>
+                            <div className="attendance-tab-metric-value">{attendanceStats.leaveDays}</div>
+                            <div className="attendance-tab-metric-details">
+                                <span>This period</span>
+                                {attendanceStats.halfDays > 0 && (
+                                    <small>Half days: {attendanceStats.halfDays}</small>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {attendanceStats.overtimeHours > 0 && (
+                    <div className="attendance-tab-metric-card attendance-tab-overtime-card">
+                        <div className="attendance-tab-metric-icon">
+                            <BsClockHistory />
+                        </div>
+                        <div className="attendance-tab-metric-content">
+                            <div className="attendance-tab-metric-title">Overtime</div>
+                            <div className="attendance-tab-metric-value">{attendanceStats.overtimeHours.toFixed(1)}h</div>
+                            <div className="attendance-tab-metric-details">
+                                <span>Extra hours</span>
                             </div>
                         </div>
                     </div>
@@ -409,42 +596,81 @@ const AttendanceTab = ({ employee, formatDate }) => {
         );
     };
 
+    const todayRecords = getTodayAttendanceRecords();
+
+    if (!employee) {
+        return (
+            <div className="attendance-tab">
+                <div className="attendance-tab-no-employee">
+                    <p>No employee data available</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (isLoading) {
+        return (
+            <div className="attendance-tab">
+                <div className="attendance-tab-loading-container">
+                    <div className="loader"></div>
+                    <p>Loading attendance data...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="attendance-tab">
+                <div className="attendance-tab-error-container">
+                    <p>Error: {error}</p>
+                    <button onClick={fetchAttendanceData}>Try Again</button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="attendance-tab">
-            <div className="attendance-header">
+            <div className="attendance-tab-header">
                 <h3>Attendance Records</h3>
-                <div className="employee-type">
-                    <span className="type-label">Contract:</span>
-                    <span className="type-value">{attendanceType.replace('_', ' ')}</span>
+                <div className="attendance-tab-contract-info">
+                    <span className="attendance-tab-contract-label">Contract:</span>
+                    <span className="attendance-tab-contract-value">{contractType.replace('_', ' ')}</span>
+                    {employee.jobPosition?.startTime && employee.jobPosition?.endTime && (
+                        <span className="attendance-tab-schedule-info">
+                            Schedule: {formatTime(employee.jobPosition.startTime)} - {formatTime(employee.jobPosition.endTime)}
+                        </span>
+                    )}
                 </div>
             </div>
 
-            <div className="period-selector">
-                <div className="period-tabs">
+            <div className="attendance-tab-period-selector">
+                <div className="attendance-tab-period-tabs">
                     <button
-                        className={`period-tab ${periodType === 'month' ? 'active' : ''}`}
+                        className={`attendance-tab-period-tab ${periodType === 'month' ? 'active' : ''}`}
                         onClick={() => handlePeriodChange('month')}
                     >
                         Monthly
                     </button>
                     <button
-                        className={`period-tab ${periodType === 'week' ? 'active' : ''}`}
+                        className={`attendance-tab-period-tab ${periodType === 'week' ? 'active' : ''}`}
                         onClick={() => handlePeriodChange('week')}
                     >
                         Weekly
                     </button>
                     <button
-                        className={`period-tab ${periodType === 'custom' ? 'active' : ''}`}
+                        className={`attendance-tab-period-tab ${periodType === 'custom' ? 'active' : ''}`}
                         onClick={() => handlePeriodChange('custom')}
                     >
                         Custom Range
                     </button>
                 </div>
 
-                <div className="period-options">
+                <div className="attendance-tab-period-options">
                     {periodType === 'month' && (
-                        <div className="month-selector">
-                            <div className="form-group">
+                        <div className="attendance-tab-month-selector">
+                            <div className="attendance-tab-form-group">
                                 <select value={selectedMonth} onChange={handleMonthChange}>
                                     {months.map(month => (
                                         <option key={month.value} value={month.value}>
@@ -453,7 +679,7 @@ const AttendanceTab = ({ employee, formatDate }) => {
                                     ))}
                                 </select>
                             </div>
-                            <div className="form-group">
+                            <div className="attendance-tab-form-group">
                                 <select value={selectedYear} onChange={handleYearChange}>
                                     {years.map(year => (
                                         <option key={year} value={year}>
@@ -466,8 +692,8 @@ const AttendanceTab = ({ employee, formatDate }) => {
                     )}
 
                     {periodType === 'custom' && (
-                        <div className="date-range-selector">
-                            <div className="form-group">
+                        <div className="attendance-tab-date-range-selector">
+                            <div className="attendance-tab-form-group">
                                 <label>From:</label>
                                 <input
                                     type="date"
@@ -477,7 +703,7 @@ const AttendanceTab = ({ employee, formatDate }) => {
                                     max={dateRange.endDate}
                                 />
                             </div>
-                            <div className="form-group">
+                            <div className="attendance-tab-form-group">
                                 <label>To:</label>
                                 <input
                                     type="date"
@@ -489,8 +715,9 @@ const AttendanceTab = ({ employee, formatDate }) => {
                                 />
                             </div>
                             <button
-                                className="apply-btn"
-                                onClick={fetchAttendanceData}
+                                className="attendance-tab-apply-btn"
+                                onClick={handleApplyCustomRange}
+                                disabled={!dateRange.startDate || !dateRange.endDate}
                             >
                                 Apply
                             </button>
@@ -499,34 +726,55 @@ const AttendanceTab = ({ employee, formatDate }) => {
                 </div>
             </div>
 
-            {isLoading ? (
-                <div className="loading-container">
-                    <div className="loader"></div>
-                    <p>Loading attendance data...</p>
-                </div>
-            ) : error ? (
-                <div className="error-container">
-                    <p>Error: {error}</p>
-                    <button onClick={fetchAttendanceData}>Try Again</button>
-                </div>
-            ) : (
-                <>
-                    {renderAttendanceMetrics()}
+            {renderAttendanceMetrics()}
 
-                    <div className="attendance-details">
-                        <h4>Recent Attendance</h4>
-                        <div className="table-container">
-                            {renderAttendanceTable()}
-                        </div>
-                    </div>
-
-                    <div className="view-all-link">
-                        <a href={`/attendance/${employee.id}`} target="_blank" rel="noopener noreferrer">
-                            View Complete Attendance History
-                        </a>
-                    </div>
-                </>
+            {todayRecords.length > 0 && (
+                <div className="attendance-tab-today-attendance">
+                    <h4>Today's Attendance</h4>
+                    <DataTable
+                        data={todayRecords}
+                        columns={getColumns()}
+                        actions={actions}
+                        tableTitle=""
+                        showSearch={false}
+                        showFilters={false}
+                        showExport={false}
+                        defaultItemsPerPage={5}
+                        itemsPerPageOptions={[5]}
+                        defaultSortField="date"
+                        defaultSortDirection="desc"
+                        emptyStateMessage="No attendance record for today"
+                        className="today-attendance-table"
+                    />
+                </div>
             )}
+
+            <div className="attendance-tab-details">
+                <h4>Attendance History</h4>
+                <DataTable
+                    data={attendanceData}
+                    columns={getColumns()}
+                    actions={actions}
+                    tableTitle=""
+                    showSearch={true}
+                    showFilters={true}
+                    showExport={true}
+                    exportFileName={`${employee.firstName}_${employee.lastName}_Attendance_${months.find(m => m.value === selectedMonth)?.label}_${selectedYear}`}
+                    defaultItemsPerPage={15}
+                    itemsPerPageOptions={[10, 15, 25, 50]}
+                    defaultSortField="date"
+                    defaultSortDirection="desc"
+                    emptyStateMessage="No attendance records found for this period"
+                    noResultsMessage="No attendance records match your search criteria"
+                    className="attendance-history-table"
+                />
+            </div>
+
+            <div className="attendance-tab-view-all-link">
+                <a href={`/hr/attendance`} target="_blank" rel="noopener noreferrer">
+                    View Complete Attendance History →
+                </a>
+            </div>
         </div>
     );
 };

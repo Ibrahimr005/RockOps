@@ -1,12 +1,16 @@
 import React from 'react';
 import Snackbar from '../../../../components/common/Snackbar2/Snackbar2.jsx'
+import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
+import { offerService } from '../../../../services/procurement/offerService.js';
 
 import "../ProcurementOffers.scss"
 import "./SubmittedOffers.scss"
 import {
     FiPackage, FiSend, FiClock, FiCheckCircle,
-    FiX, FiCheck, FiTrash2,
-    FiUser, FiCalendar, FiFlag, FiFileText  // Add these
+    FiX, FiCheck, FiTrash2, FiCalendar, FiUser,
+    FiTrendingUp, FiDollarSign, FiShoppingCart
 } from 'react-icons/fi';
 
 const SubmittedOffers = ({
@@ -26,6 +30,23 @@ const SubmittedOffers = ({
     const [snackbarMessage, setSnackbarMessage] = React.useState('');
     const [snackbarType, setSnackbarType] = React.useState('success');
 
+    // Confirmation dialog states
+    const [confirmationDialog, setConfirmationDialog] = React.useState({
+        show: false,
+        type: 'warning',
+        title: '',
+        message: '',
+        confirmText: 'Confirm',
+        onConfirm: null,
+        isLoading: false,
+        showInput: false,
+        inputLabel: '',
+        inputPlaceholder: '',
+        inputRequired: false
+    });
+
+    const [rejectionReason, setRejectionReason] = React.useState('');
+
     // Function to show snackbar
     const showNotification = (message, type = 'success') => {
         setSnackbarMessage(message);
@@ -35,6 +56,12 @@ const SubmittedOffers = ({
 
     const handleSnackbarClose = () => {
         setShowSnackbar(false);
+    };
+
+    // Handle confirmation dialog cancel
+    const handleConfirmationCancel = () => {
+        setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
+        setRejectionReason('');
     };
 
     React.useEffect(() => {
@@ -66,117 +93,130 @@ const SubmittedOffers = ({
         );
     };
 
-    // Handle approve action with API call and state updates
-    const handleApprove = async (e, offer) => {
-        e.stopPropagation(); // Prevent triggering the card click
-        if (window.confirm(`Are you sure you want to approve this offer: ${offer.title}?`)) {
-            try {
-                // First, update the offer status to ACCEPTED
-                const statusResponse = await fetch(`http://localhost:8080/api/v1/offers/${offer.id}/status?status=MANAGERACCEPTED`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-
-                if (statusResponse.ok) {
-                    // Then, update the finance status to PENDING_FINANCE_REVIEW
-                    const financeResponse = await fetch(`http://localhost:8080/api/v1/offers/${offer.id}/finance-status?financeStatus=PENDING_FINANCE_REVIEW`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
-                        }
-                    });
-
-                    if (financeResponse.ok) {
-                        // Remove the offer from the submitted offers list
-                        const updatedOffers = offers.filter(o => o.id !== offer.id);
-                        setOffers(updatedOffers);
-
-                        // Clear active offer if it was the approved one
-                        if (activeOffer && activeOffer.id === offer.id) {
-                            setActiveOffer(null);
-                        }
-
-                        // Call the parent component's handler if provided
-                        if (onApproveOffer) {
-                            onApproveOffer(offer.id);
-                        }
-
-                        showNotification('Offer has been approved and sent to finance for review!', 'success');
-                    } else {
-                        const errorData = await financeResponse.json();
-                        showNotification(`Error updating finance status: ${errorData.message || 'Failed to update finance status'}`, 'error');
-                    }
-                } else {
-                    const errorData = await statusResponse.json();
-                    showNotification(`Error: ${errorData.message || 'Failed to approve offer'}`, 'error');
-                }
-            } catch (error) {
-                console.error('Error approving offer:', error);
-                showNotification('Error: Could not connect to the server', 'error');
-            }
+    // Get status display info
+    const getStatusInfo = (status) => {
+        switch (status?.toUpperCase()) {
+            case 'SUBMITTED':
+                return { text: 'Submitted', icon: FiSend };
+            case 'MANAGERACCEPTED':
+                return { text: 'Accepted', icon: FiCheckCircle };
+            case 'MANAGERREJECTED':
+                return { text: 'Rejected', icon: FiX };
+            default:
+                return { text: status, icon: FiClock };
         }
     };
 
-    // Handle decline action with API call and state updates
-    const handleDecline = async (e, offer) => {
+    // Handle approve action - show confirmation dialog
+    const handleApprove = (e, offer) => {
         e.stopPropagation(); // Prevent triggering the card click
 
-        // Prompt for rejection reason
-        const rejectionReason = window.prompt("Please provide a reason for rejecting this offer:", "");
+        setConfirmationDialog({
+            show: true,
+            type: 'success',
+            title: 'Approve Offer',
+            message: `Are you sure you want to approve the offer "${offer.title}"? This will send it to finance for review.`,
+            confirmText: 'Approve Offer',
+            onConfirm: () => handleConfirmApprove(offer),
+            isLoading: false,
+            showInput: false
+        });
+    };
 
-        // If user cancels the prompt or doesn't provide a reason, don't proceed
-        if (rejectionReason === null) {
-            return; // User cancelled
-        }
+    // Handle confirmed approval
+    const handleConfirmApprove = async (offer) => {
+        try {
+            setConfirmationDialog(prev => ({ ...prev, isLoading: true }));
 
-        if (rejectionReason.trim() === "") {
-            showNotification("Please provide a rejection reason.", 'error');
-            return;
-        }
+            // First, update the offer status to ACCEPTED using the service
+            await offerService.updateStatus(offer.id, 'MANAGERACCEPTED');
 
-        if (window.confirm(`Are you sure you want to decline this offer: ${offer.title}?`)) {
-            try {
-                const response = await fetch(`http://localhost:8080/api/v1/offers/${offer.id}/status?status=MANAGERREJECTED&rejectionReason=${encodeURIComponent(rejectionReason)}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
+            // Then, update the finance status to PENDING_FINANCE_REVIEW using the service
+            await offerService.updateFinanceStatus(offer.id, 'PENDING_FINANCE_REVIEW');
 
-                if (response.ok) {
-                    // Remove the offer from the submitted offers list
-                    const updatedOffers = offers.filter(o => o.id !== offer.id);
-                    setOffers(updatedOffers);
+            // Remove the offer from the submitted offers list
+            const updatedOffers = offers.filter(o => o.id !== offer.id);
+            setOffers(updatedOffers);
 
-                    // Clear active offer if it was the declined one
-                    if (activeOffer && activeOffer.id === offer.id) {
-                        setActiveOffer(null);
-                    }
-
-                    // Call the parent component's handler if provided
-                    if (onDeclineOffer) {
-                        onDeclineOffer(offer.id);
-                    }
-
-                    showNotification('Offer has been declined successfully!', 'success');
-                } else {
-                    const errorData = await response.json();
-                    showNotification(`Error: ${errorData.message || 'Failed to decline offer'}`, 'error');
-                }
-            } catch (error) {
-                console.error('Error declining offer:', error);
-                showNotification('Error: Could not connect to the server', 'error');
+            // Clear active offer if it was the approved one
+            if (activeOffer && activeOffer.id === offer.id) {
+                setActiveOffer(updatedOffers.length > 0 ? updatedOffers[0] : null);
             }
+
+            // Call the parent component's handler if provided
+            if (onApproveOffer) {
+                onApproveOffer(offer.id);
+            }
+
+            // Close dialog and show success notification
+            setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
+            showNotification('Offer has been approved and sent to finance for review!', 'success');
+
+        } catch (error) {
+            console.error('Error approving offer:', error);
+            setConfirmationDialog(prev => ({ ...prev, isLoading: false }));
+            showNotification(`Error: ${error.message || 'Failed to approve offer'}`, 'error');
+        }
+    };
+
+    // Handle decline action - show confirmation dialog with input
+    const handleDecline = (e, offer) => {
+        e.stopPropagation(); // Prevent triggering the card click
+
+        setConfirmationDialog({
+            show: true,
+            type: 'danger',
+            title: 'Decline Offer',
+            message: `Are you sure you want to decline the offer "${offer.title}"? Please provide a reason for the rejection.`,
+            confirmText: 'Decline Offer',
+            onConfirm: (reason) => handleConfirmDecline(offer, reason),
+            isLoading: false,
+            showInput: true,
+            inputLabel: 'Rejection Reason',
+            inputPlaceholder: 'Please provide a detailed reason for declining this offer...',
+            inputRequired: true
+        });
+
+        // Reset rejection reason when opening dialog
+        setRejectionReason('');
+    };
+
+    // Handle confirmed decline
+    const handleConfirmDecline = async (offer, rejectionReason) => {
+        try {
+            setConfirmationDialog(prev => ({ ...prev, isLoading: true }));
+
+            // Use the service to update status with rejection reason
+            await offerService.updateStatus(offer.id, 'MANAGERREJECTED', rejectionReason);
+
+            // Remove the offer from the submitted offers list
+            const updatedOffers = offers.filter(o => o.id !== offer.id);
+            setOffers(updatedOffers);
+
+            // Clear active offer if it was the declined one
+            if (activeOffer && activeOffer.id === offer.id) {
+                setActiveOffer(updatedOffers.length > 0 ? updatedOffers[0] : null);
+            }
+
+            // Call the parent component's handler if provided
+            if (onDeclineOffer) {
+                onDeclineOffer(offer.id);
+            }
+
+            // Close dialog and show success notification
+            setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
+            setRejectionReason('');
+            showNotification('Offer has been declined successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error declining offer:', error);
+            setConfirmationDialog(prev => ({ ...prev, isLoading: false }));
+            showNotification(`Error: ${error.message || 'Failed to decline offer'}`, 'error');
         }
     };
 
     return (
-        <div className="procurement-main-content">
+        <div className="procurement-offers-main-content">
             {/* Offers List */}
             <div className="procurement-list-section">
                 <div className="procurement-list-header">
@@ -193,19 +233,18 @@ const SubmittedOffers = ({
                         {offers.map(offer => (
                             <div
                                 key={offer.id}
-                                className={`procurement-item-card ${activeOffer?.id === offer.id ? 'selected' : ''}`}
+                                className={`procurement-item-card-submitted ${activeOffer?.id === offer.id ? 'selected' : ''}`}
                                 onClick={() => setActiveOffer(offer)}
                             >
                                 <div className="procurement-item-header">
                                     <h4>{offer.title}</h4>
-                                    <span className={`procurement-status-badge status-${offer.status.toLowerCase()}`}>
-                                        {offer.status}
-                                    </span>
                                 </div>
                                 <div className="procurement-item-footer">
                                     <span className="procurement-item-date">
                                         <FiClock /> {new Date(offer.createdAt).toLocaleDateString()}
                                     </span>
+                                </div>
+                                <div className="procurement-item-footer">
                                 </div>
                             </div>
                         ))}
@@ -222,12 +261,15 @@ const SubmittedOffers = ({
                                 <div className="procurement-title-section">
                                     <h2 className="procurement-main-title">{activeOffer.title}</h2>
                                     <div className="procurement-header-meta">
-                <span className={`procurement-status-badge status-${activeOffer.status.toLowerCase()}`}>
-                    {activeOffer.status}
-                </span>
+                                        <span className={`procurement-status-badge status-${activeOffer.status?.toLowerCase()}`}>
+                                            {getStatusInfo(activeOffer.status).text}
+                                        </span>
                                         <span className="procurement-meta-item">
-                    <FiClock /> Created: {new Date(activeOffer.createdAt).toLocaleDateString()}
-                </span>
+                                            <FiCalendar /> Created: {new Date(activeOffer.createdAt).toLocaleDateString()}
+                                        </span>
+                                        <span className="procurement-meta-item">
+                                            <FiDollarSign /> Total: ${getTotalPrice(activeOffer).toFixed(2)}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -236,7 +278,7 @@ const SubmittedOffers = ({
                                 {activeOffer.status === 'SUBMITTED' && userRole && managerRoles.includes(userRole) && (
                                     <>
                                         <button
-                                            className="procurement-button primary approve-button"
+                                            className="btn-primary"
                                             onClick={(e) => handleApprove(e, activeOffer)}
                                             title="Approve Offer"
                                         >
@@ -244,7 +286,7 @@ const SubmittedOffers = ({
                                             <span>Approve</span>
                                         </button>
                                         <button
-                                            className="procurement-button secondary decline-button"
+                                            className="btn-primary"
                                             onClick={(e) => handleDecline(e, activeOffer)}
                                             title="Decline Offer"
                                         >
@@ -256,81 +298,8 @@ const SubmittedOffers = ({
                             </div>
                         </div>
 
-                        {/* Request Order Information Card - ADD THIS SECTION */}
-                        <div className="procurement-request-order-info-card">
-                            <h4>Request Order Information</h4>
-
-                            <div className="procurement-request-order-details-grid">
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiUser size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Requester</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder.requesterName || 'Unknown'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiCalendar size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Request Date</span>
-                                        <span className="request-order-detail-value">{new Date(activeOffer.requestOrder.createdAt).toLocaleDateString()}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiCalendar size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Deadline</span>
-                                        <span className="request-order-detail-value">{new Date(activeOffer.requestOrder.deadline).toLocaleDateString()}</span>
-                                    </div>
-                                </div>
-
-                                <div className="request-order-detail-item">
-                                    <div className="request-order-detail-icon">
-                                        <FiUser size={18} />
-                                    </div>
-                                    <div className="request-order-detail-content">
-                                        <span className="request-order-detail-label">Created By</span>
-                                        <span className="request-order-detail-value">{activeOffer.requestOrder.createdBy || 'Unknown'}</span>
-                                    </div>
-                                </div>
-
-                                {activeOffer.requestOrder.priority && (
-                                    <div className="request-order-detail-item">
-                                        <div className="request-order-detail-icon">
-                                            <FiFlag size={18} />
-                                        </div>
-                                        <div className="request-order-detail-content">
-                                            <span className="request-order-detail-label">Priority</span>
-                                            <span className={`request-order-detail-value request-priority ${activeOffer.requestOrder.priority.toLowerCase()}`}>
-                        {activeOffer.requestOrder.priority}
-                    </span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {activeOffer.requestOrder.description && (
-                                    <div className="request-order-detail-item description-item">
-                                        <div className="request-order-detail-icon">
-                                            <FiFileText size={18} />
-                                        </div>
-                                        <div className="request-order-detail-content">
-                                            <span className="request-order-detail-label">Description</span>
-                                            <p className="request-order-detail-value description-text">
-                                                {activeOffer.requestOrder.description}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
+                        {/* Use RequestOrderDetails Component */}
+                        <RequestOrderDetails requestOrder={activeOffer.requestOrder} />
 
                         {!activeOffer.requestOrder ? (
                             <div className="procurement-loading">
@@ -339,75 +308,37 @@ const SubmittedOffers = ({
                             </div>
                         ) : (
                             <div className="procurement-submitted-info">
-                                <div className="procurement-request-summary-card">
-                                    <h4>Submitted Offer Details</h4>
-                                    <p className="procurement-section-description">
-                                        This offer has been submitted to the manager for review.
-                                    </p>
+                                {/* Replace the old timeline with the new OfferTimeline component */}
+                                <OfferTimeline
+                                    offer={activeOffer}
+                                    variant="submitted"
+                                    showRetryInfo={true}
+                                />
 
-                                    {/* Status Timeline */}
-                                    <div className="procurement-timeline">
-                                        <div className="procurement-timeline-item active">
-                                            <div className="timeline-icon">
-                                                <FiCheckCircle size={18} />
-                                            </div>
-                                            <div className="timeline-content">
-                                                <h5>Offer Submitted</h5>
-                                                <p className="timeline-date">{new Date(activeOffer.updatedAt || activeOffer.createdAt).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className={`procurement-timeline-item ${activeOffer.status === 'ACCEPTED' ? 'active' : activeOffer.status === 'REJECTED' ? 'rejected' : ''}`}>
-                                            <div className="timeline-icon">
-                                                {activeOffer.status === 'ACCEPTED' ? <FiCheckCircle size={18} /> :
-                                                    activeOffer.status === 'REJECTED' ? <FiX size={18} /> :
-                                                        <FiClock size={18} />}
-                                            </div>
-                                            <div className="timeline-content">
-                                                <h5>{activeOffer.status === 'ACCEPTED' ? 'Offer Accepted' :
-                                                    activeOffer.status === 'REJECTED' ? 'Offer Rejected' :
-                                                        'Awaiting Response From Manager'}</h5>
-                                                {(activeOffer.status === 'ACCEPTED' || activeOffer.status === 'REJECTED') &&
-                                                    <p className="timeline-date">{new Date(activeOffer.updatedAt).toLocaleDateString()}</p>
-                                                }
-                                                {/* Add rejection reason display */}
-                                                {activeOffer.status === 'REJECTED' && activeOffer.rejectionReason && (
-                                                    <div className="rejection-reason">
-                                                        <p><strong>Reason:</strong> {activeOffer.rejectionReason}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-
-
-
-                                {/* Procurement Details */}
-                                <div className="procurement-submitted-details">
+                                {/* Enhanced Procurement Details */}
+                                <div className="procurement-submitted-details-submitted">
                                     <h4>Procurement Solutions</h4>
-                                    <div className="procurement-submitted-items">
+                                    <div className="procurement-submitted-items-submitted">
                                         {activeOffer.requestOrder?.requestItems?.map(requestItem => {
                                             const offerItems = getOfferItemsForRequestItem(requestItem.id);
 
                                             return (
-                                                <div key={requestItem.id} className="procurement-submitted-item-card">
-                                                    <div className="submitted-item-header">
-                                                        <div className="item-icon-name">
-                                                            <div className="item-icon-container">
-                                                                <FiPackage size={20} />
+                                                <div key={requestItem.id} className="procurement-submitted-item-card-submitted">
+                                                    <div className="submitted-item-header-submitted">
+                                                        <div className="item-icon-name-submitted">
+                                                            <div className="item-icon-container-submitted">
+                                                                <FiPackage size={22} />
                                                             </div>
                                                             <h5>{requestItem.itemType?.name || 'Item'}</h5>
                                                         </div>
-                                                        <div className="submitted-item-quantity">
+                                                        <div className="submitted-item-quantity-submitted">
                                                             {requestItem.quantity} {requestItem.itemType.measuringUnit}
                                                         </div>
                                                     </div>
 
                                                     {offerItems.length > 0 && (
-                                                        <div className="submitted-offer-solutions">
-                                                            <table className="procurement-offer-entries-table">
+                                                        <div className="submitted-offer-solutions-submitted">
+                                                            <table className="procurement-offer-entries-table-submitted">
                                                                 <thead>
                                                                 <tr>
                                                                     <th>Merchant</th>
@@ -437,15 +368,18 @@ const SubmittedOffers = ({
                                     </div>
                                 </div>
 
-                                {/* Total Summary */}
-                                <div className="procurement-submitted-summary">
-                                    <div className="submitted-summary-row">
-                                        <span>Total Items:</span>
-                                        <span>{activeOffer.requestOrder?.requestItems?.length || 0}</span>
+                                {/* Simplified Summary */}
+                                <div className="procurement-submitted-summary-submitted">
+                                    <div className="summary-item">
+                                        <FiPackage size={16} />
+                                        <span className="summary-label">Total Items:</span>
+                                        <span className="summary-value">{activeOffer.requestOrder?.requestItems?.length || 0}</span>
                                     </div>
-                                    <div className="submitted-summary-row">
-                                        <span>Total Value:</span>
-                                        <span className="submitted-total-value">${getTotalPrice(activeOffer).toFixed(2)}</span>
+
+                                    <div className="summary-item total-value">
+                                        <FiDollarSign size={18} />
+                                        <span className="summary-label">Total Value:</span>
+                                        <span className="summary-value total">${getTotalPrice(activeOffer).toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -471,6 +405,26 @@ const SubmittedOffers = ({
                     </div>
                 )}
             </div>
+
+            {/* Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={confirmationDialog.show}
+                type={confirmationDialog.type}
+                title={confirmationDialog.title}
+                message={confirmationDialog.message}
+                confirmText={confirmationDialog.confirmText}
+                cancelText="Cancel"
+                onConfirm={confirmationDialog.onConfirm}
+                onCancel={handleConfirmationCancel}
+                isLoading={confirmationDialog.isLoading}
+                showInput={confirmationDialog.showInput}
+                inputLabel={confirmationDialog.inputLabel}
+                inputPlaceholder={confirmationDialog.inputPlaceholder}
+                inputRequired={confirmationDialog.inputRequired}
+                inputValue={rejectionReason}
+                onInputChange={setRejectionReason}
+                size="large"
+            />
 
             {/* Snackbar Notification */}
             <Snackbar

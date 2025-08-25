@@ -19,6 +19,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
     // Find by email
     Optional<Employee> findByEmail(String email);
 
+    // Find by email
+    List<Employee> findByStatus(String status);
     // Find by department
     @Query("SELECT e FROM Employee e JOIN e.jobPosition jp WHERE jp.department.name = :departmentName")
     List<Employee> findByJobPositionDepartment(String departmentName);

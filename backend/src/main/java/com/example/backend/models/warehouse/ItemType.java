@@ -3,8 +3,7 @@ package com.example.backend.models.warehouse;
 import com.example.backend.models.procurement.OfferItem;
 import com.example.backend.models.procurement.RequestOrderItem;
 import com.example.backend.models.transaction.TransactionItem;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,27 +32,23 @@ public class ItemType {
     private int minQuantity;
     private String serialNumber;
 
-    @OneToMany(mappedBy = "itemType", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonBackReference
+    @OneToMany(mappedBy = "itemType")
+    @JsonIgnore // CHANGED from @JsonManagedReference to @JsonIgnore
     private List<Item> items = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "item_category_id", nullable = false)
-    @JsonManagedReference
-    private ItemCategory itemCategory;
-
-    @OneToMany(mappedBy = "itemType", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonBackReference
-    private List<TransactionItem> transactionItems = new ArrayList<>();
-
-    // New relationship with RequestOrderItem
-    @OneToMany(mappedBy = "itemType", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonBackReference
-    private List<RequestOrderItem> requestOrderItems = new ArrayList<>();
-
-
+    private ItemCategory itemCategory; // REMOVED @JsonBackReference - keep for serialization
 
     @OneToMany(mappedBy = "itemType")
-    @JsonBackReference
+    @JsonIgnore // CHANGED from @JsonBackReference to @JsonIgnore
+    private List<TransactionItem> transactionItems = new ArrayList<>();
+
+    @OneToMany(mappedBy = "itemType")
+    @JsonIgnore // CHANGED from @JsonBackReference to @JsonIgnore
+    private List<RequestOrderItem> requestOrderItems = new ArrayList<>();
+
+    @OneToMany(mappedBy = "itemType")
+    @JsonIgnore // CHANGED from @JsonBackReference to @JsonIgnore
     private List<OfferItem> offerItems = new ArrayList<>();
 }

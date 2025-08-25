@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
-import DataTable from "../../../components/common/DataTable/DataTable.jsx"; // Updated import
+import DataTable from "../../../components/common/DataTable/DataTable.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
+import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
+import ProcurementIntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 import "./WarehouseViewItemTypesTable.scss";
+import { itemTypeService } from '../../../services/warehouse/itemTypeService'; // ADD THIS LINE
+import { itemCategoryService } from '../../../services/warehouse/itemCategoryService'; // ADD THIS LINE
+
+// Import your item types images (you'll need to add these to your assets)
+import itemTypesImg from "../../../assets/imgs/itemType.png"; // Add this image
+import itemTypesDarkImg from "../../../assets/imgs/itemTypeDarkk.png"; // Add this image
 
 const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
     const [tableData, setTableData] = useState([]);
@@ -10,13 +18,13 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
     const [selectedItem, setSelectedItem] = useState(null);
     const modalRef = useRef(null);
     const [newItemType, setNewItemType] = useState({
-        name: "", // Name of the item
-        itemCategory: "",  // Single category ID for the item type
-        minQuantity: 0, // Minimum quantity for the item
-        measuringUnit: "", // Measuring unit (e.g., kg, pieces)
-        serialNumber: "", // Serial number (optional)
-        status: "AVAILABLE", // Default status for new item
-        comment: "" // New field for comments (added)
+        name: "",
+        itemCategory: "",
+        minQuantity: '',
+        measuringUnit: "",
+        serialNumber: "",
+        status: "AVAILABLE",
+        comment: ""
     });
     const [categories, setCategories] = useState([]);
 
@@ -24,6 +32,11 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
+
+    // Confirmation dialog states
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
 
     const [userRole, setUserRole] = useState("");
 
@@ -44,7 +57,7 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
             setNewItemType({
                 name: "",
                 itemCategory: "",
-                minQuantity: 0,
+                minQuantity: '',
                 measuringUnit: "",
                 serialNumber: "",
                 status: "AVAILABLE",
@@ -61,27 +74,16 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
         }
     }, [onAddButtonClick]);
 
-    // Fetch item types - updated to use global endpoint
+
+
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             console.log("Fetching item types...");
 
             try {
-                const token = localStorage.getItem("token");
-                // Updated to use the global endpoint instead of warehouse-specific
-                const response = await fetch("http://localhost:8080/api/v1/itemTypes", {
-                    headers: {
-                        "Authorization": `Bearer ${token}`
-                    }
-                });
-                console.log("Response Status:", response.status);
-
-                if (!response.ok)
-                    throw new Error("Failed to fetch data");
-
-                const data = await response.json();
-                console.log("Data fetched:", data);
+                const data = await itemTypeService.getAll();
+                console.log("Complete API Response:", JSON.stringify(data, null, 2));
                 setTableData(data);
             } catch (error) {
                 console.error("Error fetching data:", error);
@@ -91,6 +93,20 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
 
         fetchData();
     }, []);
+
+    useEffect(() => {
+        if (isModalOpen) {
+            document.body.classList.add("modal-open");
+        } else {
+            document.body.classList.remove("modal-open");
+        }
+
+        // Cleanup when component unmounts
+        return () => {
+            document.body.classList.remove("modal-open");
+        };
+    }, [isModalOpen]);
+
 
     // Add this useEffect to get the user role when component mounts
     useEffect(() => {
@@ -107,19 +123,11 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
         }
     }, []);
 
-    // Fetch categories for dropdown - updated to use global endpoint
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const token = localStorage.getItem("token");
-                const response = await fetch("http://localhost:8080/api/v1/itemCategories/children", {
-                    headers: {
-                        "Authorization": `Bearer ${token}`
-                    }
-                });
-                if (!response.ok) throw new Error("Failed to fetch categories");
-                const data = await response.json();
-                console.log("Categories fetched:", data); // Better debug message
+                const data = await itemCategoryService.getChildren();
+                console.log("Categories fetched:", data);
                 setCategories(data);
             } catch (error) {
                 console.error("Error fetching categories:", error);
@@ -152,18 +160,97 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
         setShowNotification(true);
     };
 
-    // Define table columns for DataTable
+    // Calculate stats for the intro card
+    const getItemTypeStats = () => {
+        const totalTypes = tableData.length;
+        const categoriesCount = new Set(tableData.map(item => item.itemCategory?.id).filter(Boolean)).size;
+        const lowStockItems = tableData.filter(item => item.minQuantity > 0).length;
+
+        return [
+            { value: totalTypes.toString(), label: "Total Item Types" },
+        ];
+    };
+
+    // Function to initiate delete confirmation
+    const handleDeleteRequest = (id) => {
+        // Find the item to get its name for the confirmation dialog
+        const item = tableData.find(item => item.id === id);
+        setItemToDelete({ id, name: item?.name || 'Unknown Item Type' });
+        setShowConfirmDialog(true);
+    };
+
+    const confirmDeleteItemType = async () => {
+        if (!itemToDelete) return;
+
+        try {
+            setDeleteLoading(true);
+
+            await itemTypeService.delete(itemToDelete.id);
+
+            // Success - update UI
+            setTableData(prevData => prevData.filter(item => item.id !== itemToDelete.id));
+            showSnackbar(`Item type "${itemToDelete.name}" successfully deleted!`, "success");
+
+        } catch (error) {
+            console.error("Error deleting item type:", error);
+
+            // Handle specific error messages
+            let errorMessage = error.message;
+
+            if (errorMessage.includes("ITEMS_EXIST")) {
+                errorMessage = "This item type is currently in use in warehouse inventory. Please remove all inventory items of this type before deleting.";
+            } else if (errorMessage.includes("TRANSACTION_ITEMS_EXIST")) {
+                errorMessage = "This item type has transaction history and cannot be deleted. Please contact your administrator if deletion is necessary.";
+            } else if (errorMessage.includes("REQUEST_ORDER_ITEMS_EXIST")) {
+                errorMessage = "This item type is being used in active procurement requests. Please complete or cancel all related requests first.";
+            } else if (errorMessage.includes("OFFER_ITEMS_EXIST")) {
+                errorMessage = "This item type is referenced in supplier offers. Please remove it from all offers before deleting.";
+            } else if (errorMessage.includes("ITEM_TYPE_NOT_FOUND")) {
+                errorMessage = "This item type no longer exists. It may have been deleted by another user.";
+            } else if (errorMessage.includes("500")) {
+                errorMessage = "This item type cannot be deleted because it's being used elsewhere in the system. Please check for any dependencies first.";
+            }
+
+            showSnackbar(errorMessage, "error");
+        } finally {
+            setDeleteLoading(false);
+            setShowConfirmDialog(false);
+            setItemToDelete(null);
+        }
+    };
+
+    // Function to cancel deletion
+    const cancelDeleteItemType = () => {
+        setShowConfirmDialog(false);
+        setItemToDelete(null);
+        setDeleteLoading(false);
+    };
+
+
+// Updated columns array with parent category column added before the category column
     const columns = [
         {
-            header: 'ITEM CATEGORY',
+            header: 'PARENT CATEGORY',
+            accessor: 'itemCategory.parentCategory.name',
+            sortable: true,
+            width: '200px',
+            minWidth: '150px',
+            render: (row) => (
+                <span className="parent-category-tag">
+                {row.itemCategory?.parentCategory?.name || "No Parent"}
+            </span>
+            )
+        },
+        {
+            header: 'CHILD CATEGORY',
             accessor: 'itemCategory.name',
             sortable: true,
-            width: '250px',
+            width: '200px',
             minWidth: '150px',
             render: (row) => (
                 <span className="category-tag">
-                    {row.itemCategory ? row.itemCategory.name : "No Category"}
-                </span>
+                {row.itemCategory ? row.itemCategory.name : "No Category"}
+            </span>
             )
         },
         {
@@ -177,7 +264,7 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
             header: 'MIN QUANTITY',
             accessor: 'minQuantity',
             sortable: true,
-            width: '220px',
+            width: '150px',
             minWidth: '120px',
             align: 'left'
         },
@@ -185,7 +272,7 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
             header: 'UNIT',
             accessor: 'measuringUnit',
             sortable: true,
-            width: '210px',
+            width: '120px',
             minWidth: '100px',
             align: 'left'
         },
@@ -193,15 +280,20 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
             header: 'SERIAL NUMBER',
             accessor: 'serialNumber',
             sortable: true,
-            width: '230px',
+            width: '180px',
             minWidth: '130px'
         }
     ];
 
-    // Filterable columns for DataTable
+// Updated filterable columns with parent category filter
     const filterableColumns = [
         {
-            header: 'ITEM CATEGORY',
+            header: 'PARENT CATEGORY',
+            accessor: 'itemCategory.parent.name',
+            filterType: 'select'
+        },
+        {
+            header: 'CHILD CATEGORY',
             accessor: 'itemCategory.name',
             filterType: 'select'
         },
@@ -250,18 +342,26 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
                 </svg>
             ),
             className: 'delete',
-            onClick: (row) => deleteItemType(row.id)
+            onClick: (row) => handleDeleteRequest(row.id)
         }
     ];
 
+    // Enhanced handleInputChange function
     const handleInputChange = (e) => {
         const { name, value } = e.target;
 
-        // If the input name is minQuantity, parse the value to an integer
         if (name === "minQuantity") {
+            // Allow empty string or convert to number, minimum 1
+            const numValue = value === '' ? '' : Math.max(1, parseInt(value, 10) || 1);
             setNewItemType(prev => ({
                 ...prev,
-                [name]: parseInt(value, 10) || 0 // Ensures that we convert the string to an integer, defaulting to 0 if NaN
+                [name]: numValue
+            }));
+        } else if (name === "serialNumber") {
+            // Allow any alphanumeric characters for serial number
+            setNewItemType(prev => ({
+                ...prev,
+                [name]: value
             }));
         } else {
             setNewItemType(prev => ({
@@ -274,157 +374,72 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validate that all required fields are filled in
-        if (
-            !newItemType.name ||
-            !newItemType.itemCategory ||
-            !newItemType.minQuantity ||
-            !newItemType.measuringUnit ||
-            !newItemType.serialNumber
-        ) {
-            showSnackbar("Please fill in all the required fields.", "error");
-            return; // Stop the form submission
-        }
-
-        // Create payload based on the backend's expected format
         const payload = {
-            name: newItemType.name,
-            itemCategory: newItemType.itemCategory, // Send just the ID as a string
+            name: newItemType.name.trim(),
+            itemCategory: newItemType.itemCategory,
             minQuantity: parseInt(newItemType.minQuantity),
-            measuringUnit: newItemType.measuringUnit,
-            serialNumber: newItemType.serialNumber,
-            status: newItemType.status,
-            comment: newItemType.comment || ""
+            measuringUnit: newItemType.measuringUnit.trim(),
+            serialNumber: newItemType.serialNumber.trim(),
+            status: newItemType.status || "AVAILABLE",
+            comment: newItemType.comment?.trim() || ""
         };
 
         console.log("Submitting payload:", payload);
 
-        if (selectedItem) {
-            // If we are updating an existing item, call the update function
-            updateItemType(selectedItem.id, payload);
-        } else {
-            // If we're adding a new item, call the add function
-            try {
-                const token = localStorage.getItem("token");
-                // Updated to use global endpoint
-                const response = await fetch("http://localhost:8080/api/v1/itemTypes", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(payload),
-                });
+        try {
+            let result;
+            if (selectedItem) {
+                // Update existing item
+                result = await itemTypeService.update(selectedItem.id, payload);
+            } else {
+                // Create new item
+                result = await itemTypeService.create(payload);
+            }
 
-                if (!response.ok) {
-                    throw new Error(`Failed to add item type: ${response.status}`);
-                }
-
-                const newItem = await response.json();
-                setTableData((prevData) => [...prevData, newItem]);
-
+            if (selectedItem) {
+                // Update existing item in table
+                setTableData((prevData) =>
+                    prevData.map((item) =>
+                        item.id === selectedItem.id ? { ...item, ...result } : item
+                    )
+                );
+                showSnackbar("Item type successfully updated!", "success");
+            } else {
+                // Add new item to table
+                setTableData((prevData) => [...prevData, result]);
                 showSnackbar("Item type successfully added!", "success");
-
-                setIsModalOpen(false);
-
-                setNewItemType({
-                    name: '',
-                    itemCategory: '',
-                    minQuantity: 0,
-                    measuringUnit: '',
-                    serialNumber: '',
-                    status: 'AVAILABLE',
-                    comment: '',
-                });
-            } catch (error) {
-                console.error('Error adding item type:', error);
-                showSnackbar(`Failed to add item type: ${error.message}`, "error");
             }
-        }
-    };
-
-    const deleteItemType = async (id) => {
-        try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/itemTypes/${id}`, {
-                method: "DELETE",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to delete item type: ${response.status}`);
-            }
-
-            // Remove the item from the table data without refetching the entire table
-            setTableData(prevData => prevData.filter(item => item.id !== id));
-
-            showSnackbar("Item type successfully deleted!", "success");
-        } catch (error) {
-            console.error("Error deleting item type:", error);
-            showSnackbar(`Failed to delete item type: ${error.message}`, "error");
-        }
-    };
-
-    const updateItemType = async (id, updatedItem) => {
-        try {
-            // Check if the comment is empty, and replace it with "No comment" if it is
-            if (!updatedItem.comment) {
-                updatedItem.comment = "No comment";
-            }
-
-            console.log("Updating item with data:", updatedItem);
-
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/itemTypes/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(updatedItem),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to update item type: ${response.status}`);
-            }
-
-            const updatedData = await response.json();
-            // Update the table with the updated item
-            setTableData((prevData) =>
-                prevData.map((item) =>
-                    item.id === id ? { ...item, ...updatedData } : item
-                )
-            );
-
-            showSnackbar("Item type successfully updated!", "success");
 
             // Close modal and reset form
             setIsModalOpen(false);
             setNewItemType({
                 name: '',
                 itemCategory: '',
-                minQuantity: 0,
+                minQuantity: '',
                 measuringUnit: '',
                 serialNumber: '',
                 status: 'AVAILABLE',
                 comment: '',
             });
+            setSelectedItem(null);
+
         } catch (error) {
-            console.error('Error updating item type:', error);
-            showSnackbar(`Failed to update item type: ${error.message}`, "error");
+            console.error(`Error ${selectedItem ? 'updating' : 'adding'} item type:`, error);
+            showSnackbar(error.message, "error");
         }
     };
 
     return (
         <>
-            {/* Header with count */}
-            <div className="header-container">
-                <div className="left-section">
-                    <div className="item-count">{tableData.length} items</div>
-                </div>
-            </div>
+            {/* Item Types Intro Card */}
+            <ProcurementIntroCard
+                title="Item Types"
+                label="WAREHOUSE MANAGEMENT"
+                lightModeImage={itemTypesImg}
+                darkModeImage={itemTypesDarkImg}
+                stats={getItemTypeStats()}
+                className="item-types-intro"
+            />
 
             {/* DataTable with integrated search and filters */}
             <DataTable
@@ -440,12 +455,20 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
                 itemsPerPageOptions={[5, 10, 15, 20]}
                 defaultItemsPerPage={10}
                 actionsColumnWidth="160px"
+                showAddButton={true}
+                addButtonText="Add Item Type"
+                addButtonIcon={
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 5v14M5 12h14" />
+                    </svg>
+                }
+                onAddClick={() => openItemModal()}
             />
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="modal-backdrop">
-                    <div className="modal" ref={modalRef}>
+                <div className="modal-backdrop-type">
+                    <div className="modal-item-type" ref={modalRef}>
                         <div className="modal-header0">
                             <h2>{selectedItem ? 'Edit Item Type' : 'Add New Item Type'}</h2>
                             <button className="close-modal" onClick={() => setIsModalOpen(false)}>
@@ -473,10 +496,10 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
                             </div>
                         </div>
 
-                        <form  className="form2" onSubmit={handleSubmit}>
+                        <form className="form2" onSubmit={handleSubmit}>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label htmlFor="name">Item Name</label>
+                                    <label htmlFor="name">Item Name <span style={{ color: 'red' }}>*</span></label>
                                     <input
                                         type="text"
                                         id="name"
@@ -489,7 +512,7 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
                                 </div>
 
                                 <div className="form-group">
-                                    <label htmlFor="itemCategory">Category</label>
+                                    <label htmlFor="itemCategory">Category <span style={{ color: 'red' }}>*</span></label>
                                     <select
                                         id="itemCategory"
                                         name="itemCategory"
@@ -513,20 +536,21 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
 
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label htmlFor="minQuantity">Minimum Quantity</label>
+                                    <label htmlFor="minQuantity">Minimum Quantity <span style={{ color: 'red' }}>*</span></label>
                                     <input
                                         type="number"
                                         id="minQuantity"
                                         name="minQuantity"
-                                        value={newItemType.minQuantity}
+                                        value={newItemType.minQuantity === 0 ? '' : newItemType.minQuantity}
                                         onChange={handleInputChange}
-                                        min="0"
+                                        min="1"
                                         placeholder="Enter minimum quantity"
+                                        required
                                     />
                                 </div>
 
                                 <div className="form-group">
-                                    <label htmlFor="measuringUnit">Unit</label>
+                                    <label htmlFor="measuringUnit">Unit <span style={{ color: 'red' }}>*</span></label>
                                     <input
                                         type="text"
                                         id="measuringUnit"
@@ -541,14 +565,15 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
 
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label htmlFor="serialNumber">Serial Number</label>
+                                    <label htmlFor="serialNumber">Serial Number </label>
                                     <input
-                                        type="text"
+                                        type="text"  // Changed from "number" to "text"
                                         id="serialNumber"
                                         name="serialNumber"
                                         value={newItemType.serialNumber}
                                         onChange={handleInputChange}
-                                        placeholder="Enter serial number "
+                                        placeholder="Enter serial number"
+                                        // Remove the min="1" attribute since it's not needed for text
                                     />
                                 </div>
                             </div>
@@ -567,8 +592,8 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
                             </div>
 
                             <div className="modal-footer0">
-                                <button type="submit" className="submit-button">
-                                    {selectedItem ? 'Update Item' : 'Add Item'}
+                                <button type="submit" className="btn-primary">
+                                    {selectedItem ? 'Update Item Type' : 'Add Item Type'}
                                 </button>
                             </div>
                         </form>
@@ -576,13 +601,31 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
                 </div>
             )}
 
+            {/* Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={showConfirmDialog}
+                type="delete"
+                title="Delete Item Type"
+                message={
+                    itemToDelete
+                        ? `Are you sure you want to delete the item type "${itemToDelete.name}"? This action cannot be undone.`
+                        : "Are you sure you want to delete this item type?"
+                }
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={confirmDeleteItemType}
+                onCancel={cancelDeleteItemType}
+                isLoading={deleteLoading}
+                size="large"
+            />
+
             {/* Snackbar Notification */}
             <Snackbar
                 type={notificationType}
                 text={notificationMessage}
                 isVisible={showNotification}
                 onClose={() => setShowNotification(false)}
-                duration={3000}
+                duration={notificationType === 'error' ? 5000 : 3000}
             />
         </>
     );

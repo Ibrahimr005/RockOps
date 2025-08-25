@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {FiCheck, FiEdit, FiPlus, FiTrash2, FiX} from 'react-icons/fi';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import {useSnackbar} from '../../../contexts/SnackbarContext';
-import {departmentService} from '../../../services/departmentService';
+import {departmentService} from '../../../services/hr/departmentService.js';
 import './DepartmentsList.scss';
 
 const DepartmentsList = () => {
@@ -202,14 +202,6 @@ const DepartmentsList = () => {
         }
     ];
 
-    if (loading && departments.length === 0) {
-        return (
-            <div className="departments-loading">
-                <div className="loader"></div>
-                <p>Loading departments...</p>
-            </div>
-        );
-    }
 
     return (
         <div className="departments-list-container">
@@ -290,7 +282,7 @@ const DepartmentsList = () => {
 
                                 <button
                                     type="button"
-                                    className="departments-cancel-button"
+                                    className="btn-cancel"
                                     onClick={handleCloseForm}
                                     disabled={loading}
                                 >
@@ -349,7 +341,7 @@ const DepartmentsList = () => {
 
                                 <button
                                     type="button"
-                                    className="departments-cancel-button"
+                                    className="btn-cancel"
                                     onClick={handleCloseEditForm}
                                     disabled={loading}
                                 >
@@ -377,7 +369,7 @@ const DepartmentsList = () => {
                         <div className="departments-form-actions">
 
                             <button
-                                className="departments-cancel-button"
+                                className="btn-cancel"
                                 onClick={() => setDeleteConfirmId(null)}
                                 disabled={loading}
                             >

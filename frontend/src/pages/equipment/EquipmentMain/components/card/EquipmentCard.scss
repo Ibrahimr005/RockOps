@@ -285,6 +285,11 @@
   margin-right: auto;
 }
 
+.status-running {
+  background-color: rgba(46, 204, 113, 0.15);
+  color: #27ae60;
+}
+
 .status-available {
   background-color: rgba(46, 204, 113, 0.15);
   color: #27ae60;
@@ -312,6 +317,10 @@
   height: 8px;
   border-radius: 50%;
   margin-right: 6px;
+}
+
+.status-running::before {
+  background-color: #27ae60;
 }
 
 .status-available::before {

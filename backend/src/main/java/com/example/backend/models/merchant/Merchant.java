@@ -14,7 +14,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-
 @Entity
 @Data
 @Builder
@@ -27,7 +26,6 @@ public class Merchant {
 
     @Column(nullable = false)
     private String name;
-
 
     private String contactEmail;
 
@@ -49,9 +47,9 @@ public class Merchant {
 
     private Date lastOrderDate;
 
-
-
-
+    // Add photoUrl field like in Site model
+    @Column(length = 500)
+    private String photoUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -65,13 +63,10 @@ public class Merchant {
     )
     private List<ItemCategory> itemCategories = new ArrayList<>();
 
-
     private String notes;
-
 
     @ManyToOne()
     @JoinColumn(name = "site_id")
     @JsonManagedReference
     private Site site;
-
 }

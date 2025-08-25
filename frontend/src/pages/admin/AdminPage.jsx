@@ -4,14 +4,16 @@ import DataTable from '../../components/common/DataTable/DataTable';
 import UserStatsCard from './components/UserStatsCard';
 import EditUserModal from './components/EditUserModal';
 import { FaEdit, FaTrash, FaUserPlus } from 'react-icons/fa';
+import { adminService } from '../../services/adminService';
+import { useSnackbar } from '../../contexts/SnackbarContext';
 import './AdminPage.css';
 
 const AdminPage = () => {
     const { t } = useTranslation();
+    const { showSnackbar } = useSnackbar();
 
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [editingUser, setEditingUser] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState('edit'); // 'edit' or 'add'
@@ -24,26 +26,23 @@ const AdminPage = () => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:8080/api/v1/admin/users', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await adminService.getUsers();
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                throw new Error(`${t('common.error')}: ${response.status} ${response.statusText}`);
+            // DEBUG: Log the entire response
+            console.log('Full API Response:', response);
+            console.log('Response Data:', response.data);
+            console.log('Data Type:', typeof response.data);
+            console.log('Is Array:', Array.isArray(response.data));
+
+            if (response.data && Array.isArray(response.data)) {
+                console.log('First User:', response.data[0]);
+                console.log('User Count:', response.data.length);
             }
 
-            const data = await response.json();
-            setUsers(data);
-            setError(null);
+            setUsers(response.data);
         } catch (err) {
-            setError(`${t('common.error')}: ${err.message}`);
             console.error('Error fetching users:', err);
+            showSnackbar(t('admin.fetchUsersError', 'Failed to load users'), 'error');
         } finally {
             setLoading(false);
         }
@@ -55,23 +54,13 @@ const AdminPage = () => {
         }
 
         try {
-            const response = await fetch(`http://localhost:8080/api/v1/admin/users/${userId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(t('common.error'));
-            }
-
+            await adminService.deleteUser(userId);
             // Remove user from state
             setUsers(users.filter(user => user.id !== userId));
-            setError(null);
+            showSnackbar(t('admin.userDeletedSuccessfully', 'User deleted successfully'), 'success');
         } catch (err) {
-            setError(`${t('common.error')}: ${err.message}`);
             console.error('Error deleting user:', err);
+            showSnackbar(t('admin.deleteUserError', 'Failed to delete user'), 'error');
         }
     };
 
@@ -98,18 +87,7 @@ const AdminPage = () => {
     const updateUser = async (updatedUserData) => {
         try {
             // For updating role only (as per your controller)
-            const roleUpdateResponse = await fetch(`http://localhost:8080/api/v1/admin/users/${editingUser.id}/role`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ role: updatedUserData.role })
-            });
-
-            if (!roleUpdateResponse.ok) {
-                throw new Error(`${t('common.error')}: Role update failed`);
-            }
+            await adminService.updateUserRole(editingUser.id, { role: updatedUserData.role });
 
             // Update user in state
             const updatedUser = {
@@ -124,39 +102,26 @@ const AdminPage = () => {
             // Close modal and clear form
             setShowModal(false);
             setEditingUser(null);
-            setError(null);
         } catch (err) {
-            setError(`${t('common.error')}: ${err.message}`);
             console.error('Error updating user:', err);
+            // Re-throw to let modal handle the error display
+            throw err;
         }
     };
 
     const createUser = async (newUserData) => {
         try {
-            // Use the admin/users endpoint
-            const response = await fetch('http://localhost:8080/api/v1/admin/users', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(newUserData)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || t('common.error'));
-            }
+            await adminService.createUser(newUserData);
 
             // Refresh user list to include the new user
             await fetchUsers();
 
             // Close modal
             setShowModal(false);
-            setError(null);
         } catch (err) {
-            setError(`${t('common.error')}: ${err.message}`);
             console.error('Error creating user:', err);
+            // Re-throw to let modal handle the error display
+            throw err;
         }
     };
 
@@ -186,11 +151,22 @@ const AdminPage = () => {
             header: t('admin.role'),
             accessor: 'role',
             sortable: true,
-            render: (row, value) => (
-                <span className={`role-badge role-badge--${value.toLowerCase()}`}>
-                    {t(`roles.${value}`)}
-                </span>
-            )
+            render: (row, value) => {
+                // Handle null/undefined values
+                if (!value) {
+                    return (
+                        <span className="role-badge role-badge--unknown">
+                            {t('admin.noRole', 'No Role')}
+                        </span>
+                    );
+                }
+
+                return (
+                    <span className={`role-badge role-badge--${value.toLowerCase()}`}>
+                        {t(`roles.${value}`)}
+                    </span>
+                );
+            }
         }
     ];
 
@@ -220,8 +196,6 @@ const AdminPage = () => {
 
     return (
         <div className="admin-container">
-            {/* Use the new Navbar component */}
-
             <div className="admin-content">
                 <main className="admin-main">
                     <div className="">
@@ -231,24 +205,9 @@ const AdminPage = () => {
                             {/* Add more summary cards here if needed */}
                         </div>
 
-                        {/* Error message */}
-                        {error && (
-                            <div className="error-message">
-                                {error}
-                            </div>
-                        )}
+                        {/* Removed error message display - now handled by snackbar */}
 
-                        {/* Action buttons */}
-                        <div className="admin-actions">
-                            <button
-                                className="btn btn-primary"
-                                onClick={handleAddUser}
-                            >
-                                <FaUserPlus /> {t('admin.addUser')}
-                            </button>
-                        </div>
-
-                        {/* DataTable implementation */}
+                        {/* Data Table */}
                         <DataTable
                             data={users}
                             columns={columns}
@@ -263,6 +222,10 @@ const AdminPage = () => {
                             actionsColumnWidth="120px"
                             itemsPerPageOptions={[10, 25, 50, 100]}
                             defaultItemsPerPage={10}
+                            showAddButton={true}
+                            addButtonText={t('admin.addUser')}
+                            addButtonIcon={<FaUserPlus />}
+                            onAddClick={handleAddUser}
                         />
                     </div>
                 </main>

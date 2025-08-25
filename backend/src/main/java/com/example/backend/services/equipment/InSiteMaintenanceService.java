@@ -42,7 +42,14 @@ public class InSiteMaintenanceService {
 
     // Get all maintenance records for equipment with related transactions
     public List<InSiteMaintenance> getMaintenanceByEquipmentId(UUID equipmentId) {
-        return inSiteMaintenanceRepository.findByEquipmentIdWithTransactions(equipmentId);
+        try {
+            // Try the complex query first
+            return inSiteMaintenanceRepository.findByEquipmentIdWithTransactions(equipmentId);
+        } catch (Exception e) {
+            // If it fails, fall back to the simple query
+            System.err.println("Error with complex query, falling back to simple query: " + e.getMessage());
+            return inSiteMaintenanceRepository.findByEquipmentIdOrderByMaintenanceDateDesc(equipmentId);
+        }
     }
 
     // Create a new maintenance record

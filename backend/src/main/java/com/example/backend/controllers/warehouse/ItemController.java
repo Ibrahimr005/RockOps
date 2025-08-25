@@ -81,30 +81,76 @@ public class ItemController {
     }
 
     @PostMapping()
-    public ResponseEntity<Item> createItem(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> createItem(@RequestBody Map<String, Object> request) {
         try {
-            UUID itemTypeId = UUID.fromString((String) request.get("itemTypeId"));
-            UUID warehouseId = UUID.fromString((String) request.get("warehouseId"));
-            int initialQuantity = (int) request.get("initialQuantity");
+            System.out.println("🔍 Received request payload: " + request);
+
+            // Validate required fields
+            if (!request.containsKey("itemTypeId") || request.get("itemTypeId") == null) {
+                throw new IllegalArgumentException("itemTypeId is required");
+            }
+            if (!request.containsKey("warehouseId") || request.get("warehouseId") == null) {
+                throw new IllegalArgumentException("warehouseId is required");
+            }
+            if (!request.containsKey("initialQuantity") || request.get("initialQuantity") == null) {
+                throw new IllegalArgumentException("initialQuantity is required");
+            }
+            if (!request.containsKey("username") || request.get("username") == null) {
+                throw new IllegalArgumentException("username is required");
+            }
+
+            UUID itemTypeId = UUID.fromString(request.get("itemTypeId").toString());
+            UUID warehouseId = UUID.fromString(request.get("warehouseId").toString());
+
+            // Handle initialQuantity - it might come as Integer or Double from JSON
+            int initialQuantity;
+            Object quantityObj = request.get("initialQuantity");
+            if (quantityObj instanceof Integer) {
+                initialQuantity = (Integer) quantityObj;
+            } else if (quantityObj instanceof Double) {
+                initialQuantity = ((Double) quantityObj).intValue();
+            } else {
+                initialQuantity = Integer.parseInt(quantityObj.toString());
+            }
+
             String username = request.get("username").toString();
 
             // Convert date string to LocalDateTime
             String dateString = (String) request.get("createdAt");
             LocalDateTime createdAt;
             if (dateString != null && !dateString.isEmpty()) {
-                // Parse YYYY-MM-DD and set time to start of day
                 LocalDate date = LocalDate.parse(dateString);
                 createdAt = date.atStartOfDay();
             } else {
                 createdAt = LocalDateTime.now();
             }
 
+            System.out.println("✅ Parsed values - ItemTypeId: " + itemTypeId +
+                    ", WarehouseId: " + warehouseId +
+                    ", Quantity: " + initialQuantity +
+                    ", Username: " + username +
+                    ", CreatedAt: " + createdAt);
+
             Item newItem = itemService.createItem(itemTypeId, warehouseId, initialQuantity, username, createdAt);
+            System.out.println("✅ Item created successfully in controller");
             return ResponseEntity.ok(newItem);
-        } catch (Exception e) {
-            System.err.println("Error creating item: " + e.getMessage());
+
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Validation error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Validation Error", "message", e.getMessage()));
+
+        } catch (RuntimeException e) {
+            System.err.println("❌ Runtime error in controller: " + e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Server Error", "message", e.getMessage()));
+
+        } catch (Exception e) {
+            System.err.println("❌ Unexpected error in controller: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Server Error", "message", "An unexpected error occurred: " + e.getMessage()));
         }
     }
 

@@ -1,6 +1,7 @@
 package com.example.backend.controllers.equipment;
 
 import com.example.backend.models.*;
+import com.example.backend.models.PartyType;
 import com.example.backend.models.equipment.InSiteMaintenance;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.transaction.Transaction;
@@ -43,7 +44,14 @@ public class InSiteMaintenanceController {
     // Get all maintenance records for equipment
     @GetMapping
     public ResponseEntity<List<InSiteMaintenance>> getAllMaintenanceRecords(@PathVariable UUID equipmentId) {
-        return ResponseEntity.ok(maintenanceService.getMaintenanceByEquipmentId(equipmentId));
+        try {
+            List<InSiteMaintenance> maintenanceRecords = maintenanceService.getMaintenanceByEquipmentId(equipmentId);
+            return ResponseEntity.ok(maintenanceRecords);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Error fetching maintenance records for equipment " + equipmentId + ": " + e.getMessage());
+            return ResponseEntity.status(500).body(null);
+        }
     }
 
     // Get all employees that can be technicians
@@ -309,7 +317,8 @@ public class InSiteMaintenanceController {
                     userDetails.getUsername(),
                     batchNumber,
                     equipmentId, // Equipment is the receiver
-                    TransactionPurpose.MAINTENANCE // Specify maintenance purpose
+                    TransactionPurpose.MAINTENANCE
+                   // Specify maintenance purpose
             );
 
             // Link transaction to maintenance
