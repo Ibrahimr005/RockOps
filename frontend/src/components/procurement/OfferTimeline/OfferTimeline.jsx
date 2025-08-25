@@ -172,6 +172,9 @@ const OfferTimeline = ({
             case 'FINANCE_ACCEPTED': return 'Approved at';
             case 'FINANCE_REJECTED': return 'Rejected at';
             case 'FINANCE_PARTIALLY_ACCEPTED': return 'Partially approved at';
+            case 'OFFER_FINALIZING': return 'Finalized at';  // Changed from "Finalizing at"
+            case 'OFFER_FINALIZED': return 'Finalized at';
+            case 'OFFER_COMPLETED': return 'Completed at';
             default: return 'Processed at';
         }
     };
@@ -186,6 +189,9 @@ const OfferTimeline = ({
             case 'FINANCE_ACCEPTED': return 'Approved by';
             case 'FINANCE_REJECTED': return 'Rejected by';
             case 'FINANCE_PARTIALLY_ACCEPTED': return 'Partially approved by';
+            case 'OFFER_FINALIZING': return 'Finalized by';  // Changed from "Finalizing by"
+            case 'OFFER_FINALIZED': return 'Finalized by';
+            case 'OFFER_COMPLETED': return 'Completed by';
             default: return 'Processed by';
         }
     };
