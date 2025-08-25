@@ -128,11 +128,11 @@ public class OfferTimelineService {
     }
 
     /**
-     * Create a timeline event - this is where ALL the timeline data lives!
+     * Create a timeline event - PUBLIC METHOD for external services like PurchaseOrderService
      */
-    private OfferTimelineEvent createTimelineEvent(Offer offer, TimelineEventType eventType,
-                                                   String actionBy, String notes,
-                                                   String previousStatus, String newStatus) {
+    public OfferTimelineEvent createTimelineEvent(Offer offer, TimelineEventType eventType,
+                                                  String actionBy, String notes,
+                                                  String previousStatus, String newStatus) {
 
         String displayTitle = generateDisplayTitle(eventType, offer.getCurrentAttemptNumber());
         String displayDescription = generateDisplayDescription(eventType, offer.getCurrentAttemptNumber());

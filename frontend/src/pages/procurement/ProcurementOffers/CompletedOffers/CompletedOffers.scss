@@ -81,7 +81,6 @@
   background: transparent;
   border: none;
   border-radius: 0;
-  padding: 2rem;
   margin-bottom: 0;
   box-shadow: none;
 
@@ -519,7 +518,16 @@
   letter-spacing: 0.5px;
   background: #dcfce7;
   color: #166534;
-}
+
+  &.accepted {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  &.rejected {
+    background: #fee2e2;
+    color: #991b1b;
+  }}
 
 // Card styling for completed offers in the list
 .procurement-items-list {
