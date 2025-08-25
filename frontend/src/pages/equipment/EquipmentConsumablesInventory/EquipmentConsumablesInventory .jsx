@@ -1,14 +1,15 @@
 import React, {forwardRef, useEffect, useImperativeHandle, useState} from 'react';
+import { FaPlus } from 'react-icons/fa';
 import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
 import { equipmentService } from '../../../services/equipmentService';
-import { transactionService } from '../../../services/transactionService';
+import { transactionService } from '../../../services/transaction/transactionService.js';
 import { consumableService } from '../../../services/consumableService';
 import './EquipmentConsumablesInventory.scss';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
 import EquipmentConsumablesHistoryModal from "./EquipmentConsumablesHistoryModal.jsx";
-import TransactionViewModal from "../../warehouse/WarehouseViewTransactions/PendingTransactions/TransactionViewModal.jsx";
+import TransactionViewModal from "../../warehouse/WarehouseViewTransactions/TransactionViewModal/TransactionViewModal.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 
 const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref) => {
@@ -21,6 +22,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [selectedConsumable, setSelectedConsumable] = useState(null);
     const [consumableHistory, setConsumableHistory] = useState([]);
+    const [consumableResolutions, setConsumableResolutions] = useState([]);
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
     const [resolutionHistory, setResolutionHistory] = useState([]);
@@ -162,23 +164,45 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
 
     const fetchConsumableHistory = async (consumableId) => {
         try {
-            console.log("🔍 Fetching consumable history for ID:", consumableId);
-            const token = localStorage.getItem("token");
-            const response = await fetch(`http://localhost:8080/api/v1/equipment/consumables/${consumableId}/history`, {
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                console.log("✅ Fetched consumable history:", data);
-                setConsumableHistory(data);
+            console.log("🔍 [FETCH-HISTORY] Fetching consumable history for ID:", consumableId);
+            const response = await consumableService.getConsumableHistory(consumableId);
+            console.log("✅ [FETCH-HISTORY] Fetched consumable history raw response:", response.data);
+            
+            // Handle new response format with both transactions and resolutions
+            if (response.data.transactions) {
+                console.log("📊 [FETCH-HISTORY] Found transactions:", response.data.transactions.length);
+                console.log("📊 [FETCH-HISTORY] Found resolutions:", response.data.resolutions?.length || 0);
+                
+                // Log detailed transaction item data
+                response.data.transactions.forEach((transaction, index) => {
+                    console.log(`📊 [FETCH-HISTORY] Transaction ${index + 1}:`, {
+                        id: transaction.id,
+                        batchNumber: transaction.batchNumber,
+                        status: transaction.status,
+                        items: transaction.items?.map(item => ({
+                            id: item.id,
+                            itemTypeName: item.itemTypeName,
+                            status: item.status,
+                            quantity: item.quantity,
+                            receivedQuantity: item.receivedQuantity,
+                            equipmentReceivedQuantity: item.equipmentReceivedQuantity,
+                            isResolved: item.isResolved,
+                            resolutionType: item.resolutionType,
+                            fullyResolved: item.fullyResolved
+                        }))
+                    });
+                });
+                
+                setConsumableHistory(response.data.transactions);
+                setConsumableResolutions(response.data.resolutions || []);
             } else {
-                console.error("Failed to fetch consumable history, status:", response.status);
-                showSnackbar("Failed to fetch consumable history", "error");
+                // Fallback for old format
+                console.log("📊 [FETCH-HISTORY] Using fallback format");
+                setConsumableHistory(response.data);
+                setConsumableResolutions([]);
             }
         } catch (error) {
-            console.error("Failed to fetch consumable history:", error);
+            console.error("❌ [FETCH-HISTORY] Failed to fetch consumable history:", error);
             showSnackbar("Failed to fetch consumable history", "error");
         }
     };
@@ -287,13 +311,16 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
             accessor: 'history',
             render: (row) => (
                 <button
-                    className="history-button"
+                    className="rockops-table__action-button view"
                     title="View History"
                     onClick={() => showConsumableHistory(row)}
                 >
+
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
                     </svg>
+
                 </button>
             )
         }] : []),
@@ -303,7 +330,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
             accessor: 'transaction',
             render: (row) => (
                 <button
-                    className="transaction-view-button"
+                    className="btn-primary--ghost"
                     title="View Transaction"
                     onClick={() => showTransactionDetails(row)}
                 >
@@ -320,7 +347,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
             accessor: 'actions',
             render: (row) => (
                 <button
-                    className="resolve-button"
+                    className="btn-primary--warning"
                     title="Resolve Surplus"
                     onClick={() => openResolutionModal(row)}
                 >
@@ -425,7 +452,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                     className={`inventory-tab ${activeTab === 'current' ? 'active' : ''}`}
                     onClick={() => handleTabChange('current')}
                 >
-                    Current Inventory
+                    Consumed Material
                     <span className="inventory-tab-count">{consumables.filter(c => (!c.status || c.status === 'REGULAR' || c.status === 'IN_WAREHOUSE' || c.status === 'CONSUMED') && !c.resolved).length}</span>
                 </button>
                 <button
@@ -513,37 +540,66 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                             defaultItemsPerPage={10}
                             emptyMessage="No resolution history found"
                             className="resolution-history-table"
+                            showExportButton={true}
+                            exportButtonText="Export Resolution History"
+                            exportFileName="equipment_resolution_history"
+                            exportAllData={true}
+                            customExportHeaders={{
+                                'consumable.itemType.name': 'Item Name',
+                                'consumable.itemType.itemCategory.name': 'Category',
+                                'resolutionType': 'Resolution Type',
+                                'resolvedBy': 'Resolved By',
+                                'resolvedAt': 'Resolved Date',
+                                'notes': 'Notes'
+                            }}
+                            onExportStart={() => showSnackbar("Exporting resolution history...", "info")}
+                            onExportComplete={(result) => showSnackbar(`Exported ${result.rowCount} records to Excel`, "success")}
+                            onExportError={(error) => showSnackbar("Failed to export resolution history", "error")}
                         />
                     ) : (
                         <DataTable
                             data={filteredConsumables}
                             columns={columns}
                             loading={loading}
-                            tableTitle={`${activeTab === 'current' ? 'Current Inventory' : 'Surplus Items'}`}
+                            tableTitle={`${activeTab === 'current' ? 'Consumed Material' : 'Surplus Items'}`}
                             showSearch={true}
                             showFilters={true}
                             filterableColumns={filterableColumns}
                             itemsPerPageOptions={[5, 10, 15, 20]}
                             defaultItemsPerPage={5}
                             emptyMessage="No consumables found"
+                            showAddButton={permissions.canCreate && activeTab === 'current'}
+                            addButtonText="Add Consumable"
+                            addButtonIcon={<FaPlus />}
+                            onAddClick={onAddClick}
+                            showExportButton={true}
+                            exportButtonText={`Export ${activeTab === 'current' ? 'Consumables' : 'Surplus Items'}`}
+                            exportFileName={`equipment_${activeTab === 'current' ? 'consumables' : 'surplus_items'}`}
+                            exportAllData={true}
+                            customExportHeaders={{
+                                'itemTypeName': 'Item Name',
+                                'itemTypeCategory': 'Category',
+                                'quantity': 'Quantity',
+                                'unit': 'Unit',
+                                'status': 'Status',
+                                'batchNumber': 'Batch Number',
+                                'transactionDate': 'Transaction Date',
+                                'lastUpdated': 'Last Updated'
+                            }}
+                            onExportStart={() => showSnackbar(`Exporting ${activeTab === 'current' ? 'consumables' : 'surplus items'}...`, "info")}
+                            onExportComplete={(result) => showSnackbar(`Exported ${result.rowCount} records to Excel`, "success")}
+                            onExportError={(error) => showSnackbar(`Failed to export ${activeTab === 'current' ? 'consumables' : 'surplus items'}`, "error")}
                         />
                     )
                 )}
             </div>
-
-            {permissions.canCreate && (
-                <button className="add-button2" onClick={onAddClick}>
-                    <svg className="plus-icon2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 5v14M5 12h14"/>
-                    </svg>
-                </button>
-            )}
 
             {/* History Modal */}
             <EquipmentConsumablesHistoryModal
                 isOpen={isHistoryModalOpen}
                 onClose={() => setIsHistoryModalOpen(false)}
                 consumableHistory={consumableHistory}
+                consumableResolutions={consumableResolutions}
                 itemDetails={selectedConsumable}
             />
 
@@ -561,13 +617,10 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                         <div className="resolution-modal-header">
                             <h2>Resolve Consumable Discrepancy</h2>
                             <button
-                                className="close-modal-button"
+                                className="btn-close"
                                 onClick={() => setIsResolutionModalOpen(false)}
-                            >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M18 6L6 18M6 6l12 12" />
-                                </svg>
-                            </button>
+                                aria-label="Close"
+                            ></button>
                         </div>
 
                         <div className="resolution-modal-body">
@@ -669,14 +722,14 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                                 <div className="resolution-modal-footer">
                                     <button
                                         type="button"
-                                        className="cancel-button"
+                                        className="btn-primary--outline"
                                         onClick={() => setIsResolutionModalOpen(false)}
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        className="resolve-submit-button"
+                                        className="btn-primary"
                                         disabled={
                                             !resolutionData.resolutionType || 
                                             !resolutionData.notes ||

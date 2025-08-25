@@ -276,27 +276,33 @@ const WorkTypeManagement = () => {
 
     return (
         <div className="equipment-types-container">
-            <div className="equipment-types-header">
-                <h1>Work Types</h1>
-                {permissions.canCreate && (
-                    <button
-                        className="btn btn-primary"
-                        onClick={() => handleOpenModal()}
-                    >
-                        <FaPlus /> Add Work Type
-                    </button>
-                )}
-            </div>
-
             <DataTable
                 data={workTypes}
                 columns={columns}
                 loading={loading}
                 actions={actions}
-                tableTitle="Work Types List"
+                tableTitle="Work Types"
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={columns}
+                showAddButton={permissions.canCreate}
+                addButtonText="Add Work Type"
+                addButtonIcon={<FaPlus />}
+                onAddClick={() => handleOpenModal()}
+                showExportButton={true}
+                exportButtonText="Export Work Types"
+                exportFileName="work_types"
+                exportAllData={true}
+                excludeColumnsFromExport={['actions']}
+                customExportHeaders={{
+                    'name': 'Work Type Name',
+                    'description': 'Description',
+                    'active': 'Active Status',
+                    'supportedEquipmentTypes': 'Supported Equipment Types'
+                }}
+                onExportStart={() => showSuccess("Exporting work types...")}
+                onExportComplete={(result) => showSuccess(`Exported ${result.rowCount} work types to Excel`)}
+                onExportError={(error) => showError("Failed to export work types")}
             />
 
             {/* Modal for adding/editing work types */}
@@ -305,7 +311,7 @@ const WorkTypeManagement = () => {
                     <div className="modal-content work-type-modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>{editingWorkType ? 'Edit Work Type' : 'Add Work Type'}</h2>
-                            <button className="modal-close" onClick={() => setShowModal(false)}>
+                            <button className="btn-close" onClick={() => setShowModal(false)}>
                                 &times;
                             </button>
                         </div>
@@ -381,7 +387,7 @@ const WorkTypeManagement = () => {
                                 <button type="button" onClick={() => setShowModal(false)}>
                                     Cancel
                                 </button>
-                                <button type="submit" className="save-button">
+                                <button type="submit" className="btn-primary">
                                     {editingWorkType ? 'Update' : 'Add'}
                                 </button>
                             </div>

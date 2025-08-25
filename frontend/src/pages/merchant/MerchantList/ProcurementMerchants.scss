@@ -1,0 +1,851 @@
+.procurement-merchants-table-container {
+  margin-bottom: 45px;
+  margin-top: 45px;
+}
+
+/* Header Styles */
+.procurement-merchants-header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.procurement-merchants-left-section {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.procurement-merchants-section-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a2b42;
+  margin: 0;
+  margin-right: 16px;
+}
+
+.procurement-merchants-count {
+  font-size: 14px;
+  color: #6b7280;
+  background-color: #f3f4f6;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.procurement-merchants-section-description {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 35px;
+  margin-top:10px;
+}
+
+.procurement-merchants-right-section {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 0px;
+  margin-right:2rem;
+}
+
+
+
+/* Action Button Styles */
+.procurement-merchants-edit-button,
+.procurement-merchants-delete-button {
+  background: none;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-left: 3px;
+}
+
+.procurement-merchants-edit-button {
+  color: #4f85e5;
+}
+
+.procurement-merchants-delete-button {
+  color: #ef4444;
+}
+
+.procurement-merchants-edit-button:hover,
+.procurement-merchants-delete-button:hover {
+  background-color: #f3f4f6;
+}
+
+.procurement-merchants-edit-button svg,
+.procurement-merchants-delete-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Loading State Styles */
+.procurement-merchants-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+}
+
+.procurement-merchants-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(79, 133, 229, 0.2);
+  border-radius: 50%;
+  border-top-color: #4f85e5;
+  animation: procurement-merchants-spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes procurement-merchants-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Empty State Styles */
+.procurement-merchants-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #6b7280;
+  z-index: 10;
+  width: 100%;
+  height: auto;
+}
+
+.procurement-merchants-empty-state .procurement-merchants-empty-icon {
+  width: 60px;
+  height: 60px;
+  background-color: #f3f4f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.procurement-merchants-empty-state svg {
+  width: 30px;
+  height: 30px;
+  color: #9ca3af;
+}
+
+.procurement-merchants-empty-state h3 {
+  font-size: 18px;
+  margin: 0 0 8px 0;
+  color: #4b5563;
+}
+
+.procurement-merchants-empty-state p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Error State Styles */
+.procurement-merchants-error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 0;
+  text-align: center;
+}
+
+.procurement-merchants-error-container p {
+  color: #ef4444;
+  margin-bottom: 8px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .procurement-merchants-header-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .procurement-merchants-right-section {
+    width: 100%;
+  }
+
+  .procurement-merchants-search-container {
+    width: 100%;
+  }
+}
+.procurement-merchants-search-and-add {
+  display: flex;
+  flex-direction: column;  // Align elements vertically
+  gap: 10px;               // Space between search input and button
+  align-items: flex-end;   // Align button to the right
+}
+
+.procurement-merchants-search-container {
+  display: flex;
+  align-items: center;
+}
+
+.procurement-merchants-add-button-container {
+  display: flex;
+  justify-content: flex-end; // Or center, if you want it in the middle
+  margin-top: 24px; // Adjust spacing as needed
+}
+
+.procurement-merchants-add-button {
+  position: absolute; // Changed from absolute
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  background-color: #4f85e5;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(79, 133, 229, 0.4);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  z-index: 100;
+}
+
+.procurement-merchants-add-button:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(79, 133, 229, 0.5);
+}
+
+.plus-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Add these styles to your existing ProcurementMerchants.scss file */
+
+/* Merchant Modal Styles */
+/* Add these styles to your existing ProcurementMerchants.scss file */
+
+/* Merchant Modal Styles */
+.merchant-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: merchant-fade-in 0.2s ease;
+}
+
+@keyframes merchant-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.merchant-modal-content {
+  width: 100%;
+  max-width: 1000px;
+  background-color: var(--main-background-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: merchant-slide-in 0.3s ease;
+}
+
+@keyframes merchant-slide-in {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.merchant-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background-color: var(--color-primary);
+  color: white;
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .merchant-modal-close-button {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
+}
+
+.merchant-modal-body {
+  padding: 0;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.merchant-form-container {
+  padding: 0;
+}
+
+.merchant-form-card {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.merchant-form-profile-section {
+  background-color: #4066e0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 0;
+  min-height: 400px;
+}
+
+.merchant-form-image-label {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.merchant-form-image {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 1rem;
+  border: 3px solid white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.merchant-form-image-placeholder {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-bottom: 1rem;
+
+  &:before {
+    content: '+';
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+.merchant-form-upload-text {
+  color: white;
+  font-size: 0.9rem;
+  margin-top: 10px;
+}
+
+.merchant-form-fields-section {
+  padding: 24px;
+
+  form {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.merchant-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  margin-bottom: 24px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.merchant-form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+
+/* Make description field span two columns */
+.merchant-description-group {
+  grid-column: span 2;
+
+  @media (max-width: 768px) {
+    grid-column: span 1;
+  }
+}
+
+.merchant-form-label {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.merchant-form-input,
+.merchant-form-select,
+.merchant-form-textarea {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: 1rem;
+
+  &:focus {
+    border-color: var(--color-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(64, 102, 224, 0.2);
+  }
+}
+
+.merchant-form-input,
+.merchant-form-select {
+  height: 40px;
+}
+
+.merchant-form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Category selector styles */
+.merchant-form-category-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.merchant-form-category-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.merchant-form-category-add-button {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 500;
+
+  &:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+
+  &:hover:not(:disabled) {
+    //background-color: darken(#4066e0, 5%);
+  }
+}
+
+.merchant-form-selected-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  min-height: 40px;
+}
+
+.merchant-form-selected-category {
+  display: flex;
+  align-items: center;
+  background-color: #f0f4ff;
+  border: 1px solid #d0daf8;
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 0.9rem;
+  gap: 6px;
+}
+
+.merchant-form-category-remove-button {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+
+  &:hover {
+    background-color: #e0e5f5;
+    color: #333;
+  }
+}
+
+.merchant-form-no-categories {
+  color: var(--color-text-secondary);
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.merchant-form-button-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: auto;
+}
+
+.merchant-form-add-button, .merchant-form-cancel-button {
+  height: 40px;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.merchant-form-add-button {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+
+  &:hover {
+    //background-color: darken(#4066e0, 5%);
+  }
+}
+
+.merchant-form-cancel-button {
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border: 1px solid var(--border-color);
+
+  &:hover {
+    background-color: var(--color-surface-hover);
+  }
+}
+
+.required-field::after {
+  content: '*';
+  color: #e53e3e;
+  margin-left: 4px;
+}
+
+
+.notification {
+  position: fixed;
+  top: 20px; /* Position at the top */
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  z-index: 1000;
+  animation: slideDownFade 0.3s ease, slideUpFade 0.3s ease 2.7s;
+}
+
+@keyframes slideDownFade {
+  from {
+    transform: translate(-50%, -20px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpFade {
+  from {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, -20px);
+    opacity: 0;
+  }
+}
+
+
+.success-notification {
+  background-color: #f0fdf4;
+  border: 1px solid #dcfce7;
+  color: #166534;
+}
+
+.success-notification svg {
+  color: #16a34a;
+  width: 20px;
+  height: 20px;
+}
+
+.delete-notification {
+  background-color: #fef2f2;  // Light red background
+  border: 1px solid #fecaca;  // Light red border
+  color: #991b1b;  // Dark red text
+}
+
+.delete-notification svg {
+  color: #dc2626;  // Red icon color
+  width: 20px;
+  height: 20px;
+}
+
+
+
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+.procurement-intro-card {
+  display: flex;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+  overflow: hidden;
+  position: relative;
+  border-left: 4px solid #3b82f6;
+}
+
+.procurement-intro-left {
+  width: 150px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.procurement-intro-image {
+  width: 100%;
+  height: auto;
+  max-height: 100px;
+  object-fit: contain;
+}
+
+.procurement-intro-content {
+  flex: 1;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center; /* Center the text */
+}
+
+.procurement-intro-header {
+  margin-bottom: 16px;
+}
+
+.procurement-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+.procurement-intro-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.procurement-stats {
+  display: flex;
+  justify-content: center; /* Center the stats */
+  gap: 32px;
+  margin-top: 16px;
+}
+
+.procurement-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center stat items */
+}
+
+.procurement-stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.procurement-stat-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.procurement-intro-right {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 300px; /* Give enough space for the search bar */
+}
+
+
+
+/* Refined tab styles to match design */
+.procurement-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 16px;
+  background-color: white;
+  border-radius: 8px 8px 0 0;
+  padding: 0;
+}
+
+.procurement-tab {
+  padding: 16px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    color: #3b82f6;
+  }
+
+  &.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+  }
+}
+
+.procurement-requests-section-description {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+/* Add these styles to your SCSS file for the search bar */
+
+.procurement-intro-right {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 300px; /* Give enough space for the search bar */
+}
+
+.procurement-search-container {
+  position: relative;
+  width: 25%;
+  margin-bottom: 12px;
+  justify-content: flex-end;
+}
+
+.procurement-search-input {
+  width: 100%;
+  padding: 8px 36px 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #374151;
+  background-color: white;
+  transition: all 0.2s;
+  height: 45px;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background-color: white;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+.procurement-search-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.procurement-info-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  align-self: flex-end;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    stroke: #3b82f6;
+  }
+
+  &:hover svg {
+    stroke: #2563eb;
+  }
+}
+

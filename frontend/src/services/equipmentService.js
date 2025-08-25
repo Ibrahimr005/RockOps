@@ -10,6 +10,11 @@ export const equipmentService = {
         return apiClient.get(EQUIPMENT_ENDPOINTS.BASE);
     },
 
+    // Get equipment status options
+    getEquipmentStatusOptions: () => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.STATUS_OPTIONS);
+    },
+
     // Get equipment by ID
     getEquipmentById: (id) => {
         return apiClient.get(EQUIPMENT_ENDPOINTS.BY_ID(id));
@@ -188,6 +193,11 @@ export const equipmentService = {
         return apiClient.get(EQUIPMENT_ENDPOINTS.SARKY_ANALYTICS(equipmentId));
     },
 
+    // NEW: Get equipment statuses
+    getEquipmentStatuses: () => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.STATUSES);
+    },
+
     // Update createEquipment method
     createEquipment: (equipmentData) => {
         // Ensure brand is sent as an object with id
@@ -225,6 +235,10 @@ export const equipmentService = {
             params.append('transactionDate', requestData.transactionDate);
         }
 
+        if (requestData.description) {
+            params.append('description', requestData.description);
+        }
+
         return apiClient.post(
             `${EQUIPMENT_ENDPOINTS.SEND_TRANSACTION(equipmentId)}?${params.toString()}`,
             requestData.items
@@ -232,7 +246,18 @@ export const equipmentService = {
     },
 
     // Create transaction with equipment as receiver
-    receiveTransaction: (equipmentId, senderId, senderType, batchNumber, purpose, items, transactionDate) => {
+    receiveTransaction: (equipmentId, senderId, senderType, batchNumber, purpose, items, transactionDate, description) => {
+        console.log('🔧 EquipmentService.receiveTransaction called with:', {
+            equipmentId,
+            senderId,
+            senderType,
+            batchNumber,
+            purpose,
+            items,
+            transactionDate,
+            description
+        });
+        
         const params = new URLSearchParams({
             senderId: senderId,
             senderType: senderType,
@@ -244,10 +269,15 @@ export const equipmentService = {
             params.append('transactionDate', transactionDate);
         }
 
-        return apiClient.post(
-            `${EQUIPMENT_ENDPOINTS.RECEIVE_TRANSACTION(equipmentId)}?${params.toString()}`,
-            items
-        );
+        if (description) {
+            params.append('description', description);
+        }
+
+        const url = `${EQUIPMENT_ENDPOINTS.RECEIVE_TRANSACTION(equipmentId)}?${params.toString()}`;
+        console.log('🌐 EquipmentService: Making POST request to:', url);
+        console.log('📦 EquipmentService: Request body (items):', items);
+
+        return apiClient.post(url, items);
     },
 
     // Accept equipment transaction
@@ -257,6 +287,43 @@ export const equipmentService = {
             acceptanceData
         );
     },
+
+    // Enhanced unified transaction processing
+    processUnifiedTransaction: async (equipmentId, transactionId, processingData) => {
+        const {
+            receivedQuantities,
+            itemsNotReceived,
+            comments,
+            purpose,
+            maintenanceId,
+            createMaintenance,
+            resolutionData
+        } = processingData;
+
+        // Prepare comprehensive acceptance data
+        const acceptancePayload = {
+            receivedQuantities,
+            itemsNotReceived,
+            comments,
+            purpose,
+            ...(maintenanceId && { maintenanceId }),
+            ...(createMaintenance && { createMaintenance }),
+            ...(resolutionData && { resolutionData })
+        };
+
+        return apiClient.post(
+            EQUIPMENT_ENDPOINTS.ACCEPT_TRANSACTION(equipmentId, transactionId),
+            acceptancePayload
+        );
+    },
+
+    // Get warehouse details for transaction processing
+    getWarehouseById: (warehouseId) => {
+        return apiClient.get(`/api/warehouses/${warehouseId}`);
+    },
+
+    // Get equipment details by ID
+
 
     // Reject equipment transaction
     rejectEquipmentTransaction: (equipmentId, transactionId, rejectionData) => {
@@ -282,6 +349,10 @@ export const equipmentService = {
 
         if (updateData.purpose) {
             params.append('purpose', updateData.purpose);
+        }
+
+        if (updateData.description) {
+            params.append('description', updateData.description);
         }
 
         return apiClient.put(
@@ -312,5 +383,55 @@ export const equipmentService = {
             `${EQUIPMENT_ENDPOINTS.RECEIVE_TRANSACTION(equipmentId)}?${params.toString()}`,
             items
         );
+    },
+
+    // ========================================
+    // MAINTENANCE INTEGRATION METHODS
+    // Enhanced transaction acceptance with maintenance linking
+    // ========================================
+
+    // Search maintenance records for linking
+    searchMaintenanceRecords: (equipmentId, searchCriteria) => {
+        const params = new URLSearchParams();
+        
+        if (searchCriteria.startDate) params.append('startDate', searchCriteria.startDate);
+        if (searchCriteria.endDate) params.append('endDate', searchCriteria.endDate);
+        if (searchCriteria.technicianId) params.append('technicianId', searchCriteria.technicianId);
+        if (searchCriteria.maintenanceTypeId) params.append('maintenanceTypeId', searchCriteria.maintenanceTypeId);
+        if (searchCriteria.status) params.append('status', searchCriteria.status);
+        if (searchCriteria.description) params.append('description', searchCriteria.description);
+        if (searchCriteria.hasLinkedTransactions !== undefined) {
+            params.append('hasLinkedTransactions', searchCriteria.hasLinkedTransactions.toString());
+        }
+
+        return apiClient.get(`${EQUIPMENT_ENDPOINTS.MAINTENANCE_SEARCH(equipmentId)}?${params.toString()}`);
+    },
+
+    // Get maintenance records suitable for linking
+    getMaintenanceRecordsForLinking: (equipmentId) => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.MAINTENANCE_FOR_LINKING(equipmentId));
+    },
+
+    // Accept transaction with maintenance integration
+    acceptTransactionWithMaintenance: (equipmentId, transactionId, acceptanceData) => {
+        return apiClient.post(
+            EQUIPMENT_ENDPOINTS.ACCEPT_TRANSACTION_WITH_MAINTENANCE(equipmentId, transactionId),
+            acceptanceData
+        );
+    },
+
+    // Check if batch number exists for equipment
+    checkBatchExists: (equipmentId, batchNumber) => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.CHECK_BATCH_EXISTS(equipmentId, batchNumber));
+    },
+
+    // Get equipment items
+    getEquipmentItems: (equipmentId) => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.ITEMS(equipmentId));
+    },
+
+    // Get equipment by site
+    getEquipmentBySite: (siteId) => {
+        return apiClient.get(`/api/equipment/site/${siteId}`);
     }
 };

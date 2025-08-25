@@ -45,6 +45,7 @@
   --color-danger-hover: #dc2626;
   --color-warning: #ff9800;
   --color-warning-light: #f59e0b;
+  --color-warning-rgb: 255, 152, 0; /* RGB values for #ff9800 */
   --color-info: #2196f3;
   --color-info-light: #3b82f6;
 
@@ -140,6 +141,7 @@
   --color-danger-hover: #ef4444;
   --color-warning: #ffb74d;
   --color-warning-light: #fbbf24;
+  --color-warning-rgb: 255, 183, 77; /* RGB values for #ffb74d */
   --color-info: #42a5f5;
   --color-info-light: #60a5fa;
 

@@ -1,0 +1,566 @@
+/* DisposalManagement.css - Fixed with proper dark theme support */
+.disposal-management {
+    width: 100%;
+}
+
+.disposal-management__summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.disposal-management__summary-card {
+    background: var(--section-background-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.disposal-management__summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.disposal-management__summary-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.disposal-management__summary-amount {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-color);
+}
+
+.disposal-management__summary-card--total-gain-loss .disposal-management__summary-amount {
+    color: var(--color-success); /* Default green, will be overridden by JS if negative */
+}
+
+.disposal-management__summary-card--sale-proceeds .disposal-management__summary-amount {
+    color: var(--color-primary);
+}
+
+.disposal-management__summary-card--profitable .disposal-management__summary-amount {
+    color: var(--color-success);
+}
+
+.disposal-management__summary-card--loss .disposal-management__summary-amount {
+    color: var(--color-danger);
+}
+
+/* Summary Cards Border Colors */
+.disposal-management__summary-card--total-gain-loss {
+    border-left: 4px solid var(--color-text-secondary);
+}
+
+.disposal-management__summary-card--sale-proceeds {
+    border-left: 4px solid var(--color-success);
+}
+
+.disposal-management__summary-card--profitable {
+    border-left: 4px solid var(--color-success);
+}
+
+.disposal-management__summary-card--loss {
+    border-left: 4px solid var(--color-danger);
+}
+
+/* Table Cell Styling */
+.disposal-management__method-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: inline-block;
+}
+
+.disposal-management__method-sale {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: var(--color-success);
+}
+
+.disposal-management__method-scrap {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--color-danger);
+}
+
+.disposal-management__method-donation {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--color-primary);
+}
+
+.disposal-management__method-trade {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--color-warning);
+}
+
+.disposal-management__method-unknown {
+    background-color: rgba(107, 114, 128, 0.1);
+    color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .disposal-management__method-sale {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: var(--color-success);
+}
+
+[data-theme="dark"] .disposal-management__method-scrap {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: var(--color-danger);
+}
+
+[data-theme="dark"] .disposal-management__method-donation {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: var(--color-primary);
+}
+
+[data-theme="dark"] .disposal-management__method-trade {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: var(--color-warning);
+}
+
+[data-theme="dark"] .disposal-management__method-unknown {
+    background-color: rgba(107, 114, 128, 0.2);
+    color: var(--color-text-secondary);
+}
+
+.disposal-management__gain-loss {
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.disposal-management__gain-loss--gain {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: var(--color-success);
+}
+
+.disposal-management__gain-loss--loss {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--color-danger);
+}
+
+[data-theme="dark"] .disposal-management__gain-loss--gain {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: var(--color-success);
+}
+
+[data-theme="dark"] .disposal-management__gain-loss--loss {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: var(--color-danger);
+}
+
+/* Modal Styles */
+.disposal-management__modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.disposal-management__modal-content {
+    background: var(--section-background-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    max-width: 700px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+}
+
+.disposal-management__modal-content--large {
+    max-width: 1000px;
+    min-height: 700px;
+    width: 95%;
+}
+
+.disposal-management__modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--color-danger);
+    color: var(--text-hover);
+    border-radius: 12px 12px 0 0;
+}
+
+.disposal-management__modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-hover);
+}
+
+.disposal-management__modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    color: var(--text-hover);
+    transition: all 0.2s;
+}
+
+.disposal-management__modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.disposal-management__modal-body {
+    padding: 24px;
+}
+
+.disposal-management__details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    padding: 16px 0;
+}
+
+.disposal-management__details-section {
+    background: var(--main-background-color);
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.disposal-management__details-section:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.disposal-management__details-section--full {
+    grid-column: 1 / -1;
+}
+
+.disposal-management__details-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+.disposal-management__details-section-title svg {
+    color: var(--color-danger);
+}
+
+.disposal-management__details-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.disposal-management__details-row:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.disposal-management__details-label {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    min-width: 160px;
+    flex-shrink: 0;
+}
+
+.disposal-management__details-value {
+    color: var(--text-color);
+    text-align: right;
+    word-break: break-word;
+    flex: 1;
+    margin-left: 12px;
+}
+
+.disposal-management__modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    background: var(--main-background-color);
+}
+
+/* Button Styles */
+.disposal-management__btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 120px;
+}
+
+.disposal-management__btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.disposal-management__btn--primary {
+    background: var(--color-danger);
+    color: var(--text-hover);
+    border: 1px solid var(--color-danger);
+}
+
+.disposal-management__btn--primary:hover:not(:disabled) {
+    background: var(--color-primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.disposal-management__btn--secondary {
+    background: var(--section-background-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+.disposal-management__btn--secondary:hover:not(:disabled) {
+    background: var(--main-background-color);
+    border-color: var(--color-text-secondary);
+    transform: translateY(-1px);
+}
+
+/* Form Styles */
+.disposal-management__form {
+    width: 100%;
+}
+
+.disposal-management__form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.disposal-management__form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.disposal-management__form-group--full {
+    grid-column: 1 / -1;
+}
+
+.disposal-management__form-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.disposal-management__form-input,
+.disposal-management__form-select,
+.disposal-management__form-textarea,
+.disposal-management__form-file {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--section-background-color);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.disposal-management__form-input:focus,
+.disposal-management__form-select:focus,
+.disposal-management__form-textarea:focus,
+.disposal-management__form-file:focus {
+    outline: none;
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.disposal-management__form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.disposal-management__form-select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+}
+
+.disposal-management__form-file {
+    border: 2px dashed var(--border-color);
+    cursor: pointer;
+}
+
+.disposal-management__form-file:hover {
+    border-color: var(--color-danger);
+}
+
+.disposal-management__form-help {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-top: 0.25rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .disposal-management__summary {
+        grid-template-columns: 1fr;
+    }
+
+    .disposal-management__summary-amount {
+        font-size: 1.2rem;
+    }
+
+    .disposal-management__modal-content {
+        width: 95%;
+        margin: 1rem;
+    }
+
+    .disposal-management__modal-content--large {
+        width: 95%;
+        max-width: none;
+        margin: 10px;
+        min-height: auto;
+    }
+
+    .disposal-management__details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .disposal-management__details-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .disposal-management__details-label {
+        min-width: auto;
+        margin-bottom: 4px;
+    }
+
+    .disposal-management__details-value {
+        text-align: left;
+        margin-left: 0;
+    }
+
+    .disposal-management__modal-header,
+    .disposal-management__modal-body,
+    .disposal-management__modal-actions {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .disposal-management__modal-actions {
+        flex-direction: column;
+    }
+
+    .disposal-management__btn {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .disposal-management__form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Animation for modal */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.disposal-management__modal-content {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Scrollbar Styling with theme support */
+.disposal-management__modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.disposal-management__modal-content::-webkit-scrollbar-track {
+    background: var(--main-background-color);
+    border-radius: 4px;
+}
+
+.disposal-management__modal-content::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.disposal-management__modal-content::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-secondary);
+}
+
+/* Dark theme specific adjustments */
+[data-theme="dark"] .disposal-management__modal-overlay {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .disposal-management__modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .disposal-management__form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* Ensure all text inherits proper theme colors */
+.disposal-management * {
+    transition: background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+/* Special styling for financial values in details */
+.disposal-management__details-value[style*="color: #10b981"] {
+    color: var(--color-success) !important;
+}
+
+.disposal-management__details-value[style*="color: #ef4444"] {
+    color: var(--color-danger) !important;
+}
+
+.disposal-management__details-value[style*="color: #f59e0b"] {
+    color: var(--color-warning) !important;
+}
+
+.disposal-management__details-value[style*="color: #3b82f6"] {
+    color: var(--color-primary) !important;
+}

@@ -61,8 +61,20 @@ public class TransactionController {
                     request.getTransactionDate(),
                     request.getUsername(),
                     request.getBatchNumber(),
-                    request.getSentFirst()
+                    request.getSentFirst(),
+                    request.getDescription()
             );
+
+            // Set additional fields
+            if (request.getDescription() != null) {
+                transaction.setDescription(request.getDescription());
+            }
+            if (request.getHandledBy() != null) {
+                transaction.setHandledBy(request.getHandledBy());
+            }
+            
+            // Save updated transaction
+            transaction = transactionRepository.save(transaction);
 
             // Convert to DTO and return
             TransactionDTO responseDTO = transactionMapperService.toDTO(transaction);
@@ -161,7 +173,8 @@ public class TransactionController {
                     items,
                     request.getTransactionDate(),
                     request.getUsername(),
-                    request.getBatchNumber()
+                    request.getBatchNumber(),
+                    request.getDescription()
             );
 
             TransactionDTO responseDTO = transactionMapperService.toDTO(updatedTransaction);
@@ -207,6 +220,77 @@ public class TransactionController {
         }
     }
 
+    @PutMapping("/{id}/details")
+    public ResponseEntity<TransactionDTO> updateTransactionDetails(
+            @PathVariable UUID id,
+            @RequestBody Map<String, String> updates) {
+        try {
+            Transaction transaction = transactionRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
+
+            // Update description if provided
+            if (updates.containsKey("description")) {
+                transaction.setDescription(updates.get("description"));
+            }
+
+            // Update handledBy if provided
+            if (updates.containsKey("handledBy")) {
+                transaction.setHandledBy(updates.get("handledBy"));
+            }
+
+            // Update rejection reason if provided
+            if (updates.containsKey("rejectionReason")) {
+                transaction.setRejectionReason(updates.get("rejectionReason"));
+            }
+
+            // Update acceptance comment if provided
+            if (updates.containsKey("acceptanceComment")) {
+                transaction.setAcceptanceComment(updates.get("acceptanceComment"));
+            }
+
+            Transaction updatedTransaction = transactionRepository.save(transaction);
+            TransactionDTO responseDTO = transactionMapperService.toDTO(updatedTransaction);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @PatchMapping("/{transactionId}/resolve")
+    public ResponseEntity<TransactionDTO> markTransactionAsResolved(
+            @PathVariable UUID transactionId,
+            @RequestBody Map<String, String> request) {
+        try {
+            Transaction transaction = transactionRepository.findById(transactionId)
+                    .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
+
+            transaction.setStatus(TransactionStatus.RESOLVED);
+            transaction.setCompletedAt(LocalDateTime.now());
+            
+            if (request.containsKey("resolvedBy")) {
+                transaction.setApprovedBy(request.get("resolvedBy"));
+            }
+            
+            if (request.containsKey("resolutionComment")) {
+                transaction.setAcceptanceComment(request.get("resolutionComment"));
+            }
+
+            Transaction resolvedTransaction = transactionRepository.save(transaction);
+            TransactionDTO responseDTO = transactionMapperService.toDTO(resolvedTransaction);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
     // ========================================
     // LEGACY SUPPORT METHODS
     // Keep existing Map-based endpoints for backward compatibility
@@ -223,6 +307,7 @@ public class TransactionController {
         int batchNumber = (int) request.get("batchNumber");
         UUID sentFirst = UUID.fromString((String) request.get("sentFirst"));
         LocalDateTime transactionDate = LocalDateTime.parse((String) request.get("transactionDate"));
+        String description = (String) request.get("description");
 
         // Extract the items array
         List<Map<String, Object>> itemsData = (List<Map<String, Object>>) request.get("items");
@@ -254,7 +339,8 @@ public class TransactionController {
                 items,
                 transactionDate,
                 username, batchNumber,
-                sentFirst
+                sentFirst,
+                description
         );
 
         return ResponseEntity.ok(transaction);
@@ -316,6 +402,50 @@ public class TransactionController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(null);
+        }
+    }
+
+    @DeleteMapping("/{transactionId}")
+    public ResponseEntity<Map<String, Object>> deleteTransaction(@PathVariable UUID transactionId) {
+
+        try {
+            System.out.println("🗑️ DELETE /transactions/" + transactionId + " - Request received");
+
+            // Call the service method to delete the transaction
+            transactionService.deleteTransaction(transactionId);
+
+            // Create success response
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Transaction deleted successfully");
+            response.put("transactionId", transactionId);
+            response.put("deletedAt", LocalDateTime.now());
+
+            System.out.println("✅ Transaction deleted successfully: " + transactionId);
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Delete failed - Invalid request: " + e.getMessage());
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Invalid Request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("transactionId", transactionId);
+
+            return ResponseEntity.badRequest().body(errorResponse);
+
+        } catch (Exception e) {
+            System.err.println("❌ Delete failed - Server error: " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", "Server Error");
+            errorResponse.put("message", "An unexpected error occurred while deleting the transaction");
+            errorResponse.put("transactionId", transactionId);
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 }

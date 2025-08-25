@@ -39,7 +39,7 @@ const AllSites = () => {
     });
 
     const dropdownRef = useRef(null);
-    const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || "ADMIN";
+    const isSiteAdmin = currentUser?.role === "ADMIN";
 
     useEffect(() => {
         console.log("AllSites component mounted");
@@ -393,11 +393,11 @@ const AllSites = () => {
                                 <h2 className="site-name">{site.name || t('common.noData')}</h2>
 
                                 <div className="site-stats">
-                                    <p className="stat-item">
+                                    <p className="sites-stat-item">
                                         <span className="stat-label">{t('hr.dashboard.employees')}:</span>
                                         <span className="stat-value"> {site.employeeCount || 0}</span>
                                     </p>
-                                    <p className="stat-item">
+                                    <p className="sites-stat-item">
                                         <span className="stat-label">{t('equipment.equipment')}:</span>
                                         <span className="stat-value"> {site.equipmentCount || 0}</span>
                                     </p>

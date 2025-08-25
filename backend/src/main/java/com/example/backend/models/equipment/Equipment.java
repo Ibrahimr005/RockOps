@@ -79,9 +79,6 @@ public class Equipment {
     private double taxes;
 
     @Column(nullable = false)
-    private String modelNumber;
-
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private EquipmentStatus status;
 
@@ -107,6 +104,10 @@ public class Equipment {
     @OneToMany(mappedBy = "equipment", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonBackReference
     private List<Consumable> consumables = new ArrayList<>();
+
+    @OneToMany(mappedBy = "equipment", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonBackReference("equipment-maintenance")
+    private List<InSiteMaintenance> maintenanceRecords = new ArrayList<>();
 
 
 

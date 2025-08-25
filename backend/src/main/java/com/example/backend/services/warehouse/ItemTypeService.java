@@ -101,6 +101,27 @@ public class ItemTypeService {
         ItemType itemType = itemTypeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("ItemType not found with id: " + id));
 
+        // Check for warehouse items
+        if (!itemType.getItems().isEmpty()) {
+            throw new RuntimeException("ITEMS_EXIST");
+        }
+
+        // Check for transaction items
+        if (!itemType.getTransactionItems().isEmpty()) {
+            throw new RuntimeException("TRANSACTION_ITEMS_EXIST");
+        }
+
+        // Check for request order items
+        if (!itemType.getRequestOrderItems().isEmpty()) {
+            throw new RuntimeException("REQUEST_ORDER_ITEMS_EXIST");
+        }
+
+        // Check for offer items
+        if (!itemType.getOfferItems().isEmpty()) {
+            throw new RuntimeException("OFFER_ITEMS_EXIST");
+        }
+
+        // If no dependencies, proceed with deletion
         itemType.setItemCategory(null);
         itemTypeRepository.delete(itemType);
     }

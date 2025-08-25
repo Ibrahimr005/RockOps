@@ -1,5 +1,8 @@
 package com.example.backend.models.user;
 
+import com.example.backend.models.warehouse.Warehouse;
+import com.example.backend.models.warehouse.WarehouseEmployee;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,9 +12,11 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 
 @Entity
@@ -35,6 +40,11 @@ public class User implements UserDetails
     private String lastName;
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    // Add this to your User entity
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"user", "warehouse"}) // Prevent circular reference
+    private List<WarehouseEmployee> warehouseAssignments = new ArrayList<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -61,5 +71,16 @@ public class User implements UserDetails
     @Override
     public boolean isEnabled() {
         return UserDetails.super.isEnabled();
+    }
+
+    public List<Warehouse> getAssignedWarehouses() {
+        return warehouseAssignments.stream()
+                .map(WarehouseEmployee::getWarehouse)
+                .collect(Collectors.toList());
+    }
+
+    public boolean isAssignedToWarehouse(UUID warehouseId) {
+        return warehouseAssignments.stream()
+                .anyMatch(wa -> wa.getWarehouse().getId().equals(warehouseId));
     }
 }

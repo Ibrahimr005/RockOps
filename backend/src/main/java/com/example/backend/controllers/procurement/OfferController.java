@@ -1,12 +1,13 @@
 package com.example.backend.controllers.procurement;
 
-
 import com.example.backend.dto.OfferDTO;
 import com.example.backend.dto.OfferItemDTO;
 import com.example.backend.models.procurement.Offer;
 import com.example.backend.models.procurement.OfferItem;
+import com.example.backend.models.procurement.OfferTimelineEvent;
 import com.example.backend.models.procurement.RequestOrder;
 import com.example.backend.services.procurement.OfferService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,11 +44,24 @@ public class OfferController {
      * Add offer items to an existing offer
      */
     @PostMapping("/{offerId}/items")
-    public ResponseEntity<List<OfferItem>> addOfferItems(
-            @PathVariable UUID offerId,
-            @RequestBody List<OfferItemDTO> offerItemDTOs) {
-        List<OfferItem> offerItems = offerService.addOfferItems(offerId, offerItemDTOs);
-        return new ResponseEntity<>(offerItems, HttpStatus.CREATED);
+    public ResponseEntity<?> addOfferItems(@PathVariable UUID offerId, @RequestBody List<OfferItemDTO> offerItemDTOs, HttpServletRequest request) {
+        try {
+            System.out.println("=== CONTROLLER CALLED ===");
+            System.out.println("Offer ID: " + offerId);
+            System.out.println("Number of DTOs: " + offerItemDTOs.size());
+
+            List<OfferItem> savedItems = offerService.addOfferItems(offerId, offerItemDTOs);
+
+            System.out.println("=== CONTROLLER SUCCESS ===");
+            return ResponseEntity.ok(savedItems);
+        } catch (Exception e) {
+            System.err.println("=== CONTROLLER ERROR ===");
+            System.err.println("Error message: " + e.getMessage());
+            System.err.println("Error class: " + e.getClass().getSimpleName());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Server Error", "message", e.getMessage()));
+        }
     }
 
     /**
@@ -161,8 +175,8 @@ public class OfferController {
 
         try {
             String username = userDetails.getUsername();
-            Offer newOffer = offerService.retryOffer(offerId, username);
-            return ResponseEntity.ok(newOffer);
+            Offer retriedOffer = offerService.retryOffer(offerId, username);
+            return ResponseEntity.ok(retriedOffer);
         } catch (IllegalStateException e) {
             // Return message as JSON
             Map<String, String> error = new HashMap<>();
@@ -240,5 +254,86 @@ public class OfferController {
         }
     }
 
+    // ================================
+    // NEW TIMELINE ENDPOINTS
+    // ================================
 
+    /**
+     * Get complete timeline for an offer
+     * GET /api/v1/offers/{offerId}/timeline
+     */
+    @GetMapping("/{offerId}/timeline")
+    public ResponseEntity<List<OfferTimelineEvent>> getOfferTimeline(@PathVariable UUID offerId) {
+        try {
+            List<OfferTimelineEvent> timeline = offerService.getOfferTimeline(offerId);
+            return ResponseEntity.ok(timeline);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Get retryable events (events that can be retried from)
+     * GET /api/v1/offers/{offerId}/timeline/retryable
+     */
+    @GetMapping("/{offerId}/timeline/retryable")
+    public ResponseEntity<List<OfferTimelineEvent>> getRetryableEvents(@PathVariable UUID offerId) {
+        try {
+            List<OfferTimelineEvent> retryableEvents = offerService.getRetryableEvents(offerId);
+            return ResponseEntity.ok(retryableEvents);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Get timeline events for a specific attempt
+     * GET /api/v1/offers/{offerId}/timeline/attempt/{attemptNumber}
+     */
+    @GetMapping("/{offerId}/timeline/attempt/{attemptNumber}")
+    public ResponseEntity<List<OfferTimelineEvent>> getTimelineForAttempt(
+            @PathVariable UUID offerId,
+            @PathVariable int attemptNumber) {
+        try {
+            List<OfferTimelineEvent> timeline = offerService.getTimelineForAttempt(offerId, attemptNumber);
+            return ResponseEntity.ok(timeline);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Get timeline statistics for an offer
+     * GET /api/v1/offers/{offerId}/timeline/stats
+     */
+    @GetMapping("/{offerId}/timeline/stats")
+    public ResponseEntity<Map<String, Object>> getTimelineStats(@PathVariable UUID offerId) {
+        try {
+            Offer offer = offerService.getOfferById(offerId);
+            List<OfferTimelineEvent> timeline = offerService.getOfferTimeline(offerId);
+
+            long submissionCount = timeline.stream()
+                    .filter(e -> e.getEventType().isSubmissionEvent())
+                    .count();
+
+            long rejectionCount = timeline.stream()
+                    .filter(e -> e.getEventType().isRejectionEvent())
+                    .count();
+
+            long retryCount = timeline.stream()
+                    .filter(e -> e.getEventType().isRetryEvent())
+                    .count();
+
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("totalAttempts", offer.getCurrentAttemptNumber());
+            stats.put("totalRetries", offer.getTotalRetries());
+            stats.put("totalSubmissions", submissionCount);
+            stats.put("totalRejections", rejectionCount);
+            stats.put("currentAttempt", offer.getCurrentAttemptNumber());
+
+            return ResponseEntity.ok(stats);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

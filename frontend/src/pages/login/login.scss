@@ -1,43 +1,45 @@
-/* login.scss - Modern, responsive login with namespace-isolated classes */
+/* Modern Login Styles with Unique Class Names */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-// Import Google Font
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap');
+// Modern color palette
+$rockops-primary-blue: #3b82f6;
+$rockops-primary-blue-dark: #2563eb;
+$rockops-primary-blue-light: #60a5fa;
+$rockops-text-primary: #111827;
+$rockops-text-secondary: #6b7280;
+$rockops-text-light: #9ca3af;
+$rockops-bg-primary: #ffffff;
+$rockops-bg-secondary: #f9fafb;
+$rockops-bg-accent: #f3f4f6;
+$rockops-border-color: #e5e7eb;
+$rockops-border-focus: #3b82f6;
+$rockops-error-color: #ef4444;
+$rockops-error-bg: #fef2f2;
+$rockops-success-color: #10b981;
+$rockops-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$rockops-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+$rockops-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+$rockops-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
-// Define variables for this component only
-$rockops-blue: #4285f4;
-$rockops-blue-dark: #3367d6;
-$rockops-blue-light: #a4c2f4;
-$rockops-text-dark: #333333;
-$rockops-text-medium: #555555;
-$rockops-text-light: #777777;
-$rockops-bg-light: #ffffff;
-$rockops-bg-field: #f9f9f9;
-$rockops-border: #e0e0e0;
-$rockops-error: #ff4d4f;
-$rockops-error-bg: #fff2f0;
-$rockops-error-border: #ffccc7;
-$rockops-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-$rockops-border-radius: 8px;
-
-// Reset styles specifically for login page
-.rockops-login__container *,
-.rockops-login__container *::before,
-.rockops-login__container *::after {
+// Reset and base styles for login container
+.rockops__auth__login__main__container * {
     box-sizing: border-box;
-    font-family: 'Nunito Sans', sans-serif;
+    margin: 0;
+    padding: 0;
 }
 
-// Main container
-.rockops-login__container {
+.rockops__auth__login__main__container {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #4285f4;
-    //background: linear-gradient(135deg, #4285f4 0%, #34495e 100%);
+    padding: 1rem;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
     position: relative;
+    overflow: hidden;
 
-    // Pattern overlay
+    // Add animated background pattern
     &::before {
         content: '';
         position: absolute;
@@ -45,180 +47,409 @@ $rockops-border-radius: 8px;
         left: 0;
         width: 100%;
         height: 100%;
-
-        background-size: 300px;
-        background-repeat: repeat;
-        opacity: 0.1;
+        background-image:
+                radial-gradient(circle at 25% 25%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.2) 0%, transparent 50%);
+        animation: rockops-bg-pulse 8s ease-in-out infinite alternate;
+        z-index: 0;
     }
 
-    @media (max-width: 480px) {
-        padding: 0 24px ;
+    // Add grid pattern overlay
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 50px 50px;
+        z-index: 1;
     }
 
-    @media (min-width: 1200px) {
-        padding: 0 24px;
+    // Background decoration
+    .rockops__auth__login__background__decoration {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+
+        .rockops__auth__login__floating__circle {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.15));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+            &.rockops__auth__login__floating__circle--primary {
+                width: 300px;
+                height: 300px;
+                top: -5%;
+                left: -5%;
+                background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(139, 92, 246, 0.1));
+                animation: rockops-float-animation-primary 8s ease-in-out infinite;
+            }
+
+            &.rockops__auth__login__floating__circle--secondary {
+                width: 200px;
+                height: 200px;
+                top: 40%;
+                right: -10%;
+                background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.1));
+                animation: rockops-float-animation-secondary 10s ease-in-out infinite reverse;
+            }
+
+            &.rockops__auth__login__floating__circle--tertiary {
+                width: 150px;
+                height: 150px;
+                bottom: -5%;
+                left: 15%;
+                background: linear-gradient(135deg, rgba(120, 119, 198, 0.18), rgba(59, 130, 246, 0.12));
+                animation: rockops-float-animation-tertiary 9s ease-in-out infinite;
+            }
+        }
+    }
+
+    @keyframes rockops-float-animation-primary {
+        0%, 100% {
+            transform: translateY(0px) translateX(0px) rotate(0deg);
+            opacity: 0.8;
+        }
+        33% {
+            transform: translateY(-30px) translateX(20px) rotate(120deg);
+            opacity: 0.6;
+        }
+        66% {
+            transform: translateY(-10px) translateX(-15px) rotate(240deg);
+            opacity: 0.9;
+        }
+    }
+
+    @keyframes rockops-float-animation-secondary {
+        0%, 100% {
+            transform: translateY(0px) translateX(0px) rotate(0deg);
+            opacity: 0.7;
+        }
+        50% {
+            transform: translateY(-25px) translateX(30px) rotate(180deg);
+            opacity: 1;
+        }
+    }
+
+    @keyframes rockops-float-animation-tertiary {
+        0%, 100% {
+            transform: translateY(0px) translateX(0px) scale(1);
+            opacity: 0.6;
+        }
+        25% {
+            transform: translateY(-20px) translateX(-10px) scale(1.1);
+            opacity: 0.8;
+        }
+        75% {
+            transform: translateY(-35px) translateX(25px) scale(0.9);
+            opacity: 0.9;
+        }
+    }
+
+    @keyframes rockops-bg-pulse {
+        0% {
+            opacity: 0.4;
+            transform: scale(1);
+        }
+        100% {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
     }
 }
 
-// Login card
-.rockops-login__card {
+.rockops__auth__login__main__card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 24px;
+    box-shadow:
+            0 25px 50px -12px rgba(0, 0, 0, 0.25),
+            0 0 0 1px rgba(255, 255, 255, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    padding: 3rem;
+    width: 100%;
+    max-width: 480px;
     position: relative;
     z-index: 10;
-    width: 100%;
-    max-width: 420px;
-    padding: 36px;
-    background-color: $rockops-bg-light;
-    border-radius: $rockops-border-radius;
-    box-shadow: $rockops-shadow;
-    animation: card-slide-up 0.5s ease-out;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 
-    @media (max-width: 480px) {
-        padding: 24px;
-    }
-
-    @media (min-width: 1200px) {
-        max-width: 460px;
-        padding: 40px;
-    }
-}
-
-@keyframes card-slide-up {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    @media (max-width: 640px) {
+        padding: 2rem;
+        border-radius: 16px;
+        margin: 1rem;
+        background: rgba(255, 255, 255, 0.98);
     }
 }
 
 // Header section
-.rockops-login__header {
+.rockops__auth__login__header__section {
     text-align: center;
-    margin-bottom: 28px;
-}
+    margin-bottom: 2.5rem;
 
-.rockops-login__title {
-    font-size: 28px;
-    font-weight: 700;
-    color: $rockops-text-dark;
-    margin: 0 0 12px 0;
+    .rockops__auth__login__brand__logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-bottom: 2rem;
 
-    @media (max-width: 480px) {
-        font-size: 24px;
+        .rockops__auth__login__brand__icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, $rockops-primary-blue, $rockops-primary-blue-dark);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+
+            svg {
+                width: 24px;
+                height: 24px;
+            }
+        }
+
+        .rockops__auth__login__brand__text {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: $rockops-text-primary;
+            letter-spacing: -0.025em;
+        }
+    }
+
+    .rockops__auth__login__welcome__title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: $rockops-text-primary;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.025em;
+
+        @media (max-width: 640px) {
+            font-size: 1.75rem;
+        }
+    }
+
+    .rockops__auth__login__welcome__subtitle {
+        color: $rockops-text-secondary;
+        font-size: 1rem;
+        font-weight: 400;
     }
 }
 
-.rockops-login__subtitle {
-    font-size: 15px;
-    color: $rockops-text-light;
-    margin: 0;
-    line-height: 1.5;
-}
-
-// Form elements
-.rockops-login__form-group {
-    margin-bottom: 20px;
-}
-
-.rockops-login__label {
-    display: block;
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: $rockops-text-medium;
-}
-
-.rockops-login__input {
-    width: 100%;
-    padding: 14px 16px;
-    font-size: 15px;
-    border: 1px solid $rockops-border;
-    border-radius: $rockops-border-radius;
-    background-color: $rockops-bg-field;
-    color: $rockops-text-dark;
-    transition: all 0.2s ease;
-
-    &:focus {
-        outline: none;
-        border-color: $rockops-blue;
-        box-shadow: 0 0 0 3px rgba($rockops-blue, 0.15);
-        background-color: $rockops-bg-light;
-    }
-
-    &::placeholder {
-
-    }
-
-    @media (max-width: 480px) {
-        padding: 12px 14px;
-    }
-}
-
-// Password header with forgot password link
-.rockops-login__password-header {
+// Error message
+.rockops__auth__login__error__message {
     display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: $rockops-error-bg;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    color: $rockops-error-color;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+
+    .rockops__auth__login__error__icon {
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+    }
+}
+
+// Form styles
+.rockops__auth__login__form__wrapper {
+    .rockops__auth__login__form__group {
+        margin-bottom: 1.5rem;
+
+        .rockops__auth__login__field__label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: $rockops-text-primary;
+            margin-bottom: 0.5rem;
+        }
+
+        .rockops__auth__login__input__wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+
+            .rockops__auth__login__input__icon {
+                position: absolute;
+                left: 1rem;
+                width: 20px;
+                height: 20px;
+                color: $rockops-text-light;
+                z-index: 2;
+            }
+
+            .rockops__auth__login__input__field {
+                width: 100%;
+                padding: 0.875rem 1rem 0.875rem 3rem;
+                border: 2px solid $rockops-border-color;
+                border-radius: 12px;
+                font-size: 1rem;
+                font-weight: 400;
+                color: $rockops-text-primary;
+                background: $rockops-bg-primary;
+                transition: all 0.2s ease;
+                outline: none;
+
+                &::placeholder {
+                    color: $rockops-text-light;
+                }
+
+                &:focus {
+                    border-color: $rockops-border-focus;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                }
+
+                &:hover:not(:focus) {
+                    border-color: #d1d5db;
+                }
+            }
+
+            .rockops__auth__login__password__toggle {
+                position: absolute;
+                right: 1rem;
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 0.25rem;
+                color: $rockops-text-light;
+                transition: color 0.2s ease;
+                z-index: 2;
+
+                &:hover {
+                    color: $rockops-text-secondary;
+                }
+
+                svg {
+                    width: 20px;
+                    height: 20px;
+                }
+            }
+        }
+    }
+}
+
+// Form options (checkbox and forgot password)
+.rockops__auth__login__form__options {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-}
+    margin-bottom: 2rem;
 
-.rockops-login__forgot-link {
-    font-size: 13px;
-    color: $rockops-blue;
-    text-decoration: none;
-    transition: color 0.2s ease;
-
-
-    &:hover {
-        color: $rockops-blue-dark;
-        text-decoration: underline;
+    @media (max-width: 480px) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
     }
-}
 
-// Remember me checkbox
-.rockops-login__remember {
-    display: flex;
-    align-items: center;
-    margin-bottom: 24px;
-}
+    .rockops__auth__login__checkbox__wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        user-select: none;
 
-.rockops-login__checkbox {
-    width: 18px;
-    height: 18px;
-    margin-right: 10px;
-    accent-color: $rockops-blue;
-    cursor: pointer;
-}
+        .rockops__auth__login__checkbox__input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
 
-.rockops-login__remember-label {
-    font-size: 14px;
-    color: $rockops-text-medium;
-    cursor: pointer;
+            &:checked + .rockops__auth__login__checkbox__custom {
+                background: $rockops-primary-blue;
+                border-color: $rockops-primary-blue;
+
+                &::after {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+        }
+
+        .rockops__auth__login__checkbox__custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid $rockops-border-color;
+            border-radius: 4px;
+            background: $rockops-bg-primary;
+            position: relative;
+            transition: all 0.2s ease;
+
+            &::after {
+                content: '';
+                position: absolute;
+                top: 2px;
+                left: 6px;
+                width: 4px;
+                height: 8px;
+                border: 2px solid white;
+                border-top: 0;
+                border-left: 0;
+                transform: rotate(45deg) scale(0);
+                opacity: 0;
+                transition: all 0.2s ease;
+            }
+        }
+
+        .rockops__auth__login__checkbox__label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: $rockops-text-secondary;
+        }
+    }
+
+    .rockops__auth__login__forgot__password {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: $rockops-primary-blue;
+        text-decoration: none;
+        transition: color 0.2s ease;
+
+        &:hover {
+            color: $rockops-primary-blue-dark;
+        }
+    }
 }
 
 // Submit button
-.rockops-login__button {
-    position: relative;
+.rockops__auth__login__submit__button {
     width: 100%;
-    padding: 14px;
-    background-color: $rockops-blue;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, $rockops-primary-blue, $rockops-primary-blue-dark);
     color: white;
     border: none;
-    border-radius: $rockops-border-radius;
-    font-size: 16px;
+    border-radius: 12px;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    outline: none;
+    position: relative;
+    overflow: hidden;
 
     &:hover:not(:disabled) {
-        background-color: $rockops-blue-dark;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba($rockops-blue-dark, 0.25);
+        transform: translateY(-1px);
+        box-shadow: $rockops-shadow-lg;
     }
 
     &:active:not(:disabled) {
@@ -226,70 +457,62 @@ $rockops-border-radius: 8px;
     }
 
     &:disabled {
-        background-color: $rockops-blue-light;
+        opacity: 0.7;
         cursor: not-allowed;
-        opacity: 0.8;
+        transform: none;
     }
 
-    @media (max-width: 480px) {
-        padding: 12px;
+    .rockops__auth__login__button__spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: rockops-spinner-rotation 1s linear infinite;
+    }
+
+    .rockops__auth__login__button__arrow {
+        width: 20px;
+        height: 20px;
+        transition: transform 0.2s ease;
+    }
+
+    &:hover:not(:disabled) .rockops__auth__login__button__arrow {
+        transform: translateX(2px);
+    }
+
+    @keyframes rockops-spinner-rotation {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 }
 
-// Loading spinner
-.rockops-login__spinner {
-    display: inline-block;
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: white;
-    animation: spinner 0.8s linear infinite;
-    margin-right: 10px;
-}
-
-@keyframes spinner {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-// Sign up link
-.rockops-login__signup {
-    margin-top: 24px;
+// Footer
+.rockops__auth__login__footer__section {
     text-align: center;
-    font-size: 14px;
-    color: $rockops-text-medium;
-}
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid $rockops-border-color;
 
-.rockops-login__signup-link {
-    color: $rockops-blue;
-    font-weight: 600;
-    text-decoration: none;
-    transition: color 0.2s ease;
-
-    &:hover {
-        color: $rockops-blue-dark;
-        text-decoration: underline;
+    p {
+        font-size: 0.875rem;
+        color: $rockops-text-light;
     }
 }
 
-// Error message
-.rockops-login__error {
-    background-color: $rockops-error-bg;
-    border: 1px solid $rockops-error-border;
-    border-left: 4px solid $rockops-error;
-    color: $rockops-error;
-    padding: 12px 16px;
-    border-radius: $rockops-border-radius;
-    margin-bottom: 20px;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
+// Responsive adjustments
+@media (max-width: 640px) {
+    .rockops__auth__login__main__container {
+        padding: 0.5rem;
+    }
 
-    &::before {
-        content: "⚠️";
-        margin-right: 10px;
-        font-size: 16px;
+    .rockops__auth__login__main__card {
+        max-width: 100%;
+    }
+
+    .rockops__auth__login__form__options {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
     }
 }

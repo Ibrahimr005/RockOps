@@ -1,6 +1,7 @@
 import React, { forwardRef, useState, useImperativeHandle, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import "./EquipmentCard.scss";
+import equipmentIcon from "../../../../../assets/imgs/equipment_icon.png";
 
 const EquipmentCard = forwardRef((props, ref) => {
     const [equipmentId, setEquipmentId] = useState("");
@@ -33,6 +34,7 @@ const EquipmentCard = forwardRef((props, ref) => {
         if (!status) return "status-unknown";
 
         const statusLower = status.toLowerCase();
+        if (statusLower === "running") return "status-running";
         if (statusLower === "available") return "status-available";
         if (statusLower === "in_use" || statusLower === "in use" || statusLower === "rented") return "status-in-use";
         if (statusLower === "maintenance" || statusLower === "in_maintenance") return "status-maintenance";
@@ -54,7 +56,7 @@ const EquipmentCard = forwardRef((props, ref) => {
         setSiteName(newSiteName || "N/A");
         setStatus(newStatus || "Unknown");
         setDriver(newDriver || "No Driver Assigned");
-        setImageUrl(newImageUrl || Excavator1);
+        setImageUrl(newImageUrl || "");
         setEquipmentId(newEquipmentId || "");
 
         // Log for debugging
@@ -77,11 +79,11 @@ const EquipmentCard = forwardRef((props, ref) => {
             <div className="equipment-image-container">
                 <img
                     className="equipment-image"
-                    src={imageUrl}
+                    src={imageUrl || equipmentIcon}
                     alt={modelName}
                     onError={(e) => {
                         console.log(`Image failed to load for ${modelName}: ${imageUrl}`);
-                        e.target.src = Excavator1;
+                        e.target.src = equipmentIcon;
                     }}
                 />
             </div>

@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { inSiteMaintenanceService } from '../../../services/inSiteMaintenanceService';
 import { maintenanceTypeService } from '../../../services/maintenanceTypeService';
 import { siteService } from '../../../services/siteService';
-import { itemTypeService } from '../../../services/itemTypeService';
-import { warehouseService } from '../../../services/warehouseService';
+import { itemTypeService } from '../../../services/warehouse/itemTypeService.js';
+import { warehouseService } from '../../../services/warehouse/warehouseService.js';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import InlineTransactionValidation from './InlineTransactionValidation';
 import './MaintenanceAddModal.scss';
@@ -48,7 +48,12 @@ const MaintenanceAddModal = ({
     const [inventoryByWarehouse, setInventoryByWarehouse] = useState({});
     const [validationData, setValidationData] = useState(null);
 
-    const { showSuccess, showWarning } = useSnackbar();
+    // Maintenance type creation modal state
+    const [showMaintenanceTypeModal, setShowMaintenanceTypeModal] = useState(false);
+    const [newMaintenanceTypeData, setNewMaintenanceTypeData] = useState({ name: '', description: '', active: true });
+    const [creatingMaintenanceType, setCreatingMaintenanceType] = useState(false);
+
+    const { showSuccess, showWarning, showError } = useSnackbar();
 
     const isEditing = !!editingMaintenance;
 
@@ -362,7 +367,8 @@ const MaintenanceAddModal = ({
             .map((item, index) => index !== currentIndex ? item.itemTypeId : null)
             .filter(id => id);
         
-        return itemTypes.filter(itemType => !selectedItemTypeIds.includes(itemType.id));
+        // Ensure itemTypes is always an array before filtering
+        return (itemTypes || []).filter(itemType => !selectedItemTypeIds.includes(itemType.id));
     };
 
 
@@ -373,6 +379,62 @@ const MaintenanceAddModal = ({
         setPendingTransaction(null);
         setBatchVerificationResult(null);
         setFormData(prev => ({ ...prev, batchNumber: '' }));
+    };
+
+    // Maintenance type creation functions
+    const handleMaintenanceTypeChange = (e) => {
+        const { value } = e.target;
+        if (value === 'add_new') {
+            setShowMaintenanceTypeModal(true);
+        } else {
+            handleInputChange(e);
+        }
+    };
+
+    const handleNewMaintenanceTypeInputChange = (e) => {
+        const { name, value } = e.target;
+        setNewMaintenanceTypeData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleCreateMaintenanceType = async (e) => {
+        e.preventDefault();
+        if (!newMaintenanceTypeData.name.trim()) {
+            showError('Maintenance type name is required');
+            return;
+        }
+
+        setCreatingMaintenanceType(true);
+        try {
+            const response = await maintenanceTypeService.create(newMaintenanceTypeData);
+            const newMaintenanceType = response.data;
+
+            // Add the new maintenance type to the list
+            setMaintenanceTypes(prev => [...prev, newMaintenanceType]);
+
+            // Automatically select the newly created maintenance type
+            setFormData(prev => ({
+                ...prev,
+                maintenanceTypeId: newMaintenanceType.id
+            }));
+
+            // Close the modal and reset form
+            setShowMaintenanceTypeModal(false);
+            setNewMaintenanceTypeData({ name: '', description: '', active: true });
+            showSuccess(`Maintenance type "${newMaintenanceType.name}" created successfully and selected`);
+        } catch (error) {
+            console.error('Error creating maintenance type:', error);
+            showError(`Failed to create maintenance type: ${error.response?.data?.message || error.message}`);
+        } finally {
+            setCreatingMaintenanceType(false);
+        }
+    };
+
+    const handleCancelMaintenanceTypeCreation = () => {
+        setShowMaintenanceTypeModal(false);
+        setNewMaintenanceTypeData({ name: '', description: '', active: true });
     };
 
     // Create or update maintenance record and transaction if needed
@@ -480,7 +542,7 @@ const MaintenanceAddModal = ({
             <div className="maintenance-modal">
                 <div className="maintenance-modal-header">
                     <h2>{isEditing ? 'Edit Maintenance Record' : 'Add Maintenance Record'}</h2>
-                    <button className="close-button" onClick={onClose}>×</button>
+                    <button className="btn-close" onClick={onClose} aria-label="Close"></button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="maintenance-form">
@@ -529,7 +591,7 @@ const MaintenanceAddModal = ({
                                 <select
                                     name="maintenanceTypeId"
                                     value={formData.maintenanceTypeId}
-                                    onChange={handleInputChange}
+                                    onChange={handleMaintenanceTypeChange}
                                     required
                                 >
                                     <option value="">Select Maintenance Type</option>
@@ -538,6 +600,9 @@ const MaintenanceAddModal = ({
                                             {type.name}
                                         </option>
                                     ))}
+                                    <option value="add_new" className="add-new-option">
+                                        + Add New Maintenance Type
+                                    </option>
                                 </select>
                             </div>
 
@@ -732,12 +797,12 @@ const MaintenanceAddModal = ({
                     )}
 
                     <div className="form-actions">
-                        <button type="button" className="cancel-button" onClick={onClose}>
+                        <button type="button" className="btn-primary--outline" onClick={onClose}>
                             Cancel
                         </button>
                         <button 
                             type="submit" 
-                            className="submit-button" 
+                            className="btn-primary" 
                             disabled={isLoading || isValidatingTransaction || (showInlineValidation && (!validationData || !validationData.isValid))}
                         >
                             {isLoading ? 'Saving...' : 
@@ -753,6 +818,85 @@ const MaintenanceAddModal = ({
                     </div>
                 </form>
             </div>
+
+            {/* Maintenance Type Creation Modal */}
+            {showMaintenanceTypeModal && (
+                <div className="modal-overlay" onClick={handleCancelMaintenanceTypeCreation}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Add Maintenance Type</h2>
+                            <button
+                                className="modal-close"
+                                onClick={handleCancelMaintenanceTypeCreation}
+                                disabled={creatingMaintenanceType}
+                            >
+                                &times;
+                            </button>
+                        </div>
+                        <form onSubmit={handleCreateMaintenanceType}>
+                            <div className="form-group">
+                                <label htmlFor="maintenanceTypeName">Name *</label>
+                                <input
+                                    type="text"
+                                    id="maintenanceTypeName"
+                                    name="name"
+                                    value={newMaintenanceTypeData.name}
+                                    onChange={handleNewMaintenanceTypeInputChange}
+                                    placeholder="e.g., Oil Change, Repair, Inspection"
+                                    required
+                                    disabled={creatingMaintenanceType}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="maintenanceTypeDescription">Description</label>
+                                <textarea
+                                    id="maintenanceTypeDescription"
+                                    name="description"
+                                    value={newMaintenanceTypeData.description}
+                                    onChange={handleNewMaintenanceTypeInputChange}
+                                    placeholder="Describe this maintenance type..."
+                                    rows="3"
+                                    disabled={creatingMaintenanceType}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="checkbox-label">
+                                    <input
+                                        type="checkbox"
+                                        name="active"
+                                        checked={newMaintenanceTypeData.active !== false}
+                                        onChange={(e) => setNewMaintenanceTypeData(prev => ({
+                                            ...prev,
+                                            active: e.target.checked
+                                        }))}
+                                        disabled={creatingMaintenanceType}
+                                    />
+                                    <span className="checkbox-text">Active</span>
+                                </label>
+                                <small className="form-help-text">
+                                    Inactive maintenance types will not be available for selection
+                                </small>
+                            </div>
+                            <div className="modal-actions">
+                                <button
+                                    type="button"
+                                    onClick={handleCancelMaintenanceTypeCreation}
+                                    disabled={creatingMaintenanceType}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="btn-primary"
+                                    disabled={creatingMaintenanceType || !newMaintenanceTypeData.name.trim()}
+                                >
+                                    {creatingMaintenanceType ? 'Creating...' : 'Create Maintenance Type'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

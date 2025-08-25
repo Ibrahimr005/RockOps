@@ -1,6 +1,6 @@
 // EventService.js - Handles API calls for event operations
-
-const API_URL = "http://localhost:8080/api/v1/events";
+import apiClient from '../utils/apiClient.js';
+import { EVENT_ENDPOINTS } from '../config/api.config.js';
 
 /**
  * Fetches all events from the API
@@ -8,20 +8,8 @@ const API_URL = "http://localhost:8080/api/v1/events";
  */
 export const fetchEvents = async () => {
     try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(API_URL, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch events: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const response = await apiClient.get(EVENT_ENDPOINTS.BASE);
+        const data = response.data;
 
         // Convert eventTime to JavaScript Date object
         return data.map(event => ({
@@ -41,22 +29,8 @@ export const fetchEvents = async () => {
  */
 export const createEvent = async (eventData) => {
     try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(API_URL, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
-            body: JSON.stringify(eventData),
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to create event: ${errorText}`);
-        }
-
-        return await response.json();
+        const response = await apiClient.post(EVENT_ENDPOINTS.CREATE, eventData);
+        return response.data;
     } catch (error) {
         console.error("Error creating event:", error);
         throw error;
@@ -70,18 +44,7 @@ export const createEvent = async (eventData) => {
  */
 export const cancelEvent = async (eventId) => {
     try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`${API_URL}/${eventId}/cancel`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to cancel event: ${response.status}`);
-        }
+        await apiClient.put(EVENT_ENDPOINTS.CANCEL(eventId));
     } catch (error) {
         console.error("Error cancelling event:", error);
         throw error;
@@ -95,18 +58,7 @@ export const cancelEvent = async (eventId) => {
  */
 export const rescheduleEvent = async (eventId) => {
     try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`${API_URL}/${eventId}/reschedule`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to reschedule event: ${response.status}`);
-        }
+        await apiClient.put(EVENT_ENDPOINTS.RESCHEDULE(eventId));
     } catch (error) {
         console.error("Error rescheduling event:", error);
         throw error;

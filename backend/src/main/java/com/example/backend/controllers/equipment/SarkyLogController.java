@@ -113,6 +113,7 @@ public class SarkyLogController {
         sarkyLogDTO.setWorkedHours(workedHours);
         sarkyLogDTO.setDate(LocalDate.parse(date));
         sarkyLogDTO.setDriverId(driverId);
+        // Note: equipmentId is not needed for update as we fetch the entity by ID
 
         return ResponseEntity.ok(sarkyLogService.updateSarkyLog(id, sarkyLogDTO, file));
     }

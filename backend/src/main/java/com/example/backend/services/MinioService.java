@@ -1,350 +1,426 @@
 package com.example.backend.services;
 
-import io.minio.*;
-import io.minio.http.Method;
-import io.minio.messages.Item;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 import java.io.InputStream;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+import java.util.*;
 
 @Service
-public class MinioService {
+public class MinioService implements FileStorageService {
 
-    private final MinioClient minioClient;
+    private final S3Client s3Client;
+    private final S3Presigner s3Presigner;
 
-    @Value("${minio.bucketName}")
+    @Value("${aws.s3.bucket-name:rockops}")
     private String bucketName;
 
-    public MinioService(MinioClient minioClient) {
-        this.minioClient = minioClient;
-    }
+    @Value("${aws.s3.region:us-east-1}")
+    private String region;
 
-    // Create bucket if it doesn't exist
-    public void createBucket() throws Exception {
-        boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
-        if (!found) {
-            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
+    @Value("${aws.s3.public-url:}")
+    private String s3PublicUrl;
+
+    @Value("${aws.s3.enabled:true}")
+    private boolean s3Enabled;
+
+    public MinioService(S3Client s3Client, S3Presigner s3Presigner) {
+        this.s3Client = s3Client;
+        this.s3Presigner = s3Presigner;
+
+        // Force enable S3 for local MinIO development
+        if (s3Client != null) {
+            this.s3Enabled = true;  // Override the @Value annotation
+            System.out.println("🔧 MinioService initialized with S3 enabled: " + s3Enabled + " (forced to true because S3Client exists)");
+        } else {
+            System.out.println("🔧 MinioService initialized with S3 enabled: " + s3Enabled + " (S3Client is null)");
         }
     }
 
-    // Upload file
-    public String uploadFile(MultipartFile file) throws Exception {
-        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        minioClient.putObject(
-                PutObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(fileName)
-                        .stream(file.getInputStream(), file.getSize(), -1)
-                        .contentType(file.getContentType())
-                        .build()
-        );
-        return fileName;
-    }
+    @Override
+    public void createBucketIfNotExists(String bucketName) {
+        if (!s3Enabled) {
+            System.out.println("⚠️ S3 is disabled, skipping bucket creation for local development");
+            return;
+        }
 
-    // Download file
-    public InputStream downloadFile(String fileName) throws Exception {
-        return minioClient.getObject(GetObjectArgs.builder().bucket(bucketName).object(fileName).build());
-    }
+        if (s3Client == null) {
+            System.out.println("⚠️ S3Client is null, skipping bucket creation for local development");
+            return;
+        }
 
-    // Get file URL (for access)
-    public String getFileUrl(String fileName) throws Exception {
-        return minioClient.getPresignedObjectUrl(
-                GetPresignedObjectUrlArgs.builder()
-                        .method(Method.GET)
-                        .bucket(bucketName)
-                        .object(fileName)
-                        .expiry(7, TimeUnit.DAYS)
-                        .build()
-        );
-    }
-
-    @PostConstruct
-    public void init() {
         try {
-            createBucketIfNotExists(); // Ensure bucket exists on startup
+            HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
+                    .bucket(bucketName)
+                    .build();
+            s3Client.headBucket(headBucketRequest);
+        } catch (NoSuchBucketException e) {
+            CreateBucketRequest createBucketRequest = CreateBucketRequest.builder()
+                    .bucket(bucketName)
+                    .build();
+            s3Client.createBucket(createBucketRequest);
+            System.out.println("✅ S3 bucket created: " + bucketName);
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Error checking/creating S3 bucket: " + e.getMessage());
         }
     }
 
-    public void createBucketIfNotExists() throws Exception {
-        boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
-        if (!found) {
-            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
-            System.out.println("✅ Bucket created: " + bucketName);
-        } else {
-            System.out.println("✅ Bucket already exists: " + bucketName);
+    @Override
+    public void setBucketPublicReadPolicy(String bucketName) {
+        if (!s3Enabled || s3Client == null) {
+            System.out.println("⚠️ S3 is disabled, skipping bucket policy for local development");
+            return;
+        }
+
+        try {
+            String policyJson = String.format("""
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Sid": "PublicReadGetObject",
+                            "Effect": "Allow",
+                            "Principal": "*",
+                            "Action": "s3:GetObject",
+                            "Resource": "arn:aws:s3:::%s/*"
+                        }
+                    ]
+                }
+                """, bucketName);
+
+            PutBucketPolicyRequest policyRequest = PutBucketPolicyRequest.builder()
+                    .bucket(bucketName)
+                    .policy(policyJson)
+                    .build();
+            s3Client.putBucketPolicy(policyRequest);
+        } catch (Exception e) {
+            System.err.println("Error setting S3 bucket policy: " + e.getMessage());
         }
     }
 
-    // Upload file with custom path/name
-    public String uploadFile(MultipartFile file, String objectName) throws Exception {
-        minioClient.putObject(
-                PutObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(objectName)
-                        .stream(file.getInputStream(), file.getSize(), -1)
-                        .contentType(file.getContentType())
-                        .build()
-        );
-        return objectName;
+    @Override
+    public String uploadFile(MultipartFile file) throws Exception {
+        if (!s3Enabled || s3Client == null) {
+            System.out.println("✅ S3 is disabled for local development, simulating file upload");
+            String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+            System.out.println("✅ Simulated file upload: " + fileName);
+            return fileName;
+        }
+
+        String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+        return uploadFile(bucketName, file, fileName);
     }
 
-    // Delete file
-    public void deleteFile(String fileName) throws Exception {
-        minioClient.removeObject(
-                RemoveObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(fileName)
-                        .build()
-        );
-    }
+    @Override
+    public String uploadFile(String bucketName, MultipartFile file, String fileName) throws Exception {
+        if (!s3Enabled || s3Client == null) {
+            System.out.println("✅ S3 is disabled for local development, simulating file upload: " + fileName);
+            return fileName;
+        }
 
-    //Equipment Methods
+        try {
+            createBucketIfNotExists(bucketName);
 
-    public void createEquipmentBucket(UUID equipmentId) throws Exception {
-        String bucketName = "equipment-" + equipmentId.toString(); // Ensure valid bucket name
-        boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(fileName)
+                    .contentType(file.getContentType())
+                    .contentLength(file.getSize())
+                    .build();
 
-        if (!found) {
-            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
-            System.out.println("Bucket created: " + bucketName);
-        } else {
-            System.out.println("Bucket already exists: " + bucketName);
+            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+            return fileName;
+        } catch (Exception e) {
+            throw new Exception("Error uploading file to S3: " + e.getMessage());
         }
     }
 
-    public String uploadEquipmentFile(UUID equipmentId, MultipartFile file, String fileName) throws Exception {
-        String equipmentBucket = "equipment-" + equipmentId.toString();
-        // Ensure bucket exists before uploading
-
-
-        minioClient.putObject(
-                PutObjectArgs.builder()
-                        .bucket(equipmentBucket)
-                        .object(fileName)
-                        .stream(file.getInputStream(), file.getSize(), -1)
-                        .contentType(file.getContentType())
-                        .build()
-        );
-
-        return fileName;
-    }
-
-    public String getEquipmentMainPhoto(UUID equipmentId) throws Exception {
-        String equipmentBucket = "equipment-" + equipmentId.toString();
-
-        // List objects in the bucket to find the "main image"
-        Iterable<Result<Item>> results = minioClient.listObjects(
-                ListObjectsArgs.builder().bucket(equipmentBucket).build()
-        );
-
-        for (Result<Item> result : results) {
-            Item item = result.get();
-            if (item.objectName().contains("Main_Image")) { // Assuming naming convention
-                return minioClient.getPresignedObjectUrl(
-                        GetPresignedObjectUrlArgs.builder()
-                                .method(Method.GET)
-                                .bucket(equipmentBucket)
-                                .object(item.objectName())
-                                .expiry(7, TimeUnit.DAYS)
-                                .build()
-                );
-            }
+    @Override
+    public void uploadFile(MultipartFile file, String fileName) throws Exception {
+        if (!s3Enabled || s3Client == null) {
+            System.out.println("✅ S3 is disabled for local development, simulating file upload: " + fileName);
+            return;
         }
-
-        throw new Exception("Main image not found for equipment: " + equipmentId);
-    }
-
-    public void deleteEquipmentFile(UUID equipmentId, String fileName) throws Exception {
-        String equipmentBucket = "equipment-" + equipmentId.toString();
-
-        // List all objects in the bucket
-        Iterable<Result<Item>> results = minioClient.listObjects(
-                ListObjectsArgs.builder().bucket(equipmentBucket).build()
-        );
-
-        String matchingFileName = null;
-
-        // Find the file that contains the given fileName
-        for (Result<Item> result : results) {
-            String objectName = result.get().objectName();
-            if (objectName.contains(fileName)) {
-                matchingFileName = objectName;
-                break; // Stop searching once we find a match
-            }
-        }
-
-        if (matchingFileName != null) {
-            // Delete the found file
-            minioClient.removeObject(
-                    RemoveObjectArgs.builder()
-                            .bucket(equipmentBucket)
-                            .object(matchingFileName)
-                            .build()
-            );
-            System.out.println("File " + matchingFileName + " deleted successfully from bucket " + equipmentBucket);
-        } else {
-            System.out.println("File " + fileName + " not found in bucket " + equipmentBucket);
-        }
-    }
-
-    public String getEquipmentFileUrl(UUID equipmentId, String documentPath) throws Exception {
-        String equipmentBucket = "equipment-" + equipmentId.toString();
-
-        // Check if bucket exists
-        boolean bucketExists = minioClient.bucketExists(
-                BucketExistsArgs.builder().bucket(equipmentBucket).build()
-        );
-
-        if (!bucketExists) {
-            throw new Exception("Equipment bucket does not exist: " + equipmentBucket);
-        }
-
-        // Get the presigned URL for the file
-        return minioClient.getPresignedObjectUrl(
-                GetPresignedObjectUrlArgs.builder()
-                        .method(Method.GET)
-                        .bucket(equipmentBucket)
-                        .object(documentPath)
-                        .expiry(7, TimeUnit.DAYS)
-                        .build()
-        );
-    }
-
-    // NEW GENERIC DOCUMENT METHODS
-
-    /**
-     * Create a bucket if it does not exist for any entity type
-     */
-    public void createBucketIfNotExists(String bucketName) throws Exception {
-        boolean found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
-        if (!found) {
-            minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
-            System.out.println("Bucket created: " + bucketName);
-        }
-    }
-
-    /**
-     * Upload a file to any bucket
-     */
-    public void uploadFile(String bucketName, MultipartFile file, String fileName) throws Exception {
-        // Ensure bucket exists
-        createBucketIfNotExists(bucketName);
-
-        // Upload file
-        minioClient.putObject(
-                PutObjectArgs.builder()
-                        .bucket(bucketName)
-                        .object(fileName)
-                        .stream(file.getInputStream(), file.getSize(), -1)
-                        .contentType(file.getContentType())
-                        .build()
-        );
-
-        System.out.println("File uploaded: " + fileName + " to bucket: " + bucketName);
-    }
-
-    /**
-     * Get a file URL from any bucket
-     */
-    public String getFileUrl(String bucketName, String fileName) throws Exception {
-        return minioClient.getPresignedObjectUrl(
-                GetPresignedObjectUrlArgs.builder()
-                        .method(Method.GET)
-                        .bucket(bucketName)
-                        .object(fileName)
-                        .expiry(7, TimeUnit.DAYS)
-                        .build()
-        );
-    }
-
-    /**
-     * Delete a file from any bucket
-     */
-    public void deleteFile(String bucketName, String fileName) throws Exception {
-        // First check if the file exists
-        Iterable<Result<Item>> results = minioClient.listObjects(
-                ListObjectsArgs.builder().bucket(bucketName).build()
-        );
-
-        String matchingFileName = null;
-
-        // Find the file that contains the given fileName
-        for (Result<Item> result : results) {
-            String objectName = result.get().objectName();
-            if (objectName.contains(fileName)) {
-                matchingFileName = objectName;
-                break; // Stop searching once we find a match
-            }
-        }
-
-        if (matchingFileName != null) {
-            minioClient.removeObject(
-                    RemoveObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(matchingFileName)
-                            .build()
-            );
-
-            System.out.println("File deleted: " + matchingFileName + " from bucket: " + bucketName);
-        } else {
-            System.out.println("File not found: " + fileName + " in bucket: " + bucketName);
-        }
-    }
-
-    /**
-     * List all files in a bucket
-     */
-    public Iterable<Result<Item>> listFiles(String bucketName) throws Exception {
-        boolean bucketExists = minioClient.bucketExists(
-                BucketExistsArgs.builder().bucket(bucketName).build()
-        );
-
-        if (!bucketExists) {
-            throw new Exception("Bucket does not exist: " + bucketName);
-        }
-
-        return minioClient.listObjects(
-                ListObjectsArgs.builder().bucket(bucketName).build()
-        );
-    }
-
-    /**
-     * Create a bucket for any entity type
-     */
-    public void createEntityBucket(String entityType, UUID entityId) throws Exception {
-        String bucketName = entityType.toLowerCase() + "-" + entityId.toString();
-        createBucketIfNotExists(bucketName);
-    }
-
-    /**
-     * Upload a file for any entity
-     */
-    public String uploadEntityFile(String entityType, UUID entityId, MultipartFile file, String fileName) throws Exception {
-        String bucketName = entityType.toLowerCase() + "-" + entityId.toString();
         uploadFile(bucketName, file, fileName);
-        return fileName;
     }
 
-    /**
-     * Get file URL for any entity
-     */
-    public String getEntityFileUrl(String entityType, UUID entityId, String fileName) throws Exception {
-        String bucketName = entityType.toLowerCase() + "-" + entityId.toString();
+    @Override
+    public InputStream downloadFile(String fileName) throws Exception {
+        if (!s3Enabled || s3Client == null) {
+            throw new Exception("S3 is disabled for local development, cannot download file");
+        }
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(fileName)
+                .build();
+        return s3Client.getObject(getObjectRequest);
+    }
+
+    @Override
+    public String getFileUrl(String fileName) {
+        if (!s3Enabled || s3Client == null) {
+            String url = "http://localhost:9000/local-dev/" + fileName;
+            System.out.println("✅ Generated mock file URL: " + url);
+            return url;
+        }
+
+        if (!s3PublicUrl.isEmpty()) {
+            return s3PublicUrl + "/" + bucketName + "/" + fileName;
+        }
+        return String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, fileName);
+    }
+
+    @Override
+    public String getFileUrl(String bucketName, String fileName) {
+        if (!s3Enabled || s3Client == null) {
+            String url = "http://localhost:9000/local-dev/" + bucketName + "/" + fileName;
+            System.out.println("✅ Generated mock file URL: " + url);
+            return url;
+        }
+
+        if (!s3PublicUrl.isEmpty()) {
+            return s3PublicUrl + "/" + bucketName + "/" + fileName;
+        }
+        return String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, fileName);
+    }
+
+    @Override
+    public void initializeService() {
+        if (!s3Enabled || s3Client == null) {
+            System.out.println("✅ S3 is disabled for local development. Using mock file storage.");
+            return;
+        }
+
+        try {
+            createBucketIfNotExists(bucketName);
+            System.out.println("✅ S3 initialization completed successfully");
+        } catch (Exception e) {
+            System.out.println("❌ S3 initialization failed: " + e.getMessage());
+            e.printStackTrace();
+            System.out.println("⚠️ Continuing startup without S3. File storage will be unavailable.");
+        }
+    }
+
+    // Equipment-specific methods
+    @Override
+    public void createEquipmentBucket(UUID equipmentId) {
+        if (!s3Enabled || s3Client == null) {
+            System.out.println("✅ S3 is disabled for local development, skipping equipment bucket creation");
+            return;
+        }
+        String equipmentBucket = "equipment-" + equipmentId.toString();
+        createBucketIfNotExists(equipmentBucket);
+    }
+
+    @Override
+    public String uploadEquipmentFile(UUID equipmentId, MultipartFile file, String customFileName) throws Exception {
+        String fileName = customFileName.isEmpty() ?
+                UUID.randomUUID().toString() + "_" + file.getOriginalFilename() :
+                customFileName + "_" + file.getOriginalFilename();
+
+        if (!s3Enabled || s3Client == null) {
+            System.out.println("✅ S3 is disabled for local development, simulating equipment file upload: " + fileName);
+            return fileName;
+        }
+
+        String equipmentBucket = "equipment-" + equipmentId.toString();
+        return uploadFile(equipmentBucket, file, fileName);
+    }
+
+    @Override
+    public String getEquipmentMainPhoto(UUID equipmentId) {
+        if (!s3Enabled || s3Client == null) {
+            String url = "http://localhost:9000/local-dev/equipment-" + equipmentId + "/main-image.jpg";
+            System.out.println("✅ Generated mock equipment photo URL: " + url);
+            return url;
+        }
+
+        String equipmentBucket = "equipment-" + equipmentId.toString();
+        try {
+            ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                    .bucket(equipmentBucket)
+                    .prefix("Main_Image")
+                    .build();
+
+            ListObjectsV2Response response = s3Client.listObjectsV2(listRequest);
+
+            if (!response.contents().isEmpty()) {
+                String objectKey = response.contents().get(0).key();
+                return getFileUrl(equipmentBucket, objectKey);
+            }
+        } catch (Exception e) {
+            System.err.println("Error getting equipment main photo: " + e.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public void deleteEquipmentFile(UUID equipmentId, String fileName) throws Exception {
+        if (!s3Enabled || s3Client == null) {
+            System.out.println("✅ S3 is disabled for local development, simulating equipment file deletion: " + fileName);
+            return;
+        }
+
+        String equipmentBucket = "equipment-" + equipmentId.toString();
+        deleteFile(equipmentBucket, fileName);
+    }
+
+    @Override
+    public String getEquipmentFileUrl(UUID equipmentId, String documentPath) {
+        if (!s3Enabled || s3Client == null) {
+            String url = "http://localhost:9000/local-dev/equipment-" + equipmentId + "/" + documentPath;
+            System.out.println("✅ Generated mock equipment file URL: " + url);
+            return url;
+        }
+
+        String equipmentBucket = "equipment-" + equipmentId.toString();
+        return getFileUrl(equipmentBucket, documentPath);
+    }
+
+    // Entity file methods
+    @Override
+    public void uploadEntityFile(String entityType, UUID entityId, MultipartFile file, String fileName) throws Exception {
+        if (!s3Enabled || s3Client == null) {
+            System.out.println("✅ S3 is disabled for local development, simulating entity file upload: " + fileName);
+            return;
+        }
+
+        String bucketName = entityType + "-" + entityId.toString();
+        createBucketIfNotExists(bucketName);
+        uploadFile(bucketName, file, fileName);
+    }
+
+    @Override
+    public String getEntityFileUrl(String entityType, UUID entityId, String fileName) {
+        if (!s3Enabled || s3Client == null) {
+            String url = "http://localhost:9000/local-dev/" + entityType + "-" + entityId + "/" + fileName;
+            System.out.println("✅ Generated mock entity file URL: " + url);
+            return url;
+        }
+
+        String bucketName = entityType + "-" + entityId.toString();
         return getFileUrl(bucketName, fileName);
     }
 
-    /**
-     * Delete a file for any entity
-     */
-    public void deleteEntityFile(String entityType, UUID entityId, String fileName) throws Exception {
-        String bucketName = entityType.toLowerCase() + "-" + entityId.toString();
+    @Override
+    public void deleteEntityFile(String entityType, UUID entityId, String fileName) {
+        if (!s3Enabled || s3Client == null) {
+            System.out.println("✅ S3 is disabled for local development, simulating entity file deletion: " + fileName);
+            return;
+        }
+
+        String bucketName = entityType + "-" + entityId.toString();
         deleteFile(bucketName, fileName);
+    }
+
+    // Presigned URL methods
+    @Override
+    public String getPresignedDownloadUrl(String fileName, int expirationMinutes) throws Exception {
+        if (!s3Enabled || s3Client == null || s3Presigner == null) {
+            String url = "http://localhost:9000/local-dev/presigned/" + fileName;
+            System.out.println("✅ Generated mock presigned URL: " + url);
+            return url;
+        }
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(fileName)
+                .build();
+
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(expirationMinutes))
+                .getObjectRequest(getObjectRequest)
+                .build();
+
+        PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
+        return presignedRequest.url().toString();
+    }
+
+    @Override
+    public String getPresignedDownloadUrl(String bucketName, String fileName, int expirationMinutes) throws Exception {
+        if (!s3Enabled || s3Client == null || s3Presigner == null) {
+            String url = "http://localhost:9000/local-dev/presigned/" + bucketName + "/" + fileName;
+            System.out.println("✅ Generated mock presigned URL: " + url);
+            return url;
+        }
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(fileName)
+                .build();
+
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(expirationMinutes))
+                .getObjectRequest(getObjectRequest)
+                .build();
+
+        PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
+        return presignedRequest.url().toString();
+    }
+
+    // List and delete methods
+    @Override
+    public List<S3Object> listFiles(String bucketName) throws Exception {
+        if (!s3Enabled || s3Client == null) {
+            System.out.println("✅ S3 is disabled for local development, returning empty file list");
+            return new ArrayList<>();
+        }
+
+        ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                .bucket(bucketName)
+                .build();
+
+        ListObjectsV2Response response = s3Client.listObjectsV2(listRequest);
+        return response.contents();
+    }
+
+    @Override
+    public void deleteFile(String fileName) {
+        if (!s3Enabled || s3Client == null) {
+            System.out.println("✅ S3 is disabled for local development, simulating file deletion: " + fileName);
+            return;
+        }
+
+        deleteFile(bucketName, fileName);
+    }
+
+    @Override
+    public void deleteFile(String bucketName, String fileName) {
+        if (!s3Enabled || s3Client == null) {
+            System.out.println("✅ S3 is disabled for local development, simulating file deletion: " + bucketName + "/" + fileName);
+            return;
+        }
+
+        try {
+            ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                    .bucket(bucketName)
+                    .prefix(fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName)
+                    .build();
+
+            ListObjectsV2Response response = s3Client.listObjectsV2(listRequest);
+
+            for (S3Object s3Object : response.contents()) {
+                if (s3Object.key().equals(fileName) || s3Object.key().contains(fileName)) {
+                    DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                            .bucket(bucketName)
+                            .key(s3Object.key())
+                            .build();
+                    s3Client.deleteObject(deleteRequest);
+                    System.out.println("Deleted from S3: " + s3Object.key());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error deleting file from S3: " + e.getMessage());
+        }
     }
 }

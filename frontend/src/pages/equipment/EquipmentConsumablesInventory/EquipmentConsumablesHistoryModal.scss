@@ -273,6 +273,67 @@
             color: var(--color-text-secondary);
         }
     }
+
+    // Resolution status badges
+    &.resolved-loss {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: rgb(239, 68, 68);
+
+        [data-theme="dark"] & {
+            background-color: rgba(255, 82, 82, 0.1);
+            color: var(--color-danger);
+        }
+    }
+
+    &.counting-error {
+        background-color: rgba(255, 152, 0, 0.1);
+        color: rgb(255, 152, 0);
+
+        [data-theme="dark"] & {
+            background-color: rgba(255, 152, 0, 0.1);
+            color: var(--color-warning);
+        }
+    }
+
+    &.found-items {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: rgb(16, 185, 129);
+
+        [data-theme="dark"] & {
+            background-color: rgba(92, 188, 96, 0.1);
+            color: var(--color-success);
+        }
+    }
+
+    &.surplus-accepted {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: rgb(16, 185, 129);
+
+        [data-theme="dark"] & {
+            background-color: rgba(92, 188, 96, 0.1);
+            color: var(--color-success);
+        }
+    }
+
+    &.return-sender {
+        background-color: rgba(33, 150, 243, 0.1);
+        color: rgb(33, 150, 243);
+
+        [data-theme="dark"] & {
+            background-color: rgba(33, 150, 243, 0.1);
+            color: var(--color-info);
+        }
+    }
+
+    &.resolved {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: rgb(16, 185, 129);
+
+        [data-theme="dark"] & {
+            background-color: rgba(92, 188, 96, 0.1);
+            color: var(--color-success);
+        }
+    }
 }
 
 // Manual entry styles (keeping these as they're less likely to conflict)
@@ -486,5 +547,86 @@
     .received-value {
         color: var(--color-warning);
         font-weight: 500;
+    }
+}
+
+// Resolution and discrepancy messages
+.consumable-history-resolution-message,
+.consumable-history-discrepancy-message {
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    
+    .resolution-message-label,
+    .discrepancy-message-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 2px;
+    }
+    
+    .resolution-message-details,
+    .discrepancy-message-details {
+        display: block;
+        font-size: 12px;
+        opacity: 0.8;
+    }
+    
+    &.success {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: rgb(16, 185, 129);
+        border-left: 3px solid rgb(16, 185, 129);
+    }
+    
+    &.info {
+        background-color: rgba(33, 150, 243, 0.1);
+        color: rgb(33, 150, 243);
+        border-left: 3px solid rgb(33, 150, 243);
+    }
+    
+    &.warning {
+        background-color: rgba(255, 152, 0, 0.1);
+        color: rgb(255, 152, 0);
+        border-left: 3px solid rgb(255, 152, 0);
+    }
+    
+    &.danger {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: rgb(239, 68, 68);
+        border-left: 3px solid rgb(239, 68, 68);
+    }
+}
+
+// Resolution entry styles
+.resolution-entry {
+    .consumable-history-resolution-info {
+        background-color: var(--color-surface);
+        border-radius: 8px;
+        padding: 16px;
+        border-left: 4px solid var(--color-info);
+    }
+
+    .resolution-details {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .resolution-quantity-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 14px;
+
+        .resolution-label {
+            color: var(--color-text-secondary);
+            font-weight: 500;
+        }
+
+        .resolution-value {
+            color: var(--color-text-primary);
+            font-weight: 600;
+        }
     }
 }

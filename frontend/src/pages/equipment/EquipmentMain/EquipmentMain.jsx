@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaPlus, FaFilter, FaSearch, FaExclamationCircle } from "react-icons/fa";
 import EquipmentModal from "./components/EquipmentModal/EquipmentModal.jsx";
+import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 import "./EquipmentMain.scss";
-import equipmentImage from "../../../assets/imgs/equipment_icon.png";
+import excavatorBlack from "../../../assets/logos/excavator-svgrepo-com black.svg";
+import excavatorWhite from "../../../assets/logos/excavator-svgrepo-com.svg";
 import { equipmentService } from "../../../services/equipmentService";
 import EquipmentCard from "./components/card/EquipmentCard.jsx";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -18,9 +20,7 @@ const EquipmentMain = () => {
     const [equipmentTypes, setEquipmentTypes] = useState([]);
     const [equipmentBrands, setEquipmentBrands] = useState([]);
     const [sites, setSites] = useState([]);
-    const [statusOptions] = useState([
-        "AVAILABLE", "RENTED", "IN_MAINTENANCE", "SOLD", "SCRAPPED"
-    ]);
+    const [statusOptions, setStatusOptions] = useState([]);
     const [selectedType, setSelectedType] = useState("");
     const [selectedBrand, setSelectedBrand] = useState("");
     const [selectedSite, setSelectedSite] = useState("");
@@ -77,6 +77,12 @@ const EquipmentMain = () => {
             const sitesResponse = await equipmentService.getAllSites();
             if (Array.isArray(sitesResponse.data)) {
                 setSites(sitesResponse.data);
+            }
+
+            // Fetch equipment status options
+            const statusResponse = await equipmentService.getEquipmentStatusOptions();
+            if (Array.isArray(statusResponse.data)) {
+                setStatusOptions(statusResponse.data);
             }
         } catch (error) {
             console.error("Error fetching reference data:", error);
@@ -192,6 +198,15 @@ const EquipmentMain = () => {
         setShowFilters(!showFilters);
     };
 
+    const getActiveFilterCount = () => {
+        let count = 0;
+        if (selectedType) count++;
+        if (selectedBrand) count++;
+        if (selectedSite) count++;
+        if (selectedStatus) count++;
+        return count;
+    };
+
     // Update EquipmentCard component to add edit functionality
     const enhanceEquipmentCard = (card, index, equipmentId) => {
         if (card) {
@@ -220,56 +235,61 @@ const EquipmentMain = () => {
     return (
         <main className="equipment-main-container">
             {/* Header area with stats */}
-            <header className="equipment-intro-card">
-                <div className="equipment-intro-left">
-                    <img src={equipmentImage} alt="Equipment" className="equipment-intro-image" />
-                </div>
-
-                <div className="equipment-intro-content">
-                    <div className="equipment-intro-header">
-                        <span className="equipment-label">EQUIPMENT MANAGEMENT</span>
-                        <h2 className="equipment-intro-title">Equipment</h2>
-                    </div>
-
-                    <div className="equipment-stats">
-                        <div className="equipment-stat-item">
-                            <span className="equipment-stat-value">{equipmentData.length}</span>
-                            <span className="equipment-stat-label">Total Equipment</span>
-                        </div>
-                    </div>
-                </div>
-
-                <button className="equipment-info-button">
-                    <FaExclamationCircle />
-                </button>
-            </header>
+            <IntroCard
+                title="Equipment"
+                label="EQUIPMENT MANAGEMENT"
+                lightModeImage={excavatorBlack}
+                darkModeImage={excavatorWhite}
+                stats={[
+                    {
+                        value: equipmentData.length,
+                        label: "Total Equipment"
+                    }
+                ]}
+                onInfoClick={() => {
+                    // Handle info button click if needed
+                    console.log("Equipment info clicked");
+                }}
+            />
 
             {/* Search and filter toolbar */}
             <section className="equipment-toolbar">
-                {/* Search */}
-                <div className="equipment-search-container">
-                    <input
-                        type="text"
-                        placeholder="Search equipment..."
-                        className="equipment-search-input"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <FaSearch className="equipment-search-icon" />
+                <div className="equipment-toolbar-header">
+                    <div className="equipment-search-section">
+                        <div className="equipment-search-container">
+                            <FaSearch className="equipment-search-icon" />
+                            <input
+                                type="text"
+                                placeholder="Search equipment by name, model, brand, or serial number..."
+                                className="equipment-search-input"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="equipment-actions-section">
+                        {permissions.canCreate && (
+                            <button className="btn-primary" onClick={handleAddEquipment}>
+                                <FaPlus /> Add Equipment
+                            </button>
+                        )}
+                    </div>
                 </div>
 
-                {/* Action buttons */}
-                <div className="equipment-actions-bar">
-                    {/* Filters */}
-                    <div className="equipment-filter-section">
+                <div className="equipment-filters-section">
+                    <div className="equipment-filters-header">
                         <button className="equipment-filter-toggle" onClick={toggleFilters}>
-                            <FaFilter /> Filters
+                            <FaFilter /> 
+                            <span>Filters</span>
+                            {showFilters && <span className="filter-count">({getActiveFilterCount()})</span>}
                         </button>
+                    </div>
 
-                        {showFilters && (
-                            <div className="equipment-filters-panel">
-                                <div className="equipment-filter-controls">
-                                    {/* Equipment Type filter */}
+                    {showFilters && (
+                        <div className="equipment-filters-panel">
+                            <div className="equipment-filter-controls">
+                                <div className="equipment-filter-row">
                                     <div className="equipment-filter-group">
                                         <label>Equipment Type</label>
                                         <select
@@ -283,7 +303,6 @@ const EquipmentMain = () => {
                                         </select>
                                     </div>
 
-                                    {/* Equipment Brand filter */}
                                     <div className="equipment-filter-group">
                                         <label>Equipment Brand</label>
                                         <select
@@ -297,7 +316,6 @@ const EquipmentMain = () => {
                                         </select>
                                     </div>
 
-                                    {/* Site filter */}
                                     <div className="equipment-filter-group">
                                         <label>Site</label>
                                         <select
@@ -311,7 +329,6 @@ const EquipmentMain = () => {
                                         </select>
                                     </div>
 
-                                    {/* Status filter */}
                                     <div className="equipment-filter-group">
                                         <label>Status</label>
                                         <select
@@ -320,27 +337,22 @@ const EquipmentMain = () => {
                                         >
                                             <option value="">All Statuses</option>
                                             {statusOptions.map(status => (
-                                                <option key={status} value={status}>{status.replace("_", " ")}</option>
+                                                <option key={status.value} value={status.value}>
+                                                    {status.label}
+                                                </option>
                                             ))}
                                         </select>
                                     </div>
+                                </div>
 
+                                <div className="equipment-filter-actions">
                                     <button className="equipment-filter-reset" onClick={handleResetFilters}>
-                                        Reset Filters
+                                        Clear All Filters
                                     </button>
                                 </div>
                             </div>
-                        )}
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="equipment-actions-buttons">
-                        {permissions.canCreate && (
-                            <button className="btn-primary" onClick={handleAddEquipment}>
-                                <FaPlus /> Add Equipment
-                            </button>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </section>
 

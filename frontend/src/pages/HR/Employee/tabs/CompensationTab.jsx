@@ -1,6 +1,33 @@
 import React from 'react';
 
 const CompensationTab = ({ employee, formatCurrency }) => {
+    // Helper function to get the appropriate base salary
+    const getBaseSalary = () => {
+        if (employee.baseSalaryOverride) {
+            return employee.baseSalaryOverride;
+        }
+        if (employee.jobPosition?.monthlyBaseSalary) {
+            return employee.jobPosition.monthlyBaseSalary;
+        }
+        if (employee.jobPosition?.baseSalary) {
+            return employee.jobPosition.baseSalary;
+        }
+        return 0;
+    };
+
+    // Helper function to get monthly salary
+    const getMonthlySalary = () => {
+        if (employee.monthlySalary) {
+            return employee.monthlySalary;
+        }
+        return getBaseSalary() * (employee.salaryMultiplier || 1);
+    };
+
+    // Helper function to get annual salary
+    const getAnnualSalary = () => {
+        return getMonthlySalary() * 12;
+    };
+
     return (
         <div className="compensation-info tab-panel">
             <h3>Compensation Details</h3>
@@ -9,19 +36,19 @@ const CompensationTab = ({ employee, formatCurrency }) => {
                 <div className="salary-card">
                     <div className="salary-title">Base Monthly Salary</div>
                     <div className="salary-amount">
-                        {formatCurrency(employee.monthlySalary || (employee.jobPosition?.baseSalary ? employee.jobPosition.baseSalary  : 0))}
+                        {formatCurrency(getMonthlySalary())}
                     </div>
                 </div>
                 <div className="salary-card">
                     <div className="salary-title">Annual Salary</div>
                     <div className="salary-amount">
-                        {formatCurrency((employee.baseSalary || employee.jobPosition?.baseSalary )*12 || 0)}
+                        {formatCurrency(getAnnualSalary())}
                     </div>
                 </div>
                 <div className="salary-card">
                     <div className="salary-title">Base Position Salary</div>
                     <div className="salary-amount">
-                        {formatCurrency(employee.jobPosition?.baseSalary || 0)}
+                        {formatCurrency(getBaseSalary())}
                     </div>
                 </div>
             </div>
@@ -34,7 +61,7 @@ const CompensationTab = ({ employee, formatCurrency }) => {
                     </div>
                     <div className="info-item">
                         <label>Contract Type</label>
-                        <p>{employee.contractType || 'Not specified'}</p>
+                        <p>{employee.contractType || employee.jobPosition?.contractType || 'Not specified'}</p>
                     </div>
                 </div>
 

@@ -192,11 +192,11 @@ public class TransactionService {
             List<TransactionItem> items,
             LocalDateTime transactionDate,
             String username, int batchNumber,
-            UUID sentFirst) {
+            UUID sentFirst, String description) {
 
         Transaction transaction = createTransactionWithPurpose(
                 senderType, senderId, receiverType, receiverId,
-                items, transactionDate, username, batchNumber, sentFirst, null);
+                items, transactionDate, username, batchNumber, sentFirst, null, description);
 
         // After creating the transaction, attempt batch matching with specific sender/receiver IDs
         attemptBatchMatching(batchNumber, senderId, receiverId);
@@ -214,7 +214,7 @@ public class TransactionService {
 
         Transaction transaction = createTransactionWithPurpose(
                 senderType, senderId, receiverType, receiverId,
-                items, transactionDate, username, batchNumber, sentFirst, purpose);
+                items, transactionDate, username, batchNumber, sentFirst, purpose, null);
 
         // After creating the transaction, attempt batch matching with specific sender/receiver IDs
         attemptBatchMatching(batchNumber, senderId, receiverId);
@@ -232,7 +232,7 @@ public class TransactionService {
             List<TransactionItem> items,
             LocalDateTime transactionDate,
             String username, int batchNumber,
-            UUID sentFirst, TransactionPurpose purpose) {
+            UUID sentFirst, TransactionPurpose purpose, String description) {
 
         System.out.println("🚀 Starting createTransaction() with immediate inventory updates");
         System.out.println("Sender Type: " + senderType + ", Sender ID: " + senderId);
@@ -260,30 +260,22 @@ public class TransactionService {
                 System.out.println("✅ Validated sender has sufficient inventory (equipment - no changes)");
             }
 
-        } else if (sentFirst.equals(receiverId)) {
-            // RECEIVER INITIATED: "I received these items"
-            System.out.println("📥 RECEIVER-INITIATED transaction");
+        }  else if (sentFirst.equals(receiverId)) {
+        // RECEIVER INITIATED: "I received these items"
+        System.out.println("📥 RECEIVER-INITIATED transaction");
 
-            if (receiverType == PartyType.WAREHOUSE) {
-                // 🆕 NEW: Immediately add to receiver warehouse inventory
-                System.out.println("🏭 Receiver is warehouse - immediately adding inventory");
-                for (TransactionItem item : items) {
-                    addToWarehouseInventoryOnReceive(receiverId, item);
-                }
-                System.out.println("✅ Immediately added inventory to receiver warehouse");
-            }
-            // Note: Equipment receiver inventory will be handled after transaction is saved
-            // to avoid TransientObjectException with unsaved transaction references
+        // Note: Warehouse receiver inventory will be handled AFTER transaction is saved
+        // to avoid TransientObjectException with unsaved transaction references
 
-            // No validation of sender inventory for receiver-initiated transactions
-            // The receiver claims they already received the items, sender will confirm during acceptance
-            System.out.println("✅ Skipping sender inventory validation for receiver-initiated transaction");
+        // No validation of sender inventory for receiver-initiated transactions
+        // The receiver claims they already received the items, sender will confirm during acceptance
+        System.out.println("✅ Skipping sender inventory validation for receiver-initiated transaction");
 
-        }
+    }
 
         Transaction transaction = buildTransaction(
                 senderType, senderId, receiverType, receiverId,
-                transactionDate, username, batchNumber, sentFirst, purpose);
+                transactionDate, username, batchNumber, sentFirst, purpose, description);
 
         transaction.setItems(new ArrayList<>());
         for (TransactionItem item : items) {
@@ -295,10 +287,19 @@ public class TransactionService {
         Transaction saved = transactionRepository.save(transaction);
         System.out.println("✅ Transaction saved with immediate inventory updates applied");
 
-        // Handle equipment receiver inventory after transaction is saved (to avoid TransientObjectException)
+// Handle receiver-initiated warehouse inventory AFTER transaction is saved
+        if (sentFirst.equals(receiverId) && receiverType == PartyType.WAREHOUSE) {
+            System.out.println("🏭 Receiver is warehouse - adding inventory AFTER transaction save");
+            for (TransactionItem item : saved.getItems()) {
+                addToWarehouseInventoryOnReceive(receiverId, item);
+            }
+            System.out.println("✅ Added inventory to receiver warehouse after transaction save");
+        }
+
+// Handle equipment receiver inventory after transaction is saved (to avoid TransientObjectException)
         if (sentFirst.equals(receiverId) && receiverType == PartyType.EQUIPMENT) {
             System.out.println("⚙️ Equipment receiver initiated - adding items after transaction save");
-            for (TransactionItem item : items) {
+            for (TransactionItem item : saved.getItems()) {
                 addToEquipmentConsumables(receiverId, item.getItemType(), item.getQuantity(), saved);
             }
             System.out.println("✅ Added items to equipment receiver after transaction save");
@@ -371,8 +372,13 @@ public class TransactionService {
         transaction.setAcceptanceComment(acceptanceComment);
         transaction.setCompletedAt(LocalDateTime.now());
 
+        System.out.println("🔍 DEBUG: acceptTransactionWithPurpose - Original transaction purpose: " + transaction.getPurpose());
+        System.out.println("🔍 DEBUG: acceptTransactionWithPurpose - New purpose parameter: " + purpose);
         if (purpose != null && purpose != transaction.getPurpose()) {
             transaction.setPurpose(purpose);
+            System.out.println("🔍 DEBUG: acceptTransactionWithPurpose - Updated transaction purpose to: " + transaction.getPurpose());
+        } else {
+            System.out.println("🔍 DEBUG: acceptTransactionWithPurpose - No purpose change needed");
         }
 
         boolean allItemsMatch = true;
@@ -384,6 +390,19 @@ public class TransactionService {
                 throw new IllegalArgumentException("Received quantity not provided for item: " + item.getId());
             }
 
+            // 🆕 NEW LOGIC: Populate equipmentReceivedQuantity when equipment is receiver
+            if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
+                if (transaction.getSentFirst().equals(transaction.getReceiverId())) {
+                    // Equipment initiated: equipmentReceivedQuantity = original quantity they claimed
+                    item.setEquipmentReceivedQuantity(item.getQuantity());
+                } else {
+                    // Warehouse initiated: equipmentReceivedQuantity = what equipment reports they received
+                    item.setEquipmentReceivedQuantity(receivedQuantity);
+                }
+                System.out.println("⚙️ Set equipmentReceivedQuantity: " + item.getEquipmentReceivedQuantity());
+            }
+            
+            // Set receivedQuantity for warehouse validation (mainly used in warehouse-to-warehouse)
             item.setReceivedQuantity(receivedQuantity);
 
             // Check if item was marked as not received FIRST
@@ -399,29 +418,43 @@ public class TransactionService {
                 continue;
             }
 
-            // Determine what each party actually claims
-            int senderClaimedQuantity;
-            int receiverClaimedQuantity;
+            // Determine what each party actually claims - SIMPLIFIED LOGIC
+            int warehouseSentQuantity;
+            int equipmentReceivedQuantity;
 
-            if (transaction.getSentFirst().equals(transaction.getSenderId())) {
-                // SENDER INITIATED: Sender set original quantity, receiver reports what they got
-                senderClaimedQuantity = item.getQuantity();
-                receiverClaimedQuantity = receivedQuantity;
-                System.out.println(String.format("📤 SENDER-INITIATED: Sender claims %d, Receiver reports %d",
-                        senderClaimedQuantity, receiverClaimedQuantity));
+            if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
+                // Equipment-involved transaction: Use clear fields
+                warehouseSentQuantity = (transaction.getSentFirst().equals(transaction.getSenderId())) 
+                    ? item.getQuantity() : receivedQuantity;
+                equipmentReceivedQuantity = item.getEquipmentReceivedQuantity();
+                
+                System.out.printf("📦➡️⚙️ EQUIPMENT TRANSACTION: Warehouse sent %d, Equipment received %d%n",
+                        warehouseSentQuantity, equipmentReceivedQuantity);
             } else {
-                // RECEIVER INITIATED: Receiver set original quantity, sender reports what they sent
-                receiverClaimedQuantity = item.getQuantity();
-                senderClaimedQuantity = receivedQuantity;
-                System.out.println(String.format("📥 RECEIVER-INITIATED: Receiver claims %d, Sender reports %d",
-                        receiverClaimedQuantity, senderClaimedQuantity));
+                // Warehouse-to-warehouse: Use traditional logic (no changes to ensure compatibility)
+                int senderClaimedQuantity;
+                int receiverClaimedQuantity;
+                
+                if (transaction.getSentFirst().equals(transaction.getSenderId())) {
+                    senderClaimedQuantity = item.getQuantity();
+                    receiverClaimedQuantity = receivedQuantity;
+                } else {
+                    receiverClaimedQuantity = item.getQuantity();
+                    senderClaimedQuantity = receivedQuantity;
+                }
+                
+                warehouseSentQuantity = senderClaimedQuantity;
+                equipmentReceivedQuantity = receiverClaimedQuantity; // This will be used as receiverClaimedQuantity
+                
+                System.out.printf("📦➡️📦 WAREHOUSE TRANSACTION: Sender claims %d, Receiver claims %d%n",
+                        senderClaimedQuantity, receiverClaimedQuantity);
             }
 
             // Check if quantities match
-            if (senderClaimedQuantity != receiverClaimedQuantity) {
+            if (warehouseSentQuantity != equipmentReceivedQuantity) {
                 allItemsMatch = false;
                 String reason = String.format("Quantity mismatch between quantity sent and quantity received",
-                        senderClaimedQuantity, receiverClaimedQuantity);
+                        warehouseSentQuantity, equipmentReceivedQuantity);
                 item.setStatus(TransactionStatus.REJECTED);
                 item.setRejectionReason(reason);
                 System.out.println("⚠️ MISMATCH: " + reason);
@@ -431,7 +464,7 @@ public class TransactionService {
             }
 
             // Process real-world inventory changes considering immediate updates
-            processInventoryChangesWithImmediateUpdates(transaction, item, senderClaimedQuantity, receiverClaimedQuantity);
+            processInventoryChangesWithImmediateUpdates(transaction, item, warehouseSentQuantity, equipmentReceivedQuantity);
         }
 
         // Set overall transaction status
@@ -520,6 +553,14 @@ public class TransactionService {
             // 🚨 FIXED: Add only what RECEIVER claims they got, NOT what sender claims they sent
             System.out.println("🏭 Adding to warehouse what RECEIVER claims they got: " + receiverClaimedQuantity);
             addToWarehouseInventory(transaction, item, receiverClaimedQuantity);
+        } else if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
+            // ✅ FIXED: Add missing equipment receiver handling - create consumables for what equipment received
+            System.out.println("⚙️ Adding to equipment consumables what EQUIPMENT claims they received: " + receiverClaimedQuantity);
+            System.out.println("🔍 DEBUG: Transaction purpose is: " + transaction.getPurpose());
+            System.out.println("🔍 DEBUG: ItemType: " + item.getItemType().getName());
+            System.out.println("🔍 DEBUG: Equipment ID: " + transaction.getReceiverId());
+            System.out.println("🔍 DEBUG: Transaction purpose comparison - CONSUMABLE: " + (transaction.getPurpose() == TransactionPurpose.CONSUMABLE));
+            addToEquipmentConsumables(transaction.getReceiverId(), item.getItemType(), receiverClaimedQuantity, transaction);
         }
 
         // Handle sender adjustments if quantities don't match what was originally claimed
@@ -692,8 +733,8 @@ public class TransactionService {
 
             itemRepository.save(stolenItem);
 
-            System.out.println(String.format("🚨 Created STOLEN entry: %d %s at warehouse %s",
-                    stolenQuantity, item.getItemType().getName(), warehouse.getName()));
+            System.out.printf("\uD83D\uDEA8 Created STOLEN entry: %d %s at warehouse %s%n",
+                    stolenQuantity, item.getItemType().getName(), warehouse.getName());
 
         } else if (transaction.getSenderType() == PartyType.EQUIPMENT) {
             Equipment equipment = equipmentRepository.findById(transaction.getSenderId())
@@ -708,8 +749,8 @@ public class TransactionService {
             stolenConsumable.setTransaction(transaction);
             consumableRepository.save(stolenConsumable);
 
-            System.out.println(String.format("🚨 Created STOLEN consumable entry: %d %s at equipment %s",
-                    stolenQuantity, item.getItemType().getName(), equipment.getName()));
+            System.out.printf("\uD83D\uDEA8 Created STOLEN consumable entry: %d %s at equipment %s%n",
+                    stolenQuantity, item.getItemType().getName(), equipment.getName());
 
             // Note: For STOLEN items, we don't deduct from equipment inventory because
             // the equipment is the SENDER, not the receiver. The items were already
@@ -735,8 +776,8 @@ public class TransactionService {
 
             itemRepository.save(overReceivedItem);
 
-            System.out.println(String.format("📈 Created OVERRECEIVED entry: %d %s at warehouse %s",
-                    overReceivedQuantity, item.getItemType().getName(), warehouse.getName()));
+            System.out.printf("\uD83D\uDCC8 Created OVERRECEIVED entry: %d %s at warehouse %s%n",
+                    overReceivedQuantity, item.getItemType().getName(), warehouse.getName());
 
         } else if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
             Equipment equipment = equipmentRepository.findById(transaction.getReceiverId())
@@ -751,8 +792,8 @@ public class TransactionService {
             overReceivedConsumable.setTransaction(transaction);
             consumableRepository.save(overReceivedConsumable);
 
-            System.out.println(String.format("📈 Created OVERRECEIVED consumable entry: %d %s at equipment %s",
-                    overReceivedQuantity, item.getItemType().getName(), equipment.getName()));
+            System.out.printf("\uD83D\uDCC8 Created OVERRECEIVED consumable entry: %d %s at equipment %s%n",
+                    overReceivedQuantity, item.getItemType().getName(), equipment.getName());
 
             // ✅ FIXED: No longer deduct from consumable inventory for overreceived items
             // Just create the OVERRECEIVED entry for tracking, resolution will be handled separately
@@ -863,23 +904,44 @@ public class TransactionService {
 
         // Get the receiving warehouse
         UUID receivingWarehouseId = transaction.getReceiverId();
+        System.out.println("🔍 DEBUG: Retrieved receiver warehouse ID from transaction: " + receivingWarehouseId);
 
         // Fetch the warehouse entity
         Warehouse warehouse = warehouseRepository.findById(receivingWarehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found: " + receivingWarehouseId));
+        System.out.println("🔍 DEBUG: Successfully fetched warehouse from repository: " + warehouse.getName() + " (ID: " + warehouse.getId() + ")");
 
         // 🆕 ALWAYS create a new item entry (no more checking for existing items)
         Item newItem = new Item();
+        System.out.println("🔍 DEBUG: Initialized new Item instance");
+
+        System.out.println("🔍 DEBUG: Set item type on new item: " + transactionItem.getItemType());
         newItem.setItemType(transactionItem.getItemType());
+
+
         newItem.setQuantity(actualQuantity);
+        System.out.println("🔍 DEBUG: Set quantity on new item: " + actualQuantity);
+
         newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
+        System.out.println("🔍 DEBUG: Set item status to IN_WAREHOUSE");
+
         newItem.setWarehouse(warehouse);
-        newItem.setTransactionItem(transactionItem); // ✅ Always link to TransactionItem for traceability
+        System.out.println("🔍 DEBUG: Assigned warehouse to new item: " + warehouse.getId());
+
+        newItem.setTransactionItem(transactionItem);
+        System.out.println("🔍 DEBUG: Linked new item to TransactionItem: " + transactionItem.getId());
+
         newItem.setResolved(false);
+        System.out.println("🔍 DEBUG: Set resolved status to false");
+
         newItem.setCreatedAt(LocalDateTime.now());
+        System.out.println("🔍 DEBUG: Set createdAt to current time: " + newItem.getCreatedAt());
+
         newItem.setCreatedBy("Created by a Transaction");
+        System.out.println("🔍 DEBUG: Set createdBy to 'Created by a Transaction'");
 
         itemRepository.save(newItem);
+        System.out.println("🔍 DEBUG: Saved new item to database with ID: " + newItem.getId());
 
         System.out.println("✅ Created NEW item entry with quantity: " + actualQuantity +
                 " linked to transaction: " + transaction.getId() +
@@ -911,16 +973,26 @@ public class TransactionService {
 
 
     private void addToEquipmentConsumables(UUID equipmentId, ItemType itemType, int quantity, Transaction transaction) {
+        System.out.println("🔍 DEBUG: addToEquipmentConsumables called with:");
+        System.out.println("   - Equipment ID: " + equipmentId);
+        System.out.println("   - ItemType: " + itemType.getName());
+        System.out.println("   - Quantity: " + quantity);
+        System.out.println("   - Transaction Purpose: " + transaction.getPurpose());
+        
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
 
-        // Check if this is a consumables transaction
+        // ALWAYS create consumables for equipment receivers, regardless of transaction purpose
+        // The status depends on the transaction purpose
+                System.out.println("✅ DEBUG: Creating consumables for equipment receiver - purpose: " + transaction.getPurpose());
+        
         if (transaction.getPurpose() == TransactionPurpose.CONSUMABLE) {
+            System.out.println("✅ DEBUG: Transaction purpose is CONSUMABLE - creating IN_WAREHOUSE consumable");
             // For consumables transactions, add to available inventory
             // Check if there's already a consumable entry for this item type with IN_WAREHOUSE status
             Consumable existingConsumable = consumableRepository.findByEquipmentIdAndItemTypeIdAndStatus(
                 equipmentId, itemType.getId(), ItemStatus.IN_WAREHOUSE);
-
+            
             if (existingConsumable != null) {
                 // Update existing consumable quantity
                 existingConsumable.setQuantity(existingConsumable.getQuantity() + quantity);
@@ -940,6 +1012,7 @@ public class TransactionService {
                 System.out.println("✅ Added new consumable to equipment inventory: " + quantity + " " + itemType.getName());
             }
         } else {
+            System.out.println("✅ DEBUG: Transaction purpose is NOT CONSUMABLE (" + transaction.getPurpose() + ") - creating CONSUMED entry");
             // For maintenance or other transactions, create consumed entry
             Consumable consumedConsumable = new Consumable();
             consumedConsumable.setEquipment(equipment);
@@ -1030,9 +1103,9 @@ public class TransactionService {
     public Transaction updateTransaction(
             UUID transactionId, PartyType senderType, UUID senderId,
             PartyType receiverType, UUID receiverId, List<TransactionItem> updatedItems,
-            LocalDateTime transactionDate, String username, int batchNumber) {
+            LocalDateTime transactionDate, String username, int batchNumber, String description) {
         return updateTransactionWithPurpose(transactionId, senderType, senderId, receiverType,
-                receiverId, updatedItems, transactionDate, username, batchNumber, null);
+                receiverId, updatedItems, transactionDate, username, batchNumber, null, description);
     }
 
     public Transaction updateEquipmentTransaction(
@@ -1040,13 +1113,13 @@ public class TransactionService {
             PartyType receiverType, UUID receiverId, List<TransactionItem> updatedItems,
             LocalDateTime transactionDate, String username, int batchNumber, TransactionPurpose purpose) {
         return updateTransactionWithPurpose(transactionId, senderType, senderId, receiverType,
-                receiverId, updatedItems, transactionDate, username, batchNumber, purpose);
+                receiverId, updatedItems, transactionDate, username, batchNumber, purpose, null);
     }
 
     private Transaction updateTransactionWithPurpose(
             UUID transactionId, PartyType senderType, UUID senderId,
             PartyType receiverType, UUID receiverId, List<TransactionItem> updatedItems,
-            LocalDateTime transactionDate, String username, int batchNumber, TransactionPurpose purpose) {
+            LocalDateTime transactionDate, String username, int batchNumber, TransactionPurpose purpose, String description) {
 
         System.out.println("🔄 Updating transaction with immediate inventory handling");
 
@@ -1078,6 +1151,10 @@ public class TransactionService {
 
         if (purpose != null) {
             transaction.setPurpose(purpose);
+        }
+
+        if (description != null) {
+            transaction.setDescription(description);
         }
 
         // 🚨 SAFE ITEM UPDATE: Update existing items instead of clearing
@@ -1395,7 +1472,7 @@ public class TransactionService {
 
     private Transaction buildTransaction(PartyType senderType, UUID senderId, PartyType receiverType,
                                          UUID receiverId, LocalDateTime transactionDate, String username,
-                                         int batchNumber, UUID sentFirst, TransactionPurpose purpose) {
+                                         int batchNumber, UUID sentFirst, TransactionPurpose purpose, String description) {
         Transaction.TransactionBuilder builder = Transaction.builder()
                 .createdAt(LocalDateTime.now())
                 .transactionDate(transactionDate)
@@ -1410,6 +1487,10 @@ public class TransactionService {
 
         if (purpose != null) {
             builder.purpose(purpose);
+        }
+
+        if (description != null) {
+            builder.description(description);
         }
 
         return builder.build();
@@ -1433,5 +1514,150 @@ public class TransactionService {
             default:
                 throw new IllegalArgumentException("Unsupported entity type: " + type);
         }
+    }
+
+    /**
+     * Enhanced transaction acceptance with maintenance handling
+     */
+    public Transaction acceptTransactionWithMaintenanceHandling(
+            UUID transactionId,
+            Map<UUID, Integer> receivedQuantities,
+            Map<UUID, Boolean> itemsNotReceived,
+            String username,
+            String acceptanceComment,
+            TransactionPurpose purpose,
+            com.example.backend.dto.equipment.MaintenanceLinkingRequest maintenanceRequest) {
+
+        // First, accept the transaction normally
+        Transaction acceptedTransaction = acceptTransactionWithPurpose(
+                transactionId, receivedQuantities, itemsNotReceived,
+                username, acceptanceComment, purpose);
+
+        // If maintenance request is provided and transaction is MAINTENANCE purpose, handle it
+        if (maintenanceRequest != null && purpose == TransactionPurpose.MAINTENANCE) {
+            handleMaintenanceLinking(acceptedTransaction, maintenanceRequest);
+        }
+
+        return acceptedTransaction;
+    }
+
+    /**
+     * Handle maintenance linking based on the request type
+     */
+    private void handleMaintenanceLinking(Transaction transaction,
+                                        com.example.backend.dto.equipment.MaintenanceLinkingRequest maintenanceRequest) {
+
+        // This would typically be handled by the MaintenanceIntegrationService
+        // For now, we'll just set the purpose to ensure it's properly marked
+        if (transaction.getPurpose() != TransactionPurpose.MAINTENANCE) {
+            transaction.setPurpose(TransactionPurpose.MAINTENANCE);
+            transactionRepository.save(transaction);
+        }
+
+        // Note: The actual maintenance linking will be handled by the controller
+        // using the MaintenanceIntegrationService to avoid circular dependencies
+    }
+
+    // ADD THESE METHODS TO YOUR TransactionService CLASS
+
+    /**
+     * Deletes a transaction and reverts any immediate inventory changes if necessary
+     * Only allows deletion of PENDING transactions to maintain data integrity
+     */
+    public void deleteTransaction(UUID transactionId) {
+        System.out.println("🗑️ Starting transaction deletion for ID: " + transactionId);
+
+        Transaction transaction = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new IllegalArgumentException("Transaction not found with ID: " + transactionId));
+
+        // Only allow deletion of PENDING transactions
+        if (transaction.getStatus() != TransactionStatus.PENDING) {
+            throw new IllegalArgumentException("Cannot delete transaction with status: " + transaction.getStatus() +
+                    ". Only PENDING transactions can be deleted.");
+        }
+
+        System.out.println("📋 Transaction details:");
+        System.out.println("  - Status: " + transaction.getStatus());
+        System.out.println("  - Sender: " + transaction.getSenderType() + " (" + transaction.getSenderId() + ")");
+        System.out.println("  - Receiver: " + transaction.getReceiverType() + " (" + transaction.getReceiverId() + ")");
+        System.out.println("  - Initiated by: " + transaction.getSentFirst());
+        System.out.println("  - Batch: " + transaction.getBatchNumber());
+
+        // Revert immediate inventory changes based on who initiated the transaction
+        revertImmediateInventoryChanges(transaction);
+
+        // Delete the transaction and its items (cascade should handle TransactionItems)
+        System.out.println("🗑️ Deleting transaction and its items...");
+        transactionRepository.delete(transaction);
+
+        System.out.println("✅ Transaction deleted successfully");
+    }
+
+    /**
+     * Reverts the immediate inventory changes that were made during transaction creation
+     * Equipment is always a receiver, never a sender
+     */
+    private void revertImmediateInventoryChanges(Transaction transaction) {
+        System.out.println("↩️ Reverting immediate inventory changes...");
+
+        if (transaction.getSentFirst().equals(transaction.getSenderId())) {
+            // SENDER INITIATED: Revert sender inventory deductions
+            System.out.println("📤 Sender-initiated transaction - reverting sender inventory deductions");
+
+            if (transaction.getSenderType() == PartyType.WAREHOUSE) {
+                System.out.println("🏭 Adding back inventory to sender warehouse");
+                for (TransactionItem item : transaction.getItems()) {
+                    addBackToWarehouseInventory(
+                            transaction.getSenderId(),
+                            item.getItemType(),
+                            item.getQuantity()
+                    );
+                    System.out.println("  ↩️ Added back: " + item.getQuantity() + " x " + item.getItemType().getName());
+                }
+            }
+            // Note: Equipment is never a sender, so no equipment sender logic needed
+
+        } else if (transaction.getSentFirst().equals(transaction.getReceiverId())) {
+            // RECEIVER INITIATED: Revert receiver inventory additions
+            System.out.println("📥 Receiver-initiated transaction - reverting receiver inventory additions");
+
+            if (transaction.getReceiverType() == PartyType.WAREHOUSE) {
+                System.out.println("🏭 Removing inventory from receiver warehouse");
+                for (TransactionItem item : transaction.getItems()) {
+                    try {
+                        deductFromWarehouseInventory(
+                                transaction.getReceiverId(),
+                                item.getItemType(),
+                                item.getQuantity()
+                        );
+                        System.out.println("  ➖ Removed: " + item.getQuantity() + " x " + item.getItemType().getName());
+                    } catch (IllegalArgumentException e) {
+                        System.out.println("  ⚠️ Could not remove " + item.getQuantity() + " x " + item.getItemType().getName() +
+                                " from warehouse - insufficient inventory or item not found");
+                        // Continue with deletion even if we can't revert some inventory
+                        // This could happen if items were manually adjusted after transaction creation
+                    }
+                }
+            } else if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
+                System.out.println("⚙️ Equipment receiver - reverting consumable additions");
+                for (TransactionItem item : transaction.getItems()) {
+                    try {
+                        // Remove the consumables that were added during transaction creation
+                        deductFromEquipmentConsumables(
+                                transaction.getReceiverId(),
+                                item.getItemType(),
+                                item.getQuantity()
+                        );
+                        System.out.println("  ➖ Removed consumables: " + item.getQuantity() + " x " + item.getItemType().getName());
+                    } catch (IllegalArgumentException e) {
+                        System.out.println("  ⚠️ Could not remove consumables " + item.getQuantity() + " x " + item.getItemType().getName() +
+                                " from equipment - insufficient quantity or item not found");
+                        // Continue with deletion even if we can't revert some consumables
+                    }
+                }
+            }
+        }
+
+        System.out.println("✅ Inventory reversion completed");
     }
 }

@@ -22,4 +22,6 @@ public interface ItemCategoryRepository extends JpaRepository<ItemCategory, UUID
     // Find categories that are either leaves or have a parent (useful for item type assignment)
     @Query("SELECT c FROM ItemCategory c WHERE c.parentCategory IS NOT NULL OR NOT EXISTS (SELECT 1 FROM ItemCategory child WHERE child.parentCategory = c)")
     List<ItemCategory> findCategoriesForItemTypeAssignment();
+
+
 }

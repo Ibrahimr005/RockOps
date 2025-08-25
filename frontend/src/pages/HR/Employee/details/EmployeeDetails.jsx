@@ -15,6 +15,8 @@ import LoansTab from '../tabs/LoansTab.jsx';
 import PayslipsTab from '../tabs/PayslipsTab.jsx';
 import VacationTab from '../tabs/VacationTab.jsx';
 import LoadingPage from "../../../../components/common/LoadingPage/LoadingPage.jsx";
+import {FaUser} from "react-icons/fa";
+import {hrEmployeeService} from "../../../../services/hr/hrEmployeeService.js";
 
 const EmployeeDetails = () => {
     const { id } = useParams();
@@ -31,32 +33,19 @@ const EmployeeDetails = () => {
     const fetchEmployeeDetails = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:8080/api/v1/hr/employee/${id}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await hrEmployeeService.employee.getById(id);
 
             console.log('Employee details response:', response);
+            console.log('Employee details data:', response.data);
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log('Employee details data:', data);
-            setEmployee(data);
-            setLoading(false);
+            setEmployee(response.data);
         } catch (error) {
             console.error('Error fetching employee details:', error);
-            setError(error.message);
+            setError(error.message || 'Failed to fetch employee details');
+        } finally {
             setLoading(false);
         }
     };
-
     // Format date for display - moved to a utility function to be used by all tabs
     const formatDate = (dateString) => {
         if (!dateString) return 'Not specified';
@@ -195,10 +184,23 @@ const EmployeeDetails = () => {
                 {/* Minimal Info Bar */}
                 <div className="employee-info-bar">
                     <div className="employee-details-avatar">
-                        <img
-                            src={employee.photoUrl || 'https://via.placeholder.com/48?text=?'}
-                            alt={`${employee.firstName} ${employee.lastName}`}
-                        />
+                        {employee.photoUrl ? (
+                            <img
+                                src={employee.photoUrl}
+                                alt={`${employee.firstName} ${employee.lastName}`}
+                                onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextSibling.style.display = 'flex';
+                                }}
+                            />
+                        ) : (
+                            <div className="employee-details-avatar__placeholder">
+                                <FaUser />
+                            </div>
+                        )}
+                        <div className="employee-details-avatar__placeholder" style={{ display: 'none' }}>
+                            <FaUser />
+                        </div>
                         <div className={`employee-status-indicator ${employee.status?.toLowerCase() || 'active'}`}></div>
                     </div>
 
@@ -216,17 +218,17 @@ const EmployeeDetails = () => {
                     </div>
 
                     <div className="employee-quick-stats">
-                        <div className="stat-item">
+                        <div className="emp-stat-item">
                             <span className="stat-label">Status</span>
                             <span className={`status-badge ${employee.status?.toLowerCase() || 'active'}`}>
                                 {employee.status || 'N/A'}
                             </span>
                         </div>
-                        <div className="stat-item">
+                        <div className="emp-stat-item">
                             <span className="stat-label">Employee ID</span>
                             <span className="stat-value">#{employee.id}</span>
                         </div>
-                        <div className="stat-item">
+                        <div className="emp-stat-item">
                             <span className="stat-label">Hire Date</span>
                             <span className="stat-value">
                                 {formatDate(employee.hireDate)}

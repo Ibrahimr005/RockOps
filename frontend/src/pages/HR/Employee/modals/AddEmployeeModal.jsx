@@ -2,18 +2,24 @@ import React, { useState, useEffect } from 'react';
 import './EmployeeModals.scss';
 
 const calculateMonthlySalary = (jobPosition, baseSalaryOverride, salaryMultiplier) => {
-    const baseSalary = baseSalaryOverride ? parseFloat(baseSalaryOverride) : (jobPosition.baseSalary || 0);
+    if (!jobPosition) return 0;
     const multiplier = salaryMultiplier ? parseFloat(salaryMultiplier) : 1.0;
 
     switch (jobPosition.contractType) {
-        case 'HOURLY':
-            return baseSalary * multiplier * (jobPosition.workingDaysPerWeek * 4) * jobPosition.hoursPerShift;
-        case 'DAILY':
-            return baseSalary * multiplier * jobPosition.workingDaysPerMonth;
-        case 'MONTHLY':
-            return baseSalary * multiplier;
+        case 'HOURLY': {
+            const hourlyRate = baseSalaryOverride ? parseFloat(baseSalaryOverride) : (jobPosition.hourlyRate || 0);
+            return hourlyRate * multiplier * (jobPosition.workingDaysPerWeek * 4) * jobPosition.hoursPerShift;
+        }
+        case 'DAILY': {
+            const dailyRate = baseSalaryOverride ? parseFloat(baseSalaryOverride) : (jobPosition.dailyRate || 0);
+            return dailyRate * multiplier * jobPosition.workingDaysPerMonth;
+        }
+        case 'MONTHLY': {
+            const monthlyBaseSalary = baseSalaryOverride ? parseFloat(baseSalaryOverride) : (jobPosition.monthlyBaseSalary || 0);
+            return monthlyBaseSalary * multiplier;
+        }
         default:
-            return baseSalary * multiplier;
+            return 0;
     }
 };
 
@@ -36,10 +42,10 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
         status: 'ACTIVE',
         education: '',
         // Financial details
-        bonus: '',
-        commission: '',
+        // bonus: '',
+        // commission: '',
         baseSalaryOverride: '',
-        salaryMultiplier: 1.0,
+        // salaryMultiplier: 1.0,
         // Relationships
         jobPositionId: '',
         siteId: ''
@@ -124,13 +130,14 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
     };
 
     // Validate form
+    // Validate form
     const validateForm = () => {
         const newErrors = {};
 
         // Required fields
         if (!formData.firstName) newErrors.firstName = 'First name is required';
         if (!formData.lastName) newErrors.lastName = 'Last name is required';
-        if (!formData.email) newErrors.email = 'Email is required';
+        // if (!formData.email) newErrors.email = 'Email is required';
         if (!formData.jobPositionId) newErrors.jobPositionId = 'Job position is required';
         if (!formData.birthDate) newErrors.birthDate = 'Date of Birth is required';
         if (!formData.nationalIDNumber) newErrors.nationalIDNumber = 'National ID is required';
@@ -148,10 +155,33 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
             newErrors.phoneNumber = 'Phone number is invalid';
         }
 
+        // Hire date validation - should not be after today
+        if (formData.hireDate) {
+            const hireDateObj = new Date(formData.hireDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+            hireDateObj.setHours(0, 0, 0, 0);
+
+            if (hireDateObj > today) {
+                newErrors.hireDate = 'Hire date cannot be in the future';
+            }
+        }
+
+        // Birth date validation - should not be after today
+        if (formData.birthDate) {
+            const birthDateObj = new Date(formData.birthDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            birthDateObj.setHours(0, 0, 0, 0);
+
+            if (birthDateObj > today) {
+                newErrors.birthDate = 'Birth date cannot be in the future';
+            }
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
-
     // Handle form submission
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -188,7 +218,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
             <div className="r4m-employee-modal">
                 <div className="r4m-modal-header">
                     <h2>{isFromCandidate ? 'Hire Candidate as Employee' : 'Add New Employee'}</h2>
-                    <button className="r4m-close-button" onClick={onClose}>×</button>
+                    <button className="btn-close" onClick={onClose}>×</button>
                 </div>
 
                 {isFromCandidate && (
@@ -249,14 +279,16 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                     </div>
                                 </div>
 
+
                                 <div className="r4m-form-group">
-                                    <label>First Name *</label>
+                                    <label className="r4m-required-field">First Name</label>
                                     <input
                                         type="text"
                                         name="firstName"
                                         value={formData.firstName}
                                         onChange={handleChange}
                                         className={errors.firstName ? 'error' : ''}
+                                        required
                                     />
                                     {errors.firstName && <span className="r4m-error-message">{errors.firstName}</span>}
                                 </div>
@@ -272,7 +304,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Last Name *</label>
+                                    <label className="r4m-required-field">Last Name</label>
                                     <input
                                         type="text"
                                         name="lastName"
@@ -284,7 +316,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Gender *</label>
+                                    <label className="r4m-required-field">Gender </label>
                                     <select
                                         name="gender"
                                         value={formData.gender}
@@ -300,7 +332,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Date of Birth *</label>
+                                    <label className="r4m-required-field">Date of Birth </label>
                                     <input
                                         type="date"
                                         name="birthDate"
@@ -312,7 +344,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>National ID Number *</label>
+                                    <label className="r4m-required-field">National ID Number </label>
                                     <input
                                         type="text"
                                         name="nationalIDNumber"
@@ -365,7 +397,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 <h3>Contact Information</h3>
 
                                 <div className="r4m-form-group">
-                                    <label>Email *</label>
+                                    <label>Email </label>
                                     <input
                                         type="email"
                                         name="email"
@@ -411,7 +443,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Country *</label>
+                                    <label className="r4m-required-field">Country </label>
                                     <input
                                         type="text"
                                         name="country"
@@ -429,7 +461,7 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 <h3>Employment Information</h3>
 
                                 <div className="r4m-form-group">
-                                    <label>Job Position *</label>
+                                    <label className="r4m-required-field">Job Position</label>
                                     <select
                                         name="jobPositionId"
                                         value={formData.jobPositionId}
@@ -475,12 +507,13 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                 )}
 
                                 <div className="r4m-form-group">
-                                    <label>Hire Date *</label>
+                                    <label className="r4m-required-field">Hire Date </label>
                                     <input
                                         type="date"
                                         name="hireDate"
                                         value={formData.hireDate}
                                         onChange={handleChange}
+                                        max={new Date().toISOString().split('T')[0]} // Prevent future dates
                                         className={errors.hireDate ? 'error' : ''}
                                     />
                                     {errors.hireDate && <span className="r4m-error-message">{errors.hireDate}</span>}
@@ -526,29 +559,8 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
                                     />
                                 </div>
 
-                                <div className="r4m-form-group">
-                                    <label>Bonus</label>
-                                    <input
-                                        type="number"
-                                        name="bonus"
-                                        min="0"
-                                        step="0.01"
-                                        value={formData.bonus}
-                                        onChange={handleNumberChange}
-                                    />
-                                </div>
 
-                                <div className="r4m-form-group">
-                                    <label>Commission</label>
-                                    <input
-                                        type="number"
-                                        name="commission"
-                                        min="0"
-                                        step="0.01"
-                                        value={formData.commission}
-                                        onChange={handleNumberChange}
-                                    />
-                                </div>
+
 
                                 {selectedJobPosition && (
                                     <div className="r4m-salary-info">

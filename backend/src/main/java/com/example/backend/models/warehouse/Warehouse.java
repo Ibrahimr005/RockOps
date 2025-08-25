@@ -2,8 +2,9 @@ package com.example.backend.models.warehouse;
 
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.site.Site;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.example.backend.models.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Entity
 @Data
@@ -29,19 +31,30 @@ public class Warehouse {
     @Column(length = 500)
     private String photoUrl;
 
-    private int capacity;
+//    private int capacity;
 
     @ManyToOne
     @JoinColumn(name = "site_id", referencedColumnName = "id")
     private Site site;
 
     @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL)
-    @JsonManagedReference("warehouse-employee") // Add this annotation
+    @JsonIgnore // CHANGED from @JsonManagedReference to @JsonIgnore
     private List<Employee> employees;
 
     @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonBackReference // prevents infinite recursion in serialization
+    @JsonIgnore // CHANGED from @JsonManagedReference to @JsonIgnore
     private List<Item> items = new ArrayList<>();
 
-    // New relation to WarehouseTransaction
+    // Add this to your Warehouse entity
+    @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"user", "warehouse"}) // Prevent circular reference
+    private List<WarehouseEmployee> employeeAssignments = new ArrayList<>();
+
+    public List<User> getAssignedEmployees() {
+        return employeeAssignments.stream()
+                .map(WarehouseEmployee::getUser)
+                .collect(Collectors.toList());
+    }
+
+
 }

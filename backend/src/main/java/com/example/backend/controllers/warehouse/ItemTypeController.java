@@ -4,6 +4,7 @@ package com.example.backend.controllers.warehouse;
 import com.example.backend.models.warehouse.ItemType;
 import com.example.backend.services.warehouse.ItemTypeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,8 +43,24 @@ public class ItemTypeController {
 
     // Delete an existing ItemType
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteItemType(@PathVariable UUID id) {
-        itemTypeService.deleteItemType(id);
-        return ResponseEntity.ok("ItemType with ID " + id + " deleted successfully");
+    public ResponseEntity<?> deleteItemType(@PathVariable UUID id) {
+        try {
+            itemTypeService.deleteItemType(id);
+            return ResponseEntity.ok("ItemType with ID " + id + " deleted successfully");
+        } catch (RuntimeException e) {
+            if (e.getMessage().equals("ITEMS_EXIST")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("ITEMS_EXIST");
+            } else if (e.getMessage().equals("TRANSACTION_ITEMS_EXIST")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("TRANSACTION_ITEMS_EXIST");
+            } else if (e.getMessage().equals("REQUEST_ORDER_ITEMS_EXIST")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("REQUEST_ORDER_ITEMS_EXIST");
+            } else if (e.getMessage().equals("OFFER_ITEMS_EXIST")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("OFFER_ITEMS_EXIST");
+            } else if (e.getMessage().contains("ItemType not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("ITEM_TYPE_NOT_FOUND");
+            }
+            // Let other exceptions go to global handler
+            throw e;
+        }
     }
 }
