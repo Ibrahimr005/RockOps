@@ -43,8 +43,7 @@ const EmployeesList = () => {
             // DEBUG: Log the first employee to see what status values we're getting
             if (data && data.length > 0) {
                 console.log('First employee data:', data[0]);
-                console.log('Status field:', data[0].status);
-                console.log('Status type:', typeof data[0].status);
+
             }
 
             setEmployees(data);
@@ -77,7 +76,6 @@ const EmployeesList = () => {
 
     // Get status badge styling - IMPROVED
     const getStatusBadge = (status) => {
-        console.log('getStatusBadge called with:', status, 'Type:', typeof status); // DEBUG
 
         const statusColors = {
             'ACTIVE': 'success',
@@ -164,7 +162,7 @@ const EmployeesList = () => {
             header: 'Status',
             accessor: 'status',
             render: (employee) => {
-                console.log('Rendering status for employee:', employee.firstName, 'Status:', employee.status); // DEBUG
+
                 return getStatusBadge(employee.status);
             }
         },
