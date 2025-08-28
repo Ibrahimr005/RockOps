@@ -276,16 +276,6 @@ const CandidateDetailsModal = ({
                                 Already Hired
                             </div>
                         )}
-
-                        {!isHired && (
-                            <button
-                                className="modal-btn-danger"
-                                onClick={onDelete}
-                            >
-                                <FaTrashAlt />
-                                Delete
-                            </button>
-                        )}
                     </div>
                 </div>
             </div>
