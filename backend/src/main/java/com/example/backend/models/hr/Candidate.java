@@ -74,7 +74,8 @@ public class Candidate {
         HIRED,          // Successfully hired
         REJECTED,       // Application rejected
         POTENTIAL,      // Moved to potential list (vacancy full)
-        WITHDRAWN       // Candidate withdrew application
+        WITHDRAWN,
+        PENDING_HIRE// Candidate withdrew application
     }
 
     // Helper methods

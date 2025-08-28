@@ -1,7 +1,5 @@
 .candidates-section {
   padding: 1.5rem;
-  background: var(--main-background-color);
-  min-height: 100vh;
 
   .error-alert {
     background: linear-gradient(135deg, #fee2e2, #fecaca);
@@ -347,5 +345,86 @@
         font-size: 1.8rem;
       }
     }
+  }
+}
+
+.candidates-datatable {
+  .candidates-table__status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &.candidates-table__status-badge--applied {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    &.candidates-table__status-badge--review {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    &.candidates-table__status-badge--interviewed {
+      background: #f3e8ff;
+      color: #7c3aed;
+    }
+
+    &.candidates-table__status-badge--pending {
+      background: #fed7aa;
+      color: #ea580c;
+      animation: candidatesTablePulse 2s infinite;
+    }
+
+    &.candidates-table__status-badge--hired {
+      background: #d1fae5;
+      color: #059669;
+    }
+
+    &.candidates-table__status-badge--rejected {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    &.candidates-table__status-badge--potential {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    &.candidates-table__status-badge--withdrawn {
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+  }
+
+  // Action button styling - scoped to table
+  .candidates-table__pending-hire-btn {
+    background: #f59e0b !important;
+    color: white !important;
+
+    &:hover {
+      background: #d97706 !important;
+    }
+  }
+
+  .candidates-table__hired-btn {
+    background: #10b981 !important;
+    color: white !important;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+@keyframes candidatesTablePulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
   }
 }

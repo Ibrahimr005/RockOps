@@ -275,7 +275,7 @@ const AddCandidateModal = ({ onClose, onSave, vacancyId }) => {
             <div className="candidate-modal">
                 <div className="modal-header">
                     <h2>Add New Candidate</h2>
-                    <button className="close-button" onClick={onClose}>×</button>
+                    <button className="btn-close" onClick={onClose}>×</button>
                 </div>
 
                 <form onSubmit={handleSubmit}>

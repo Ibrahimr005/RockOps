@@ -5,6 +5,7 @@ import CandidatesTable from "../Candidate/CandidatesTable.jsx";
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import { vacancyService } from '../../../../services/hr/vacancyService.js';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
+import { FaArrowLeft, FaEdit, FaTrash, FaUsers, FaBriefcase, FaCalendar, FaClock, FaBuilding } from 'react-icons/fa';
 
 const VacancyDetails = () => {
     const { id } = useParams();
@@ -12,7 +13,6 @@ const VacancyDetails = () => {
     const [vacancy, setVacancy] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('details'); // 'details' or 'candidates'
     const [confirmDialog, setConfirmDialog] = useState({
         isVisible: false,
         type: 'warning',
@@ -30,7 +30,7 @@ const VacancyDetails = () => {
                 setLoading(true);
                 const response = await vacancyService.getById(id);
                 setVacancy(response.data);
-                console.log('Vacancy Data:', response.data); // Correct way to print it
+                console.log('Vacancy Data:', response.data);
             } catch (error) {
                 console.error('Error fetching vacancy details:', error);
                 setError(error.message);
@@ -39,7 +39,6 @@ const VacancyDetails = () => {
                 setLoading(false);
             }
         };
-
 
         if (id) {
             fetchVacancyDetails();
@@ -70,13 +69,13 @@ const VacancyDetails = () => {
     const getStatusBadgeClass = (status) => {
         switch (status) {
             case 'OPEN':
-                return 'success';
+                return 'active';
             case 'CLOSED':
-                return 'status-danger';
+                return 'danger';
             case 'FILLED':
-                return 'info';
+                return 'completed';
             default:
-                return 'status-warning';
+                return 'pending';
         }
     };
 
@@ -84,13 +83,13 @@ const VacancyDetails = () => {
     const getPriorityBadgeClass = (priority) => {
         switch (priority) {
             case 'HIGH':
-                return 'priority-badge-high';
+                return 'high';
             case 'MEDIUM':
-                return 'priority-badge-medium';
+                return 'medium';
             case 'LOW':
-                return 'priority-badge-low';
+                return 'low';
             default:
-                return 'priority-badge-medium';
+                return 'medium';
         }
     };
 
@@ -140,7 +139,6 @@ const VacancyDetails = () => {
                 try {
                     await vacancyService.moveToPotential(id);
                     showSuccess('Candidates moved to potential list successfully');
-                    // Refresh the page or update the state as needed
                     window.location.reload();
                 } catch (error) {
                     console.error('Error moving candidates to potential:', error);
@@ -160,149 +158,183 @@ const VacancyDetails = () => {
 
     if (loading) {
         return (
-            <div className="vacancy-details-container">
-                <div className="loading-container">
-                    <div className="loader"></div>
+            <div className="vacancy-details-page">
+                <div className="loading-state">
+                    <div className="spinner"></div>
                     <p>Loading vacancy details...</p>
                 </div>
             </div>
         );
     }
 
-    if (error) {
+    if (error || !vacancy) {
         return (
-            <div className="vacancy-details-container">
-                <div className="error-container">
-                    <p>Error: {error}</p>
-                    <button onClick={handleBackClick}>Back to Vacancies</button>
-                </div>
-            </div>
-        );
-    }
-
-    if (!vacancy) {
-        return (
-            <div className="vacancy-details-container">
-                <div className="error-container">
-                    <p>Vacancy not found</p>
-                    <button onClick={handleBackClick}>Back to Vacancies</button>
+            <div className="vacancy-details-page">
+                <div className="error-state">
+                    <h3>Error Loading Vacancy</h3>
+                    <p>{error || 'Vacancy not found'}</p>
+                    <button className="btn btn-primary" onClick={handleBackClick}>
+                        <FaArrowLeft />
+                        Back to Vacancies
+                    </button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="vacancy-details-container">
-            {process.env.NODE_ENV === 'development' && vacancy && (
-                <div className="debug-section">
-                    <h3>Debug: Vacancy Object</h3>
-                    <pre style={{
-                        background: 'black',
-                        padding: '1rem',
-                        border: '1px solid #ccc',
-                        borderRadius: '8px',
-                        overflowX: 'auto',
-                        maxHeight: '300px'
-                    }}>
-            {JSON.stringify(vacancy, null, 2)}
-        </pre>
+        <div className="vacancy-details-page">
+            {/* Header Section */}
+            <div className="vacancy-header">
+                <div className="header-navigation">
+                    <button className="btn btn-secondary" onClick={handleBackClick}>
+                        <FaArrowLeft />
+                        Back to Vacancies
+                    </button>
+                    <div className="header-actions">
+                        {/*<button className="btn btn-primary" onClick={handleEditClick}>*/}
+                        {/*    <FaEdit />*/}
+                        {/*    Edit Vacancy*/}
+                        {/*</button>*/}
+                        {/*<button className="btn modal-btn-danger" onClick={handleDeleteVacancy}>*/}
+                        {/*    <FaTrash />*/}
+                        {/*    Delete*/}
+                        {/*</button>*/}
+                    </div>
                 </div>
-            )}
 
-            <div className="details-header">
-                <div className="header-content">
-
-                    <h1>{vacancy.title}</h1>
-                    <div className="header-badges">
+                <div className="vacancy-title-section">
+                    <h1 className="page-title">{vacancy.title}</h1>
+                    <div className="vacancy-badges">
                         <span className={`status-badge ${getStatusBadgeClass(vacancy.status)}`}>
                             {vacancy.status}
                         </span>
-                        <span className={`priority-badge ${getPriorityBadgeClass(vacancy.priority)}`}>
+                        <span className={`status-badge ${getPriorityBadgeClass(vacancy.priority)}`}>
                             {vacancy.priority || 'MEDIUM'} Priority
                         </span>
                     </div>
                 </div>
-
             </div>
 
-            <div className="tabs-container">
-                <div className="tabs">
-                    <button
-                        className={`tab-btn ${activeTab === 'details' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('details')}
-                    >
-                        <i className="fas fa-info-circle"></i> Details
-                    </button>
-                    <button
-                        className={`tab-btn ${activeTab === 'candidates' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('candidates')}
-                    >
-                        <i className="fas fa-users"></i> Candidates
-                    </button>
-                </div>
-            </div>
+            {/* Main Content */}
+            <div className="vacancy-content">
+                {/* Vacancy Details Section */}
+                <div className="vacancy-details-section">
+                    <div className="section-header">
+                        <h2 className="section-title">
+                            <FaBriefcase />
+                            Vacancy Information
+                        </h2>
+                    </div>
 
-            {activeTab === 'details' ? (
-                <div className="vacancy-details-content">
-                    <div className="vacancy-details-section vacancy-overview-section">
-                        <div className="vacancy-info-grid">
-                            <div className="vacancy-info-card">
-                                <span className="vacancy-info-label">Position</span>
-                                <span className="vacancy-info-value">{vacancy.jobPosition ? vacancy.jobPosition.positionName : 'General Position'}</span>
+                    <div className="vacancy-info-grid">
+                        <div className="info-card">
+                            <div className="info-icon">
+                                <FaBriefcase />
                             </div>
-                            <div className="vacancy-info-card">
-                                <span className="vacancy-info-label">Department</span>
-                                <span className="vacancy-info-value">{vacancy.jobPosition ? vacancy.jobPosition.department.name : 'N/A'}</span>
+                            <div className="info-content">
+                                <span className="info-label">Position</span>
+                                <span className="info-value">
+                                    {vacancy.jobPosition ? vacancy.jobPosition.positionName : 'General Position'}
+                                </span>
                             </div>
-                            <div className="vacancy-info-card">
-                                <span className="vacancy-info-label">Posted Date</span>
-                                <span className="vacancy-info-value">{formatDate(vacancy.postingDate)}</span>
+                        </div>
+
+                        <div className="info-card">
+                            <div className="info-icon">
+                                <FaBuilding />
                             </div>
-                            <div className="vacancy-info-card">
-                                <span className="vacancy-info-label">Closing Date</span>
-                                <span className="vacancy-info-value">{formatDate(vacancy.closingDate)}</span>
+                            <div className="info-content">
+                                <span className="info-label">Department</span>
+                                <span className="info-value">
+                                    {vacancy.jobPosition ? vacancy.jobPosition.department.name : 'N/A'}
+                                </span>
                             </div>
-                            <div className="vacancy-info-card">
-                                <span className="vacancy-info-label">Remaining Time</span>
-                                <span className={`vacancy-info-value ${calculateRemainingDays(vacancy.closingDate) === 'Closed' ? 'vacancy-closed' :
-                                    calculateRemainingDays(vacancy.closingDate) === 'Today' ? 'vacancy-today' :
-                                        parseInt(calculateRemainingDays(vacancy.closingDate)) <= 7 ? 'vacancy-urgent' : 'vacancy-normal'}`}>
+                        </div>
+
+                        <div className="info-card">
+                            <div className="info-icon">
+                                <FaCalendar />
+                            </div>
+                            <div className="info-content">
+                                <span className="info-label">Posted Date</span>
+                                <span className="info-value">{formatDate(vacancy.postingDate)}</span>
+                            </div>
+                        </div>
+
+                        <div className="info-card">
+                            <div className="info-icon">
+                                <FaCalendar />
+                            </div>
+                            <div className="info-content">
+                                <span className="info-label">Closing Date</span>
+                                <span className="info-value">{formatDate(vacancy.closingDate)}</span>
+                            </div>
+                        </div>
+
+                        <div className="info-card">
+                            <div className="info-icon">
+                                <FaClock />
+                            </div>
+                            <div className="info-content">
+                                <span className="info-label">Remaining Time</span>
+                                <span className={`info-value status-indicator ${
+                                    calculateRemainingDays(vacancy.closingDate) === 'Closed' ? 'closed' :
+                                        calculateRemainingDays(vacancy.closingDate) === 'Today' ? 'urgent' :
+                                            parseInt(calculateRemainingDays(vacancy.closingDate)) <= 7 ? 'warning' : 'normal'
+                                }`}>
                                     {calculateRemainingDays(vacancy.closingDate)}
                                 </span>
                             </div>
-                            <div className="vacancy-info-card">
-                                <span className="vacancy-info-label">Positions</span>
-                                <span className="vacancy-info-value">{vacancy.numberOfPositions || 1}</span>
+                        </div>
+
+                        <div className="info-card">
+                            <div className="info-icon">
+                                <FaUsers />
+                            </div>
+                            <div className="info-content">
+                                <span className="info-label">Positions Available</span>
+                                <span className="info-value">{vacancy.numberOfPositions || 1}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="vacancy-details-section vacancy-description-section">
-                        <h2>Description</h2>
-                        <div className="vacancy-content-card">
-                            <p>{vacancy.description || 'No description provided.'}</p>
+                    {/* Content Cards */}
+                    <div className="content-cards">
+                        <div className="content-card">
+                            <h3 className="card-title">Description</h3>
+                            <div className="card-content">
+                                <p>{vacancy.description || 'No description provided.'}</p>
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="vacancy-details-section vacancy-requirements-section">
-                        <h2>Requirements</h2>
-                        <div className="vacancy-content-card">
-                            <p>{vacancy.requirements || 'No specific requirements provided.'}</p>
+                        <div className="content-card">
+                            <h3 className="card-title">Requirements</h3>
+                            <div className="card-content">
+                                <p>{vacancy.requirements || 'No specific requirements provided.'}</p>
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="vacancy-details-section vacancy-responsibilities-section">
-                        <h2>Responsibilities</h2>
-                        <div className="vacancy-content-card">
-                            <p>{vacancy.responsibilities || 'No specific responsibilities provided.'}</p>
+                        <div className="content-card">
+                            <h3 className="card-title">Responsibilities</h3>
+                            <div className="card-content">
+                                <p>{vacancy.responsibilities || 'No specific responsibilities provided.'}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            ) : (
-                <div className="candidates-content">
+
+                {/* Candidates Section */}
+                <div className="candidates-section">
+                    <div className="section-header">
+                        <h2 className="section-title">
+                            <FaUsers />
+                            Candidates
+                        </h2>
+                    </div>
                     <CandidatesTable vacancyId={id} />
                 </div>
-            )}
+            </div>
 
             {/* Confirmation Dialog */}
             <ConfirmationDialog
