@@ -1,0 +1,815 @@
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .modal-backdrop {
+    padding: 0.5rem;
+
+    .modal-container {
+      max-height: 95vh;
+    }
+  }
+
+  .modal-header {
+    padding: 1rem 1.5rem;
+
+    .modal-title {
+      font-size: 1.25rem;
+    }
+  }
+
+  .modal-body {
+    padding: 1rem 1.5rem;
+
+    .modal-section {
+      margin-bottom: 1.5rem;
+
+      .modal-section-title {
+        font-size: 1.125rem;
+      }
+    }
+
+    .candidate-details-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+
+  .candidate-modal-footer {
+    padding: 1rem 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+
+    .modal-btn-secondary,
+    .candidate-primary-actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .candidate-header-content {
+    gap: 0.75rem;
+  }
+
+  .candidate-avatar {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.25rem;
+
+    svg {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+  }
+
+  .candidate-details-grid {
+    gap: 0.75rem;
+  }
+
+  .candidate-detail-item {
+    .candidate-detail-label {
+      font-size: 0.85rem;
+    }
+
+    .candidate-detail-value {
+      font-size: 0.875rem;
+      padding: 0.625rem;
+    }
+  }
+
+  .modal-warning,
+  .modal-error {
+    padding: 0.75rem;
+    gap: 0.5rem;
+
+    svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    div {
+      h4 {
+        font-size: 0.85rem;
+      }
+
+      p {
+        font-size: 0.8rem;
+      }
+    }
+  }
+}/* CandidateDetailsModal.scss - Following CreateLoanModal styling pattern */
+
+// Import dependencies (if needed in your build process)
+// @import '../styles/modal-styles';
+// @import '../styles/status-badges';
+// @import '../styles/primary-button';
+
+/* ===========================================
+   Candidate Details Modal Specific Styles
+   Following the CreateLoanModal design pattern
+   =========================================== */
+
+/* Modal Backdrop & Container */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+
+  .modal-container {
+    background: var(--color-surface-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    width: 100%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* Enhanced Header for Candidate Details */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border-color-light);
+  background: var(--color-surface-secondary);
+
+  .modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all var(--transition-fast) ease;
+
+    &:hover {
+      background: var(--color-danger);
+      color: white;
+    }
+  }
+}
+
+.candidate-header-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.candidate-avatar {
+  width: 3.5rem;
+  height: 3.5rem;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-inverse);
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--color-surface);
+
+  svg {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  // Avatar variations
+  &.candidate-avatar-sm {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1rem;
+
+    svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
+
+  &.candidate-avatar-lg {
+    width: 4.5rem;
+    height: 4.5rem;
+    font-size: 2rem;
+
+    svg {
+      width: 2.25rem;
+      height: 2.25rem;
+    }
+  }
+}
+
+.candidate-basic-info {
+  flex: 1;
+  min-width: 0; // Allows text to truncate properly
+
+  .modal-title {
+    margin: 0;
+    margin-bottom: 0.25rem;
+    font-size: 1.5rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--color-text-primary);
+    line-height: 1.2;
+
+    @media (max-width: 768px) {
+      font-size: 1.25rem;
+    }
+  }
+
+  .modal-subtitle {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+
+    @media (max-width: 768px) {
+      font-size: 0.8rem;
+    }
+  }
+
+  // Status badge positioning in header
+  .status-badge {
+    margin-top: 0.5rem;
+
+    &.large {
+      font-size: 0.8rem;
+      padding: 0.5rem 0.75rem;
+      font-weight: 600;
+    }
+  }
+}
+
+/* Modal Body Content */
+.modal-body {
+  background-color: var(--section-background-color);
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+}
+
+/* Modal Section Styling */
+.modal-section {
+  margin-bottom: 2rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  // Section title with icon enhancement
+  .modal-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--color-text-primary);
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-primary);
+
+    svg {
+      color: var(--color-primary);
+      width: 1.25rem;
+      height: 1.25rem;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.candidate-detail-item {
+  display: flex;
+  flex-direction: column;
+
+  .candidate-detail-label {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    svg {
+      width: 0.875rem;
+      height: 0.875rem;
+      color: var(--color-primary);
+      flex-shrink: 0;
+    }
+  }
+
+  .candidate-detail-value {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-secondary);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    transition: all var(--transition-fast) ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+    }
+
+    // Special styling for empty/null values
+    &:empty::before,
+    &[data-empty="true"]::before {
+      content: 'Not provided';
+      color: var(--color-text-tertiary);
+      font-style: italic;
+      font-weight: normal;
+    }
+
+    // Email styling
+    &[data-type="email"] {
+      color: var(--color-primary);
+      text-decoration: underline;
+      cursor: pointer;
+
+      &:hover {
+        color: var(--color-primary-dark);
+      }
+    }
+
+    // Phone number styling
+    &[data-type="phone"] {
+      font-family: var(--font-mono, 'Courier New', monospace);
+      letter-spacing: 0.025em;
+    }
+  }
+}
+
+/* Resume Section Styling */
+.candidate-resume-section {
+  margin-top: 1rem;
+
+  .btn {
+    // Leverages global button styles
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: var(--color-primary);
+    color: white;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all var(--transition-fast) ease;
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary-dark);
+      transform: translateY(-1px);
+    }
+
+    svg {
+      color: currentColor;
+    }
+  }
+}
+
+/* Notes Section Styling */
+.candidate-notes-content {
+  background: var(--color-surface-secondary);
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color-light);
+  margin-top: 1rem;
+
+  p {
+    margin: 0;
+    color: var(--color-text-primary);
+    line-height: 1.6;
+    font-size: 0.9rem;
+
+    // Handle long text
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  // Empty notes styling
+  &:empty::before {
+    content: 'No notes available';
+    color: var(--color-text-tertiary);
+    font-style: italic;
+  }
+}
+
+/* Status Information Alerts */
+.modal-warning {
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  border: 1px solid var(--border-color-light);
+  margin-top: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+
+  svg {
+    color: var(--color-warning);
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  div {
+    flex: 1;
+
+    h4 {
+      margin: 0 0 0.25rem 0;
+      font-size: 0.9rem;
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-primary);
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      line-height: 1.4;
+    }
+  }
+}
+
+.modal-error {
+  background: var(--color-surface-secondary);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  border: 1px solid var(--border-color-light);
+  margin-top: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+
+  svg {
+    color: var(--color-danger);
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  div {
+    flex: 1;
+
+    h4 {
+      margin: 0 0 0.25rem 0;
+      font-size: 0.9rem;
+      font-weight: var(--bold-font-weight);
+      color: var(--color-text-primary);
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      line-height: 1.4;
+    }
+  }
+}
+
+/* Modal Footer */
+.candidate-modal-footer {
+
+
+  .modal-btn-secondary {
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all var(--transition-fast) ease;
+
+    &:hover {
+      background: var(--color-surface-hover);
+      border-color: var(--color-text-secondary);
+    }
+  }
+}
+
+/* Footer Action Groups */
+.candidate-primary-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all var(--transition-fast) ease;
+
+    &.btn-primary {
+      border: none;
+      background: var(--color-primary);
+      color: white;
+
+      &:hover:not(:disabled) {
+        background: var(--color-primary-dark);
+        transform: translateY(-1px);
+      }
+    }
+
+    &.btn-success {
+      border: none;
+      background: var(--color-success);
+      color: white;
+
+      &:hover:not(:disabled) {
+        background: var(--color-success-dark);
+        transform: translateY(-1px);
+      }
+    }
+
+    &.modal-btn-warning {
+      border: none;
+      background: var(--color-warning);
+      color: white;
+
+      &:hover:not(:disabled) {
+        background: var(--color-warning-dark);
+        transform: translateY(-1px);
+      }
+    }
+
+    &.modal-btn-danger {
+      border: none;
+      background: var(--color-danger);
+      color: white;
+
+      &:hover:not(:disabled) {
+        background: var(--color-danger-dark);
+        transform: translateY(-1px);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: stretch;
+
+    .btn {
+      flex: 1;
+      min-width: 0;
+      justify-content: center;
+    }
+  }
+
+  // Status badge in footer (for hired state)
+  .status-badge {
+    // Inherits from global status badge styles
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+
+    &.completed {
+      // Uses global status badge completed styling
+    }
+  }
+}
+
+/* Modal Section Enhancements */
+.modal-section {
+  // Extends global modal section styles
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  // Section with highlighted border
+  &.section-highlighted {
+    background: var(--color-surface);
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    margin-top: 1rem;
+  }
+
+  // Section title with icon enhancement
+  .modal-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    // Inherits other styles from global modal section title
+
+    svg {
+      color: var(--color-primary);
+      width: 1.25rem;
+      height: 1.25rem;
+      flex-shrink: 0;
+    }
+  }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .candidate-header-content {
+    gap: 0.75rem;
+  }
+
+  .candidate-avatar {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.25rem;
+
+    svg {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+  }
+
+  .candidate-details-grid {
+    gap: 0.75rem;
+  }
+
+  .candidate-detail-item {
+    padding: 0.75rem;
+  }
+
+  .modal-warning,
+  .modal-error {
+    padding: 0.75rem;
+    gap: 0.5rem;
+
+    svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    div {
+      h4 {
+        font-size: 0.85rem;
+      }
+
+      p {
+        font-size: 0.8rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .candidate-basic-info {
+    .modal-title {
+      font-size: 1.125rem;
+    }
+
+    .modal-subtitle {
+      font-size: 0.75rem;
+    }
+  }
+
+  .candidate-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-detail-label {
+    font-size: 0.75rem;
+  }
+
+  .candidate-detail-value {
+    font-size: 0.875rem;
+  }
+
+  .candidate-primary-actions {
+    flex-direction: column;
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+/* Print Styles */
+@media print {
+  .modal-backdrop {
+    position: static;
+    background: none;
+  }
+
+  .modal-container {
+    box-shadow: none;
+    border: 1px solid #000;
+    max-width: none;
+    max-height: none;
+  }
+
+  .modal-header {
+    background: none !important;
+    border-bottom: 2px solid #000;
+  }
+
+  .modal-close,
+  .candidate-primary-actions .btn {
+    display: none !important;
+  }
+
+  .candidate-avatar {
+    background: #f0f0f0 !important;
+    color: #000 !important;
+  }
+
+  .status-badge {
+    border: 1px solid #000 !important;
+    background: none !important;
+    color: #000 !important;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .candidate-detail-item {
+    border-width: 2px;
+  }
+
+  .candidate-avatar {
+    border-width: 3px;
+  }
+
+  .modal-warning,
+  .modal-error {
+    border-width: 2px;
+  }
+
+  .status-badge {
+    border-width: 2px;
+    font-weight: 700;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .candidate-avatar,
+  .candidate-detail-item,
+  .modal-warning,
+  .modal-error {
+    transition: none;
+  }
+
+  .candidate-detail-item:hover {
+    transform: none;
+  }
+}
+
+/* Focus Management for Accessibility */
+.candidate-detail-item:focus-within {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.candidate-notes-content:focus-within {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Dark Theme Adjustments */
+[data-theme="dark"] {
+  .candidate-detail-item {
+  }
+
+  .candidate-notes-content {
+    background: var(--color-surface-secondary, var(--color-surface));
+  }
+
+  .modal-warning {
+    background: rgba(var(--color-warning-rgb, 255, 152, 0), 0.15);
+  }
+
+  .modal-error {
+    background: rgba(var(--color-danger-rgb, 244, 67, 54), 0.15);
+  }
+}

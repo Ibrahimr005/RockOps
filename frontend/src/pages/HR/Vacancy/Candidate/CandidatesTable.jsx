@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CandidatesTable.scss';
 import AddCandidateModal from './AddCandidateModal';
+import CandidateDetailsModal from './CandidateDetailsModal';
+import EditCandidateModal from './EditCandidateModal';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import { candidateService } from '../../../../services/hr/candidateService.js';
 import { vacancyService } from "../../../../services/hr/vacancyService.js";
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
-import { FaFilePdf, FaUserCheck, FaTrashAlt, FaUserPlus } from 'react-icons/fa';
+import { FaFilePdf, FaUserCheck, FaTrashAlt, FaUserPlus, FaEye, FaEdit, FaClock } from 'react-icons/fa';
 
 const CandidatesTable = ({ vacancyId }) => {
     const navigate = useNavigate();
@@ -16,6 +18,9 @@ const CandidatesTable = ({ vacancyId }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedCandidate, setSelectedCandidate] = useState(null);
     const [confirmDialog, setConfirmDialog] = useState({
         isVisible: false,
         type: 'warning',
@@ -88,6 +93,34 @@ const CandidatesTable = ({ vacancyId }) => {
         }
     };
 
+    // Handle editing a candidate
+    const handleEditCandidate = async (formData) => {
+        try {
+            setActionLoading(true);
+            setError(null);
+
+            const response = await candidateService.update(selectedCandidate.id, formData);
+            console.log('Candidate updated successfully:', response);
+
+            await fetchCandidatesAndStats();
+            setShowEditModal(false);
+            setSelectedCandidate(null);
+            showSuccess('Candidate updated successfully');
+
+        } catch (error) {
+            console.error('Error updating candidate:', error);
+
+            const errorMessage = error.response?.data?.message ||
+                error.response?.data?.error ||
+                error.message ||
+                'Failed to update candidate';
+            setError(errorMessage);
+            showError(errorMessage);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     // Handle deleting a candidate
     const handleDeleteCandidate = (candidate) => {
         setConfirmDialog({
@@ -113,7 +146,7 @@ const CandidatesTable = ({ vacancyId }) => {
         });
     };
 
-    // Handle hiring a candidate
+    // Handle hiring a candidate - NEW IMPLEMENTATION
     const handleHireCandidate = (candidate) => {
         const isVacancyFull = vacancyStats?.isFull && candidate.candidateStatus !== 'POTENTIAL';
 
@@ -122,31 +155,35 @@ const CandidatesTable = ({ vacancyId }) => {
             return;
         }
 
+        // Check if already hired or pending
+        if (candidate.candidateStatus === 'HIRED') {
+            showError('Candidate is already hired.');
+            return;
+        }
+
+        if (candidate.candidateStatus === 'PENDING_HIRE') {
+            showError('Candidate is already pending hire. Complete the employee form to finalize hiring.');
+            return;
+        }
+
         setConfirmDialog({
             isVisible: true,
             type: 'success',
-            title: 'Hire Candidate',
-            message: `Are you sure you want to hire "${candidate.firstName} ${candidate.lastName}"? This will convert them to an employee and update the vacancy position count.`,
+            title: 'Set Candidate to Pending Hire',
+            message: `Are you sure you want to mark "${candidate.firstName} ${candidate.lastName}" as pending hire?`,
             onConfirm: async () => {
                 setActionLoading(true);
                 try {
-                    // First hire the candidate (this updates the vacancy position count)
-                    await vacancyService.hireCandidate(candidate.id);
-
-                    // Then convert to employee
+                    // Skip status update for now, go directly to employee form
                     const employeeDataResponse = await candidateService.convertToEmployee(candidate.id);
                     sessionStorage.setItem('prepopulatedEmployeeData', JSON.stringify(employeeDataResponse.data));
 
-                    showSuccess('Candidate hired successfully! Redirecting to employee creation...');
+                    showSuccess('Redirecting to employee form to complete hiring process.');
                     navigate('/hr/employees/add');
 
                 } catch (error) {
-                    console.error('Error hiring candidate:', error);
-                    const errorMessage = error.response?.data?.error ||
-                        error.response?.data?.message ||
-                        error.message ||
-                        'Failed to hire candidate';
-                    showError(`Failed to hire candidate: ${errorMessage}`);
+                    console.error('Error preparing candidate data:', error);
+                    showError('Failed to prepare candidate data for hiring');
                 } finally {
                     setActionLoading(false);
                     setConfirmDialog(prev => ({ ...prev, isVisible: false }));
@@ -155,20 +192,16 @@ const CandidatesTable = ({ vacancyId }) => {
         });
     };
 
-    // Update candidate status
-    const handleUpdateCandidateStatus = async (candidateId, newStatus) => {
-        try {
-            setActionLoading(true);
-            await candidateService.updateStatus(candidateId, newStatus);
-            await fetchCandidatesAndStats();
-            showSuccess('Candidate status updated successfully');
-        } catch (error) {
-            console.error('Error updating candidate status:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to update candidate status';
-            showError(errorMessage);
-        } finally {
-            setActionLoading(false);
-        }
+    // Handle viewing candidate details
+    const handleViewDetails = (candidate) => {
+        setSelectedCandidate(candidate);
+        setShowDetailsModal(true);
+    };
+
+    // Handle editing candidate
+    const handleEditClick = (candidate) => {
+        setSelectedCandidate(candidate);
+        setShowEditModal(true);
     };
 
     // Handle dialog cancel
@@ -188,67 +221,43 @@ const CandidatesTable = ({ vacancyId }) => {
         return date.toLocaleDateString();
     };
 
-    // Calculate remaining days
-    const calculateRemainingDays = (closingDate) => {
-        if (!closingDate) return 'N/A';
-        const today = new Date();
-        const closing = new Date(closingDate);
-        const diffTime = closing - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays < 0) return 'Closed';
-        if (diffDays === 0) return 'Today';
-        return `${diffDays} days`;
-    };
-
-    // Get candidate status badge
-    const getCandidateStatusBadge = (status) => {
-        const statusColors = {
-            'APPLIED': 'info',
-            'UNDER_REVIEW': 'warning',
-            'INTERVIEWED': 'primary',
-            'HIRED': 'success',
-            'REJECTED': 'danger',
-            'POTENTIAL': 'secondary',
-            'WITHDRAWN': 'secondary'
+    // Get status badge class and text
+    const getStatusDisplay = (status) => {
+        const statusMap = {
+            'APPLIED': { text: 'Applied', class: 'info' },
+            'UNDER_REVIEW': { text: 'Under Review', class: 'under-review' },
+            'INTERVIEWED': { text: 'Interviewed', class: 'under-review' }, // Similar to under review
+            'PENDING_HIRE': { text: 'Pending Hire', class: 'pending' },
+            'HIRED': { text: 'Hired', class: 'completed' }, // or 'active' - both work for hired status
+            'REJECTED': { text: 'Rejected', class: 'rejected' },
+            'POTENTIAL': { text: 'Potential', class: 'draft' }, // or 'inactive' for potential candidates
+            'WITHDRAWN': { text: 'Withdrawn', class: 'cancelled' }
         };
 
-        const colorClass = statusColors[status] || 'info';
-
-        return (
-            <span className={`status-badge status-badge--${colorClass}`}>
-                {status?.replace('_', ' ') || 'APPLIED'}
-            </span>
-        );
+        return statusMap[status] || { text: status || 'N/A', class: 'draft' };
     };
 
     // Define columns for DataTable
     const columns = [
         {
-            id: 'name',
-            header: 'Name',
+            id: 'fullName',
+            header: 'Full Name',
             accessor: 'firstName',
             sortable: true,
             filterable: true,
-            render: (row) => `${row.firstName} ${row.lastName}`
-        },
-        {
-            id: 'status',
-            header: 'Status',
-            accessor: 'candidateStatus',
-            sortable: true,
-            filterable: true,
-            render: (row) => getCandidateStatusBadge(row.candidateStatus)
+            render: (row) => `${row.firstName} ${row.lastName}`,
+            onRowClick: (row) => handleViewDetails(row)
         },
         {
             id: 'email',
             header: 'Email',
             accessor: 'email',
             sortable: true,
-            filterable: true
+            filterable: true,
+            render: (row) => row.email || 'N/A'
         },
         {
-            id: 'phone',
+            id: 'phoneNumber',
             header: 'Phone',
             accessor: 'phoneNumber',
             sortable: true,
@@ -264,12 +273,19 @@ const CandidatesTable = ({ vacancyId }) => {
             render: (row) => row.currentPosition || 'N/A'
         },
         {
-            id: 'currentCompany',
-            header: 'Current Company',
-            accessor: 'currentCompany',
+            id: 'candidateStatus',
+            header: 'Status',
+            accessor: 'candidateStatus',
             sortable: true,
             filterable: true,
-            render: (row) => row.currentCompany || 'N/A'
+            render: (row) => {
+                const status = getStatusDisplay(row.candidateStatus);
+                return (
+                    <span className={`status-badge ${status.class}`}>
+                        {status.text}
+                    </span>
+                );
+            }
         },
         {
             id: 'applicationDate',
@@ -283,6 +299,15 @@ const CandidatesTable = ({ vacancyId }) => {
 
     // Define actions for DataTable
     const actions = [
+
+        {
+            id: 'edit',
+            label: 'Edit',
+            icon: <FaEdit />,
+            onClick: (row) => handleEditClick(row),
+            isDisabled: (row) => row.candidateStatus === 'HIRED',
+            className: 'edit-btn'
+        },
         {
             id: 'view-resume',
             label: 'View Resume',
@@ -293,17 +318,32 @@ const CandidatesTable = ({ vacancyId }) => {
         },
         {
             id: 'hire',
-            label: 'Hire',
-            icon: <FaUserCheck />,
+            label: (row) => {
+                if (row.candidateStatus === 'PENDING_HIRE') return 'Complete Hiring';
+                if (row.candidateStatus === 'HIRED') return 'Hired';
+                return 'Hire';
+            },
+            icon: (row) => {
+                if (row.candidateStatus === 'PENDING_HIRE') return <FaClock />;
+                return <FaUserCheck />;
+            },
             onClick: (row) => handleHireCandidate(row),
-            isDisabled: (row) => row.candidateStatus === 'HIRED' || (vacancyStats?.isFull && row.candidateStatus !== 'POTENTIAL'),
-            className: 'hire-btn'
+            isDisabled: (row) => {
+                // Only disable if already hired - show button for other cases
+                return row.candidateStatus === 'HIRED';
+            },
+            className: (row) => {
+                if (row.candidateStatus === 'PENDING_HIRE') return 'candidates-table__pending-hire-btn';
+                if (row.candidateStatus === 'HIRED') return 'candidates-table__hired-btn';
+                return 'hire-btn';
+            }
         },
         {
             id: 'delete',
             label: 'Delete',
             icon: <FaTrashAlt />,
             onClick: (row) => handleDeleteCandidate(row),
+            isDisabled: (row) => row.candidateStatus === 'HIRED',
             className: 'delete-btn'
         }
     ];
@@ -312,7 +352,22 @@ const CandidatesTable = ({ vacancyId }) => {
         return (
             <div className="candidates-section">
                 <div className="error-alert">
-                    <strong>Error:</strong> No vacancy ID provided
+                    <h3>No Vacancy Selected</h3>
+                    <p>Please select a vacancy to view candidates.</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error && !loading) {
+        return (
+            <div className="candidates-section">
+                <div className="error-alert">
+                    <h3>Error Loading Candidates</h3>
+                    <p>{error}</p>
+                    <button className="retry-button" onClick={fetchCandidatesAndStats}>
+                        Try Again
+                    </button>
                 </div>
             </div>
         );
@@ -320,53 +375,26 @@ const CandidatesTable = ({ vacancyId }) => {
 
     return (
         <div className="candidates-section">
-            {/* Error Display */}
-            {error && (
-                <div className="error-alert">
-                    <strong>Error:</strong> {error}
-                </div>
-            )}
-
-            {/* Vacancy Statistics */}
-            {vacancyStats && (
-                <div className="vacancy-stats">
-                    <div className="vacancy-stats-grid">
-                        <div className="vacancy-stat-card">
-                            <div className="vacancy-stat-number">{vacancyStats.remainingPositions}</div>
-                            <div className="vacancy-stat-label">Remaining Positions</div>
-                        </div>
-                        <div className="vacancy-stat-card">
-                            <div className="vacancy-stat-number">{vacancyStats.hiredCount}</div>
-                            <div className="vacancy-stat-label">Hired</div>
-                        </div>
-                        <div className="vacancy-stat-card">
-                            <div className="vacancy-stat-number">{vacancyStats.totalPositions}</div>
-                            <div className="vacancy-stat-label">Total Positions</div>
-                        </div>
-                        <div className="vacancy-stat-card">
-                            <div className="vacancy-stat-number">{Math.round(vacancyStats.filledPercentage)}%</div>
-                            <div className="vacancy-stat-label">Filled</div>
-                        </div>
-                        <div className="vacancy-stat-card">
-                            <div className={`vacancy-stat-number ${calculateRemainingDays(vacancyStats.closingDate) === 'Closed' ? 'remaining-days-closed' :
-                                calculateRemainingDays(vacancyStats.closingDate) === 'Today' ? 'remaining-days-today' :
-                                    parseInt(calculateRemainingDays(vacancyStats.closingDate)) <= 7 ? 'remaining-days-urgent' : 'remaining-days-normal'}`}>
-                                {calculateRemainingDays(vacancyStats.closingDate)}
-                            </div>
-                            <div className="vacancy-stat-label">Time Remaining</div>
-                        </div>
-                    </div>
-                    {vacancyStats.isFull && (
-                        <div className="vacancy-full-alert">
-                            <i className="fas fa-exclamation-triangle"></i>
-                            <span>
-                                <span className="important-label">Important</span>
-                                This vacancy is full. New candidates will be moved to the potential list.
-                            </span>
-                        </div>
-                    )}
-                </div>
-            )}
+            {/*{vacancyStats && (*/}
+            {/*    <div className="stats-cards">*/}
+            {/*        <div className="stat-item">*/}
+            {/*            <span className="label">Total Candidates:</span>*/}
+            {/*            <span className="value">{vacancyStats.totalCandidates}</span>*/}
+            {/*        </div>*/}
+            {/*        <div className="stat-item">*/}
+            {/*            <span className="label">Hired:</span>*/}
+            {/*            <span className="value">{vacancyStats.hiredCount}/{vacancyStats.positionsNeeded}</span>*/}
+            {/*        </div>*/}
+            {/*        {vacancyStats.isFull && (*/}
+            {/*            <div className="vacancy-full-notice">*/}
+            {/*                <span className="warning-icon">⚠️</span>*/}
+            {/*                <span>*/}
+            {/*                    This vacancy is full. New candidates will be moved to the potential list.*/}
+            {/*                </span>*/}
+            {/*            </div>*/}
+            {/*        )}*/}
+            {/*    </div>*/}
+            {/*)}*/}
 
             <DataTable
                 data={candidates}
@@ -392,6 +420,8 @@ const CandidatesTable = ({ vacancyId }) => {
                 addButtonIcon={<FaUserPlus />}
                 onAddClick={handleAddButtonClick}
                 addButtonDisabled={loading || actionLoading}
+                // Enable row click for details view
+                onRowClick={handleViewDetails}
             />
 
             {/* Add Candidate Modal */}
@@ -400,6 +430,43 @@ const CandidatesTable = ({ vacancyId }) => {
                     onClose={() => setShowAddModal(false)}
                     onSave={handleAddCandidate}
                     vacancyId={vacancyId}
+                    isLoading={actionLoading}
+                />
+            )}
+
+            {/* Candidate Details Modal */}
+            {showDetailsModal && selectedCandidate && (
+                <CandidateDetailsModal
+                    candidate={selectedCandidate}
+                    onClose={() => {
+                        setShowDetailsModal(false);
+                        setSelectedCandidate(null);
+                    }}
+                    onEdit={() => {
+                        setShowDetailsModal(false);
+                        setShowEditModal(true);
+                    }}
+                    onHire={() => {
+                        setShowDetailsModal(false);
+                        handleHireCandidate(selectedCandidate);
+                    }}
+                    onDelete={() => {
+                        setShowDetailsModal(false);
+                        handleDeleteCandidate(selectedCandidate);
+                    }}
+                    vacancyStats={vacancyStats}
+                />
+            )}
+
+            {/* Edit Candidate Modal */}
+            {showEditModal && selectedCandidate && (
+                <EditCandidateModal
+                    candidate={selectedCandidate}
+                    onClose={() => {
+                        setShowEditModal(false);
+                        setSelectedCandidate(null);
+                    }}
+                    onSave={handleEditCandidate}
                     isLoading={actionLoading}
                 />
             )}
