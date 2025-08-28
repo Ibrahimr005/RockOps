@@ -58,10 +58,10 @@ const Navbar = () => {
         try {
             const response = await notificationService.getUnreadCount();
             const data = response.data;
-            console.log('📊 Initial unread count fetched:', data);
+            // console.log('📊 Initial unread count fetched:', data);
             setUnreadNotifications(data.unreadCount || data.count || 0);
         } catch (error) {
-            console.error('Failed to fetch unread count:', error);
+            // console.error('Failed to fetch unread count:', error);
         }
     };
 
@@ -71,15 +71,15 @@ const Navbar = () => {
     const connectWebSocket = async () => {
         // Check for username (not ID)
         if (!currentUser || !currentUser.username || !token) {
-            console.log('❌ Cannot connect WebSocket: Missing auth data');
-            console.log('  - currentUser:', !!currentUser);
-            console.log('  - currentUser.username:', currentUser?.username);
-            console.log('  - token:', !!token);
+            // console.log('❌ Cannot connect WebSocket: Missing auth data');
+            // console.log('  - currentUser:', !!currentUser);
+            // console.log('  - currentUser.username:', currentUser?.username);
+            // console.log('  - token:', !!token);
             return;
         }
 
         if (stompClientRef.current?.connected) {
-            console.log('⚠️ WebSocket already connected');
+            // console.log('⚠️ WebSocket already connected');
             return;
         }
 
@@ -99,7 +99,7 @@ const Navbar = () => {
                 debug: (str) => {
                     // Only log important debug messages
                     if (str.includes('ERROR') || str.includes('RECEIPT')) {
-                        console.log('Navbar STOMP Debug:', str);
+                        // console.log('Navbar STOMP Debug:', str);
                     }
                 },
                 reconnectDelay: 5000,
@@ -116,7 +116,7 @@ const Navbar = () => {
                     stompClient.subscribe('/user/queue/unread-count', (message) => {
                         try {
                             const response = JSON.parse(message.body);
-                            console.log('📊 Navbar received unread count update:', response);
+                            // console.log('📊 Navbar received unread count update:', response);
 
                             let newCount = 0;
                             if (response.data !== undefined) {
@@ -136,7 +136,7 @@ const Navbar = () => {
                     // Subscribe to new notifications (just for count updates)
                     stompClient.subscribe('/user/queue/notifications', (message) => {
                         try {
-                            console.log('🔔 Navbar: New notification received, refreshing count');
+                            // console.log('🔔 Navbar: New notification received, refreshing count');
                             // Refresh unread count after a short delay
                             setTimeout(() => {
                                 fetchUnreadCount();
@@ -149,7 +149,7 @@ const Navbar = () => {
                     // Subscribe to broadcast notifications
                     stompClient.subscribe('/topic/notifications', (message) => {
                         try {
-                            console.log('📢 Navbar: Broadcast notification received, refreshing count');
+                            // console.log('📢 Navbar: Broadcast notification received, refreshing count');
                             // Refresh unread count after a short delay
                             setTimeout(() => {
                                 fetchUnreadCount();
