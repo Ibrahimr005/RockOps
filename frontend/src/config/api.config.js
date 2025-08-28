@@ -519,13 +519,14 @@ export const OFFER_ENDPOINTS = {
     TIMELINE_STATS: (offerId) => `/api/v1/offers/${offerId}/timeline/stats`
 };
 
-// Candidate module endpoints
+// Updated Candidate module endpoints
 export const CANDIDATE_ENDPOINTS = {
     BASE: '/api/v1/candidates',
     BY_ID: (id) => `/api/v1/candidates/${id}`,
     BY_VACANCY: (vacancyId) => `/api/v1/candidates/vacancy/${vacancyId}`,
     CREATE: '/api/v1/candidates',
     UPDATE: (id) => `/api/v1/candidates/${id}`,
+    UPDATE_STATUS: (id) => `/api/v1/candidates/${id}/status`,  // New endpoint for status updates
     DELETE: (id) => `/api/v1/candidates/${id}`,
     TO_EMPLOYEE: (id) => `/api/v1/candidates/${id}/to-employee`
 };
