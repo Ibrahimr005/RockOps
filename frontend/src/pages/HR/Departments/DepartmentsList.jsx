@@ -1,21 +1,23 @@
-import React, {useEffect, useState} from 'react';
-import {FiCheck, FiEdit, FiPlus, FiTrash2, FiX} from 'react-icons/fi';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FiCheck, FiEdit, FiPlus, FiTrash2, FiX, FiUsers, FiBriefcase, FiEye } from 'react-icons/fi';
 import DataTable from '../../../components/common/DataTable/DataTable';
-import {useSnackbar} from '../../../contexts/SnackbarContext';
-import {departmentService} from '../../../services/hr/departmentService.js';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
+import { useSnackbar } from '../../../contexts/SnackbarContext';
+import { departmentService } from '../../../services/hr/departmentService.js';
+import DepartmentModal from './DepartmentModal';
 import './DepartmentsList.scss';
 
 const DepartmentsList = () => {
-    const {showSuccess, showError} = useSnackbar();
+    const navigate = useNavigate();
+    const { showSuccess, showError } = useSnackbar();
     const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentDepartment, setCurrentDepartment] = useState(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
-    const [formData, setFormData] = useState({name: '', description: ''});
-    const [editFormData, setEditFormData] = useState({name: '', description: ''});
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch departments
     const fetchDepartments = async () => {
@@ -39,125 +41,36 @@ const DepartmentsList = () => {
         fetchDepartments();
     }, []);
 
-    const handleOpenForm = () => {
-        setFormData({name: '', description: ''});
-        setIsFormOpen(true);
-    };
-
-    const handleCloseForm = () => {
-        setIsFormOpen(false);
-        setFormData({name: '', description: ''});
-        setError(null);
-    };
-
-    const handleOpenEditForm = (department) => {
-        setCurrentDepartment(department);
-        setEditFormData({
-            name: department.name || '',
-            description: department.description || ''
-        });
-        setIsEditFormOpen(true);
-    };
-
-    const handleCloseEditForm = () => {
-        setIsEditFormOpen(false);
+    // Modal handlers
+    const handleOpenCreateModal = () => {
         setCurrentDepartment(null);
-        setEditFormData({name: '', description: ''});
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEditModal = (department) => {
+        setCurrentDepartment(department);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setCurrentDepartment(null);
         setError(null);
     };
 
-    const handleInputChange = (e) => {
-        const {name, value} = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+    const handleModalSuccess = () => {
+        fetchDepartments();
     };
 
-    const handleEditInputChange = (e) => {
-        const {name, value} = e.target;
-        setEditFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
+    // Delete handlers
+    const handleDeleteDepartment = async () => {
+        if (!deleteConfirmId) return;
 
-    const handleSubmitForm = async (e) => {
-        e.preventDefault();
-
-        if (!formData.name.trim()) {
-            setError('Department name is required');
-            showError('Department name is required');
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
+        setIsDeleting(true);
 
         try {
-            const departmentData = {
-                name: formData.name.trim(),
-                description: formData.description.trim() || null
-            };
-
-            console.log('Creating department with data:', departmentData);
-            const response = await departmentService.create(departmentData);
-            console.log('Created department:', response.data);
-
-            await fetchDepartments(); // Refresh the list
-            handleCloseForm();
-            showSuccess('Department created successfully');
-        } catch (err) {
-            console.error('Error creating department:', err);
-            const errorMessage = err.response?.data?.error || err.message || 'Failed to create department';
-            setError(errorMessage);
-            showError(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSubmitEditForm = async (e) => {
-        e.preventDefault();
-
-        if (!editFormData.name.trim()) {
-            setError('Department name is required');
-            showError('Department name is required');
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            const departmentData = {
-                name: editFormData.name.trim(),
-                description: editFormData.description.trim() || null
-            };
-
-            console.log('Updating department with data:', departmentData);
-            const response = await departmentService.update(currentDepartment.id, departmentData);
-
-            await fetchDepartments(); // Refresh the list
-            handleCloseEditForm();
-            showSuccess('Department updated successfully');
-        } catch (err) {
-            console.error('Error updating department:', err);
-            const errorMessage = err.response?.data?.error || err.message || 'Failed to update department';
-            setError(errorMessage);
-            showError(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleDeleteDepartment = async (id) => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            console.log('Deleting department with id:', id);
-            await departmentService.delete(id);
+            console.log('Deleting department with id:', deleteConfirmId);
+            await departmentService.delete(deleteConfirmId);
 
             await fetchDepartments(); // Refresh the list
             setDeleteConfirmId(null);
@@ -168,40 +81,79 @@ const DepartmentsList = () => {
             setError(errorMessage);
             showError(errorMessage);
         } finally {
-            setLoading(false);
+            setIsDeleting(false);
         }
     };
 
-    // DataTable configuration
+    const handleCancelDelete = () => {
+        setDeleteConfirmId(null);
+    };
+
+    // Navigation handler for row clicks
+    const handleRowClick = (department) => {
+        navigate(`/hr/departments/${department.id}`);
+    };
+
+    // DataTable configuration with enhanced columns
     const columns = [
         {
-            header: 'Name',
+            header: 'Department Name',
             accessor: 'name',
-            sortable: true
+            sortable: true,
+            render: (row, value) => (
+                <div className="department-name-cell">
+                    <span className="department-name">{value}</span>
+                </div>
+            )
         },
         {
             header: 'Description',
             accessor: 'description',
             sortable: true,
-            render: (row, value) => value || 'No description'
+            render: (row, value) => (
+                <span className="department-description">
+                    {value || 'No description'}
+                </span>
+            )
+        },
+        {
+            header: 'Employees',
+            accessor: 'employeeCount',
+            sortable: true,
+            render: (row, value) => (
+                <div className="count-cell">
+                    <FiUsers className="count-icon" />
+                    <span className="count-number">{value || 0}</span>
+                </div>
+            )
+        },
+        {
+            header: 'Positions',
+            accessor: 'jobPositionCount',
+            sortable: true,
+            render: (row, value) => (
+                <div className="count-cell">
+                    <FiBriefcase className="count-icon" />
+                    <span className="count-number">{value || 0}</span>
+                </div>
+            )
         }
     ];
 
     const actions = [
         {
             label: 'Edit',
-            icon: <FiEdit/>,
-            onClick: (row) => handleOpenEditForm(row),
+            icon: <FiEdit />,
+            onClick: (row) => handleOpenEditModal(row),
             className: 'primary'
         },
         {
             label: 'Delete',
-            icon: <FiTrash2/>,
+            icon: <FiTrash2 />,
             onClick: (row) => setDeleteConfirmId(row.id),
             className: 'danger'
         }
     ];
-
 
     return (
         <div className="departments-list-container">
@@ -212,15 +164,15 @@ const DepartmentsList = () => {
                     </p>
                 </h1>
                 <button
-                    className="departments-add-button"
-                    onClick={handleOpenForm}
+                    className="btn btn-primary"
+                    onClick={handleOpenCreateModal}
                     disabled={loading}
                 >
-                    <FiPlus/> Add Department
+                    <FiPlus /> Add Department
                 </button>
             </div>
 
-            {error && !isFormOpen && !isEditFormOpen && (
+            {error && !isModalOpen && (
                 <div className="departments-error">
                     {error}
                     <button onClick={fetchDepartments} className="retry-button">
@@ -240,152 +192,32 @@ const DepartmentsList = () => {
                 filterableColumns={columns}
                 defaultItemsPerPage={10}
                 itemsPerPageOptions={[10, 25, 50, 100]}
+                onRowClick={handleRowClick}
+                rowClickable={true}
+                emptyMessage="No departments found. Create your first department to get started."
             />
 
-            {/* Add Department Modal */}
-            {isFormOpen && (
-                <div className="departments-modal">
-                    <div className="departments-modal-content">
-                        <h2>Add Department</h2>
-                        {error && (
-                            <div className="form-error">
-                                {error}
-                            </div>
-                        )}
-                        <form onSubmit={handleSubmitForm}>
-                            <div className="departments-form-group">
-                                <label htmlFor="name">Name *</label>
-                                <input
-                                    type="text"
-                                    id="name"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleInputChange}
-                                    required
-                                    disabled={loading}
-                                    placeholder="Enter department name"
-                                />
-                            </div>
-                            <div className="departments-form-group">
-                                <label htmlFor="description">Description</label>
-                                <textarea
-                                    id="description"
-                                    name="description"
-                                    rows="4"
-                                    value={formData.description}
-                                    onChange={handleInputChange}
-                                    disabled={loading}
-                                    placeholder="Enter department description (optional)"
-                                />
-                            </div>
-                            <div className="departments-form-actions">
+            {/* Reusable Department Modal */}
+            <DepartmentModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                onSuccess={handleModalSuccess}
+                department={currentDepartment}
+            />
 
-                                <button
-                                    type="button"
-                                    className="btn-cancel"
-                                    onClick={handleCloseForm}
-                                    disabled={loading}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="departments-submit-button"
-                                    disabled={loading}
-                                >
-                                    {loading ? 'Adding...' : 'Add Department'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Department Modal */}
-            {isEditFormOpen && currentDepartment && (
-                <div className="departments-modal">
-                    <div className="departments-modal-content">
-                        <h2>Edit Department</h2>
-                        {error && (
-                            <div className="form-error">
-                                {error}
-                            </div>
-                        )}
-                        <form onSubmit={handleSubmitEditForm}>
-                            <div className="departments-form-group">
-                                <label htmlFor="edit-name">Name *</label>
-                                <input
-                                    type="text"
-                                    id="edit-name"
-                                    name="name"
-                                    value={editFormData.name}
-                                    onChange={handleEditInputChange}
-                                    required
-                                    disabled={loading}
-                                    placeholder="Enter department name"
-                                />
-                            </div>
-                            <div className="departments-form-group">
-                                <label htmlFor="edit-description">Description</label>
-                                <textarea
-                                    id="edit-description"
-                                    name="description"
-                                    rows="4"
-                                    value={editFormData.description}
-                                    onChange={handleEditInputChange}
-                                    disabled={loading}
-                                    placeholder="Enter department description (optional)"
-                                />
-                            </div>
-                            <div className="departments-form-actions">
-
-                                <button
-                                    type="button"
-                                    className="btn-cancel"
-                                    onClick={handleCloseEditForm}
-                                    disabled={loading}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="departments-submit-button"
-                                    disabled={loading}
-                                >
-                                    {loading ? 'Updating...' : 'Update Department'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Delete Confirmation Modal */}
-            {deleteConfirmId && (
-                <div className="departments-modal">
-                    <div className="departments-modal-content">
-                        <h2>Confirm Delete</h2>
-                        <p>Are you sure you want to delete this department?</p>
-                        <div className="departments-form-actions">
-
-                            <button
-                                className="btn-cancel"
-                                onClick={() => setDeleteConfirmId(null)}
-                                disabled={loading}
-                            >
-                                <FiX/> Cancel
-                            </button>
-                            <button
-                                className="departments-confirm-button"
-                                onClick={() => handleDeleteDepartment(deleteConfirmId)}
-                                disabled={loading}
-                            >
-                                <FiCheck/> Confirm
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Delete Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={!!deleteConfirmId}
+                type="delete"
+                title="Delete Department"
+                message="Are you sure you want to delete this department? This action cannot be undone and may affect associated positions and employees."
+                confirmText="Delete Department"
+                cancelText="Cancel"
+                onConfirm={handleDeleteDepartment}
+                onCancel={handleCancelDelete}
+                isLoading={isDeleting}
+                size="medium"
+            />
         </div>
     );
 };

@@ -54,14 +54,14 @@
 }
 
 .status-badge.invited,
-.status-badge.pending {
+.status-badge.pending, .status-badge.hourly {
   background-color: rgba(255, 152, 0, 0.15);
   color: var(--color-warning);
   border-color: rgba(255, 152, 0, 0.3);
 }
 
 .status-badge.on_leave,
-.status-badge.on-leave, .status-badge.info {
+.status-badge.on-leave, .status-badge.info, .status-badge.monthly {
   background-color: rgba(33, 150, 243, 0.15);
   color: var(--color-info);
   border-color: rgba(33, 150, 245, 1);
@@ -395,7 +395,7 @@
   border-color: rgba(183, 28, 28, 0.3);
 }
 
-.status-badge.refunded {
+.status-badge.refunded, .status-badge.daily {
   background-color: rgba(103, 58, 183, 0.15);
   color: #7b1fa2;
   border-color: rgba(103, 58, 183, 0.3);
