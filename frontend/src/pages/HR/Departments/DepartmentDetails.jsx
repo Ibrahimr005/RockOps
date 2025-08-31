@@ -44,6 +44,7 @@ const DepartmentDetails = () => {
             // Fetch department details
             const deptResponse = await departmentService.getById(id);
             const departmentData = deptResponse.data;
+            console.log("Department Details Response",departmentData);
             setDepartment(departmentData);
 
             // Extract positions and employees from department data
