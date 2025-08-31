@@ -302,5 +302,77 @@ export const siteService = {
             console.error('Error fetching technicians:', error);
             throw error;
         }
-    }
+    },
+
+    // Add this method to your siteService.js file
+
+// Get available warehouse managers (not assigned to any warehouse)
+    async getAvailableWarehouseManagers() {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.ADMIN.getAvailableWarehouseManagers);
+        } catch (error) {
+            console.error('Error fetching available warehouse managers:', error);
+            throw error;
+        }
+    },
+
+// Alternative: Get available warehouse managers for a specific site
+    async getAvailableWarehouseManagersForSite(siteId) {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.ADMIN.getAvailableWarehouseManagersForSite(siteId));
+        } catch (error) {
+            console.error('Error fetching available warehouse managers for site:', error);
+            throw error;
+        }
+    },
+
+    // Get available warehouse workers (not assigned to any warehouse and not warehouse managers)
+// FIXED - Add proper response handling:
+    getAvailableWarehouseWorkers: async () => {
+        try {
+            console.log("Fetching available warehouse workers...");
+            const response = await apiClient.get(SITE_ENDPOINTS.ADMIN.getAvailableWarehouseWorkers);
+            console.log("Available warehouse workers response:", response.data);
+            return response;
+        } catch (error) {
+            console.error("Error fetching available warehouse workers:", error);
+            throw error;
+        }
+    },
+
+// Get available warehouse workers for a specific site
+    getAvailableWarehouseWorkersForSite: async (siteId) => {
+        try {
+            console.log(`Fetching available warehouse workers for site ${siteId}...`);
+            const response =  await apiClient.get(SITE_ENDPOINTS.ADMIN.getAvailableWarehouseWorkersForSite(siteId));
+            console.log("Site warehouse workers response:", response.data);
+            return response;
+        } catch (error) {
+            console.error(`Error fetching warehouse workers for site ${siteId}:`, error);
+            throw error;
+        }
+    },
+
+    // Add these methods to your existing siteService object
+
+// Get warehouse employees
+    getWarehouseEmployees: async (warehouseId) => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.ADMIN.getWarehouseEmployees(warehouseId));
+        } catch (error) {
+            console.error(`Error fetching warehouse employees for ${warehouseId}:`, error);
+            throw error;
+        }
+    },
+
+// Unassign employee from warehouse
+    unassignEmployeeFromWarehouse: async (warehouseId, employeeId) => {
+        try {
+            return await apiClient.delete(SITE_ENDPOINTS.ADMIN.unassignEmployeeFromWarehouse(warehouseId, employeeId));
+        } catch (error) {
+            console.error(`Error unassigning employee ${employeeId} from warehouse ${warehouseId}:`, error);
+            throw error;
+        }
+    },
+
 };

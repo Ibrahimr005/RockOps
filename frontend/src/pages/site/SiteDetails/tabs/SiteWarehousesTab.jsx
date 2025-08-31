@@ -3,7 +3,7 @@ import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import {useTranslation} from 'react-i18next';
 import {useAuth} from "../../../../contexts/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
-import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import {FaPlus, FaEdit, FaTrash, FaUsers} from 'react-icons/fa';
 import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import ConfirmationDialog from "../../../../components/common/ConfirmationDialog/ConfirmationDialog";
 import { siteService } from "../../../../services/siteService";
@@ -40,6 +40,19 @@ const SiteWarehousesTab = ({siteId}) => {
     });
     const [editManagers, setEditManagers] = useState([]);
     const [selectedEditManagerId, setSelectedEditManagerId] = useState("");
+
+// Updated sections of SiteWarehousesTab.jsx
+
+// Add these state variables to your existing component state:
+    const [editSelectedWorkers, setEditSelectedWorkers] = useState([]);
+    const [editSelectedWorkerIds, setEditSelectedWorkerIds] = useState([]);
+    const [editWorkers, setEditWorkers] = useState([]);
+
+    // Add these to your existing state variables
+    const [showManageEmployeesModal, setShowManageEmployeesModal] = useState(false);
+    const [managingWarehouse, setManagingWarehouse] = useState(null);
+    const [warehouseEmployees, setWarehouseEmployees] = useState([]);
+    const [loadingEmployees, setLoadingEmployees] = useState(false);
 
     // Confirmation dialog state
     const [confirmDialog, setConfirmDialog] = useState({
@@ -236,6 +249,12 @@ const SiteWarehousesTab = ({siteId}) => {
     // Define actions for DataTable
     const actions = isSiteAdmin ? [
         {
+            label: 'Manage Employees',
+            icon: <FaUsers />, // You'll need to import this: import { FaPlus, FaEdit, FaTrash, FaUsers } from 'react-icons/fa';
+            onClick: (row) => handleOpenManageEmployeesModal(row),
+            className: 'manage'
+        },
+        {
             label: 'Edit',
             icon: <FaEdit />,
             onClick: (row) => handleOpenEditModal(row),
@@ -265,25 +284,25 @@ const SiteWarehousesTab = ({siteId}) => {
     };
 
     // Helper function to find and format manager name consistently
-    const findManagerName = (warehouse) => {
-        if (warehouse.managerName) {
-            return warehouse.managerName;
-        }
-
-        if (warehouse.employees && Array.isArray(warehouse.employees) && warehouse.employees.length > 0) {
-            const manager = warehouse.employees.find(emp =>
-                (emp.jobPosition && emp.jobPosition.positionName &&
-                    emp.jobPosition.positionName.toLowerCase() === "warehouse manager") ||
-                (emp.position && emp.position.toLowerCase() === "warehouse manager")
-            );
-
-            if (manager) {
-                return `${manager.firstName} ${manager.lastName}`;
-            }
-        }
-
-        return "No Manager";
-    };
+    // const findManagerName = (warehouse) => {
+    //     if (warehouse.managerName) {
+    //         return warehouse.managerName;
+    //     }
+    //
+    //     if (warehouse.employees && Array.isArray(warehouse.employees) && warehouse.employees.length > 0) {
+    //         const manager = warehouse.employees.find(emp =>
+    //             (emp.jobPosition && emp.jobPosition.positionName &&
+    //                 emp.jobPosition.positionName.toLowerCase() === "warehouse manager") ||
+    //             (emp.position && emp.position.toLowerCase() === "warehouse manager")
+    //         );
+    //
+    //         if (manager) {
+    //             return `${manager.firstName} ${manager.lastName}`;
+    //         }
+    //     }
+    //
+    //     return "No Manager";
+    // };
 
     useEffect(() => {
         fetchWarehouses();
@@ -315,24 +334,41 @@ const SiteWarehousesTab = ({siteId}) => {
             const response = await siteService.getSiteWarehouses(siteId);
             const data = response.data;
 
-            // Add this debug line
             console.log("Warehouse data from API:", data);
 
             if (Array.isArray(data)) {
-                const transformedData = data.map((item, index) => {
-                    // Add this debug line too
-                    console.log("Individual warehouse:", item);
+                // For each warehouse, fetch full details to get employee information
+                const warehousesWithDetails = await Promise.all(
+                    data.map(async (warehouse, index) => {
+                        try {
+                            // Fetch full warehouse details including employees
+                            const detailResponse = await warehouseService.getById(warehouse.id);
+                            const fullWarehouseData = detailResponse.data || detailResponse;
 
-                    return {
-                        conventionalId: `WH-${String(index + 1).padStart(3, '0')}`,
-                        name: item.name,
-                        warehouseID: item.id,
-                        manager: findManagerName(item),
-                        originalData: item
-                    };
-                });
+                            console.log(`Full details for ${warehouse.name}:`, fullWarehouseData);
 
-                setWarehouseData(transformedData);
+                            return {
+                                conventionalId: `WH-${String(index + 1).padStart(3, '0')}`,
+                                name: warehouse.name,
+                                warehouseID: warehouse.id,
+                                manager: findManagerName(fullWarehouseData), // Use full data for manager lookup
+                                originalData: fullWarehouseData // Store full data instead of limited data
+                            };
+                        } catch (detailError) {
+                            console.error(`Error fetching details for warehouse ${warehouse.name}:`, detailError);
+                            // Fallback to basic data if detail fetch fails
+                            return {
+                                conventionalId: `WH-${String(index + 1).padStart(3, '0')}`,
+                                name: warehouse.name,
+                                warehouseID: warehouse.id,
+                                manager: "No Manager", // Fallback
+                                originalData: warehouse
+                            };
+                        }
+                    })
+                );
+
+                setWarehouseData(warehousesWithDetails);
             } else {
                 setWarehouseData([]);
                 setSnackbar({
@@ -357,17 +393,114 @@ const SiteWarehousesTab = ({siteId}) => {
         }
     };
 
+// Enhanced findManagerName function with detailed employee debugging
+    const findManagerName = (warehouse) => {
+        console.log("Finding manager for warehouse:", warehouse.name);
+
+        // Check if managerName is directly available
+        if (warehouse.managerName) {
+            return warehouse.managerName;
+        }
+
+        // Check if employees array exists and has data
+        if (warehouse.employees && Array.isArray(warehouse.employees) && warehouse.employees.length > 0) {
+            console.log("Employees found:", warehouse.employees.length);
+
+            // Debug: Log each employee's complete structure
+            warehouse.employees.forEach((emp, index) => {
+                console.log(`Employee ${index + 1} complete structure:`, JSON.stringify(emp, null, 2));
+                console.log(`Employee ${index + 1} keys:`, Object.keys(emp));
+
+                // Check all possible position-related fields
+                console.log(`Employee ${index + 1} position fields:`, {
+                    jobPosition: emp.jobPosition,
+                    position: emp.position,
+                    role: emp.role,
+                    jobTitle: emp.jobTitle,
+                    positionName: emp.positionName
+                });
+            });
+
+            // Try multiple ways to find the manager
+            const manager = warehouse.employees.find(emp => {
+                console.log(`Checking employee: ${emp.firstName} ${emp.lastName}`);
+
+                // Method 0: Check if employee.name contains manager info
+                if (emp.name) {
+                    const nameMatch = emp.name.toLowerCase().includes("warehouse manager") ||
+                        emp.name.toLowerCase().includes("manager");
+                    console.log(`Method 0 - name field: "${emp.name}" -> ${nameMatch}`);
+                    if (nameMatch) return true;
+                }
+
+                // Method 1: jobPosition.positionName
+                if (emp.jobPosition?.positionName) {
+                    const positionMatch = emp.jobPosition.positionName.toLowerCase() === "warehouse manager";
+                    console.log(`Method 1 - jobPosition.positionName: "${emp.jobPosition.positionName}" -> ${positionMatch}`);
+                    if (positionMatch) return true;
+                }
+
+                // Method 2: direct position field
+                if (emp.position) {
+                    const positionMatch = emp.position.toLowerCase() === "warehouse manager";
+                    console.log(`Method 2 - position: "${emp.position}" -> ${positionMatch}`);
+                    if (positionMatch) return true;
+                }
+
+                // Method 3: role field
+                if (emp.role) {
+                    const roleMatch = emp.role.toLowerCase() === "warehouse_manager" ||
+                        emp.role.toLowerCase() === "warehouse manager";
+                    console.log(`Method 3 - role: "${emp.role}" -> ${roleMatch}`);
+                    if (roleMatch) return true;
+                }
+
+                // Method 4: jobTitle field
+                if (emp.jobTitle) {
+                    const titleMatch = emp.jobTitle.toLowerCase() === "warehouse manager";
+                    console.log(`Method 4 - jobTitle: "${emp.jobTitle}" -> ${titleMatch}`);
+                    if (titleMatch) return true;
+                }
+
+                // Method 5: positionName field (direct)
+                if (emp.positionName) {
+                    const nameMatch = emp.positionName.toLowerCase() === "warehouse manager";
+                    console.log(`Method 5 - positionName: "${emp.positionName}" -> ${nameMatch}`);
+                    if (nameMatch) return true;
+                }
+
+                return false;
+            });
+
+            if (manager) {
+                // Use the name field directly since firstName/lastName don't exist in this API response
+                const managerName = manager.name || `${manager.firstName || ''} ${manager.lastName || ''}`.trim() || 'Unknown Manager';
+                console.log("Found manager:", managerName);
+                return managerName;
+            } else {
+                console.log("No manager found with any of the search methods");
+            }
+        }
+
+        return "No Manager";
+    };
+
+    // Replace your existing fetchEmployees method with this updated version
     const fetchEmployees = async () => {
         try {
-            // Fetch managers
-            const managersResponse = await siteService.getWarehouseManagers();
-            const managersData = managersResponse.data;
-            setManagers(managersData);
+            // Fetch available managers (not assigned to any warehouse)
+            const managersResponse = await siteService.getAvailableWarehouseManagers();
+            const managersData = managersResponse.data?.data || managersResponse.data || [];
+            console.log("Managers response:", managersResponse);
+            console.log("Managers data:", managersData);
+            setManagers(Array.isArray(managersData) ? managersData : []);
 
-            // Fetch workers
-            const workersResponse = await siteService.getWarehouseWorkers();
-            const workersData = workersResponse.data;
-            setWorkers(workersData);
+            // Fetch available workers (not assigned to any warehouse and not warehouse managers)
+            const workersResponse = await siteService.getAvailableWarehouseWorkers();
+            const workersData = workersResponse.data?.data || workersResponse.data || [];
+            console.log("Workers response:", workersResponse);
+            console.log("Workers data:", workersData);
+            setWorkers(Array.isArray(workersData) ? workersData : []);
 
             if (managersData.length === 0 && workersData.length === 0) {
                 setSnackbar({
@@ -388,12 +521,119 @@ const SiteWarehousesTab = ({siteId}) => {
         }
     };
 
-    const fetchEditManagers = async () => {
+/// Replace your existing fetchEditManagers function with this updated version:
+
+    const fetchEditManagers = async (warehouseToEdit = null) => {
         try {
-            const response = await siteService.getWarehouseManagers();
-            setEditManagers(response.data || []);
+            console.log("=== FETCH EDIT MANAGERS DEBUG ===");
+            const targetWarehouse = warehouseToEdit || editingWarehouse;
+            console.log("targetWarehouse:", targetWarehouse);
+
+            // Get available managers and current warehouse's manager
+            const managersResponse = await siteService.getAvailableWarehouseManagers();
+            let availableManagers = managersResponse.data?.data || managersResponse.data || [];
+
+            if (!Array.isArray(availableManagers)) {
+                console.warn("Available managers for edit is not an array:", availableManagers);
+                availableManagers = [];
+            }
+
+            // If we're editing a warehouse and it has a current manager, include that manager
+            if (targetWarehouse && targetWarehouse.employees) {
+                console.log("targetWarehouse.employees:", targetWarehouse.employees);
+
+                const currentManager = targetWarehouse.employees.find(emp => {
+                    const isManager = (emp.jobPosition?.positionName?.toLowerCase() === "warehouse manager") ||
+                        (emp.position?.toLowerCase() === "warehouse manager") ||
+                        (emp.role?.toLowerCase() === "warehouse_manager") ||
+                        (emp.role?.toLowerCase() === "warehouse manager") ||
+                        (emp.name?.toLowerCase().includes("warehouse manager"));
+                    console.log(`Checking ${emp.name}: isManager = ${isManager}, position = ${emp.position}`);
+                    return isManager;
+                });
+
+                console.log("currentManager found in fetchEditManagers:", currentManager);
+
+                if (currentManager && !availableManagers.find(m => m.id === currentManager.id)) {
+                    // Split name into firstName and lastName since the API only provides 'name'
+                    const nameParts = currentManager.name ? currentManager.name.split(' ') : ['Unknown', 'Manager'];
+                    const managerToAdd = {
+                        id: currentManager.id,
+                        firstName: nameParts[0] || 'Unknown',
+                        lastName: nameParts.slice(1).join(' ') || 'Manager'
+                    };
+                    console.log("Adding current manager to available list:", managerToAdd);
+                    availableManagers.push(managerToAdd);
+                }
+            }
+
+            console.log("Final editManagers list:", availableManagers);
+            setEditManagers(availableManagers);
+
+            // Fetch available workers
+            const workersResponse = await siteService.getAvailableWarehouseWorkers();
+            let availableWorkers = workersResponse.data?.data || workersResponse.data || [];
+
+            if (!Array.isArray(availableWorkers)) {
+                console.warn("Available workers for edit is not an array:", availableWorkers);
+                availableWorkers = [];
+            }
+
+            // If we're editing a warehouse, include current workers who are not managers
+            if (targetWarehouse && targetWarehouse.employees) {
+                const currentWorkers = targetWarehouse.employees.filter(emp => {
+                    // Exclude the manager from workers list
+                    const isManager = (emp.jobPosition?.positionName?.toLowerCase() === "warehouse manager") ||
+                        (emp.position?.toLowerCase() === "warehouse manager") ||
+                        (emp.role?.toLowerCase() === "warehouse_manager") ||
+                        (emp.role?.toLowerCase() === "warehouse manager") ||
+                        (emp.name?.toLowerCase().includes("warehouse manager"));
+                    return !isManager;
+                });
+
+                console.log("Current workers found:", currentWorkers);
+
+                // Add current workers to available list and selected list
+                const currentWorkerIds = [];
+                const currentWorkersFormatted = [];
+
+                currentWorkers.forEach(worker => {
+                    if (!availableWorkers.find(w => w.id === worker.id)) {
+                        // Split name into firstName and lastName since the API only provides 'name'
+                        const nameParts = worker.name ? worker.name.split(' ') : ['Unknown', 'Worker'];
+                        const workerToAdd = {
+                            id: worker.id,
+                            firstName: nameParts[0] || 'Unknown',
+                            lastName: nameParts.slice(1).join(' ') || 'Worker'
+                        };
+                        availableWorkers.push(workerToAdd);
+                    }
+
+                    // Add to selected workers for edit modal
+                    currentWorkerIds.push(worker.id);
+                    const nameParts = worker.name ? worker.name.split(' ') : ['Unknown', 'Worker'];
+                    currentWorkersFormatted.push({
+                        id: worker.id,
+                        firstName: nameParts[0] || 'Unknown',
+                        lastName: nameParts.slice(1).join(' ') || 'Worker'
+                    });
+                });
+
+                console.log("Setting edit selected workers:", currentWorkersFormatted);
+                console.log("Setting edit selected worker IDs:", currentWorkerIds);
+
+                setEditSelectedWorkerIds(currentWorkerIds);
+                setEditSelectedWorkers(currentWorkersFormatted);
+            } else {
+                // Reset if no current workers
+                setEditSelectedWorkerIds([]);
+                setEditSelectedWorkers([]);
+            }
+
+            setEditWorkers(availableWorkers);
+
         } catch (error) {
-            console.error("Error fetching managers:", error);
+            console.error("Error fetching managers and workers:", error);
             const friendlyError = parseErrorMessage(error, 'fetch');
             setSnackbar({
                 show: true,
@@ -401,6 +641,9 @@ const SiteWarehousesTab = ({siteId}) => {
                 type: 'error'
             });
             setEditManagers([]);
+            setEditWorkers([]);
+            setEditSelectedWorkers([]);
+            setEditSelectedWorkerIds([]);
         }
     };
 
@@ -410,6 +653,9 @@ const SiteWarehousesTab = ({siteId}) => {
         setSelectedManager(null);
         setSelectedWorkers([]);
         setSelectedWorkerIds([]);
+        // ADD THESE MISSING RESETS:
+        setEditSelectedWorkers([]);
+        setEditSelectedWorkerIds([]);
         setIsWorkersDropdownOpen(false);
         setPreviewImage(null);
         setFormError(null);
@@ -449,15 +695,53 @@ const SiteWarehousesTab = ({siteId}) => {
     };
 
     // Open edit modal
+    // Replace your existing handleOpenEditModal function with this updated version:
+
     const handleOpenEditModal = async (row) => {
         try {
             setEditPreviewImage(null);
-            const warehouse = row.originalData;
 
-            // Find current manager
-            const currentManager = warehouse.employees?.find(
-                (emp) => emp.jobPosition?.positionName?.toLowerCase() === "warehouse manager"
-            );
+            const warehouse = row.originalData;
+            console.log("=== EDIT MODAL DEBUG ===");
+            console.log("Opening edit modal for warehouse:", warehouse);
+            console.log("Warehouse employees:", warehouse.employees);
+
+            // Debug: Log each employee's structure
+            if (warehouse.employees) {
+                warehouse.employees.forEach((emp, index) => {
+                    console.log(`Employee ${index + 1}:`, {
+                        id: emp.id,
+                        name: emp.name,
+                        firstName: emp.firstName,
+                        lastName: emp.lastName,
+                        jobPosition: emp.jobPosition,
+                        position: emp.position,
+                        role: emp.role
+                    });
+                });
+            }
+
+            // Find current manager using the same logic as findManagerName
+            let currentManager = null;
+            if (warehouse.employees && Array.isArray(warehouse.employees)) {
+                currentManager = warehouse.employees.find(emp => {
+                    return (emp.jobPosition?.positionName?.toLowerCase() === "warehouse manager") ||
+                        (emp.position?.toLowerCase() === "warehouse manager") ||
+                        (emp.role?.toLowerCase() === "warehouse_manager") ||
+                        (emp.role?.toLowerCase() === "warehouse manager") ||
+                        (emp.name?.toLowerCase().includes("warehouse manager"));
+                });
+            }
+
+            console.log("Found current manager:", currentManager);
+
+            // Find current workers (all employees except the manager)
+            let currentWorkers = [];
+            if (warehouse.employees && Array.isArray(warehouse.employees)) {
+                currentWorkers = warehouse.employees.filter(emp => emp.id !== currentManager?.id);
+            }
+
+            console.log("Found current workers:", currentWorkers);
 
             setEditFormData({
                 id: warehouse.id,
@@ -473,10 +757,13 @@ const SiteWarehousesTab = ({siteId}) => {
             }
 
             setEditingWarehouse(warehouse);
+
+            // Fetch managers and workers for dropdown BEFORE showing modal
+            await fetchEditManagers(warehouse);
+
+            // Now show the modal
             setShowEditModal(true);
 
-            // Fetch managers for dropdown
-            await fetchEditManagers();
         } catch (error) {
             console.error("Error opening edit modal:", error);
             const friendlyError = parseErrorMessage(error, 'general');
@@ -486,6 +773,18 @@ const SiteWarehousesTab = ({siteId}) => {
                 type: 'error'
             });
         }
+    };
+
+    const handleSelectEditWorker = (worker) => {
+        if (!editSelectedWorkerIds.includes(worker.id)) {
+            setEditSelectedWorkers([...editSelectedWorkers, worker]);
+            setEditSelectedWorkerIds([...editSelectedWorkerIds, worker.id]);
+        }
+    };
+
+    const handleRemoveEditWorker = (workerId) => {
+        setEditSelectedWorkers(editSelectedWorkers.filter(worker => worker.id !== workerId));
+        setEditSelectedWorkerIds(editSelectedWorkerIds.filter(id => id !== workerId));
     };
 
     // Open delete confirmation dialog
@@ -512,6 +811,9 @@ const SiteWarehousesTab = ({siteId}) => {
         setEditingWarehouse(null);
         setEditPreviewImage(null);
         setEditManagers([]);
+        setEditWorkers([]);
+        setEditSelectedWorkers([]);
+        setEditSelectedWorkerIds([]);
         setSelectedEditManagerId("");
         setEditFormData({
             id: "",
@@ -547,10 +849,15 @@ const SiteWarehousesTab = ({siteId}) => {
                 warehouseData.managerId = editFormData.managerId;
             }
 
-            // Always append warehouseData as JSON string (backend expects this parameter name)
+            // Add workers if selected
+            if (editSelectedWorkerIds.length > 0) {
+                warehouseData.workerIds = editSelectedWorkerIds;
+            }
+
+            // Always append warehouseData as JSON string
             formDataToSend.append("warehouseData", JSON.stringify(warehouseData));
 
-            // Add photo if uploaded (backend expects this parameter name)
+            // Add photo if uploaded
             if (editFormData.photo) {
                 formDataToSend.append("photo", editFormData.photo);
             }
@@ -558,7 +865,8 @@ const SiteWarehousesTab = ({siteId}) => {
             console.log("Sending warehouse update data:", {
                 id: editFormData.id,
                 warehouseData: warehouseData,
-                hasPhoto: !!editFormData.photo
+                hasPhoto: !!editFormData.photo,
+                selectedWorkers: editSelectedWorkers
             });
 
             const response = await warehouseService.update(editFormData.id, formDataToSend);
@@ -575,13 +883,6 @@ const SiteWarehousesTab = ({siteId}) => {
 
         } catch (error) {
             console.error("Failed to update warehouse:", error);
-            console.error("Error details:", {
-                status: error.response?.status,
-                statusText: error.response?.statusText,
-                data: error.response?.data,
-                message: error.message
-            });
-
             const friendlyError = parseErrorMessage(error, 'update');
             setSnackbar({
                 show: true,
@@ -747,6 +1048,144 @@ const SiteWarehousesTab = ({siteId}) => {
         });
     };
 
+    // Handle opening the manage employees modal
+    const handleOpenManageEmployeesModal = async (row) => {
+        try {
+            const warehouse = row.originalData;
+            setManagingWarehouse(warehouse);
+            setShowManageEmployeesModal(true);
+            await fetchWarehouseEmployees(warehouse.id);
+        } catch (error) {
+            console.error("Error opening manage employees modal:", error);
+            const friendlyError = parseErrorMessage(error, 'general');
+            setSnackbar({
+                show: true,
+                message: friendlyError,
+                type: 'error'
+            });
+        }
+    };
+
+// Close manage employees modal
+    const handleCloseManageEmployeesModal = () => {
+        setShowManageEmployeesModal(false);
+        setManagingWarehouse(null);
+        setWarehouseEmployees([]);
+    };
+
+// Fetch warehouse employees
+    const fetchWarehouseEmployees = async (warehouseId) => {
+        try {
+            setLoadingEmployees(true);
+            const response = await siteService.getWarehouseEmployees(warehouseId);
+            const employees = response.data?.data || [];
+
+            console.log("Warehouse employees fetched:", employees);
+            setWarehouseEmployees(Array.isArray(employees) ? employees : []);
+        } catch (error) {
+            console.error("Error fetching warehouse employees:", error);
+            const friendlyError = parseErrorMessage(error, 'fetch');
+            setSnackbar({
+                show: true,
+                message: friendlyError,
+                type: 'error'
+            });
+            setWarehouseEmployees([]);
+        } finally {
+            setLoadingEmployees(false);
+        }
+    };
+
+// Handle unassigning an employee
+    const handleUnassignEmployee = (employee) => {
+        const message = `Are you sure you want to unassign "${employee.fullName}" from this warehouse?\n\nThis will also remove them from the site. This action cannot be undone.`;
+
+        showConfirmDialog(
+            'warning',
+            'Unassign Employee',
+            message,
+            () => performUnassignEmployee(employee)
+        );
+    };
+
+// Perform the actual unassignment
+    const performUnassignEmployee = async (employee) => {
+        try {
+            await siteService.unassignEmployeeFromWarehouse(managingWarehouse.id, employee.id);
+
+            // Refresh the employee list
+            await fetchWarehouseEmployees(managingWarehouse.id);
+
+            // Refresh the main warehouse list to update counts
+            fetchWarehouses();
+
+            hideConfirmDialog();
+            setSnackbar({
+                show: true,
+                message: `${employee.fullName} has been successfully unassigned from the warehouse!`,
+                type: 'success'
+            });
+        } catch (error) {
+            console.error("Failed to unassign employee:", error);
+            const friendlyError = parseErrorMessage(error, 'unassign');
+            hideConfirmDialog();
+            setSnackbar({
+                show: true,
+                message: friendlyError,
+                type: 'error'
+            });
+        }
+    };
+
+    // DataTable configuration for warehouse employees
+    const warehouseEmployeeColumns = [
+        {
+            header: 'Name',
+            accessor: 'fullName',
+            sortable: true,
+            minWidth: '200px'
+        },
+        {
+            header: 'Position',
+            accessor: 'jobPosition',
+            sortable: true,
+            minWidth: '150px',
+            render: (row, value) => (
+                <span className={`warehouse-manage-employee-position-badge-datatable ${row.isManager ? 'warehouse-manage-employee-position-badge-manager-datatable' : 'warehouse-manage-employee-position-badge-worker-datatable'}`}>
+                {value}
+            </span>
+            )
+        },
+        {
+            header: 'Role Type',
+            accessor: 'isManager',
+            sortable: true,
+            minWidth: '120px',
+            render: (row, value) => (
+                <span className={`warehouse-manage-employee-role-type-badge ${value ? 'manager' : 'worker'}`}>
+                {value ? 'Manager' : 'Worker'}
+            </span>
+            )
+        }
+    ];
+
+    const warehouseEmployeeActions = [
+        {
+            label: 'Unassign',
+            icon: <FaTrash />,
+            onClick: (row) => handleUnassignEmployee(row),
+            className: 'danger'
+        }
+    ];
+
+    const warehouseEmployeeFilterableColumns = [
+        {
+            header: 'Position',
+            accessor: 'jobPosition',
+            filterType: 'select'
+        },
+    ];
+
     if (loading) return <div className="loading-container">Loading warehouse information...</div>;
 
     return (
@@ -885,7 +1324,7 @@ const SiteWarehousesTab = ({siteId}) => {
                                                             className="add-warehouse-dropdown-header"
                                                             onClick={toggleWorkersDropdown}
                                                         >
-                                                            <span>Select Workers (Optional)</span>
+                                                            <span>Select Workers</span>
                                                             <span
                                                                 className={`add-warehouse-dropdown-icon ${isWorkersDropdownOpen ? 'open' : ''}`}
                                                             >
@@ -961,24 +1400,24 @@ const SiteWarehousesTab = ({siteId}) => {
 
             {/* Edit Warehouse Modal */}
             {showEditModal && (
-                <div className="warehouse-modal-overlay">
-                    <div className="warehouse-modal-content">
-                        <div className="warehouse-modal-header">
+                <div className="add-warehouse-modal-overlay">
+                    <div className="add-warehouse-modal-content">
+                        <div className="add-warehouse-modal-header">
                             <h2>Edit Warehouse</h2>
-                            <button className="warehouse-modal-close-button" onClick={handleCloseEditModal}>×</button>
+                            <button className="add-warehouse-modal-close-button" onClick={handleCloseEditModal}>×</button>
                         </div>
 
-                        <div className="warehouse-modal-body">
-                            <div className="warehouse-form-container">
-                                <div className="warehouse-form-card">
-                                    <div className="warehouse-profile-section">
-                                        <label htmlFor="warehouseEditImageUpload" className="warehouse-image-upload-label">
+                        <div className="add-warehouse-modal-body">
+                            <div className="add-warehouse-form-container">
+                                <div className="add-warehouse-form-card">
+                                    <div className="add-warehouse-profile-section">
+                                        <label htmlFor="warehouseEditImageUpload" className="add-warehouse-image-upload-label">
                                             {editPreviewImage ? (
-                                                <img src={editPreviewImage} alt="Warehouse" className="warehouse-image-preview" />
+                                                <img src={editPreviewImage} alt="Warehouse" className="add-warehouse-image-preview" />
                                             ) : (
-                                                <div className="warehouse-image-placeholder"></div>
+                                                <div className="add-warehouse-image-placeholder"></div>
                                             )}
-                                            <span className="warehouse-upload-text">Upload Photo</span>
+                                            <span className="add-warehouse-upload-text">Upload Photo</span>
                                         </label>
                                         <input
                                             type="file"
@@ -990,10 +1429,10 @@ const SiteWarehousesTab = ({siteId}) => {
                                         />
                                     </div>
 
-                                    <div className="warehouse-form-fields-section">
+                                    <div className="add-warehouse-form-fields-section">
                                         <form onSubmit={handleUpdateWarehouse}>
-                                            <div className="warehouse-form-grid">
-                                                <div className="warehouse-form-group">
+                                            <div className="add-warehouse-form-grid">
+                                                <div className="add-warehouse-form-group">
                                                     <label>
                                                         Warehouse Name <span className="required-asterisk">*</span>
                                                     </label>
@@ -1007,7 +1446,7 @@ const SiteWarehousesTab = ({siteId}) => {
                                                     />
                                                 </div>
 
-                                                <div className="warehouse-form-group">
+                                                <div className="add-warehouse-form-group">
                                                     <label>Warehouse Manager</label>
                                                     <select
                                                         name="managerId"
@@ -1015,26 +1454,80 @@ const SiteWarehousesTab = ({siteId}) => {
                                                         onChange={handleEditInputChange}
                                                     >
                                                         <option value="">Select Manager</option>
-                                                        {editManagers.map(manager => (
+                                                        {Array.isArray(editManagers) && editManagers.map(manager => (
                                                             <option key={manager.id} value={manager.id}>
                                                                 {manager.firstName} {manager.lastName}
                                                             </option>
                                                         ))}
                                                     </select>
                                                 </div>
+
+                                                <div className="add-warehouse-form-group add-warehouse-workers-section">
+                                                    <label>Warehouse Workers</label>
+                                                    <div className="add-warehouse-workers-dropdown" ref={workersDropdownRef}>
+                                                        <div
+                                                            className="add-warehouse-dropdown-header"
+                                                            onClick={toggleWorkersDropdown}
+                                                        >
+                                                            <span>Select Workers (Optional)</span>
+                                                            <span
+                                                                className={`add-warehouse-dropdown-icon ${isWorkersDropdownOpen ? 'open' : ''}`}
+                                                            >
+                                                    ▼
+                                                </span>
+                                                        </div>
+
+                                                        {isWorkersDropdownOpen && (
+                                                            <div className="add-warehouse-dropdown-menu">
+                                                                {editWorkers
+                                                                    .filter(worker => !editSelectedWorkerIds.includes(worker.id))
+                                                                    .map(worker => (
+                                                                        <div
+                                                                            key={worker.id}
+                                                                            className="add-warehouse-dropdown-item"
+                                                                            onClick={() => handleSelectEditWorker(worker)}
+                                                                        >
+                                                                            {worker.firstName} {worker.lastName}
+                                                                        </div>
+                                                                    ))}
+                                                                {editWorkers.filter(worker => !editSelectedWorkerIds.includes(worker.id)).length === 0 && (
+                                                                    <div className="add-warehouse-dropdown-item">
+                                                                        No workers available
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {editSelectedWorkers.length > 0 && (
+                                                        <div className="add-warehouse-workers-list">
+                                                            {editSelectedWorkers.map(worker => (
+                                                                <div key={worker.id} className="add-warehouse-worker-chip">
+                                                                    <span>{worker.firstName} {worker.lastName}</span>
+                                                                    <span
+                                                                        className="add-warehouse-remove-worker"
+                                                                        onClick={() => handleRemoveEditWorker(worker.id)}
+                                                                    >
+                                                            ×
+                                                        </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
 
-                                            <div className="warehouse-form-actions">
+                                            <div className="add-warehouse-form-actions">
                                                 <button
                                                     type="button"
-                                                    className="warehouse-cancel-button"
+                                                    className="add-warehouse-cancel-button"
                                                     onClick={handleCloseEditModal}
                                                 >
                                                     Cancel
                                                 </button>
                                                 <button
                                                     type="submit"
-                                                    className="warehouse-submit-button"
+                                                    className="add-warehouse-submit-button"
                                                 >
                                                     Update Warehouse
                                                 </button>
@@ -1042,6 +1535,50 @@ const SiteWarehousesTab = ({siteId}) => {
                                         </form>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Manage Employees Modal */}
+            {showManageEmployeesModal && managingWarehouse && (
+                <div className="add-warehouse-modal-overlay">
+                    <div className="add-warehouse-modal-content warehouse-manage-employees-modal-content">
+                        <div className="add-warehouse-modal-header">
+                            <h2>Manage Employees - {managingWarehouse.name}</h2>
+                            <button className="add-warehouse-modal-close-button" onClick={handleCloseManageEmployeesModal}>×</button>
+                        </div>
+
+                        <div className="add-warehouse-modal-body warehouse-manage-employees-modal-body">
+                            <DataTable
+                                data={warehouseEmployees}
+                                columns={warehouseEmployeeColumns}
+                                actions={warehouseEmployeeActions}
+                                loading={loadingEmployees}
+                                showSearch={true}
+                                showFilters={true}
+                                filterableColumns={warehouseEmployeeFilterableColumns}
+                                itemsPerPageOptions={[5, 10, 15, 20]}
+                                defaultItemsPerPage={10}
+                                tableTitle={`Assigned Employees (${warehouseEmployees.length})`}
+                                emptyMessage="No employees assigned to this warehouse"
+                                className="warehouse-manage-employees-data-table"
+                                showAddButton={false}
+                                showExportButton={false}
+                                exportButtonText="Export Employees"
+                                exportFileName={`warehouse_${managingWarehouse.name}_employees`}
+                                actionsColumnWidth="100px"
+                            />
+
+                            <div className="warehouse-manage-employees-modal-actions">
+                                <button
+                                    type="button"
+                                    className="add-warehouse-cancel-button"
+                                    onClick={handleCloseManageEmployeesModal}
+                                >
+                                    Close
+                                </button>
                             </div>
                         </div>
                     </div>

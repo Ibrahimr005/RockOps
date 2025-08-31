@@ -478,7 +478,7 @@ const AllSites = () => {
                                         <form onSubmit={handleAddSite}>
                                             <div className="site-form-grid">
                                                 <div className="site-form-group">
-                                                    <label>{t('site.siteName')}</label>
+                                                    <label>{t('site.siteName')} <span className="required-asterisk">*</span></label>
                                                     <input
                                                         type="text"
                                                         name="name"
@@ -489,7 +489,7 @@ const AllSites = () => {
                                                 </div>
 
                                                 <div className="site-form-group">
-                                                    <label>{t('site.physicalAddress')}</label>
+                                                    <label>{t('site.physicalAddress')} <span className="required-asterisk">*</span></label>
                                                     <input
                                                         type="text"
                                                         name="physicalAddress"
@@ -500,7 +500,7 @@ const AllSites = () => {
                                                 </div>
 
                                                 <div className="site-form-group">
-                                                    <label>{t('site.companyAddress')}</label>
+                                                    <label>{t('site.companyAddress')} <span className="required-asterisk">*</span></label>
                                                     <input
                                                         type="text"
                                                         name="companyAddress"
@@ -511,7 +511,7 @@ const AllSites = () => {
                                                 </div>
 
                                                 <div className="site-form-group">
-                                                    <label>{t('site.creationDate')}</label>
+                                                    <label>{t('site.creationDate')} <span className="required-asterisk">*</span></label>
                                                     <input
                                                         type="date"
                                                         name="creationDate"
