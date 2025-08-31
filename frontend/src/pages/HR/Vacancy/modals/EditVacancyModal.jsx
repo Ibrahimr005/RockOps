@@ -22,7 +22,6 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
     // Initialize form with vacancy data
     useEffect(() => {
         if (vacancy) {
-            // Format dates from ISO string to YYYY-MM-DD for input fields
             const formatDate = (dateString) => {
                 if (!dateString) return '';
                 const date = new Date(dateString);
@@ -39,7 +38,7 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
                 status: vacancy.status || 'OPEN',
                 numberOfPositions: vacancy.numberOfPositions || 1,
                 priority: vacancy.priority || 'MEDIUM',
-                jobPosition: vacancy.jobPosition || null
+                jobPositionId: vacancy.jobPosition?.id || null
             });
         }
     }, [vacancy]);
@@ -67,24 +66,21 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
         if (positionId === '') {
             setFormData({
                 ...formData,
-                jobPosition: null
+                jobPositionId: null
             });
             return;
         }
 
-        // Find the selected position without parseInt since UUID is a string
         const selectedPosition = jobPositions.find(pos => pos.id === positionId);
 
         if (selectedPosition) {
-            // Either send just the ID or the whole object depending on your backend
             setFormData({
                 ...formData,
-                jobPosition: {
-                    id: selectedPosition.id
-                }
+                jobPositionId: selectedPosition.id
             });
         }
     };
+
 
     // Validate form
     const validateForm = () => {
@@ -170,8 +166,8 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
                                     <div className="form-group">
                                         <label>Job Position</label>
                                         <select
+                                            value={formData.jobPositionId || ''}
                                             onChange={handleJobPositionChange}
-                                            value={formData.jobPosition ? formData.jobPosition.id : ''}
                                             disabled={isSubmitting}
                                         >
                                             <option value="">Select a position</option>

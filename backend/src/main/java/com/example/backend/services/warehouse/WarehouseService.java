@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class WarehouseService {
@@ -158,28 +159,12 @@ public class WarehouseService {
 
             // Handle manager assignment
             if (warehouseData.containsKey("managerId")) {
-                String managerIdStr = (String) warehouseData.get("managerId");
-                if (managerIdStr != null && !managerIdStr.isEmpty()) {
-                    UUID managerId = UUID.fromString(managerIdStr);
-                    Employee manager = employeeRepository.findById(managerId)
-                            .orElseThrow(() -> new RuntimeException("Manager not found with id: " + managerId));
+                handleManagerAssignment(existingWarehouse, warehouseData.get("managerId"));
+            }
 
-                    // Remove current manager if exists
-                    if (existingWarehouse.getEmployees() != null) {
-                        existingWarehouse.getEmployees().removeIf(emp ->
-                                emp.getJobPosition() != null &&
-                                        "warehouse manager".equalsIgnoreCase(emp.getJobPosition().getPositionName())
-                        );
-                    }
-
-                    // Add new manager
-                    manager.setWarehouse(existingWarehouse);
-                    if (existingWarehouse.getEmployees() == null) {
-                        existingWarehouse.setEmployees(new ArrayList<>());
-                    }
-                    existingWarehouse.getEmployees().add(manager);
-                    employeeRepository.save(manager);
-                }
+            // Handle worker assignments
+            if (warehouseData.containsKey("workerIds")) {
+                handleWorkerAssignments(existingWarehouse, warehouseData.get("workerIds"));
             }
 
             return warehouseRepository.save(existingWarehouse);
@@ -190,6 +175,83 @@ public class WarehouseService {
             throw new RuntimeException("Failed to update warehouse", e);
         }
     }
+
+    private void handleManagerAssignment(Warehouse warehouse, Object managerIdObj) {
+        // First, unassign current manager
+        if (warehouse.getEmployees() != null) {
+            List<Employee> currentManagers = warehouse.getEmployees().stream()
+                    .filter(emp -> emp.getJobPosition() != null &&
+                            "Warehouse Manager".equalsIgnoreCase(emp.getJobPosition().getPositionName()))
+                    .collect(Collectors.toList());
+
+            for (Employee currentManager : currentManagers) {
+                currentManager.setWarehouse(null);
+                employeeRepository.save(currentManager);
+                warehouse.getEmployees().remove(currentManager);
+                System.out.println("Unassigned manager: " + currentManager.getFirstName() + " " + currentManager.getLastName());
+            }
+        }
+
+        // Add new manager if provided
+        if (managerIdObj != null) {
+            String managerIdStr = managerIdObj.toString();
+            if (!managerIdStr.isEmpty()) {
+                UUID managerId = UUID.fromString(managerIdStr);
+                Employee newManager = employeeRepository.findById(managerId)
+                        .orElseThrow(() -> new RuntimeException("Manager not found with id: " + managerId));
+
+                newManager.setWarehouse(warehouse);
+                if (warehouse.getEmployees() == null) {
+                    warehouse.setEmployees(new ArrayList<>());
+                }
+                warehouse.getEmployees().add(newManager);
+                employeeRepository.save(newManager);
+                System.out.println("Assigned new manager: " + newManager.getFirstName() + " " + newManager.getLastName());
+            }
+        }
+    }
+
+    private void handleWorkerAssignments(Warehouse warehouse, Object workerIdsObj) {
+        // First, unassign current workers (non-managers)
+        if (warehouse.getEmployees() != null) {
+            List<Employee> currentWorkers = warehouse.getEmployees().stream()
+                    .filter(emp -> emp.getJobPosition() == null ||
+                            !"Warehouse Manager".equalsIgnoreCase(emp.getJobPosition().getPositionName()))
+                    .collect(Collectors.toList());
+
+            for (Employee currentWorker : currentWorkers) {
+                currentWorker.setWarehouse(null);
+                employeeRepository.save(currentWorker);
+                warehouse.getEmployees().remove(currentWorker);
+                System.out.println("Unassigned worker: " + currentWorker.getFirstName() + " " + currentWorker.getLastName());
+            }
+        }
+
+        // Add new workers if provided
+        if (workerIdsObj instanceof List<?> workerIdsList) {
+            for (Object workerIdObj : workerIdsList) {
+                if (workerIdObj != null) {
+                    UUID workerId = UUID.fromString(workerIdObj.toString());
+                    Employee worker = employeeRepository.findById(workerId)
+                            .orElseThrow(() -> new RuntimeException("Worker not found with id: " + workerId));
+
+                    // Ensure this worker is not a warehouse manager
+                    if (worker.getJobPosition() == null ||
+                            !"Warehouse Manager".equalsIgnoreCase(worker.getJobPosition().getPositionName())) {
+
+                        worker.setWarehouse(warehouse);
+                        if (warehouse.getEmployees() == null) {
+                            warehouse.setEmployees(new ArrayList<>());
+                        }
+                        warehouse.getEmployees().add(worker);
+                        employeeRepository.save(worker);
+                        System.out.println("Assigned worker: " + worker.getFirstName() + " " + worker.getLastName());
+                    }
+                }
+            }
+        }
+    }
+
 
     public void deleteWarehouse(UUID id) {
         try {

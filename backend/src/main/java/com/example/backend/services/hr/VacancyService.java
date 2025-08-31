@@ -1,6 +1,7 @@
 package com.example.backend.services.hr;
 
-import com.example.backend.dto.hr.CreateVacancyDTO;
+import com.example.backend.dto.hr.vacancy.CreateVacancyDTO;
+import com.example.backend.dto.hr.vacancy.UpdateVacancyDTO;
 import com.example.backend.models.hr.Candidate;
 import com.example.backend.models.hr.JobPosition;
 import com.example.backend.models.hr.Vacancy;
@@ -17,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -154,23 +154,54 @@ public class VacancyService {
         }
     }
     @Transactional
-    public Vacancy updateVacancy(UUID id, Vacancy vacancyDetails) {
+    public Vacancy updateVacancy(UUID id, UpdateVacancyDTO dto) {
+        System.out.println("=== DEBUG: Starting vacancy update with DTO ===");
+        System.out.println("Vacancy ID: " + id);
+        System.out.println("DTO: " + dto);
+
         try {
             Vacancy vacancy = getVacancyById(id);
             String oldStatus = vacancy.getStatus();
             String oldPriority = vacancy.getPriority();
             LocalDate oldClosingDate = vacancy.getClosingDate();
 
-            vacancy.setTitle(vacancyDetails.getTitle());
-            vacancy.setDescription(vacancyDetails.getDescription());
-            vacancy.setRequirements(vacancyDetails.getRequirements());
-            vacancy.setResponsibilities(vacancyDetails.getResponsibilities());
-            vacancy.setPostingDate(vacancyDetails.getPostingDate());
-            vacancy.setClosingDate(vacancyDetails.getClosingDate());
-            vacancy.setStatus(vacancyDetails.getStatus());
-            vacancy.setNumberOfPositions(vacancyDetails.getNumberOfPositions());
-            vacancy.setPriority(vacancyDetails.getPriority());
-            vacancy.setJobPosition(vacancyDetails.getJobPosition());
+            // Basic validations
+            if (dto.getTitle() != null && dto.getTitle().isBlank()) {
+                throw new IllegalArgumentException("Title cannot be empty");
+            }
+
+            if (dto.getDescription() != null && dto.getDescription().isBlank()) {
+                throw new IllegalArgumentException("Description cannot be empty");
+            }
+
+            if (dto.getPostingDate() != null && dto.getClosingDate() != null &&
+                    dto.getClosingDate().isBefore(dto.getPostingDate())) {
+                throw new IllegalArgumentException("Closing date cannot be before posting date");
+            }
+
+            if (dto.getNumberOfPositions() != null && dto.getNumberOfPositions() < 1) {
+                throw new IllegalArgumentException("Number of positions must be at least 1");
+            }
+
+            // Handle job position update
+            JobPosition jobPosition = null;
+            if (dto.getJobPositionId() != null) {
+                jobPosition = jobPositionRepository.findByIdWithDepartment(dto.getJobPositionId())
+                        .orElseThrow(() -> new EntityNotFoundException("Job position not found with ID: " + dto.getJobPositionId()));
+                System.out.println("DEBUG: Found job position: " + jobPosition.getPositionName());
+            }
+
+            // Update fields only if they're provided
+            if (dto.getTitle() != null) vacancy.setTitle(dto.getTitle().trim());
+            if (dto.getDescription() != null) vacancy.setDescription(dto.getDescription().trim());
+            if (dto.getRequirements() != null) vacancy.setRequirements(dto.getRequirements().trim());
+            if (dto.getResponsibilities() != null) vacancy.setResponsibilities(dto.getResponsibilities().trim());
+            if (dto.getPostingDate() != null) vacancy.setPostingDate(dto.getPostingDate());
+            if (dto.getClosingDate() != null) vacancy.setClosingDate(dto.getClosingDate());
+            if (dto.getStatus() != null) vacancy.setStatus(dto.getStatus());
+            if (dto.getNumberOfPositions() != null) vacancy.setNumberOfPositions(dto.getNumberOfPositions());
+            if (dto.getPriority() != null) vacancy.setPriority(dto.getPriority());
+            if (dto.getJobPositionId() != null) vacancy.setJobPosition(jobPosition);
 
             Vacancy updatedVacancy = vacancyRepository.save(vacancy);
 
@@ -180,6 +211,7 @@ public class VacancyService {
             return updatedVacancy;
 
         } catch (Exception e) {
+            System.err.println("Error updating vacancy: " + e.getMessage());
             // Send error notification
             notificationService.sendNotificationToHRUsers(
                     "Vacancy Update Failed",
@@ -191,7 +223,6 @@ public class VacancyService {
             throw e;
         }
     }
-
     /**
      * Send notifications for vacancy updates
      */
