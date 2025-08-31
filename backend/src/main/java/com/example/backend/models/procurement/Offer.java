@@ -73,8 +73,15 @@ public class Offer {
     }
 
     public boolean canRetry() {
-        return "MANAGERREJECTED".equals(this.status) ||
-                "FINANCE_REJECTED".equals(this.financeStatus);
+        // OLD restrictive logic:
+        // return "MANAGERREJECTED".equals(this.status) ||
+        //        "FINANCE_REJECTED".equals(this.financeStatus);
+
+        // NEW permissive logic - allow retry for any status:
+        return true;
+
+        // OR if you want some restrictions, maybe something like:
+        // return !"COMPLETED".equals(this.status) && !"FINALIZED".equals(this.status);
     }
 
     // Get information from timeline events instead of dedicated fields

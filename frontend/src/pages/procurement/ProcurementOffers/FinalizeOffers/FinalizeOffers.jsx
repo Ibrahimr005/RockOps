@@ -152,12 +152,12 @@ const FinalizeOffers = ({
         if (!activeOffer || !activeOffer.offerItems) return [];
         return activeOffer.offerItems.filter(
             item => (item.requestOrderItem?.id === requestItemId || item.requestOrderItemId === requestItemId) &&
-                item.financeStatus === 'FINANCE_ACCEPTED'
+                item.financeStatus === 'ACCEPTED'
         );
     };
 
     const totalAcceptedItems = activeOffer?.offerItems?.filter(item =>
-        item.financeStatus === 'FINANCE_ACCEPTED'
+        item.financeStatus === 'ACCEPTED'
     ).length || 0;
 
     const totalFinalizedItems = Object.values(finalizedItems).filter(v => v).length;
@@ -269,7 +269,6 @@ const FinalizeOffers = ({
                         <div className="procurement-request-summary-card-finalize">
                             <OfferTimeline
                                 offer={activeOffer}
-                                variant="finalize"
                                 showRetryInfo={false}
                             />
                         </div>
@@ -337,7 +336,7 @@ const FinalizeOffers = ({
                                                             <h5>{requestItem.itemType?.name || 'Item'}</h5>
                                                         </div>
                                                         <div className="submitted-item-quantity-finalize">
-                                                            {requestItem.quantity} {requestItem.itemType.measuringUnit}
+                                                            {requestItem.quantity} {requestItem.itemType?.measuringUnit}
                                                         </div>
                                                     </div>
 
@@ -359,9 +358,9 @@ const FinalizeOffers = ({
                                                                     className={finalizedItems[offerItem.id] ? 'item-finalized-finalize' : ''}
                                                                 >
                                                                     <td>{offerItem.merchant?.name || 'Unknown'}</td>
-                                                                    <td>{offerItem.quantity} {requestItem.itemType.measuringUnit}</td>
-                                                                    <td>${parseFloat(offerItem.unitPrice).toFixed(2)}</td>
-                                                                    <td>${parseFloat(offerItem.totalPrice).toFixed(2)}</td>
+                                                                    <td>{offerItem.quantity} {requestItem.itemType?.measuringUnit}</td>
+                                                                    <td>${parseFloat(offerItem.unitPrice || 0).toFixed(2)}</td>
+                                                                    <td>${parseFloat(offerItem.totalPrice || 0).toFixed(2)}</td>
                                                                     <td>
                                                                         <label className="finalize-checkbox-container-finalize">
                                                                             <input
@@ -439,7 +438,7 @@ const FinalizeOffers = ({
                 isVisible={showConfirmDialog}
                 type="success"
                 title="Finalize Offer"
-                message={`Are you sure you want to finalize ${totalFinalizedItems} item${totalFinalizedItems !== 1 ? 's' : ''} from this offer? The total value to be finalized is ${getFinalizedTotalValue().toFixed(2)}. This action will create a purchase order and cannot be undone.`}
+                message={`Are you sure you want to finalize ${totalFinalizedItems} item${totalFinalizedItems !== 1 ? 's' : ''} from this offer? The total value to be finalized is $${getFinalizedTotalValue().toFixed(2)}. This action will create a purchase order and cannot be undone.`}
                 confirmText="Finalize Offer"
                 cancelText="Cancel"
                 onConfirm={saveFinalizedOffer}

@@ -163,4 +163,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
     // Find employees by warehouse ID
     @Query("SELECT e FROM Employee e WHERE e.warehouse.id = :warehouseId")
     List<Employee> findByWarehouseId(@Param("warehouseId") UUID warehouseId);
+
+    @Query("SELECT COUNT(e) FROM Employee e JOIN e.jobPosition jp WHERE jp.department.name = :departmentName")
+    long countByJobPositionDepartmentName(@Param("departmentName") String departmentName);
 }

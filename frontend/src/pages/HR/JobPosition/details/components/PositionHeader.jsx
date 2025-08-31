@@ -16,9 +16,12 @@ const PositionHeader = ({ position, onEdit, onDelete, onBack }) => {
     return (
         <div className="position-header">
             <div className="header-left">
-                <button onClick={onBack} className="back-button">
+                <button
+                    onClick={onBack}
+                    className="back-button"
+                    title="Back to positions"
+                >
                     <FiArrowLeft />
-                    Back to Positions
                 </button>
                 <div className="header-info">
                     <h1>{position.positionName}</h1>

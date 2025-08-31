@@ -229,9 +229,24 @@ const IncomingRequestOrders = ({
                 offerItems: []
             };
 
-            await offerService.create(offerData);
+            const createdOffer = await offerService.create(offerData);
+            console.log('📦 CREATED OFFER:', createdOffer);
 
-            showSuccessNotification('Request Order accepted successfully, Visit Offers to start on the offer.');
+            showSuccessNotification('Request Order approved successfully! Redirecting to offers...');
+
+            if (onDataChange) {
+                onDataChange();
+            }
+
+// Navigate to offers page with the created offer information
+            setTimeout(() => {
+                navigate('/procurement/offers', {
+                    state: {
+                        newOffer: createdOffer,
+                        activeTab: 'unstarted'
+                    }
+                });
+            }, 1500); // Small delay to show success message
 
             if (onDataChange) {
                 onDataChange();

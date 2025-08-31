@@ -48,6 +48,24 @@ const WarehouseInformation = () => {
     );
   };
 
+  // Component for displaying worker names in an organized way
+  const WorkersList = ({ workers }) => {
+    if (!workers || workers.length === 0) {
+      return <span className="info-value">No workers assigned</span>;
+    }
+
+    return (
+        <div className="workers-list">
+          {workers.map((worker, index) => (
+              <div key={index} className="info-row worker-row">
+                <span className="info-label">Worker {index + 1}</span>
+                <span className="info-value">{worker.name}</span>
+              </div>
+          ))}
+        </div>
+    );
+  };
+
   if (loading) {
     return (
         <div className="warehouse-info-page">
@@ -141,40 +159,18 @@ const WarehouseInformation = () => {
                 <h3>Management & Staff</h3>
                 <div className="info-rows">
                   <InfoRow
-                      label="Warehouse Manager"
-                      value={manager ? manager.name : "Not Assigned"}
-                  />
-                  <InfoRow
                       label="Total Staff"
                       value={warehouseData.employees?.length || 0}
                   />
+
                   <InfoRow
-                      label="Workers"
-                      value={workers.length > 0 ? `${workers.length} worker${workers.length > 1 ? 's' : ''}` : "No workers assigned"}
+                      label="Warehouse Manager"
+                      value={manager ? manager.name : "Not Assigned"}
                   />
+
+                  <WorkersList workers={workers} />
                 </div>
               </div>
-
-              {/* Staff List (if workers exist) */}
-              {workers.length > 0 && (
-                  <div className="info-section">
-                    <h3>Staff Directory</h3>
-                    <div className="staff-list">
-                      {manager && (
-                          <div className="staff-item manager">
-                            <span className="staff-name">{manager.name}</span>
-                            <span className="staff-role">Manager</span>
-                          </div>
-                      )}
-                      {workers.map((worker, index) => (
-                          <div key={index} className="staff-item">
-                            <span className="staff-name">{worker.name}</span>
-                            <span className="staff-role">Worker</span>
-                          </div>
-                      ))}
-                    </div>
-                  </div>
-              )}
 
             </div>
           </div>

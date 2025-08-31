@@ -385,3 +385,74 @@
     }
   }
 }
+
+// Workers styling - Professional design with theme variables
+.workers-row {
+  align-items: flex-start !important;
+}
+
+.workers-container {
+  flex: 1;
+}
+
+.workers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.worker-item {
+  display: flex;
+  align-items: center;
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--border-color-light);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  transition: all var(--transition-fast) ease;
+
+  &:hover {
+    background: var(--color-surface-hover);
+    border-color: var(--border-color-medium);
+  }
+
+  &:first-child {
+    border-top-left-radius: var(--radius-sm);
+    border-top-right-radius: var(--radius-sm);
+  }
+
+  &:last-child {
+    border-bottom-left-radius: var(--radius-sm);
+    border-bottom-right-radius: var(--radius-sm);
+  }
+}
+
+.worker-name {
+  font-weight: var(--bold-font-weight);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+
+  &::before {
+    content: "•";
+    color: var(--color-primary);
+    font-weight: bold;
+    margin-right: 8px;
+  }
+}
+
+// Alternative cleaner design without bullets
+.workers-list.clean {
+  .worker-name::before {
+    display: none;
+  }
+
+  .worker-item {
+    padding-left: 16px;
+    border-left: 3px solid transparent;
+
+    &:hover {
+      border-left-color: var(--color-primary);
+    }
+  }
+}

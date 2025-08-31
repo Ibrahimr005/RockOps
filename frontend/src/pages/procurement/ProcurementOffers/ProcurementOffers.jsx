@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import './ProcurementOffers.scss';
+import { useLocation } from 'react-router-dom'; // Add this import
 
 // Import services
 import { offerService } from '../../../services/procurement/offerService.js';
@@ -34,8 +35,10 @@ const API_URL = 'http://localhost:8080/api/v1';
 const ProcurementOffers = () => {
     const navigate = useNavigate();
     const { theme } = useTheme();
+    const location = useLocation(); // Add this line
 
     // State
+    const [pendingNewOffer, setPendingNewOffer] = useState(null);
     const [loading, setLoading] = useState(true);
     const [offers, setOffers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -99,6 +102,17 @@ const ProcurementOffers = () => {
         }
     };
 
+    useEffect(() => {
+        if (location.state?.newOffer) {
+            console.log('📦 RECEIVED NEW OFFER FROM NAVIGATION:', location.state.newOffer);
+            setPendingNewOffer(location.state.newOffer);
+            setActiveTab(location.state.activeTab || 'unstarted');
+
+            // Clear the navigation state
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, navigate]);
+
     // Fetch data using service
     useEffect(() => {
         // Get user role from localStorage
@@ -159,6 +173,18 @@ const ProcurementOffers = () => {
                         setActiveOffer(pendingCompletedOffer);
                         setPendingCompletedOffer(null); // Clear the pending offer
                     }
+
+                    // Add this BEFORE the existing "else if (activeOffer && offersData.find..." condition:
+                    else if (pendingNewOffer && activeTab === 'unstarted') {
+                        const newOffer = offersData.find(offer => offer.id === pendingNewOffer.id);
+                        if (newOffer) {
+                            setActiveOffer(newOffer);
+                            setPendingNewOffer(null); // Clear the pending offer
+                        } else {
+                            setActiveOffer(offersData[0]);
+                        }
+                    }
+
                     // If we have an activeOffer and it exists in the new data, keep it selected
                     else if (activeOffer && offersData.find(offer => offer.id === activeOffer.id)) {
                         // Find the updated version of the active offer from the fetched data
@@ -181,7 +207,10 @@ const ProcurementOffers = () => {
         };
 
         fetchData();
-    }, [activeTab, pendingSubmittedOffer, pendingFinalizedOffer, pendingCompletedOffer]); // Add pendingCompletedOffer to dependencies
+    }, [activeTab, pendingSubmittedOffer, pendingFinalizedOffer, pendingCompletedOffer, pendingNewOffer]); // Add pendingNewOffer
+
+    // Add this useEffect to handle navigation from request orders
+
 
     // When active offer changes, fetch its request order
     useEffect(() => {
@@ -482,6 +511,8 @@ const ProcurementOffers = () => {
                                 setError={setError}
                                 setSuccess={setSuccess}
                                 onOfferFinalized={handleOfferSentToFinalize}
+                                onRetryOffer={handleRetryOffer}  // ADD THIS LINE
+                                onDeleteOffer={handleDeleteOffer}  // ADD THIS LINE
                             />
                         )}
 

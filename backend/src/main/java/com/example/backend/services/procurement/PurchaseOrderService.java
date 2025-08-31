@@ -5,6 +5,7 @@ import com.example.backend.models.procurement.Offer;
 import com.example.backend.models.procurement.OfferItem;
 import com.example.backend.models.procurement.PurchaseOrder;
 import com.example.backend.models.procurement.PurchaseOrderItem;
+import com.example.backend.models.procurement.TimelineEventType;
 import com.example.backend.repositories.procurement.OfferItemRepository;
 import com.example.backend.repositories.procurement.OfferRepository;
 import com.example.backend.repositories.procurement.PurchaseOrderItemRepository;
@@ -24,17 +25,20 @@ public class PurchaseOrderService {
     private final OfferItemRepository offerItemRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
+    private final OfferTimelineService offerTimelineService; // ADDED
 
     @Autowired
     public PurchaseOrderService(
             OfferRepository offerRepository,
             OfferItemRepository offerItemRepository,
             PurchaseOrderRepository purchaseOrderRepository,
-            PurchaseOrderItemRepository purchaseOrderItemRepository) {
+            PurchaseOrderItemRepository purchaseOrderItemRepository,
+            OfferTimelineService offerTimelineService) { // ADDED PARAMETER
         this.offerRepository = offerRepository;
         this.offerItemRepository = offerItemRepository;
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.purchaseOrderItemRepository = purchaseOrderItemRepository;
+        this.offerTimelineService = offerTimelineService; // ADDED
     }
 
     /**
@@ -65,7 +69,7 @@ public class PurchaseOrderService {
                 throw new IllegalArgumentException("Item " + item.getId() + " does not belong to offer " + offerId);
             }
 
-            if (!"FINANCE_ACCEPTED".equals(item.getFinanceStatus())) {
+            if (!"ACCEPTED".equals(item.getFinanceStatus())) {
                 throw new IllegalArgumentException("Cannot finalize item " + item.getId() + " as it is not finance-accepted");
             }
         }
@@ -74,9 +78,16 @@ public class PurchaseOrderService {
             throw new IllegalArgumentException("No valid items to finalize");
         }
 
-        // Update offer status to FINALIZED
-        offer.setStatus("COMPLETED");
+        // UPDATE OFFER STATUS AND ADD TIMELINE EVENTS
+        String previousStatus = offer.getStatus();
 
+        // Create OFFER_FINALIZING timeline event
+        offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_FINALIZED, username,
+                "Starting finalization process with " + finalizedItems.size() + " items",
+                previousStatus, "COMPLETED");
+
+        // Update offer status to COMPLETED
+        offer.setStatus("COMPLETED");
         offerRepository.save(offer);
 
         // Create purchase order
@@ -119,7 +130,15 @@ public class PurchaseOrderService {
         purchaseOrder.setTotalAmount(totalAmount);
 
         // Save the purchase order
-        return purchaseOrderRepository.save(purchaseOrder);
+        PurchaseOrder savedPurchaseOrder = purchaseOrderRepository.save(purchaseOrder);
+
+        // CREATE OFFER_COMPLETED TIMELINE EVENT AFTER PO IS CREATED
+        offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_COMPLETED, username,
+                "Purchase order " + savedPurchaseOrder.getPoNumber() + " created with total value: " +
+                        savedPurchaseOrder.getCurrency() + " " + String.format("%.2f", totalAmount),
+                "COMPLETED", "COMPLETED");
+
+        return savedPurchaseOrder;
     }
 
     /**

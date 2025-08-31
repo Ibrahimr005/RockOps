@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { FaTimes, FaBriefcase } from 'react-icons/fa';
+import React, {useState} from 'react';
+import {FaBriefcase, FaTimes} from 'react-icons/fa';
+import './VacancyModals.scss'
 
-const AddVacancyModal = ({ onClose, onSave, jobPositions }) => {
+const AddVacancyModal = ({onClose, onSave, jobPositions}) => {
     const today = new Date().toISOString().split('T')[0];
 
     const [formData, setFormData] = useState({
@@ -22,7 +23,7 @@ const AddVacancyModal = ({ onClose, onSave, jobPositions }) => {
 
     // Handle form input changes
     const handleChange = (e) => {
-        const { name, value } = e.target;
+        const {name, value} = e.target;
         setFormData({
             ...formData,
             [name]: value
@@ -43,7 +44,7 @@ const AddVacancyModal = ({ onClose, onSave, jobPositions }) => {
         if (positionId === '') {
             setFormData({
                 ...formData,
-                jobPosition: null
+                jobPositionId: null
             });
             return;
         }
@@ -55,9 +56,8 @@ const AddVacancyModal = ({ onClose, onSave, jobPositions }) => {
             // Either send just the ID or the whole object depending on your backend
             setFormData({
                 ...formData,
-                jobPosition: {
-                    id: selectedPosition.id
-                }
+                jobPositionId:  selectedPosition.id
+
             });
         }
     }
@@ -90,179 +90,230 @@ const AddVacancyModal = ({ onClose, onSave, jobPositions }) => {
     };
 
     // Handle form submission
+    // const handleJobPositionChange = (e) => {
+    //     const positionId = e.target.value;
+    //     console.log('Selected position ID:', positionId);
+    //     console.log('Available job positions:', jobPositions);
+    //
+    //     if (positionId === '') {
+    //         console.log('Setting jobPosition to null');
+    //         setFormData({
+    //             ...formData,
+    //             jobPosition: null
+    //         });
+    //         return;
+    //     }
+    //
+    //     // Find the selected position without parseInt since UUID is a string
+    //     const selectedPosition = jobPositions.find(pos => pos.id === positionId);
+    //     console.log('Found selected position:', selectedPosition);
+    //
+    //     if (selectedPosition) {
+    //         const jobPositionData = {
+    //             id: selectedPosition.id
+    //         };
+    //         console.log('Setting jobPosition to:', jobPositionData);
+    //
+    //         setFormData({
+    //             ...formData,
+    //             jobPosition: jobPositionData
+    //         });
+    //     } else {
+    //         console.log('No position found for ID:', positionId);
+    //     }
+    // }
+
+// Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log('Form submission started');
+        console.log('Current formData:', formData);
 
         if (validateForm()) {
             setIsSubmitting(true);
+            console.log('Form validation passed, preparing request data...');
+
+            // Log the exact data being sent
+            const requestData = { ...formData };
+            console.log('Request data being sent:', JSON.stringify(requestData, null, 2));
+
             try {
-                await onSave(formData);
+                console.log('Calling onSave with data:', requestData);
+                const response = await onSave(requestData);
+                console.log('Response received:', response);
             } catch (error) {
                 console.error('Error saving vacancy:', error);
+                console.error('Error details:', error.response?.data || error.message);
             } finally {
                 setIsSubmitting(false);
             }
+        } else {
+            console.log('Form validation failed. Errors:', errors);
         }
     };
 
     return (
-        <div className="modal-backdrop">
-            <div className="modal-container modal-lg">
-                <div className="modal-header">
-
+        <div className="add-vacancy-modal">
+            <div className="modal-backdrop">
+                <div className="modal-container modal-lg">
+                    <div className="modal-header">
                         <h2 className="modal-title">
+                            <FaBriefcase />
                             Post New Vacancy
                         </h2>
 
-                    <button className="btn-close" onClick={onClose} disabled={isSubmitting}>
-                        <FaTimes />
-                    </button>
-                </div>
+                        <button className="btn-close" onClick={onClose} disabled={isSubmitting}>
+                            <FaTimes/>
+                        </button>
+                    </div>
 
-                <form onSubmit={handleSubmit}>
                     <div className="modal-body">
-                        <div className="modal-section">
-                            <h3 className="modal-section-title">Basic Information</h3>
-                            <div className="form-grid">
-                                <div className="form-group full-width">
-                                    <label>Job Title *</label>
-                                    <input
-                                        type="text"
-                                        name="title"
-                                        value={formData.title}
-                                        onChange={handleChange}
-                                        className={errors.title ? 'error' : ''}
-                                        placeholder="e.g. Senior Software Engineer"
-                                        disabled={isSubmitting}
-                                    />
-                                    {errors.title && <span className="error-message">{errors.title}</span>}
-                                </div>
+                        <form onSubmit={handleSubmit}>
+                            <div className="modal-section">
+                                <h3 className="modal-section-title">Basic Information</h3>
+                                <div className="form-grid">
+                                    <div className="form-group full-width">
+                                        <label>Job Title *</label>
+                                        <input
+                                            type="text"
+                                            name="title"
+                                            value={formData.title}
+                                            onChange={handleChange}
+                                            className={errors.title ? 'error' : ''}
+                                            placeholder="e.g. Senior Software Engineer"
+                                            disabled={isSubmitting}
+                                        />
+                                        {errors.title && <span className="error-message">{errors.title}</span>}
+                                    </div>
 
-                                <div className="form-group">
-                                    <label>Job Position</label>
-                                    <select
-                                        onChange={handleJobPositionChange}
-                                        defaultValue=""
-                                        disabled={isSubmitting}
-                                    >
-                                        <option value="">Select a position</option>
-                                        {jobPositions.map(position => (
-                                            <option key={position.id} value={position.id}>
-                                                {position.positionName} - {position.department}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                    <div className="form-group">
+                                        <label>Job Position</label>
+                                        <select
+                                            onChange={handleJobPositionChange}
+                                            defaultValue=""
+                                            disabled={isSubmitting}
+                                        >
+                                            <option value="">Select a position</option>
+                                            {jobPositions.map(position => (
+                                                <option key={position.id} value={position.id}>
+                                                    {position.positionName} - {position.department}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                                <div className="form-group">
-                                    <label>Status</label>
-                                    <select
-                                        name="status"
-                                        value={formData.status}
-                                        onChange={handleChange}
-                                        disabled={isSubmitting}
-                                    >
-                                        <option value="OPEN">Open</option>
-                                        <option value="CLOSED">Closed</option>
-                                        <option value="FILLED">Filled</option>
-                                    </select>
-                                </div>
+                                    <div className="form-group">
+                                        <label>Status</label>
+                                        <select
+                                            name="status"
+                                            value={formData.status}
+                                            onChange={handleChange}
+                                            disabled={isSubmitting}
+                                        >
+                                            <option value="OPEN">Open</option>
+                                            <option value="CLOSED">Closed</option>
+                                            <option value="FILLED">Filled</option>
+                                        </select>
+                                    </div>
 
-                                <div className="form-group">
-                                    <label>Number of Positions</label>
-                                    <input
-                                        type="number"
-                                        name="numberOfPositions"
-                                        value={formData.numberOfPositions}
-                                        onChange={handleChange}
-                                        min="1"
-                                        className={errors.numberOfPositions ? 'error' : ''}
-                                        disabled={isSubmitting}
-                                    />
-                                    {errors.numberOfPositions && <span className="error-message">{errors.numberOfPositions}</span>}
-                                </div>
+                                    <div className="form-group">
+                                        <label>Number of Positions</label>
+                                        <input
+                                            type="number"
+                                            name="numberOfPositions"
+                                            value={formData.numberOfPositions}
+                                            onChange={handleChange}
+                                            min="1"
+                                            className={errors.numberOfPositions ? 'error' : ''}
+                                            disabled={isSubmitting}
+                                        />
+                                        {errors.numberOfPositions &&
+                                            <span className="error-message">{errors.numberOfPositions}</span>}
+                                    </div>
 
-                                <div className="form-group">
-                                    <label>Priority</label>
-                                    <select
-                                        name="priority"
-                                        value={formData.priority}
-                                        onChange={handleChange}
-                                        disabled={isSubmitting}
-                                    >
-                                        <option value="HIGH">High</option>
-                                        <option value="MEDIUM">Medium</option>
-                                        <option value="LOW">Low</option>
-                                    </select>
-                                </div>
+                                    <div className="form-group">
+                                        <label>Priority</label>
+                                        <select
+                                            name="priority"
+                                            value={formData.priority}
+                                            onChange={handleChange}
+                                            disabled={isSubmitting}
+                                        >
+                                            <option value="HIGH">High</option>
+                                            <option value="MEDIUM">Medium</option>
+                                            <option value="LOW">Low</option>
+                                        </select>
+                                    </div>
 
-                                <div className="form-group">
-                                    <label>Posting Date</label>
-                                    <input
-                                        type="date"
-                                        name="postingDate"
-                                        value={formData.postingDate}
-                                        onChange={handleChange}
-                                        disabled={isSubmitting}
-                                    />
-                                </div>
+                                    <div className="form-group">
+                                        <label>Posting Date</label>
+                                        <input
+                                            type="date"
+                                            name="postingDate"
+                                            value={formData.postingDate}
+                                            onChange={handleChange}
+                                            disabled={isSubmitting}
+                                        />
+                                    </div>
 
-                                <div className="form-group">
-                                    <label>Closing Date *</label>
-                                    <input
-                                        type="date"
-                                        name="closingDate"
-                                        value={formData.closingDate}
-                                        onChange={handleChange}
-                                        className={errors.closingDate ? 'error' : ''}
-                                        min={formData.postingDate}
-                                        disabled={isSubmitting}
-                                    />
-                                    {errors.closingDate && <span className="error-message">{errors.closingDate}</span>}
+                                    <div className="form-group">
+                                        <label>Closing Date *</label>
+                                        <input
+                                            type="date"
+                                            name="closingDate"
+                                            value={formData.closingDate}
+                                            onChange={handleChange}
+                                            className={errors.closingDate ? 'error' : ''}
+                                            min={formData.postingDate}
+                                            disabled={isSubmitting}
+                                        />
+                                        {errors.closingDate &&
+                                            <span className="error-message">{errors.closingDate}</span>}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="modal-section">
-                            <h3 className="modal-section-title">Job Details</h3>
-                            <div className="form-group">
-                                <label>Description *</label>
-                                <textarea
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={handleChange}
-                                    rows="4"
-                                    className={errors.description ? 'error' : ''}
-                                    placeholder="Brief overview of the job opportunity, company culture, and what makes this role exciting..."
-                                    disabled={isSubmitting}
-                                ></textarea>
-                                {errors.description && <span className="error-message">{errors.description}</span>}
-                            </div>
+                            <div className="modal-section">
+                                <h3 className="modal-section-title">Job Details</h3>
+                                <div className="form-group">
+                                    <label>Description *</label>
+                                    <textarea
+                                        name="description"
+                                        value={formData.description}
+                                        onChange={handleChange}
+                                        rows="4"
+                                        className={errors.description ? 'error' : ''}
+                                        placeholder="Brief overview of the job opportunity, company culture, and what makes this role exciting..."
+                                        disabled={isSubmitting}
+                                    ></textarea>
+                                    {errors.description && <span className="error-message">{errors.description}</span>}
+                                </div>
 
-                            <div className="form-group">
-                                <label>Requirements</label>
-                                <textarea
-                                    name="requirements"
-                                    value={formData.requirements}
-                                    onChange={handleChange}
-                                    rows="4"
-                                    placeholder="• Bachelor's degree in relevant field&#10;• 3+ years of experience&#10;• Strong communication skills&#10;• Proficiency in required technologies"
-                                    disabled={isSubmitting}
-                                ></textarea>
-                            </div>
+                                <div className="form-group">
+                                    <label>Requirements</label>
+                                    <textarea
+                                        name="requirements"
+                                        value={formData.requirements}
+                                        onChange={handleChange}
+                                        rows="4"
+                                        placeholder="• Bachelor's degree in relevant field&#10;• 3+ years of experience&#10;• Strong communication skills&#10;• Proficiency in required technologies"
+                                        disabled={isSubmitting}
+                                    ></textarea>
+                                </div>
 
-                            <div className="form-group">
-                                <label>Responsibilities</label>
-                                <textarea
-                                    name="responsibilities"
-                                    value={formData.responsibilities}
-                                    onChange={handleChange}
-                                    rows="4"
-                                    placeholder="• Lead development of new features&#10;• Collaborate with cross-functional teams&#10;• Mentor junior team members&#10;• Participate in code reviews"
-                                    disabled={isSubmitting}
-                                ></textarea>
+                                <div className="form-group">
+                                    <label>Responsibilities</label>
+                                    <textarea
+                                        name="responsibilities"
+                                        value={formData.responsibilities}
+                                        onChange={handleChange}
+                                        rows="4"
+                                        placeholder="• Lead development of new features&#10;• Collaborate with cross-functional teams&#10;• Mentor junior team members&#10;• Participate in code reviews"
+                                        disabled={isSubmitting}
+                                    ></textarea>
+                                </div>
                             </div>
-                        </div>
+                        </form>
                     </div>
 
                     <div className="modal-footer">
@@ -278,6 +329,7 @@ const AddVacancyModal = ({ onClose, onSave, jobPositions }) => {
                             type="submit"
                             className="btn btn-primary"
                             disabled={isSubmitting}
+                            onClick={handleSubmit}
                         >
                             {isSubmitting ? (
                                 <>
@@ -286,16 +338,14 @@ const AddVacancyModal = ({ onClose, onSave, jobPositions }) => {
                                 </>
                             ) : (
                                 <>
-                                    <FaBriefcase />
+                                    <FaBriefcase/>
                                     Post Vacancy
                                 </>
                             )}
                         </button>
                     </div>
-                </form>
+                </div>
             </div>
-
-
         </div>
     );
 };

@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import {
     FiPackage, FiCheck, FiClock, FiCheckCircle,
     FiX, FiFileText, FiDollarSign, FiList,
-    FiUser, FiCalendar, FiFlag, FiTrendingUp
+    FiUser, FiCalendar, FiFlag, FiTrendingUp, FiRefreshCw, FiTrash2
 } from 'react-icons/fi';
 
 import "../ProcurementOffers.scss";
@@ -11,6 +10,7 @@ import "./FinanceValidatedOffers.scss"
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
+import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx";
 import { offerService } from '../../../../services/procurement/offerService.js';
 
 // Updated to accept offers, setError, and setSuccess from parent
@@ -22,12 +22,51 @@ const FinanceValidatedOffers = ({
                                     setError,
                                     setSuccess,
                                     onRefresh, // Optional callback to refresh data after status update
-                                    onOfferFinalized // New callback to handle offer finalization and tab switch
+                                    onOfferFinalized, // New callback to handle offer finalization and tab switch
+                                    onRetryOffer, // Callback for retry functionality
+                                    onDeleteOffer // Callback for delete functionality
                                 }) => {
     const [loading, setLoading] = useState(false);
     const [userRole, setUserRole] = useState(''); // Added for role checking
     const [showFinalizeDialog, setShowFinalizeDialog] = useState(false);
     const [offerToFinalizeId, setOfferToFinalizeId] = useState(null);
+
+    // New states for retry and delete functionality
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showRetryConfirm, setShowRetryConfirm] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isRetrying, setIsRetrying] = useState(false);
+
+    // Snackbar states
+    const [showSnackbar, setShowSnackbar] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [snackbarType, setSnackbarType] = useState('success');
+
+    const showNotification = (message, type = 'success') => {
+        setSnackbarMessage(message);
+        setSnackbarType(type);
+        setShowSnackbar(true);
+    };
+
+    const handleSnackbarClose = () => {
+        setShowSnackbar(false);
+    };
+
+    const handleError = (message) => {
+        if (typeof setError === 'function') {
+            setError(message);
+        } else {
+            showNotification(message, 'error');
+        }
+    };
+
+    const handleSuccess = (message) => {
+        if (typeof setSuccess === 'function') {
+            setSuccess(message);
+        } else {
+            showNotification(message, 'success');
+        }
+    };
 
     // Fetch all finance reviewed offers - We're now getting offers as props
     useEffect(() => {
@@ -57,7 +96,7 @@ const FinanceValidatedOffers = ({
             // Update the offer status to FINALIZING using offerService
             await offerService.updateStatus(offerToFinalizeId, 'FINALIZING');
 
-            setSuccess('Offer has been sent to the finalizing section.');
+            handleSuccess('Offer has been sent to the finalizing section.');
 
             // Find the finalized offer to pass to the callback
             const finalizedOffer = offers.find(offer => offer.id === offerToFinalizeId);
@@ -77,7 +116,7 @@ const FinanceValidatedOffers = ({
 
         } catch (err) {
             console.error('Error updating offer status to FINALIZING:', err);
-            setError(err.message || 'Failed to update offer status. Please try again.');
+            handleError(err.message || 'Failed to update offer status. Please try again.');
         } finally {
             setLoading(false);
             setOfferToFinalizeId(null);
@@ -88,6 +127,76 @@ const FinanceValidatedOffers = ({
     const handleCancelFinalize = () => {
         setShowFinalizeDialog(false);
         setOfferToFinalizeId(null);
+    };
+
+    // NEW: Retry functionality (copied exactly from working ManagerValidatedOffers)
+    const handleRetryClick = () => {
+        setShowRetryConfirm(true);
+    };
+
+    const confirmRetry = async () => {
+        setIsRetrying(true);
+        try {
+            const response = await offerService.retryOffer(activeOffer.id);
+
+            if (response && response.id) {
+                showNotification(`New offer created successfully (Retry ${response.retryCount}). Old offer has been removed.`, 'success');
+
+                // Remove the old offer from the current offers list
+                if (onDeleteOffer) {
+                    onDeleteOffer(activeOffer.id);
+                }
+
+                // Switch to the new offer in inprogress tab
+                if (onRetryOffer) {
+                    onRetryOffer(response);
+                }
+            }
+
+            setShowRetryConfirm(false);
+        } catch (error) {
+            console.error('Error retrying offer:', error);
+
+            if (error.message && error.message.includes("A retry for this offer is already in progress")) {
+                showNotification('A retry for this offer is already in progress. Please complete the existing retry first.', 'error');
+            } else {
+                showNotification('Failed to create new offer. Please try again.', 'error');
+            }
+        } finally {
+            setIsRetrying(false);
+        }
+    };
+
+    const cancelRetry = () => {
+        setShowRetryConfirm(false);
+    };
+
+    // NEW: Delete functionality
+    const handleDeleteClick = () => {
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = async () => {
+        setIsDeleting(true);
+        try {
+            await offerService.delete(activeOffer.id);
+
+            if (onDeleteOffer) {
+                onDeleteOffer(activeOffer.id);
+            }
+
+            showNotification(`Offer "${activeOffer.title}" deleted successfully`, 'success');
+            setShowDeleteConfirm(false);
+        } catch (error) {
+            console.error('Error deleting offer:', error);
+            showNotification('Failed to delete offer. Please try again.', 'error');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const cancelDelete = () => {
+        setShowDeleteConfirm(false);
     };
 
     // Get offer items for a specific request item
@@ -198,16 +307,45 @@ const FinanceValidatedOffers = ({
                                 </div>
                             </div>
                             <div className="procurement-header-actions">
-                                {/* Finalize button for finance-accepted offers */}
+                                {/* THREE ACTION OPTIONS */}
+
+                                {/* Option 1: Finalize Offer - Primary action for accepted/partially accepted offers */}
                                 {activeOffer && (activeOffer.status === 'FINANCE_ACCEPTED' || activeOffer.status === 'FINANCE_PARTIALLY_ACCEPTED') && (
                                     <button
                                         className="btn-primary"
                                         onClick={() => handleOpenFinalizeDialog(activeOffer.id)}
                                         disabled={loading}
+                                        style={{ marginRight: '10px' }}
                                     >
                                         <FiCheckCircle /> Finalize Offer
                                     </button>
                                 )}
+
+                                {/* Option 2 & 3: Retry and Delete - Only for FINANCE_REJECTED offers (based on financeStatus field) */}
+
+                                    <>
+                                        <button
+                                            className="btn-primary"
+                                            onClick={handleRetryClick}
+                                            disabled={loading || isRetrying}
+                                            title="Create a new offer based on this one"
+                                            style={{ marginRight: '10px' }}
+                                        >
+                                            <FiRefreshCw size={16} />
+                                            {isRetrying ? 'Creating...' : 'Retry Offer'}
+                                        </button>
+
+                                        <button
+                                            className="btn-primary"
+                                            onClick={handleDeleteClick}
+                                            disabled={loading || isDeleting}
+                                            title="Delete this offer permanently"
+                                        >
+                                            <FiTrash2 size={16} />
+                                            {isDeleting ? 'Deleting...' : 'Delete Offer'}
+                                        </button>
+                                    </>
+
                             </div>
                         </div>
 
@@ -247,7 +385,7 @@ const FinanceValidatedOffers = ({
                                                             <h5>{requestItem.itemType?.name || 'Item'}</h5>
                                                         </div>
                                                         <div className="submitted-item-quantity-finance">
-                                                            {requestItem.quantity} {requestItem.itemType.measuringUnit}
+                                                            {requestItem.quantity} {requestItem.itemType?.measuringUnit}
                                                         </div>
                                                     </div>
 
@@ -266,18 +404,18 @@ const FinanceValidatedOffers = ({
                                                                 <tbody>
                                                                 {offerItems.map((offerItem, idx) => (
                                                                     <tr key={offerItem.id || idx} className={
-                                                                        offerItem.financeStatus === 'FINANCE_ACCEPTED' ? 'finance-accepted' :
-                                                                            offerItem.financeStatus === 'FINANCE_REJECTED' ? 'finance-rejected' : ''
+                                                                        offerItem.financeStatus === 'ACCEPTED' ? 'finance-accepted' :
+                                                                            offerItem.financeStatus === 'REJECTED' ? 'finance-rejected' : ''
                                                                     }>
                                                                         <td>{offerItem.merchant?.name || 'Unknown'}</td>
-                                                                        <td>{offerItem.quantity} {requestItem.itemType.measuringUnit}</td>
-                                                                        <td>${parseFloat(offerItem.unitPrice).toFixed(2)}</td>
-                                                                        <td>${parseFloat(offerItem.totalPrice).toFixed(2)}</td>
+                                                                        <td>{offerItem.quantity} {requestItem.itemType?.measuringUnit}</td>
+                                                                        <td>${parseFloat(offerItem.unitPrice || 0).toFixed(2)}</td>
+                                                                        <td>${parseFloat(offerItem.totalPrice || 0).toFixed(2)}</td>
                                                                         <td>
                                                                             <span className={`finance-item-status status-${(offerItem.financeStatus || '').toLowerCase()}`}>
                                                                                 {formatFinanceStatus(offerItem.financeStatus)}
                                                                             </span>
-                                                                            {offerItem.financeStatus === 'FINANCE_REJECTED' && offerItem.rejectionReason && (
+                                                                            {offerItem.financeStatus === 'REJECTED' && offerItem.rejectionReason && (
                                                                                 <span className="rejection-reason-icon" title={offerItem.rejectionReason}>
                                                                                     <FiX size={14} />
                                                                                 </span>
@@ -302,7 +440,7 @@ const FinanceValidatedOffers = ({
                                         <span className="summary-label-finance">Total Items Accepted:</span>
                                         <span className="summary-value-finance">
                                             {activeOffer.offerItems?.filter(item =>
-                                                item.financeStatus === 'FINANCE_ACCEPTED'
+                                                item.financeStatus === 'ACCEPTED'
                                             ).length || 0}
                                         </span>
                                     </div>
@@ -311,7 +449,7 @@ const FinanceValidatedOffers = ({
                                         <span className="summary-label-finance">Total Items Rejected:</span>
                                         <span className="summary-value-finance">
                                             {activeOffer.offerItems?.filter(item =>
-                                                item.financeStatus === 'FINANCE_REJECTED'
+                                                item.financeStatus === 'REJECTED'
                                             ).length || 0}
                                         </span>
                                     </div>
@@ -340,6 +478,15 @@ const FinanceValidatedOffers = ({
                 )}
             </div>
 
+            {/* Snackbar Component */}
+            <Snackbar
+                type={snackbarType}
+                text={snackbarMessage}
+                isVisible={showSnackbar}
+                onClose={handleSnackbarClose}
+                duration={4000}
+            />
+
             {/* Confirmation Dialog for Finalizing an Offer */}
             <ConfirmationDialog
                 isVisible={showFinalizeDialog}
@@ -350,6 +497,36 @@ const FinanceValidatedOffers = ({
                 onConfirm={handleConfirmFinalize}
                 onCancel={handleCancelFinalize}
                 isLoading={loading}
+                size="large"
+            />
+
+            {/* Retry Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={showRetryConfirm}
+                type="warning"
+                title="Retry Offer"
+                message={`Are you sure you want to create a new offer based on "${activeOffer?.title}"? This will create a duplicate offer that you can modify.`}
+                confirmText="Create New Offer"
+                cancelText="Cancel"
+                onConfirm={confirmRetry}
+                onCancel={cancelRetry}
+                isLoading={isRetrying}
+                showIcon={true}
+                size="large"
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={showDeleteConfirm}
+                type="delete"
+                title="Delete Offer"
+                message={`Are you sure you want to delete the offer "${activeOffer?.title}"? This action cannot be undone.`}
+                confirmText="Delete Offer"
+                cancelText="Cancel"
+                onConfirm={confirmDelete}
+                onCancel={cancelDelete}
+                isLoading={isDeleting}
+                showIcon={true}
                 size="large"
             />
         </div>
