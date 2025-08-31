@@ -196,7 +196,7 @@ const DepartmentDetails = () => {
             accessor: 'status',
             sortable: true,
             render: (row, value) => (
-                <span className={`status-badge status-${value?.toLowerCase() || 'unknown'}`}>
+                <span className={`status-badge ${value?.toLowerCase() || 'unknown'}`}>
                     {value || 'Unknown'}
                 </span>
             )

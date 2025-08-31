@@ -334,14 +334,7 @@ const PositionsList = () => {
     ];
 
     const actions = [
-        {
-            label: 'View Details',
-            icon: <FiEye />,
-            onClick: (row) => {
-                navigate(`/hr/positions/${row.id}`);
-            },
-            className: 'info',
-        },
+
         {
             label: 'Edit',
             icon: <FiEdit />,
