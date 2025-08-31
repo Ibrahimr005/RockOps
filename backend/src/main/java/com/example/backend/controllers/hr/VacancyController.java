@@ -1,6 +1,7 @@
 package com.example.backend.controllers.hr;
 
-import com.example.backend.dto.hr.CreateVacancyDTO;
+import com.example.backend.dto.hr.vacancy.CreateVacancyDTO;
+import com.example.backend.dto.hr.vacancy.UpdateVacancyDTO;
 import com.example.backend.models.hr.Vacancy;
 import com.example.backend.models.hr.Candidate;
 import com.example.backend.services.hr.VacancyService;
@@ -72,11 +73,37 @@ public class VacancyController {
 
     // Update an existing vacancy
     @PutMapping("/{id}")
-    public ResponseEntity<Vacancy> updateVacancy(@PathVariable UUID id, @RequestBody Vacancy vacancyDetails) {
-        Vacancy updatedVacancy = vacancyService.updateVacancy(id, vacancyDetails);
-        return ResponseEntity.ok(updatedVacancy);
-    }
+    public ResponseEntity<?> updateVacancy(@PathVariable UUID id, @RequestBody UpdateVacancyDTO dto) {
+        System.out.println("=== VacancyController: Received update request ===");
+        System.out.println("Vacancy ID: " + id);
+        System.out.println("DTO: " + dto);
 
+        try {
+            Vacancy updatedVacancy = vacancyService.updateVacancy(id, dto);
+            System.out.println("Vacancy updated successfully with ID: " + updatedVacancy.getId());
+            return ResponseEntity.ok(updatedVacancy);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Validation Error",
+                    "message", e.getMessage(),
+                    "timestamp", java.time.Instant.now().toString()
+            ));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "error", "Entity Not Found",
+                    "message", e.getMessage(),
+                    "timestamp", java.time.Instant.now().toString()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "error", "Internal Server Error",
+                    "message", "An unexpected error occurred while updating the vacancy",
+                    "details", e.getMessage(),
+                    "type", e.getClass().getSimpleName(),
+                    "timestamp", java.time.Instant.now().toString()
+            ));
+        }
+    }
     // Delete a vacancy
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteVacancy(@PathVariable UUID id) {

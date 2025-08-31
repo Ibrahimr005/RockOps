@@ -3,6 +3,7 @@ package com.example.backend.services.hr;
 import com.example.backend.models.hr.Department;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.repositories.hr.DepartmentRepository;
+import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.services.notification.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,9 @@ public class DepartmentService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
     /**
      * Get all departments as Map objects
      */
@@ -45,7 +49,7 @@ public class DepartmentService {
                     "Department Fetch Error",
                     "Failed to retrieve departments: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/departments",
+                    "/hr/departments",
                     "department-fetch-error-" + System.currentTimeMillis()
             );
 
@@ -71,7 +75,7 @@ public class DepartmentService {
                     "Department Retrieval Error",
                     "Failed to fetch department: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/departments/" + id,
+                    "/hr/departments/" + id,
                     "department-get-error-" + id
             );
 
@@ -117,7 +121,7 @@ public class DepartmentService {
                     "New Department Created",
                     "Department '" + name + "' has been successfully created",
                     NotificationType.SUCCESS,
-                    "/departments/" + savedDepartment.getId(),
+                    "/hr/departments/" + savedDepartment.getId(),
                     "new-department-" + savedDepartment.getId()
             );
 
@@ -127,7 +131,7 @@ public class DepartmentService {
                         "Strategic Department Added",
                         "🏢 Strategic department '" + name + "' has been added to the organization",
                         NotificationType.INFO,
-                        "/departments/" + savedDepartment.getId(),
+                        "/hr/departments/" + savedDepartment.getId(),
                         "strategic-dept-" + savedDepartment.getId()
                 );
             }
@@ -141,7 +145,7 @@ public class DepartmentService {
                     "Department Creation Failed",
                     "Failed to create department: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/departments",
+                    "/hr/departments",
                     "dept-creation-error-" + System.currentTimeMillis()
             );
 
@@ -153,7 +157,7 @@ public class DepartmentService {
                     "Department Creation Error",
                     "Unexpected error creating department: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/departments",
+                    "/hr/departments",
                     "dept-creation-error-" + System.currentTimeMillis()
             );
 
@@ -213,7 +217,7 @@ public class DepartmentService {
                     "Department Updated",
                     updateMessage.toString(),
                     NotificationType.INFO,
-                    "/departments/" + updatedDepartment.getId(),
+                    "/hr/departments/" + updatedDepartment.getId(),
                     "dept-updated-" + updatedDepartment.getId()
             );
 
@@ -228,7 +232,7 @@ public class DepartmentService {
                             "Department rename from '" + oldName + "' to '" + updatedDepartment.getName() +
                                     "' affects " + jobPositionCount + " job position(s)",
                             NotificationType.WARNING,
-                            "/departments/" + updatedDepartment.getId(),
+                            "/hr/departments/" + updatedDepartment.getId(),
                             "dept-rename-impact-" + updatedDepartment.getId()
                     );
                 }
@@ -243,7 +247,7 @@ public class DepartmentService {
                     "Department Update Failed",
                     "Failed to update department: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/departments/" + id,
+                    "/hr/departments/" + id,
                     "dept-update-error-" + id
             );
 
@@ -255,7 +259,7 @@ public class DepartmentService {
                     "Department Update Error",
                     "Unexpected error updating department: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/departments/" + id,
+                    "/hr/departments/" + id,
                     "dept-update-error-" + id
             );
 
@@ -286,7 +290,7 @@ public class DepartmentService {
                         "Department Deletion Blocked",
                         "Cannot delete '" + departmentName + "': " + jobPositionCount + " job positions must be handled first",
                         NotificationType.WARNING,
-                        "/departments/" + id,
+                        "/hr/departments/" + id,
                         "dept-delete-blocked-" + id
                 );
 
@@ -301,7 +305,7 @@ public class DepartmentService {
                     "Department Deleted",
                     "Department '" + departmentName + "' has been successfully deleted",
                     NotificationType.WARNING,
-                    "/departments",
+                    "/hr/departments",
                     "dept-deleted-" + id
             );
 
@@ -311,7 +315,7 @@ public class DepartmentService {
                         "Strategic Department Removed",
                         "⚠️ Strategic department '" + departmentName + "' has been removed from the organization",
                         NotificationType.ERROR,
-                        "/departments",
+                        "/hr/departments",
                         "strategic-dept-deleted-" + id
                 );
             }
@@ -326,7 +330,7 @@ public class DepartmentService {
                     "Department Deletion Error",
                     "Failed to delete department: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/departments/" + id,
+                    "/hr/departments/" + id,
                     "dept-delete-error-" + id
             );
 
@@ -363,6 +367,10 @@ public class DepartmentService {
                 department.getJobPositions().size() : 0;
         departmentMap.put("jobPositionCount", jobPositionCount);
 
+        // Add employee count by querying the Employee repository efficiently
+        long employeeCount = employeeRepository.countByJobPositionDepartmentName(department.getName());
+        departmentMap.put("employeeCount", employeeCount);
+
         // Add basic job position info if available (without triggering lazy loading issues)
         if (department.getJobPositions() != null && !department.getJobPositions().isEmpty()) {
             List<Map<String, Object>> jobPositions = department.getJobPositions().stream()
@@ -372,6 +380,33 @@ public class DepartmentService {
                         jpMap.put("positionName", jobPosition.getPositionName());
                         jpMap.put("type", jobPosition.getType());
                         jpMap.put("active", jobPosition.getActive());
+
+                        // Add employee count for each position
+                        int positionEmployeeCount = jobPosition.getEmployees() != null ?
+                                jobPosition.getEmployees().size() : 0;
+                        jpMap.put("employeeCount", positionEmployeeCount);
+
+                        // Add employee details for Department Details page
+                        if (jobPosition.getEmployees() != null && !jobPosition.getEmployees().isEmpty()) {
+                            List<Map<String, Object>> employees = jobPosition.getEmployees().stream()
+                                    .map(employee -> {
+                                        Map<String, Object> empMap = new HashMap<>();
+                                        empMap.put("id", employee.getId());
+                                        empMap.put("firstName", employee.getFirstName());
+                                        empMap.put("lastName", employee.getLastName());
+                                        empMap.put("fullName", employee.getFullName());
+                                        empMap.put("email", employee.getEmail());
+                                        empMap.put("status", employee.getStatus());
+                                        empMap.put("hireDate", employee.getHireDate());
+                                        empMap.put("positionName", jobPosition.getPositionName());
+                                        return empMap;
+                                    })
+                                    .collect(Collectors.toList());
+                            jpMap.put("employees", employees);
+                        } else {
+                            jpMap.put("employees", new ArrayList<>());
+                        }
+
                         return jpMap;
                     })
                     .collect(Collectors.toList());
@@ -397,7 +432,7 @@ public class DepartmentService {
                     "Department Fetch Error",
                     "Failed to retrieve departments: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/departments",
+                    "/hr/departments",
                     "department-fetch-error-" + System.currentTimeMillis()
             );
 
@@ -449,7 +484,7 @@ public class DepartmentService {
                     "New Department Created",
                     "Department '" + saved.getName() + "' has been successfully created",
                     NotificationType.SUCCESS,
-                    "/departments/" + saved.getId(),
+                    "/hr/departments/" + saved.getId(),
                     "new-department-" + saved.getId()
             );
 
@@ -462,7 +497,7 @@ public class DepartmentService {
                     "Department Creation Failed",
                     "Failed to create department: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/departments",
+                    "/hr/departments",
                     "dept-creation-error-" + System.currentTimeMillis()
             );
 
@@ -474,7 +509,7 @@ public class DepartmentService {
                     "Department Creation Error",
                     "Unexpected error creating department: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/departments",
+                    "/hr/departments",
                     "dept-creation-error-" + System.currentTimeMillis()
             );
 
@@ -512,7 +547,7 @@ public class DepartmentService {
                         "Department Renamed",
                         "Department renamed from '" + oldName + "' to '" + updated.getName() + "'",
                         NotificationType.INFO,
-                        "/departments/" + updated.getId(),
+                        "/hr/departments/" + updated.getId(),
                         "dept-renamed-" + updated.getId()
                 );
             } else {
@@ -520,7 +555,7 @@ public class DepartmentService {
                         "Department Updated",
                         "Department '" + updated.getName() + "' information has been updated",
                         NotificationType.INFO,
-                        "/departments/" + updated.getId(),
+                        "/hr/departments/" + updated.getId(),
                         "dept-updated-" + updated.getId()
                 );
             }
@@ -534,7 +569,7 @@ public class DepartmentService {
                     "Department Update Failed",
                     "Failed to update department: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/departments/" + id,
+                    "/hr/departments/" + id,
                     "dept-update-error-" + id
             );
 
@@ -546,7 +581,7 @@ public class DepartmentService {
                     "Department Update Error",
                     "Unexpected error updating department: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/departments/" + id,
+                    "/hr/departments/" + id,
                     "dept-update-error-" + id
             );
 

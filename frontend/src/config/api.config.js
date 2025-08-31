@@ -341,7 +341,14 @@ export const SITE_ENDPOINTS = {
         ASSIGN_FIXED_ASSET: (siteId, fixedAssetId) => `/siteadmin/${siteId}/assign-fixedAsset/${fixedAssetId}`,
         ASSIGN_PARTNER: (siteId, partnerId) => `/siteadmin/${siteId}/assign-partner/${partnerId}`,
         UPDATE_PARTNER_PERCENTAGE: (siteId, partnerId) => `/siteadmin/${siteId}/update-partner-percentage/${partnerId}`,
-        REMOVE_PARTNER: (siteId, partnerId) => `/siteadmin/${siteId}/remove-partner/${partnerId}`
+        REMOVE_PARTNER: (siteId, partnerId) => `/siteadmin/${siteId}/remove-partner/${partnerId}`,
+        getAvailableWarehouseManagers: 'siteadmin/warehouse-managers/available',
+        getAvailableWarehouseManagersForSite:(siteId) =>`siteadmin/sites/${siteId}/warehouse-managers/available`,
+        getAvailableWarehouseWorkers: '/siteadmin/warehouse-workers/available',
+        getAvailableWarehouseWorkersForSite: (siteId) => `/siteadmin/${siteId}/warehouse-workers/available`,
+        getWarehouseEmployees: (warehouseId) => `/siteadmin/warehouses/${warehouseId}/employees`,
+        unassignEmployeeFromWarehouse: (warehouseId, employeeId) => `/siteadmin/warehouses/${warehouseId}/unassign-employee/${employeeId}`
+
     }
 };
 

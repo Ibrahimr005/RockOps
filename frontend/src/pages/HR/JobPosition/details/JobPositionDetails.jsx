@@ -120,10 +120,11 @@ const JobPositionDetails = () => {
             <div className="position-header">
                 <div className="position-header-content">
                     <button
-                        className="back-button"
                         onClick={() => navigate('/hr/positions')}
+                        className="back-button"
+                        title="Back to positions"
                     >
-                        <FiArrowLeft /> Back to Positions
+                        <FiArrowLeft />
                     </button>
                     <div className="position-title">
                         <h1>{position.positionName}</h1>

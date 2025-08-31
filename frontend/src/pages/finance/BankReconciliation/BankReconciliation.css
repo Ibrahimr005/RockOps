@@ -48,12 +48,12 @@
 }
 
 .modal-content {
-    background: var(--section-background-color);
-    border-radius: var(--radius-md);
-    max-width: 600px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
+    /*background: var(--section-background-color);*/
+    /*border-radius: var(--radius-md);*/
+    /*max-width: 600px;*/
+    /*width: 100%;*/
+    /*max-height: 90vh;*/
+    /*overflow-y: auto;*/
 }
 
 .modal-header {
