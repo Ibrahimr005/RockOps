@@ -141,4 +141,26 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
      */
     @Query("SELECT e FROM Employee e JOIN e.jobPosition jp WHERE jp.contractType = 'MONTHLY' AND e.status = 'ACTIVE'")
     List<Employee> findActiveMonthlyEmployees();
+
+    // Add this method to your EmployeeRepository interface
+
+    // Alternative query if the above doesn't work with your entity structure:
+    @Query("SELECT e FROM Employee e JOIN e.jobPosition jp WHERE jp.positionName = :positionName")
+    List<Employee> findByJobPositionPositionNameAlternative(@Param("positionName") String positionName);
+
+    // If you prefer a more flexible approach:
+    @Query("SELECT e FROM Employee e WHERE LOWER(e.jobPosition.positionName) = LOWER(:positionName)")
+    List<Employee> findByJobPositionPositionNameIgnoreCase(@Param("positionName") String positionName);
+
+    @Query("SELECT e FROM Employee e WHERE e.jobPosition.positionName = :positionName")
+    List<Employee> findByJobPositionPositionName(@Param("positionName") String positionName);
+
+    // Add this method to your EmployeeRepository interface
+
+    @Query("SELECT e FROM Employee e WHERE e.site.id = :siteId OR e.site IS NULL")
+    List<Employee> findBySiteIdOrSiteIsNull(@Param("siteId") UUID siteId);
+
+    // Find employees by warehouse ID
+    @Query("SELECT e FROM Employee e WHERE e.warehouse.id = :warehouseId")
+    List<Employee> findByWarehouseId(@Param("warehouseId") UUID warehouseId);
 }
