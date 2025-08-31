@@ -169,10 +169,10 @@ const DepartmentModal = ({
                 </div>
 
                 {/* Modal Footer */}
-                <div className="modal-footer modal-footer-between">
+                <div className="modal-footer modal-footer">
                     <button
                         type="button"
-                        className="modal-btn-ghost"
+                        className="btn-cancel"
                         onClick={handleClose}
                         disabled={loading}
                     >
@@ -181,7 +181,7 @@ const DepartmentModal = ({
                     <button
                         type="submit"
                         form="department-form"
-                        className="btn-success"
+                        className="btn-primary"
                         disabled={loading || !formData.name.trim()}
                     >
                         {loading ? (isEdit ? 'Updating...' : 'Creating...') : (isEdit ? 'Update Department' : 'Create Department')}
