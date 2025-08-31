@@ -17,9 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 
 @RestController
@@ -254,7 +252,165 @@ public class SiteAdminController
         return ResponseEntity.noContent().build(); // returns 204 No Content
     }
 
+    // Add these endpoints to your SiteController class
 
+    @GetMapping("/warehouse-managers/available")
+    public ResponseEntity<Map<String, Object>> getAvailableWarehouseManagers() {
+        try {
+            List<Map<String, Object>> availableManagers = siteAdminService.getAvailableWarehouseManagers();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Available warehouse managers fetched successfully");
+            response.put("data", availableManagers);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("Error in getAvailableWarehouseManagers: " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to fetch available warehouse managers: " + e.getMessage());
+            errorResponse.put("data", new ArrayList<>());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    @GetMapping("/sites/{siteId}/warehouse-managers/available")
+    public ResponseEntity<Map<String, Object>> getAvailableWarehouseManagersForSite(@PathVariable UUID siteId) {
+        try {
+            List<Map<String, Object>> availableManagers = siteAdminService.getAvailableWarehouseManagersForSite(siteId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Available warehouse managers for site fetched successfully");
+            response.put("data", availableManagers);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("Error in getAvailableWarehouseManagersForSite: " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to fetch available warehouse managers for site: " + e.getMessage());
+            errorResponse.put("data", new ArrayList<>());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    @GetMapping("/warehouse-workers/available")
+    public ResponseEntity<Map<String, Object>> getAvailableWarehouseWorkers() {
+        try {
+            List<Map<String, Object>> availableWorkers = siteAdminService.getAvailableWarehouseWorkers();
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Available warehouse workers fetched successfully");
+            response.put("data", availableWorkers);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("Error in getAvailableWarehouseWorkers: " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to fetch available warehouse workers: " + e.getMessage());
+            errorResponse.put("data", new ArrayList<>());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    @GetMapping("/{siteId}/warehouse-workers/available")
+    public ResponseEntity<Map<String, Object>> getAvailableWarehouseWorkersForSite(@PathVariable UUID siteId) {
+        try {
+            List<Map<String, Object>> availableWorkers = siteAdminService.getAvailableWarehouseWorkersForSite(siteId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Available warehouse workers for site fetched successfully");
+            response.put("data", availableWorkers);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("Error in getAvailableWarehouseWorkersForSite: " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to fetch available warehouse workers for site: " + e.getMessage());
+            errorResponse.put("data", new ArrayList<>());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    @DeleteMapping("/warehouses/{warehouseId}/unassign-employee/{employeeId}")
+    public ResponseEntity<Map<String, Object>> unassignEmployeeFromWarehouse(
+            @PathVariable UUID warehouseId,
+            @PathVariable UUID employeeId) {
+        try {
+            Employee unassignedEmployee = siteAdminService.unassignEmployeeFromWarehouse(warehouseId, employeeId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Employee successfully unassigned from warehouse");
+            response.put("employee", unassignedEmployee);
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", e.getMessage());
+
+            return ResponseEntity.badRequest().body(errorResponse);
+
+        } catch (Exception e) {
+            System.err.println("Error unassigning employee from warehouse: " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Internal server error occurred while unassigning employee");
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    @GetMapping("/warehouses/{warehouseId}/employees")
+    public ResponseEntity<Map<String, Object>> getWarehouseEmployees(@PathVariable UUID warehouseId) {
+        try {
+            List<Map<String, Object>> employees = siteAdminService.getWarehouseEmployees(warehouseId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Warehouse employees fetched successfully");
+            response.put("data", employees);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("Error fetching warehouse employees: " + e.getMessage());
+            e.printStackTrace();
+
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to fetch warehouse employees: " + e.getMessage());
+            errorResponse.put("data", new ArrayList<>());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
 
 
 

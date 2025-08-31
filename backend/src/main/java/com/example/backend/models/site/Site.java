@@ -51,7 +51,7 @@ public class Site
     @JsonBackReference
     private List<Warehouse> warehouses;
 
-    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL)
     @JsonBackReference
     private List<Employee> employees;
 
