@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class SiteAdminService
@@ -538,6 +539,83 @@ public class SiteAdminService
         return employeeRepository.save(employee);
     }
 
+    @Transactional
+    public Employee unassignEmployeeFromWarehouse(UUID warehouseId, UUID employeeId) {
+        try {
+            System.out.println("=== Unassigning employee from warehouse ===");
+            System.out.println("Warehouse ID: " + warehouseId + ", Employee ID: " + employeeId);
+
+            // Find and validate warehouse
+            Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                    .orElseThrow(() -> new RuntimeException("Warehouse not found with ID: " + warehouseId));
+
+            // Find and validate employee
+            Employee employee = employeeRepository.findById(employeeId)
+                    .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + employeeId));
+
+            // Verify employee is actually assigned to this warehouse
+            if (employee.getWarehouse() == null || !employee.getWarehouse().getId().equals(warehouseId)) {
+                throw new RuntimeException("Employee is not assigned to this warehouse");
+            }
+
+            // Unassign from warehouse and site
+            employee.setWarehouse(null);
+            employee.setSite(null);
+
+            // Save employee
+            Employee savedEmployee = employeeRepository.save(employee);
+
+            System.out.println("Employee successfully unassigned from warehouse and site");
+            return savedEmployee;
+
+        } catch (Exception e) {
+            System.err.println("ERROR unassigning employee from warehouse: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to unassign employee from warehouse: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Map<String, Object>> getWarehouseEmployees(UUID warehouseId) {
+        try {
+            System.out.println("=== Fetching employees for warehouse: " + warehouseId + " ===");
+
+            // Verify warehouse exists
+            warehouseRepository.findById(warehouseId)
+                    .orElseThrow(() -> new RuntimeException("Warehouse not found with ID: " + warehouseId));
+
+            // Get all employees assigned to this warehouse
+            List<Employee> employees = employeeRepository.findByWarehouseId(warehouseId);
+
+            // Convert to response format
+            List<Map<String, Object>> employeeList = new ArrayList<>();
+            for (Employee employee : employees) {
+                Map<String, Object> employeeData = new HashMap<>();
+                employeeData.put("id", employee.getId());
+                employeeData.put("firstName", employee.getFirstName());
+                employeeData.put("lastName", employee.getLastName());
+                employeeData.put("fullName", employee.getFirstName() + " " + employee.getLastName());
+
+                if (employee.getJobPosition() != null) {
+                    employeeData.put("jobPosition", employee.getJobPosition().getPositionName());
+                    employeeData.put("isManager", "Warehouse Manager".equals(employee.getJobPosition().getPositionName()));
+                } else {
+                    employeeData.put("jobPosition", "N/A");
+                    employeeData.put("isManager", false);
+                }
+
+                employeeList.add(employeeData);
+            }
+
+            System.out.println("Found " + employeeList.size() + " employees for warehouse");
+            return employeeList;
+
+        } catch (Exception e) {
+            System.err.println("Error fetching warehouse employees: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to fetch warehouse employees", e);
+        }
+    }
+
 
     @Transactional
     public Warehouse assignWarehouseToSite(UUID siteId, UUID warehouseId) {
@@ -584,52 +662,52 @@ public class SiteAdminService
         return fixedAssetsRepository.save(fixedAsset);
     }
 
-    @Transactional
-    public Warehouse addWarehouse(UUID siteId, Map<String, Object> requestBody) {
-        // Create new warehouse
-        Warehouse warehouse = new Warehouse();
-        warehouse.setName((String) requestBody.get("name"));
-//        warehouse.setCapacity((Integer) requestBody.get("capacity"));
-
-        if (requestBody.get("photoUrl") != null) {
-            warehouse.setPhotoUrl((String) requestBody.get("photoUrl"));
-        }
-
-        // Get and assign the site directly from the siteId parameter
-        Site site = siteRepository.findById(siteId)
-                .orElseThrow(() -> new RuntimeException("❌ Site not found with ID: " + siteId));
-        warehouse.setSite(site);
-
-        List<Employee> employees = new ArrayList<>();
-
-        // Handle employees if provided
-        if (requestBody.containsKey("employees")) {
-            List<Map<String, Object>> employeeList = (List<Map<String, Object>>) requestBody.get("employees");
-            List<UUID> employeeIds = employeeList.stream()
-                    .map(emp -> UUID.fromString((String) emp.get("id")))
-                    .toList();
-            employees = employeeRepository.findAllById(employeeIds);
-
-            for (Employee employee : employees) {
-                employee.setWarehouse(warehouse);
-                employee.setSite(site);
-            }
-
-            warehouse.setEmployees(employees);
-        } else {
-            warehouse.setEmployees(new ArrayList<>());
-        }
-
-        // Save the warehouse
-        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
-
-        // Save all employees
-        if (!employees.isEmpty()) {
-            employeeRepository.saveAll(employees);
-        }
-
-        return savedWarehouse;
-    }
+//    @Transactional
+//    public Warehouse addWarehouse(UUID siteId, Map<String, Object> requestBody) {
+//        // Create new warehouse
+//        Warehouse warehouse = new Warehouse();
+//        warehouse.setName((String) requestBody.get("name"));
+////        warehouse.setCapacity((Integer) requestBody.get("capacity"));
+//
+//        if (requestBody.get("photoUrl") != null) {
+//            warehouse.setPhotoUrl((String) requestBody.get("photoUrl"));
+//        }
+//
+//        // Get and assign the site directly from the siteId parameter
+//        Site site = siteRepository.findById(siteId)
+//                .orElseThrow(() -> new RuntimeException("❌ Site not found with ID: " + siteId));
+//        warehouse.setSite(site);
+//
+//        List<Employee> employees = new ArrayList<>();
+//
+//        // Handle employees if provided
+//        if (requestBody.containsKey("employees")) {
+//            List<Map<String, Object>> employeeList = (List<Map<String, Object>>) requestBody.get("employees");
+//            List<UUID> employeeIds = employeeList.stream()
+//                    .map(emp -> UUID.fromString((String) emp.get("id")))
+//                    .toList();
+//            employees = employeeRepository.findAllById(employeeIds);
+//
+//            for (Employee employee : employees) {
+//                employee.setWarehouse(warehouse);
+//                employee.setSite(site);
+//            }
+//
+//            warehouse.setEmployees(employees);
+//        } else {
+//            warehouse.setEmployees(new ArrayList<>());
+//        }
+//
+//        // Save the warehouse
+//        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
+//
+//        // Save all employees
+//        if (!employees.isEmpty()) {
+//            employeeRepository.saveAll(employees);
+//        }
+//
+//        return savedWarehouse;
+//    }
 
     // PRODUCTION-READY VERSION - USE THIS ONE
     // Replace your entire assignPartnerToSite method with this:
@@ -901,6 +979,238 @@ public class SiteAdminService
 //                    return partnerRepository.save(defaultPartner);
 //                });
 //    }
+
+
+    // Add this method to your SiteAdminService class
+
+    @Transactional
+    public List<Map<String, Object>> getAvailableWarehouseManagers() {
+        try {
+            System.out.println("=== Fetching available warehouse managers ===");
+
+            // Use the correct case - "Warehouse Manager" not "warehouse manager"
+            List<Employee> allWarehouseManagers = employeeRepository.findByJobPositionPositionName("Warehouse Manager");
+
+            // Filter out managers who are already assigned to a warehouse
+            List<Employee> availableManagers = allWarehouseManagers.stream()
+                    .filter(manager -> manager.getWarehouse() == null)
+                    .collect(Collectors.toList());
+
+            // Convert to response format
+            List<Map<String, Object>> managerList = new ArrayList<>();
+            for (Employee manager : availableManagers) {
+                Map<String, Object> managerData = new HashMap<>();
+                managerData.put("id", manager.getId());
+                managerData.put("firstName", manager.getFirstName());
+                managerData.put("lastName", manager.getLastName());
+                managerData.put("fullName", manager.getFirstName() + " " + manager.getLastName());
+
+                if (manager.getJobPosition() != null) {
+                    managerData.put("jobPosition", manager.getJobPosition().getPositionName());
+                }
+
+                managerList.add(managerData);
+            }
+
+            System.out.println("Found " + managerList.size() + " available warehouse managers");
+            return managerList;
+
+        } catch (Exception e) {
+            System.err.println("Error fetching available warehouse managers: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to fetch available warehouse managers", e);
+        }
+    }
+
+    // Also add this method to get available managers for a specific site (if needed)
+    @Transactional
+    public List<Map<String, Object>> getAvailableWarehouseManagersForSite(UUID siteId) {
+        try {
+            System.out.println("=== Fetching available warehouse managers for site: " + siteId + " ===");
+
+            // Verify site exists
+            Site site = siteRepository.findById(siteId)
+                    .orElseThrow(() -> new RuntimeException("Site not found: " + siteId));
+
+            // Get all warehouse managers
+            List<Employee> allWarehouseManagers = employeeRepository.findByJobPositionPositionName("Warehouse Manager");
+
+            // Filter available managers (not assigned to warehouse OR assigned to site but no warehouse)
+            List<Employee> availableManagers = allWarehouseManagers.stream()
+                    .filter(manager -> {
+                        // Manager is available if:
+                        // 1. Not assigned to any warehouse
+                        // 2. OR assigned to the target site but no warehouse (can be assigned to warehouse in same site)
+                        return manager.getWarehouse() == null &&
+                                (manager.getSite() == null || manager.getSite().getId().equals(siteId));
+                    })
+                    .toList();
+
+            // Convert to response format
+            List<Map<String, Object>> managerList = new ArrayList<>();
+            for (Employee manager : availableManagers) {
+                Map<String, Object> managerData = new HashMap<>();
+                managerData.put("id", manager.getId());
+                managerData.put("firstName", manager.getFirstName());
+                managerData.put("lastName", manager.getLastName());
+                managerData.put("fullName", manager.getFullName());
+
+                if (manager.getJobPosition() != null) {
+                    managerData.put("jobPosition", manager.getJobPosition().getPositionName());
+                }
+
+                managerList.add(managerData);
+            }
+
+            System.out.println("Found " + managerList.size() + " available warehouse managers for site");
+            return managerList;
+
+        } catch (Exception e) {
+            System.err.println("Error fetching available warehouse managers for site: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to fetch available warehouse managers for site", e);
+        }
+    }
+
+    // Add these methods to your SiteAdminService class
+    @Transactional
+    public List<Map<String, Object>> getAvailableWarehouseWorkers() {
+        try {
+            System.out.println("=== Fetching available warehouse workers ===");
+
+            // CORRECT: Only get employees with "Warehouse Worker" job position
+            List<Employee> warehouseWorkers = employeeRepository.findByJobPositionPositionName("Warehouse Worker");
+
+            List<Employee> availableWorkers = warehouseWorkers.stream()
+                    .filter(worker -> worker.getWarehouse() == null)
+                    .collect(Collectors.toList());
+
+            // Convert to response format
+            List<Map<String, Object>> workerList = new ArrayList<>();
+            for (Employee worker : availableWorkers) {
+                Map<String, Object> workerData = new HashMap<>();
+                workerData.put("id", worker.getId());
+                workerData.put("firstName", worker.getFirstName());
+                workerData.put("lastName", worker.getLastName());
+                workerData.put("fullName", worker.getFirstName() + " " + worker.getLastName());
+
+                if (worker.getJobPosition() != null) {
+                    workerData.put("jobPosition", worker.getJobPosition().getPositionName());
+                }
+
+                workerList.add(workerData);
+            }
+
+            System.out.println("Found " + workerList.size() + " available warehouse workers");
+            return workerList;
+
+        } catch (Exception e) {
+            System.err.println("Error fetching available warehouse workers: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to fetch available warehouse workers", e);
+        }
+    }
+
+    @Transactional
+    public List<Map<String, Object>> getAvailableWarehouseWorkersForSite(UUID siteId) {
+        try {
+            System.out.println("=== Fetching available warehouse workers for site: " + siteId + " ===");
+
+            // Verify site exists
+            Site site = siteRepository.findById(siteId)
+                    .orElseThrow(() -> new RuntimeException("Site not found: " + siteId));
+
+            // CORRECT: Get employees with "Warehouse Worker" job position
+            List<Employee> warehouseWorkers = employeeRepository.findByJobPositionPositionName("Warehouse Worker");
+
+            List<Employee> availableWorkers = warehouseWorkers.stream()
+                    .filter(worker -> {
+                        // Worker is available if:
+                        // 1. Not assigned to any warehouse
+                        // 2. AND either not assigned to any site OR assigned to the target site
+                        return worker.getWarehouse() == null &&
+                                (worker.getSite() == null || worker.getSite().getId().equals(siteId));
+                    })
+                    .collect(Collectors.toList());
+
+            // Convert to response format (same as above)
+            List<Map<String, Object>> workerList = new ArrayList<>();
+            for (Employee worker : availableWorkers) {
+                Map<String, Object> workerData = new HashMap<>();
+                workerData.put("id", worker.getId());
+                workerData.put("firstName", worker.getFirstName());
+                workerData.put("lastName", worker.getLastName());
+                workerData.put("fullName", worker.getFirstName() + " " + worker.getLastName());
+
+                if (worker.getJobPosition() != null) {
+                    workerData.put("jobPosition", worker.getJobPosition().getPositionName());
+                }
+
+                workerList.add(workerData);
+            }
+
+            System.out.println("Found " + workerList.size() + " available warehouse workers for site");
+            return workerList;
+
+        } catch (Exception e) {
+            System.err.println("Error fetching available warehouse workers for site: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to fetch available warehouse workers for site", e);
+        }
+    }
+
+    // Update the existing addWarehouse method to handle workers properly
+    @Transactional
+    public Warehouse addWarehouse(UUID siteId, Map<String, Object> requestBody) {
+        // Create new warehouse
+        Warehouse warehouse = new Warehouse();
+        warehouse.setName((String) requestBody.get("name"));
+
+        if (requestBody.get("photoUrl") != null) {
+            warehouse.setPhotoUrl((String) requestBody.get("photoUrl"));
+        }
+
+        // Get and assign the site directly from the siteId parameter
+        Site site = siteRepository.findById(siteId)
+                .orElseThrow(() -> new RuntimeException("❌ Site not found with ID: " + siteId));
+        warehouse.setSite(site);
+
+        List<Employee> employees = new ArrayList<>();
+
+        // Handle employees if provided
+        if (requestBody.containsKey("employees")) {
+            List<Map<String, Object>> employeeList = (List<Map<String, Object>>) requestBody.get("employees");
+            List<UUID> employeeIds = employeeList.stream()
+                    .map(emp -> UUID.fromString((String) emp.get("id")))
+                    .toList();
+            employees = employeeRepository.findAllById(employeeIds);
+
+            for (Employee employee : employees) {
+                // Verify employee is available (not assigned to another warehouse)
+                if (employee.getWarehouse() != null) {
+                    throw new RuntimeException("Employee " + employee.getFirstName() + " " + employee.getLastName() +
+                            " is already assigned to warehouse: " + employee.getWarehouse().getName());
+                }
+
+                employee.setWarehouse(warehouse);
+                employee.setSite(site);
+            }
+
+            warehouse.setEmployees(employees);
+        } else {
+            warehouse.setEmployees(new ArrayList<>());
+        }
+
+        // Save the warehouse
+        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
+
+        // Save all employees
+        if (!employees.isEmpty()) {
+            employeeRepository.saveAll(employees);
+        }
+
+        return savedWarehouse;
+    }
 
     @PostConstruct
     public void initializeDefaultPartner() {
