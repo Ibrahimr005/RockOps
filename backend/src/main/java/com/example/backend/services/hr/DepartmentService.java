@@ -3,6 +3,7 @@ package com.example.backend.services.hr;
 import com.example.backend.models.hr.Department;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.repositories.hr.DepartmentRepository;
+import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.services.notification.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,9 @@ public class DepartmentService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
 
     /**
      * Get all departments as Map objects
@@ -363,6 +367,10 @@ public class DepartmentService {
                 department.getJobPositions().size() : 0;
         departmentMap.put("jobPositionCount", jobPositionCount);
 
+        // Add employee count by querying the Employee repository efficiently
+        long employeeCount = employeeRepository.countByJobPositionDepartmentName(department.getName());
+        departmentMap.put("employeeCount", employeeCount);
+
         // Add basic job position info if available (without triggering lazy loading issues)
         if (department.getJobPositions() != null && !department.getJobPositions().isEmpty()) {
             List<Map<String, Object>> jobPositions = department.getJobPositions().stream()
@@ -372,6 +380,33 @@ public class DepartmentService {
                         jpMap.put("positionName", jobPosition.getPositionName());
                         jpMap.put("type", jobPosition.getType());
                         jpMap.put("active", jobPosition.getActive());
+
+                        // Add employee count for each position
+                        int positionEmployeeCount = jobPosition.getEmployees() != null ?
+                                jobPosition.getEmployees().size() : 0;
+                        jpMap.put("employeeCount", positionEmployeeCount);
+
+                        // Add employee details for Department Details page
+                        if (jobPosition.getEmployees() != null && !jobPosition.getEmployees().isEmpty()) {
+                            List<Map<String, Object>> employees = jobPosition.getEmployees().stream()
+                                    .map(employee -> {
+                                        Map<String, Object> empMap = new HashMap<>();
+                                        empMap.put("id", employee.getId());
+                                        empMap.put("firstName", employee.getFirstName());
+                                        empMap.put("lastName", employee.getLastName());
+                                        empMap.put("fullName", employee.getFullName());
+                                        empMap.put("email", employee.getEmail());
+                                        empMap.put("status", employee.getStatus());
+                                        empMap.put("hireDate", employee.getHireDate());
+                                        empMap.put("positionName", jobPosition.getPositionName());
+                                        return empMap;
+                                    })
+                                    .collect(Collectors.toList());
+                            jpMap.put("employees", employees);
+                        } else {
+                            jpMap.put("employees", new ArrayList<>());
+                        }
+
                         return jpMap;
                     })
                     .collect(Collectors.toList());

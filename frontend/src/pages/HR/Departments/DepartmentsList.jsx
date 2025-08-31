@@ -26,6 +26,7 @@ const DepartmentsList = () => {
         try {
             const response = await departmentService.getAll();
             console.log('Fetched departments:', response.data);
+
             setDepartments(response.data);
         } catch (err) {
             console.error('Error fetching departments:', err);

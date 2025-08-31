@@ -141,4 +141,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
      */
     @Query("SELECT e FROM Employee e JOIN e.jobPosition jp WHERE jp.contractType = 'MONTHLY' AND e.status = 'ACTIVE'")
     List<Employee> findActiveMonthlyEmployees();
+
+    @Query("SELECT COUNT(e) FROM Employee e JOIN e.jobPosition jp WHERE jp.department.name = :departmentName")
+    long countByJobPositionDepartmentName(@Param("departmentName") String departmentName);
 }
