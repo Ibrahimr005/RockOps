@@ -10,7 +10,8 @@ import {
     FiCalendar,
     FiFlag,
     FiDollarSign,
-    FiArrowRight
+    FiArrowRight,
+    FiX
 } from 'react-icons/fi';
 import "../ProcurementOffers.scss";
 import "./CompletedOffers.scss";
@@ -52,12 +53,12 @@ const CompletedOffers = ({
         }
     };
 
-    // Get offer items for a specific request item
+    // Get offer items for a specific request item - Show both accepted and rejected items
     const getOfferItemsForRequestItem = (requestItemId) => {
         if (!activeOffer || !activeOffer.offerItems) return [];
         return activeOffer.offerItems.filter(
             item => (item.requestOrderItem?.id === requestItemId || item.requestOrderItemId === requestItemId) &&
-                item.financeStatus === 'FINANCE_ACCEPTED'  // Only show finance accepted items
+                (item.financeStatus === 'ACCEPTED' || item.financeStatus === 'REJECTED')  // Show both accepted and rejected items
         );
     };
 
@@ -187,15 +188,21 @@ const CompletedOffers = ({
                                                                 </thead>
                                                                 <tbody>
                                                                 {offerItems.map((offerItem, idx) => (
-                                                                    <tr key={offerItem.id || idx} className="item-completed">
+                                                                    <tr key={offerItem.id || idx} className={`item-${offerItem.financeStatus.toLowerCase()}`}>
                                                                         <td>{offerItem.merchant?.name || 'Unknown'}</td>
                                                                         <td>{offerItem.quantity} {requestItem.itemType.measuringUnit}</td>
                                                                         <td>${parseFloat(offerItem.unitPrice).toFixed(2)}</td>
                                                                         <td>${parseFloat(offerItem.totalPrice).toFixed(2)}</td>
                                                                         <td>
-                                                                            <span className="completed-item-status">
-                                                                                <FiCheckCircle size={14} /> Completed
-                                                                            </span>
+                                                                            {offerItem.financeStatus === 'ACCEPTED' ? (
+                                                                                <span className="completed-item-status accepted">
+                                                                                    <FiCheckCircle size={14} /> Accepted
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className="completed-item-status rejected">
+                                                                                    <FiX size={14} /> Rejected
+                                                                                </span>
+                                                                            )}
                                                                         </td>
                                                                     </tr>
                                                                 ))}

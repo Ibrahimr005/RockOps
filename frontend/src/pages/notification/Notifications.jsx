@@ -348,10 +348,10 @@ const Notifications = () => {
 
     const getNotificationStats = () => {
         const unreadCount = notifications.filter(n => !n.read).length;
-        const totalCount = notifications.length;
+        const readCount = notifications.filter(n => n.read).length;
 
         return [
-            { value: totalCount.toString(), label: "Total Notifications" },
+            { value: readCount.toString(), label: "Read" },
             { value: unreadCount.toString(), label: "Unread" },
         ];
     };

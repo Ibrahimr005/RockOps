@@ -1,11 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
-import { hrEmployeeService } from '../../../services/hr/hrEmployeeService.js';
-import { jobPositionService } from '../../../services/hr/jobPositionService.js';
-import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
-import { FaUser, FaBriefcase, FaFileContract, FaCheckCircle, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
+import {
+    FaUser,
+    FaBriefcase,
+    FaFileContract,
+    FaCheckCircle,
+    FaTimes,
+    FaArrowLeft,
+    FaArrowRight,
+    FaUpload,
+    FaInfoCircle,
+    FaUserPlus
+} from 'react-icons/fa';
 import './EmployeeOnboarding.scss';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { employeeService } from '../../../services/hr/employeeService.js';
+import { jobPositionService } from '../../../services/hr/jobPositionService.js';
+import { candidateService } from '../../../services/hr/candidateService.js';
+import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
+import {hrEmployeeService} from "../../../services/hr/hrEmployeeService.js";
 
 // Salary calculation function matching AddEmployeeModal
 const calculateMonthlySalary = (jobPosition, baseSalaryOverride, salaryMultiplier) => {
@@ -34,16 +47,24 @@ const EmployeeOnboarding = () => {
     const navigate = useNavigate();
     const { showSuccess, showError, showWarning } = useSnackbar();
 
+    // State for form steps
     const [currentStep, setCurrentStep] = useState(1);
-    const [loading, setLoading] = useState(false);
-    const [candidateData, setCandidateData] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Candidate context
     const [isFromCandidate, setIsFromCandidate] = useState(false);
     const [candidateId, setCandidateId] = useState(null);
-    const [jobPositions, setJobPositions] = useState([]);
-    const [sites, setSites] = useState([]);
+    const [candidateData, setCandidateData] = useState(null);
 
+    // Dropdown data
+    const [jobPositions, setJobPositions] = useState([]);
+
+    // Form data state - UPDATED to match AddEmployeeModal exactly
     const [formData, setFormData] = useState({
-        // Personal Information
+        // From candidate (if applicable)
+        candidateId: null,
+
+        // Personal Information - matching EmployeeRequestDTO
         firstName: '',
         lastName: '',
         middleName: '',
@@ -52,17 +73,16 @@ const EmployeeOnboarding = () => {
         address: '',
         city: '',
         country: '',
-        birthDate: '',
-        nationalIDNumber: '',
+        birthDate: '', // Changed from dateOfBirth to match backend DTO
+        nationalIDNumber: '', // Changed from nationalId to match backend DTO
         gender: '',
         maritalStatus: '',
         militaryStatus: '',
         education: '',
 
-        // Employment Information
+        // Employment Details
         jobPositionId: '',
-        siteId: '',
-        hireDate: new Date().toISOString().split('T')[0],
+        hireDate: new Date().toISOString().split('T')[0], // Changed from startDate to match backend DTO
         status: 'ACTIVE',
 
         // Compensation
@@ -118,7 +138,6 @@ const EmployeeOnboarding = () => {
     // Load prepopulated data from candidate and fetch dropdown data
     useEffect(() => {
         fetchJobPositions();
-        fetchSites();
 
         const prepopulatedData = sessionStorage.getItem('prepopulatedEmployeeData');
         if (prepopulatedData) {
@@ -126,10 +145,19 @@ const EmployeeOnboarding = () => {
                 const parsedData = JSON.parse(prepopulatedData);
                 setCandidateData(parsedData);
 
+                // Map candidate data to match our form structure
+                const mappedData = {
+                    ...parsedData,
+                    // Map any field name differences
+                    birthDate: parsedData.dateOfBirth || parsedData.birthDate || '',
+                    nationalIDNumber: parsedData.nationalId || parsedData.nationalIDNumber || '',
+                    hireDate: parsedData.startDate || parsedData.hireDate || new Date().toISOString().split('T')[0]
+                };
+
                 // Populate form with candidate data
                 setFormData(prev => ({
                     ...prev,
-                    ...parsedData
+                    ...mappedData
                 }));
 
                 // Save candidate ID if available
@@ -155,120 +183,180 @@ const EmployeeOnboarding = () => {
         }
     };
 
-    const fetchSites = async () => {
-        try {
-            // Assuming you have a site service
-            // const response = await siteService.getAll();
-            // setSites(Array.isArray(response.data) ? response.data : []);
-            setSites([]); // Placeholder
-        } catch (error) {
-            console.error('Error fetching sites:', error);
-        }
-    };
-
-    const selectedJobPosition = formData.jobPositionId ?
-        jobPositions.find(pos => String(pos.id).trim() === String(formData.jobPositionId).trim()) : null;
-
+    // Handle form input changes
     const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
-
-        if (type === 'checkbox') {
-            setFormData(prev => ({ ...prev, [name]: checked }));
-        } else if (type === 'file') {
-            handleFileChange(e);
-        } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
-        }
+        const { name, value, type } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'number' ? parseFloat(value) || 0 : value
+        }));
     };
 
+    // Handle number input changes (for financial fields)
     const handleNumberChange = (e) => {
         const { name, value } = e.target;
         // Allow empty value or valid number
         if (value === '' || !isNaN(parseFloat(value))) {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
         }
     };
 
-    const handleFileChange = (e) => {
-        const { name, files } = e.target;
+    // Handle job position selection
+    const handleJobPositionChange = (e) => {
+        const selectedPositionId = e.target.value;
+        setFormData(prev => ({ ...prev, jobPositionId: selectedPositionId }));
 
-        if (name === 'photo' && files[0]) {
-            setPhotoFile(files[0]);
-            setPhotoPreview(URL.createObjectURL(files[0]));
-        } else if (name === 'idFront' && files[0]) {
-            setIdFrontFile(files[0]);
-        } else if (name === 'idBack' && files[0]) {
-            setIdBackFile(files[0]);
+        // Find selected position details
+        if (selectedPositionId) {
+            const selectedPosition = jobPositions.find(pos => pos.id === selectedPositionId);
+            if (selectedPosition) {
+                setFormData(prev => ({
+                    ...prev,
+                    departmentId: selectedPosition.departmentId || ''
+                }));
+            }
         }
     };
 
-    const validateStep = (step) => {
-        const errors = [];
-
-        switch (step) {
-            case 1:
-                if (!formData.firstName) errors.push('First name is required');
-                if (!formData.lastName) errors.push('Last name is required');
-                if (!formData.birthDate) errors.push('Date of birth is required');
-                if (!formData.nationalIDNumber) errors.push('National ID is required');
-                if (!formData.country) errors.push('Country is required');
-                if (!formData.gender) errors.push('Gender is required');
-                if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-                    errors.push('Email is invalid');
-                }
-                if (formData.phoneNumber && !/^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$/.test(formData.phoneNumber)) {
-                    errors.push('Phone number is invalid');
-                }
-                break;
-
-            case 2:
-                if (!formData.jobPositionId) errors.push('Job position is required');
-                if (!formData.hireDate) errors.push('Hire date is required');
-                break;
-        }
-
-        return errors;
+    // Get selected job position details
+    const getSelectedJobPosition = () => {
+        return jobPositions.find(pos => pos.id === formData.jobPositionId);
     };
 
-    const handleNext = () => {
-        const errors = validateStep(currentStep);
-        if (errors.length > 0) {
-            showError(errors.join(', '));
+    // Handle file changes
+    const handleFileChange = (e, fileType) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            showError('File size must be less than 5MB');
             return;
         }
 
-        if (currentStep < steps.length) {
-            setCurrentStep(currentStep + 1);
+        switch (fileType) {
+            case 'photo':
+                setPhotoFile(file);
+                // Create preview
+                const reader = new FileReader();
+                reader.onload = (e) => setPhotoPreview(e.target.result);
+                reader.readAsDataURL(file);
+                break;
+            case 'idFront':
+                setIdFrontFile(file);
+                break;
+            case 'idBack':
+                setIdBackFile(file);
+                break;
+            default:
+                break;
         }
     };
 
-    const handlePrevious = () => {
+    // Navigate between steps
+    const nextStep = () => {
+        if (currentStep < 4) {
+            if (validateCurrentStep()) {
+                setCurrentStep(currentStep + 1);
+            }
+        }
+    };
+
+    const prevStep = () => {
         if (currentStep > 1) {
             setCurrentStep(currentStep - 1);
         }
     };
 
-    const handleSubmit = () => {
-        const errors = validateStep(currentStep);
+    // Validate current step
+    const validateCurrentStep = () => {
+        const errors = [];
+
+        switch (currentStep) {
+            case 1:
+                // Required fields matching AddEmployeeModal validation
+                if (!formData.firstName?.trim()) errors.push('First name is required');
+                if (!formData.lastName?.trim()) errors.push('Last name is required');
+                if (!formData.nationalIDNumber?.trim()) errors.push('National ID is required');
+                if (!formData.birthDate) errors.push('Date of birth is required');
+                if (!formData.country?.trim()) errors.push('Country is required');
+                if (!formData.gender) errors.push('Gender is required');
+
+                // Email validation (optional but must be valid if provided)
+                if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
+                    errors.push('Email is invalid');
+                }
+
+                // Phone validation (optional but must be valid if provided)
+                if (formData.phoneNumber && !/^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$/.test(formData.phoneNumber)) {
+                    errors.push('Phone number is invalid');
+                }
+
+                // Date validations
+                if (formData.birthDate) {
+                    const birthDateObj = new Date(formData.birthDate);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    birthDateObj.setHours(0, 0, 0, 0);
+
+                    if (birthDateObj > today) {
+                        errors.push('Birth date cannot be in the future');
+                    }
+                }
+                break;
+            case 2:
+                if (!formData.jobPositionId) errors.push('Job position is required');
+                if (!formData.hireDate) errors.push('Hire date is required');
+
+                // Hire date validation
+                if (formData.hireDate) {
+                    const hireDateObj = new Date(formData.hireDate);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    hireDateObj.setHours(0, 0, 0, 0);
+
+                    if (hireDateObj > today) {
+                        errors.push('Hire date cannot be in the future');
+                    }
+                }
+                break;
+            case 3:
+                // File validation is optional but can be added here
+                break;
+            default:
+                break;
+        }
+
         if (errors.length > 0) {
             showError(errors.join(', '));
-            return;
+            return false;
         }
+        return true;
+    };
+
+    // Handle form submission
+    const handleSubmit = () => {
+        if (!validateCurrentStep()) return;
 
         setConfirmDialog({
             isVisible: true,
             type: 'success',
-            title: 'Create Employee',
-            message: `Are you sure you want to create employee record for ${formData.firstName} ${formData.lastName}? This will complete the hiring process.`,
-            onConfirm: submitEmployeeData
+            title: isFromCandidate ? 'Complete Hiring Process' : 'Create New Employee',
+            message: isFromCandidate
+                ? `Are you sure you want to finalize the hiring of ${formData.firstName} ${formData.lastName}? This will complete the hiring process and mark the candidate as hired.`
+                : `Are you sure you want to create employee record for ${formData.firstName} ${formData.lastName}?`,
+            onConfirm: submitEmployee
         });
     };
 
-    const submitEmployeeData = async () => {
+    const submitEmployee = async () => {
         try {
-            setLoading(true);
+            setIsLoading(true);
 
-            // Prepare final data according to AddEmployeeModal structure
+            // Prepare final data according to DTO structure
             const finalData = {
                 ...formData,
                 jobPositionId: formData.jobPositionId ? formData.jobPositionId : null,
@@ -280,7 +368,7 @@ const EmployeeOnboarding = () => {
                 hireDate: formData.hireDate && formData.hireDate.trim() !== '' ? formData.hireDate : null
             };
 
-            // Remove siteId as it's not in the DTO according to AddEmployeeModal
+            // Remove siteId as it's not in the DTO
             const { siteId, ...dtoData } = finalData;
 
             // Add candidate ID if from candidate conversion
@@ -288,660 +376,728 @@ const EmployeeOnboarding = () => {
                 dtoData.candidateId = candidateId;
             }
 
-            // Call the onSave function with the same signature as AddEmployeeModal
-            await saveEmployee(dtoData, photoFile, idFrontFile, idBackFile);
+            console.log("Employee data being sent:", dtoData);
+
+            // Create FormData for multipart/form-data request
+            const formDataToSubmit = new FormData();
+
+            // Add employee data as a JSON Blob
+            formDataToSubmit.append("employeeData", new Blob([JSON.stringify(dtoData)], {
+                type: "application/json"
+            }));
+
+            // Add image files if provided with correct field names
+            if (photoFile) {
+                formDataToSubmit.append('photo', photoFile);
+                console.log('Added photo file:', photoFile.name);
+            }
+
+            if (idFrontFile) {
+                formDataToSubmit.append('idFrontImage', idFrontFile);
+                console.log('Added ID front file:', idFrontFile.name);
+            }
+
+            if (idBackFile) {
+                formDataToSubmit.append('idBackImage', idBackFile);
+                console.log('Added ID back file:', idBackFile.name);
+            }
+
+            // Debug FormData contents
+            for (let pair of formDataToSubmit.entries()) {
+                console.log(pair[0], pair[1] instanceof Blob ? `Blob: ${pair[1].type}, size: ${pair[1].size}` : pair[1]);
+            }
+
+            // Call the service with FormData
+            const response = await hrEmployeeService.employee.create(formDataToSubmit);
+            await candidateService.updateStatus(candidateId, 'HIRED');
+
+            console.log('Employee created successfully:', response.data);
+
+            // If this is from a candidate, finalize the hiring process
+            if (isFromCandidate && candidateId) {
+                try {
+                    // Update candidate status to HIRED
+                    await candidateService.updateStatus(candidateId, 'HIRED');
+                    console.log('Candidate status updated to HIRED for candidate ID:', candidateId);
+                    showSuccess('Employee created and candidate hiring process completed successfully!');
+                } catch (error) {
+                    console.error('Error finalizing candidate hiring:', error);
+                    showWarning('Employee created successfully, but there was an issue finalizing the candidate status. Please check manually.');
+                }
+            } else {
+                showSuccess('Employee created successfully!');
+            }
+
+            // Clear prepopulated data from session storage
+            sessionStorage.removeItem('prepopulatedEmployeeData');
+
+            // Navigate to employee list or details
+            navigate('/hr/employees', {
+                state: {
+                    message: isFromCandidate ? 'Hiring process completed successfully!' : 'Employee created successfully!',
+                    newEmployeeId: response.data?.employee?.id
+                }
+            });
 
         } catch (error) {
             console.error('Error creating employee:', error);
             const errorMessage = error.response?.data?.message || error.message || 'Failed to create employee';
             showError(errorMessage);
         } finally {
-            setLoading(false);
+            setIsLoading(false);
             setConfirmDialog(prev => ({ ...prev, isVisible: false }));
         }
     };
 
-    const saveEmployee = async (employeeData, photoFile, idFrontFile, idBackFile) => {
-        // Create FormData for multipart submission
-        const formData = new FormData();
+    // Render step indicator
+    const renderStepIndicator = () => (
+        <div className="step-indicator">
+            {steps.map((step, index) => (
+                <div key={step.number} className={`step-item ${currentStep === step.number ? 'active' : currentStep > step.number ? 'completed' : ''}`}>
+                    <div className="step-circle">
+                        {currentStep > step.number ? <FaCheckCircle /> : step.icon}
+                    </div>
+                    <div className="step-content">
+                        <div className="step-title">{step.title}</div>
+                        <div className="step-description">{step.description}</div>
+                    </div>
+                    {index < steps.length - 1 && <div className="step-connector" />}
+                </div>
+            ))}
+        </div>
+    );
 
-        // Add employee data as JSON string (this matches most Spring Boot controllers)
-        formData.append('employeeData', JSON.stringify(employeeData));
+    // Render step 1 - Personal Information (UPDATED to match AddEmployeeModal)
+    const renderStep1 = () => (
+        <div className="form-step">
+            {isFromCandidate && candidateData && (
+                <div className="candidate-info-banner">
+                    <FaInfoCircle />
+                    <div>
+                        <strong>Hiring from Candidate Application</strong>
+                        <p>Some information has been pre-filled from the candidate's application. You can modify any details below.</p>
+                    </div>
+                </div>
+            )}
 
-        // Add files if they exist
-        if (photoFile) {
-            formData.append('photo', photoFile);
-        }
-        if (idFrontFile) {
-            formData.append('idFront', idFrontFile);
-        }
-        if (idBackFile) {
-            formData.append('idBack', idBackFile);
-        }
+            <div className="form-section">
+                <h3>Basic Information</h3>
+                <div className="form-row">
+                    <div className="form-group">
+                        <label>First Name *</label>
+                        <input
+                            type="text"
+                            name="firstName"
+                            value={formData.firstName}
+                            onChange={handleInputChange}
+                            required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Middle Name</label>
+                        <input
+                            type="text"
+                            name="middleName"
+                            value={formData.middleName}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Last Name *</label>
+                        <input
+                            type="text"
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleInputChange}
+                            required
+                        />
+                    </div>
+                </div>
+                <div className="form-row">
+                    <div className="form-group">
+                        <label>Email</label>
+                        <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Phone Number</label>
+                        <input
+                            type="tel"
+                            name="phoneNumber"
+                            value={formData.phoneNumber}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+                </div>
+            </div>
 
-        // Use the service but with explicit headers to ensure multipart is handled correctly
-        try {
-            const response = await hrEmployeeService.employee.create(formData);
+            <div className="form-section">
+                <h3>Personal Details</h3>
+                <div className="form-row">
+                    <div className="form-group">
+                        <label>National ID Number *</label>
+                        <input
+                            type="text"
+                            name="nationalIDNumber"
+                            value={formData.nationalIDNumber}
+                            onChange={handleInputChange}
+                            required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Date of Birth *</label>
+                        <input
+                            type="date"
+                            name="birthDate"
+                            value={formData.birthDate}
+                            onChange={handleInputChange}
+                            required
+                        />
+                    </div>
+                </div>
+                <div className="form-row">
+                    <div className="form-group">
+                        <label>Gender *</label>
+                        <select name="gender" value={formData.gender} onChange={handleInputChange} required>
+                            <option value="">Select Gender</option>
+                            <option value="MALE">Male</option>
+                            <option value="FEMALE">Female</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label>Marital Status</label>
+                        <select name="maritalStatus" value={formData.maritalStatus} onChange={handleInputChange}>
+                            <option value="">Select Status</option>
+                            <option value="SINGLE">Single</option>
+                            <option value="MARRIED">Married</option>
+                            <option value="DIVORCED">Divorced</option>
+                            <option value="WIDOWED">Widowed</option>
+                        </select>
+                    </div>
+                </div>
+                <div className="form-row">
+                    <div className="form-group">
+                        <label>Military Status</label>
+                        <select name="militaryStatus" value={formData.militaryStatus} onChange={handleInputChange}>
+                            <option value="">Select Status</option>
+                            <option value="NONE">None</option>
+                            <option value="ACTIVE">Active</option>
+                            <option value="VETERAN">Veteran</option>
+                            <option value="RESERVE">Reserve</option>
+                            <option value="EXEMPT">Exempt</option>
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label>Education</label>
+                        <select name="education" value={formData.education} onChange={handleInputChange}>
+                            <option value="">Select Education Level</option>
+                            <option value="HIGH_SCHOOL">High School</option>
+                            <option value="ASSOCIATE">Associate Degree</option>
+                            <option value="BACHELOR">Bachelor's Degree</option>
+                            <option value="MASTER">Master's Degree</option>
+                            <option value="DOCTORATE">Doctorate</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
 
-            // Clear session storage
-            sessionStorage.removeItem('prepopulatedEmployeeData');
+            <div className="form-section">
+                <h3>Contact Information</h3>
+                <div className="form-row">
+                    <div className="form-group">
+                        <label>Country *</label>
+                        <input
+                            type="text"
+                            name="country"
+                            value={formData.country}
+                            onChange={handleInputChange}
+                            required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>City</label>
+                        <input
+                            type="text"
+                            name="city"
+                            value={formData.city}
+                            onChange={handleInputChange}
+                        />
+                    </div>
+                </div>
+                <div className="form-group">
+                    <label>Address</label>
+                    <textarea
+                        name="address"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        rows="3"
+                    />
+                </div>
+            </div>
+        </div>
+    );
 
-            showSuccess('Employee created successfully! Welcome to the team!');
-            navigate(`/hr/employee-details/${response.data.id}`);
-        } catch (error) {
-            // If multipart fails, try with just JSON data (without files)
-            if (error.response?.status === 415) {
-                console.warn('Multipart submission failed, trying JSON-only approach');
+    // Render step 2 - Employment Details (UPDATED to match AddEmployeeModal)
+    const renderStep2 = () => {
+        const selectedJobPosition = getSelectedJobPosition();
 
-                try {
-                    // Remove files and try JSON-only submission
-                    const jsonResponse = await hrEmployeeService.employee.createJson(employeeData);
+        return (
+            <div className="form-step">
+                <div className="form-section">
+                    <h3>Position & Department</h3>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Job Position *</label>
+                            <select
+                                name="jobPositionId"
+                                value={formData.jobPositionId}
+                                onChange={handleJobPositionChange}
+                                required
+                            >
+                                <option value="">Select Job Position</option>
+                                {jobPositions.map(position => (
+                                    <option key={position.id} value={position.id}>
+                                        {position.positionName} - {position.department || position.departmentName}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
 
-                    // If successful, show warning about files not uploaded
-                    if (photoFile || idFrontFile || idBackFile) {
-                        showWarning('Employee created successfully, but files could not be uploaded. Please upload them manually.');
-                    } else {
-                        showSuccess('Employee created successfully!');
-                    }
+                    {selectedJobPosition && (
+                        <div className="job-details">
+                            <h4>Position Details</h4>
+                            <p><strong>Position:</strong> {selectedJobPosition.positionName}</p>
+                            <p><strong>Department:</strong> {selectedJobPosition.department || selectedJobPosition.departmentName || 'N/A'}</p>
+                            <p><strong>Contract Type:</strong> {selectedJobPosition.contractType?.replace('_', ' ') || 'N/A'}</p>
+                            {selectedJobPosition.contractType === 'HOURLY' && (
+                                <>
+                                    <p><strong>Working Days/Week:</strong> {selectedJobPosition.workingDaysPerWeek || 'N/A'}</p>
+                                    <p><strong>Hours/Shift:</strong> {selectedJobPosition.hoursPerShift || 'N/A'}</p>
+                                    <p><strong>Hourly Rate:</strong> ${selectedJobPosition.hourlyRate?.toFixed(2) || 'N/A'}</p>
+                                </>
+                            )}
+                            {selectedJobPosition.contractType === 'DAILY' && (
+                                <>
+                                    <p><strong>Working Days/Month:</strong> {selectedJobPosition.workingDaysPerMonth || 'N/A'}</p>
+                                    <p><strong>Daily Rate:</strong> ${selectedJobPosition.dailyRate?.toFixed(2) || 'N/A'}</p>
+                                </>
+                            )}
+                            {selectedJobPosition.contractType === 'MONTHLY' && (
+                                <>
+                                    <p><strong>Monthly Base Salary:</strong> ${selectedJobPosition.monthlyBaseSalary?.toFixed(2) || 'N/A'}</p>
+                                    <p><strong>Working Hours:</strong> {selectedJobPosition.workingHours || 'N/A'}</p>
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
 
-                    sessionStorage.removeItem('prepopulatedEmployeeData');
-                    navigate(`/hr/employee-details/${jsonResponse.data.id}`);
-                } catch (jsonError) {
-                    throw jsonError;
-                }
-            } else {
-                throw error;
-            }
-        }
-    };
+                <div className="form-section">
+                    <h3>Employment Terms</h3>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Hire Date *</label>
+                            <input
+                                type="date"
+                                name="hireDate"
+                                value={formData.hireDate}
+                                onChange={handleInputChange}
+                                max={new Date().toISOString().split('T')[0]} // Prevent future dates
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Status</label>
+                            <select
+                                name="status"
+                                value={formData.status}
+                                onChange={handleInputChange}
+                            >
+                                <option value="ACTIVE">Active</option>
+                                <option value="ON_LEAVE">On Leave</option>
+                                <option value="SUSPENDED">Suspended</option>
+                                <option value="TERMINATED">Terminated</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
 
-    const handleCancel = () => {
-        setConfirmDialog({
-            isVisible: true,
-            type: 'warning',
-            title: 'Cancel Onboarding',
-            message: 'Are you sure you want to cancel the employee onboarding process? All entered data will be lost.',
-            onConfirm: () => {
-                sessionStorage.removeItem('prepopulatedEmployeeData');
-                navigate('/hr/vacancies');
-            }
-        });
-    };
+                <div className="form-section">
+                    <h3>Compensation</h3>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Base Salary Override</label>
+                            <input
+                                type="number"
+                                name="baseSalaryOverride"
+                                value={formData.baseSalaryOverride}
+                                onChange={handleNumberChange}
+                                min="0"
+                                step="0.01"
+                                placeholder={selectedJobPosition?.baseSalary || 'Enter amount'}
+                            />
+                            <small>Optional: Override the default salary for this position</small>
+                        </div>
+                        <div className="form-group">
+                            <label>Salary Multiplier</label>
+                            <input
+                                type="number"
+                                name="salaryMultiplier"
+                                value={formData.salaryMultiplier}
+                                onChange={handleNumberChange}
+                                min="0.1"
+                                max="5"
+                                step="0.1"
+                            />
+                            <small>Multiplier applied to base salary (1.0 = 100%)</small>
+                        </div>
+                    </div>
 
-    const handleDialogCancel = () => {
-        setConfirmDialog(prev => ({ ...prev, isVisible: false }));
-    };
+                    {selectedJobPosition && (
+                        <div className="salary-info">
+                            <p>
+                                <strong>Base Salary: </strong>
+                                ${formData.baseSalaryOverride ?
+                                parseFloat(formData.baseSalaryOverride).toFixed(2) :
+                                (selectedJobPosition.baseSalary || 0).toFixed(2)}
+                            </p>
+                            <p>
+                                <strong>Monthly Salary: </strong>
+                                ${calculateMonthlySalary(selectedJobPosition, formData.baseSalaryOverride, formData.salaryMultiplier).toFixed(2)}
+                            </p>
+                            <p>
+                                <strong>Annual Salary: </strong>
+                                ${(calculateMonthlySalary(selectedJobPosition, formData.baseSalaryOverride, formData.salaryMultiplier) * 12).toFixed(2)}
+                            </p>
+                        </div>
+                    )}
+                </div>
 
-    const renderStepContent = () => {
-        switch (currentStep) {
-            case 1:
-                return (
-                    <div className="onboarding-step">
-                        <h3>Personal Information</h3>
-                        {isFromCandidate && (
-                            <div className="candidate-info-banner">
-                                <FaUser />
-                                <span>This form is pre-filled with candidate information. Please complete the additional required fields to finalize the hiring process.</span>
-                            </div>
-                        )}
-
-                        <div className="form-grid">
+                {(formData.previousPosition || formData.previousCompany) && (
+                    <div className="form-section">
+                        <h3>Previous Employment</h3>
+                        <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="firstName">First Name *</label>
+                                <label>Previous Position</label>
                                 <input
                                     type="text"
-                                    id="firstName"
-                                    name="firstName"
-                                    value={formData.firstName}
+                                    name="previousPosition"
+                                    value={formData.previousPosition}
                                     onChange={handleInputChange}
-                                    required
+                                    readOnly={isFromCandidate}
                                 />
                             </div>
-
                             <div className="form-group">
-                                <label htmlFor="middleName">Middle Name</label>
+                                <label>Previous Company</label>
                                 <input
                                     type="text"
-                                    id="middleName"
-                                    name="middleName"
-                                    value={formData.middleName}
+                                    name="previousCompany"
+                                    value={formData.previousCompany}
                                     onChange={handleInputChange}
+                                    readOnly={isFromCandidate}
                                 />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="lastName">Last Name *</label>
-                                <input
-                                    type="text"
-                                    id="lastName"
-                                    name="lastName"
-                                    value={formData.lastName}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="gender">Gender *</label>
-                                <select
-                                    id="gender"
-                                    name="gender"
-                                    value={formData.gender}
-                                    onChange={handleInputChange}
-                                    required
-                                >
-                                    <option value="">Select Gender</option>
-                                    <option value="MALE">Male</option>
-                                    <option value="FEMALE">Female</option>
-                                    <option value="OTHER">Other</option>
-                                </select>
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="birthDate">Date of Birth *</label>
-                                <input
-                                    type="date"
-                                    id="birthDate"
-                                    name="birthDate"
-                                    value={formData.birthDate}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="nationalIDNumber">National ID Number *</label>
-                                <input
-                                    type="text"
-                                    id="nationalIDNumber"
-                                    name="nationalIDNumber"
-                                    value={formData.nationalIDNumber}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="email">Email</label>
-                                <input
-                                    type="email"
-                                    id="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="phoneNumber">Phone Number</label>
-                                <input
-                                    type="tel"
-                                    id="phoneNumber"
-                                    name="phoneNumber"
-                                    value={formData.phoneNumber}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="address">Address</label>
-                                <input
-                                    type="text"
-                                    id="address"
-                                    name="address"
-                                    value={formData.address}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="city">City</label>
-                                <input
-                                    type="text"
-                                    id="city"
-                                    name="city"
-                                    value={formData.city}
-                                    onChange={handleInputChange}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="country">Country *</label>
-                                <input
-                                    type="text"
-                                    id="country"
-                                    name="country"
-                                    value={formData.country}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="maritalStatus">Marital Status</label>
-                                <select
-                                    id="maritalStatus"
-                                    name="maritalStatus"
-                                    value={formData.maritalStatus}
-                                    onChange={handleInputChange}
-                                >
-                                    <option value="">Select Status</option>
-                                    <option value="SINGLE">Single</option>
-                                    <option value="MARRIED">Married</option>
-                                    <option value="DIVORCED">Divorced</option>
-                                    <option value="WIDOWED">Widowed</option>
-                                </select>
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="militaryStatus">Military Status</label>
-                                <select
-                                    id="militaryStatus"
-                                    name="militaryStatus"
-                                    value={formData.militaryStatus}
-                                    onChange={handleInputChange}
-                                >
-                                    <option value="">Select Status</option>
-                                    <option value="NONE">None</option>
-                                    <option value="ACTIVE">Active</option>
-                                    <option value="VETERAN">Veteran</option>
-                                    <option value="RESERVE">Reserve</option>
-                                    <option value="EXEMPT">Exempt</option>
-                                </select>
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="education">Education</label>
-                                <select
-                                    id="education"
-                                    name="education"
-                                    value={formData.education}
-                                    onChange={handleInputChange}
-                                >
-                                    <option value="">Select Education Level</option>
-                                    <option value="HIGH_SCHOOL">High School</option>
-                                    <option value="ASSOCIATE">Associate Degree</option>
-                                    <option value="BACHELOR">Bachelor's Degree</option>
-                                    <option value="MASTER">Master's Degree</option>
-                                    <option value="DOCTORATE">Doctorate</option>
-                                    <option value="OTHER">Other</option>
-                                </select>
                             </div>
                         </div>
                     </div>
-                );
+                )}
+            </div>
+        );
+    };
 
-            case 2:
-                return (
-                    <div className="onboarding-step">
-                        <h3>Employment Details</h3>
-
-                        <div className="form-grid">
-                            <div className="form-group">
-                                <label htmlFor="jobPositionId">Job Position *</label>
-                                <select
-                                    id="jobPositionId"
-                                    name="jobPositionId"
-                                    value={formData.jobPositionId}
-                                    onChange={handleInputChange}
-                                    required
-                                >
-                                    <option value="">Select Job Position</option>
-                                    {jobPositions.map(pos => (
-                                        <option key={pos.id} value={pos.id}>
-                                            {pos.positionName} - {pos.department}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="hireDate">Hire Date *</label>
+    // Render step 3 - Documents & Files
+    const renderStep3 = () => (
+        <div className="form-step">
+            <div className="form-section">
+                <h3>Employee Photo</h3>
+                <div className="file-upload-section">
+                    <div className="photo-upload">
+                        <div className="photo-preview">
+                            {photoPreview ? (
+                                <img src={photoPreview} alt="Employee Preview" />
+                            ) : (
+                                <div className="photo-placeholder">
+                                    <FaUser />
+                                    <span>No photo selected</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="upload-controls">
+                            <label className="upload-button">
+                                <FaUpload />
+                                Select Photo
                                 <input
-                                    type="date"
-                                    id="hireDate"
-                                    name="hireDate"
-                                    value={formData.hireDate}
-                                    onChange={handleInputChange}
-                                    required
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleFileChange(e, 'photo')}
+                                    style={{ display: 'none' }}
                                 />
-                            </div>
+                            </label>
+                            <small>Upload employee photo (JPG, PNG - Max 5MB)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                            <div className="form-group">
-                                <label htmlFor="status">Employment Status</label>
-                                <select
-                                    id="status"
-                                    name="status"
-                                    value={formData.status}
-                                    onChange={handleInputChange}
-                                >
-                                    <option value="ACTIVE">Active</option>
-                                    <option value="INACTIVE">Inactive</option>
-                                    <option value="TERMINATED">Terminated</option>
-                                </select>
+            <div className="form-section">
+                <h3>Identification Documents</h3>
+                <div className="documents-grid">
+                    <div className="document-upload">
+                        <label>ID Front</label>
+                        <label className="upload-button">
+                            <FaUpload />
+                            {idFrontFile ? idFrontFile.name : 'Select ID Front'}
+                            <input
+                                type="file"
+                                accept="image/*,.pdf"
+                                onChange={(e) => handleFileChange(e, 'idFront')}
+                                style={{ display: 'none' }}
+                            />
+                        </label>
+                        <small>Front side of national ID (Image or PDF - Max 5MB)</small>
+                    </div>
+                    <div className="document-upload">
+                        <label>ID Back</label>
+                        <label className="upload-button">
+                            <FaUpload />
+                            {idBackFile ? idBackFile.name : 'Select ID Back'}
+                            <input
+                                type="file"
+                                accept="image/*,.pdf"
+                                onChange={(e) => handleFileChange(e, 'idBack')}
+                                style={{ display: 'none' }}
+                            />
+                        </label>
+                        <small>Back side of national ID (Image or PDF - Max 5MB)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    // Render step 4 - Review & Confirm
+    const renderStep4 = () => {
+        const selectedJobPosition = jobPositions.find(pos => pos.id === formData.jobPositionId);
+
+        return (
+            <div className="form-step">
+                <div className="review-section">
+                    <h3>Review Employee Information</h3>
+
+                    {isFromCandidate && (
+                        <div className="hiring-notice">
+                            <FaUserPlus />
+                            <div>
+                                <strong>Finalizing Hiring Process</strong>
+                                <p>This will complete the hiring of the candidate and create their employee record.</p>
                             </div>
                         </div>
+                    )}
 
-                        {selectedJobPosition && (
-                            <div className="job-details-section">
-                                <h4>Position Details</h4>
-                                <div className="job-details-grid">
-                                    <div><strong>Position:</strong> {selectedJobPosition.positionName}</div>
-                                    <div><strong>Department:</strong> {selectedJobPosition.department || 'N/A'}</div>
-                                    <div><strong>Contract Type:</strong> {selectedJobPosition.contractType?.replace('_', ' ') || 'N/A'}</div>
-                                    {selectedJobPosition.contractType === 'HOURLY' && (
-                                        <>
-                                            <div><strong>Working Days/Week:</strong> {selectedJobPosition.workingDaysPerWeek || 'N/A'}</div>
-                                            <div><strong>Hours/Shift:</strong> {selectedJobPosition.hoursPerShift || 'N/A'}</div>
-                                            <div><strong>Hourly Rate:</strong> ${selectedJobPosition.hourlyRate?.toFixed(2) || 'N/A'}</div>
-                                        </>
-                                    )}
-                                    {selectedJobPosition.contractType === 'DAILY' && (
-                                        <>
-                                            <div><strong>Working Days/Month:</strong> {selectedJobPosition.workingDaysPerMonth || 'N/A'}</div>
-                                            <div><strong>Daily Rate:</strong> ${selectedJobPosition.dailyRate?.toFixed(2) || 'N/A'}</div>
-                                        </>
-                                    )}
-                                    {selectedJobPosition.contractType === 'MONTHLY' && (
-                                        <>
-                                            <div><strong>Monthly Base Salary:</strong> ${selectedJobPosition.monthlyBaseSalary?.toFixed(2) || 'N/A'}</div>
-                                            <div><strong>Working Hours:</strong> {selectedJobPosition.workingHours || 'N/A'}</div>
-                                        </>
-                                    )}
-                                </div>
+                    <div className="review-grid">
+                        <div className="review-card">
+                            <h4><FaUser /> Personal Information</h4>
+                            <div className="review-item">
+                                <span>Name:</span>
+                                <span>{formData.firstName} {formData.middleName} {formData.lastName}</span>
                             </div>
-                        )}
-
-                        <div className="compensation-section">
-                            <h4>Compensation</h4>
-                            <div className="form-grid">
-                                <div className="form-group">
-                                    <label htmlFor="baseSalaryOverride">Base Salary Override</label>
-                                    <input
-                                        type="number"
-                                        id="baseSalaryOverride"
-                                        name="baseSalaryOverride"
-                                        min="0"
-                                        step="0.01"
-                                        value={formData.baseSalaryOverride}
-                                        onChange={handleNumberChange}
-                                        placeholder={selectedJobPosition?.baseSalary || 'Enter amount'}
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label htmlFor="salaryMultiplier">Salary Multiplier</label>
-                                    <input
-                                        type="number"
-                                        id="salaryMultiplier"
-                                        name="salaryMultiplier"
-                                        min="0.1"
-                                        step="0.1"
-                                        value={formData.salaryMultiplier}
-                                        onChange={handleNumberChange}
-                                    />
-                                </div>
+                            <div className="review-item">
+                                <span>Email:</span>
+                                <span>{formData.email || 'N/A'}</span>
                             </div>
+                            <div className="review-item">
+                                <span>Phone:</span>
+                                <span>{formData.phoneNumber || 'N/A'}</span>
+                            </div>
+                            <div className="review-item">
+                                <span>National ID:</span>
+                                <span>{formData.nationalIDNumber}</span>
+                            </div>
+                            <div className="review-item">
+                                <span>Date of Birth:</span>
+                                <span>{formData.birthDate}</span>
+                            </div>
+                            <div className="review-item">
+                                <span>Gender:</span>
+                                <span>{formData.gender}</span>
+                            </div>
+                            <div className="review-item">
+                                <span>Country:</span>
+                                <span>{formData.country}</span>
+                            </div>
+                            {formData.maritalStatus && (
+                                <div className="review-item">
+                                    <span>Marital Status:</span>
+                                    <span>{formData.maritalStatus.replace('_', ' ')}</span>
+                                </div>
+                            )}
+                            {formData.education && (
+                                <div className="review-item">
+                                    <span>Education:</span>
+                                    <span>{formData.education.replace('_', ' ')}</span>
+                                </div>
+                            )}
+                        </div>
 
+                        <div className="review-card">
+                            <h4><FaBriefcase /> Employment Details</h4>
+                            <div className="review-item">
+                                <span>Position:</span>
+                                <span>{selectedJobPosition?.positionName || 'N/A'}</span>
+                            </div>
+                            <div className="review-item">
+                                <span>Department:</span>
+                                <span>{selectedJobPosition?.department || selectedJobPosition?.departmentName || 'N/A'}</span>
+                            </div>
+                            <div className="review-item">
+                                <span>Hire Date:</span>
+                                <span>{formData.hireDate}</span>
+                            </div>
+                            <div className="review-item">
+                                <span>Status:</span>
+                                <span>{formData.status?.replace('_', ' ')}</span>
+                            </div>
                             {selectedJobPosition && (
-                                <div className="salary-info">
-                                    <div className="salary-item">
-                                        <strong>Base Salary:</strong>
-                                        ${formData.baseSalaryOverride ?
-                                        parseFloat(formData.baseSalaryOverride).toFixed(2) :
-                                        (selectedJobPosition.baseSalary || 0).toFixed(2)}
+                                <>
+                                    <div className="review-item">
+                                        <span>Base Salary:</span>
+                                        <span>
+                                            ${formData.baseSalaryOverride ?
+                                            parseFloat(formData.baseSalaryOverride).toFixed(2) :
+                                            (selectedJobPosition.baseSalary || 0).toFixed(2)}
+                                        </span>
                                     </div>
-                                    <div className="salary-item">
-                                        <strong>Monthly Salary:</strong>
-                                        ${calculateMonthlySalary(selectedJobPosition, formData.baseSalaryOverride, formData.salaryMultiplier).toFixed(2)}
+                                    <div className="review-item">
+                                        <span>Monthly Salary:</span>
+                                        <span>
+                                            ${calculateMonthlySalary(selectedJobPosition, formData.baseSalaryOverride, formData.salaryMultiplier).toFixed(2)}
+                                        </span>
                                     </div>
-                                    <div className="salary-item">
-                                        <strong>Annual Salary:</strong>
-                                        ${(calculateMonthlySalary(selectedJobPosition, formData.baseSalaryOverride, formData.salaryMultiplier) * 12).toFixed(2)}
-                                    </div>
-                                </div>
+                                </>
                             )}
                         </div>
 
-                        {isFromCandidate && (
-                            <div className="previous-employment-section">
+                        <div className="review-card">
+                            <h4><FaFileContract /> Documents</h4>
+                            <div className="review-item">
+                                <span>Photo:</span>
+                                <span>{photoFile ? photoFile.name : 'Not provided'}</span>
+                            </div>
+                            <div className="review-item">
+                                <span>ID Front:</span>
+                                <span>{idFrontFile ? idFrontFile.name : 'Not provided'}</span>
+                            </div>
+                            <div className="review-item">
+                                <span>ID Back:</span>
+                                <span>{idBackFile ? idBackFile.name : 'Not provided'}</span>
+                            </div>
+                        </div>
+
+                        {(formData.previousPosition || formData.previousCompany) && (
+                            <div className="review-card">
                                 <h4>Previous Employment</h4>
-                                <div className="form-grid">
-                                    <div><strong>Position:</strong> {formData.previousPosition || 'N/A'}</div>
-                                    <div><strong>Company:</strong> {formData.previousCompany || 'N/A'}</div>
+                                <div className="review-item">
+                                    <span>Position:</span>
+                                    <span>{formData.previousPosition || 'N/A'}</span>
+                                </div>
+                                <div className="review-item">
+                                    <span>Company:</span>
+                                    <span>{formData.previousCompany || 'N/A'}</span>
                                 </div>
                             </div>
                         )}
                     </div>
-                );
+                </div>
+            </div>
+        );
+    };
 
-            case 3:
-                return (
-                    <div className="onboarding-step">
-                        <h3>Documents & Files</h3>
-
-                        <div className="photo-section">
-                            <h4>Employee Photo</h4>
-                            <div className="photo-upload-container">
-                                <div className="photo-preview">
-                                    {photoPreview ? (
-                                        <img src={photoPreview} alt="Employee preview" />
-                                    ) : (
-                                        <div className="photo-placeholder">
-                                            <FaUser size={48} />
-                                            <span>No Photo</span>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="photo">Upload Photo</label>
-                                    <input
-                                        type="file"
-                                        id="photo"
-                                        name="photo"
-                                        accept="image/*"
-                                        onChange={handleFileChange}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="documents-section">
-                            <h4>Identity Documents</h4>
-                            <div className="form-grid">
-                                <div className="form-group">
-                                    <label htmlFor="idFront">ID Front</label>
-                                    <input
-                                        type="file"
-                                        id="idFront"
-                                        name="idFront"
-                                        accept="image/*"
-                                        onChange={handleFileChange}
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label htmlFor="idBack">ID Back</label>
-                                    <input
-                                        type="file"
-                                        id="idBack"
-                                        name="idBack"
-                                        accept="image/*"
-                                        onChange={handleFileChange}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-
-            case 4:
-                return (
-                    <div className="onboarding-step">
-                        <h3>Review & Confirm</h3>
-
-                        <div className="review-sections">
-                            <div className="review-section">
-                                <h4>Personal Information</h4>
-                                <div className="review-grid">
-                                    <div><strong>Name:</strong> {formData.firstName} {formData.middleName} {formData.lastName}</div>
-                                    <div><strong>Gender:</strong> {formData.gender}</div>
-                                    <div><strong>Date of Birth:</strong> {formData.birthDate}</div>
-                                    <div><strong>National ID:</strong> {formData.nationalIDNumber}</div>
-                                    <div><strong>Email:</strong> {formData.email || 'Not provided'}</div>
-                                    <div><strong>Phone:</strong> {formData.phoneNumber || 'Not provided'}</div>
-                                    <div><strong>Address:</strong> {formData.address || 'Not provided'}</div>
-                                    <div><strong>City:</strong> {formData.city || 'Not provided'}</div>
-                                    <div><strong>Country:</strong> {formData.country}</div>
-                                </div>
-                            </div>
-
-                            <div className="review-section">
-                                <h4>Employment Details</h4>
-                                <div className="review-grid">
-                                    <div><strong>Position:</strong> {selectedJobPosition?.positionName || 'Not selected'}</div>
-                                    <div><strong>Department:</strong> {selectedJobPosition?.department || 'Not available'}</div>
-                                    <div><strong>Contract Type:</strong> {selectedJobPosition?.contractType || 'Not available'}</div>
-                                    <div><strong>Hire Date:</strong> {formData.hireDate}</div>
-                                    <div><strong>Status:</strong> {formData.status}</div>
-                                </div>
-                            </div>
-
-                            <div className="review-section">
-                                <h4>Compensation</h4>
-                                <div className="review-grid">
-                                    <div><strong>Base Salary Override:</strong> {formData.baseSalaryOverride ? `${parseFloat(formData.baseSalaryOverride).toFixed(2)}` : 'Not set'}</div>
-                                    <div><strong>Salary Multiplier:</strong> {formData.salaryMultiplier}</div>
-                                    {selectedJobPosition && (
-                                        <>
-                                            <div><strong>Monthly Salary:</strong> ${calculateMonthlySalary(selectedJobPosition, formData.baseSalaryOverride, formData.salaryMultiplier).toFixed(2)}</div>
-                                            <div><strong>Annual Salary:</strong> ${(calculateMonthlySalary(selectedJobPosition, formData.baseSalaryOverride, formData.salaryMultiplier) * 12).toFixed(2)}</div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="review-section">
-                                <h4>Documents</h4>
-                                <div className="review-grid">
-                                    <div><strong>Photo:</strong> {photoFile ? '✓ Uploaded' : 'Not uploaded'}</div>
-                                    <div><strong>ID Front:</strong> {idFrontFile ? '✓ Uploaded' : 'Not uploaded'}</div>
-                                    <div><strong>ID Back:</strong> {idBackFile ? '✓ Uploaded' : 'Not uploaded'}</div>
-                                </div>
-                            </div>
-
-                            {isFromCandidate && (
-                                <div className="review-section">
-                                    <h4>Previous Employment</h4>
-                                    <div className="review-grid">
-                                        <div><strong>Previous Position:</strong> {formData.previousPosition || 'Not provided'}</div>
-                                        <div><strong>Previous Company:</strong> {formData.previousCompany || 'Not provided'}</div>
-                                        <div><strong>Candidate ID:</strong> {candidateId}</div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                );
-
-            default:
-                return null;
+    // Render current step content
+    const renderCurrentStep = () => {
+        switch (currentStep) {
+            case 1: return renderStep1();
+            case 2: return renderStep2();
+            case 3: return renderStep3();
+            case 4: return renderStep4();
+            default: return null;
         }
     };
 
     return (
         <div className="employee-onboarding">
             <div className="onboarding-header">
-                <button className="back-btn" onClick={() => navigate('/hr/vacancies')}>
+                <button className="back-button" onClick={() => navigate(-1)}>
                     <FaArrowLeft />
-                    Back to Vacancies
+                    Back
                 </button>
-                <h1>Employee Onboarding</h1>
-                <p>{isFromCandidate ? 'Complete the hiring process for selected candidate' : 'Create new employee record'}</p>
+                <div className="header-content">
+                    <h1>
+                        {isFromCandidate ? 'Complete Hiring Process' : 'Add New Employee'}
+                    </h1>
+                    <p>
+                        {isFromCandidate
+                            ? 'Complete the employee information to finalize the hiring process'
+                            : 'Fill in the employee information step by step'
+                        }
+                    </p>
+                </div>
             </div>
 
-            {/* Step Progress */}
-            <div className="step-progress">
-                {steps.map((step) => (
-                    <div
-                        key={step.number}
-                        className={`step ${currentStep === step.number ? 'active' : currentStep > step.number ? 'completed' : ''}`}
-                    >
-                        <div className="step-icon">
-                            {currentStep > step.number ? <FaCheckCircle /> : step.icon}
-                        </div>
-                        <div className="step-info">
-                            <div className="step-title">{step.title}</div>
-                            <div className="step-description">{step.description}</div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Step Content */}
             <div className="onboarding-content">
-                {renderStepContent()}
-            </div>
+                {renderStepIndicator()}
 
-            {/* Navigation */}
-            <div className="onboarding-navigation">
-                <div className="nav-left">
-                    {currentStep > 1 && (
-                        <button
-                            className="btn-secondary"
-                            onClick={handlePrevious}
-                            disabled={loading}
-                        >
-                            <FaArrowLeft />
-                            Previous
-                        </button>
-                    )}
+                <div className="form-container">
+                    {renderCurrentStep()}
                 </div>
 
-                <div className="nav-center">
+                <div className="navigation-controls">
                     <button
-                        className="btn-outline"
-                        onClick={handleCancel}
-                        disabled={loading}
+                        className="nav-button secondary"
+                        onClick={prevStep}
+                        disabled={currentStep === 1 || isLoading}
                     >
-                        Cancel
+                        <FaArrowLeft />
+                        Previous
                     </button>
-                </div>
 
-                <div className="nav-right">
-                    {currentStep < steps.length ? (
+                    {currentStep < 4 ? (
                         <button
-                            className="btn-primary"
-                            onClick={handleNext}
-                            disabled={loading}
+                            className="nav-button primary"
+                            onClick={nextStep}
+                            disabled={isLoading}
                         >
                             Next
                             <FaArrowRight />
                         </button>
                     ) : (
                         <button
-                            className="btn-success"
+                            className="nav-button success"
                             onClick={handleSubmit}
-                            disabled={loading}
+                            disabled={isLoading}
                         >
-                            {loading ? 'Creating Employee...' : isFromCandidate ? 'Complete Hiring Process' : 'Create Employee'}
+                            {isLoading ? 'Creating...' : isFromCandidate ? 'Complete Hiring' : 'Create Employee'}
                             <FaCheckCircle />
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Confirmation Dialog */}
             <ConfirmationDialog
                 isVisible={confirmDialog.isVisible}
                 type={confirmDialog.type}
                 title={confirmDialog.title}
                 message={confirmDialog.message}
-                confirmText="Yes, Proceed"
+                confirmText={isFromCandidate ? "Complete Hiring" : "Create Employee"}
                 cancelText="Cancel"
                 onConfirm={confirmDialog.onConfirm}
-                onCancel={handleDialogCancel}
-                isLoading={loading}
+                onCancel={() => setConfirmDialog(prev => ({ ...prev, isVisible: false }))}
+                isLoading={isLoading}
                 size="medium"
             />
         </div>

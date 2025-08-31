@@ -297,7 +297,7 @@ const WarehousesList = () => {
 
     // Fetch warehouses on initial load - wait for currentUser to be available
     useEffect(() => {
-        console.log("Current user in useEffect:", currentUser);
+        // console.log("Current user in useEffect:", currentUser);
         if (currentUser && currentUser.role) {
             fetchWarehouses();
         }
