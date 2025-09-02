@@ -341,7 +341,14 @@ export const SITE_ENDPOINTS = {
         ASSIGN_FIXED_ASSET: (siteId, fixedAssetId) => `/siteadmin/${siteId}/assign-fixedAsset/${fixedAssetId}`,
         ASSIGN_PARTNER: (siteId, partnerId) => `/siteadmin/${siteId}/assign-partner/${partnerId}`,
         UPDATE_PARTNER_PERCENTAGE: (siteId, partnerId) => `/siteadmin/${siteId}/update-partner-percentage/${partnerId}`,
-        REMOVE_PARTNER: (siteId, partnerId) => `/siteadmin/${siteId}/remove-partner/${partnerId}`
+        REMOVE_PARTNER: (siteId, partnerId) => `/siteadmin/${siteId}/remove-partner/${partnerId}`,
+        getAvailableWarehouseManagers: 'siteadmin/warehouse-managers/available',
+        getAvailableWarehouseManagersForSite:(siteId) =>`siteadmin/sites/${siteId}/warehouse-managers/available`,
+        getAvailableWarehouseWorkers: '/siteadmin/warehouse-workers/available',
+        getAvailableWarehouseWorkersForSite: (siteId) => `/siteadmin/${siteId}/warehouse-workers/available`,
+        getWarehouseEmployees: (warehouseId) => `/siteadmin/warehouses/${warehouseId}/employees`,
+        unassignEmployeeFromWarehouse: (warehouseId, employeeId) => `/siteadmin/warehouses/${warehouseId}/unassign-employee/${employeeId}`
+
     }
 };
 
@@ -521,13 +528,14 @@ export const OFFER_ENDPOINTS = {
     CONTINUE_AND_RETURN: (offerId) => `/api/v1/offers/${offerId}/continue-and-return`
 };
 
-// Candidate module endpoints
+// Updated Candidate module endpoints
 export const CANDIDATE_ENDPOINTS = {
     BASE: '/api/v1/candidates',
     BY_ID: (id) => `/api/v1/candidates/${id}`,
     BY_VACANCY: (vacancyId) => `/api/v1/candidates/vacancy/${vacancyId}`,
     CREATE: '/api/v1/candidates',
     UPDATE: (id) => `/api/v1/candidates/${id}`,
+    UPDATE_STATUS: (id) => `/api/v1/candidates/${id}/status`,  // New endpoint for status updates
     DELETE: (id) => `/api/v1/candidates/${id}`,
     TO_EMPLOYEE: (id) => `/api/v1/candidates/${id}/to-employee`
 };

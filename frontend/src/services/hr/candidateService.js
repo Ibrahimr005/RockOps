@@ -36,6 +36,11 @@ export const candidateService = {
         });
     },
 
+    // Update candidate status only
+    updateStatus: (id, status) => {
+        return apiClient.put(CANDIDATE_ENDPOINTS.UPDATE_STATUS(id), { status });
+    },
+
     // Delete candidate
     delete: (id) => {
         return apiClient.delete(CANDIDATE_ENDPOINTS.DELETE(id));
@@ -45,4 +50,4 @@ export const candidateService = {
     convertToEmployee: (id) => {
         return apiClient.get(CANDIDATE_ENDPOINTS.TO_EMPLOYEE(id));
     }
-}; 
+};

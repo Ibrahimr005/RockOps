@@ -73,7 +73,7 @@ public class CandidateController {
             ObjectMapper objectMapper = new ObjectMapper();
             Map<String, Object> candidateData = objectMapper.readValue(candidateDataJson, new TypeReference<Map<String, Object>>() {});
 
-            Candidate updatedCandidate = candidateService.updateCandidate(id, candidateData, resumeFile);
+            Candidate updatedCandidate = (Candidate) candidateService.updateCandidate(id, candidateData, resumeFile);
             return ResponseEntity.ok(updatedCandidate);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -98,9 +98,9 @@ public class CandidateController {
 
     // Convert candidate to employee data (preparation for hiring)
     @GetMapping("/{id}/to-employee")
-    public ResponseEntity<Map<String, Object>> convertToEmployeeData(@PathVariable UUID id) {
+    public ResponseEntity<Map<String, Object>> convertCandidateToEmployee(@PathVariable UUID id) {
         try {
-            Map<String, Object> employeeData = candidateService.convertToEmployeeData(id);
+            Map<String, Object> employeeData = candidateService.convertCandidateToEmployee(id);
             return ResponseEntity.ok(employeeData);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -119,7 +119,7 @@ public class CandidateController {
             if (newStatus == null || newStatus.trim().isEmpty()) {
                 return ResponseEntity.badRequest().build();
             }
-            
+
             Candidate updatedCandidate = candidateService.updateCandidateStatus(id, newStatus);
             return ResponseEntity.ok(updatedCandidate);
         } catch (EntityNotFoundException e) {

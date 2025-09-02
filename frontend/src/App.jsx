@@ -72,6 +72,7 @@ import BankReconciliation from "./pages/finance/BankReconciliation/BankReconcili
 import PayslipManagement from "./pages/payroll/payslip/PayslipManagement.jsx";
 import PayslipEdit from "./pages/payroll/payslip/PayslipEdit.jsx";
 import DeductionManagement from "./pages/payroll/deduction/DeductionManagement.jsx";
+import DepartmentDetails from "./pages/HR/Departments/DepartmentDetails.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -174,6 +175,7 @@ function App() {
                                         <Route path="attendance" element={<AttendancePage/>}/>
                                         <Route path="vacancies/:id" element={<VacancyDetails/>}/>
                                         <Route path="departments" element={<DepartmentsList/>}/>
+                                        <Route path="departments/:id" element={<DepartmentDetails/>}/>
                                         <Route path="promotions/*" element={<PromotionList/>}/>
                                     </Route>
 

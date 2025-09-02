@@ -23,7 +23,7 @@ const ParentCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
             setError(null);
             try {
                 const data = await itemCategoryService.getParents();
-                console.log("dataaaa:" + JSON.stringify(data, null, 2));
+                // console.log("dataaaa:" + JSON.stringify(data, null, 2));
                 setParentCategories(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error("Error fetching parent categories:", error);
