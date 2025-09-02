@@ -687,9 +687,9 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="jp-modal">
-            <div className="jp-modal-content">
-                <div className="jp-modal-header">
+        <div className="modal-overlay">
+            <div className="modal-content modal-xl">
+                <div className="modal-header">
                     <h2>Add New Position</h2>
                     <button className="btn-close" onClick={onClose}>×</button>
                 </div>
@@ -703,7 +703,7 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                 {(loadingDepartments || loadingEmployees || loadingPositions) ? (
                     <div className="jp-loading">Loading form data...</div>
                 ) : (
-                    <form onSubmit={handleSubmit}>
+                    <div className="modal-body">   <form onSubmit={handleSubmit}>
                         {/* Basic Information */}
                         <div className="jp-section">
                             <h3>Basic Information</h3>
@@ -941,26 +941,30 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
                             </div>
                         </div>
 
-                        <div className="jp-form-actions">
-                            <button
-                                type="button"
-                                className="btn-cancel"
-                                onClick={onClose}
-                                disabled={loading}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                className="btn-primary"
-                                disabled={loading}
-                            >
-                                {loading ? 'Adding...' : 'Add Position'}
-                            </button>
-                        </div>
-                    </form>
+
+                    </form></div>
+
                 )}
+                <div className="modal-footer">
+                    <button
+                        type="button"
+                        className="btn-cancel"
+                        onClick={onClose}
+                        disabled={loading}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        className="btn-primary"
+                        disabled={loading}
+                        onClick={handleSubmit}
+                    >
+                        {loading ? 'Adding...' : 'Add Position'}
+                    </button>
+                </div>
             </div>
+
         </div>
     );
 };

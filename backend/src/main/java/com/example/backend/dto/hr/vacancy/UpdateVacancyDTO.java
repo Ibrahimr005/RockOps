@@ -1,21 +1,19 @@
-package com.example.backend.dto.hr;
+package com.example.backend.dto.hr.vacancy;
 
 import lombok.Data;
 import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
-public class CreateVacancyDTO {
+public class UpdateVacancyDTO {
     private String title;
     private String description;
     private String requirements;
     private String responsibilities;
     private LocalDate postingDate;
     private LocalDate closingDate;
-    private String status; // e.g. "OPEN"
+    private String status;
     private Integer numberOfPositions;
-    private String priority; // e.g. "HIGH"
-
-    // Nested JobPosition reference by ID
+    private String priority;
     private UUID jobPositionId;
 }

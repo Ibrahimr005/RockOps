@@ -87,11 +87,14 @@ const VacancyList = () => {
         try {
             setLoading(true);
             console.log('Sending vacancy data:', newVacancy);
+            console.log('JobPosition in request:', newVacancy.jobPosition);
 
             const response = await vacancyService.create(newVacancy);
 
+            console.log('Full API response:', response);
+            console.log('Response data:', response.data);
+
             if (response && response.data) {
-                // Refresh the vacancy list
                 await fetchVacancies();
                 setShowAddModal(false);
                 showSuccess('Vacancy created successfully!');
@@ -100,6 +103,9 @@ const VacancyList = () => {
             }
         } catch (error) {
             console.error('Error adding vacancy:', error);
+            console.error('Error response:', error.response);
+            console.error('Error response data:', error.response?.data);
+
             const errorMessage = error.response?.data?.message ||
                 error.message ||
                 'Failed to create vacancy';
