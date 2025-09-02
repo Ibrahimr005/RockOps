@@ -19,7 +19,10 @@ public enum TimelineEventType {
     // Final stages
     OFFER_FINALIZING("Offer Finalizing", "Offer is being finalized"),
     OFFER_FINALIZED("Offer Finalized", "Offer finalization completed"),
-    OFFER_COMPLETED("Offer Completed", "Offer completed and purchase order created");
+    OFFER_COMPLETED("Offer Completed", "Offer completed and purchase order created"),
+
+    // Continue and Return events
+    OFFER_SPLIT("Offer Split", "Offer split into accepted items (finalized) and remaining quantities (new offer)");
 
     private final String displayName;
     private final String description;

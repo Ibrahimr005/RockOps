@@ -20,6 +20,7 @@ const SubmittedOffers = ({
                              setActiveOffer,
                              onApproveOffer, // Add these new props
                              onDeclineOffer,  // for handling approve/decline actions
+                             onOfferValidated, // NEW: Add this prop for redirecting to validated tab
                              managerRoles = ['MANAGER', 'ADMIN', 'PROCUREMENT_MANAGER','PROCUREMENT'] // Default manager roles
                          }) => {
     // Get user role from localStorage
@@ -134,6 +135,13 @@ const SubmittedOffers = ({
             // Then, update the finance status to PENDING_FINANCE_REVIEW using the service
             await offerService.updateFinanceStatus(offer.id, 'PENDING_FINANCE_REVIEW');
 
+            // Create the updated offer object for redirection
+            const updatedOffer = {
+                ...offer,
+                status: 'MANAGERACCEPTED',
+                financeStatus: 'PENDING_FINANCE_REVIEW'
+            };
+
             // Remove the offer from the submitted offers list
             const updatedOffers = offers.filter(o => o.id !== offer.id);
             setOffers(updatedOffers);
@@ -148,9 +156,19 @@ const SubmittedOffers = ({
                 onApproveOffer(offer.id);
             }
 
-            // Close dialog and show success notification
+            // Close dialog first
             setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
+
+            // Show success notification
             showNotification('Offer has been approved and sent to finance for review!', 'success');
+
+            // NEW: Redirect to validated tab with this offer as active
+            if (onOfferValidated) {
+                // Small delay to ensure state updates are processed
+                setTimeout(() => {
+                    onOfferValidated(updatedOffer, 'approved');
+                }, 100);
+            }
 
         } catch (error) {
             console.error('Error approving offer:', error);
@@ -189,6 +207,13 @@ const SubmittedOffers = ({
             // Use the service to update status with rejection reason
             await offerService.updateStatus(offer.id, 'MANAGERREJECTED', rejectionReason);
 
+            // Create the updated offer object for redirection
+            const updatedOffer = {
+                ...offer,
+                status: 'MANAGERREJECTED',
+                rejectionReason: rejectionReason
+            };
+
             // Remove the offer from the submitted offers list
             const updatedOffers = offers.filter(o => o.id !== offer.id);
             setOffers(updatedOffers);
@@ -203,10 +228,20 @@ const SubmittedOffers = ({
                 onDeclineOffer(offer.id);
             }
 
-            // Close dialog and show success notification
+            // Close dialog first
             setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
             setRejectionReason('');
+
+            // Show success notification
             showNotification('Offer has been declined successfully!', 'success');
+
+            // NEW: Redirect to validated tab with this offer as active
+            if (onOfferValidated) {
+                // Small delay to ensure state updates are processed
+                setTimeout(() => {
+                    onOfferValidated(updatedOffer, 'declined');
+                }, 100);
+            }
 
         } catch (error) {
             console.error('Error declining offer:', error);
