@@ -2,11 +2,29 @@ import React, { useState, useEffect } from 'react';
 import DataTable from "../../../../components/common/DataTable/DataTable.jsx";
 import { useNavigate } from 'react-router-dom';
 import { requestOrderService } from '../../../../services/procurement/requestOrderService.js';
+import RequestOrderViewModal from '../RequestOrderViewModal/RequestOrderViewModal';
 
 const ValidatedRequestOrders = ({ warehouseId, refreshTrigger, onShowSnackbar, userRole }) => {
     const navigate = useNavigate();
     const [validatedOrders, setValidatedOrders] = useState([]);
     const [isLoadingValidated, setIsLoadingValidated] = useState(false);
+
+    // Modal states
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [selectedRequestOrder, setSelectedRequestOrder] = useState(null);
+
+
+    const fetchRequestOrderDetails = async (id) => {
+        try {
+            const details = await requestOrderService.getById(id);
+            return details;
+        } catch (error) {
+            console.error('Error fetching request order details:', error);
+            onShowSnackbar('Failed to load request order details.', 'error');
+            return null;
+        }
+    };
+
 
     // Column configuration for validated request orders
     const validatedOrderColumns = [
@@ -132,8 +150,12 @@ const ValidatedRequestOrders = ({ warehouseId, refreshTrigger, onShowSnackbar, u
     };
 
     // Handle row click to navigate to detail page
-    const handleRowClick = (row) => {
-        navigate(`/procurement/request-orders/${row.id}`);
+    const handleRowClick = async (row) => {
+        const details = await fetchRequestOrderDetails(row.id);
+        if (details) {
+            setSelectedRequestOrder(details);
+            setShowViewModal(true);
+        }
     };
 
     return (
@@ -161,6 +183,15 @@ const ValidatedRequestOrders = ({ warehouseId, refreshTrigger, onShowSnackbar, u
                     />
                 </div>
             </div>
+            {/* View Modal */}
+            <RequestOrderViewModal
+                requestOrder={selectedRequestOrder}
+                isOpen={showViewModal}
+                onClose={() => {
+                    setShowViewModal(false);
+                    setSelectedRequestOrder(null);
+                }}
+            />
         </div>
     );
 };

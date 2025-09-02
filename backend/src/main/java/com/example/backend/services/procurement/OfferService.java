@@ -16,9 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -553,5 +551,190 @@ public class OfferService {
                 .stream()
                 .filter(event -> event.getAttemptNumber() == attemptNumber)
                 .toList();
+    }
+
+    // Add this method to your OfferService.java class
+// This version handles both int and double quantity types
+
+    /**
+     * Continue and Return functionality - simplified approach
+     * Original offer continues to finalization, new offer created for remaining quantities
+     */
+    /**
+     * Continue and Return functionality - simplified approach
+     * Original offer continues to finalization, new offer created for remaining quantities
+     */
+    @Transactional
+    public Map<String, Object> continueAndReturnOffer(UUID offerId, String username) {
+        // Find the original offer
+        Offer originalOffer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new RuntimeException("Offer not found"));
+
+        // Verify that the offer has been finance reviewed
+        if (!Arrays.asList("FINANCE_PARTIALLY_ACCEPTED", "FINANCE_ACCEPTED").contains(originalOffer.getStatus())) {
+            throw new IllegalStateException("Only finance reviewed offers can be processed with continue and return");
+        }
+
+        Map<String, Object> result = new HashMap<>();
+
+        // Step 1: Get accepted items from original offer (FIXED)
+        List<OfferItem> acceptedItems = originalOffer.getOfferItems().stream()
+                .filter(item -> "ACCEPTED".equals(item.getFinanceStatus()))  // FIXED
+                .collect(Collectors.toList());
+
+        if (acceptedItems.isEmpty()) {
+            throw new IllegalStateException("No accepted items found in this offer");
+        }
+
+        // Step 2: Calculate remaining quantities BEFORE modifying the original offer
+        Map<UUID, Double> remainingQuantities = calculateRemainingQuantities(originalOffer, acceptedItems);
+
+        // Step 3: Update original offer to continue to finalization with only accepted items
+        // Remove rejected items from the original offer (FIXED)
+        List<OfferItem> rejectedItems = originalOffer.getOfferItems().stream()
+                .filter(item -> "REJECTED".equals(item.getFinanceStatus()))  // FIXED
+                .collect(Collectors.toList());
+
+        // Delete rejected items from database
+        for (OfferItem rejectedItem : rejectedItems) {
+            offerItemRepository.delete(rejectedItem);
+        }
+
+        // Update original offer status to move to finalization
+        originalOffer.setStatus("FINALIZING");
+        originalOffer.getOfferItems().removeAll(rejectedItems);
+        Offer continuingOffer = offerRepository.save(originalOffer);
+        result.put("acceptedOffer", continuingOffer);
+
+        // Step 4: Create new offer for remaining quantities if any exist
+        if (!remainingQuantities.isEmpty()) {
+            Offer newOffer = createNewOfferForRemaining(originalOffer, remainingQuantities, username);
+            result.put("newOffer", newOffer);
+        }
+
+        // Step 5: Record the action in timeline
+        double totalRemainingQuantity = remainingQuantities.values().stream()
+                .mapToDouble(Double::doubleValue)
+                .sum();
+        timelineService.recordOfferSplit(offerId, username, acceptedItems.size(), (int) totalRemainingQuantity);
+
+        return result;
+    }
+
+    /**
+     * Helper method: Calculate remaining quantities that need to be fulfilled
+     * Using Double to handle both int and double quantity types
+     */
+    private Map<UUID, Double> calculateRemainingQuantities(Offer originalOffer, List<OfferItem> acceptedItems) {
+        Map<UUID, Double> remainingQuantities = new HashMap<>();
+
+        // Group accepted items by request order item and sum their quantities
+        Map<UUID, Double> acceptedQuantitiesByItem = acceptedItems.stream()
+                .collect(Collectors.groupingBy(
+                        item -> item.getRequestOrderItem().getId(),
+                        Collectors.summingDouble(OfferItem::getQuantity)
+                ));
+
+        // Check each request order item for remaining quantities
+        for (RequestOrderItem requestItem : originalOffer.getRequestOrder().getRequestItems()) {
+            double requestedQuantity = requestItem.getQuantity(); // Required (e.g., 30.0)
+            double acceptedQuantity = acceptedQuantitiesByItem.getOrDefault(requestItem.getId(), 0.0); // Accepted (e.g., 20.0)
+
+            if (acceptedQuantity < requestedQuantity) {
+                double remaining = requestedQuantity - acceptedQuantity; // Remaining (e.g., 10.0)
+                remainingQuantities.put(requestItem.getId(), remaining);
+
+                System.out.println("DEBUG - Item " + requestItem.getId() +
+                        ": Required=" + requestedQuantity +
+                        ", Accepted=" + acceptedQuantity +
+                        ", Remaining=" + remaining);
+            }
+        }
+
+        return remainingQuantities;
+    }
+
+    /**
+     * Helper method: Create new offer for remaining quantities
+     */
+    /**
+     * Helper method: Create new offer for remaining quantities
+     * Creates new RequestOrder and RequestOrderItems with only remaining quantities
+     */
+    /**
+     * Helper method: Create new offer for remaining quantities
+     * Creates new RequestOrder and RequestOrderItems with only remaining quantities
+     */
+    private Offer createNewOfferForRemaining(Offer originalOffer, Map<UUID, Double> remainingQuantities, String username) {
+        // Create new offer title
+        String newTitle = originalOffer.getTitle()
+                .replaceAll("\\s*\\(Retry\\s*\\d*\\)\\s*$", "")
+                .replaceAll("\\s*\\(Remaining\\)\\s*$", "")
+                .trim() + " (Remaining)";
+
+        // Create new RequestOrder for the remaining quantities
+        RequestOrder newRequestOrder = RequestOrder.builder()
+                .title(originalOffer.getRequestOrder().getTitle() + " (Remaining)")
+                .description("Remaining quantities from original request: " + originalOffer.getRequestOrder().getId())
+                .createdAt(LocalDateTime.now())
+                .createdBy(username)
+                .status("APPROVED") // Keep same status as original
+                .partyType(originalOffer.getRequestOrder().getPartyType())
+                .requesterId(originalOffer.getRequestOrder().getRequesterId())
+                .requesterName(originalOffer.getRequestOrder().getRequesterName())
+                .employeeRequestedBy(originalOffer.getRequestOrder().getEmployeeRequestedBy())
+                .deadline(originalOffer.getRequestOrder().getDeadline())
+                .requestItems(new ArrayList<>())
+                .offers(new ArrayList<>())
+                .build();
+
+        RequestOrder savedRequestOrder = requestOrderRepository.save(newRequestOrder);
+
+        // Create new RequestOrderItems with only the remaining quantities
+        for (Map.Entry<UUID, Double> entry : remainingQuantities.entrySet()) {
+            // Find the original request item
+            RequestOrderItem originalItem = originalOffer.getRequestOrder().getRequestItems().stream()
+                    .filter(item -> item.getId().equals(entry.getKey()))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Original request item not found"));
+
+            // Create new request item with only the remaining quantity
+            RequestOrderItem newRequestItem = RequestOrderItem.builder()
+                    .quantity(entry.getValue()) // This will be 10.0, not 30.0
+                    .itemType(originalItem.getItemType())
+                    .comment("Remaining quantity from original request item")
+                    .requestOrder(savedRequestOrder)
+                    .build();
+
+            RequestOrderItem savedRequestItem = requestOrderItemRepository.save(newRequestItem);
+            savedRequestOrder.getRequestItems().add(savedRequestItem);
+        }
+
+        // Save the updated request order
+        requestOrderRepository.save(savedRequestOrder);
+
+        // Create the new offer
+        Offer newOffer = Offer.builder()
+                .title(newTitle)
+                .description("New offer for remaining quantities after continue & return. Original offer ID: " + originalOffer.getId())
+                .createdAt(LocalDateTime.now())
+                .createdBy(username)
+                .status("INPROGRESS")
+                .validUntil(originalOffer.getValidUntil())
+                .notes("Created for remaining quantities only. Original offer: " + originalOffer.getId())
+                .requestOrder(savedRequestOrder) // Use new RequestOrder with remaining quantities
+                .offerItems(new ArrayList<>())
+                .timelineEvents(new ArrayList<>())
+                .currentAttemptNumber(1)
+                .totalRetries(0)
+                .build();
+
+        Offer savedNewOffer = offerRepository.save(newOffer);
+
+        // Add the new offer to the request order's offers list
+        savedRequestOrder.getOffers().add(savedNewOffer);
+        requestOrderRepository.save(savedRequestOrder);
+
+        return savedNewOffer;
     }
 }

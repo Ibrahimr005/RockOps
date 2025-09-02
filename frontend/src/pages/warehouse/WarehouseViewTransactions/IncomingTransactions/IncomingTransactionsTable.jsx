@@ -317,8 +317,6 @@ const IncomingTransactionsTable = ({
         }
 
         try {
-            const token = localStorage.getItem('token');
-
             let username = "system";
             const userInfoString = localStorage.getItem('userInfo');
 
@@ -339,78 +337,72 @@ const IncomingTransactionsTable = ({
                 itemNotReceived: itemsNotReceived[index] || false
             }));
 
+            // Debug log
+            console.log("Sending accept request:", {
+                receivedItems: receivedItems,
+                username: username,
+                acceptanceComment: comments
+            });
+
             await transactionService.accept(selectedTransaction.id, {
                 receivedItems: receivedItems,
                 username: username,
                 acceptanceComment: comments
             });
 
+            // Success path
             fetchPendingTransactions();
             setIsAcceptModalOpen(false);
             showSnackbar("Transaction Accepted Successfully", "success");
 
             if (onTransactionUpdate) {
                 onTransactionUpdate();
-
-            } else {
-                let errorMessage = "Failed to accept transaction";
-                let snackbarMessage = "Failed to accept transaction";
-
-                try {
-                    const errorData = await response.text();
-                    console.log("Error response:", errorData);
-                    console.log("Response status:", response.status);
-
-                    // Check if we have any error data
-                    if (errorData && errorData.trim()) {
-                        console.log("Checking if includes 'No available items':", errorData.includes("No available items in warehouse for:"));
-
-                        // ✅ Check for specific "No available items" error
-                        if (errorData.includes("No available items in warehouse for:")) {
-                            const match = errorData.match(/No available items in warehouse for:\s*([^\s,]+)/);
-                            console.log("Regex match result:", match);
-                            const itemName = match ? match[1] : "this item";
-                            console.log("Extracted item name:", itemName);
-
-                            errorMessage = `Insufficient inventory for ${itemName}`;
-                            snackbarMessage = `You don't have enough ${itemName} in your warehouse`;
-                        } else if (errorData.includes("IllegalArgumentException")) {
-                            errorMessage = errorData.replace("java.lang.IllegalArgumentException: ", "");
-                            snackbarMessage = errorMessage;
-                        } else {
-                            errorMessage = errorData;
-                            snackbarMessage = errorData;
-                        }
-                    } else {
-                        // ✅ Handle empty response based on status code
-                        if (response.status === 500) {
-                            errorMessage = "Server error occurred";
-                            snackbarMessage = "Please check if you have sufficient inventory";
-                        } else if (response.status === 400) {
-                            errorMessage = "Invalid request";
-                            snackbarMessage = "Invalid request - please check your input";
-                        } else {
-                            errorMessage = `Server error (${response.status})`;
-                            snackbarMessage = `Server error (${response.status})`;
-                        }
-                    }
-                } catch (e) {
-                    console.error("Error parsing error response:", e);
-                    // ✅ Better fallback for parse errors
-                    if (response.status === 500) {
-                        errorMessage = "Server error occurred";
-                        snackbarMessage = "Please check if you have sufficient inventory";
-                    }
-                }
-
-                setAcceptError(errorMessage);
-                showSnackbar(snackbarMessage, "error");
-                console.error("Failed to accept transaction:", errorMessage);
             }
+
         } catch (error) {
-            setAcceptError("Network error. Please try again.");
-            showSnackbar("Network error. Please try again.", "error");
-            console.error("Error accepting transaction:", error);
+            // Error handling
+            let errorMessage = "Failed to accept transaction";
+            let snackbarMessage = "Failed to accept transaction";
+
+            console.error("Accept transaction error details:", error);
+
+            if (error.response && error.response.data) {
+                const errorData = error.response.data;
+
+                if (typeof errorData === 'string') {
+                    if (errorData.includes("No available items in warehouse for:")) {
+                        const match = errorData.match(/No available items in warehouse for:\s*([^\s,]+)/);
+                        const itemName = match ? match[1] : "this item";
+                        errorMessage = `Insufficient inventory for ${itemName}`;
+                        snackbarMessage = `You don't have enough ${itemName} in your warehouse`;
+                    } else if (errorData.includes("IllegalArgumentException")) {
+                        errorMessage = errorData.replace("java.lang.IllegalArgumentException: ", "");
+                        snackbarMessage = errorMessage;
+                    } else {
+                        errorMessage = errorData;
+                        snackbarMessage = errorData;
+                    }
+                } else if (errorData.message) {
+                    errorMessage = errorData.message;
+                    snackbarMessage = errorData.message;
+                } else if (errorData.error) {
+                    errorMessage = errorData.error;
+                    snackbarMessage = errorData.error;
+                }
+            } else if (error.response?.status === 500) {
+                errorMessage = "Server error occurred";
+                snackbarMessage = "Please check if you have sufficient inventory or try again";
+            } else if (error.response?.status === 400) {
+                errorMessage = "Invalid request";
+                snackbarMessage = "Invalid request - please check your input";
+            } else {
+                errorMessage = error.message || "Network error occurred";
+                snackbarMessage = "Network error. Please try again.";
+            }
+
+            setAcceptError(errorMessage);
+            showSnackbar(snackbarMessage, "error");
+            console.error("Failed to accept transaction:", errorMessage);
         } finally {
             setProcessingAction(false);
         }
@@ -502,17 +494,7 @@ const IncomingTransactionsTable = ({
 
     // Actions array for DataTable
     const actions = [
-        {
-            label: 'View',
-            icon: (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                </svg>
-            ),
-            className: 'view',
-            onClick: (row) => handleOpenViewModal(row)
-        },
+
         {
             label: 'Accept',
             icon: (
@@ -545,6 +527,7 @@ const IncomingTransactionsTable = ({
                 itemsPerPageOptions={[5, 10, 15, 20]}
                 defaultItemsPerPage={10}
                 actionsColumnWidth="200px"
+                onRowClick={handleOpenViewModal}  // Add this line
             />
 
             {/* View Transaction Modal */}
