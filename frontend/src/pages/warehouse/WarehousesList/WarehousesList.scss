@@ -46,6 +46,8 @@
   background-color: var(--color-surface);
   transition: all var(--transition-normal);
   position: relative;
+  display: flex;
+  flex-direction: column; // Add this to make the card a flex container
 }
 
 .warehouse-list-card:hover {
@@ -81,7 +83,10 @@
 }
 
 .warehouse-list-card-content {
-  padding: 20px;
+  padding: 20px 20px 0px 20px; // Reduced bottom padding from 20px to 12px
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .warehouse-list-card-name {
@@ -116,6 +121,8 @@
   padding: 12px;
   background-color: var(--color-surface-hover);
   border-radius: var(--radius-md);
+  flex: 1; // This will make the stats container expand to fill available space
+  align-content: start; // Align content to the top of the container
 }
 
 .warehouse-list-stat-item {
@@ -139,20 +146,38 @@
 }
 
 /* Action Buttons */
-/* Action Buttons */
-/* Action Buttons */
 .warehouse-list-card-actions {
   display: grid;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 8px;
+  margin-top: auto; // This pushes the buttons to the bottom
   width: 100%;
 
-  /* Default: single button takes full width */
+  // Your existing button grid styles...
   grid-template-columns: 1fr;
 
-  /* When there are 2 buttons, use different column sizes */
   &.has-two-buttons {
-    grid-template-columns: 1fr 1fr; /* Left button smaller, right button bigger */
+    grid-template-columns: 1fr 1fr;
+  }
+
+  &.has-three-buttons {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+
+    button {
+      font-size: 12px;
+      padding: 10px 8px;
+    }
+  }
+
+  &.has-four-buttons {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 6px;
+
+    button {
+      font-size: 12px;
+      padding: 8px 6px;
+    }
   }
 }
 

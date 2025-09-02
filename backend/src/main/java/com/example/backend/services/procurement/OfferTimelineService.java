@@ -195,4 +195,21 @@ public class OfferTimelineService {
                 .filter(OfferTimelineEvent::isCanRetryFromHere)
                 .toList();
     }
+
+    /**
+     * Record offer split event for continue and return functionality
+     */
+
+    public OfferTimelineEvent recordOfferSplit(UUID offerId, String actionBy, int acceptedItemsCount, int remainingItemsCount) {
+        Offer offer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new RuntimeException("Offer not found"));
+
+        String previousStatus = offer.getStatus();
+        String notes = String.format("Offer split: %d accepted items continued to finalization, %d remaining items created in new offer",
+                acceptedItemsCount, remainingItemsCount);
+
+        // Create timeline event for the split action
+        return createTimelineEvent(offer, TimelineEventType.OFFER_SPLIT, actionBy, notes,
+                previousStatus, "PROCESSED_SPLIT");
+    }
 }
