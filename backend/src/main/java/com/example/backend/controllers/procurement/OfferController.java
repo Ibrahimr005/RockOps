@@ -336,4 +336,20 @@ public class OfferController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PostMapping("/{offerId}/continue-and-return")
+    public ResponseEntity<Map<String, Object>> continueAndReturnOffer(
+            @PathVariable UUID offerId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            String username = userDetails.getUsername();
+            Map<String, Object> result = offerService.continueAndReturnOffer(offerId, username);
+            return ResponseEntity.ok(result);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to process continue and return: " + e.getMessage()));
+        }
+    }
 }

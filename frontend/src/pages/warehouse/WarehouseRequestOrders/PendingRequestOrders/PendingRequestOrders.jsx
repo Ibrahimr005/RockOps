@@ -7,11 +7,16 @@ import { requestOrderService } from '../../../../services/procurement/requestOrd
 import { itemTypeService } from '../../../../services/warehouse/itemTypeService';
 import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
 import { warehouseService } from '../../../../services/warehouse/warehouseService';
+import RequestOrderViewModal from '../RequestOrderViewModal/RequestOrderViewModal';
 
 const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, onShowSnackbar, userRole }, ref) => {
     const navigate = useNavigate();
     const [pendingOrders, setPendingOrders] = useState([]);
     const [isLoadingPending, setIsLoadingPending] = useState(false);
+
+    // Modal states
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [selectedRequestOrder, setSelectedRequestOrder] = useState(null);
 
     // Modal and form states
     const [showAddModal, setShowAddModal] = useState(false);
@@ -160,6 +165,17 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
             fetchParentCategories(); // NEW: Fetch parent categories
         }
     }, [warehouseId, refreshTrigger]);
+
+    const fetchRequestOrderDetails = async (id) => {
+        try {
+            const details = await requestOrderService.getById(id);
+            return details;
+        } catch (error) {
+            console.error('Error fetching request order details:', error);
+            onShowSnackbar('Failed to load request order details.', 'error');
+            return null;
+        }
+    };
 
 // NEW: Toggle filters with animation
     const toggleFilters = (index) => {
@@ -347,8 +363,12 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
     };
 
     // Handle row click to navigate to detail page
-    const handleRowClick = (row) => {
-        navigate(`/procurement/request-orders/${row.id}`);
+    const handleRowClick = async (row) => {
+        const details = await fetchRequestOrderDetails(row.id);
+        if (details) {
+            setSelectedRequestOrder(details);
+            setShowViewModal(true);
+        }
     };
 
     // Handle add button click from DataTable
@@ -542,14 +562,10 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
                 itemTypeId: item.itemTypeId,
                 quantity: item.quantity,
                 comment: item.comment || ''
-                // Don't include parentCategoryId and itemCategoryId in the payload
             }))
         };
 
         try {
-            const token = localStorage.getItem('token');
-
-            // Replace the API calls in handleCreateRequest:
             let response;
             if (isEditMode && currentEditId) {
                 // Update existing request
@@ -559,14 +575,9 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
                 response = await requestOrderService.create(requestPayload);
             }
 
-            if (!response.ok) {
-                throw new Error(isEditMode ? 'Failed to update request order' : 'Failed to create request order');
-            }
-
             // Request created/updated successfully
             handleCloseModal();
             fetchPendingOrders(); // Refresh the pending orders list
-
             onShowSnackbar(isEditMode ? 'Request Order updated successfully!' : 'Request Order created successfully!', 'success');
 
         } catch (error) {
@@ -854,6 +865,17 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
                     </div>
                 </div>
             )}
+
+            {/* View Modal */}
+            <RequestOrderViewModal
+                requestOrder={selectedRequestOrder}
+                isOpen={showViewModal}
+                onClose={() => {
+                    setShowViewModal(false);
+                    setSelectedRequestOrder(null);
+                }}
+            />
+
         </div>
     );
 });

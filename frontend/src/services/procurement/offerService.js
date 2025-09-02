@@ -109,6 +109,12 @@ export const offerService = {
         return response.data || response;
     },
 
+    // NEW: Continue and Return operation
+    continueAndReturnOffer: async (offerId) => {
+        const response = await apiClient.post(OFFER_ENDPOINTS.CONTINUE_AND_RETURN(offerId));
+        return response.data || response;
+    },
+
     // Multiple status operations for complex tabs
     getMultipleStatuses: async (statuses) => {
         const promises = statuses.map(status => offerService.getByStatus(status));
@@ -116,7 +122,7 @@ export const offerService = {
         return results.flat();
     },
 
-    // NEW: Timeline operations
+    // Timeline operations
     getTimeline: async (offerId) => {
         const response = await apiClient.get(OFFER_ENDPOINTS.TIMELINE(offerId));
         return response.data || response;

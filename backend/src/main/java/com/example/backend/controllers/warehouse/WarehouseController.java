@@ -97,9 +97,25 @@ public class WarehouseController {
 
 
 
-    @GetMapping("/employees/{warehouseId}")
-    public List<Employee> getEmployeesByWarehouseId(@PathVariable UUID warehouseId) {
-        return warehouseService.getEmployeesByWarehouseId(warehouseId);
+    @GetMapping("/{warehouseId}/employees")
+    public ResponseEntity<List<Map<String, Object>>> getWarehouseEmployees(@PathVariable UUID warehouseId) {
+        try {
+            List<Employee> employees = warehouseService.getEmployeesByWarehouseId(warehouseId);
+
+            List<Map<String, Object>> employeeList = employees.stream()
+                    .map(employee -> {
+                        Map<String, Object> employeeMap = new HashMap<>();
+                        employeeMap.put("id", employee.getId().toString());
+                        employeeMap.put("name", employee.getFirstName() + " " + employee.getLastName());
+                        return employeeMap;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(employeeList);
+        } catch (Exception e) {
+            System.err.println("Error fetching warehouse employees: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ArrayList<>());
+        }
     }
 
     @GetMapping("/site/{siteId}")

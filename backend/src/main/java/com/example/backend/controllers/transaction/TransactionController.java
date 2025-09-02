@@ -89,39 +89,99 @@ public class TransactionController {
     @PostMapping("/{transactionId}/accept")
     public ResponseEntity<TransactionDTO> acceptTransaction(
             @PathVariable UUID transactionId,
-            @RequestBody TransactionAcceptRequestDTO request
+            @RequestBody Map<String, Object> requestBody
     ) {
+        System.out.println("=== ACCEPT TRANSACTION DEBUG START ===");
+        System.out.println("Transaction ID: " + transactionId);
+        System.out.println("Request Body: " + requestBody);
+
         try {
-            // Convert received items from DTO to the format expected by service
-            Map<UUID, Integer> receivedQuantities = new HashMap<>();
-            Map<UUID, Boolean> itemsNotReceived = new HashMap<>();
-            
-            for (var receivedItem : request.getReceivedItems()) {
-                UUID itemId = UUID.fromString(receivedItem.getTransactionItemId());
-                receivedQuantities.put(itemId, receivedItem.getReceivedQuantity());
-                
-                // Extract itemNotReceived flag if present
-                if (receivedItem.getItemNotReceived() != null) {
-                    itemsNotReceived.put(itemId, receivedItem.getItemNotReceived());
-                }
+            // Extract data from the request body
+            String username = (String) requestBody.get("username");
+            String acceptanceComment = (String) requestBody.get("acceptanceComment");
+            List<Map<String, Object>> receivedItemsList = (List<Map<String, Object>>) requestBody.get("receivedItems");
+
+            System.out.println("Extracted data:");
+            System.out.println("  Username: " + username);
+            System.out.println("  Comment: " + acceptanceComment);
+            System.out.println("  Items count: " + (receivedItemsList != null ? receivedItemsList.size() : "null"));
+
+            // Validation
+            if (username == null || username.trim().isEmpty()) {
+                throw new IllegalArgumentException("Username is required");
+            }
+            if (receivedItemsList == null || receivedItemsList.isEmpty()) {
+                throw new IllegalArgumentException("Received items list is required");
             }
 
+            // Convert received items to the format expected by service
+            Map<UUID, Integer> receivedQuantities = new HashMap<>();
+            Map<UUID, Boolean> itemsNotReceived = new HashMap<>();
+
+            System.out.println("Processing received items:");
+            for (int i = 0; i < receivedItemsList.size(); i++) {
+                Map<String, Object> receivedItem = receivedItemsList.get(i);
+                System.out.println("  Item " + i + ": " + receivedItem);
+
+                // Extract transaction item ID
+                Object itemIdObj = receivedItem.get("transactionItemId");
+                if (itemIdObj == null) {
+                    throw new IllegalArgumentException("Missing transactionItemId for item " + i);
+                }
+                UUID itemId = UUID.fromString(itemIdObj.toString());
+
+                // Extract received quantity
+                Object quantityObj = receivedItem.get("receivedQuantity");
+                if (quantityObj == null) {
+                    throw new IllegalArgumentException("Missing receivedQuantity for item " + i);
+                }
+                Integer receivedQuantity = Integer.parseInt(quantityObj.toString());
+
+                // Extract item not received flag
+                Object itemNotReceivedObj = receivedItem.get("itemNotReceived");
+                Boolean itemNotReceived = itemNotReceivedObj != null ?
+                        Boolean.parseBoolean(itemNotReceivedObj.toString()) : false;
+
+                receivedQuantities.put(itemId, receivedQuantity);
+                itemsNotReceived.put(itemId, itemNotReceived);
+
+                System.out.println("    Processed: ID=" + itemId + ", Qty=" + receivedQuantity + ", NotReceived=" + itemNotReceived);
+            }
+
+            System.out.println("Calling transaction service...");
             Transaction transaction = transactionService.acceptTransaction(
                     transactionId,
                     receivedQuantities,
                     itemsNotReceived,
-                    request.getUsername(),
-                    request.getAcceptanceComment()
+                    username,
+                    acceptanceComment
             );
 
+            System.out.println("Service call successful, converting to DTO...");
             TransactionDTO responseDTO = transactionMapperService.toDTO(transaction);
+
+            System.out.println("=== ACCEPT TRANSACTION SUCCESS ===");
             return ResponseEntity.ok(responseDTO);
 
         } catch (Exception e) {
+            System.err.println("=== ACCEPT TRANSACTION ERROR ===");
+            System.err.println("Error Type: " + e.getClass().getSimpleName());
+            System.err.println("Error Message: " + e.getMessage());
+            System.err.println("Stack Trace:");
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            System.err.println("=== END ERROR ===");
+
+            // Return a structured error response
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            errorResponse.put("timestamp", LocalDateTime.now());
+            errorResponse.put("transactionId", transactionId);
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
         }
     }
+
 
     @GetMapping("/warehouse/{warehouseId}")
     public ResponseEntity<List<TransactionDTO>> getTransactionsForWarehouse(@PathVariable UUID warehouseId) {
