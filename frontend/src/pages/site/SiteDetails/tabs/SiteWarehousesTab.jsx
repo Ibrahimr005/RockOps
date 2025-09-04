@@ -1156,17 +1156,17 @@ const SiteWarehousesTab = ({siteId}) => {
             </span>
             )
         },
-        {
-            header: 'Role Type',
-            accessor: 'isManager',
-            sortable: true,
-            minWidth: '120px',
-            render: (row, value) => (
-                <span className={`warehouse-manage-employee-role-type-badge ${value ? 'manager' : 'worker'}`}>
-                {value ? 'Manager' : 'Worker'}
-            </span>
-            )
-        }
+        // {
+        //     header: 'Role Type',
+        //     accessor: 'isManager',
+        //     sortable: true,
+        //     minWidth: '120px',
+        //     render: (row, value) => (
+        //         <span className={`warehouse-manage-employee-role-type-badge ${value ? 'manager' : 'worker'}`}>
+        //         {value ? 'Manager' : 'Worker'}
+        //     </span>
+        //     )
+        // }
     ];
 
     const warehouseEmployeeActions = [
