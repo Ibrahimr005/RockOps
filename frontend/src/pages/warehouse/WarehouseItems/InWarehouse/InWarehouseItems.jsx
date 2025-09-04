@@ -456,18 +456,7 @@ const InWarehouseItems = ({
 
     // Table actions
     const actions = [
-        {
-            label: 'View Details',
-            icon: (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                </svg>
-            ),
-            onClick: (row) => handleOpenTransactionDetailsModal(row),
-            className: 'view',
-            isDisabled: (row) => !row.isAggregated
-        }
+
     ];
 
     return (
@@ -610,6 +599,7 @@ const InWarehouseItems = ({
                 actions={actions}
                 className="inventory-items-table"
                 showAddButton={true}
+                onRowClick={handleOpenTransactionDetailsModal}
                 addButtonText="Add Item"
                 addButtonIcon={
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -618,6 +608,7 @@ const InWarehouseItems = ({
                 }
                 onAddClick={handleOpenAddItemModal}
                 // Excel Export functionality
+
                 showExportButton={true}
                 exportButtonText="Export Items"
                 exportButtonIcon={

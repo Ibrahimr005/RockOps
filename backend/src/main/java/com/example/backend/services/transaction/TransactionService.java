@@ -344,7 +344,39 @@ public class TransactionService {
     public Transaction acceptTransaction(UUID transactionId, Map<UUID, Integer> receivedQuantities,
                                          Map<UUID, Boolean> itemsNotReceived,
                                          String username, String acceptanceComment) {
-        return acceptTransactionWithPurpose(transactionId, receivedQuantities, itemsNotReceived, username, acceptanceComment, null);
+
+        System.out.println("=== SERVICE ACCEPT DEBUG ===");
+        System.out.println("Transaction ID: " + transactionId);
+        System.out.println("Username: " + username);
+        System.out.println("Received quantities: " + receivedQuantities);
+        System.out.println("Items not received: " + itemsNotReceived);
+
+        // Validation
+        if (transactionId == null) {
+            throw new IllegalArgumentException("Transaction ID is null");
+        }
+        if (receivedQuantities == null) {
+            throw new IllegalArgumentException("Received quantities is null");
+        }
+        if (username == null) {
+            throw new IllegalArgumentException("Username is null");
+        }
+
+        try {
+            // Check if transaction exists
+            System.out.println("Checking if transaction exists...");
+            Transaction transaction = transactionRepository.findById(transactionId).orElse(null);
+            if (transaction == null) {
+                throw new IllegalArgumentException("Transaction not found with ID: " + transactionId);
+            }
+            System.out.println("Transaction found: Status=" + transaction.getStatus() + ", Items=" + transaction.getItems().size());
+
+            return acceptTransactionWithPurpose(transactionId, receivedQuantities, itemsNotReceived, username, acceptanceComment, null);
+        } catch (Exception e) {
+            System.err.println("Service method error: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     public Transaction acceptEquipmentTransaction(UUID transactionId, Map<UUID, Integer> receivedQuantities,
@@ -478,7 +510,19 @@ public class TransactionService {
             System.out.println("❌ Transaction REJECTED - But inventory adjusted as needed");
         }
 
-        return transactionRepository.save(transaction);
+        // At the end of acceptTransactionWithPurpose method, replace the return statement with:
+        try {
+            System.out.println("🔍 DEBUG: About to save updated transaction...");
+            Transaction savedTransaction = transactionRepository.save(transaction);
+            System.out.println("✅ Transaction acceptance completed successfully. Transaction ID: " + savedTransaction.getId());
+            return savedTransaction;
+        } catch (Exception e) {
+            System.err.println("❌ ERROR saving transaction:");
+            System.err.println("  Error type: " + e.getClass().getSimpleName());
+            System.err.println("  Error message: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to save transaction after acceptance", e);
+        }
     }
 
     /**
@@ -902,52 +946,61 @@ public class TransactionService {
     private void addToWarehouseInventory(Transaction transaction, TransactionItem transactionItem, int actualQuantity) {
         System.out.println("📦 Adding " + actualQuantity + " units to warehouse inventory as NEW ITEM ENTRY");
 
-        // Get the receiving warehouse
-        UUID receivingWarehouseId = transaction.getReceiverId();
-        System.out.println("🔍 DEBUG: Retrieved receiver warehouse ID from transaction: " + receivingWarehouseId);
+        try {
+            // Get the receiving warehouse
+            UUID receivingWarehouseId = transaction.getReceiverId();
+            System.out.println("🔍 DEBUG: Retrieved receiver warehouse ID from transaction: " + receivingWarehouseId);
 
-        // Fetch the warehouse entity
-        Warehouse warehouse = warehouseRepository.findById(receivingWarehouseId)
-                .orElseThrow(() -> new IllegalArgumentException("Warehouse not found: " + receivingWarehouseId));
-        System.out.println("🔍 DEBUG: Successfully fetched warehouse from repository: " + warehouse.getName() + " (ID: " + warehouse.getId() + ")");
+            // Fetch the warehouse entity
+            Warehouse warehouse = warehouseRepository.findById(receivingWarehouseId)
+                    .orElseThrow(() -> new IllegalArgumentException("Warehouse not found: " + receivingWarehouseId));
+            System.out.println("🔍 DEBUG: Successfully fetched warehouse from repository: " + warehouse.getName() + " (ID: " + warehouse.getId() + ")");
 
-        // 🆕 ALWAYS create a new item entry (no more checking for existing items)
-        Item newItem = new Item();
-        System.out.println("🔍 DEBUG: Initialized new Item instance");
+            // Create new item entry
+            Item newItem = new Item();
+            System.out.println("🔍 DEBUG: Initialized new Item instance");
 
-        System.out.println("🔍 DEBUG: Set item type on new item: " + transactionItem.getItemType());
-        newItem.setItemType(transactionItem.getItemType());
+            // Set properties one by one with logging
+            System.out.println("🔍 DEBUG: Setting item type: " + transactionItem.getItemType().getName());
+            newItem.setItemType(transactionItem.getItemType());
 
+            System.out.println("🔍 DEBUG: Setting quantity: " + actualQuantity);
+            newItem.setQuantity(actualQuantity);
 
-        newItem.setQuantity(actualQuantity);
-        System.out.println("🔍 DEBUG: Set quantity on new item: " + actualQuantity);
+            System.out.println("🔍 DEBUG: Setting item status to IN_WAREHOUSE");
+            newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
 
-        newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
-        System.out.println("🔍 DEBUG: Set item status to IN_WAREHOUSE");
+            System.out.println("🔍 DEBUG: Assigning warehouse to new item");
+            newItem.setWarehouse(warehouse);
 
-        newItem.setWarehouse(warehouse);
-        System.out.println("🔍 DEBUG: Assigned warehouse to new item: " + warehouse.getId());
+            System.out.println("🔍 DEBUG: Linking to TransactionItem: " + transactionItem.getId());
+            newItem.setTransactionItem(transactionItem);
 
-        newItem.setTransactionItem(transactionItem);
-        System.out.println("🔍 DEBUG: Linked new item to TransactionItem: " + transactionItem.getId());
+            System.out.println("🔍 DEBUG: Setting resolved status to false");
+            newItem.setResolved(false);
 
-        newItem.setResolved(false);
-        System.out.println("🔍 DEBUG: Set resolved status to false");
+            LocalDateTime now = LocalDateTime.now();
+            System.out.println("🔍 DEBUG: Setting createdAt to: " + now);
+            newItem.setCreatedAt(now);
 
-        newItem.setCreatedAt(LocalDateTime.now());
-        System.out.println("🔍 DEBUG: Set createdAt to current time: " + newItem.getCreatedAt());
+            System.out.println("🔍 DEBUG: Setting createdBy");
+            newItem.setCreatedBy("Created by a Transaction");
 
-        newItem.setCreatedBy("Created by a Transaction");
-        System.out.println("🔍 DEBUG: Set createdBy to 'Created by a Transaction'");
+            System.out.println("🔍 DEBUG: About to save new item to database...");
+            Item savedItem = itemRepository.save(newItem);
+            System.out.println("🔍 DEBUG: Successfully saved new item with ID: " + savedItem.getId());
 
-        itemRepository.save(newItem);
-        System.out.println("🔍 DEBUG: Saved new item to database with ID: " + newItem.getId());
+            System.out.println("✅ Created NEW item entry with quantity: " + actualQuantity +
+                    " linked to transaction: " + transaction.getId() +
+                    " (batch #" + transaction.getBatchNumber() + ")");
 
-        System.out.println("✅ Created NEW item entry with quantity: " + actualQuantity +
-                " linked to transaction: " + transaction.getId() +
-                " (batch #" + transaction.getBatchNumber() + ")");
-
-        System.out.println("✅ Successfully processed warehouse inventory addition - NEW ENTRY CREATED");
+        } catch (Exception e) {
+            System.err.println("❌ ERROR in addToWarehouseInventory:");
+            System.err.println("  Error type: " + e.getClass().getSimpleName());
+            System.err.println("  Error message: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to add item to warehouse inventory", e);
+        }
     }
 
     // ========================================

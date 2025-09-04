@@ -525,7 +525,9 @@ export const OFFER_ENDPOINTS = {
     TIMELINE: (offerId) => `/api/v1/offers/${offerId}/timeline`,
     TIMELINE_RETRYABLE: (offerId) => `/api/v1/offers/${offerId}/timeline/retryable`,
     TIMELINE_ATTEMPT: (offerId, attemptNumber) => `/api/v1/offers/${offerId}/timeline/attempt/${attemptNumber}`,
-    TIMELINE_STATS: (offerId) => `/api/v1/offers/${offerId}/timeline/stats`
+    TIMELINE_STATS: (offerId) => `/api/v1/offers/${offerId}/timeline/stats`,
+    // NEW: Continue and Return endpoint
+    CONTINUE_AND_RETURN: (offerId) => `/api/v1/offers/${offerId}/continue-and-return`
 };
 
 // Updated Candidate module endpoints
