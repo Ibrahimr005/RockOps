@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     FiPackage, FiCheck, FiClock, FiCheckCircle,
     FiX, FiFileText, FiDollarSign, FiList,
-    FiUser, FiCalendar, FiFlag, FiTrendingUp, FiRefreshCw, FiTrash2
+    FiUser, FiCalendar, FiFlag, FiTrendingUp, FiRefreshCw, FiTrash2, FiArrowRight
 } from 'react-icons/fi';
 
 import "../ProcurementOffers.scss";
@@ -34,8 +34,10 @@ const FinanceValidatedOffers = ({
     // New states for retry and delete functionality
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showRetryConfirm, setShowRetryConfirm] = useState(false);
+    const [showContinueAndReturnConfirm, setShowContinueAndReturnConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isRetrying, setIsRetrying] = useState(false);
+    const [isContinueAndReturn, setIsContinueAndReturn] = useState(false);
 
     // Snackbar states
     const [showSnackbar, setShowSnackbar] = useState(false);
@@ -76,6 +78,41 @@ const FinanceValidatedOffers = ({
             setUserRole(userInfo.role);
         }
     }, []);
+
+    // NEW: Helper function to calculate fulfillment status
+    const calculateFulfillmentStatus = (offer) => {
+        if (!offer?.requestOrder?.requestItems) {
+            return { hasFullFulfillment: false, hasAcceptedItems: false, fulfillmentDetails: {} };
+        }
+
+        const acceptedQuantities = {};
+        const requestedQuantities = {};
+
+        // Group by request item to compare quantities
+        offer.requestOrder.requestItems.forEach(requestItem => {
+            requestedQuantities[requestItem.id] = requestItem.quantity;
+
+            const offerItems = getOfferItemsForRequestItem(requestItem.id);
+            acceptedQuantities[requestItem.id] = offerItems
+                .filter(item => item.financeStatus === 'ACCEPTED')
+                .reduce((sum, item) => sum + item.quantity, 0);
+        });
+
+        // Check if we have full fulfillment
+        const hasFullFulfillment = Object.keys(requestedQuantities).every(itemId =>
+            acceptedQuantities[itemId] >= requestedQuantities[itemId]
+        );
+
+        // Check if we have any accepted items
+        const hasAcceptedItems = Object.values(acceptedQuantities).some(qty => qty > 0);
+
+        return {
+            hasFullFulfillment,
+            hasAcceptedItems,
+            acceptedQuantities,
+            requestedQuantities
+        };
+    };
 
     // Function to handle opening the finalize confirmation dialog
     const handleOpenFinalizeDialog = (offerId) => {
@@ -129,7 +166,7 @@ const FinanceValidatedOffers = ({
         setOfferToFinalizeId(null);
     };
 
-    // NEW: Retry functionality (copied exactly from working ManagerValidatedOffers)
+    // Retry functionality (copied exactly from working ManagerValidatedOffers)
     const handleRetryClick = () => {
         setShowRetryConfirm(true);
     };
@@ -171,7 +208,59 @@ const FinanceValidatedOffers = ({
         setShowRetryConfirm(false);
     };
 
-    // NEW: Delete functionality
+    // NEW: Continue and Return functionality
+    const handleContinueAndReturnClick = () => {
+        setShowContinueAndReturnConfirm(true);
+    };
+
+    const confirmContinueAndReturn = async () => {
+        setIsContinueAndReturn(true);
+        try {
+            // Call backend service to split the offer
+            const result = await offerService.continueAndReturnOffer(activeOffer.id);
+
+            let successMessage = '';
+
+            if (result.acceptedOffer && result.newOffer) {
+                successMessage = 'Accepted items sent to finalization. New offer created for remaining quantities.';
+            } else if (result.acceptedOffer) {
+                successMessage = 'Accepted items sent to finalization.';
+            } else if (result.newOffer) {
+                successMessage = 'New offer created for remaining quantities.';
+            }
+
+            showNotification(successMessage, 'success');
+
+            // Handle accepted offer going to finalization
+            if (result.acceptedOffer && onOfferFinalized) {
+                onOfferFinalized(result.acceptedOffer);
+            }
+
+            // Handle new offer for remaining quantities
+            if (result.newOffer && onRetryOffer) {
+                onRetryOffer(result.newOffer);
+            }
+
+            // Remove current offer from finance validated tab
+            if (onDeleteOffer) {
+                onDeleteOffer(activeOffer.id);
+            }
+
+            setShowContinueAndReturnConfirm(false);
+
+        } catch (error) {
+            console.error('Error in continue and return:', error);
+            showNotification('Failed to process offer. Please try again.', 'error');
+        } finally {
+            setIsContinueAndReturn(false);
+        }
+    };
+
+    const cancelContinueAndReturn = () => {
+        setShowContinueAndReturnConfirm(false);
+    };
+
+    // Delete functionality
     const handleDeleteClick = () => {
         setShowDeleteConfirm(true);
     };
@@ -223,6 +312,87 @@ const FinanceValidatedOffers = ({
             .split(' ')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
+    };
+
+    // NEW: Render action buttons based on fulfillment status
+    const renderActionButtons = () => {
+        if (!activeOffer) return null;
+
+        const { hasFullFulfillment, hasAcceptedItems } = calculateFulfillmentStatus(activeOffer);
+
+        if (hasFullFulfillment) {
+            // Case 1: Full fulfillment - Auto continue to finalization
+            return (
+                <button
+                    className="btn-primary"
+                    onClick={() => handleOpenFinalizeDialog(activeOffer.id)}
+                    disabled={loading}
+                    title="All requested quantities accepted - proceed to finalization"
+                >
+                    <FiCheckCircle /> Finalize Offer
+                </button>
+            );
+        } else if (hasAcceptedItems) {
+            // Case 2: Partial fulfillment - User chooses
+            return (
+                <div className="action-buttons-group">
+                    <button
+                        className="btn-primary"
+                        onClick={handleContinueAndReturnClick}
+                        disabled={loading || isContinueAndReturn}
+                        title="Continue with accepted items and create new offer for remaining quantities"
+                        style={{ marginRight: '10px' }}
+                    >
+                        <FiArrowRight />
+                        {isContinueAndReturn ? 'Processing...' : 'Continue & Return'}
+                    </button>
+                    <button
+                        className="btn-secondary"
+                        onClick={handleRetryClick}
+                        disabled={loading || isRetrying}
+                        title="Start over with entire quantity"
+                        style={{ marginRight: '10px' }}
+                    >
+                        <FiRefreshCw />
+                        {isRetrying ? 'Creating...' : 'Retry Entire Offer'}
+                    </button>
+                    <button
+                        className="btn-danger"
+                        onClick={handleDeleteClick}
+                        disabled={loading || isDeleting}
+                        title="Delete this offer permanently"
+                    >
+                        <FiTrash2 />
+                        {isDeleting ? 'Deleting...' : 'Delete Offer'}
+                    </button>
+                </div>
+            );
+        } else {
+            // Case 3: Nothing accepted - Only retry or delete
+            return (
+                <div className="action-buttons-group">
+                    <button
+                        className="btn-primary"
+                        onClick={handleRetryClick}
+                        disabled={loading || isRetrying}
+                        title="Create a new offer"
+                        style={{ marginRight: '10px' }}
+                    >
+                        <FiRefreshCw />
+                        {isRetrying ? 'Creating...' : 'Retry Offer'}
+                    </button>
+                    <button
+                        className="btn-primary"
+                        onClick={handleDeleteClick}
+                        disabled={loading || isDeleting}
+                        title="Delete this offer permanently"
+                    >
+                        <FiTrash2 />
+                        {isDeleting ? 'Deleting...' : 'Delete Offer'}
+                    </button>
+                </div>
+            );
+        }
     };
 
     return (
@@ -307,45 +477,8 @@ const FinanceValidatedOffers = ({
                                 </div>
                             </div>
                             <div className="procurement-header-actions">
-                                {/* THREE ACTION OPTIONS */}
-
-                                {/* Option 1: Finalize Offer - Primary action for accepted/partially accepted offers */}
-                                {activeOffer && (activeOffer.status === 'FINANCE_ACCEPTED' || activeOffer.status === 'FINANCE_PARTIALLY_ACCEPTED') && (
-                                    <button
-                                        className="btn-primary"
-                                        onClick={() => handleOpenFinalizeDialog(activeOffer.id)}
-                                        disabled={loading}
-                                        style={{ marginRight: '10px' }}
-                                    >
-                                        <FiCheckCircle /> Finalize Offer
-                                    </button>
-                                )}
-
-                                {/* Option 2 & 3: Retry and Delete - Only for FINANCE_REJECTED offers (based on financeStatus field) */}
-
-                                    <>
-                                        <button
-                                            className="btn-primary"
-                                            onClick={handleRetryClick}
-                                            disabled={loading || isRetrying}
-                                            title="Create a new offer based on this one"
-                                            style={{ marginRight: '10px' }}
-                                        >
-                                            <FiRefreshCw size={16} />
-                                            {isRetrying ? 'Creating...' : 'Retry Offer'}
-                                        </button>
-
-                                        <button
-                                            className="btn-primary"
-                                            onClick={handleDeleteClick}
-                                            disabled={loading || isDeleting}
-                                            title="Delete this offer permanently"
-                                        >
-                                            <FiTrash2 size={16} />
-                                            {isDeleting ? 'Deleting...' : 'Delete Offer'}
-                                        </button>
-                                    </>
-
+                                {/* SMART ACTION BUTTONS - Now uses the new logic */}
+                                {renderActionButtons()}
                             </div>
                         </div>
 
@@ -500,12 +633,27 @@ const FinanceValidatedOffers = ({
                 size="large"
             />
 
+            {/* Continue and Return Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={showContinueAndReturnConfirm}
+                type="info"
+                title="Continue & Return"
+                message={`Accepted items will proceed to finalization, and a new offer will be created for the remaining quantities. This action cannot be undone.`}
+                confirmText="Continue & Return"
+                cancelText="Cancel"
+                onConfirm={confirmContinueAndReturn}
+                onCancel={cancelContinueAndReturn}
+                isLoading={isContinueAndReturn}
+                showIcon={true}
+                size="large"
+            />
+
             {/* Retry Confirmation Dialog */}
             <ConfirmationDialog
                 isVisible={showRetryConfirm}
                 type="warning"
-                title="Retry Offer"
-                message={`Are you sure you want to create a new offer based on "${activeOffer?.title}"? This will create a duplicate offer that you can modify.`}
+                title="Retry Entire Offer"
+                message={`Are you sure you want to create a new offer for the entire quantity based on "${activeOffer?.title}"? This will discard the current finance review results.`}
                 confirmText="Create New Offer"
                 cancelText="Cancel"
                 onConfirm={confirmRetry}

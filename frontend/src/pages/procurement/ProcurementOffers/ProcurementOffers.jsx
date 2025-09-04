@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import './ProcurementOffers.scss';
-import { useLocation } from 'react-router-dom'; // Add this import
+import { useLocation } from 'react-router-dom';
 
 // Import services
 import { offerService } from '../../../services/procurement/offerService.js';
@@ -28,14 +28,14 @@ import {
 // Add this to your imports at the top
 import { FiCheck } from 'react-icons/fi';
 import offersImage from "../../../assets/imgs/pro_icon.png";
-import offersImageDark from "../../../assets/imgs/pro_icon_dark.png"; // Add dark mode image
+import offersImageDark from "../../../assets/imgs/pro_icon_dark.png";
 
 const API_URL = 'http://localhost:8080/api/v1';
 
 const ProcurementOffers = () => {
     const navigate = useNavigate();
     const { theme } = useTheme();
-    const location = useLocation(); // Add this line
+    const location = useLocation();
 
     // State
     const [pendingNewOffer, setPendingNewOffer] = useState(null);
@@ -46,10 +46,11 @@ const ProcurementOffers = () => {
     const [activeOffer, setActiveOffer] = useState(null);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
-    const [userRole, setUserRole] = useState(''); // Added for role checking
-    const [pendingSubmittedOffer, setPendingSubmittedOffer] = useState(null); // Track submitted offer for redirection
-    const [pendingFinalizedOffer, setPendingFinalizedOffer] = useState(null); // Track finalized offer for redirection
-    const [pendingCompletedOffer, setPendingCompletedOffer] = useState(null); // Track completed offer for redirection
+    const [userRole, setUserRole] = useState('');
+    const [pendingSubmittedOffer, setPendingSubmittedOffer] = useState(null);
+    const [pendingFinalizedOffer, setPendingFinalizedOffer] = useState(null);
+    const [pendingCompletedOffer, setPendingCompletedOffer] = useState(null);
+    const [pendingValidatedOffer, setPendingValidatedOffer] = useState(null); // NEW: Track validated offer for redirection
 
     // Helper function for authenticated fetch (keep for backward compatibility with child components)
     const fetchWithAuth = async (url, options = {}) => {
@@ -158,6 +159,16 @@ const ProcurementOffers = () => {
                             setActiveOffer(offersData[0]);
                         }
                     }
+                    // NEW: If we have a pending validated offer and we're on the validated tab, select it
+                    else if (pendingValidatedOffer && activeTab === 'validated') {
+                        const validatedOffer = offersData.find(offer => offer.id === pendingValidatedOffer.id);
+                        if (validatedOffer) {
+                            setActiveOffer(validatedOffer);
+                            setPendingValidatedOffer(null); // Clear the pending offer
+                        } else {
+                            setActiveOffer(offersData[0]);
+                        }
+                    }
                     // If we have a pending finalized offer and we're on the finalize tab, select it
                     else if (pendingFinalizedOffer && activeTab === 'finalize') {
                         const finalizedOffer = offersData.find(offer => offer.id === pendingFinalizedOffer.id);
@@ -173,7 +184,6 @@ const ProcurementOffers = () => {
                         setActiveOffer(pendingCompletedOffer);
                         setPendingCompletedOffer(null); // Clear the pending offer
                     }
-
                     // Add this BEFORE the existing "else if (activeOffer && offersData.find..." condition:
                     else if (pendingNewOffer && activeTab === 'unstarted') {
                         const newOffer = offersData.find(offer => offer.id === pendingNewOffer.id);
@@ -184,7 +194,6 @@ const ProcurementOffers = () => {
                             setActiveOffer(offersData[0]);
                         }
                     }
-
                     // If we have an activeOffer and it exists in the new data, keep it selected
                     else if (activeOffer && offersData.find(offer => offer.id === activeOffer.id)) {
                         // Find the updated version of the active offer from the fetched data
@@ -207,10 +216,7 @@ const ProcurementOffers = () => {
         };
 
         fetchData();
-    }, [activeTab, pendingSubmittedOffer, pendingFinalizedOffer, pendingCompletedOffer, pendingNewOffer]); // Add pendingNewOffer
-
-    // Add this useEffect to handle navigation from request orders
-
+    }, [activeTab, pendingSubmittedOffer, pendingFinalizedOffer, pendingCompletedOffer, pendingNewOffer, pendingValidatedOffer]); // Add pendingValidatedOffer
 
     // When active offer changes, fetch its request order
     useEffect(() => {
@@ -364,6 +370,17 @@ const ProcurementOffers = () => {
         setActiveTab('completed');
     };
 
+    // NEW: Handle offer validated (approved/declined) callback
+    const handleOfferValidated = (validatedOffer, action) => {
+        console.log(`Offer ${action}:`, validatedOffer);
+
+        // Store the validated offer for selection after tab switch
+        setPendingValidatedOffer(validatedOffer);
+
+        // Switch to validated tab
+        setActiveTab('validated');
+    };
+
     // Prepare stats data for the intro card
     const getActiveTabLabel = () => {
         switch(activeTab) {
@@ -488,6 +505,7 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
+                                onOfferValidated={handleOfferValidated} // NEW: Pass the validation handler
                             />
                         )}
 
@@ -511,8 +529,8 @@ const ProcurementOffers = () => {
                                 setError={setError}
                                 setSuccess={setSuccess}
                                 onOfferFinalized={handleOfferSentToFinalize}
-                                onRetryOffer={handleRetryOffer}  // ADD THIS LINE
-                                onDeleteOffer={handleDeleteOffer}  // ADD THIS LINE
+                                onRetryOffer={handleRetryOffer}
+                                onDeleteOffer={handleDeleteOffer}
                             />
                         )}
 

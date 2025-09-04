@@ -317,17 +317,7 @@ const ValidatedTransactionsTable = ({
 
     // Actions array for DataTable
     const actions = [
-        {
-            label: 'View',
-            icon: (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                </svg>
-            ),
-            className: 'view',
-            onClick: (row) => handleOpenViewModal(row)
-        }
+
     ];
 
     // 🎯 Excel export event handlers
@@ -381,6 +371,7 @@ const ValidatedTransactionsTable = ({
                 onExportStart={handleExportStart}
                 onExportComplete={handleExportComplete}
                 onExportError={handleExportError}
+                onRowClick={handleOpenViewModal}  // Add this line
             />
 
             {/* View Transaction Modal */}
