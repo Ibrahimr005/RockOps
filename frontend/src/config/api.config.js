@@ -450,7 +450,9 @@ export const DOCUMENT_ENDPOINTS = {
 export const PARTNER_ENDPOINTS = {
     BASE: '/api/v1/partner',
     GET_ALL: '/api/v1/partner/getallpartners',
-    ADD: '/api/v1/partner/add'
+    ADD: '/api/v1/partner/add',
+    UPDATE: (id) => `/api/v1/partner/update/${id}`,
+    DELETE: (id) =>  `/api/v1/partner/delete/${id}`
 };
 
 // Authentication module endpoints
