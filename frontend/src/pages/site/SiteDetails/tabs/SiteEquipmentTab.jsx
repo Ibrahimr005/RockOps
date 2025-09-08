@@ -252,6 +252,7 @@ const SiteEquipmentTab = ({siteId}) => {
                                         <thead>
                                         <tr>
                                             <th>{t('common.type')}</th>
+                                            <th>{t('common.type')}</th>
                                             <th>{t('common.status')}</th>
                                             <th>{t('common.action')}</th>
                                         </tr>
@@ -259,6 +260,7 @@ const SiteEquipmentTab = ({siteId}) => {
                                         <tbody>
                                         {availableEquipment.map((eq) => {
                                             const eqData = eq.equipment || {};
+                                            const eqModel = eq.model || {};
                                             const equipmentId = eqData.id || eq.id;
                                             const equipmentType = eq.type?.name || eq.typeName || '';
                                             const status = eqData.status || eq.status;
@@ -270,6 +272,12 @@ const SiteEquipmentTab = ({siteId}) => {
                                                         data-label={t('common.type')}
                                                     >
                                                         {equipmentType}
+                                                    </td>
+                                                    <td
+                                                        className="assign-equipment-type"
+                                                        data-label={t('common.type')}
+                                                    >
+                                                        {eqModel}
                                                     </td>
                                                     <td data-label={t('common.status')}>
                                                         <span
