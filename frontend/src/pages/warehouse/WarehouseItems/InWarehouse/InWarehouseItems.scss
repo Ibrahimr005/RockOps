@@ -1044,47 +1044,7 @@
   }
 }
 
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-  .add-item-info {
-    background: var(--color-surface-secondary) !important;
-    border-color: var(--color-primary) !important;
-  }
 
-  .low-stock-warning-banner {
-    background: linear-gradient(135deg, #3d3d00 0%, #4a4a00 100%);
-    border-color: #5d5d00;
-  }
-
-  .low-stock-warning-banner::before {
-    background: linear-gradient(180deg, #ffd700 0%, #ffb300 100%);
-  }
-
-  .warning-title,
-  .warning-message {
-    color: #ffd700;
-  }
-
-  .low-stock-item {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffd700;
-    border-color: rgba(255, 215, 0, 0.3);
-  }
-
-  .min-quantity-info {
-    background: rgba(220, 53, 69, 0.2);
-    color: #ff6b6b;
-  }
-
-  .transaction-detail-card {
-    background: var(--section-background-color) !important;
-    border: 1px solid var(--border-color) !important;
-  }
-
-  .transaction-card-body {
-    background-color: var(--section-background-color) !important;
-  }
-}
 
 /* Utility Classes and Animations */
 @keyframes spin {
