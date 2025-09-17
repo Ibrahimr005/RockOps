@@ -1,0 +1,582 @@
+// ===================================
+// LeaveRequestList.scss - Leave Request Management Page Styles
+// ===================================
+
+.leave-request-list-container {
+
+  // Header section
+  .leave-request-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    background: var(--section-background-color);
+    border-radius: var(--radius-md);
+    padding: 2rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+
+    h1 {
+      font-size: 2rem;
+      font-weight: var(--bold-font-weight);
+      color: var(--head-title-color);
+      margin: 0;
+      line-height: 1.2;
+
+      .leave-request-header__subtitle {
+        font-size: 1rem;
+        font-weight: 400;
+        color: var(--color-text-secondary);
+        margin: 0.5rem 0 0 0;
+        line-height: 1.5;
+      }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast) ease;
+      text-decoration: none;
+      justify-content: center;
+      min-width: fit-content;
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      &.btn-primary {
+        background-color: var(--color-primary);
+        color: white;
+
+        &:hover:not(:disabled) {
+          background-color: var(--color-primary-dark);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3);
+        }
+      }
+    }
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch;
+
+      .btn {
+        align-self: flex-start;
+      }
+    }
+  }
+
+  // Error display
+  .leave-request-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    color: #b91c1c;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .retry-button {
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: all var(--transition-fast) ease;
+
+      &:hover {
+        background: #b91c1c;
+      }
+    }
+  }
+
+  // Employee cell styling
+  .employee-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .employee-avatar {
+      flex-shrink: 0;
+    }
+
+    .employee-name {
+      font-weight: 600;
+      color: var(--color-text-primary);
+      font-size: 0.875rem;
+      display: block;
+    }
+
+    .employee-info {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-top: 0.125rem;
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+
+      .separator {
+        color: var(--color-text-tertiary);
+      }
+
+      .employee-position {
+        font-weight: 500;
+      }
+
+      .employee-department {
+        color: var(--color-text-tertiary);
+      }
+    }
+
+    .employee-id {
+      font-size: 0.7rem;
+      color: var(--color-text-tertiary);
+      margin-top: 0.125rem;
+    }
+  }
+
+  // Duration cell styling
+  .duration-cell {
+    .date-range {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      margin-bottom: 0.5rem;
+
+      .start-date, .end-date {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-size: 0.875rem;
+
+        .date-icon {
+          color: var(--color-text-tertiary);
+          font-size: 0.75rem;
+        }
+      }
+
+      .date-separator {
+        font-size: 0.75rem;
+        color: var(--color-text-tertiary);
+        text-align: center;
+        font-style: italic;
+      }
+    }
+
+    .days-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+
+      .working-days {
+        font-weight: 600;
+        color: var(--color-primary);
+        font-size: 0.875rem;
+      }
+
+      .total-days {
+        font-size: 0.75rem;
+        color: var(--color-text-tertiary);
+      }
+    }
+  }
+
+  // Status cell styling
+  .status-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .overdue-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--color-danger);
+      font-weight: 500;
+
+      .overdue-icon {
+        font-size: 0.7rem;
+      }
+    }
+  }
+
+  // Submitted cell styling
+  .submitted-cell {
+    .submitted-date {
+      font-weight: 500;
+      color: var(--color-text-primary);
+      margin-bottom: 0.125rem;
+    }
+
+    .submitted-by {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+    }
+  }
+
+  // Review cell styling
+  .review-cell {
+    .reviewed-date {
+      font-weight: 500;
+      color: var(--color-text-primary);
+      margin-bottom: 0.125rem;
+    }
+
+    .reviewed-by {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 0.25rem;
+    }
+
+    .review-comments {
+      font-size: 0.75rem;
+      color: var(--color-text-tertiary);
+      font-style: italic;
+      background: var(--color-surface-secondary);
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-xs);
+    }
+  }
+
+  .no-review {
+    font-size: 0.875rem;
+    color: var(--color-text-tertiary);
+    font-style: italic;
+  }
+
+  // Delegation cell styling
+  .delegation-cell {
+    .delegated-to {
+      font-weight: 500;
+      color: var(--color-text-primary);
+      margin-bottom: 0.125rem;
+    }
+
+    .delegation-notes {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      font-style: italic;
+      background: var(--color-surface-secondary);
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-xs);
+    }
+
+    .no-delegation {
+      font-size: 0.875rem;
+      color: var(--color-text-tertiary);
+      font-style: italic;
+    }
+  }
+
+  // Emergency contact cell styling
+  .emergency-cell {
+    .contact-name {
+      font-weight: 500;
+      color: var(--color-text-primary);
+      margin-bottom: 0.125rem;
+    }
+
+    .contact-phone {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      font-family: monospace;
+    }
+
+    .no-emergency {
+      font-size: 0.875rem;
+      color: var(--color-text-tertiary);
+      font-style: italic;
+    }
+  }
+
+  // Date cell styling
+  .date-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .date-icon {
+      color: var(--color-text-tertiary);
+      font-size: 0.75rem;
+    }
+  }
+
+  // Days count styling
+  .days-count {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    background: var(--color-surface-secondary);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+  }
+
+  // Reason cell styling
+  .reason-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // Leave type badges
+  .leave-type {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &.leave-type-vacation,
+    &.leave-type-annual {
+      background: rgba(59, 130, 246, 0.1);
+      color: #1d4ed8;
+    }
+
+    &.leave-type-sick {
+      background: rgba(248, 113, 113, 0.1);
+      color: #dc2626;
+    }
+
+    &.leave-type-personal {
+      background: rgba(139, 92, 246, 0.1);
+      color: #7c3aed;
+    }
+
+    &.leave-type-maternity {
+      background: rgba(236, 72, 153, 0.1);
+      color: #be185d;
+    }
+
+    &.leave-type-paternity {
+      background: rgba(34, 197, 94, 0.1);
+      color: #059669;
+    }
+
+    &.leave-type-emergency {
+      background: rgba(251, 191, 36, 0.1);
+      color: #d97706;
+    }
+
+    &.leave-type-unpaid {
+      background: rgba(107, 114, 128, 0.1);
+      color: #374151;
+    }
+
+    &.leave-type-bereavement {
+      background: rgba(75, 85, 99, 0.1);
+      color: #1f2937;
+    }
+
+    &.leave-type-compensatory {
+      background: rgba(16, 185, 129, 0.1);
+      color: #047857;
+    }
+  }
+
+  // Status badges
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+
+    &.status-pending {
+      background: rgba(251, 191, 36, 0.1);
+      color: #d97706;
+      border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+
+    &.status-approved {
+      background: rgba(34, 197, 94, 0.1);
+      color: #059669;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    &.status-rejected {
+      background: rgba(248, 113, 113, 0.1);
+      color: #dc2626;
+      border: 1px solid rgba(248, 113, 113, 0.2);
+    }
+
+    &.status-cancelled {
+      background: rgba(107, 114, 128, 0.1);
+      color: #374151;
+      border: 1px solid rgba(107, 114, 128, 0.2);
+    }
+
+    &.status-unknown {
+      background: var(--color-surface-secondary);
+      color: var(--color-text-secondary);
+      border: 1px solid var(--border-color);
+    }
+  }
+
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    padding: 1rem;
+
+    .leave-request-header {
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+
+      h1 {
+        font-size: 1.5rem;
+      }
+    }
+
+    .employee-name-cell {
+      .employee-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 0.75rem;
+
+    .leave-request-header {
+      padding: 1rem;
+
+      h1 {
+        font-size: 1.25rem;
+
+        .leave-request-header__subtitle {
+          font-size: 0.875rem;
+        }
+      }
+    }
+  }
+
+  // Dark mode adjustments
+  @media (prefers-color-scheme: dark) {
+    .leave-request-error {
+      background: rgba(248, 113, 113, 0.1);
+      border-color: rgba(248, 113, 113, 0.2);
+      color: #fca5a5;
+
+      .retry-button {
+        background: #ef4444;
+
+        &:hover {
+          background: #dc2626;
+        }
+      }
+    }
+
+    .leave-type {
+      &.leave-type-vacation,
+      &.leave-type-annual {
+        background: rgba(59, 130, 246, 0.2);
+        color: #93c5fd;
+      }
+
+      &.leave-type-sick {
+        background: rgba(248, 113, 113, 0.2);
+        color: #fca5a5;
+      }
+
+      &.leave-type-personal {
+        background: rgba(139, 92, 246, 0.2);
+        color: #c4b5fd;
+      }
+
+      &.leave-type-maternity {
+        background: rgba(236, 72, 153, 0.2);
+        color: #f9a8d4;
+      }
+
+      &.leave-type-paternity {
+        background: rgba(34, 197, 94, 0.2);
+        color: #86efac;
+      }
+
+      &.leave-type-emergency {
+        background: rgba(251, 191, 36, 0.2);
+        color: #fde047;
+      }
+    }
+
+    .status-badge {
+      &.status-pending {
+        background: rgba(251, 191, 36, 0.2);
+        color: #fde047;
+        border-color: rgba(251, 191, 36, 0.3);
+      }
+
+      &.status-approved {
+        background: rgba(34, 197, 94, 0.2);
+        color: #86efac;
+        border-color: rgba(34, 197, 94, 0.3);
+      }
+
+      &.status-rejected {
+        background: rgba(248, 113, 113, 0.2);
+        color: #fca5a5;
+        border-color: rgba(248, 113, 113, 0.3);
+      }
+
+      &.status-cancelled {
+        background: rgba(107, 114, 128, 0.2);
+        color: #d1d5db;
+        border-color: rgba(107, 114, 128, 0.3);
+      }
+    }
+  }
+
+  // Animation enhancements
+  .status-badge,
+  .leave-type {
+    transition: all var(--transition-normal) ease;
+  }
+
+  // Accessibility improvements
+  .status-badge,
+  .leave-type {
+    &:focus {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  // Print styles
+  @media print {
+    .leave-request-header .btn,
+    .leave-request-error .retry-button {
+      display: none;
+    }
+
+    .leave-request-list-container {
+      padding: 0;
+    }
+
+    .leave-request-header {
+      box-shadow: none;
+      border: 1px solid #000;
+    }
+  }
+}

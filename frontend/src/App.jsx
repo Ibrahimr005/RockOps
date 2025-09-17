@@ -29,6 +29,8 @@ import MaintenanceTypeManagement from "./pages/equipment/EquipmentManagement/Mai
 import ViewEquipmentData from "./pages/equipment/EquipmentInfo/ViewEquipmentData.jsx";
 import EquipmentDetails from "./pages/equipment/EquipmentDetails/EquipmentDetails.jsx";
 import RelatedDocuments from "./pages/RelatedDocuments/RelatedDocuments.jsx";
+import LeaveRequestDetailPage from './pages/HR/LeaveRequests/LeaveRequestDetailPage';
+import VacationBalancePage from './pages/HR/VacationBalance/VacationBalancePage';
 
 // ===================== Warehouse Imports =====================
 import WarehousesList from "./pages/warehouse/WarehousesList/WarehousesList.jsx";
@@ -73,6 +75,7 @@ import PayslipManagement from "./pages/payroll/payslip/PayslipManagement.jsx";
 import PayslipEdit from "./pages/payroll/payslip/PayslipEdit.jsx";
 import DeductionManagement from "./pages/payroll/deduction/DeductionManagement.jsx";
 import DepartmentDetails from "./pages/HR/Departments/DepartmentDetails.jsx";
+import LeaveRequestList from "./pages/HR/LeaveRequests/LeaveRequestList.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -177,6 +180,10 @@ function App() {
                                         <Route path="departments" element={<DepartmentsList/>}/>
                                         <Route path="departments/:id" element={<DepartmentDetails/>}/>
                                         <Route path="promotions/*" element={<PromotionList/>}/>
+                                        <Route path="leave-requests/:id" element={<LeaveRequestDetailPage />} />
+                                        <Route path="leave-requests" element={<LeaveRequestList />} />
+
+                                        <Route path="vacation-balances" element={<VacationBalancePage />} />
                                     </Route>
 
 
