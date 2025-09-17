@@ -9,6 +9,7 @@ import { equipmentService } from "../../../services/equipmentService";
 import EquipmentCard from "./components/card/EquipmentCard.jsx";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useEquipmentPermissions } from "../../../utils/rbac";
+import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
 
 const EquipmentMain = () => {
     const [equipmentData, setEquipmentData] = useState([]);
@@ -359,10 +360,7 @@ const EquipmentMain = () => {
             {/* Equipment cards grid */}
             <section className="equipment-cards-container">
                 {loading ? (
-                    <div className="equipment-loading">
-                        <div className="equipment-loading-spinner"></div>
-                        <p>Loading equipment data...</p>
-                    </div>
+                    <LoadingPage />
                 ) : error ? (
                     <div className="equipment-error">
                         <FaExclamationCircle />

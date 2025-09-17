@@ -5,6 +5,7 @@ import { IoDocumentOutline, IoArrowBackOutline } from "react-icons/io5";
 import { BsPrinter } from "react-icons/bs";
 import { equipmentService } from "../../../services/equipmentService.js";
 import "./ViewEquipmentData.scss";
+import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
 
 const ViewEquipmentData = () => {
     const params = useParams();
@@ -70,7 +71,7 @@ const ViewEquipmentData = () => {
         );
     };
 
-    if (loading) return <div className="equipment-info-page"><div className="loading-message">Loading equipment details...</div></div>;
+    if (loading) return <LoadingPage />;
     if (error) return <div className="equipment-info-page"><div className="error-message">Error: {error}</div></div>;
     if (!equipmentData) return <div className="equipment-info-page"><div className="error-message">No equipment data found</div></div>;
 

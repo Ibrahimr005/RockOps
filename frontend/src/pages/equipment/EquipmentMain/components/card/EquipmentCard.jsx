@@ -1,7 +1,8 @@
-import React, { forwardRef, useState, useImperativeHandle, Fragment } from "react";
+import React, { forwardRef, useState, useImperativeHandle, Fragment, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./EquipmentCard.scss";
 import equipmentIcon from "../../../../../assets/imgs/equipment_icon.png";
+import { equipmentService } from "../../../../../services/equipmentService";
 
 const EquipmentCard = forwardRef((props, ref) => {
     const [equipmentId, setEquipmentId] = useState("");
@@ -43,6 +44,31 @@ const EquipmentCard = forwardRef((props, ref) => {
         return "status-unknown";
     };
 
+    // Function to fetch equipment photo from MinIO service
+    const fetchEquipmentPhoto = async (equipmentId) => {
+        if (!equipmentId) return;
+        
+        try {
+            const response = await equipmentService.getEquipmentMainPhoto(equipmentId);
+            if (response.data) {
+                setImageUrl(response.data);
+            }
+        } catch (error) {
+            console.log(`Failed to fetch photo for equipment ${equipmentId}:`, error);
+            // Try refresh to get new presigned URL
+            try {
+                const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(equipmentId);
+                if (refreshResponse.data) {
+                    setImageUrl(refreshResponse.data);
+                }
+            } catch (refreshError) {
+                console.log(`Failed to refresh photo for equipment ${equipmentId}:`, refreshError);
+                // Use fallback image
+                setImageUrl("");
+            }
+        }
+    };
+
     // Function to update the card data
     const updateEquipmentCard = (
         newModelName,
@@ -56,8 +82,16 @@ const EquipmentCard = forwardRef((props, ref) => {
         setSiteName(newSiteName || "N/A");
         setStatus(newStatus || "Unknown");
         setDriver(newDriver || "No Driver");
-        setImageUrl(newImageUrl || "");
         setEquipmentId(newEquipmentId || "");
+
+        // First set the initial image URL if provided
+        if (newImageUrl) {
+            setImageUrl(newImageUrl);
+        } else {
+            // If no imageUrl provided, fetch from MinIO service
+            setImageUrl(""); // Reset to fallback initially
+            fetchEquipmentPhoto(newEquipmentId);
+        }
 
         // Log for debugging
         console.log(`EquipmentCard updated for ${newModelName} with siteName: ${newSiteName} and image: ${newImageUrl}`);
