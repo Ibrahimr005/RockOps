@@ -44,27 +44,29 @@ const EquipmentCard = forwardRef((props, ref) => {
         return "status-unknown";
     };
 
-    // Function to fetch equipment photo from MinIO service
+    // Function to fetch equipment photo from storage service (MinIO/AWS S3)
     const fetchEquipmentPhoto = async (equipmentId) => {
         if (!equipmentId) return;
         
         try {
             const response = await equipmentService.getEquipmentMainPhoto(equipmentId);
             if (response.data) {
+                console.log(`Successfully fetched photo for equipment ${equipmentId}:`, response.data);
                 setImageUrl(response.data);
             }
         } catch (error) {
             console.log(`Failed to fetch photo for equipment ${equipmentId}:`, error);
-            // Try refresh to get new presigned URL
+            // Try refresh to get new presigned URL (important for AWS S3 which has expiring URLs)
             try {
                 const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(equipmentId);
                 if (refreshResponse.data) {
+                    console.log(`Successfully refreshed photo for equipment ${equipmentId}:`, refreshResponse.data);
                     setImageUrl(refreshResponse.data);
                 }
             } catch (refreshError) {
                 console.log(`Failed to refresh photo for equipment ${equipmentId}:`, refreshError);
-                // Use fallback image
-                setImageUrl("");
+                // Keep existing imageUrl as fallback, or use empty string
+                console.log(`Using fallback image for equipment ${equipmentId}`);
             }
         }
     };
@@ -84,14 +86,10 @@ const EquipmentCard = forwardRef((props, ref) => {
         setDriver(newDriver || "No Driver");
         setEquipmentId(newEquipmentId || "");
 
-        // First set the initial image URL if provided
-        if (newImageUrl) {
-            setImageUrl(newImageUrl);
-        } else {
-            // If no imageUrl provided, fetch from MinIO service
-            setImageUrl(""); // Reset to fallback initially
-            fetchEquipmentPhoto(newEquipmentId);
-        }
+        // Always try to fetch the latest photo from service first
+        // This ensures we get fresh URLs for both MinIO and AWS S3
+        setImageUrl(newImageUrl || ""); // Set initial value
+        fetchEquipmentPhoto(newEquipmentId);
 
         // Log for debugging
         console.log(`EquipmentCard updated for ${newModelName} with siteName: ${newSiteName} and image: ${newImageUrl}`);
