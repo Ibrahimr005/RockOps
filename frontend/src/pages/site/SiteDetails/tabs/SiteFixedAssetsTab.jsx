@@ -5,6 +5,7 @@ import {useAuth} from "../../../../contexts/AuthContext";
 import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import { siteService } from "../../../../services/siteService";
 import {FaPlus} from "react-icons/fa";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const SiteFixedAssetsTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -160,7 +161,11 @@ const SiteFixedAssetsTab = ({siteId}) => {
         setSnackbar(prev => ({ ...prev, show: false }));
     };
 
-    if (loading) return <div className="loading-container">{t('site.loadingFixedAssets')}</div>;
+    if (loading) return  <ContentLoader
+        context="employee-details"
+        message={t('site.loadingFixedAssets')}
+        fadeIn={true}
+    />;
 
     return (
         <div className="site-fixed-assets-tab">

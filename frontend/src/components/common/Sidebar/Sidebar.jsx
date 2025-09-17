@@ -35,7 +35,16 @@ import {
     FaTags,
     FaListAlt,
     FaArrowLeft,
-    FaBook, FaBalanceScale, FaReceipt, FaPiggyBank, FaFileAlt, FaMoneyBillWave, FaChartBar, FaArrowUp, FaMinusCircle,
+    FaBook,
+    FaBalanceScale,
+    FaReceipt,
+    FaPiggyBank,
+    FaFileAlt,
+    FaMoneyBillWave,
+    FaChartBar,
+    FaArrowUp,
+    FaMinusCircle,
+    FaCalendarCheck, FaCalendarTimes,
 } from 'react-icons/fa';
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE } from '../../../utils/roles';
 
@@ -337,10 +346,16 @@ const Sidebar = () => {
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
                 },
                 {
-                    title: 'Promotions',
-                    icon: <FaArrowUp/>,
-                    path: '/hr/promotions',
-                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE],
+                    title: 'Leave Requests',
+                    icon: <FaCalendarTimes/>,
+                    path: '/hr/leave-requests',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, ]
+                },
+                {
+                    title: 'Vacation Balances',
+                    icon: <FaCalendarCheck/>,
+                    path: '/hr/vacation-balances',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE]
                 },
                 {
                     title: 'Attendance',
@@ -348,6 +363,13 @@ const Sidebar = () => {
                     path: '/hr/attendance',
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
                 },
+                {
+                    title: 'Promotions',
+                    icon: <FaArrowUp/>,
+                    path: '/hr/promotions',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE],
+                },
+
             ]
         },
 

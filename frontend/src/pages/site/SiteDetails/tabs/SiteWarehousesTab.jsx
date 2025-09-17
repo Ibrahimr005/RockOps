@@ -8,6 +8,7 @@ import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import ConfirmationDialog from "../../../../components/common/ConfirmationDialog/ConfirmationDialog";
 import { siteService } from "../../../../services/siteService";
 import { warehouseService } from "../../../../services/warehouseService";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const SiteWarehousesTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -1186,7 +1187,11 @@ const SiteWarehousesTab = ({siteId}) => {
         },
     ];
 
-    if (loading) return <div className="loading-container">Loading warehouse information...</div>;
+    if (loading) return <ContentLoader
+        context="employee-details"
+        message="Loading Warehouses"
+        fadeIn={true}
+    />;
 
     return (
         <div className="site-warehouses-tab">

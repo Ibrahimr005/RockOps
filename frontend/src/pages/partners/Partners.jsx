@@ -168,7 +168,7 @@ const Partners = () => {
             {/* Add Partner Modal */}
             {showAddModal && (
                 <div className="modal-backdrop">
-                    <div className="modal-container">
+                    <div className="modal-content">
                         <div className="modal-header">
                             <h3>{t('partners.addTitle', 'Add New Partner')}</h3>
                             <button className="btn-close" onClick={() => setShowAddModal(false)}>×</button>
@@ -198,31 +198,33 @@ const Partners = () => {
                                     disabled={actionLoading}
                                 />
                             </div>
-                            <div className="modal-footer">
-                                <button
-                                    type="button"
-                                    className="modal-btn-secondary"
-                                    onClick={() => setShowAddModal(false)}
-                                    disabled={actionLoading}
-                                >
-                                    {t('common.cancel', 'Cancel')}
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="btn btn-success"
-                                    disabled={actionLoading}
-                                >
-                                    {actionLoading ? (
-                                        <>
-                                            <span className="spinner"></span>
-                                            {t('common.adding', 'Adding...')}
-                                        </>
-                                    ) : (
-                                        t('common.add', 'Add')
-                                    )}
-                                </button>
-                            </div>
+
                         </form>
+                        <div className="modal-footer">
+                            <button
+                                type="button"
+                                className="modal-btn-secondary"
+                                onClick={() => setShowAddModal(false)}
+                                disabled={actionLoading}
+                            >
+                                {t('common.cancel', 'Cancel')}
+                            </button>
+                            <button
+                                type="submit"
+                                className="btn btn-success"
+                                onClick={handleAddPartner}
+                                disabled={actionLoading}
+                            >
+                                {actionLoading ? (
+                                    <>
+                                        <span className="spinner"></span>
+                                        {t('common.adding', 'Adding...')}
+                                    </>
+                                ) : (
+                                    t('common.add', 'Add')
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
