@@ -16,6 +16,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { useEquipmentPermissions } from "../../../utils/rbac";
 import TransactionHub from "../../../components/equipment/TransactionHub/TransactionHub";
 import EquipmentSarkyMatrix from '../EquipmentSarkyMatrix/EquipmentSarkyMatrix';
+import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
 
 // Set the app element for accessibility
 Modal.setAppElement('#root'); // Adjust this to match your root element ID
@@ -167,7 +168,7 @@ const EquipmentDetails = () => {
         navigate(`../info/${params.EquipmentID}`);
     };
 
-    if (loading) return <div className="loading-spinner">Loading...</div>;
+    if (loading) return <LoadingPage />;
     if (error) return <div className="error-message">Error: {error}</div>;
 
     return (

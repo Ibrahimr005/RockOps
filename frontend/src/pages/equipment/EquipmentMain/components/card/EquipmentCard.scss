@@ -17,6 +17,12 @@
   cursor: pointer; /* Add pointer cursor to show it's clickable */
 }
 
+/* Spin animation for loading spinner */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .equipment-card:hover {
   transform: translateY(-8px); /* Increased lift effect */
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2); /* Stronger shadow */
