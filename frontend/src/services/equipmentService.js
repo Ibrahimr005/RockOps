@@ -20,9 +20,16 @@ export const equipmentService = {
         return apiClient.get(EQUIPMENT_ENDPOINTS.BY_ID(id));
     },
 
-    // Get equipment main photo
+    // Get equipment main photo (works with both MinIO and AWS S3)
     getEquipmentMainPhoto: (equipmentId) => {
+        console.log(`Fetching main photo for equipment: ${equipmentId}`);
         return apiClient.get(`/minio/equipment/${equipmentId}/main-photo`);
+    },
+
+    // Refresh equipment main photo (get new presigned URL - important for AWS S3)
+    refreshEquipmentMainPhoto: (equipmentId) => {
+        console.log(`Refreshing main photo URL for equipment: ${equipmentId}`);
+        return apiClient.get(`/minio/equipment/${equipmentId}/main-photo/refresh`);
     },
 
     // Add new equipment

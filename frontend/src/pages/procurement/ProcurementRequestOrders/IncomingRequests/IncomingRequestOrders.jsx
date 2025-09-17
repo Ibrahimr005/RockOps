@@ -246,7 +246,7 @@ const IncomingRequestOrders = ({
                         activeTab: 'unstarted'
                     }
                 });
-            }, 1500); // Small delay to show success message
+            }, 0); // Small delay to show success message
 
             if (onDataChange) {
                 onDataChange();

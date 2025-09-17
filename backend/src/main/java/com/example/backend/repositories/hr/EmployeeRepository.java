@@ -40,6 +40,10 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
     // Find by site
     List<Employee> findBySiteId(UUID siteId);
 
+    // Find by site with job position eagerly fetched
+    @Query("SELECT e FROM Employee e LEFT JOIN FETCH e.jobPosition WHERE e.site.id = :siteId")
+    List<Employee> findBySiteIdWithJobPosition(@Param("siteId") UUID siteId);
+
     // Find by site object
     List<Employee> findBySite(Site site);
 
@@ -166,4 +170,13 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
 
     @Query("SELECT COUNT(e) FROM Employee e JOIN e.jobPosition jp WHERE jp.department.name = :departmentName")
     long countByJobPositionDepartmentName(@Param("departmentName") String departmentName);
+
+    /**
+     * Find employees who are not assigned to any site AND not assigned as drivers to any equipment
+     * @return List of employees available for site assignment
+     */
+    @Query("SELECT e FROM Employee e WHERE e.site IS NULL " +
+            "AND e.id NOT IN (SELECT eq.mainDriver.id FROM Equipment eq WHERE eq.mainDriver IS NOT NULL) " +
+            "AND e.id NOT IN (SELECT eq.subDriver.id FROM Equipment eq WHERE eq.subDriver IS NOT NULL)")
+    List<Employee> findUnassignedEmployeesNotAssignedAsDrivers();
 }

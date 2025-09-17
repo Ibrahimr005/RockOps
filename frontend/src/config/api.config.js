@@ -1,5 +1,5 @@
 // src/config/api.config.js
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||  'http://localhost:8080';
 
 // Equipment module endpoints
 export const EQUIPMENT_ENDPOINTS = {
@@ -450,7 +450,9 @@ export const DOCUMENT_ENDPOINTS = {
 export const PARTNER_ENDPOINTS = {
     BASE: '/api/v1/partner',
     GET_ALL: '/api/v1/partner/getallpartners',
-    ADD: '/api/v1/partner/add'
+    ADD: '/api/v1/partner/add',
+    UPDATE: (id) => `/api/v1/partner/update/${id}`,
+    DELETE: (id) =>  `/api/v1/partner/delete/${id}`
 };
 
 // Authentication module endpoints
@@ -523,7 +525,9 @@ export const OFFER_ENDPOINTS = {
     TIMELINE: (offerId) => `/api/v1/offers/${offerId}/timeline`,
     TIMELINE_RETRYABLE: (offerId) => `/api/v1/offers/${offerId}/timeline/retryable`,
     TIMELINE_ATTEMPT: (offerId, attemptNumber) => `/api/v1/offers/${offerId}/timeline/attempt/${attemptNumber}`,
-    TIMELINE_STATS: (offerId) => `/api/v1/offers/${offerId}/timeline/stats`
+    TIMELINE_STATS: (offerId) => `/api/v1/offers/${offerId}/timeline/stats`,
+    // NEW: Continue and Return endpoint
+    CONTINUE_AND_RETURN: (offerId) => `/api/v1/offers/${offerId}/continue-and-return`
 };
 
 // Updated Candidate module endpoints
@@ -720,7 +724,66 @@ export const PURCHASE_ORDER_ENDPOINTS = {
     UPDATE_STATUS: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}/status`,
     FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`
 };
+export const MAINTENANCE_ENDPOINTS = {
+    // Dashboard
+    DASHBOARD: '/api/maintenance/dashboard',
 
+    // Maintenance Records
+    RECORDS: {
+        BASE: '/api/maintenance/records',
+        BY_ID: (id) => `/api/maintenance/records/${id}`,
+        CREATE: '/api/maintenance/records',
+        UPDATE: (id) => `/api/maintenance/records/${id}`,
+        DELETE: (id) => `/api/maintenance/records/${id}`,
+        ACTIVE: '/api/maintenance/records/active',
+        OVERDUE: '/api/maintenance/records/overdue',
+        BY_EQUIPMENT: (equipmentId) => `/api/maintenance/records/equipment/${equipmentId}`
+    },
+
+    // Maintenance Steps
+    STEPS: {
+        BY_RECORD: (recordId) => `/api/maintenance/records/${recordId}/steps`,
+        BY_ID: (stepId) => `/api/maintenance/steps/${stepId}`,
+        CREATE: (recordId) => `/api/maintenance/records/${recordId}/steps`,
+        UPDATE: (stepId) => `/api/maintenance/steps/${stepId}`,
+        DELETE: (stepId) => `/api/maintenance/steps/${stepId}`,
+        COMPLETE: (stepId) => `/api/maintenance/steps/${stepId}/complete`,
+        HANDOFF: (stepId) => `/api/maintenance/steps/${stepId}/handoff`,
+        ASSIGN_CONTACT: (stepId, contactId) => `/api/maintenance/steps/${stepId}/assign-contact/${contactId}`,
+        MARK_AS_FINAL: (stepId) => `/api/maintenance/steps/${stepId}/mark-as-final`
+    },
+
+    // Contact Logs
+    CONTACTS: {
+        BY_RECORD: (recordId) => `/api/maintenance/records/${recordId}/contacts`,
+        CREATE: (stepId) => `/api/maintenance/steps/${stepId}/contacts`
+    },
+
+    // Available Contacts
+    AVAILABLE_CONTACTS: '/api/maintenance/available-contacts'
+};
+
+// Contact Management module endpoints
+export const CONTACT_ENDPOINTS = {
+    BASE: '/api/contacts',
+    BY_ID: (id) => `/api/contacts/${id}`,
+    CREATE: '/api/contacts',
+    UPDATE: (id) => `/api/contacts/${id}`,
+    DELETE: (id) => `/api/contacts/${id}`,
+    FILTER: '/api/contacts/filter',
+    ACTIVE: '/api/contacts/active',
+    BY_TYPE: (contactType) => `/api/contacts/type/${contactType}`,
+    AVAILABLE: '/api/contacts/available',
+    AVAILABLE_BY_SPECIALIZATION: (specialization) => `/api/contacts/available/specialization/${specialization}`,
+    AVAILABLE_BY_TYPE: (contactType) => `/api/contacts/available/type/${contactType}`,
+    EMERGENCY: '/api/contacts/emergency',
+    SEARCH: '/api/contacts/search',
+    DEACTIVATE: (id) => `/api/contacts/${id}/deactivate`,
+    ACTIVATE: (id) => `/api/contacts/${id}/activate`,
+    OVERDUE_ASSIGNMENTS: '/api/contacts/overdue-assignments',
+    NEEDING_FOLLOWUP: '/api/contacts/needing-followup',
+    STATISTICS: '/api/contacts/statistics'
+};
 
 
 export const LOAN_ENDPOINTS = {

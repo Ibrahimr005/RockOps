@@ -9,6 +9,7 @@ import { equipmentService } from "../../../services/equipmentService";
 import EquipmentCard from "./components/card/EquipmentCard.jsx";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useEquipmentPermissions } from "../../../utils/rbac";
+import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
 
 const EquipmentMain = () => {
     const [equipmentData, setEquipmentData] = useState([]);
@@ -115,7 +116,7 @@ const EquipmentMain = () => {
                 const displayName = `${brandName || ''} ${data.model || ''} ${data.name || ''}`.trim() || 'Unknown Equipment';
                 const siteName = data.siteName ? data.siteName : 'No Site Assigned';
                 const status = data.status || 'Unknown';
-                const driverName = data.mainDriverName ? data.mainDriverName : 'No Driver Assigned';
+                const driverName = data.mainDriverName ? data.mainDriverName : 'No Driver ';
                 const imageUrl = data.imageUrl || null;
                 const equipmentId = data.id;
 
@@ -359,10 +360,7 @@ const EquipmentMain = () => {
             {/* Equipment cards grid */}
             <section className="equipment-cards-container">
                 {loading ? (
-                    <div className="equipment-loading">
-                        <div className="equipment-loading-spinner"></div>
-                        <p>Loading equipment data...</p>
-                    </div>
+                    <LoadingPage />
                 ) : error ? (
                     <div className="equipment-error">
                         <FaExclamationCircle />
