@@ -43,14 +43,17 @@ public class MaintenanceService {
                 .orElseThrow(() -> new MaintenanceException("Equipment not found with id: " + dto.getEquipmentId()));
         
         // Allow creating maintenance records even if equipment is already in maintenance
-        
+
         MaintenanceRecord record = MaintenanceRecord.builder()
                 .equipmentId(dto.getEquipmentId())
-                .equipmentInfo(dto.getEquipmentInfo() != null ? dto.getEquipmentInfo() : 
+                .equipmentInfo(dto.getEquipmentInfo() != null ? dto.getEquipmentInfo() :
                         equipment.getType().getName() + " - " + equipment.getFullModelName())
                 .initialIssueDescription(dto.getInitialIssueDescription())
                 .expectedCompletionDate(dto.getExpectedCompletionDate())
                 .status(MaintenanceRecord.MaintenanceStatus.ACTIVE)
+                // ADD THIS LINE - Set initial cost from DTO
+                .totalCost(dto.getTotalCost() != null ? dto.getTotalCost() :
+                        (dto.getEstimatedCost() != null ? dto.getEstimatedCost() : BigDecimal.ZERO))
                 .build();
         
         // Set current responsible contact if provided
@@ -128,6 +131,13 @@ public class MaintenanceService {
         if (dto.getExpectedCompletionDate() != null) {
             record.setExpectedCompletionDate(dto.getExpectedCompletionDate());
         }
+
+        if (dto.getTotalCost() != null) {
+            record.setTotalCost(dto.getTotalCost());
+        } else if (dto.getEstimatedCost() != null) {
+            record.setTotalCost(dto.getEstimatedCost());
+        }
+
         if (dto.getStatus() != null) {
             record.setStatus(dto.getStatus());
             
