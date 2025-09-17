@@ -223,7 +223,7 @@ const EquipmentBrandManagement = () => {
                             <div className="form-actions">
                                 <button
                                     type="button"
-                                    className="btn-primary--outline"
+                                    className="btn-cancel"
                                     onClick={() => setShowModal(false)}
                                 >
                                     Cancel

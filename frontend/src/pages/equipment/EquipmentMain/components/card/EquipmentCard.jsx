@@ -8,7 +8,7 @@ const EquipmentCard = forwardRef((props, ref) => {
     const [modelName, setModelName] = useState("Equipment Name");
     const [siteName, setSiteName] = useState("N/A");
     const [status, setStatus] = useState("Unknown");
-    const [driver, setDriver] = useState("No Driver Assigned");
+    const [driver, setDriver] = useState("No Driver");
     const [imageUrl, setImageUrl] = useState("");
     const [customActions, setCustomActions] = useState([]);
 
@@ -55,7 +55,7 @@ const EquipmentCard = forwardRef((props, ref) => {
         setModelName(newModelName || "Equipment Name");
         setSiteName(newSiteName || "N/A");
         setStatus(newStatus || "Unknown");
-        setDriver(newDriver || "No Driver Assigned");
+        setDriver(newDriver || "No Driver");
         setImageUrl(newImageUrl || "");
         setEquipmentId(newEquipmentId || "");
 
@@ -95,14 +95,16 @@ const EquipmentCard = forwardRef((props, ref) => {
                     <div className="spec-row">
                         <div className="spec-item">
                             <span className="spec-label">Site</span>
-                            <span className="spec-value">{siteName}</span>
+                            <span className="spec-value" title={siteName}>{siteName}</span>
                         </div>
 
                         <div className="spec-item">
                             <span className="spec-label">Status</span>
-                            <span className={`status-indicator ${getStatusClass(status)}`}>
-                                {status}
-                            </span>
+                            <div className="spec-value">
+                                <span className={`status-indicator ${getStatusClass(status)}`}>
+                                    {status}
+                                </span>
+                            </div>
                         </div>
                     </div>
 

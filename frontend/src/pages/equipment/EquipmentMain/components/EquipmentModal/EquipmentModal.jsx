@@ -1569,10 +1569,9 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                     />
                                 </div>
                             </div>
-                            <div className="brand-modal-footer">
+                            <div className="modal-actions">
                                 <button
                                     type="button"
-                                    className="brand-modal-cancel"
                                     onClick={handleCancelBrandCreation}
                                     disabled={creatingBrand}
                                 >

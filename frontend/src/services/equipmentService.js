@@ -25,6 +25,11 @@ export const equipmentService = {
         return apiClient.get(`/minio/equipment/${equipmentId}/main-photo`);
     },
 
+    // Refresh equipment main photo (get new presigned URL)
+    refreshEquipmentMainPhoto: (equipmentId) => {
+        return apiClient.get(`/minio/equipment/${equipmentId}/main-photo/refresh`);
+    },
+
     // Add new equipment
     addEquipment: (formData) => {
         return apiClient.post(EQUIPMENT_ENDPOINTS.BASE, formData, {

@@ -40,6 +40,10 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
     // Find by site
     List<Employee> findBySiteId(UUID siteId);
 
+    // Find by site with job position eagerly fetched
+    @Query("SELECT e FROM Employee e LEFT JOIN FETCH e.jobPosition WHERE e.site.id = :siteId")
+    List<Employee> findBySiteIdWithJobPosition(@Param("siteId") UUID siteId);
+
     // Find by site object
     List<Employee> findBySite(Site site);
 

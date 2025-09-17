@@ -115,7 +115,7 @@ const EquipmentMain = () => {
                 const displayName = `${brandName || ''} ${data.model || ''} ${data.name || ''}`.trim() || 'Unknown Equipment';
                 const siteName = data.siteName ? data.siteName : 'No Site Assigned';
                 const status = data.status || 'Unknown';
-                const driverName = data.mainDriverName ? data.mainDriverName : 'No Driver Assigned';
+                const driverName = data.mainDriverName ? data.mainDriverName : 'No Driver ';
                 const imageUrl = data.imageUrl || null;
                 const equipmentId = data.id;
 

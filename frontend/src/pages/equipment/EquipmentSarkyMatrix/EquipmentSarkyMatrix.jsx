@@ -121,6 +121,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
     const [showAddWorkType, setShowAddWorkType] = useState(false);
     const [newWorkTypeName, setNewWorkTypeName] = useState('');
     const [focusedCell, setFocusedCell] = useState(null);
+    const [focusedInput, setFocusedInput] = useState(null); // Track which input is currently focused
     const [copiedValue, setCopiedValue] = useState(null);
 
     // Z-index management for dropdowns
@@ -148,28 +149,10 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         refreshData: () => fetchExistingEntries()
     }));
 
-    // Intersection Observer for sticky header
+    // Simplified header behavior - no intersection observer needed
     useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                setIsHeaderStuck(!entry.isIntersecting);
-            },
-            {
-                root: null,
-                rootMargin: `-${70}px 0px 0px 0px`, // Account for navbar height
-                threshold: 0
-            }
-        );
-
-        if (stickyHeaderRef.current) {
-            observer.observe(stickyHeaderRef.current);
-        }
-
-        return () => {
-            if (stickyHeaderRef.current) {
-                observer.unobserve(stickyHeaderRef.current);
-            }
-        };
+        // Set stuck state to false since we removed sticky positioning
+        setIsHeaderStuck(false);
     }, []);
 
     // Get date range based on view mode
@@ -1165,17 +1148,46 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                                     return (
                                         <td key={workType.id} className="hours-cell">
                                             <div className="cell-content">
+
                                                 <input
                                                     ref={el => gridRef.current[`${rowIndex}-${colIndex}`] = el}
                                                     type="number"
                                                     min="0"
                                                     max="24"
                                                     step="0.5"
-                                                    value={cellData?.hours || ''}
+                                                    value={cellData?.hours !== undefined && cellData?.hours !== null && cellData?.hours !== 0 ? cellData.hours : ''}
                                                     onChange={(e) => updateCell(dateKey, workType.id, e.target.value)}
-                                                    onKeyDown={(e) => handleKeyDown(e, dateKey, workType.id, rowIndex, colIndex)}
-                                                    onFocus={() => setFocusedCell({ date: dateKey, workType: workType.id })}
-                                                    placeholder="0"
+                                                    onKeyDown={(e) => {
+                                                        // Handle special case for number input to prevent leading zeros
+                                                        if (e.key >= '0' && e.key <= '9' && e.target.value === '0') {
+                                                            e.preventDefault();
+                                                            updateCell(dateKey, workType.id, e.key);
+                                                        } else {
+                                                            handleKeyDown(e, dateKey, workType.id, rowIndex, colIndex);
+                                                        }
+                                                    }}
+                                                    onFocus={(e) => {
+                                                        const inputKey = `${dateKey}-${workType.id}`;
+                                                        setFocusedCell({ date: dateKey, workType: workType.id });
+                                                        setFocusedInput(inputKey);
+
+                                                        // If the value is 0 or empty, clear it completely for fresh input
+                                                        if (e.target.value === '0' || e.target.value === '') {
+                                                            e.target.value = '';
+                                                            updateCell(dateKey, workType.id, '');
+                                                        } else {
+                                                            // Select all text for non-zero values so user can replace
+                                                            e.target.select();
+                                                        }
+                                                    }}
+                                                    onBlur={(e) => {
+                                                        setFocusedInput(null);
+                                                        // If user leaves field empty, set it back to 0
+                                                        if (e.target.value === '' || e.target.value === null) {
+                                                            updateCell(dateKey, workType.id, 0);
+                                                        }
+                                                    }}
+                                                    placeholder=""
                                                     disabled={isBlocked}
                                                     className={`hours-input ${hasValue ? 'has-value' : ''} ${cellData?.isExisting ? 'existing' : ''} ${isBlocked ? 'blocked' : ''} ${hasInvalidDriver ? 'invalid-driver' : ''}`}
                                                     title={blockedMessage || (hasInvalidDriver ? `Driver required for ${workType.name}` : `Enter hours for ${workType.name}`)}
