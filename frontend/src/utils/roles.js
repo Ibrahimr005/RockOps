@@ -11,6 +11,8 @@ export const HR_MANAGER = 'HR_MANAGER';
 export const HR_EMPLOYEE = 'HR_EMPLOYEE';
 export const FINANCE_MANAGER = 'FINANCE_MANAGER';
 export const FINANCE_EMPLOYEE = 'FINANCE_EMPLOYEE';
+export const MAINTENANCE_MANAGER = 'MAINTENANCE_MANAGER';
+export const MAINTENANCE_EMPLOYEE = 'MAINTENANCE_EMPLOYEE';
 
 // Export all as a single object for convenience
 export const ROLES = {
@@ -26,4 +28,6 @@ export const ROLES = {
   HR_EMPLOYEE,
   FINANCE_MANAGER,
   FINANCE_EMPLOYEE,
-}; 
+  MAINTENANCE_MANAGER,
+  MAINTENANCE_EMPLOYEE,
+};
