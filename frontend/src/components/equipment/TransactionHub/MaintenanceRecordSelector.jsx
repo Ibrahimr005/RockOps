@@ -263,17 +263,17 @@ const MaintenanceRecordSelector = ({
 
                     <div className="maintenance-selector-create-form">
                         <div className="maintenance-selector-form-group">
-                            <label>Technician *</label>
+                            <label>Assigned Employee *</label>
                             <select
                                 value={newMaintenance.technicianId}
                                 onChange={(e) => handleNewMaintenanceChange('technicianId', e.target.value)}
                                 className="maintenance-selector-form-select"
                                 required
                             >
-                                <option value="">Select technician...</option>
+                                <option value="">Select employee...</option>
                                 {technicians.map(tech => (
                                     <option key={tech.id} value={tech.id}>
-                                        {tech.fullName} - {tech.jobPosition?.title || 'Technician'}
+                                        {tech.fullName || `${tech.firstName} ${tech.lastName}`} - {tech.jobPosition?.positionName || 'No Position'}
                                     </option>
                                 ))}
                             </select>
