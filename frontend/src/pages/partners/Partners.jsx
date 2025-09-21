@@ -197,6 +197,18 @@ const Partners = () => {
         }
     ] : [];
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            if (showAddModal) {
+                setShowAddModal(false);
+            } else if (showEditModal) {
+                setShowEditModal(false);
+                setEditingPartner(null);
+            }
+        }
+    };
+
     return (
         <div className="partner-table-container">
             <div className="departments-header">
@@ -222,8 +234,8 @@ const Partners = () => {
 
             {/* Add Partner Modal */}
             {showAddModal && (
-                <div className="modal-backdrop">
-                    <div className="modal-content">
+                <div className="modal-backdrop" onClick={handleOverlayClick}>
+                    <div className="modal-container">
                         <div className="modal-header">
                             <h3>{t('partners.addTitle', 'Add New Partner')}</h3>
                             <button className="btn-close" onClick={() => setShowAddModal(false)}>×</button>
@@ -286,7 +298,7 @@ const Partners = () => {
 
             {/* Edit Partner Modal */}
             {showEditModal && editingPartner && (
-                <div className="modal-backdrop">
+                <div className="modal-backdrop" onClick={handleOverlayClick}>
                     <div className="modal-container">
                         <div className="modal-header">
                             <h3>{t('partners.editTitle', 'Edit Partner')}</h3>

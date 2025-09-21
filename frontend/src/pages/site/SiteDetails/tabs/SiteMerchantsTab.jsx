@@ -113,9 +113,9 @@ const SiteMerchantsTab = ({ siteId }) => {
                 duration={3000}
             />
             
-            <div className="departments-header">
-                <h3>{t('site.siteMerchantsReport')}</h3>
-            </div>
+            {/*<div className="departments-header">*/}
+            {/*    <h3>{t('site.siteMerchantsReport')}</h3>*/}
+            {/*</div>*/}
 
             {/*<div className="merchants-stats">*/}
             {/*    {Object.entries(merchantTypeCounts).map(([type, count]) => (*/}
@@ -147,7 +147,7 @@ const SiteMerchantsTab = ({ siteId }) => {
                                 type: 'info'
                             });
                         }}
-                        tableTitle="Merchants List"
+                        //tableTitle="Merchants List"
                     />
                 </div>
             )}
