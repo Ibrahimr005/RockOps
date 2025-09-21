@@ -563,17 +563,17 @@ const MaintenanceAddModal = ({
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Technician</label>
+                                <label>Assigned Employee</label>
                                 <select
                                     name="technicianId"
                                     value={formData.technicianId}
                                     onChange={handleInputChange}
                                     required
                                 >
-                                    <option value="">Select Technician</option>
+                                    <option value="">Select Employee</option>
                                     {technicians.map(tech => (
                                         <option key={tech.id} value={tech.id}>
-                                            {tech.firstName} {tech.lastName}
+                                            {tech.firstName} {tech.lastName} - {tech.jobPosition?.positionName || 'No Position'}
                                         </option>
                                     ))}
                                 </select>
@@ -802,8 +802,8 @@ const MaintenanceAddModal = ({
                         </div>
                     )}
 
-                    <div className="form-actions">
-                        <button type="button" className="btn-primary--outline" onClick={onClose}>
+                    <div className="modal-actions">
+                        <button type="button" onClick={onClose}>
                             Cancel
                         </button>
                         <button 

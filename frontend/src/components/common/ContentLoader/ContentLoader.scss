@@ -1,0 +1,357 @@
+// ContentLoader.scss - Specific classnames for content area loading component
+
+.rockops-content-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  width: 100%;
+  background-color: var(--main-background-color);
+
+  // Container for all loading elements
+  .rockops-content-loader__container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  // Main spinner container
+  .rockops-content-loader__spinner-wrapper {
+    position: relative;
+    width: 50px;
+    height: 50px;
+
+    .rockops-content-loader__spinner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+
+      // Individual spinner rings
+      .rockops-content-loader__spinner-ring {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 3px solid transparent;
+        border-radius: 50%;
+        animation: rockopsSpinnerRotate 1.5s linear infinite;
+
+        // Primary ring
+        &--primary {
+          border-top-color: var(--color-primary);
+          border-right-color: var(--color-primary);
+        }
+
+        // Secondary ring (smaller, reverse rotation)
+        &--secondary {
+          border-bottom-color: var(--color-primary);
+          border-left-color: var(--color-primary);
+          animation-direction: reverse;
+          animation-duration: 2s;
+          width: 70%;
+          height: 70%;
+          top: 15%;
+          left: 15%;
+          opacity: 0.3;
+        }
+      }
+    }
+  }
+
+  // Loading message text
+  .rockops-content-loader__message {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 1rem;
+    font-weight: var(--bold-font-weight);
+    font-family: var(--font-family);
+    opacity: 0.9;
+  }
+
+  // Animated dots container
+  .rockops-content-loader__dots-container {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+    justify-content: center;
+
+    // Individual dots
+    .rockops-content-loader__dot {
+      width: 6px;
+      height: 6px;
+      background-color: var(--color-primary);
+      border-radius: 50%;
+      animation: rockopsDotBounce 1.4s ease-in-out infinite both;
+
+      // Staggered animation delays
+      &--first {
+        animation-delay: -0.32s;
+      }
+
+      &--second {
+        animation-delay: -0.16s;
+      }
+
+      &--third {
+        animation-delay: 0s;
+      }
+    }
+  }
+}
+
+// Size variants
+.rockops-content-loader--small {
+  min-height: 250px;
+
+  .rockops-content-loader__container {
+    gap: 1rem;
+    padding: 1.5rem;
+  }
+
+  .rockops-content-loader__spinner-wrapper {
+    width: 35px;
+    height: 35px;
+  }
+
+  .rockops-content-loader__message {
+    font-size: 0.875rem;
+  }
+
+  .rockops-content-loader__dot {
+    width: 4px;
+    height: 4px;
+  }
+}
+
+.rockops-content-loader--large {
+  min-height: 500px;
+
+  .rockops-content-loader__container {
+    gap: 2rem;
+    padding: 3rem;
+  }
+
+  .rockops-content-loader__spinner-wrapper {
+    width: 65px;
+    height: 65px;
+  }
+
+  .rockops-content-loader__message {
+    font-size: 1.125rem;
+  }
+
+  .rockops-content-loader__dot {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+// Alternative spinner styles
+.rockops-content-loader--pulse {
+  .rockops-content-loader__spinner-ring {
+    animation: rockopsSpinnerPulse 2s ease-in-out infinite;
+    border: 3px solid var(--color-primary);
+    opacity: 0.6;
+
+    &--secondary {
+      animation-delay: -1s;
+      opacity: 0.3;
+    }
+  }
+}
+
+.rockops-content-loader--fade {
+  .rockops-content-loader__spinner-ring {
+    animation: rockopsSpinnerFade 1.5s ease-in-out infinite;
+    border: 3px solid var(--color-primary);
+
+    &--secondary {
+      animation-delay: -0.75s;
+    }
+  }
+}
+
+// Context-specific variants
+.rockops-content-loader--employee-details {
+  .rockops-content-loader__message {
+    color: var(--color-primary);
+  }
+}
+
+.rockops-content-loader--dashboard {
+  background-color: var(--section-background-color);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.rockops-content-loader--table {
+  min-height: 300px;
+  background-color: var(--color-surface);
+}
+
+.rockops-content-loader--modal {
+  min-height: 200px;
+  background-color: transparent;
+}
+
+// Keyframe animations
+@keyframes rockopsSpinnerRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rockopsSpinnerPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes rockopsSpinnerFade {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes rockopsDotBounce {
+  0%, 80%, 100% {
+    transform: scale(0.8) translateY(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2) translateY(-8px);
+    opacity: 1;
+  }
+}
+
+// Loading state animations
+@keyframes rockopsContentLoaderFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rockops-content-loader--fade-in {
+  animation: rockopsContentLoaderFadeIn 0.5s ease-out;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .rockops-content-loader {
+    min-height: 300px;
+
+    .rockops-content-loader__container {
+      gap: 1.25rem;
+      padding: 1.5rem;
+    }
+
+    .rockops-content-loader__spinner-wrapper {
+      width: 40px;
+      height: 40px;
+    }
+
+    .rockops-content-loader__message {
+      font-size: 0.9rem;
+    }
+
+    .rockops-content-loader__dot {
+      width: 5px;
+      height: 5px;
+    }
+  }
+
+  // Small variant adjustments for mobile
+  .rockops-content-loader--small {
+    min-height: 200px;
+
+    .rockops-content-loader__spinner-wrapper {
+      width: 30px;
+      height: 30px;
+    }
+  }
+
+  // Large variant adjustments for mobile
+  .rockops-content-loader--large {
+    min-height: 400px;
+
+    .rockops-content-loader__spinner-wrapper {
+      width: 50px;
+      height: 50px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .rockops-content-loader {
+    min-height: 250px;
+
+    .rockops-content-loader__container {
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    .rockops-content-loader__message {
+      font-size: 0.825rem;
+      padding: 0 1rem;
+    }
+  }
+}
+
+// Reduced motion preferences
+@media (prefers-reduced-motion: reduce) {
+  .rockops-content-loader__spinner-ring {
+    animation-duration: 3s;
+  }
+
+  .rockops-content-loader__dot {
+    animation-duration: 2s;
+  }
+
+  .rockops-content-loader--fade-in {
+    animation: none;
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .rockops-content-loader__spinner-ring {
+    border-width: 4px;
+  }
+
+  .rockops-content-loader__message {
+    font-weight: 700;
+  }
+
+  .rockops-content-loader__dot {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+// Print styles (hide loading animations)
+@media print {
+  .rockops-content-loader {
+    display: none;
+  }
+}

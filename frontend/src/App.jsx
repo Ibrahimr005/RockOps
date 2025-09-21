@@ -29,6 +29,8 @@ import MaintenanceTypeManagement from "./pages/equipment/EquipmentManagement/Mai
 import ViewEquipmentData from "./pages/equipment/EquipmentInfo/ViewEquipmentData.jsx";
 import EquipmentDetails from "./pages/equipment/EquipmentDetails/EquipmentDetails.jsx";
 import RelatedDocuments from "./pages/RelatedDocuments/RelatedDocuments.jsx";
+import LeaveRequestDetailPage from './pages/HR/LeaveRequests/LeaveRequestDetailPage';
+import VacationBalancePage from './pages/HR/VacationBalance/VacationBalancePage';
 
 // ===================== Warehouse Imports =====================
 import WarehousesList from "./pages/warehouse/WarehousesList/WarehousesList.jsx";
@@ -57,7 +59,28 @@ import Payables from "./pages/finance/Payables/Payables.jsx";
 import Notifications from './pages/notification/Notifications.jsx';
 import FixedAssets from "./pages/finance/FixedAssets/FixedAssets.jsx";
 
-import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, ROLES } from './utils/roles';
+// ===================== Maintenance Team Imports =====================
+import MaintenanceLayout from "./pages/maintenance/MaintenanceLayout.jsx";
+import MaintenanceDashboard from "./pages/maintenance/MaintenanceDashboard/MaintenanceDashboard.jsx";
+import MaintenanceRecords from "./pages/maintenance/MaintenanceRecords/MaintenanceRecords.jsx";
+
+import {
+    ADMIN,
+    USER,
+    SITE_ADMIN,
+    PROCUREMENT,
+    WAREHOUSE_MANAGER,
+    WAREHOUSE_EMPLOYEE,
+    SECRETARY,
+    EQUIPMENT_MANAGER,
+    HR_MANAGER,
+    HR_EMPLOYEE,
+    FINANCE_MANAGER,
+    FINANCE_EMPLOYEE,
+    MAINTENANCE_MANAGER,
+    MAINTENANCE_EMPLOYEE,
+    ROLES
+} from './utils/roles';
 import PayrollDashboard from "./pages/payroll/PayrollDashboard/PayrollDashboard.jsx";
 import PayslipList from "./pages/payroll/PayslipList/PayslipList.jsx";
 import LoanManagement from "./pages/payroll/Loans/LoanManagement/LoanManagement.jsx";
@@ -73,6 +96,9 @@ import PayslipManagement from "./pages/payroll/payslip/PayslipManagement.jsx";
 import PayslipEdit from "./pages/payroll/payslip/PayslipEdit.jsx";
 import DeductionManagement from "./pages/payroll/deduction/DeductionManagement.jsx";
 import DepartmentDetails from "./pages/HR/Departments/DepartmentDetails.jsx";
+import Contacts from "./pages/maintenance/Contacts/Contacts.jsx";
+import MaintenanceRecordDetail from "./pages/maintenance/MaintenanceRecordDetail/MaintenanceRecordDetail.jsx";
+import LeaveRequestList from "./pages/HR/LeaveRequests/LeaveRequestList.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -177,6 +203,10 @@ function App() {
                                         <Route path="departments" element={<DepartmentsList/>}/>
                                         <Route path="departments/:id" element={<DepartmentDetails/>}/>
                                         <Route path="promotions/*" element={<PromotionList/>}/>
+                                        <Route path="leave-requests/:id" element={<LeaveRequestDetailPage />} />
+                                        <Route path="leave-requests" element={<LeaveRequestList />} />
+
+                                        <Route path="vacation-balances" element={<VacationBalancePage />} />
                                     </Route>
 
 
@@ -224,6 +254,14 @@ function App() {
                                         <Route path="maintenance-type-management" element={<RoleRoute allowedRoles={allRoles}><MaintenanceTypeManagement/></RoleRoute>}/>
                                         <Route path="info/:EquipmentID" element={<RoleRoute allowedRoles={allRoles}><ViewEquipmentData/></RoleRoute>}/>
                                         <Route path=":EquipmentID" element={<RoleRoute allowedRoles={allRoles}><EquipmentDetails/></RoleRoute>}/>
+                                    </Route>
+
+                                    {/* ===================== Maintenance Team Routes ===================== */}
+                                    <Route path="/maintenance" element={<RoleRoute allowedRoles={[ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]}><MaintenanceLayout/></RoleRoute>}>
+                                        <Route index element={<MaintenanceDashboard/>}/>
+                                        <Route path="records" element={<MaintenanceRecords/>}/>
+                                        <Route path="records/:recordId" element={<MaintenanceRecordDetail/>}/>
+                                        <Route path="contacts" element={<Contacts/>}/>
                                     </Route>
 
                                     {/* Finance Routes */}

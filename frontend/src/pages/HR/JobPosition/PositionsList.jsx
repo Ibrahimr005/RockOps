@@ -412,7 +412,7 @@ const PositionsList = () => {
                 columns={columns}
                 actions={actions}
                 loading={loading}
-                tableTitle="Job Positions"
+                tableTitle=""
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={getFilterableColumns()}

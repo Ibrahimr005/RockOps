@@ -118,7 +118,7 @@
 /* Stats Styles - more compact */
 .equipment-specs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); /* Use minmax to prevent overflow */
   gap: 12px;
   margin-bottom: 12px;
   padding: 12px;
@@ -138,6 +138,8 @@
 
 .spec-item {
   margin: 0;
+  min-width: 0; /* Allow items to shrink below their content size */
+  overflow: hidden; /* Ensure content doesn't escape container */
 }
 
 .full-width {
@@ -160,6 +162,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0; /* Allow text to shrink */
+  width: 100%; /* Take full available width */
+}
+
+/* Specific handling for site names to prevent layout breaking */
+.spec-item:nth-child(1) .spec-value {
+  max-width: 120px; /* Limit site name width to prevent status push-down */
+}
+
+/* Ensure status indicator container aligns properly */
+.spec-value .status-indicator {
+  vertical-align: top; /* Align with text baseline */
+  display: inline-block; /* Change to inline-block for better alignment */
+  margin-top: 1px; /* Fine-tune vertical alignment */
 }
 
 /* Action Buttons */
@@ -282,7 +298,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-right: auto;
+  margin: 0; /* Remove auto margin that causes misalignment */
 }
 
 .status-running {

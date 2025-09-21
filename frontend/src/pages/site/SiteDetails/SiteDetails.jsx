@@ -16,6 +16,7 @@ import {warehouseService} from "../../../services/warehouseService.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
 import {FaTrash} from "react-icons/fa";
+import ContentLoader from "../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const SiteDetails = () => {
     const { siteId } = useParams();
@@ -281,7 +282,7 @@ const SiteDetails = () => {
 
     if (loading) {
         return (
-            <LoadingPage/>
+            <ContentLoader />
         );
     }
 

@@ -17,10 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.YearMonth;
+import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -729,5 +726,64 @@ public class AttendanceService {
         return attendanceList.stream()
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
+    }
+    public void markLeaveDay(UUID employeeId, LocalDate date, String leaveType, boolean approved) {
+        try {
+            Employee employee = employeeRepository.findById(employeeId)
+                    .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+            // Check if attendance record already exists
+            Optional<Attendance> existingAttendance = attendanceRepository
+                    .findByEmployeeIdAndDate(employeeId, date);
+
+            Attendance attendance;
+            if (existingAttendance.isPresent()) {
+                attendance = existingAttendance.get();
+            } else {
+                attendance = Attendance.builder()
+                        .employee(employee)
+                        .date(date)
+                        .dayType(Attendance.DayType.WORKING_DAY)
+                        .build();
+            }
+
+            // Update attendance for leave
+            attendance.setStatus(Attendance.AttendanceStatus.ON_LEAVE);
+            attendance.setLeaveType(leaveType);
+            attendance.setLeaveApproved(approved);
+            attendance.setUpdatedAt(LocalDateTime.now());
+
+            attendanceRepository.save(attendance);
+            log.info("Marked {} as {} leave for employee {}", date, leaveType, employeeId);
+
+        } catch (Exception e) {
+            log.error("Error marking leave day for employee {} on {}: {}", employeeId, date, e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Remove leave marking from attendance (when leave is cancelled/rejected)
+     */
+    public void removeLeaveMarking(UUID employeeId, LocalDate date) {
+        try {
+            Optional<Attendance> attendance = attendanceRepository
+                    .findByEmployeeIdAndDate(employeeId, date);
+
+            if (attendance.isPresent()) {
+                Attendance record = attendance.get();
+                if (record.getStatus() == Attendance.AttendanceStatus.ON_LEAVE) {
+                    record.setStatus(Attendance.AttendanceStatus.ABSENT);
+                    record.setLeaveType(null);
+                    record.setLeaveApproved(null);
+                    record.setUpdatedAt(LocalDateTime.now());
+                    attendanceRepository.save(record);
+
+                    log.info("Removed leave marking for employee {} on {}", employeeId, date);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error removing leave marking for employee {} on {}: {}", employeeId, date, e.getMessage());
+        }
     }
 }
