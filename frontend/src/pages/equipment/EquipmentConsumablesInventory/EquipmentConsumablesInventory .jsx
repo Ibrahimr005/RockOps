@@ -443,6 +443,13 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
         {header: 'Last Updated', accessor: 'lastUpdated'}
     ];
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            setIsResolutionModalOpen(false);
+        }
+    };
+
     return (
         <div className="consumables-inventory">
 
@@ -606,7 +613,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
 
             {/* Resolution Modal */}
             {isResolutionModalOpen && selectedConsumable && (
-                <div className="resolution-modal-backdrop">
+                <div className="resolution-modal-backdrop"  onClick={handleOverlayClick}>
                     <div className="resolution-modal">
                         <div className="resolution-modal-header">
                             <h2>Resolve Consumable Discrepancy</h2>

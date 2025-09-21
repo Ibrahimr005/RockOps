@@ -2,6 +2,7 @@ package com.example.backend.services.equipment;
 
 import com.example.backend.dto.equipment.MaintenanceTypeDTO;
 import com.example.backend.exceptions.ResourceAlreadyExistsException;
+import com.example.backend.exceptions.ResourceConflictException;
 import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.equipment.MaintenanceType;
 import com.example.backend.repositories.equipment.MaintenanceTypeRepository;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -60,8 +62,14 @@ public class MaintenanceTypeService {
     @Transactional
     public MaintenanceTypeDTO createMaintenanceType(MaintenanceTypeDTO maintenanceTypeDTO) {
         // Check if maintenance type with same name already exists
-        if (maintenanceTypeRepository.existsByNameIgnoreCase(maintenanceTypeDTO.getName())) {
-            throw new ResourceAlreadyExistsException("Maintenance type with name '" + maintenanceTypeDTO.getName() + "' already exists");
+        Optional<MaintenanceType> existingMaintenanceType = maintenanceTypeRepository.findByNameIgnoreCase(maintenanceTypeDTO.getName());
+        if (existingMaintenanceType.isPresent()) {
+            MaintenanceType existing = existingMaintenanceType.get();
+            if (existing.isActive()) {
+                throw ResourceConflictException.duplicateActive("Maintenance type", maintenanceTypeDTO.getName());
+            } else {
+                throw ResourceConflictException.duplicateInactive("Maintenance type", maintenanceTypeDTO.getName());
+            }
         }
 
         MaintenanceType maintenanceType = new MaintenanceType();
@@ -82,9 +90,16 @@ public class MaintenanceTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Maintenance type not found with id: " + id));
 
         // Check if name is being changed and if it conflicts with an existing one
-        if (!maintenanceType.getName().equals(maintenanceTypeDTO.getName()) &&
-                maintenanceTypeRepository.existsByNameIgnoreCase(maintenanceTypeDTO.getName())) {
-            throw new ResourceAlreadyExistsException("Maintenance type with name '" + maintenanceTypeDTO.getName() + "' already exists");
+        if (!maintenanceType.getName().equals(maintenanceTypeDTO.getName())) {
+            Optional<MaintenanceType> conflictingMaintenanceType = maintenanceTypeRepository.findByNameIgnoreCase(maintenanceTypeDTO.getName());
+            if (conflictingMaintenanceType.isPresent()) {
+                MaintenanceType existing = conflictingMaintenanceType.get();
+                if (existing.isActive()) {
+                    throw ResourceConflictException.duplicateActive("Maintenance type", maintenanceTypeDTO.getName());
+                } else {
+                    throw ResourceConflictException.duplicateInactive("Maintenance type", maintenanceTypeDTO.getName());
+                }
+            }
         }
 
         maintenanceType.setName(maintenanceTypeDTO.getName());
@@ -116,8 +131,14 @@ public class MaintenanceTypeService {
     @Transactional
     public MaintenanceType addMaintenanceType(String name, String description) {
         // Check if maintenance type with same name already exists
-        if (maintenanceTypeRepository.existsByNameIgnoreCase(name)) {
-            throw new ResourceAlreadyExistsException("Maintenance type with name " + name + " already exists");
+        Optional<MaintenanceType> existingMaintenanceType = maintenanceTypeRepository.findByNameIgnoreCase(name);
+        if (existingMaintenanceType.isPresent()) {
+            MaintenanceType existing = existingMaintenanceType.get();
+            if (existing.isActive()) {
+                throw ResourceConflictException.duplicateActive("Maintenance type", name);
+            } else {
+                throw ResourceConflictException.duplicateInactive("Maintenance type", name);
+            }
         }
 
         MaintenanceType maintenanceType = new MaintenanceType();
@@ -136,8 +157,14 @@ public class MaintenanceTypeService {
 
         // If name is changing, check if new name already exists
         if (name != null && !name.equals(maintenanceType.getName())) {
-            if (maintenanceTypeRepository.existsByNameIgnoreCase(name)) {
-                throw new ResourceAlreadyExistsException("Maintenance type with name " + name + " already exists");
+            Optional<MaintenanceType> conflictingMaintenanceType = maintenanceTypeRepository.findByNameIgnoreCase(name);
+            if (conflictingMaintenanceType.isPresent()) {
+                MaintenanceType existing = conflictingMaintenanceType.get();
+                if (existing.isActive()) {
+                    throw ResourceConflictException.duplicateActive("Maintenance type", name);
+                } else {
+                    throw ResourceConflictException.duplicateInactive("Maintenance type", name);
+                }
             }
             maintenanceType.setName(name);
         }
@@ -151,6 +178,27 @@ public class MaintenanceTypeService {
     // Search maintenance types by name
     public List<MaintenanceType> searchMaintenanceTypes(String namePart) {
         return maintenanceTypeRepository.findByNameContainingIgnoreCase(namePart);
+    }
+
+    /**
+     * Reactivate an inactive maintenance type by name and update its details
+     */
+    @Transactional
+    public MaintenanceTypeDTO reactivateMaintenanceTypeByName(String name, MaintenanceTypeDTO maintenanceTypeDTO) {
+        MaintenanceType maintenanceType = maintenanceTypeRepository.findByNameIgnoreCase(name)
+                .orElseThrow(() -> new ResourceNotFoundException("Maintenance type not found with name: " + name));
+        
+        if (maintenanceType.isActive()) {
+            throw new IllegalStateException("Maintenance type is already active");
+        }
+        
+        // Reactivate and update with new details
+        maintenanceType.setActive(true);
+        maintenanceType.setName(maintenanceTypeDTO.getName()); // Update name in case of case differences
+        maintenanceType.setDescription(maintenanceTypeDTO.getDescription()); // Update description
+        
+        MaintenanceType reactivatedMaintenanceType = maintenanceTypeRepository.save(maintenanceType);
+        return convertToDTO(reactivatedMaintenanceType);
     }
 
     /**

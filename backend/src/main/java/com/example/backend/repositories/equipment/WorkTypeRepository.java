@@ -13,8 +13,11 @@ public interface WorkTypeRepository extends JpaRepository<WorkType, UUID> {
     // Find work types that are active
     List<WorkType> findByActiveTrue();
 
-    // Find work type by name
+    // Find work type by name (case-sensitive)
     Optional<WorkType> findByName(String name);
+    
+    // Find work type by name (case-insensitive)
+    Optional<WorkType> findByNameIgnoreCase(String name);
 
     // Find work type by name and active status
     Optional<WorkType> findByNameAndActiveTrue(String name);

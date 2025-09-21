@@ -463,9 +463,15 @@ const BatchValidationWorkflow = ({
 
     if (!isOpen) return null;
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
     return (
-        <div className="batch-validation-modal-backdrop">
-            <div className="batch-validation-modal">
+        <div className="batch-validation-modal-backdrop" onClick={handleOverlayClick}>            <div className="batch-validation-modal">
                 <div className="batch-validation-modal-header">
                     <h2>{title}</h2>
                     <button className="btn-close" onClick={onClose} aria-label="Close">

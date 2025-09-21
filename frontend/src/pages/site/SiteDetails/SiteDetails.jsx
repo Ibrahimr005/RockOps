@@ -333,6 +333,10 @@ const SiteDetails = () => {
                     </div>
 
                     <div className="site-quick-stats">
+                        <div className="stat-item">
+                            <span className="stat-label">Created</span>
+                            <span className="stat-value">{formatDate(site.creationDate)}</span>
+                        </div>
                         <div className="delete-site">
                             {isAdmin && (
                                 <button
@@ -351,10 +355,7 @@ const SiteDetails = () => {
                         {/*    <span className="stat-label">Efficiency</span>*/}
                         {/*    <span className="stat-value">{site.efficiency || 'N/A'}%</span>*/}
                         {/*</div>*/}
-                        <div className="stat-item">
-                            <span className="stat-label">Created</span>
-                            <span className="stat-value">{formatDate(site.creationDate)}</span>
-                        </div>
+
 
                         {/*<div className="stat-item">*/}
                         {/*    <span className="stat-label">Manager</span>*/}

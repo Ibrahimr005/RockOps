@@ -24,5 +24,12 @@ export const maintenanceTypeService = {
 
     delete: (id) => {
         return apiClient.delete(MAINTENANCE_TYPE_ENDPOINTS.DELETE(id));
+    },
+
+    reactivateByName: (name, maintenanceTypeData) => {
+        return apiClient.post(`${MAINTENANCE_TYPE_ENDPOINTS.BASE}/reactivate`, { 
+            name, 
+            maintenanceTypeData 
+        });
     }
 }; 

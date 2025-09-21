@@ -459,6 +459,17 @@ const InWarehouseItems = ({
 
     ];
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            if (isAddItemModalOpen) {
+                setIsAddItemModalOpen(false);
+            } else if (isTransactionDetailsModalOpen) {
+                setIsTransactionDetailsModalOpen(false);
+            }
+        }
+    };
+
     return (
         <>
             {/* NEW: Full-width Alerts and Legend Container */}
@@ -644,7 +655,7 @@ const InWarehouseItems = ({
 
             {/* Add Item Modal */}
             {isAddItemModalOpen && (
-                <div className="resolution-modal-backdrop">
+                <div className="resolution-modal-backdrop" onClick={handleOverlayClick}>
                     <div className="add-item-modal">
                         <div className="resolution-modal-header">
                             <h2>Add New Item</h2>

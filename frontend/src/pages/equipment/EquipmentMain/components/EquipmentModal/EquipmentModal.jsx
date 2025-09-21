@@ -9,6 +9,7 @@ import { documentService } from "../../../../../services/documentService.js";
 import { useSnackbar } from "../../../../../contexts/SnackbarContext.jsx";
 import DocumentUpload from '../../../../../components/equipment/DocumentUpload';
 import "./EquipmentModal.scss";
+import '../../../../../styles/form-validation.scss';
 
 const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => {
     const { showSuccess, showError, showInfo, showWarning, hideSnackbar, showConfirmation } = useSnackbar();
@@ -925,7 +926,33 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             showSuccess(`Brand "${newBrand.name}" created successfully and selected`);
         } catch (error) {
             console.error('Error creating brand:', error);
-            showError(`Failed to create brand: ${error.response?.data?.message || error.message}`);
+            
+            // Handle specific error cases
+            if (error.response?.status === 409) {
+                // Check if it's our enhanced conflict response
+                if (error.response.data?.conflictType) {
+                    const { conflictType, resourceName, isInactive } = error.response.data;
+                    if (isInactive) {
+                        showError(`Equipment brand "${resourceName}" already exists but was previously deleted. Please contact your administrator to reactivate it, or choose a different name.`);
+                    } else {
+                        showError(`Equipment brand "${resourceName}" already exists. Please choose a different name.`);
+                    }
+                } else {
+                    // Fallback for legacy error responses
+                    if (error.response.data?.message?.includes('inactive') || error.response.data?.message?.includes('deleted')) {
+                        showError(`Equipment brand "${newBrandData.name.trim()}" already exists but was previously deleted. Please contact your administrator to reactivate it, or choose a different name.`);
+                    } else {
+                        showError(`Equipment brand "${newBrandData.name.trim()}" already exists. Please choose a different name.`);
+                    }
+                }
+            } else if (error.response?.status === 400) {
+                const message = error.response.data?.message || 'Please check your input and try again';
+                showError(`Brand name is invalid: ${message}`);
+            } else if (error.response?.status === 403) {
+                showError('You don\'t have permission to create equipment brands. Please contact your administrator.');
+            } else {
+                showError(`Failed to create brand: ${error.response?.data?.message || error.message}`);
+            }
         } finally {
             setCreatingBrand(false);
         }
@@ -951,8 +978,23 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         driver.id !== formData.mainDriverId
     );
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            if (formTouched) {
+                showConfirmation(
+                    "Are you sure you want to close? Any unsaved changes will be lost.",
+                    onClose,
+                    () => hideSnackbar()
+                );
+            } else {
+                onClose();
+            }
+        }
+    };
+
     return (
-        <div className="equipment-modal-overlay">
+        <div className="equipment-modal-overlay" onClick={handleOverlayClick}>
             <div className="equipment-modal">
                 <div className="equipment-modal-header">
                     <h2>{equipmentToEdit ? 'Edit Equipment' : 'Add New Equipment'}</h2>
@@ -1548,7 +1590,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                         <form onSubmit={handleCreateBrand}>
                             <div className="brand-modal-body">
                                 <div className="form-group">
-                                    <label htmlFor="brandName" className="required-field">Brand Name</label>
+                                    <label htmlFor="brandName">Brand Name <span className="required-field">*</span></label>
                                     <input
                                         type="text"
                                         id="brandName"

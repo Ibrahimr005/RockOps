@@ -2,8 +2,11 @@ package com.example.backend.config;
 
 import com.example.backend.authentication.AuthenticationController.*;
 import com.example.backend.authentication.AuthenticationService.*;
+import com.example.backend.exceptions.ResourceConflictException;
+import com.example.backend.exceptions.ResourceInUseException;
 import com.example.backend.exceptions.UserNotFoundException;
 import com.example.backend.exceptions.UsernameAlreadyExistsException;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -48,6 +51,31 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
     }
 
+    @ExceptionHandler(ResourceConflictException.class)
+    public ResponseEntity<ConflictErrorResponse> handleResourceConflict(ResourceConflictException ex) {
+        ConflictErrorResponse errorResponse = new ConflictErrorResponse(
+            "Resource Conflict",
+            ex.getMessage(),
+            ex.getConflictType(),
+            ex.getResourceName(),
+            ex.isInactive()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(ResourceInUseException.class)
+    public ResponseEntity<ResourceInUseErrorResponse> handleResourceInUse(ResourceInUseException ex) {
+        ResourceInUseErrorResponse errorResponse = new ResourceInUseErrorResponse(
+            "Resource In Use",
+            ex.getMessage(),
+            ex.getResourceType(),
+            ex.getResourceName(),
+            ex.getUsageCount(),
+            ex.getDependentType()
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse("Server Error",
@@ -70,6 +98,63 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         public String getMessage() {
             return message;
+        }
+    }
+
+    public static class ConflictErrorResponse extends ErrorResponse {
+        private final String conflictType;
+        private final String resourceName;
+        private final boolean isInactive;
+
+        public ConflictErrorResponse(String error, String message, String conflictType, String resourceName, boolean isInactive) {
+            super(error, message);
+            this.conflictType = conflictType;
+            this.resourceName = resourceName;
+            this.isInactive = isInactive;
+        }
+
+        public String getConflictType() {
+            return conflictType;
+        }
+
+        public String getResourceName() {
+            return resourceName;
+        }
+
+        @JsonProperty("isInactive")
+        public boolean isInactive() {
+            return isInactive;
+        }
+    }
+
+    public static class ResourceInUseErrorResponse extends ErrorResponse {
+        private final String resourceType;
+        private final String resourceName;
+        private final int usageCount;
+        private final String dependentType;
+
+        public ResourceInUseErrorResponse(String error, String message, String resourceType, String resourceName, int usageCount, String dependentType) {
+            super(error, message);
+            this.resourceType = resourceType;
+            this.resourceName = resourceName;
+            this.usageCount = usageCount;
+            this.dependentType = dependentType;
+        }
+
+        public String getResourceType() {
+            return resourceType;
+        }
+
+        public String getResourceName() {
+            return resourceName;
+        }
+
+        public int getUsageCount() {
+            return usageCount;
+        }
+
+        public String getDependentType() {
+            return dependentType;
         }
     }
 }
