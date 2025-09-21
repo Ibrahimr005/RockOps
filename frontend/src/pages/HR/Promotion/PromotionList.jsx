@@ -1,29 +1,35 @@
 // src/pages/HR/Promotion/PromotionList.jsx - Enhanced with RBAC and Error Handling
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, Plus, Clock, CheckCircle, XCircle, FileText, BarChart3, Users, AlertTriangle, Download, Settings, RefreshCw } from 'lucide-react';
+import React, {useEffect, useState} from 'react';
+import {
+    AlertTriangle,
+    BarChart3,
+    CheckCircle,
+    FileText,
+    Plus,
+    RefreshCw,
+    Settings,
+    TrendingUp,
+    Users,
+    XCircle
+} from 'lucide-react';
 import DataTable from '../../../components/common/DataTable/DataTable';
-import IntroCard from '../../../components/common/IntroCard/IntroCard';
-import { useSnackbar } from '../../../contexts/SnackbarContext';
-import { useAuth } from '../../../contexts/AuthContext';
+import {useSnackbar} from '../../../contexts/SnackbarContext';
+import {useAuth} from '../../../contexts/AuthContext';
 import promotionService from '../../../services/hr/promotionService';
 import AddPromotionForm from './components/AddPromotionForm';
 import ReviewPromotionModal from './components/ReviewPromotionModal';
 import PromotionDetailsModal from './components/PromotionDetailsModal';
-import {
-    usePromotionPermissions,
-    canPerformPromotionAction,
-    getAllowedPromotionActions,
-    hasPromotionViewAccess
-} from '../../../utils/rbac.js';
-import { createPromotionErrorHandler } from '../../../utils/hr/promotionErrorHandler';
+import {canPerformPromotionAction, hasPromotionViewAccess, usePromotionPermissions} from '../../../utils/rbac.js';
+import {createPromotionErrorHandler} from '../../../utils/hr/promotionErrorHandler';
 import './PromotionList.scss';
+import {FiPlus} from "react-icons/fi";
 
 const PromotionList = () => {
-    const { showSuccess, showError, showWarning } = useSnackbar();
-    const { currentUser, isAuthenticated } = useAuth();
+    const {showSuccess, showError, showWarning} = useSnackbar();
+    const {currentUser, isAuthenticated} = useAuth();
 
     // Get user permissions using RBAC
-    const permissions = usePromotionPermissions({ currentUser, isAuthenticated });
+    const permissions = usePromotionPermissions({currentUser, isAuthenticated});
 
     // Create specialized error handler for promotions
     const errorHandler = createPromotionErrorHandler(showError, showWarning);
@@ -56,7 +62,7 @@ const PromotionList = () => {
         return (
             <div className="promotion-list-container">
                 <div className="unauthorized-access">
-                    <AlertTriangle size={48} className="text-warning" />
+                    <AlertTriangle size={48} className="text-warning"/>
                     <h3>Access Denied</h3>
                     <p>You don't have permission to view promotion requests.</p>
                     <p>Contact your HR administrator for access.</p>
@@ -243,7 +249,7 @@ const PromotionList = () => {
         }
 
         try {
-            console.log('Reviewing promotion:', { promotionId, reviewData });
+            console.log('Reviewing promotion:', {promotionId, reviewData});
 
             const response = await promotionService.reviewPromotionRequest(promotionId, reviewData);
 
@@ -298,7 +304,7 @@ const PromotionList = () => {
         }
 
         try {
-            console.log('Cancelling promotion:', { promotionId, reason });
+            console.log('Cancelling promotion:', {promotionId, reason});
 
             const response = await promotionService.cancelPromotionRequest(promotionId, reason);
 
@@ -336,7 +342,7 @@ const PromotionList = () => {
 
             // Handle file download
             if (response.data) {
-                const blob = new Blob([response.data], { type: 'text/csv' });
+                const blob = new Blob([response.data], {type: 'text/csv'});
                 const url = window.URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
@@ -408,7 +414,7 @@ const PromotionList = () => {
     const actions = [
         {
             label: 'View',
-            icon: <FileText size={14} />,
+            icon: <FileText size={14}/>,
             onClick: (row) => {
                 setSelectedPromotion(row);
                 setShowDetailsModal(true);
@@ -418,7 +424,7 @@ const PromotionList = () => {
         },
         {
             label: 'Review',
-            icon: <CheckCircle size={14} />,
+            icon: <CheckCircle size={14}/>,
             onClick: (row) => {
                 if (canPerformPromotionAction(currentUser, 'review', row.status)) {
                     setSelectedPromotion(row);
@@ -432,7 +438,7 @@ const PromotionList = () => {
         },
         {
             label: 'Implement',
-            icon: <TrendingUp size={14} />,
+            icon: <TrendingUp size={14}/>,
             onClick: (row) => {
                 if (canPerformPromotionAction(currentUser, 'implement', row.status)) {
                     handleImplementPromotion(row.id);
@@ -445,7 +451,7 @@ const PromotionList = () => {
         },
         {
             label: 'Cancel',
-            icon: <XCircle size={14} />,
+            icon: <XCircle size={14}/>,
             onClick: (row) => {
                 if (canPerformPromotionAction(currentUser, 'cancel', row.status)) {
                     const reason = window.prompt('Please provide a reason for cancellation:');
@@ -479,8 +485,10 @@ const PromotionList = () => {
             sortable: true,
             render: (row) => (
                 <div className="position-cell">
-                    <div className="position-name">{row.currentPositionName || row.currentJobPosition?.positionName || 'N/A'}</div>
-                    <div className="department-name text-muted">{row.currentDepartmentName || row.currentJobPosition?.department || ''}</div>
+                    <div
+                        className="position-name">{row.currentPositionName || row.currentJobPosition?.positionName || 'N/A'}</div>
+                    <div
+                        className="department-name text-muted">{row.currentDepartmentName || row.currentJobPosition?.department || ''}</div>
                 </div>
             )
         },
@@ -490,8 +498,10 @@ const PromotionList = () => {
             sortable: true,
             render: (row) => (
                 <div className="position-cell">
-                    <div className="position-name text-success">{row.promotedToPositionName || row.promotedToJobPosition?.positionName || 'N/A'}</div>
-                    <div className="department-name text-muted">{row.promotedToDepartmentName || row.promotedToJobPosition?.department || ''}</div>
+                    <div
+                        className="position-name text-success">{row.promotedToPositionName || row.promotedToJobPosition?.positionName || 'N/A'}</div>
+                    <div
+                        className="department-name text-muted">{row.promotedToDepartmentName || row.promotedToJobPosition?.department || ''}</div>
                 </div>
             )
         },
@@ -568,22 +578,22 @@ const PromotionList = () => {
 
     // Conditionally show statistics based on permissions
     const introStats = permissions.canViewStatistics ? [
-        { label: 'Total Requests', value: statistics.total || statistics.totalRequests || 0 },
-        { label: 'Pending Review', value: statistics.pending || statistics.pendingRequests || 0 },
-        { label: 'Approved', value: statistics.approved || statistics.approvedRequests || 0 },
-        { label: 'Implemented', value: statistics.implemented || statistics.implementedRequests || 0 }
+        {label: 'Total Requests', value: statistics.total || statistics.totalRequests || 0},
+        {label: 'Pending Review', value: statistics.pending || statistics.pendingRequests || 0},
+        {label: 'Approved', value: statistics.approved || statistics.approvedRequests || 0},
+        {label: 'Implemented', value: statistics.implemented || statistics.implementedRequests || 0}
     ] : [
-        { label: 'Total Visible', value: promotions.length },
-        { label: 'Access Level', value: permissions.isHRManager ? 'Manager' : 'Employee' }
+        {label: 'Total Visible', value: promotions.length},
+        {label: 'Access Level', value: permissions.isHRManager ? 'Manager' : 'Employee'}
     ];
 
     // Define filterable columns for DataTable
     const filterableColumns = [
-        { header: 'Employee Name', accessor: 'employeeName' },
-        { header: 'Current Position', accessor: 'currentPositionName' },
-        { header: 'Proposed Position', accessor: 'proposedPositionName' },
-        { header: 'Current Department', accessor: 'currentDepartment' },
-        { header: 'Proposed Department', accessor: 'proposedDepartment' }
+        {header: 'Employee Name', accessor: 'employeeName'},
+        {header: 'Current Position', accessor: 'currentPositionName'},
+        {header: 'Proposed Position', accessor: 'proposedPositionName'},
+        {header: 'Current Department', accessor: 'currentDepartment'},
+        {header: 'Proposed Department', accessor: 'proposedDepartment'}
     ];
 
     // Custom filters for status and priority
@@ -649,22 +659,36 @@ const PromotionList = () => {
     return (
         <div className="promotion-list-container">
             {/* Header with IntroCard */}
-            <IntroCard
-                icon={<TrendingUp size={48} />}
-                label="Human Resources"
-                title={getPageTitle()}
-                description={getPageDescription()}
-                stats={introStats}
-            />
+            {/*<IntroCard*/}
+            {/*    icon={<TrendingUp size={48} />}*/}
+            {/*    label="Human Resources"*/}
+            {/*    title={getPageTitle()}*/}
+            {/*    description={getPageDescription()}*/}
+            {/*    stats={introStats}*/}
+            {/*/>*/}
 
+            <div className="departments-header">
+                <h1>Employee Promotions
+                    <p className="employees-header__subtitle">
+                        {getPageDescription()}
+                    </p>
+                </h1>
+                <button
+                    className="btn btn-primary"
+                    onClick={() => setShowAddForm(true)}
+                >
+                    <FiPlus /> New Promotion Request
+                </button>
+            </div>
             {!permissions.isHRManager && !permissions.isAdmin && permissions.canView && (
-                <div className="alert alert-info" style={{ margin: '10px 0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <Users size={20} />
+                <div className="alert alert-info" style={{margin: '10px 0'}}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                        <Users size={20}/>
                         <div>
                             <strong>HR Employee Access</strong>
-                            <p style={{ margin: 0, fontSize: '14px' }}>
-                                You can create and view promotion requests. Contact HR Management to review or implement promotions.
+                            <p style={{margin: 0, fontSize: '14px'}}>
+                                You can create and view promotion requests. Contact HR Management to review or implement
+                                promotions.
                             </p>
                         </div>
                     </div>
@@ -689,7 +713,7 @@ const PromotionList = () => {
                 onExportClick={handleExportData}
                 showAddButton={permissions.canCreate}
                 addButtonText="New Promotion Request"
-                addButtonIcon={<Plus size={18} />}
+                addButtonIcon={<Plus size={18}/>}
                 onAddClick={() => setShowAddForm(true)}
                 emptyMessage="No promotion requests found"
                 emptyDescription={
@@ -701,7 +725,7 @@ const PromotionList = () => {
                 customToolbarButtons={permissions.isHRManager ? [
                     {
                         label: 'Refresh',
-                        icon: <RefreshCw size={18} />,
+                        icon: <RefreshCw size={18}/>,
                         onClick: async () => {
                             setLoading(true);
                             try {
@@ -720,14 +744,14 @@ const PromotionList = () => {
                     },
                     {
                         label: 'Analytics',
-                        icon: <BarChart3 size={18} />,
+                        icon: <BarChart3 size={18}/>,
                         onClick: () => showWarning('Analytics feature coming soon'),
                         className: 'btn-outline-primary',
                         show: permissions.canViewAnalytics
                     },
                     {
                         label: 'Bulk Actions',
-                        icon: <Settings size={18} />,
+                        icon: <Settings size={18}/>,
                         onClick: () => showWarning('Bulk actions feature coming soon'),
                         className: 'btn-outline-secondary',
                         show: permissions.canPerformBulkActions
@@ -735,7 +759,7 @@ const PromotionList = () => {
                 ] : [
                     {
                         label: 'Refresh',
-                        icon: <RefreshCw size={18} />,
+                        icon: <RefreshCw size={18}/>,
                         onClick: async () => {
                             setLoading(true);
                             try {
