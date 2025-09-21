@@ -1187,6 +1187,23 @@ const SiteWarehousesTab = ({siteId}) => {
         },
     ];
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            // Check which modal is open and call the appropriate close function
+            if (showAddModal) {
+                handleCloseAddModal();
+            } else if (showEditModal) {
+                handleCloseEditModal();
+            } else if (showManageEmployeesModal) {
+                handleCloseManageEmployeesModal();
+            }
+        }
+    };
+
+
+
+    if (loading) return <div className="loading-container">Loading warehouse information...</div>;
     if (loading) return <ContentLoader
         context="employee-details"
         message="Loading Warehouses"
@@ -1228,7 +1245,7 @@ const SiteWarehousesTab = ({siteId}) => {
                         filterableColumns={columns}
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10}
-                        tableTitle="Site Warehouses"
+                        //tableTitle="Site Warehouses"
                         onRowClick={handleRowClick}
                         rowClassName="clickable-row"
                         showAddButton={isSiteAdmin}
@@ -1248,7 +1265,7 @@ const SiteWarehousesTab = ({siteId}) => {
 
             {/* Add Warehouse Modal */}
             {showAddModal && (
-                <div className="add-warehouse-modal-overlay">
+                <div className="add-warehouse-modal-overlay"  onClick={handleOverlayClick}>
                     <div className="add-warehouse-modal-content">
                         <div className="add-warehouse-modal-header">
                             <h2>Add New Warehouse</h2>
@@ -1405,7 +1422,7 @@ const SiteWarehousesTab = ({siteId}) => {
 
             {/* Edit Warehouse Modal */}
             {showEditModal && (
-                <div className="add-warehouse-modal-overlay">
+                <div className="add-warehouse-modal-overlay" onClick={handleOverlayClick}>
                     <div className="add-warehouse-modal-content">
                         <div className="add-warehouse-modal-header">
                             <h2>Edit Warehouse</h2>
@@ -1548,7 +1565,7 @@ const SiteWarehousesTab = ({siteId}) => {
 
             {/* Manage Employees Modal */}
             {showManageEmployeesModal && managingWarehouse && (
-                <div className="add-warehouse-modal-overlay">
+                <div className="add-warehouse-modal-overlay" onClick={handleOverlayClick}>
                     <div className="add-warehouse-modal-content warehouse-manage-employees-modal-content">
                         <div className="add-warehouse-modal-header">
                             <h2>Manage Employees - {managingWarehouse.name}</h2>

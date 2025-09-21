@@ -213,8 +213,15 @@ const AddEmployeeModal = ({ onClose, onSave, jobPositions, sites }) => {
         }
     };
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
     return (
-        <div className="r4m-modal-overlay">
+        <div className="r4m-modal-overlay" onClick={handleOverlayClick}>
             <div className="r4m-employee-modal">
                 <div className="r4m-modal-header">
                     <h2>{isFromCandidate ? 'Hire Candidate as Employee' : 'Add New Employee'}</h2>

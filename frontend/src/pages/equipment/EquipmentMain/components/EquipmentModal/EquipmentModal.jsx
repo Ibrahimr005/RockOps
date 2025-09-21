@@ -978,8 +978,23 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         driver.id !== formData.mainDriverId
     );
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            if (formTouched) {
+                showConfirmation(
+                    "Are you sure you want to close? Any unsaved changes will be lost.",
+                    onClose,
+                    () => hideSnackbar()
+                );
+            } else {
+                onClose();
+            }
+        }
+    };
+
     return (
-        <div className="equipment-modal-overlay">
+        <div className="equipment-modal-overlay" onClick={handleOverlayClick}>
             <div className="equipment-modal">
                 <div className="equipment-modal-header">
                     <h2>{equipmentToEdit ? 'Edit Equipment' : 'Add New Equipment'}</h2>
