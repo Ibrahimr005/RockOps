@@ -1,0 +1,653 @@
+// VacationBalancePage.scss - Using specific vacation balance class names
+.vacation-balance-page {
+  .vacation-balance-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    .vacation-balance-year-selector {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--section-background-color);
+      color: var(--color-text-primary);
+      font-size: 0.9rem;
+
+      &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
+      }
+    }
+
+    .vacation-balance-init-btn,
+    .vacation-balance-carry-forward-btn {
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .vacation-balance-init-btn {
+      margin-right: 0;
+    }
+
+    .vacation-balance-carry-forward-btn {
+      margin-left: 0;
+    }
+  }
+
+  // Page Header Section
+  .vacation-balance-header {
+    background: var(--section-background-color);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+
+    .vacation-balance-header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+
+      .vacation-balance-title-section {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+
+        .vacation-balance-title-icon {
+          font-size: 2rem;
+          color: var(--color-primary);
+          margin-top: 0.25rem;
+        }
+
+        .vacation-balance-title-text {
+          h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.75rem;
+            font-weight: var(--bold-font-weight);
+            color: var(--head-title-color);
+            line-height: 1.2;
+          }
+
+          p {
+            margin: 0;
+            color: var(--paragraph-color);
+            font-size: 0.95rem;
+          }
+        }
+      }
+
+
+    }
+  }
+
+  // Statistics Cards Section
+  .vacation-balance-stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+
+    .vacation-balance-stat-card {
+      background: var(--section-background-color);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+      position: relative;
+      transition: all var(--transition-fast);
+      overflow: hidden;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        transition: all var(--transition-fast);
+      }
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+      }
+
+      // Specific stat card colors
+      &.vacation-balance-stat-employees::before {
+        background-color: var(--color-primary);
+      }
+
+      &.vacation-balance-stat-remaining::before {
+        background-color: var(--color-success);
+      }
+
+      &.vacation-balance-stat-alerts::before {
+        background-color: var(--color-danger);
+      }
+
+      &.vacation-balance-stat-utilization::before {
+        background-color: var(--color-warning);
+      }
+
+      .vacation-balance-stat-content {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .vacation-balance-stat-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 3rem;
+        height: 3rem;
+        border-radius: var(--radius-sm);
+        font-size: 1.5rem;
+        flex-shrink: 0;
+        transition: all var(--transition-fast);
+
+        svg {
+          width: 1.5rem;
+          height: 1.5rem;
+        }
+      }
+
+      &.vacation-balance-stat-employees .vacation-balance-stat-icon {
+        background-color: rgba(72, 128, 255, 0.1);
+        color: var(--color-primary);
+      }
+
+      &.vacation-balance-stat-remaining .vacation-balance-stat-icon {
+        background-color: rgba(76, 175, 80, 0.1);
+        color: var(--color-success);
+      }
+
+      &.vacation-balance-stat-alerts .vacation-balance-stat-icon {
+        background-color: rgba(244, 67, 54, 0.1);
+        color: var(--color-danger);
+      }
+
+      &.vacation-balance-stat-utilization .vacation-balance-stat-icon {
+        background-color: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
+      }
+
+      .vacation-balance-stat-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .vacation-balance-stat-title {
+        font-size: 0.9rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-secondary);
+        margin: 0 0 0.5rem 0;
+        line-height: 1.3;
+      }
+
+      .vacation-balance-stat-value {
+        font-size: 2rem;
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+        margin: 0 0 0.5rem 0;
+        line-height: 1;
+      }
+    }
+  }
+
+  // Controls Section
+  .vacation-balance-controls {
+    background: var(--section-background-color);
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+
+    .vacation-balance-search-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0;
+
+      .vacation-balance-search-box {
+        position: relative;
+        flex: 1;
+        max-width: 400px;
+
+        .vacation-balance-search-icon {
+          position: absolute;
+          left: 0.75rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--color-text-secondary);
+          font-size: 0.9rem;
+          pointer-events: none;
+        }
+
+        .vacation-balance-search-input {
+          width: 100%;
+          padding: 0.6rem 0.75rem 0.6rem 2.25rem;
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-sm);
+          background: var(--section-background-color);
+          color: var(--color-text-primary);
+          font-size: 0.9rem;
+
+          &:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
+          }
+
+          &::placeholder {
+            color: var(--color-text-secondary);
+          }
+        }
+      }
+
+      .vacation-balance-filter-toggle {
+        &.active {
+          background: var(--color-primary);
+          color: white;
+        }
+      }
+    }
+
+    .vacation-balance-filter-options {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+
+      .vacation-balance-filter-group {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+
+        label {
+          font-weight: var(--bold-font-weight);
+          color: var(--label-color);
+          white-space: nowrap;
+          font-size: 0.9rem;
+        }
+
+        .vacation-balance-filter-select {
+          padding: 0.5rem 0.75rem;
+          border: 1px solid var(--border-color);
+          border-radius: var(--radius-sm);
+          background: var(--section-background-color);
+          color: var(--color-text-primary);
+          font-size: 0.9rem;
+
+          &:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px rgba(72, 128, 255, 0.1);
+          }
+        }
+      }
+    }
+  }
+
+  // Alert Section
+  .vacation-balance-alert-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-warning);
+    border-left: 4px solid var(--color-warning);
+    background: rgba(var(--color-warning-rgb), 0.05);
+    margin-bottom: 1.5rem;
+
+    [data-theme="dark"] & {
+      background: rgba(255, 183, 77, 0.1);
+    }
+
+    .vacation-balance-alert-icon {
+      font-size: 1.5rem;
+      color: var(--color-warning);
+      flex-shrink: 0;
+    }
+
+    .vacation-balance-alert-content {
+      h4 {
+        margin: 0 0 0.25rem 0;
+        color: var(--head-title-color);
+        font-size: 1rem;
+        font-weight: var(--bold-font-weight);
+      }
+
+      p {
+        margin: 0;
+        color: var(--paragraph-color);
+        font-size: 0.9rem;
+      }
+    }
+  }
+
+  // Table Container
+  .vacation-balance-table-container {
+
+
+    // Custom table cell styling within DataTable
+    .vacation-balance-employee-info {
+      .vacation-balance-employee-name {
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
+      }
+
+      .vacation-balance-employee-id {
+        font-size: 0.75rem;
+        color: var(--color-text-secondary);
+      }
+    }
+
+    .vacation-balance-days-count {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: var(--radius-sm);
+      font-weight: var(--bold-font-weight);
+      text-align: center;
+      min-width: 2.5rem;
+      font-size: 0.85rem;
+
+      &.vacation-balance-used {
+        background: rgba(33, 150, 243, 0.1);
+        color: var(--color-info);
+      }
+
+      &.vacation-balance-pending {
+        background: rgba(var(--color-warning-rgb), 0.1);
+        color: var(--color-warning);
+      }
+
+      &.vacation-balance-remaining {
+        background: rgba(76, 175, 80, 0.1);
+        color: var(--color-success);
+      }
+
+      &.vacation-balance-low {
+        background: rgba(244, 67, 54, 0.1);
+        color: var(--color-danger);
+      }
+
+      &.vacation-balance-carried {
+        background: rgba(72, 128, 255, 0.1);
+        color: var(--color-primary);
+      }
+
+      &.vacation-balance-bonus {
+        background: rgba(255, 193, 7, 0.1);
+        color: #ff9800;
+      }
+    }
+
+    .vacation-balance-utilization-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      min-width: 100px;
+
+      .vacation-balance-utilization-rate {
+        font-weight: var(--bold-font-weight);
+        color: var(--color-text-primary);
+        font-size: 0.85rem;
+      }
+
+      .vacation-balance-utilization-bar {
+        height: 4px;
+        background: var(--color-surface-hover);
+        border-radius: 2px;
+        overflow: hidden;
+
+        .vacation-balance-utilization-fill {
+          height: 100%;
+          background: linear-gradient(90deg,
+                  var(--color-success) 0%,
+                  var(--color-warning) 50%,
+                  var(--color-danger) 100%);
+          border-radius: 2px;
+          transition: width var(--transition-normal) ease;
+        }
+      }
+    }
+
+    .vacation-balance-action-buttons {
+      display: flex;
+      gap: 0.5rem;
+
+      .vacation-balance-bonus-btn {
+        background: rgba(255, 193, 7, 0.1);
+        color: #ff9800;
+        border: 1px solid rgba(255, 193, 7, 0.2);
+
+        &:hover:not(:disabled) {
+          background: rgba(255, 193, 7, 0.2);
+          border-color: rgba(255, 193, 7, 0.3);
+        }
+      }
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: 1024px) {
+  .vacation-balance-page {
+    padding: 1.5rem;
+
+    .vacation-balance-header .vacation-balance-header-content {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .vacation-balance-header-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+
+    .vacation-balance-stats-container {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .vacation-balance-page {
+    padding: 1rem;
+
+    .vacation-balance-header {
+      padding: 1.5rem;
+
+      .vacation-balance-title-section {
+        .vacation-balance-title-text h1 {
+          font-size: 1.5rem;
+        }
+
+        .vacation-balance-title-icon {
+          font-size: 1.5rem;
+        }
+      }
+
+      .vacation-balance-header-actions {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+
+        .vacation-balance-year-selector {
+          width: 100%;
+          max-width: 150px;
+        }
+      }
+    }
+
+    .vacation-balance-stats-container {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+
+      .vacation-balance-stat-card {
+        .vacation-balance-stat-value {
+          font-size: 1.5rem;
+        }
+      }
+    }
+
+    .vacation-balance-controls {
+      padding: 1rem;
+
+      .vacation-balance-search-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+
+        .vacation-balance-search-box {
+          max-width: none;
+        }
+
+        .vacation-balance-filter-toggle {
+          align-self: flex-start;
+        }
+      }
+
+      .vacation-balance-filter-options .vacation-balance-filter-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+
+        .vacation-balance-filter-select {
+          width: 100%;
+        }
+      }
+    }
+
+    .vacation-balance-alert-card {
+      padding: 1rem;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+
+      .vacation-balance-alert-icon {
+        align-self: center;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .vacation-balance-page {
+    padding: 0.5rem;
+
+    .vacation-balance-header,
+    .vacation-balance-controls,
+    .vacation-balance-alert-card,
+    .vacation-balance-table-container {
+      border-radius: var(--radius-sm);
+    }
+
+    .vacation-balance-header {
+      padding: 1rem;
+    }
+
+    .vacation-balance-controls {
+      padding: 0.75rem;
+    }
+
+    .vacation-balance-stats-container .vacation-balance-stat-card {
+      .vacation-balance-stat-content {
+        gap: 0.75rem;
+      }
+
+      .vacation-balance-stat-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1.25rem;
+
+        svg {
+          width: 1.25rem;
+          height: 1.25rem;
+        }
+      }
+
+      .vacation-balance-stat-value {
+        font-size: 1.5rem;
+      }
+
+      .vacation-balance-stat-title {
+        font-size: 0.85rem;
+      }
+    }
+  }
+}
+
+// Dark theme specific adjustments
+[data-theme="dark"] {
+  .vacation-balance-page {
+    .vacation-balance-days-count {
+      &.vacation-balance-used {
+        background: rgba(66, 165, 245, 0.15);
+        color: var(--color-info-light);
+      }
+
+      &.vacation-balance-remaining {
+        background: rgba(92, 188, 96, 0.15);
+        color: var(--color-success-light);
+      }
+
+      &.vacation-balance-low {
+        background: rgba(255, 82, 82, 0.15);
+        color: var(--color-danger-light);
+      }
+
+      &.vacation-balance-carried {
+        background: rgba(72, 128, 255, 0.15);
+        color: var(--color-primary-light);
+      }
+
+      &.vacation-balance-pending {
+        background: rgba(255, 183, 77, 0.15);
+        color: var(--color-warning-light);
+      }
+
+      &.vacation-balance-bonus {
+        background: rgba(255, 193, 7, 0.15);
+        color: #ffc107;
+      }
+    }
+
+    .vacation-balance-bonus-btn {
+      background: rgba(255, 193, 7, 0.15);
+      color: #ffc107;
+      border-color: rgba(255, 193, 7, 0.25);
+
+      &:hover:not(:disabled) {
+        background: rgba(255, 193, 7, 0.25);
+        border-color: rgba(255, 193, 7, 0.35);
+      }
+    }
+
+    // Dark theme stat card icon adjustments
+    .vacation-balance-stat-employees .vacation-balance-stat-icon {
+      background-color: rgba(72, 128, 255, 0.15);
+      color: var(--color-primary-light);
+    }
+
+    .vacation-balance-stat-remaining .vacation-balance-stat-icon {
+      background-color: rgba(92, 188, 96, 0.15);
+      color: var(--color-success-light);
+    }
+
+    .vacation-balance-stat-alerts .vacation-balance-stat-icon {
+      background-color: rgba(255, 82, 82, 0.15);
+      color: var(--color-danger-light);
+    }
+
+    .vacation-balance-stat-utilization .vacation-balance-stat-icon {
+      background-color: rgba(255, 183, 77, 0.15);
+      color: var(--color-warning-light);
+    }
+  }
+}

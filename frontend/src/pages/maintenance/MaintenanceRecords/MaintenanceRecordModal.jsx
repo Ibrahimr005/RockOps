@@ -39,9 +39,9 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
             setFormData({
                 equipmentId: editingRecord.equipmentId || '',
                 initialIssueDescription: editingRecord.initialIssueDescription || '',
-                expectedCompletionDate: editingRecord.expectedCompletionDate ? 
+                expectedCompletionDate: editingRecord.expectedCompletionDate ?
                     editingRecord.expectedCompletionDate.split('T')[0] : '',
-                estimatedCost: editingRecord.totalCost || ''
+                estimatedCost: editingRecord.totalCost || editingRecord.estimatedCost || '' // Fix this line
             });
         } else {
             setFormData({
@@ -100,15 +100,20 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
             const submitData = {
                 ...formData,
                 expectedCompletionDate: formData.expectedCompletionDate + 'T17:00:00',
-                estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : 0
+                totalCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : 0, // Map to totalCost
+                estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : 0 // Keep both for compatibility
             };
-            
             onSubmit(submitData);
         }
     };
 
     const getSelectedEquipment = () => {
         return equipmentList.find(eq => eq.id === formData.equipmentId);
+    };
+
+    const formatNumberWithCommas = (number) => {
+        if (number === undefined || number === null || number === '') return '';
+        return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     };
 
     if (!isOpen) return null;
@@ -206,7 +211,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                                     name="estimatedCost"
                                     value={formData.estimatedCost}
                                     onChange={handleInputChange}
-                                    placeholder="0.00"
+                                    placeholder="0.00"  // Remove $ from here
                                     step="0.01"
                                     min="0"
                                     className={errors.estimatedCost ? 'error' : ''}

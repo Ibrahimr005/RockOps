@@ -5,6 +5,10 @@
   --navbar-height: 70px;
   background: var(--main-background-color);
   padding: 0;
+  border-radius: var(--radius-md);
+  // Improve scrolling performance
+  scroll-behavior: smooth;
+  contain: layout style paint;
 
   // Loading state
   .sarky-matrix-loading {
@@ -30,7 +34,7 @@
     }
   }
 
-  // Sticky Header section - Proper sticky positioning within scrolling container
+  // Sticky Header section - Simplified sticky positioning
   .matrix-header-sticky {
     background: var(--section-background-color);
     border: 1px solid var(--border-color);
@@ -38,18 +42,18 @@
     padding: 24px;
     margin-bottom: 20px;
     box-shadow: var(--shadow-sm);
-    position: sticky;
-    top: 0; // Stick to top of scrolling container
-    z-index: 1000; // High z-index to stay above everything
-    backdrop-filter: blur(8px);
+    // Remove sticky positioning to eliminate conflicts
+    position: relative;
+    z-index: 100;
     
-    // Smooth transition when sticking/unsticking
-    transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+    // Optimize rendering performance
+    will-change: transform;
+    transform: translateZ(0); // Force hardware acceleration
     
-    // Enhanced shadow when sticky for better visual separation
+    // Remove stuck state styling to prevent visual conflicts
     &.stuck {
-      box-shadow: var(--shadow-md);
-      transform: translateZ(0); // Force hardware acceleration
+      // Keep same appearance for consistency
+      box-shadow: var(--shadow-sm);
     }
 
     .header-info {
@@ -265,6 +269,14 @@
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
     overflow: auto;
+    // Improve scrolling performance
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    // Set max height to enable proper scrolling
+    max-height: 70vh;
+    // Optimize rendering
+    will-change: scroll-position;
+    contain: layout style paint;
 
     .sarky-matrix {
       width: 100%;
@@ -276,6 +288,9 @@
         top: 0;
         z-index: 10;
         background: var(--table-header-bg);
+        // Ensure smooth sticky behavior
+        will-change: transform;
+        transform: translateZ(0);
 
         th {
           padding: 16px 8px;
@@ -678,6 +693,14 @@
 
       tfoot {
         background: var(--table-header-bg);
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        // Ensure smooth sticky behavior
+        will-change: transform;
+        transform: translateZ(0);
+        // Add border to separate from content
+        box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
 
         .totals-row {
           td {
@@ -687,6 +710,7 @@
             color: var(--color-text-primary);
             border-top: 2px solid var(--table-border);
             border-right: 1px solid var(--table-border);
+            background: var(--table-header-bg);
 
             &.total-label {
               text-align: left;
@@ -694,7 +718,7 @@
               background: var(--table-header-bg);
               position: sticky;
               left: 0;
-              z-index: 6;
+              z-index: 11;
             }
 
             &.grand-total {
