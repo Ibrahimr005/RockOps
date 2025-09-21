@@ -1095,6 +1095,17 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
         });
     };
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            if (isTransactionModalOpen) {
+                handleCloseTransactionModal();
+            } else if (isViewModalOpen) {
+                handleCloseViewModal();
+            }
+        }
+    };
+
     return (
         <div className="transaction-table-section">
             <div className="table-header-section">
@@ -1135,7 +1146,7 @@ const PendingTransactionsTable = ({ warehouseId, refreshTrigger, onCountUpdate, 
 
             {/* Unified Transaction Modal (Create/Update) */}
             {isTransactionModalOpen && (
-                <div className="modal-backdrop3">
+                <div className="modal-backdrop3" onClick={handleOverlayClick}>
                     <div className="modal3">
                         <div className="modal-header3">
                             <h2>{modalMode === "create" ? "Create New Transaction" : "Update Transaction"}</h2>

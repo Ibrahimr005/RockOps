@@ -129,9 +129,16 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
         }
     };
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
     return (
         <div className="add-vacancy-modal">
-            <div className="modal-backdrop">
+            <div className="modal-backdrop" onClick={handleOverlayClick}>
                 <div className="modal-container modal-lg">
                     <div className="modal-header">
                         <h2 className="modal-title">
@@ -150,7 +157,7 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
                                 <h3 className="modal-section-title">Basic Information</h3>
                                 <div className="form-grid">
                                     <div className="form-group full-width">
-                                        <label>Job Title *</label>
+                                        <label>Job Title <span className="required-asterisk">*</span></label>
                                         <input
                                             type="text"
                                             name="title"
@@ -234,7 +241,7 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
                                     </div>
 
                                     <div className="form-group">
-                                        <label>Closing Date *</label>
+                                        <label>Closing Date <span className="required-asterisk">*</span></label>
                                         <input
                                             type="date"
                                             name="closingDate"
@@ -253,7 +260,7 @@ const EditVacancyModal = ({ vacancy, onClose, onSave, jobPositions }) => {
                             <div className="modal-section">
                                 <h3 className="modal-section-title">Job Details</h3>
                                 <div className="form-group">
-                                    <label>Description *</label>
+                                    <label>Description <span className="required-asterisk">*</span></label>
                                     <textarea
                                         name="description"
                                         value={formData.description}

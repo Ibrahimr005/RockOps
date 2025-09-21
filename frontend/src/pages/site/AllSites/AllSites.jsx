@@ -367,6 +367,13 @@ const AllSites = () => {
         }
     };
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            handleCloseModals();
+        }
+    };
+
     if (loading) return <LoadingPage />;
     if (error) return <div className="error-container">{error}</div>;
 
@@ -445,7 +452,7 @@ const AllSites = () => {
 
             {/* Add Site Modal */}
             {showAddModal && (
-                <div className="site-modal-overlay">
+                <div className="site-modal-overlay" onClick={handleOverlayClick}>
                     <div className="site-modal-content">
                         <div className="site-modal-header">
                             <h2>{t('site.addSite')}</h2>
@@ -583,7 +590,7 @@ const AllSites = () => {
 
             {/* Edit Site Modal */}
             {showEditModal && (
-                <div className="site-modal-overlay">
+                <div className="site-modal-overlay" onClick={handleOverlayClick}>
                     <div className="site-modal-content">
                         <div className="site-modal-header">
                             <h2>{t('site.editSite')}</h2>

@@ -287,8 +287,15 @@ const MaintenanceTransactionModal = ({
 
     if (!isOpen) return null;
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
     return (
-        <div className="maintenance-transaction-modal-backdrop">
+        <div className="maintenance-transaction-modal-backdrop" onClick={handleOverlayClick}>
             <div className="maintenance-transaction-modal">
                 <div className="maintenance-transaction-modal-header">
                     <h2>Add Transaction to Maintenance</h2>
