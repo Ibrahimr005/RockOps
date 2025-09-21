@@ -1024,4 +1024,48 @@
       }
     }
   }
+
+  // Work Type Modal Tab Styles
+  .tab-buttons {
+    display: flex;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 20px;
+
+    button {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      position: relative;
+
+      &.tab-active {
+        color: var(--color-primary);
+        border-bottom: 2px solid var(--color-primary);
+        background: var(--background-hover);
+      }
+
+      &.tab-inactive {
+        color: var(--color-text-secondary);
+        
+        &:hover {
+          color: var(--color-text);
+          background: var(--background-hover);
+        }
+      }
+    }
+  }
+
+  .no-options-text {
+    color: var(--color-text-secondary);
+    font-style: italic;
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--background-warning);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-warning);
+  }
 }

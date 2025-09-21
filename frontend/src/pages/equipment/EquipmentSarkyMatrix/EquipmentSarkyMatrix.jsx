@@ -9,6 +9,7 @@ import { documentService } from '../../../services/documentService';
 import { getMonthLabel } from '../../../constants/documentTypes';
 import SarkyDocumentModal from './SarkyDocumentModal';
 import './EquipmentSarkyMatrix.scss';
+import '../../../styles/form-validation.scss';
 
 // Driver Dropdown Component
 const DriverDropdown = ({
@@ -97,7 +98,7 @@ const DriverDropdown = ({
 };
 
 const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => {
-    const { showSuccess, showError } = useSnackbar();
+    const { showSuccess, showError, showConfirmation } = useSnackbar();
     const auth = useAuth();
     const permissions = useEquipmentPermissions(auth);
 
@@ -107,6 +108,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [equipmentData, setEquipmentData] = useState(null);
     const [workTypes, setWorkTypes] = useState([]);
+    const [allWorkTypes, setAllWorkTypes] = useState([]); // All work types available in the system
     const [drivers, setDrivers] = useState([]);
 
     // GLOBAL MATRIX DATA - preserves data across all view modes
@@ -120,6 +122,8 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
     const [hasChanges, setHasChanges] = useState(false);
     const [showAddWorkType, setShowAddWorkType] = useState(false);
     const [newWorkTypeName, setNewWorkTypeName] = useState('');
+    const [selectedExistingWorkType, setSelectedExistingWorkType] = useState('');
+    const [workTypeSelectionMode, setWorkTypeSelectionMode] = useState('existing'); // 'existing' or 'new'
     const [focusedCell, setFocusedCell] = useState(null);
     const [focusedInput, setFocusedInput] = useState(null); // Track which input is currently focused
     const [copiedValue, setCopiedValue] = useState(null);
@@ -244,6 +248,10 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                     const workTypesResponse = await equipmentService.getSupportedWorkTypesForEquipmentType(response.data.typeId);
                     console.log("Fetched work types:", workTypesResponse.data);
                     setWorkTypes(workTypesResponse.data || []);
+                    
+                    // Fetch all available work types
+                    const allWorkTypesResponse = await workTypeService.getAll();
+                    setAllWorkTypes(allWorkTypesResponse.data || []);
                 }
             } catch (error) {
                 console.error("Error fetching equipment data:", error);
@@ -823,7 +831,121 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [hasChanges, saving, permissions.canEdit, handleSaveAll]);
 
+    const handleLinkExistingWorkType = async () => {
+        if (!selectedExistingWorkType) {
+            showError('Please select a work type to add');
+            return;
+        }
+
+        try {
+            // Add the selected work type to supported work types for this equipment type
+            await equipmentService.addSupportedWorkTypesForEquipmentType(
+                equipmentData.typeId,
+                [selectedExistingWorkType]
+            );
+
+            // Refresh work types
+            const workTypesResponse = await equipmentService.getSupportedWorkTypesForEquipmentType(equipmentData.typeId);
+            setWorkTypes(workTypesResponse.data);
+
+            // Update global matrix data to include the linked work type
+            const updatedMatrix = { ...globalMatrixData };
+            Object.keys(updatedMatrix).forEach(dateKey => {
+                updatedMatrix[dateKey][selectedExistingWorkType] = {
+                    hours: 0,
+                    driverId: selectedDriver,
+                    isExisting: false,
+                    originalValue: 0,
+                    originalDriverId: selectedDriver
+                };
+            });
+            setGlobalMatrixData(updatedMatrix);
+
+            // Reset form and close modal
+            handleCloseWorkTypeModal();
+            showSuccess('Work type linked to equipment successfully');
+        } catch (error) {
+            console.error('Error linking work type:', error);
+            showError('Failed to link work type. Please try again.');
+        }
+    };
+
+    const handleReactivateWorkType = async (workTypeName) => {
+        try {
+            // Create work type data from current form
+            const workTypeData = {
+                name: newWorkTypeName.trim(),
+                description: `Added from Sarky Matrix for ${equipmentData.name}`,
+                active: true
+            };
+            
+            const workTypeResponse = await workTypeService.reactivateByName(workTypeName, workTypeData);
+            const newWorkTypeId = workTypeResponse.data.id;
+
+            // Add it to supported work types for this equipment type
+            await equipmentService.addSupportedWorkTypesForEquipmentType(
+                equipmentData.typeId,
+                [newWorkTypeId]
+            );
+
+            // Refresh work types
+            const workTypesResponse = await equipmentService.getSupportedWorkTypesForEquipmentType(equipmentData.typeId);
+            setWorkTypes(workTypesResponse.data);
+
+            // Update global matrix data to include new work type
+            const updatedMatrix = { ...globalMatrixData };
+            Object.keys(updatedMatrix).forEach(dateKey => {
+                updatedMatrix[dateKey][newWorkTypeId] = {
+                    hours: 0,
+                    driverId: selectedDriver,
+                    isExisting: false,
+                    originalValue: 0,
+                    originalDriverId: selectedDriver
+                };
+            });
+            setGlobalMatrixData(updatedMatrix);
+            
+            // Reset the form
+            handleCloseWorkTypeModal();
+            
+            showSuccess(`Work type "${workTypeName}" has been reactivated successfully with updated details.`);
+        } catch (error) {
+            console.error('Error reactivating work type:', error);
+            showError(`Failed to reactivate work type "${workTypeName}". Please try again or contact your administrator.`);
+        }
+    };
+
+    const handleCloseWorkTypeModal = () => {
+        setShowAddWorkType(false);
+        setNewWorkTypeName('');
+        setSelectedExistingWorkType('');
+        setWorkTypeSelectionMode('existing');
+    };
+
+    // Get available work types that aren't already linked
+    const getAvailableWorkTypes = () => {
+        return allWorkTypes.filter(wt => wt.active && !workTypes.find(existing => existing.id === wt.id));
+    };
+
+    // Handle opening the modal with smart mode selection
+    const handleOpenWorkTypeModal = () => {
+        // Auto-switch to "new" mode if no work types are available to link
+        if (getAvailableWorkTypes().length === 0) {
+            setWorkTypeSelectionMode('new');
+        } else {
+            setWorkTypeSelectionMode('existing');
+        }
+        setShowAddWorkType(true);
+    };
+
     const handleAddWorkType = async () => {
+        // Handle based on selection mode
+        if (workTypeSelectionMode === 'existing') {
+            await handleLinkExistingWorkType();
+            return;
+        }
+
+        // Handle new work type creation
         if (!newWorkTypeName.trim()) {
             showError('Please enter a work type name');
             return;
@@ -862,11 +984,42 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
             });
             setGlobalMatrixData(updatedMatrix);
 
-            setNewWorkTypeName('');
-            setShowAddWorkType(false);
+            handleCloseWorkTypeModal();
             showSuccess('Work type added successfully');
         } catch (error) {
-            showError('Failed to add work type: ' + (error.response?.data?.message || error.message));
+            console.error('Error adding work type from Sarky Matrix:', error);
+            
+            // Handle specific error cases
+            if (error.response?.status === 409) {
+                // Check if it's our enhanced conflict response
+                if (error.response.data?.conflictType) {
+                    const { conflictType, resourceName, isInactive } = error.response.data;
+                    if (isInactive) {
+                        // Show confirmation dialog to reactivate inactive work type
+                        showConfirmation(
+                            `Work type "${resourceName}" already exists but was previously deactivated. Would you like to reactivate it instead of creating a new one?`,
+                            () => handleReactivateWorkType(resourceName),
+                            () => showError(`Please choose a different name for the work type.`)
+                        );
+                    } else {
+                        showError(`Work type "${resourceName}" already exists. Please choose a different name.`);
+                    }
+                } else {
+                    // Fallback for legacy error responses
+                    if (error.response.data?.message?.includes('inactive') || error.response.data?.message?.includes('deleted')) {
+                        showError(`Work type "${newWorkTypeName.trim()}" already exists but was previously deleted. Please contact your administrator to reactivate it, or choose a different name.`);
+                    } else {
+                        showError(`Work type "${newWorkTypeName.trim()}" already exists. Please choose a different name.`);
+                    }
+                }
+            } else if (error.response?.status === 400) {
+                const message = error.response.data?.message || 'Please check your input and try again';
+                showError(`Work type name is invalid: ${message}`);
+            } else if (error.response?.status === 403) {
+                showError('You don\'t have permission to create work types. Please contact your administrator.');
+            } else {
+                showError('Failed to add work type: ' + (error.response?.data?.message || error.message));
+            }
         }
     };
 
@@ -1102,7 +1255,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                         <th className="add-worktype-header">
                             <button
                                 className="add-worktype-btn"
-                                onClick={() => setShowAddWorkType(true)}
+                                onClick={handleOpenWorkTypeModal}
                                 title="Add new work type"
                             >
                                 + Type
@@ -1287,23 +1440,101 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
 
             {/* Add Work Type Modal */}
             {showAddWorkType && (
-                <div className="modal-overlay" onClick={() => setShowAddWorkType(false)}>
+                <div className="modal-overlay" onClick={handleCloseWorkTypeModal}>
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <h3>Add New Work Type</h3>
-                        <input
-                            type="text"
-                            value={newWorkTypeName}
-                            onChange={(e) => setNewWorkTypeName(e.target.value)}
-                            placeholder="Enter work type name"
-                            autoFocus
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleAddWorkType();
-                                if (e.key === 'Escape') setShowAddWorkType(false);
-                            }}
-                        />
+                        <h3>Add Work Type</h3>
+                        
+                        {/* Selection Mode Tabs */}
+                        <div className="form-group">
+                            <div className="tab-buttons">
+                                <button 
+                                    type="button"
+                                    className={workTypeSelectionMode === 'existing' ? 'tab-active' : 'tab-inactive'}
+                                    onClick={() => setWorkTypeSelectionMode('existing')}
+                                >
+                                    Link Existing Work Type
+                                </button>
+                                <button 
+                                    type="button"
+                                    className={workTypeSelectionMode === 'new' ? 'tab-active' : 'tab-inactive'}
+                                    onClick={() => setWorkTypeSelectionMode('new')}
+                                >
+                                    Create New Work Type
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Existing Work Type Selection */}
+                        {workTypeSelectionMode === 'existing' && (
+                            <div className="form-group">
+                                <label htmlFor="existingWorkType">Select Work Type <span className="required-field">*</span></label>
+                                <select
+                                    id="existingWorkType"
+                                    value={selectedExistingWorkType}
+                                    onChange={(e) => setSelectedExistingWorkType(e.target.value)}
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleAddWorkType();
+                                        if (e.key === 'Escape') handleCloseWorkTypeModal();
+                                    }}
+                                >
+                                    <option value="">-- Select a work type --</option>
+                                    {getAvailableWorkTypes().map(workType => (
+                                        <option key={workType.id} value={workType.id}>
+                                            {workType.name}
+                                            {workType.description && ` - ${workType.description}`}
+                                        </option>
+                                    ))}
+                                </select>
+                                {getAvailableWorkTypes().length === 0 && (
+                                    <p className="no-options-text">
+                                        All available work types are already linked to this equipment type.
+                                        <br />
+                                        <button 
+                                            type="button" 
+                                            className="btn-link" 
+                                            onClick={() => setWorkTypeSelectionMode('new')}
+                                            style={{ marginTop: '8px', fontSize: '14px' }}
+                                        >
+                                            Click here to create a new work type instead
+                                        </button>
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* New Work Type Creation */}
+                        {workTypeSelectionMode === 'new' && (
+                            <div className="form-group">
+                                <label htmlFor="newWorkTypeName">Name <span className="required-field">*</span></label>
+                                <input
+                                    type="text"
+                                    id="newWorkTypeName"
+                                    value={newWorkTypeName}
+                                    onChange={(e) => setNewWorkTypeName(e.target.value)}
+                                    placeholder="Enter work type name (e.g., Excavation, Transportation, Maintenance)"
+                                    autoFocus
+                                    required
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleAddWorkType();
+                                        if (e.key === 'Escape') handleCloseWorkTypeModal();
+                                    }}
+                                />
+                            </div>
+                        )}
+
                         <div className="modal-actions">
-                            <button onClick={() => setShowAddWorkType(false)}>Cancel</button>
-                            <button onClick={handleAddWorkType} className="btn-primary">Add</button>
+                            <button onClick={handleCloseWorkTypeModal}>Cancel</button>
+                            <button 
+                                onClick={handleAddWorkType} 
+                                className="btn-primary"
+                                disabled={
+                                    (workTypeSelectionMode === 'existing' && !selectedExistingWorkType) ||
+                                    (workTypeSelectionMode === 'new' && !newWorkTypeName.trim())
+                                }
+                            >
+                                {workTypeSelectionMode === 'existing' ? 'Link Work Type' : 'Create Work Type'}
+                            </button>
                         </div>
                     </div>
                 </div>
