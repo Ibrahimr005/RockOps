@@ -586,7 +586,12 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
         }
     };
 
-
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            handleCloseModal();
+        }
+    };
 
     return (
         <div className="pending-request-orders-container">
@@ -621,7 +626,7 @@ const PendingRequestOrders = React.forwardRef(({ warehouseId, refreshTrigger, on
 
             {/* Modal for Creating Request */}
             {showAddModal && (
-                <div className="warehouse-request-modal-backdrop">
+                <div className="warehouse-request-modal-backdrop"  onClick={handleOverlayClick}>
                     <div className="warehouse-request-modal">
                         <div className="warehouse-request-modal-header">
                             <h2>{isEditMode ? 'Edit Request' : 'Create New Request'}</h2>

@@ -708,11 +708,18 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
         }
     };
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            onClose();
+        }
+    };
+
 
     if (!isOpen) return null;
 
     return (
-        <div className="modal-overlay">
+        <div className="modal-overlay" onClick={handleOverlayClick}>
             <div className="modal-content modal-lg">
                 <div className="modal-header">
                     <h2>Edit Position</h2>

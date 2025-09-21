@@ -215,6 +215,13 @@ const SiteEquipmentTab = ({siteId}) => {
         { accessor: 'driverName', header: 'Driver Name', filterType: 'text' }
     ];
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            handleCloseModal();
+        }
+    };
+
     if (loading) return <div className="loading-container">{t('site.loadingEquipment')}</div>;
 
     return (
@@ -229,7 +236,7 @@ const SiteEquipmentTab = ({siteId}) => {
 
             {/* Assign Equipment Modal */}
             {showModal && (
-                <div className="assign-equipment-modal-overlay">
+                <div className="assign-equipment-modal-overlay" onClick={handleOverlayClick}>
                     <div className="assign-equipment-modal-content">
                         <div className="assign-equipment-modal-header">
                             <h2>{t('site.assignEquipment')}</h2>
@@ -319,7 +326,7 @@ const SiteEquipmentTab = ({siteId}) => {
                         filterableColumns={filterableColumns}
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10}
-                        tableTitle={t('site.siteEquipmentReport')}
+                        //tableTitle={t('site.siteEquipmentReport')}
                         onRowClick={handleRowClick}
                         rowClassName="clickable-row"
                         // Add button configuration - only show for site admins

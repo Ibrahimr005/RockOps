@@ -326,6 +326,7 @@ export const SITE_ENDPOINTS = {
     WAREHOUSES: (siteId) => `/api/v1/site/${siteId}/warehouses`,
     MERCHANTS: (siteId) => `/api/v1/site/${siteId}/merchants`,
     FIXED_ASSETS: (siteId) => `/api/v1/site/${siteId}/fixedassets`,
+    UNASSIGNED_FIXED_ASSETS: '/api/v1/site/unassigned-fixedassets',
     
     // Site Admin endpoints
     ADMIN: {
