@@ -70,6 +70,7 @@ const AddVacancyModal = ({onClose, onSave, jobPositions}) => {
         if (!formData.title) newErrors.title = 'Title is required';
         if (!formData.description) newErrors.description = 'Description is required';
         if (!formData.closingDate) newErrors.closingDate = 'Closing date is required';
+        if(!formData.jobPosition) newErrors.jobPosition = 'Job Position is required'
 
         // Validate dates
         const postingDate = new Date(formData.postingDate);
