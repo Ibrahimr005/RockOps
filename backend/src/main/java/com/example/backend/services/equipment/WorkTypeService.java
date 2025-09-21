@@ -2,6 +2,7 @@ package com.example.backend.services.equipment;
 
 import com.example.backend.dto.equipment.WorkTypeDTO;
 import com.example.backend.exceptions.ResourceAlreadyExistsException;
+import com.example.backend.exceptions.ResourceConflictException;
 import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.equipment.WorkType;
 import com.example.backend.repositories.equipment.WorkTypeRepository;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -51,9 +53,15 @@ public class WorkTypeService {
      */
     @Transactional
     public WorkTypeDTO createWorkType(WorkTypeDTO workTypeDTO) {
-        // Check if work type with same name already exists
-        if (workTypeRepository.findByName(workTypeDTO.getName()).isPresent()) {
-            throw new ResourceAlreadyExistsException("Work type with name '" + workTypeDTO.getName() + "' already exists");
+        // Check if work type with same name already exists (case-insensitive)
+        Optional<WorkType> existingWorkType = workTypeRepository.findByNameIgnoreCase(workTypeDTO.getName());
+        if (existingWorkType.isPresent()) {
+            WorkType existing = existingWorkType.get();
+            if (existing.isActive()) {
+                throw ResourceConflictException.duplicateActive("Work type", workTypeDTO.getName());
+            } else {
+                throw ResourceConflictException.duplicateInactive("Work type", workTypeDTO.getName());
+            }
         }
 
         WorkType workType = new WorkType();
@@ -74,9 +82,16 @@ public class WorkTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Work type not found with id: " + id));
 
         // Check if name is being changed and if it conflicts with an existing one
-        if (!workType.getName().equals(workTypeDTO.getName()) &&
-                workTypeRepository.findByName(workTypeDTO.getName()).isPresent()) {
-            throw new ResourceAlreadyExistsException("Work type with name '" + workTypeDTO.getName() + "' already exists");
+        if (!workType.getName().equals(workTypeDTO.getName())) {
+            Optional<WorkType> conflictingWorkType = workTypeRepository.findByNameIgnoreCase(workTypeDTO.getName());
+            if (conflictingWorkType.isPresent()) {
+                WorkType existing = conflictingWorkType.get();
+                if (existing.isActive()) {
+                    throw ResourceConflictException.duplicateActive("Work type", workTypeDTO.getName());
+                } else {
+                    throw ResourceConflictException.duplicateInactive("Work type", workTypeDTO.getName());
+                }
+            }
         }
 
         workType.setName(workTypeDTO.getName());
@@ -97,6 +112,27 @@ public class WorkTypeService {
 
         workType.setActive(false);
         workTypeRepository.save(workType);
+    }
+
+    /**
+     * Reactivate an inactive work type by name and update its details
+     */
+    @Transactional
+    public WorkTypeDTO reactivateWorkTypeByName(String name, WorkTypeDTO workTypeDTO) {
+        WorkType workType = workTypeRepository.findByNameIgnoreCase(name)
+                .orElseThrow(() -> new ResourceNotFoundException("Work type not found with name: " + name));
+        
+        if (workType.isActive()) {
+            throw new IllegalStateException("Work type is already active");
+        }
+        
+        // Reactivate and update with new details
+        workType.setActive(true);
+        workType.setName(workTypeDTO.getName()); // Update name in case of case differences
+        workType.setDescription(workTypeDTO.getDescription()); // Update description
+        
+        WorkType reactivatedWorkType = workTypeRepository.save(workType);
+        return convertToDTO(reactivatedWorkType);
     }
 
     /**

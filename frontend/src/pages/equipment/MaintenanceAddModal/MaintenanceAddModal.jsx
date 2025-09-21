@@ -8,6 +8,7 @@ import { warehouseService } from '../../../services/warehouse/warehouseService.j
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import InlineTransactionValidation from './InlineTransactionValidation';
 import './MaintenanceAddModal.scss';
+import '../../../styles/form-validation.scss';
 
 const MaintenanceAddModal = ({
                                  isOpen,
@@ -53,7 +54,7 @@ const MaintenanceAddModal = ({
     const [newMaintenanceTypeData, setNewMaintenanceTypeData] = useState({ name: '', description: '', active: true });
     const [creatingMaintenanceType, setCreatingMaintenanceType] = useState(false);
 
-    const { showSuccess, showWarning, showError } = useSnackbar();
+    const { showSuccess, showWarning, showError, showConfirmation } = useSnackbar();
 
     const isEditing = !!editingMaintenance;
 
@@ -399,6 +400,31 @@ const MaintenanceAddModal = ({
         }));
     };
 
+    const handleReactivateMaintenanceType = async (maintenanceTypeName) => {
+        try {
+            const response = await maintenanceTypeService.reactivateByName(maintenanceTypeName, newMaintenanceTypeData);
+            
+            // Refresh maintenance types list
+            const typesResponse = await maintenanceTypeService.getAll();
+            setMaintenanceTypes(typesResponse.data);
+            
+            // Automatically select the reactivated maintenance type
+            setFormData(prev => ({
+                ...prev,
+                maintenanceTypeId: response.data.id
+            }));
+            
+            // Close modal and reset form
+            setShowMaintenanceTypeModal(false);
+            setNewMaintenanceTypeData({ name: '', description: '', active: true });
+            
+            showSuccess(`Maintenance type "${maintenanceTypeName}" has been reactivated and selected successfully with updated details.`);
+        } catch (error) {
+            console.error('Error reactivating maintenance type:', error);
+            showError(`Failed to reactivate maintenance type "${maintenanceTypeName}". Please try again or contact your administrator.`);
+        }
+    };
+
     const handleCreateMaintenanceType = async (e) => {
         e.preventDefault();
         if (!newMaintenanceTypeData.name.trim()) {
@@ -426,7 +452,38 @@ const MaintenanceAddModal = ({
             showSuccess(`Maintenance type "${newMaintenanceType.name}" created successfully and selected`);
         } catch (error) {
             console.error('Error creating maintenance type:', error);
-            showError(`Failed to create maintenance type: ${error.response?.data?.message || error.message}`);
+            
+            // Handle specific error cases
+            if (error.response?.status === 409) {
+                // Check if it's our enhanced conflict response
+                if (error.response.data?.conflictType) {
+                    const { conflictType, resourceName, isInactive } = error.response.data;
+                    if (isInactive) {
+                        // Show confirmation dialog to reactivate inactive maintenance type
+                        showConfirmation(
+                            `Maintenance type "${resourceName}" already exists but was previously deactivated. Would you like to reactivate it instead of creating a new one?`,
+                            () => handleReactivateMaintenanceType(resourceName),
+                            () => showError(`Please choose a different name for the maintenance type.`)
+                        );
+                    } else {
+                        showError(`Maintenance type "${resourceName}" already exists. Please choose a different name.`);
+                    }
+                } else {
+                    // Fallback for legacy error responses
+                    if (error.response.data?.message?.includes('inactive') || error.response.data?.message?.includes('deleted')) {
+                        showError(`Maintenance type "${newMaintenanceTypeData.name.trim()}" already exists but was previously deleted. Please contact your administrator to reactivate it, or choose a different name.`);
+                    } else {
+                        showError(`Maintenance type "${newMaintenanceTypeData.name.trim()}" already exists. Please choose a different name.`);
+                    }
+                }
+            } else if (error.response?.status === 400) {
+                const message = error.response.data?.message || 'Please check your input and try again';
+                showError(`Maintenance type name is invalid: ${message}`);
+            } else if (error.response?.status === 403) {
+                showError('You don\'t have permission to create maintenance types. Please contact your administrator.');
+            } else {
+                showError(`Failed to create maintenance type: ${error.response?.data?.message || error.message}`);
+            }
         } finally {
             setCreatingMaintenanceType(false);
         }
@@ -835,7 +892,7 @@ const MaintenanceAddModal = ({
                         </div>
                         <form onSubmit={handleCreateMaintenanceType}>
                             <div className="form-group">
-                                <label htmlFor="maintenanceTypeName">Name *</label>
+                                <label htmlFor="maintenanceTypeName">Name <span className="required-field">*</span></label>
                                 <input
                                     type="text"
                                     id="maintenanceTypeName"

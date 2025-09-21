@@ -7,6 +7,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import './EquipmentTypeManagement.scss';
+import '../../../styles/form-validation.scss';
 
 const EquipmentBrandManagement = () => {
     const [brands, setBrands] = useState([]);
@@ -94,10 +95,45 @@ const EquipmentBrandManagement = () => {
             setShowModal(false);
             fetchBrands(); // Refresh the list
         } catch (err) {
-            if (editingBrand) {
-                errorHandlers.handleUpdateError(err);
+            console.error('Error saving equipment brand:', err);
+            
+            // Handle specific error cases
+            if (err.response?.status === 409) {
+                // Check if it's our enhanced conflict response
+                if (err.response.data?.conflictType) {
+                    const { conflictType, resourceName, isInactive } = err.response.data;
+                    if (isInactive) {
+                        showError(`Equipment brand "${resourceName}" already exists but was previously deleted. Please contact your administrator to reactivate it, or choose a different name.`);
+                    } else {
+                        showError(`Equipment brand "${resourceName}" already exists. Please choose a different name.`);
+                    }
+                } else {
+                    // Fallback for legacy error responses
+                    if (err.response.data?.message?.includes('inactive') || err.response.data?.message?.includes('deleted')) {
+                        showError(`Equipment brand "${formData.name}" already exists but was previously deleted. Please contact your administrator to reactivate it, or choose a different name.`);
+                    } else {
+                        showError(`Equipment brand "${formData.name}" already exists. Please choose a different name.`);
+                    }
+                }
+            } else if (err.response?.status === 400) {
+                // Validation errors
+                const message = err.response.data?.message || 'Please check your input and try again';
+                if (message.includes('name') || message.includes('Name')) {
+                    showError(`Brand name is invalid: ${message}`);
+                } else {
+                    showError(`Please check your input: ${message}`);
+                }
+            } else if (err.response?.status === 403) {
+                showError('You don\'t have permission to save equipment brands. Please contact your administrator.');
+            } else if (err.response?.status === 500) {
+                showError('Server error occurred. Please try again later or contact support.');
             } else {
-                errorHandlers.handleCreateError(err);
+                // Fallback to enhanced error handlers for other cases
+                if (editingBrand) {
+                    errorHandlers.handleUpdateError(err);
+                } else {
+                    errorHandlers.handleCreateError(err);
+                }
             }
         }
     };
@@ -127,14 +163,65 @@ const EquipmentBrandManagement = () => {
         {
             header: 'Name',
             accessor: 'name',
-            sortable: true
+            sortable: true,
+            filterType: 'text',
+            exportFormatter: (value) => {
+                // Sanitize name for export to prevent encoding issues
+                if (!value) return '';
+                
+                const cleanValue = String(value)
+                    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
+                    .replace(/[\uFFFD]/g, '') // Remove replacement characters
+                    .trim();
+                
+                return cleanValue;
+            }
         },
-
         {
             header: 'Description',
             accessor: 'description',
             sortable: true,
-            render: (row) => row.description || 'N/A'
+            filterType: 'text',
+            width: '250px',
+            maxWidth: '250px',
+            render: (row) => {
+                const description = row.description || 'N/A';
+                const maxLength = 80; // Character limit before truncation
+                
+                if (description === 'N/A' || description.length <= maxLength) {
+                    return <span className="description-text">{description}</span>;
+                }
+                
+                const truncated = description.substring(0, maxLength) + '...';
+                return (
+                    <span 
+                        className="description-text truncated" 
+                        title={description}
+                        style={{
+                            display: 'block',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: '230px'
+                        }}
+                    >
+                        {truncated}
+                    </span>
+                );
+            },
+            exportFormatter: (value) => {
+                // For Excel export, return the full description without truncation
+                // Sanitize the value to prevent encoding issues
+                if (!value) return '';
+                
+                // Convert to string and clean any problematic characters
+                const cleanValue = String(value)
+                    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
+                    .replace(/[\uFFFD]/g, '') // Remove replacement characters
+                    .trim();
+                
+                return cleanValue;
+            }
         }
     ];
 
@@ -168,7 +255,7 @@ const EquipmentBrandManagement = () => {
                 tableTitle="Equipment Brands"
                 showSearch={true}
                 showFilters={true}
-                filterableColumns={columns}
+                filterableColumns={columns.filter(col => col.filterType)}
                 showAddButton={permissions.canCreate}
                 addButtonText="Add Equipment Brand"
                 addButtonIcon={<FaPlus />}
@@ -182,8 +269,15 @@ const EquipmentBrandManagement = () => {
                     'name': 'Brand Name',
                     'description': 'Description'
                 }}
-                onExportStart={() => showSuccess("Exporting equipment brands...")}
-                onExportComplete={(result) => showSuccess(`Exported ${result.rowCount} equipment brands to Excel`)}
+                // Enforce column width limits and text wrapping for Excel export
+                exportColumnWidths={{
+                    'name': 25,
+                    'description': 50
+                }}
+                enableTextWrapping={true}
+                preventTextOverflow={true}
+                onExportStart={() => showSuccess("Preparing equipment brands export with optimized formatting...")}
+                onExportComplete={(result) => showSuccess(`Successfully exported ${result.rowCount} equipment brands to Excel`)}
                 onExportError={(error) => showError("Failed to export equipment brands")}
             />
 
@@ -199,7 +293,7 @@ const EquipmentBrandManagement = () => {
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="form-group">
-                                <label htmlFor="name">Name</label>
+                                <label htmlFor="name">Name <span className="required-field">*</span></label>
                                 <input
                                     type="text"
                                     id="name"
@@ -207,6 +301,7 @@ const EquipmentBrandManagement = () => {
                                     value={formData.name}
                                     onChange={handleChange}
                                     required
+                                    placeholder="Enter brand name (e.g., Caterpillar, Komatsu, John Deere)"
                                 />
                             </div>
 
@@ -218,7 +313,12 @@ const EquipmentBrandManagement = () => {
                                     value={formData.description}
                                     onChange={handleChange}
                                     rows="4"
+                                    maxLength="1000"
+                                    placeholder="Enter a description of this equipment brand... (Max 1000 characters)"
                                 />
+                                <div className="character-counter">
+                                    {formData.description.length}/1000 characters
+                                </div>
                             </div>
                             <div className="form-actions">
                                 <button

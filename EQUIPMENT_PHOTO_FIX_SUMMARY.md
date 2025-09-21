@@ -124,3 +124,4 @@ After this fix:
 2. **Placeholder Images**: Add equipment-type-specific placeholder images
 3. **Lazy Loading**: Implement lazy loading for equipment list photos
 4. **Error Reporting**: Send photo loading errors to monitoring system
+
