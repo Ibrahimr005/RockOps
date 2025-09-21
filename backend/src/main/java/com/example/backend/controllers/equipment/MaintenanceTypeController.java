@@ -92,4 +92,32 @@ public class MaintenanceTypeController {
     public ResponseEntity<List<MaintenanceType>> searchMaintenanceTypes(@RequestParam String name) {
         return ResponseEntity.ok(maintenanceTypeService.searchMaintenanceTypes(name));
     }
+
+    // Reactivate maintenance type by name
+    @PostMapping("/reactivate")
+    public ResponseEntity<MaintenanceTypeDTO> reactivateMaintenanceTypeByName(@RequestBody ReactivateRequest request) {
+        return ResponseEntity.ok(maintenanceTypeService.reactivateMaintenanceTypeByName(request.getName(), request.getMaintenanceTypeData()));
+    }
+
+    // Helper class for reactivation request
+    public static class ReactivateRequest {
+        private String name;
+        private MaintenanceTypeDTO maintenanceTypeData;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public MaintenanceTypeDTO getMaintenanceTypeData() {
+            return maintenanceTypeData;
+        }
+
+        public void setMaintenanceTypeData(MaintenanceTypeDTO maintenanceTypeData) {
+            this.maintenanceTypeData = maintenanceTypeData;
+        }
+    }
 }

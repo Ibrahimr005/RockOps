@@ -90,10 +90,17 @@ const MerchantModal = ({
         }
     };
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            handleCloseModals();
+        }
+    };
+
     if (!showAddModal) return null;
 
     return (
-        <div className="proc-merchant-modal-overlay">
+        <div className="proc-merchant-modal-overlay"  onClick={handleOverlayClick}>
             <div className="proc-merchant-employee-modal">
                 <div className="proc-merchant-modal-header">
                     <h2>{modalMode === 'add' ? 'Add New Merchant' : 'Edit Merchant'}</h2>

@@ -20,7 +20,7 @@ public class EquipmentType {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @Column(nullable = true)
+    @Column(nullable = true, length = 1000)
     private String description;
 
     @OneToMany(mappedBy = "type", cascade = CascadeType.ALL)
