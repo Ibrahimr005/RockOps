@@ -35,7 +35,7 @@ export const vacancyService = {
 
     // Get potential candidates
     getPotentialCandidates: () => {
-        return apiClient.get(VACANCY_ENDPOINTS.POTENTIAL_CANDIDATES);
+        return apiClient.get(VACANCY_ENDPOINTS.GET_POTENTIAL_CANDIDATES);
     },
 
     // Hire a candidate

@@ -6,7 +6,8 @@ import AttendanceMonthlyView from './components/AttendanceMonthlyView';
 import AttendanceSummaryCard from './components/AttendanceSummaryCard';
 import './attendance.scss';
 import { siteService } from '../../../services/siteService';
-import { attendanceService } from '../../../services/hr/attendanceService.js'; // Import the new service
+import { attendanceService } from '../../../services/hr/attendanceService.js';
+import ContentLoader from "../../../components/common/ContentLoader/ContentLoader.jsx"; // Import the new service
 
 const AttendancePage = () => {
     const { showSnackbar } = useSnackbar();
@@ -255,14 +256,15 @@ const AttendancePage = () => {
     ];
 
     if (loading && monthlyAttendance.length === 0) {
-        return <LoadingPage />;
+        return <ContentLoader />;
     }
 
     return (
         <div className="attendance-page">
-            <div className="page-header">
+            <div className="departments-header">
                 <h1>
-                    <FaCalendarCheck /> Monthly Attendance Sheet
+                    Attendance Sheet
+                    <p className="employees-header__subtitle">Track and manage employee attendance records</p>
                 </h1>
                 <div className="header-actions">
                     <button
