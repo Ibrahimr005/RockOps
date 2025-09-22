@@ -70,7 +70,7 @@ const AddVacancyModal = ({onClose, onSave, jobPositions}) => {
         if (!formData.title) newErrors.title = 'Title is required';
         if (!formData.description) newErrors.description = 'Description is required';
         if (!formData.closingDate) newErrors.closingDate = 'Closing date is required';
-        if(!formData.jobPosition) newErrors.jobPosition = 'Job Position is required'
+        if(!formData.jobPositionId) newErrors.jobPositionId = 'Job Position is required'
 
         // Validate dates
         const postingDate = new Date(formData.postingDate);
@@ -195,7 +195,7 @@ const AddVacancyModal = ({onClose, onSave, jobPositions}) => {
                                     </div>
 
                                     <div className="form-group">
-                                        <label>Job Position</label>
+                                        <label>Job Position <span className="required-asterisk">*</span></label>
                                         <select
                                             onChange={handleJobPositionChange}
                                             defaultValue=""
@@ -208,6 +208,7 @@ const AddVacancyModal = ({onClose, onSave, jobPositions}) => {
                                                 </option>
                                             ))}
                                         </select>
+                                        {errors.jobPositionId && <span className="error-message">{errors.jobPositionId}</span>}
                                     </div>
 
                                     <div className="form-group">
@@ -225,7 +226,7 @@ const AddVacancyModal = ({onClose, onSave, jobPositions}) => {
                                     </div>
 
                                     <div className="form-group">
-                                        <label>Number of Positions</label>
+                                        <label>Number of Positions <span className="required-asterisk">*</span></label>
                                         <input
                                             type="number"
                                             name="numberOfPositions"

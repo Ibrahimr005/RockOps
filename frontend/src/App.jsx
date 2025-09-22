@@ -99,6 +99,7 @@ import DepartmentDetails from "./pages/HR/Departments/DepartmentDetails.jsx";
 import Contacts from "./pages/maintenance/Contacts/Contacts.jsx";
 import MaintenanceRecordDetail from "./pages/maintenance/MaintenanceRecordDetail/MaintenanceRecordDetail.jsx";
 import LeaveRequestList from "./pages/HR/LeaveRequests/LeaveRequestList.jsx";
+import PotentialCandidates from "./pages/HR/PotentialCandidates/PotentialCandidates.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -200,6 +201,7 @@ function App() {
                                         <Route path="employee-details/:id" element={<EmployeeDetails/>}/>
                                         <Route path="attendance" element={<AttendancePage/>}/>
                                         <Route path="vacancies/:id" element={<VacancyDetails/>}/>
+                                        <Route path="potential-candidates" element={<PotentialCandidates/>}/>
                                         <Route path="departments" element={<DepartmentsList/>}/>
                                         <Route path="departments/:id" element={<DepartmentDetails/>}/>
                                         <Route path="promotions/*" element={<PromotionList/>}/>

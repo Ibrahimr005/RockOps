@@ -44,7 +44,7 @@ import {
     FaChartBar,
     FaArrowUp,
     FaMinusCircle,
-    FaCalendarCheck, FaCalendarTimes, FaAddressBook,
+    FaCalendarCheck, FaCalendarTimes, FaAddressBook, FaDatabase, FaUserClock,
 } from 'react-icons/fa';
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE , MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE} from '../../../utils/roles';
 
@@ -338,6 +338,12 @@ const Sidebar = () => {
                     icon: <FaBriefcase/>,
                     path: '/hr/vacancies',
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
+                },
+                {
+                  title: 'Potential Candidates',
+                  icon: <FaUserClock />,
+                  path: '/hr/potential-candidates',
+                  roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE]
                 },
                 {
                     title: 'Positions',
@@ -694,12 +700,12 @@ const Sidebar = () => {
                         </div>
                     </div>
 
-                    <button className="logout-btn" onClick={handleLogout}>
-                        <span className="menu-icon">
-                            <FaSignOutAlt />
-                        </span>
-                        <span>{t('Logout')}</span>
-                    </button>
+                    {/*<button className="logout-btn" onClick={handleLogout}>*/}
+                    {/*    <span className="menu-icon">*/}
+                    {/*        <FaSignOutAlt />*/}
+                    {/*    </span>*/}
+                    {/*    <span>{t('Logout')}</span>*/}
+                    {/*</button>*/}
                 </div>
             </div>
 
