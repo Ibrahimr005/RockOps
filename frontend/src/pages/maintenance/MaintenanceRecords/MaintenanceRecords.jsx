@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FaEdit, FaTrash, FaEye, FaList } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaList, FaCheckCircle } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import MaintenanceRecordModal from './MaintenanceRecordModal';
 import MaintenanceRecordViewModal from './MaintenanceRecordViewModal/MaintenanceRecordViewModal';
+import '../../../styles/status-badges.scss';
 import './MaintenanceRecords.scss';
 import maintenanceService from "../../../services/maintenanceService.js";
 
@@ -119,6 +120,23 @@ const MaintenanceRecords = () => {
         }
     };
 
+    const handleCompleteRecord = async (record) => {
+        try {
+            setLoading(true);
+            await maintenanceService.updateRecord(record.id, {
+                status: 'COMPLETED',
+                actualCompletionDate: new Date().toISOString()
+            });
+            showSuccess('Maintenance record marked as completed successfully');
+            loadMaintenanceRecords();
+        } catch (error) {
+            console.error('Error completing maintenance record:', error);
+            showError('Failed to complete maintenance record. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSubmit = async (formData) => {
         try {
             setLoading(true);
@@ -154,17 +172,10 @@ const MaintenanceRecords = () => {
     };
 
     const getStatusBadge = (status) => {
-        const color = getStatusColor(status);
+        const statusClass = status.toLowerCase().replace(/_/g, '-');
         return (
-            <span
-                className="status-badge"
-                style={{
-                    backgroundColor: color + '20',
-                    color: color,
-                    border: `1px solid ${color}`
-                }}
-            >
-                {status}
+            <span className={`status-badge ${statusClass}`}>
+                {status.replace(/_/g, ' ')}
             </span>
         );
     };
@@ -265,7 +276,19 @@ const MaintenanceRecords = () => {
             label: 'Edit',
             icon: <FaEdit />,
             onClick: (row) => handleOpenModal(row),
-            className: 'primary'
+            className: 'primary',
+            show: (row) => row.status !== 'COMPLETED'
+        },
+        {
+            label: 'Mark as Final',
+            icon: <FaCheckCircle />,
+            onClick: (row) => {
+                if (window.confirm(`Are you sure you want to mark the maintenance record for ${row.equipmentName} as completed?`)) {
+                    handleCompleteRecord(row);
+                }
+            },
+            className: 'success',
+            show: (row) => row.status === 'ACTIVE'
         },
         {
             label: 'Delete',
@@ -275,7 +298,8 @@ const MaintenanceRecords = () => {
                     handleDeleteRecord(row.id);
                 }
             },
-            className: 'danger'
+            className: 'danger',
+            show: (row) => row.status !== 'COMPLETED'
         }
     ];
 
