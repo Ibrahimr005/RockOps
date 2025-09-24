@@ -31,7 +31,6 @@ public class MaintenanceStepDto {
     @NotBlank(message = "Step description is required")
     private String description;
     
-    @NotNull(message = "Responsible contact is required")
     private UUID responsibleContactId;
     
     // Contact assignment
@@ -46,17 +45,14 @@ public class MaintenanceStepDto {
     private LocalDateTime startDate;
     
     @NotNull(message = "Expected end date is required")
-    @Future(message = "Expected end date must be in the future")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime expectedEndDate;
     
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime actualEndDate;
     
-    @NotBlank(message = "From location is required")
     private String fromLocation;
     
-    @NotBlank(message = "To location is required")
     private String toLocation;
     
     @DecimalMin(value = "0.0", inclusive = true, message = "Step cost must be non-negative")
