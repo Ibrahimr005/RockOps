@@ -1,11 +1,6 @@
 package com.example.backend.controllers.procurement;
 
-import com.example.backend.dto.OfferDTO;
-import com.example.backend.dto.OfferItemDTO;
-import com.example.backend.models.procurement.Offer;
-import com.example.backend.models.procurement.OfferItem;
-import com.example.backend.models.procurement.OfferTimelineEvent;
-import com.example.backend.models.procurement.RequestOrder;
+import com.example.backend.dto.procurement.*;
 import com.example.backend.services.procurement.OfferService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +10,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
@@ -33,10 +30,10 @@ public class OfferController {
      * Create a new offer
      */
     @PostMapping
-    public ResponseEntity<Offer> createOffer(
+    public ResponseEntity<OfferDTO> createOffer(
             @RequestBody OfferDTO createOfferDTO,
             @AuthenticationPrincipal UserDetails userDetails) {
-        Offer offer = offerService.createOffer(createOfferDTO, userDetails.getUsername());
+        OfferDTO offer = offerService.createOffer(createOfferDTO, userDetails.getUsername());
         return new ResponseEntity<>(offer, HttpStatus.CREATED);
     }
 
@@ -50,7 +47,7 @@ public class OfferController {
             System.out.println("Offer ID: " + offerId);
             System.out.println("Number of DTOs: " + offerItemDTOs.size());
 
-            List<OfferItem> savedItems = offerService.addOfferItems(offerId, offerItemDTOs);
+            List<OfferItemDTO> savedItems = offerService.addOfferItems(offerId, offerItemDTOs);
 
             System.out.println("=== CONTROLLER SUCCESS ===");
             return ResponseEntity.ok(savedItems);
@@ -68,13 +65,13 @@ public class OfferController {
      * Update an offer's status
      */
     @PutMapping("/{offerId}/status")
-    public ResponseEntity<Offer> updateOfferStatus(
+    public ResponseEntity<OfferDTO> updateOfferStatus(
             @PathVariable UUID offerId,
             @RequestParam String status,
             @RequestParam(required = false) String rejectionReason,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        Offer offer = offerService.updateOfferStatus(offerId, status, userDetails.getUsername(), rejectionReason);
+        OfferDTO offer = offerService.updateOfferStatus(offerId, status, userDetails.getUsername(), rejectionReason);
         return ResponseEntity.ok(offer);
     }
 
@@ -82,10 +79,10 @@ public class OfferController {
      * Update an offer item
      */
     @PutMapping("/items/{offerItemId}")
-    public ResponseEntity<OfferItem> updateOfferItem(
+    public ResponseEntity<OfferItemDTO> updateOfferItem(
             @PathVariable UUID offerItemId,
             @RequestBody OfferItemDTO offerItemDTO) {
-        OfferItem offerItem = offerService.updateOfferItem(offerItemId, offerItemDTO);
+        OfferItemDTO offerItem = offerService.updateOfferItem(offerItemId, offerItemDTO);
         return ResponseEntity.ok(offerItem);
     }
 
@@ -111,8 +108,8 @@ public class OfferController {
      * Get all offers
      */
     @GetMapping
-    public ResponseEntity<List<Offer>> getOffers(@RequestParam(required = false) String status) {
-        List<Offer> offers;
+    public ResponseEntity<List<OfferDTO>> getOffers(@RequestParam(required = false) String status) {
+        List<OfferDTO> offers;
         if (status != null && !status.isBlank()) {
             offers = offerService.getOffersByStatus(status.toUpperCase());
         } else {
@@ -125,8 +122,8 @@ public class OfferController {
      * Get offers by request order
      */
     @GetMapping("/by-request/{requestOrderId}")
-    public ResponseEntity<List<Offer>> getOffersByRequestOrder(@PathVariable UUID requestOrderId) {
-        List<Offer> offers = offerService.getOffersByRequestOrder(requestOrderId);
+    public ResponseEntity<List<OfferDTO>> getOffersByRequestOrder(@PathVariable UUID requestOrderId) {
+        List<OfferDTO> offers = offerService.getOffersByRequestOrder(requestOrderId);
         return ResponseEntity.ok(offers);
     }
 
@@ -134,8 +131,8 @@ public class OfferController {
      * Get an offer by ID
      */
     @GetMapping("/{offerId}")
-    public ResponseEntity<Offer> getOfferById(@PathVariable UUID offerId) {
-        Offer offer = offerService.getOfferById(offerId);
+    public ResponseEntity<OfferDTO> getOfferById(@PathVariable UUID offerId) {
+        OfferDTO offer = offerService.getOfferById(offerId);
         return ResponseEntity.ok(offer);
     }
 
@@ -143,8 +140,8 @@ public class OfferController {
      * Get offer items by offer
      */
     @GetMapping("/{offerId}/items")
-    public ResponseEntity<List<OfferItem>> getOfferItemsByOffer(@PathVariable UUID offerId) {
-        List<OfferItem> offerItems = offerService.getOfferItemsByOffer(offerId);
+    public ResponseEntity<List<OfferItemDTO>> getOfferItemsByOffer(@PathVariable UUID offerId) {
+        List<OfferItemDTO> offerItems = offerService.getOfferItemsByOffer(offerId);
         return ResponseEntity.ok(offerItems);
     }
 
@@ -152,19 +149,19 @@ public class OfferController {
      * Get offer items by request order item
      */
     @GetMapping("/items/by-request-item/{requestOrderItemId}")
-    public ResponseEntity<List<OfferItem>> getOfferItemsByRequestOrderItem(@PathVariable UUID requestOrderItemId) {
-        List<OfferItem> offerItems = offerService.getOfferItemsByRequestOrderItem(requestOrderItemId);
+    public ResponseEntity<List<OfferItemDTO>> getOfferItemsByRequestOrderItem(@PathVariable UUID requestOrderItemId) {
+        List<OfferItemDTO> offerItems = offerService.getOfferItemsByRequestOrderItem(requestOrderItemId);
         return ResponseEntity.ok(offerItems);
     }
 
     @GetMapping("/status")
-    public List<Offer> getOffersByStatus(@RequestParam String status) {
+    public List<OfferDTO> getOffersByStatus(@RequestParam String status) {
         return offerService.getOffersByStatus(status.toUpperCase());
     }
 
     @GetMapping("/{offerId}/request-order")
-    public ResponseEntity<RequestOrder> getRequestOrderByOfferId(@PathVariable UUID offerId) {
-        RequestOrder requestOrder = offerService.getRequestOrderByOfferId(offerId);
+    public ResponseEntity<RequestOrderDTO> getRequestOrderByOfferId(@PathVariable UUID offerId) {
+        RequestOrderDTO requestOrder = offerService.getRequestOrderByOfferId(offerId);
         return ResponseEntity.ok(requestOrder);
     }
 
@@ -175,7 +172,7 @@ public class OfferController {
 
         try {
             String username = userDetails.getUsername();
-            Offer retriedOffer = offerService.retryOffer(offerId, username);
+            OfferDTO retriedOffer = offerService.retryOffer(offerId, username);
             return ResponseEntity.ok(retriedOffer);
         } catch (IllegalStateException e) {
             // Return message as JSON
@@ -193,7 +190,7 @@ public class OfferController {
             @RequestParam String financeStatus) {
 
         try {
-            Offer updatedOffer = offerService.updateFinanceStatus(offerId, financeStatus);
+            OfferDTO updatedOffer = offerService.updateFinanceStatus(offerId, financeStatus);
             return ResponseEntity.ok(updatedOffer);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -202,9 +199,9 @@ public class OfferController {
     }
 
     @GetMapping("/finance-status/{status}")
-    public ResponseEntity<List<Offer>> getOffersByFinanceStatus(@PathVariable String status) {
+    public ResponseEntity<List<OfferDTO>> getOffersByFinanceStatus(@PathVariable String status) {
         try {
-            List<Offer> offers = offerService.getOffersByFinanceStatus(status);
+            List<OfferDTO> offers = offerService.getOffersByFinanceStatus(status);
             return ResponseEntity.ok(offers);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -220,7 +217,7 @@ public class OfferController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            OfferItem updatedItem = offerService.updateOfferItemFinanceStatus(
+            OfferItemDTO updatedItem = offerService.updateOfferItemFinanceStatus(
                     offerItemId, financeStatus, rejectionReason);
             return ResponseEntity.ok(updatedItem);
         } catch (Exception e) {
@@ -230,9 +227,9 @@ public class OfferController {
     }
 
     @GetMapping("/completed-offers")
-    public ResponseEntity<List<Offer>> getCompletedFinanceOffers() {
+    public ResponseEntity<List<OfferDTO>> getCompletedFinanceOffers() {
         try {
-            List<Offer> completedOffers = offerService.getFinanceCompletedOffers();
+            List<OfferDTO> completedOffers = offerService.getFinanceCompletedOffers();
             return ResponseEntity.ok(completedOffers);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -245,7 +242,7 @@ public class OfferController {
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            Offer updatedOffer = offerService.completeFinanceReview(
+            OfferDTO updatedOffer = offerService.completeFinanceReview(
                     offerId, userDetails.getUsername());
             return ResponseEntity.ok(updatedOffer);
         } catch (Exception e) {
@@ -263,9 +260,9 @@ public class OfferController {
      * GET /api/v1/offers/{offerId}/timeline
      */
     @GetMapping("/{offerId}/timeline")
-    public ResponseEntity<List<OfferTimelineEvent>> getOfferTimeline(@PathVariable UUID offerId) {
+    public ResponseEntity<List<OfferTimelineEventDTO>> getOfferTimeline(@PathVariable UUID offerId) {
         try {
-            List<OfferTimelineEvent> timeline = offerService.getOfferTimeline(offerId);
+            List<OfferTimelineEventDTO> timeline = offerService.getOfferTimeline(offerId);
             return ResponseEntity.ok(timeline);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -277,9 +274,9 @@ public class OfferController {
      * GET /api/v1/offers/{offerId}/timeline/retryable
      */
     @GetMapping("/{offerId}/timeline/retryable")
-    public ResponseEntity<List<OfferTimelineEvent>> getRetryableEvents(@PathVariable UUID offerId) {
+    public ResponseEntity<List<OfferTimelineEventDTO>> getRetryableEvents(@PathVariable UUID offerId) {
         try {
-            List<OfferTimelineEvent> retryableEvents = offerService.getRetryableEvents(offerId);
+            List<OfferTimelineEventDTO> retryableEvents = offerService.getRetryableEvents(offerId);
             return ResponseEntity.ok(retryableEvents);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -291,11 +288,11 @@ public class OfferController {
      * GET /api/v1/offers/{offerId}/timeline/attempt/{attemptNumber}
      */
     @GetMapping("/{offerId}/timeline/attempt/{attemptNumber}")
-    public ResponseEntity<List<OfferTimelineEvent>> getTimelineForAttempt(
+    public ResponseEntity<List<OfferTimelineEventDTO>> getTimelineForAttempt(
             @PathVariable UUID offerId,
             @PathVariable int attemptNumber) {
         try {
-            List<OfferTimelineEvent> timeline = offerService.getTimelineForAttempt(offerId, attemptNumber);
+            List<OfferTimelineEventDTO> timeline = offerService.getTimelineForAttempt(offerId, attemptNumber);
             return ResponseEntity.ok(timeline);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -309,19 +306,19 @@ public class OfferController {
     @GetMapping("/{offerId}/timeline/stats")
     public ResponseEntity<Map<String, Object>> getTimelineStats(@PathVariable UUID offerId) {
         try {
-            Offer offer = offerService.getOfferById(offerId);
-            List<OfferTimelineEvent> timeline = offerService.getOfferTimeline(offerId);
+            OfferDTO offer = offerService.getOfferById(offerId);
+            List<OfferTimelineEventDTO> timeline = offerService.getOfferTimeline(offerId);
 
             long submissionCount = timeline.stream()
-                    .filter(e -> e.getEventType().isSubmissionEvent())
+                    .filter(OfferTimelineEventDTO::isSubmissionEvent)
                     .count();
 
             long rejectionCount = timeline.stream()
-                    .filter(e -> e.getEventType().isRejectionEvent())
+                    .filter(OfferTimelineEventDTO::isRejectionEvent)
                     .count();
 
             long retryCount = timeline.stream()
-                    .filter(e -> e.getEventType().isRetryEvent())
+                    .filter(OfferTimelineEventDTO::isRetryEvent)
                     .count();
 
             Map<String, Object> stats = new HashMap<>();
@@ -350,6 +347,111 @@ public class OfferController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to process continue and return: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{offerId}/finalize-with-remaining")
+    public ResponseEntity<Map<String, Object>> finalizeWithRemaining(
+            @PathVariable UUID offerId,
+            @RequestBody Map<String, Object> request,
+            Principal principal) {
+
+        try {
+            // Extract data
+            @SuppressWarnings("unchecked")
+            List<String> finalizedItemIdStrings = (List<String>) request.get("finalizedItemIds");
+
+            if (finalizedItemIdStrings == null || finalizedItemIdStrings.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "finalizedItemIds is required"));
+            }
+
+            List<UUID> finalizedItemIds = finalizedItemIdStrings.stream()
+                    .map(UUID::fromString)
+                    .collect(Collectors.toList());
+
+            String username = (String) request.get("username");
+            if (username == null && principal != null) {
+                username = principal.getName();
+            }
+            if (username == null) {
+                username = "system";
+            }
+
+            // Call the service method - it now returns only primitive data
+            Map<String, Object> result = offerService.finalizeWithRemaining(offerId, finalizedItemIds, username);
+
+            // Add a proper message based on what was returned
+            if (result.containsKey("newOfferId")) {
+                result.put("message", "Offer finalized successfully. A new offer has been created for remaining items.");
+            } else {
+                result.put("message", "Offer finalized successfully");
+            }
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Server error: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Create purchase order from specific offer items
+     */
+    @PostMapping("/{offerId}/create-purchase-order")
+    public ResponseEntity<?> createPurchaseOrderFromItems(
+            @PathVariable UUID offerId,
+            @RequestBody Map<String, Object> request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<String> offerItemIdStrings = (List<String>) request.get("offerItemIds");
+
+            if (offerItemIdStrings == null || offerItemIdStrings.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "offerItemIds is required"));
+            }
+
+            List<UUID> offerItemIds = offerItemIdStrings.stream()
+                    .map(UUID::fromString)
+                    .collect(Collectors.toList());
+
+            PurchaseOrderDTO purchaseOrder = offerService.createPurchaseOrderFromItems(
+                    offerId, offerItemIds, userDetails.getUsername());
+
+            return ResponseEntity.ok(purchaseOrder);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to create purchase order: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Finalize specific items
+     */
+    @PostMapping("/items/finalize")
+    public ResponseEntity<?> finalizeSpecificItems(
+            @RequestBody Map<String, Object> request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<String> offerItemIdStrings = (List<String>) request.get("offerItemIds");
+
+            if (offerItemIdStrings == null || offerItemIdStrings.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "offerItemIds is required"));
+            }
+
+            List<UUID> offerItemIds = offerItemIdStrings.stream()
+                    .map(UUID::fromString)
+                    .collect(Collectors.toList());
+
+            offerService.finalizeSpecificItems(offerItemIds, userDetails.getUsername());
+
+            return ResponseEntity.ok(Map.of("message", "Items finalized successfully"));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to finalize items: " + e.getMessage()));
         }
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     FiPackage,
     FiEdit,
@@ -8,23 +8,35 @@ import {
     FiCalendar,
     FiFileText,
     FiTag,
-    FiFlag
+    FiFlag,
+    FiTrash2
 } from 'react-icons/fi';
 import Snackbar from '../../../../components/common/Snackbar2/Snackbar2.jsx'
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import { offerService } from '../../../../services/procurement/offerService.js';
 import "../ProcurementOffers.scss"
 import "./UnstartedOffers.scss"
 
-const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatusChange, onOfferStarted }) => {
+const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatusChange, onOfferStarted, onDeleteOffer }) => {
+    // Local state to track offers (for immediate UI updates)
+    const [localOffers, setLocalOffers] = useState(offers);
+
+    // Update local offers when props change
+    React.useEffect(() => {
+        setLocalOffers(offers);
+    }, [offers]);
+
     // Snackbar state
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
 
-    // Confirmation dialog state
+    // Confirmation dialog states
     const [showStartWorkingConfirm, setShowStartWorkingConfirm] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isStartingWork, setIsStartingWork] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Start working on an offer (change from UNSTARTED to INPROGRESS)
     const handleStartWorkingClick = () => {
@@ -62,6 +74,51 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
         setShowStartWorkingConfirm(false);
     };
 
+    // Delete offer functionality
+    const handleDeleteClick = () => {
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = async () => {
+        setIsDeleting(true);
+        const offerTitle = activeOffer.title; // Store title before deletion
+        const offerIdToDelete = activeOffer.id; // Store ID before deletion
+
+        try {
+            // Use offerService to delete the offer
+            await offerService.delete(activeOffer.id);
+
+            // Show success notification
+            setNotificationMessage(`Offer "${offerTitle}" deleted successfully`);
+            setNotificationType('success');
+            setShowNotification(true);
+
+            // Close confirmation dialog
+            setShowDeleteConfirm(false);
+
+            // Clear the active offer first since it's being deleted
+            setActiveOffer(null);
+
+            // Call the callback to remove from parent component's state
+            if (onDeleteOffer) {
+                onDeleteOffer(offerIdToDelete);
+            }
+
+        } catch (error) {
+            console.error('Error deleting offer:', error);
+            setNotificationMessage('Failed to delete offer. Please try again.');
+            setNotificationType('error');
+            setShowNotification(true);
+            setShowDeleteConfirm(false);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const cancelDelete = () => {
+        setShowDeleteConfirm(false);
+    };
+
     return (
         <div className="procurement-offers-main-content">
             {/* Offers List */}
@@ -70,14 +127,14 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                     <h3>Unstarted Offers</h3>
                 </div>
 
-                {offers.length === 0 ? (
+                {localOffers.length === 0 ? (
                     <div className="procurement-empty-state">
                         <FiInbox size={48} className="empty-icon" />
                         <p>No unstarted offers found.</p>
                     </div>
                 ) : (
                     <div className="procurement-items-list">
-                        {offers.map(offer => (
+                        {localOffers.map(offer => (
                             <div
                                 key={offer.id}
                                 className={`procurement-item-card-unstarted ${activeOffer?.id === offer.id ? 'selected' : ''}`}
@@ -120,12 +177,25 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                             </div>
 
                             <div className="procurement-details-actions">
-                                <button
-                                    className="btn-primary"
-                                    onClick={handleStartWorkingClick}
-                                >
-                                    Start Working
-                                </button>
+                                <div className="action-buttons-group">
+                                    <button
+                                        className="btn-primary"
+                                        onClick={handleStartWorkingClick}
+                                        disabled={isStartingWork}
+                                        style={{ marginRight: '10px' }}
+                                    >
+                                        {isStartingWork ? 'Starting...' : 'Start Working'}
+                                    </button>
+                                    <button
+                                        className="btn-primary"
+                                        onClick={handleDeleteClick}
+                                        disabled={isDeleting}
+                                        title="Delete this offer permanently"
+                                    >
+                                        <FiTrash2 />
+                                        {isDeleting ? 'Deleting...' : 'Delete Offer'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -196,18 +266,32 @@ const UnstartedOffers = ({ offers, activeOffer, setActiveOffer, handleOfferStatu
                 )}
             </div>
 
-            {/* Confirmation Dialog */}
+            {/* Start Working Confirmation Dialog */}
             <ConfirmationDialog
                 isVisible={showStartWorkingConfirm}
                 type="success"
                 title="Start Working on Offer"
                 message={`Are you sure you want to start working on "${activeOffer?.title}"?\u00A0\u00A0\u00A0This will move the offer to In Progress status.`}
-
                 confirmText="Start Working"
                 cancelText="Cancel"
                 onConfirm={confirmStartWorking}
                 onCancel={cancelStartWorking}
                 isLoading={isStartingWork}
+                size="large"
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={showDeleteConfirm}
+                type="delete"
+                title="Delete Offer"
+                message={`Are you sure you want to delete the offer "${activeOffer?.title}"? This action cannot be undone.`}
+                confirmText="Delete Offer"
+                cancelText="Cancel"
+                onConfirm={confirmDelete}
+                onCancel={cancelDelete}
+                isLoading={isDeleting}
+                showIcon={true}
                 size="large"
             />
 

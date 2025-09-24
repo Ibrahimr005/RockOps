@@ -102,6 +102,7 @@ $gray-900: var(--color-text-dark);
 }
 
 // Section Description with Search
+// Section Description with Search - UPDATED to put search on left
 .procurement-section-description {
   display: flex;
   justify-content: space-between;
@@ -111,12 +112,14 @@ $gray-900: var(--color-text-dark);
   font-size: 0.875rem;
   color: var(--color-text-muted);
 
+  // Move search container to the left by changing flex order
   .procurement-search-container {
     position: relative;
     width: 300px;
+    order: -1; // This moves the search container to the left
 
     .procurement-search-input {
-      width: 100%;
+      width: 25rem;
       padding: 0.5rem 0.75rem 0.5rem 2rem;
       border: 1px solid var(--border-color-medium);
       border-radius: var(--radius-sm);
@@ -153,7 +156,9 @@ $gray-900: var(--color-text-dark);
 
     .procurement-search-container {
       width: 100%;
-      margin-top: 1rem;
+      margin-top: 0; // Remove top margin since search is now first
+      margin-bottom: 1rem; // Add bottom margin instead
+      order: 0; // Reset order on mobile
     }
   }
 }

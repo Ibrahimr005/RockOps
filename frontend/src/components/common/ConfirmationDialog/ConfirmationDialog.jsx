@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiAlertTriangle, FiCheckCircle, FiXCircle, FiInfo, FiTrash2, FiSend } from 'react-icons/fi';
+import { FiAlertTriangle, FiCheckCircle, FiXCircle, FiInfo, FiTrash2, FiSend, FiX } from 'react-icons/fi';
 import './ConfirmationDialog.scss';
 
 const ConfirmationDialog = ({
@@ -11,6 +11,7 @@ const ConfirmationDialog = ({
                                 cancelText = 'Cancel',
                                 onConfirm,
                                 onCancel,
+                                onClose = null, // NEW: Add onClose prop
                                 isLoading = false,
                                 showIcon = true,
                                 size = 'large', // 'small', 'medium', 'large'
@@ -64,6 +65,16 @@ const ConfirmationDialog = ({
         }
     };
 
+    // NEW: Handle X button click separately
+    const handleClose = () => {
+        document.body.style.overflow = 'unset';
+        if (onClose) {
+            onClose(); // Use onClose if provided
+        } else {
+            handleCancel(); // Fall back to handleCancel if no onClose provided
+        }
+    };
+
     // Handle backdrop click
     const handleBackdropClick = (e) => {
         if (e.target === e.currentTarget) {
@@ -110,6 +121,16 @@ const ConfirmationDialog = ({
             aria-describedby="dialog-description"
         >
             <div className={`confirmation-dialog confirmation-dialog--${type} confirmation-dialog--${size} ${showInput ? 'confirmation-dialog--with-input' : ''}`}>
+                {/* X Close Button */}
+                <button
+                    className="confirmation-dialog-close"
+                    onClick={handleClose} // CHANGED: Use handleClose instead of handleCancel
+                    disabled={isLoading}
+                    aria-label="Close dialog"
+                >
+                    <FiX size={20} />
+                </button>
+
                 {/* Header with Icon and Title */}
                 <div className="confirmation-dialog-header">
                     {showIcon && (
@@ -150,7 +171,7 @@ const ConfirmationDialog = ({
                             rows={3}
                             disabled={isLoading}
                         />
-                    
+
                     </div>
                 )}
 
