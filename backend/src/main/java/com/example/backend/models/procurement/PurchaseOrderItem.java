@@ -1,6 +1,9 @@
 package com.example.backend.models.procurement;
 
+import com.example.backend.models.merchant.Merchant;
+import com.example.backend.models.warehouse.ItemType;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,23 +23,34 @@ public class PurchaseOrderItem {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    // Existing fields
     private double quantity;
     private double unitPrice;
     private double totalPrice;
     private String comment;
-
-    // Status and delivery information
     private String status;
     private int estimatedDeliveryDays;
     private String deliveryNotes;
 
+    // ADD THESE DIRECT RELATIONSHIPS:
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "item_type_id")
+    @JsonManagedReference
+    private ItemType itemType;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "merchant_id")
+    @JsonManagedReference
+    private Merchant merchant;
+
+    // Keep existing relationships
     @ManyToOne
     @JoinColumn(name = "purchase_order_id")
-    @JsonManagedReference
+    @JsonBackReference
     private PurchaseOrder purchaseOrder;
 
     @OneToOne
     @JoinColumn(name = "offer_item_id")
-    @JsonManagedReference
+    @JsonManagedReference  // ORIGINAL VALUE
     private OfferItem offerItem;
 }

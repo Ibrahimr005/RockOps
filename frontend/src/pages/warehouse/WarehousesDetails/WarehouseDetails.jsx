@@ -8,11 +8,13 @@ import WarehouseViewItemsCategoriesTable from "../../warehouse/WarehouseCategori
 import WarehouseViewTransactionsTable from "../../warehouse/WarehouseViewTransactions/WarehouseViewTransactionsTable";
 import WarehouseRequestOrders from "../../warehouse/WarehouseRequestOrders/WarehouseRequestOrders";
 import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
-import LoadingPage from "../../../components/common/LoadingPage/LoadingPage"; // Add this import
+import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
 import "./WarehouseDetails.scss";
 import warehouseImg from "../../../assets/imgs/warehouse1.jpg";
 import { transactionService } from "../../../services/transaction/transactionService.js";
 import { warehouseService } from "../../../services/warehouse/warehouseService";
+// NEW: Import the WarehousePurchaseOrders component
+import WarehousePurchaseOrders from "../../warehouse/WarehousePurchaseOrders/WarehousePurchaseOrders";
 
 // Simple Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -60,7 +62,7 @@ const WarehouseDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [warehouseData, setWarehouseData] = useState(null);
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("items");
   const [userRole, setUserRole] = useState('');
   const [discrepancyCounts, setDiscrepancyCounts] = useState({
@@ -73,14 +75,13 @@ const WarehouseDetails = () => {
   const [restockItems, setRestockItems] = useState(null);
   const [shouldOpenRestockModal, setShouldOpenRestockModal] = useState(false);
 
-  // Function to fetch incoming transactions count directly - MOVED TO TOP
+  // Function to fetch incoming transactions count directly
   const fetchIncomingTransactionsCount = useCallback(async () => {
     if (!id) return;
 
     try {
       const data = await transactionService.getTransactionsForWarehouse(id);
 
-      // Just count, don't fetch entity details
       const incomingCount = data.filter(transaction =>
           transaction.status === "PENDING" &&
           (transaction.receiverId === id || transaction.senderId === id) &&
@@ -90,14 +91,14 @@ const WarehouseDetails = () => {
       setIncomingTransactionsCount(incomingCount);
     } catch (error) {
       console.error("Failed to fetch incoming transactions count:", error);
-      setIncomingTransactionsCount(0); // Add fallback
+      setIncomingTransactionsCount(0);
     }
   }, [id]);
 
   useEffect(() => {
     const fetchWarehouseDetails = async () => {
       try {
-        setLoading(true); // Set loading to true when starting fetch
+        setLoading(true);
 
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
         if (userInfo && userInfo.role) {
@@ -109,20 +110,18 @@ const WarehouseDetails = () => {
         setWarehouseData(data);
         console.log("warehouse:", JSON.stringify(data, null, 2));
 
-        // Fetch incoming transactions count immediately after warehouse data is loaded
         await fetchIncomingTransactionsCount();
 
       } catch (error) {
         console.error("Error fetching warehouse details:", error);
       } finally {
-        setLoading(false); // Set loading to false when done (success or error)
+        setLoading(false);
       }
     };
 
     fetchWarehouseDetails();
   }, [id, fetchIncomingTransactionsCount]);
 
-  // FIXED: Simplified registration function
   const registerAddFunction = useCallback((tabName, func) => {
     setAddFunctions(prev => ({
       ...prev,
@@ -138,10 +137,9 @@ const WarehouseDetails = () => {
     setDiscrepancyCounts(counts);
   }, []);
 
-  // Create individual callback functions for each tab - FIXED dependencies
   const handleItemsAddButtonClick = useCallback((func) => {
     registerAddFunction('items', func);
-  }, []); // Remove registerAddFunction dependency to break circular reference
+  }, []);
 
   const handleCategoriesAddButtonClick = useCallback((func) => {
     registerAddFunction('categories', func);
@@ -159,25 +157,23 @@ const WarehouseDetails = () => {
     registerAddFunction('requestOrders', func);
   }, []);
 
+  // Handler for the purchase orders tab
+  const handlePurchaseOrdersAddButtonClick = useCallback((func) => {
+    registerAddFunction('purchaseOrders', func);
+  }, []);
+
   const handleRestockItems = useCallback((itemsToRestock) => {
     console.log('Restock items requested:', itemsToRestock);
 
-    // Store the restock items
     setRestockItems(itemsToRestock);
-
-    // Switch to request orders tab
     setActiveTab("requestOrders");
-
-    // Trigger modal opening
     setShouldOpenRestockModal(true);
 
-    // Reset the trigger after a delay
     setTimeout(() => {
       setShouldOpenRestockModal(false);
     }, 500);
   }, []);
 
-  // Function to get warehouse stats
   const getWarehouseStats = () => {
     if (!warehouseData) return [];
 
@@ -186,7 +182,6 @@ const WarehouseDetails = () => {
     ];
   };
 
-  // Show loading page while data is being fetched
   if (loading || !warehouseData) {
     return <LoadingPage />;
   }
@@ -203,6 +198,8 @@ const WarehouseDetails = () => {
         return "Transactions";
       case "requestOrders":
         return "Request Orders";
+      case "purchaseOrders":
+        return "Purchase Orders";
       default:
         return "Inventory Management";
     }
@@ -220,13 +217,14 @@ const WarehouseDetails = () => {
         return "Add Transaction";
       case "requestOrders":
         return "Add Request Order";
+      case "purchaseOrders":
+        return "Add Purchase Order";
       default:
         return "Add Item";
     }
   };
 
   const handleAddButtonClick = () => {
-    // Call the appropriate add function based on active tab
     if (addFunctions[activeTab]) {
       addFunctions[activeTab]();
     } else {
@@ -286,6 +284,16 @@ const WarehouseDetails = () => {
               />
             </ErrorBoundary>
         );
+        // RENDER the WarehousePurchaseOrders component here
+      case "purchaseOrders":
+        return (
+            <ErrorBoundary>
+              <WarehousePurchaseOrders
+                  warehouseId={id}
+                  onAddButtonClick={handlePurchaseOrdersAddButtonClick}
+              />
+            </ErrorBoundary>
+        );
       default:
         return (
             <ErrorBoundary>
@@ -299,7 +307,6 @@ const WarehouseDetails = () => {
     }
   };
 
-  // FIXED: Simplified navigation handler
   const handleInfoClick = (e) => {
     e.stopPropagation();
     navigate(`/warehouses/warehouse-details/${id}`);
@@ -318,7 +325,6 @@ const WarehouseDetails = () => {
               className="warehouse-intro-card"
           />
 
-          {/* Show tabs only for warehouse managers */}
           {(userRole === 'WAREHOUSE_MANAGER' || userRole === 'ADMIN') && (
               <div className="new-tabs-container">
                 <div className="new-tabs-header">
@@ -348,17 +354,21 @@ const WarehouseDetails = () => {
                   >
                     Request Orders
                   </button>
+                  {/* Purchase Orders Tab */}
+                  <button
+                      className={`new-tab-button ${activeTab === "purchaseOrders" ? "active" : ""}`}
+                      onClick={() => setActiveTab("purchaseOrders")}
+                  >
+                    Purchase Orders
+                  </button>
                 </div>
 
-                {/* Unified container for all tab content */}
                 <div className="unified-tab-content-container">
-                  {/* Dynamic Header */}
                   <div className="tab-content-header">
                     <h2 className="tab-title">{getTabHeader()}</h2>
                     <div className="tab-header-line"></div>
                   </div>
 
-                  {/* Tab Content */}
                   <div className="tab-content-body">
                     {renderTabContent()}
                   </div>
@@ -366,14 +376,12 @@ const WarehouseDetails = () => {
               </div>
           )}
 
-          {/* For non-warehouse managers, show inventory with same structure but no top tabs */}
           {(userRole !== 'WAREHOUSE_MANAGER' && userRole !== 'ADMIN')  && (
               <div className="new-tabs-container">
                 <div className="unified-tab-content-container">
                   <div className="tab-content-header">
                     <h2 className="tab-title">
                       Inventory
-
                     </h2>
                     <div className="tab-header-line"></div>
                   </div>

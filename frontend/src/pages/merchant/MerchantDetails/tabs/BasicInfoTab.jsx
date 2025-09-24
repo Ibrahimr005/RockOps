@@ -13,10 +13,7 @@ const BasicInfoTab = ({ merchant, formatDate, getSiteName }) => {
                         <label>Merchant Name</label>
                         <p>{merchant.name || 'Not specified'}</p>
                     </div>
-                    <div className="merchant-details-info-item">
-                        <label>Merchant ID</label>
-                        <p>#{merchant.id}</p>
-                    </div>
+
                     <div className="merchant-details-info-item">
                         <label>Merchant Type</label>
                         <p>{merchant.merchantType || 'Not specified'}</p>

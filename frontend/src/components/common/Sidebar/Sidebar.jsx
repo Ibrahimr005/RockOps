@@ -620,44 +620,6 @@ const Sidebar = () => {
                     })}
                 </div>
 
-                <div className="sidebar-footer">
-                    {/* Back Button with text when expanded */}
-                    <button
-                        className="back-button"
-                        onClick={handleBackClick}
-                        title={t('common.back') || 'Go back'}
-                    >
-                        <FaArrowLeft />
-                        {isExpanded && <span className="back-text">Back</span>}
-                    </button>
-
-                    <div className="theme-toggle-container">
-                        <div
-                            className="theme-toggle-item"
-                            onClick={handleThemeToggle}
-                        >
-                            <div className="menu-icon">
-                                {theme === 'dark' ? <FaMoon/> : <FaSun/>}
-                            </div>
-                            <div className="menu-title">{theme === 'dark' ? 'Dark' : 'Light'} Mode</div>
-                            <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
-                                <input
-                                    type="checkbox"
-                                    checked={theme === 'dark'}
-                                    onChange={handleThemeToggle}
-                                />
-                                <span className="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <button className="logout-btn" onClick={handleLogout}>
-                        <span className="menu-icon">
-                            <FaSignOutAlt />
-                        </span>
-                        <span>{t('Logout')}</span>
-                    </button>
-                </div>
             </div>
 
             {/* Enhanced backdrop with blur effect */}

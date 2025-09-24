@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @Entity
 @Data
-@NoArgsConstructor  // Only keep this constructor
+@NoArgsConstructor
 public class OfferItem {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -49,7 +49,9 @@ public class OfferItem {
     private String rejectionReason;
     private String financeApprovedBy;
 
+    private boolean isFinalized = false;
+
     @OneToOne(mappedBy = "offerItem")
-    @JsonBackReference
+    @JsonBackReference  // ORIGINAL VALUE
     private PurchaseOrderItem purchaseOrderItem;
 }
