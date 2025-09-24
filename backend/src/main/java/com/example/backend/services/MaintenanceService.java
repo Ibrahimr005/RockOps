@@ -118,6 +118,16 @@ public class MaintenanceService {
                 .collect(Collectors.toList());
     }
     
+    public MaintenanceRecordDto completeMaintenanceRecord(UUID id) {
+        MaintenanceRecord record = maintenanceRecordRepository.findById(id)
+                .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
+        
+        // Complete the record using the centralized completion logic
+        completeMaintenanceRecordIfFinalStepCompleted(record);
+        
+        return convertToDto(record);
+    }
+    
     public MaintenanceRecordDto updateMaintenanceRecord(UUID id, MaintenanceRecordDto dto) {
         MaintenanceRecord record = maintenanceRecordRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
@@ -223,7 +233,7 @@ public class MaintenanceService {
             completeMaintenanceStep(currentStep.get().getId());
         }
         
-        // Get the responsible contact
+        // Get the responsible contact (optional)
         Contact responsibleContact = null;
         if (dto.getResponsibleContactId() != null) {
             try {
@@ -249,9 +259,9 @@ public class MaintenanceService {
                 .responsibleContact(responsibleContact)
                 .startDate(dto.getStartDate() != null ? dto.getStartDate() : LocalDateTime.now())
                 .expectedEndDate(dto.getExpectedEndDate())
-                .fromLocation(dto.getFromLocation())
-                .toLocation(dto.getToLocation())
-                .stepCost(dto.getStepCost())
+                .fromLocation(dto.getFromLocation() != null ? dto.getFromLocation() : "")
+                .toLocation(dto.getToLocation() != null ? dto.getToLocation() : "")
+                .stepCost(dto.getStepCost() != null ? dto.getStepCost() : BigDecimal.ZERO)
                 .notes(dto.getNotes())
                 .build();
         
@@ -331,6 +341,11 @@ public class MaintenanceService {
         stepToMark.setFinalStep(true);
         MaintenanceStep savedStep = maintenanceStepRepository.save(stepToMark);
         
+        // If this step is already completed, trigger record completion logic
+        if (savedStep.isCompleted()) {
+            completeMaintenanceRecordIfFinalStepCompleted(record);
+        }
+        
         return convertToDto(savedStep);
     }
     
@@ -343,22 +358,46 @@ public class MaintenanceService {
         
         // If this was the final step, complete the parent record
         if (step.isFinalStep()) {
-            MaintenanceRecord record = step.getMaintenanceRecord();
-            record.setStatus(MaintenanceRecord.MaintenanceStatus.COMPLETED);
-            record.setActualCompletionDate(LocalDateTime.now());
-            
-            Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
-                    .orElseThrow(() -> new MaintenanceException("Equipment not found for record"));
-            equipment.setStatus(EquipmentStatus.AVAILABLE);
-            
-            equipmentRepository.save(equipment);
-            maintenanceRecordRepository.save(record);
+            completeMaintenanceRecordIfFinalStepCompleted(step.getMaintenanceRecord());
         }
     }
     
     public void handoffToNextStep(UUID stepId, MaintenanceStepDto nextStepDto) {
         completeMaintenanceStep(stepId);
         createMaintenanceStep(nextStepDto.getMaintenanceRecordId(), nextStepDto);
+    }
+    
+    /**
+     * Complete a maintenance record when its final step is completed.
+     * Also handles equipment status changes considering other active maintenance records.
+     */
+    private void completeMaintenanceRecordIfFinalStepCompleted(MaintenanceRecord record) {
+        // Complete the maintenance record
+        record.setStatus(MaintenanceRecord.MaintenanceStatus.COMPLETED);
+        record.setActualCompletionDate(LocalDateTime.now());
+        maintenanceRecordRepository.save(record);
+        
+        // Handle equipment status change
+        Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
+                .orElseThrow(() -> new MaintenanceException("Equipment not found for record"));
+        
+        // Check if there are other active maintenance records for this equipment
+        List<MaintenanceRecord> otherActiveRecords = maintenanceRecordRepository
+                .findByEquipmentIdOrderByCreationDateDesc(equipment.getId())
+                .stream()
+                .filter(r -> r.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE && 
+                           !r.getId().equals(record.getId()))
+                .collect(Collectors.toList());
+        
+        // Only set equipment to AVAILABLE if no other active maintenance records exist
+        if (otherActiveRecords.isEmpty()) {
+            equipment.setStatus(EquipmentStatus.AVAILABLE);
+            equipmentRepository.save(equipment);
+            log.info("Equipment {} status changed to AVAILABLE - no other active maintenance records", equipment.getId());
+        } else {
+            log.info("Equipment {} remains IN_MAINTENANCE - {} other active maintenance records exist", 
+                    equipment.getId(), otherActiveRecords.size());
+        }
     }
     
     public MaintenanceStepDto assignContactToStep(UUID stepId, UUID contactId) {
