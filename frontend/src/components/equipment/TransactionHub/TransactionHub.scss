@@ -41,7 +41,7 @@
 
             .transaction-hub-refresh-btn {
                 @extend .btn;
-                @extend .btn-secondary;
+                @extend .btn-primary--ghost; // Use transparent ghost style
                 
                 svg.spinning {
                     animation: spin 1s linear infinite;

@@ -141,7 +141,7 @@ const EmployeeSelector = ({
                                             <span className="employee-selector-position">{employee.jobPositionName}</span>
                                             <span className="employee-selector-department">{employee.departmentName}</span>
                                         </div>
-                                        <div className="employee-selector-option-id">ID: {employee.employeeId}</div>
+                                        <div className="employee-selector-option-id">ID: {employee.id}</div>
                                     </div>
                                     <div className="employee-selector-option-salary">
                                         {employee.monthlySalary && (

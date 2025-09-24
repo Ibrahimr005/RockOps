@@ -8,6 +8,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import './EquipmentTypeManagement.scss';
+import '../../../styles/form-validation.scss';
 
 const WorkTypeManagement = () => {
     const [workTypes, setWorkTypes] = useState([]);
@@ -195,11 +196,101 @@ const WorkTypeManagement = () => {
             setShowModal(false);
             fetchWorkTypes(); // Refresh the list
         } catch (err) {
-            if (editingWorkType) {
-                errorHandlers.handleUpdateError(err);
+            console.error('Error saving work type:', err);
+            
+            // Handle specific error cases
+            if (err.response?.status === 409) {
+                // Check if it's our enhanced conflict response
+                if (err.response.data?.conflictType) {
+                    const { conflictType, resourceName, isInactive } = err.response.data;
+                    if (isInactive) {
+                        // Show confirmation dialog to reactivate inactive work type
+                        showConfirmation(
+                            `Work type "${resourceName}" already exists but was previously deactivated. Would you like to reactivate it instead of creating a new one?`,
+                            () => handleReactivateWorkType(resourceName),
+                            () => showError(`To create a new work type, please choose a different name than "${resourceName}".`)
+                        );
+                    } else {
+                        showError(`Work type "${resourceName}" already exists. Please choose a different name.`);
+                    }
+                } else {
+                    // Fallback for legacy error responses
+                    if (err.response.data?.message?.includes('inactive') || err.response.data?.message?.includes('deleted')) {
+                        showError(`Work type "${formData.name}" already exists but was previously deleted. Please contact your administrator to reactivate it, or choose a different name.`);
+                    } else {
+                        showError(`Work type "${formData.name}" already exists. Please choose a different name.`);
+                    }
+                }
+            } else if (err.response?.status === 400) {
+                // Validation errors
+                const message = err.response.data?.message || 'Please check your input and try again';
+                if (message.includes('name') || message.includes('Name')) {
+                    showError(`Work type name is invalid: ${message}`);
+                } else {
+                    showError(`Please check your input: ${message}`);
+                }
+            } else if (err.response?.status === 403) {
+                showError('You don\'t have permission to save work types. Please contact your administrator.');
+            } else if (err.response?.status === 500) {
+                showError('Server error occurred. Please try again later or contact support.');
             } else {
-                errorHandlers.handleCreateError(err);
+                // Fallback to enhanced error handlers for other cases
+                if (editingWorkType) {
+                    errorHandlers.handleUpdateError(err);
+                } else {
+                    errorHandlers.handleCreateError(err);
+                }
             }
+        }
+    };
+
+    const handleReactivateWorkType = async (workTypeName) => {
+        try {
+            // Call backend to reactivate the work type with current form data
+            const workTypeResponse = await workTypeService.reactivateByName(workTypeName, formData);
+            const workTypeId = workTypeResponse.data.id;
+            
+            // Update equipment type assignments if we have a work type ID
+            if (workTypeId) {
+                try {
+                    // For each equipment type, update their supported work types
+                    const allEquipmentTypes = await equipmentService.getAllEquipmentTypes();
+                    
+                    for (const equipmentType of allEquipmentTypes.data) {
+                        const currentWorkTypeIds = equipmentType.supportedWorkTypes 
+                            ? equipmentType.supportedWorkTypes.map(wt => wt.id) 
+                            : [];
+                        
+                        if (selectedEquipmentTypes.includes(equipmentType.id)) {
+                            // Add this work type if not already present
+                            if (!currentWorkTypeIds.includes(workTypeId)) {
+                                const updatedWorkTypeIds = [...currentWorkTypeIds, workTypeId];
+                                await equipmentService.setSupportedWorkTypesForEquipmentType(equipmentType.id, updatedWorkTypeIds);
+                            }
+                        } else {
+                            // Remove this work type if present
+                            if (currentWorkTypeIds.includes(workTypeId)) {
+                                const updatedWorkTypeIds = currentWorkTypeIds.filter(id => id !== workTypeId);
+                                await equipmentService.setSupportedWorkTypesForEquipmentType(equipmentType.id, updatedWorkTypeIds);
+                            }
+                        }
+                    }
+                } catch (equipmentTypeError) {
+                    console.error('Error updating equipment type assignments:', equipmentTypeError);
+                    showError('Work type reactivated, but failed to update equipment type assignments');
+                }
+            }
+            
+            // Close modal and refresh data
+            setShowModal(false);
+            setFormData({ name: '', description: '', active: true });
+            setSelectedEquipmentTypes([]);
+            
+            showSuccess(`Work type "${workTypeName}" has been reactivated successfully with updated details.`);
+            fetchWorkTypes(); // Refresh the list
+        } catch (error) {
+            console.error('Error reactivating work type:', error);
+            showError(`Failed to reactivate work type "${workTypeName}". Please try again or contact your administrator.`);
         }
     };
 
@@ -228,19 +319,52 @@ const WorkTypeManagement = () => {
         {
             header: 'Name',
             accessor: 'name',
-            sortable: true
+            sortable: true,
+            filterType: 'text'
         },
         {
             header: 'Description',
             accessor: 'description',
             sortable: true,
-            render: (row) => row.description || 'N/A'
-
+            filterType: 'text',
+            width: '250px',
+            maxWidth: '250px',
+            render: (row) => {
+                const description = row.description || 'N/A';
+                const maxLength = 80; // Character limit before truncation
+                
+                if (description === 'N/A' || description.length <= maxLength) {
+                    return <span className="description-text">{description}</span>;
+                }
+                
+                const truncated = description.substring(0, maxLength) + '...';
+                return (
+                    <span 
+                        className="description-text truncated" 
+                        title={description}
+                        style={{
+                            display: 'block',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: '230px'
+                        }}
+                    >
+                        {truncated}
+                    </span>
+                );
+            },
+            exportFormatter: (value) => {
+                // For Excel export, return the full description without truncation
+                // Excel will handle text wrapping automatically
+                return value || '';
+            }
         },
         {
             header: 'Supporting Equipment Types',
             accessor: 'supportingEquipmentTypes',
             sortable: false,
+            excludeFromSearch: true,
             render: (row) => {
                 if (!row.supportingEquipmentTypes || row.supportingEquipmentTypes.length === 0) {
                     return 'None';
@@ -251,6 +375,13 @@ const WorkTypeManagement = () => {
                         {equipmentTypeNames.length > 60 ? equipmentTypeNames.substring(0, 60) + '...' : equipmentTypeNames}
                     </span>
                 );
+            },
+            exportFormatter: (value) => {
+                // For Excel export, convert object array to readable text
+                if (!value || value.length === 0) {
+                    return 'None';
+                }
+                return value.map(et => et.name).join(', ');
             }
         }
     ];
@@ -284,7 +415,7 @@ const WorkTypeManagement = () => {
                 tableTitle="Work Types"
                 showSearch={true}
                 showFilters={true}
-                filterableColumns={columns}
+                filterableColumns={columns.filter(col => col.filterType)}
                 showAddButton={permissions.canCreate}
                 addButtonText="Add Work Type"
                 addButtonIcon={<FaPlus />}
@@ -300,6 +431,14 @@ const WorkTypeManagement = () => {
                     'active': 'Active Status',
                     'supportedEquipmentTypes': 'Supported Equipment Types'
                 }}
+                // Enforce consistent column width limits and text wrapping
+                exportColumnWidths={{
+                    'name': 25,
+                    'description': 50,
+                    'active': 15,
+                    'supportedEquipmentTypes': 40
+                }}
+                enableTextWrapping={true}
                 onExportStart={() => showSuccess("Exporting work types...")}
                 onExportComplete={(result) => showSuccess(`Exported ${result.rowCount} work types to Excel`)}
                 onExportError={(error) => showError("Failed to export work types")}
@@ -317,7 +456,7 @@ const WorkTypeManagement = () => {
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="form-group">
-                                <label htmlFor="name">Name</label>
+                                <label htmlFor="name">Name <span className="required-field">*</span></label>
                                 <input
                                     type="text"
                                     id="name"
@@ -336,8 +475,12 @@ const WorkTypeManagement = () => {
                                     value={formData.description}
                                     onChange={handleChange}
                                     rows="4"
-                                    placeholder="Enter a description of this work type..."
+                                    maxLength="1000"
+                                    placeholder="Enter a description of this work type... (Max 1000 characters)"
                                 />
+                                <div className="character-counter">
+                                    {formData.description.length}/1000 characters
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label className="checkbox-label">

@@ -47,4 +47,31 @@ public class WorkTypeController {
         workTypeService.deleteWorkType(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/worktypes/reactivate")
+    public ResponseEntity<WorkTypeDTO> reactivateWorkTypeByName(@RequestBody ReactivateRequest request) {
+        return ResponseEntity.ok(workTypeService.reactivateWorkTypeByName(request.getName(), request.getWorkTypeData()));
+    }
+
+    // Helper class for reactivation request
+    public static class ReactivateRequest {
+        private String name;
+        private WorkTypeDTO workTypeData;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public WorkTypeDTO getWorkTypeData() {
+            return workTypeData;
+        }
+
+        public void setWorkTypeData(WorkTypeDTO workTypeData) {
+            this.workTypeData = workTypeData;
+        }
+    }
 }

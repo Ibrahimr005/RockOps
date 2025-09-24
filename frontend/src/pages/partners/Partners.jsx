@@ -16,6 +16,8 @@ const Partners = () => {
     const [error, setError] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [newPartner, setNewPartner] = useState({ firstName: '', lastName: '' });
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingPartner, setEditingPartner] = useState(null);
     const [confirmDialog, setConfirmDialog] = useState({
         isVisible: false,
         type: 'warning',
@@ -77,12 +79,56 @@ const Partners = () => {
     };
 
     const handleEditPartner = (partner) => {
-        // TODO: Implement edit functionality
-        console.log('Edit partner:', partner);
-        showError('Edit functionality not yet implemented');
+        setEditingPartner({
+            id: partner.id,
+            firstName: partner.firstName,
+            lastName: partner.lastName
+        });
+        setShowEditModal(true);
+    };
+
+    const handleUpdatePartner = async (e) => {
+        e.preventDefault();
+
+        try {
+            setActionLoading(true);
+            const response = await partnerService.update(
+                editingPartner.id,
+                editingPartner.firstName,
+                editingPartner.lastName
+            );
+
+            // Update the partners list
+            setPartners(partners.map(p =>
+                p.id === editingPartner.id ? response.data : p
+            ));
+
+            setShowEditModal(false);
+            setEditingPartner(null);
+            showSuccess(t('partners.updateSuccess', 'Partner updated successfully'));
+        } catch (err) {
+            console.error('Error updating partner:', err);
+            showError(t('partners.updateError', 'Failed to update partner'));
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleEditInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditingPartner({
+            ...editingPartner,
+            [name]: value
+        });
     };
 
     const handleDeletePartner = (partner) => {
+        // Check if this is Rock4Mining partner
+        if (partner.firstName === 'Rock4Mining') {
+            showError('Cannot delete the default Rock4Mining partner');
+            return;
+        }
+
         setConfirmDialog({
             isVisible: true,
             type: 'danger',
@@ -96,7 +142,16 @@ const Partners = () => {
                     showSuccess(t('partners.deleteSuccess', 'Partner deleted successfully'));
                 } catch (err) {
                     console.error('Error deleting partner:', err);
-                    showError(t('partners.deleteError', 'Failed to delete partner'));
+
+                    // Enhanced error message handling
+                    let errorMessage = t('partners.deleteError', 'Failed to delete partner');
+                    if (err.response?.data?.message) {
+                        errorMessage = err.response.data.message;
+                    } else if (err.message) {
+                        errorMessage = err.message;
+                    }
+
+                    showError(errorMessage);
                 } finally {
                     setActionLoading(false);
                     setConfirmDialog(prev => ({ ...prev, isVisible: false }));
@@ -142,6 +197,18 @@ const Partners = () => {
         }
     ] : [];
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            if (showAddModal) {
+                setShowAddModal(false);
+            } else if (showEditModal) {
+                setShowEditModal(false);
+                setEditingPartner(null);
+            }
+        }
+    };
+
     return (
         <div className="partner-table-container">
             <div className="departments-header">
@@ -167,7 +234,7 @@ const Partners = () => {
 
             {/* Add Partner Modal */}
             {showAddModal && (
-                <div className="modal-backdrop">
+                <div className="modal-backdrop" onClick={handleOverlayClick}>
                     <div className="modal-container">
                         <div className="modal-header">
                             <h3>{t('partners.addTitle', 'Add New Partner')}</h3>
@@ -198,27 +265,97 @@ const Partners = () => {
                                     disabled={actionLoading}
                                 />
                             </div>
+
+                        </form>
+                        <div className="modal-footer">
+                            <button
+                                type="button"
+                                className="modal-btn-secondary"
+                                onClick={() => setShowAddModal(false)}
+                                disabled={actionLoading}
+                            >
+                                {t('common.cancel', 'Cancel')}
+                            </button>
+                            <button
+                                type="submit"
+                                className="btn btn-success"
+                                onClick={handleAddPartner}
+                                disabled={actionLoading}
+                            >
+                                {actionLoading ? (
+                                    <>
+                                        <span className="spinner"></span>
+                                        {t('common.adding', 'Adding...')}
+                                    </>
+                                ) : (
+                                    t('common.add', 'Add')
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Partner Modal */}
+            {showEditModal && editingPartner && (
+                <div className="modal-backdrop" onClick={handleOverlayClick}>
+                    <div className="modal-container">
+                        <div className="modal-header">
+                            <h3>{t('partners.editTitle', 'Edit Partner')}</h3>
+                            <button className="btn-close" onClick={() => {
+                                setShowEditModal(false);
+                                setEditingPartner(null);
+                            }}>×</button>
+                        </div>
+                        <form className="modal-body" onSubmit={handleUpdatePartner}>
+                            <div className="form-group">
+                                <label htmlFor="editFirstName">{t('partners.firstName', 'First Name')}</label>
+                                <input
+                                    type="text"
+                                    id="editFirstName"
+                                    name="firstName"
+                                    value={editingPartner.firstName}
+                                    onChange={handleEditInputChange}
+                                    required
+                                    disabled={actionLoading}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="editLastName">{t('partners.lastName', 'Last Name')}</label>
+                                <input
+                                    type="text"
+                                    id="editLastName"
+                                    name="lastName"
+                                    value={editingPartner.lastName}
+                                    onChange={handleEditInputChange}
+                                    required
+                                    disabled={actionLoading}
+                                />
+                            </div>
                             <div className="modal-footer">
                                 <button
                                     type="button"
                                     className="modal-btn-secondary"
-                                    onClick={() => setShowAddModal(false)}
+                                    onClick={() => {
+                                        setShowEditModal(false);
+                                        setEditingPartner(null);
+                                    }}
                                     disabled={actionLoading}
                                 >
                                     {t('common.cancel', 'Cancel')}
                                 </button>
                                 <button
                                     type="submit"
-                                    className="btn btn-success"
+                                    className="btn btn-primary"
                                     disabled={actionLoading}
                                 >
                                     {actionLoading ? (
                                         <>
                                             <span className="spinner"></span>
-                                            {t('common.adding', 'Adding...')}
+                                            {t('common.updating', 'Updating...')}
                                         </>
                                     ) : (
-                                        t('common.add', 'Add')
+                                        t('common.update', 'Update')
                                     )}
                                 </button>
                             </div>

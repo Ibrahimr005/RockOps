@@ -68,58 +68,30 @@ public class MinioController {
     public ResponseEntity<String> getEquipmentMainPhoto(@PathVariable UUID equipmentId) {
         try {
             String imageUrl = fileStorageService.getEquipmentMainPhoto(equipmentId);
-            return ResponseEntity.ok(imageUrl);
+            if (imageUrl != null) {
+                return ResponseEntity.ok(imageUrl);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+            System.err.println("Error getting equipment main photo: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error retrieving equipment image: " + e.getMessage());
         }
     }
 
-    // New endpoint for uploading maintenance files
-    @PostMapping("/equipment/{equipmentId}/maintenance/{maintenanceId}/upload")
-    public ResponseEntity<String> uploadMaintenanceFile(
-            @PathVariable UUID equipmentId,
-            @PathVariable UUID maintenanceId,
-            @RequestParam("file") MultipartFile file) {
+    @GetMapping("/equipment/{equipmentId}/main-photo/refresh")
+    public ResponseEntity<String> refreshEquipmentMainPhoto(@PathVariable UUID equipmentId) {
         try {
-            String fileName = "maintenance_" + maintenanceId + "_" + file.getOriginalFilename();
-            fileStorageService.uploadEntityFile("equipment", equipmentId, file, fileName);
-            return ResponseEntity.ok("File uploaded successfully: " + fileName);
+            // Force refresh of presigned URL
+            String imageUrl = fileStorageService.getEquipmentMainPhoto(equipmentId);
+            if (imageUrl != null) {
+                return ResponseEntity.ok(imageUrl);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error uploading file: " + e.getMessage());
-        }
-    }
-
-    // Get URL for maintenance file
-    @GetMapping("/equipment/{equipmentId}/maintenance/{maintenanceId}/file/{fileName}")
-    public ResponseEntity<String> getMaintenanceFileUrl(
-            @PathVariable UUID equipmentId,
-            @PathVariable UUID maintenanceId,
-            @PathVariable String fileName) {
-        try {
-            String url = fileStorageService.getEntityFileUrl("equipment", equipmentId, fileName);
-            return ResponseEntity.ok(url);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error generating URL: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/download/{fileName}")
-    public ResponseEntity<byte[]> downloadFile(@PathVariable String fileName) {
-        try {
-            InputStream inputStream = fileStorageService.downloadFile(fileName);
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM).body(inputStream.readAllBytes());
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(null);
-        }
-    }
-
-    @GetMapping("/url/{fileName}")
-    public ResponseEntity<String> getFileUrl(@PathVariable String fileName) {
-        try {
-            String url = fileStorageService.getFileUrl(fileName);
-            return ResponseEntity.ok(url);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error generating URL: " + e.getMessage());
+            System.err.println("Error refreshing equipment main photo: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error refreshing equipment image: " + e.getMessage());
         }
     }
 }

@@ -16,6 +16,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { useEquipmentPermissions } from "../../../utils/rbac";
 import TransactionHub from "../../../components/equipment/TransactionHub/TransactionHub";
 import EquipmentSarkyMatrix from '../EquipmentSarkyMatrix/EquipmentSarkyMatrix';
+import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
 
 // Set the app element for accessibility
 Modal.setAppElement('#root'); // Adjust this to match your root element ID
@@ -81,6 +82,14 @@ const EquipmentDetails = () => {
                 setPreviewImage(response.data);
             } catch (error) {
                 console.error("Error fetching equipment photo:", error);
+                // If direct fetch fails, try refresh to get new presigned URL
+                try {
+                    console.log("Retrying with refresh...");
+                    const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(params.EquipmentID);
+                    setPreviewImage(refreshResponse.data);
+                } catch (refreshError) {
+                    console.error("Error refreshing equipment photo:", refreshError);
+                }
             }
         };
 
@@ -159,7 +168,7 @@ const EquipmentDetails = () => {
         navigate(`../info/${params.EquipmentID}`);
     };
 
-    if (loading) return <div className="loading-spinner">Loading...</div>;
+    if (loading) return <LoadingPage />;
     if (error) return <div className="error-message">Error: {error}</div>;
 
     return (
@@ -178,7 +187,26 @@ const EquipmentDetails = () => {
                         src={previewImage || equipmentData?.imageUrl}
                         alt="Equipment"
                         className="equipment-image"
-                        onError={(e) => { e.target.src = previewImage; }}
+                        onError={async (e) => { 
+                            // If image fails to load, try to refresh the URL
+                            if (!e.target.hasAttribute('data-refresh-attempted')) {
+                                e.target.setAttribute('data-refresh-attempted', 'true');
+                                try {
+                                    const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(params.EquipmentID);
+                                    if (refreshResponse.data) {
+                                        e.target.src = refreshResponse.data;
+                                        setPreviewImage(refreshResponse.data);
+                                    }
+                                } catch (refreshError) {
+                                    console.error("Failed to refresh image on error:", refreshError);
+                                    // Fallback to a placeholder or default image
+                                    e.target.src = '/assets/imgs/equipment-placeholder.png';
+                                }
+                            } else {
+                                // Already attempted refresh, use placeholder
+                                e.target.src = '/assets/imgs/equipment-placeholder.png';
+                            }
+                        }}
                     />
                 </div>
                 <div className="center-content">
@@ -217,11 +245,7 @@ const EquipmentDetails = () => {
                     <button className="info-button-eq" onClick={handleViewFullDetails}>
                         <FaInfoCircle />
                     </button>
-                    {permissions.canDelete && (
-                        <button className="delete-button-eq" title="Delete Equipment">
-                            <RiDeleteBin6Line />
-                        </button>
-                    )}
+
                 </div>
             </div>
             {/* Tab Navigation */}

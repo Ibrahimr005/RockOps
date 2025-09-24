@@ -11,5 +11,15 @@ export const partnerService = {
         return apiClient.post(PARTNER_ENDPOINTS.ADD, null, {
             params: { firstName, lastName }
         });
+    },
+
+    update: (id, firstName, lastName) => {
+        return apiClient.put(PARTNER_ENDPOINTS.UPDATE(id), null, {
+            params: { firstName, lastName }
+        });
+    },
+
+    delete: (id) => {
+        return apiClient.delete(PARTNER_ENDPOINTS.DELETE(id));
     }
 }; 

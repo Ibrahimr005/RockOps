@@ -9,6 +9,7 @@ import { documentService } from '../../../services/documentService';
 import { getMonthLabel } from '../../../constants/documentTypes';
 import SarkyDocumentModal from './SarkyDocumentModal';
 import './EquipmentSarkyMatrix.scss';
+import '../../../styles/form-validation.scss';
 
 // Driver Dropdown Component
 const DriverDropdown = ({
@@ -97,16 +98,21 @@ const DriverDropdown = ({
 };
 
 const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => {
-    const { showSuccess, showError } = useSnackbar();
+    const { showSuccess, showError, showConfirmation } = useSnackbar();
     const auth = useAuth();
     const permissions = useEquipmentPermissions(auth);
 
     // State management
-    const [viewMode, setViewMode] = useState('month'); // 'month', '15days', 'week'
+    const [viewMode, setViewMode] = useState('month'); // 'month', '15days', 'week', 'custom'
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    
+    // Custom date range state
+    const [customFromDate, setCustomFromDate] = useState('');
+    const [customToDate, setCustomToDate] = useState('');
     const [equipmentData, setEquipmentData] = useState(null);
     const [workTypes, setWorkTypes] = useState([]);
+    const [allWorkTypes, setAllWorkTypes] = useState([]); // All work types available in the system
     const [drivers, setDrivers] = useState([]);
 
     // GLOBAL MATRIX DATA - preserves data across all view modes
@@ -120,7 +126,10 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
     const [hasChanges, setHasChanges] = useState(false);
     const [showAddWorkType, setShowAddWorkType] = useState(false);
     const [newWorkTypeName, setNewWorkTypeName] = useState('');
+    const [selectedExistingWorkType, setSelectedExistingWorkType] = useState('');
+    const [workTypeSelectionMode, setWorkTypeSelectionMode] = useState('existing'); // 'existing' or 'new'
     const [focusedCell, setFocusedCell] = useState(null);
+    const [focusedInput, setFocusedInput] = useState(null); // Track which input is currently focused
     const [copiedValue, setCopiedValue] = useState(null);
 
     // Z-index management for dropdowns
@@ -148,32 +157,36 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         refreshData: () => fetchExistingEntries()
     }));
 
-    // Intersection Observer for sticky header
+    // Simplified header behavior - no intersection observer needed
     useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                setIsHeaderStuck(!entry.isIntersecting);
-            },
-            {
-                root: null,
-                rootMargin: `-${70}px 0px 0px 0px`, // Account for navbar height
-                threshold: 0
-            }
-        );
-
-        if (stickyHeaderRef.current) {
-            observer.observe(stickyHeaderRef.current);
-        }
-
-        return () => {
-            if (stickyHeaderRef.current) {
-                observer.unobserve(stickyHeaderRef.current);
-            }
-        };
+        // Set stuck state to false since we removed sticky positioning
+        setIsHeaderStuck(false);
     }, []);
 
     // Get date range based on view mode
     const getDateRange = () => {
+        if (viewMode === 'custom') {
+            // Handle custom date range
+            if (customFromDate && customToDate) {
+                const start = new Date(customFromDate);
+                const end = new Date(customToDate);
+                
+                // Validate that start date is not after end date
+                if (start > end) {
+                    // Swap dates if they're reversed
+                    return { start: end, end: start };
+                }
+                
+                return { start, end };
+            } else {
+                // Default to current month if custom dates are not set
+                const start = new Date(selectedYear, selectedMonth - 1, 1);
+                const end = new Date(selectedYear, selectedMonth, 0);
+                return { start, end };
+            }
+        }
+
+        // Handle predefined ranges
         const start = new Date(selectedYear, selectedMonth - 1, 1);
         let end;
 
@@ -193,6 +206,75 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         }
 
         return { start, end };
+    };
+
+    // Helper function to format date for input fields (YYYY-MM-DD)
+    const formatDateForInput = (date) => {
+        if (!date) return '';
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // Set default custom date range when switching to custom mode
+    const handleViewModeChange = (newMode) => {
+        setViewMode(newMode);
+        
+        // If switching to custom mode and dates are not set, initialize with current month
+        if (newMode === 'custom' && (!customFromDate || !customToDate)) {
+            const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
+            const monthEnd = new Date(selectedYear, selectedMonth, 0);
+            setCustomFromDate(formatDateForInput(monthStart));
+            setCustomToDate(formatDateForInput(monthEnd));
+        }
+    };
+
+    // Validate custom date range
+    const validateCustomDateRange = () => {
+        if (viewMode !== 'custom') return true;
+        
+        if (!customFromDate || !customToDate) {
+            showError('Please select both From and To dates for custom range');
+            return false;
+        }
+        
+        const fromDate = new Date(customFromDate);
+        const toDate = new Date(customToDate);
+        const today = new Date();
+        
+        // Check if dates are valid
+        if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+            showError('Please enter valid dates');
+            return false;
+        }
+        
+        // Check if range is not too large (e.g., more than 6 months)
+        const diffInDays = Math.abs((toDate - fromDate) / (1000 * 60 * 60 * 24));
+        if (diffInDays > 180) {
+            showError('Custom date range cannot exceed 6 months');
+            return false;
+        }
+        
+        return true;
+    };
+
+    // Helper function to validate driver ID
+    const isValidDriverId = (driverId) => {
+        // For non-drivable equipment, driver validation is not required
+        if (equipmentData && !equipmentData.drivable) {
+            return true;
+        }
+        
+        // Check if driverId is missing, empty, or not a valid UUID format
+        if (!driverId || driverId === '' || driverId === 'Select Driver') {
+            return false;
+        }
+        
+        // Basic UUID format validation (36 characters with hyphens in correct positions)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(driverId);
     };
 
     // Generate dates array for the matrix
@@ -261,6 +343,10 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                     const workTypesResponse = await equipmentService.getSupportedWorkTypesForEquipmentType(response.data.typeId);
                     console.log("Fetched work types:", workTypesResponse.data);
                     setWorkTypes(workTypesResponse.data || []);
+                    
+                    // Fetch all available work types
+                    const allWorkTypesResponse = await workTypeService.getAll();
+                    setAllWorkTypes(allWorkTypesResponse.data || []);
                 }
             } catch (error) {
                 console.error("Error fetching equipment data:", error);
@@ -286,7 +372,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         if (equipmentId) {
             fetchExistingEntries();
         }
-    }, [equipmentId, selectedMonth, selectedYear]);
+    }, [equipmentId, selectedMonth, selectedYear, customFromDate, customToDate, viewMode]);
 
     const fetchExistingEntries = async () => {
         try {
@@ -356,12 +442,15 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
 
             workTypes.forEach(workType => {
                 if (!newGlobalData[dateKey][workType.id]) {
+                    // For non-drivable equipment, use null for driverId
+                    const defaultDriverId = (equipmentData && !equipmentData.drivable) ? null : (selectedDriver || '');
+                    
                     newGlobalData[dateKey][workType.id] = {
                         hours: 0,
-                        driverId: selectedDriver || '',
+                        driverId: defaultDriverId,
                         isExisting: false,
                         originalValue: 0,
-                        originalDriverId: selectedDriver || ''
+                        originalDriverId: defaultDriverId
                     };
                 }
             });
@@ -490,7 +579,10 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
             const prevDateData = prev[dateKey] || {};
             const existingCell = prevDateData[workTypeId] || {};
             const isNewCell = !existingCell.hasOwnProperty('hours') || existingCell.hours === undefined;
-            const newDriverId = driverId !== null ? driverId : (existingCell.driverId || selectedDriver);
+            // For non-drivable equipment, use null for driverId
+            const newDriverId = driverId !== null ? driverId : 
+                (equipmentData && !equipmentData.drivable) ? null : 
+                (existingCell.driverId || selectedDriver);
 
             const updatedCell = {
                 hours: numValue,
@@ -717,8 +809,15 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
             return;
         }
 
-        // Validate that all entries have drivers selected
-        const entriesWithoutDrivers = entriesToSave.filter(entry => !entry.driverId || entry.driverId === '');
+        // Validate that all entries have valid drivers selected
+        const entriesWithoutDrivers = entriesToSave.filter(entry => {
+            if (!isValidDriverId(entry.driverId)) {
+                console.warn('Invalid driver ID:', entry.driverId);
+                return true;
+            }
+            return false;
+        });
+        
         if (entriesWithoutDrivers.length > 0) {
             const invalidEntries = entriesWithoutDrivers.map(entry => {
                 const workTypeName = workTypes.find(wt => wt.id === entry.workTypeId)?.name || 'Unknown Work Type';
@@ -726,9 +825,11 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                 return `${formattedDate} - ${workTypeName}`;
             });
 
-            showError(
-                `❌ Cannot save entries without drivers selected:\n\n${invalidEntries.join('\n')}\n\nPlease select a driver for each entry before saving.`
-            );
+            const errorMessage = equipmentData && !equipmentData.drivable 
+                ? `❌ Invalid entries found:\n\n${invalidEntries.join('\n')}\n\nNote: This equipment is non-drivable and should not require drivers.`
+                : `❌ Cannot save entries without valid drivers selected:\n\n${invalidEntries.join('\n')}\n\nPlease select a driver for each entry before saving.`;
+            
+            showError(errorMessage);
             return;
         }
 
@@ -760,7 +861,12 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                     formData.append('workType', entry.workTypeId);
                     formData.append('workedHours', String(entry.workedHours)); // Ensure it's a string
                     formData.append('date', entry.date);
-                    formData.append('driver', entry.driverId);
+                    
+                    // For non-drivable equipment, don't send driver parameter
+                    // For drivable equipment, always send driver (may be empty if not selected)
+                    if (equipmentData?.drivable) {
+                        formData.append('driver', entry.driverId || '');
+                    }
 
                     console.log(`📤 ${entry.isUpdate ? 'Updating' : 'Creating'} entry:`, {
                         entryId: entry.entryId,
@@ -770,6 +876,8 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                         workedHoursString: String(entry.workedHours),
                         date: entry.date,
                         driverId: entry.driverId,
+                        driverIdType: typeof entry.driverId,
+                        driverIdValid: isValidDriverId(entry.driverId),
                         isUpdate: entry.isUpdate
                     });
 
@@ -840,7 +948,121 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [hasChanges, saving, permissions.canEdit, handleSaveAll]);
 
+    const handleLinkExistingWorkType = async () => {
+        if (!selectedExistingWorkType) {
+            showError('Please select a work type to add');
+            return;
+        }
+
+        try {
+            // Add the selected work type to supported work types for this equipment type
+            await equipmentService.addSupportedWorkTypesForEquipmentType(
+                equipmentData.typeId,
+                [selectedExistingWorkType]
+            );
+
+            // Refresh work types
+            const workTypesResponse = await equipmentService.getSupportedWorkTypesForEquipmentType(equipmentData.typeId);
+            setWorkTypes(workTypesResponse.data);
+
+            // Update global matrix data to include the linked work type
+            const updatedMatrix = { ...globalMatrixData };
+            Object.keys(updatedMatrix).forEach(dateKey => {
+                updatedMatrix[dateKey][selectedExistingWorkType] = {
+                    hours: 0,
+                    driverId: selectedDriver,
+                    isExisting: false,
+                    originalValue: 0,
+                    originalDriverId: selectedDriver
+                };
+            });
+            setGlobalMatrixData(updatedMatrix);
+
+            // Reset form and close modal
+            handleCloseWorkTypeModal();
+            showSuccess('Work type linked to equipment successfully');
+        } catch (error) {
+            console.error('Error linking work type:', error);
+            showError('Failed to link work type. Please try again.');
+        }
+    };
+
+    const handleReactivateWorkType = async (workTypeName) => {
+        try {
+            // Create work type data from current form
+            const workTypeData = {
+                name: newWorkTypeName.trim(),
+                description: `Added from Sarky Matrix for ${equipmentData.name}`,
+                active: true
+            };
+            
+            const workTypeResponse = await workTypeService.reactivateByName(workTypeName, workTypeData);
+            const newWorkTypeId = workTypeResponse.data.id;
+
+            // Add it to supported work types for this equipment type
+            await equipmentService.addSupportedWorkTypesForEquipmentType(
+                equipmentData.typeId,
+                [newWorkTypeId]
+            );
+
+            // Refresh work types
+            const workTypesResponse = await equipmentService.getSupportedWorkTypesForEquipmentType(equipmentData.typeId);
+            setWorkTypes(workTypesResponse.data);
+
+            // Update global matrix data to include new work type
+            const updatedMatrix = { ...globalMatrixData };
+            Object.keys(updatedMatrix).forEach(dateKey => {
+                updatedMatrix[dateKey][newWorkTypeId] = {
+                    hours: 0,
+                    driverId: selectedDriver,
+                    isExisting: false,
+                    originalValue: 0,
+                    originalDriverId: selectedDriver
+                };
+            });
+            setGlobalMatrixData(updatedMatrix);
+            
+            // Reset the form
+            handleCloseWorkTypeModal();
+            
+            showSuccess(`Work type "${workTypeName}" has been reactivated successfully with updated details.`);
+        } catch (error) {
+            console.error('Error reactivating work type:', error);
+            showError(`Failed to reactivate work type "${workTypeName}". Please try again or contact your administrator.`);
+        }
+    };
+
+    const handleCloseWorkTypeModal = () => {
+        setShowAddWorkType(false);
+        setNewWorkTypeName('');
+        setSelectedExistingWorkType('');
+        setWorkTypeSelectionMode('existing');
+    };
+
+    // Get available work types that aren't already linked
+    const getAvailableWorkTypes = () => {
+        return allWorkTypes.filter(wt => wt.active && !workTypes.find(existing => existing.id === wt.id));
+    };
+
+    // Handle opening the modal with smart mode selection
+    const handleOpenWorkTypeModal = () => {
+        // Auto-switch to "new" mode if no work types are available to link
+        if (getAvailableWorkTypes().length === 0) {
+            setWorkTypeSelectionMode('new');
+        } else {
+            setWorkTypeSelectionMode('existing');
+        }
+        setShowAddWorkType(true);
+    };
+
     const handleAddWorkType = async () => {
+        // Handle based on selection mode
+        if (workTypeSelectionMode === 'existing') {
+            await handleLinkExistingWorkType();
+            return;
+        }
+
+        // Handle new work type creation
         if (!newWorkTypeName.trim()) {
             showError('Please enter a work type name');
             return;
@@ -879,11 +1101,42 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
             });
             setGlobalMatrixData(updatedMatrix);
 
-            setNewWorkTypeName('');
-            setShowAddWorkType(false);
+            handleCloseWorkTypeModal();
             showSuccess('Work type added successfully');
         } catch (error) {
-            showError('Failed to add work type: ' + (error.response?.data?.message || error.message));
+            console.error('Error adding work type from Sarky Matrix:', error);
+            
+            // Handle specific error cases
+            if (error.response?.status === 409) {
+                // Check if it's our enhanced conflict response
+                if (error.response.data?.conflictType) {
+                    const { conflictType, resourceName, isInactive } = error.response.data;
+                    if (isInactive) {
+                        // Show confirmation dialog to reactivate inactive work type
+                        showConfirmation(
+                            `Work type "${resourceName}" already exists but was previously deactivated. Would you like to reactivate it instead of creating a new one?`,
+                            () => handleReactivateWorkType(resourceName),
+                            () => showError(`Please choose a different name for the work type.`)
+                        );
+                    } else {
+                        showError(`Work type "${resourceName}" already exists. Please choose a different name.`);
+                    }
+                } else {
+                    // Fallback for legacy error responses
+                    if (error.response.data?.message?.includes('inactive') || error.response.data?.message?.includes('deleted')) {
+                        showError(`Work type "${newWorkTypeName.trim()}" already exists but was previously deleted. Please contact your administrator to reactivate it, or choose a different name.`);
+                    } else {
+                        showError(`Work type "${newWorkTypeName.trim()}" already exists. Please choose a different name.`);
+                    }
+                }
+            } else if (error.response?.status === 400) {
+                const message = error.response.data?.message || 'Please check your input and try again';
+                showError(`Work type name is invalid: ${message}`);
+            } else if (error.response?.status === 403) {
+                showError('You don\'t have permission to create work types. Please contact your administrator.');
+            } else {
+                showError('Failed to add work type: ' + (error.response?.data?.message || error.message));
+            }
         }
     };
 
@@ -977,7 +1230,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         return allDateKeys.some(dateKey => {
             return workTypes.some(workType => {
                 const cellData = globalMatrixData[dateKey]?.[workType.id];
-                return cellData?.hours > 0 && (!cellData.driverId || cellData.driverId === '');
+                return cellData?.hours > 0 && !isValidDriverId(cellData.driverId);
             });
         });
     };
@@ -1011,76 +1264,143 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                     <div className="view-toggle">
                         <button
                             className={viewMode === 'week' ? 'active' : ''}
-                            onClick={() => setViewMode('week')}
+                            onClick={() => handleViewModeChange('week')}
                         >
                             Week
                         </button>
                         <button
                             className={viewMode === '15days' ? 'active' : ''}
-                            onClick={() => setViewMode('15days')}
+                            onClick={() => handleViewModeChange('15days')}
                         >
                             15 Days
                         </button>
                         <button
                             className={viewMode === 'month' ? 'active' : ''}
-                            onClick={() => setViewMode('month')}
+                            onClick={() => handleViewModeChange('month')}
                         >
                             Month
+                        </button>
+                        <button
+                            className={viewMode === 'custom' ? 'active' : ''}
+                            onClick={() => handleViewModeChange('custom')}
+                        >
+                            Custom Range
                         </button>
                     </div>
 
                     <div className="date-selector">
-                        <select
-                            value={selectedMonth}
-                            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                        >
-                            {Array.from({ length: 12 }, (_, i) => (
-                                <option key={i + 1} value={i + 1}>
-                                    {new Date(2000, i).toLocaleDateString('en-US', { month: 'long' })}
-                                </option>
-                            ))}
-                        </select>
-                        <select
-                            value={selectedYear}
-                            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                        >
-                            {Array.from({ length: 5 }, (_, i) => {
-                                const year = new Date().getFullYear() - 2 + i;
-                                return <option key={year} value={year}>{year}</option>;
-                            })}
-                        </select>
+                        {viewMode === 'custom' ? (
+                            /* Custom Date Range Inputs */
+                            <div className="custom-date-range">
+                                <div className="date-input-group">
+                                    <label htmlFor="fromDate">From:</label>
+                                    <input
+                                        type="date"
+                                        id="fromDate"
+                                        value={customFromDate}
+                                        onChange={(e) => setCustomFromDate(e.target.value)}
+                                        max={formatDateForInput(new Date())}
+                                    />
+                                </div>
+                                <div className="date-input-group">
+                                    <label htmlFor="toDate">To:</label>
+                                    <input
+                                        type="date"
+                                        id="toDate"
+                                        value={customToDate}
+                                        onChange={(e) => setCustomToDate(e.target.value)}
+                                        max={formatDateForInput(new Date())}
+                                        min={customFromDate}
+                                    />
+                                </div>
+                                {customFromDate && customToDate && (
+                                    <button
+                                        className="apply-custom-range-btn"
+                                        onClick={() => {
+                                            if (validateCustomDateRange()) {
+                                                // Force re-render of the matrix with new date range
+                                                setHasChanges(false); // Reset changes since we're switching ranges
+                                            }
+                                        }}
+                                        title="Apply custom date range"
+                                    >
+                                        Apply Range
+                                    </button>
+                                )}
+                            </div>
+                        ) : (
+                            /* Traditional Month/Year Selectors */
+                            <>
+                                <select
+                                    value={selectedMonth}
+                                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                                >
+                                    {Array.from({ length: 12 }, (_, i) => (
+                                        <option key={i + 1} value={i + 1}>
+                                            {new Date(2000, i).toLocaleDateString('en-US', { month: 'long' })}
+                                        </option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={selectedYear}
+                                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                                >
+                                    {Array.from({ length: 5 }, (_, i) => {
+                                        const year = new Date().getFullYear() - 2 + i;
+                                        return <option key={year} value={year}>{year}</option>;
+                                    })}
+                                </select>
+                            </>
+                        )}
 
-                        {/* Monthly documents button */}
+                        {/* Documents button - works for both modes */}
                         <button
                             className="time-range-files-btn"
                             onClick={() => setShowSarkyDocumentModal(true)}
-                            title={`Documents for ${getMonthLabel(selectedMonth)} ${selectedYear}`}
+                            title={viewMode === 'custom' && customFromDate && customToDate 
+                                ? `Documents for ${customFromDate} to ${customToDate}`
+                                : `Documents for ${getMonthLabel(selectedMonth)} ${selectedYear}`}
                             disabled={documentLoading}
                         >
                             📎 Files ({documentLoading ? '...' : monthlyDocuments.length})
                         </button>
                     </div>
 
-                    <div className="driver-selector">
-                        <label>Default Driver (for new entries):</label>
-                        <select
-                            value={selectedDriver}
-                            onChange={(e) => setSelectedDriver(e.target.value)}
-                        >
-                            <option value="">Select Driver</option>
-                            {drivers.map(driver => (
-                                <option key={driver.id} value={driver.id}>
-                                    {driver.fullName}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    {/* Only show driver selector for drivable equipment */}
+                    {equipmentData?.drivable && (
+                        <div className="driver-selector">
+                            <label>Default Driver (for new entries):</label>
+                            <select
+                                value={selectedDriver}
+                                onChange={(e) => setSelectedDriver(e.target.value)}
+                            >
+                                <option value="">Select Driver</option>
+                                {drivers.map(driver => (
+                                    <option key={driver.id} value={driver.id}>
+                                        {driver.fullName}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                    
+                    {/* Show non-drivable indicator for clarity */}
+                    {equipmentData && !equipmentData.drivable && (
+                        <div className="non-drivable-indicator">
+                            <label>Equipment Type:</label>
+                            <span className="no-driver-required">🔧 No Driver Required</span>
+                        </div>
+                    )}
 
                     <div className="header-actions">
                         <div className="changes-indicator">
                             {hasChanges && <span className="unsaved-changes">● Unsaved changes</span>}
                             {hasValidationErrors() && (
-                                <span className="validation-errors">⚠️ Driver selection required</span>
+                                <span className="validation-errors">
+                                    ⚠️ {equipmentData && !equipmentData.drivable 
+                                        ? 'Validation errors found' 
+                                        : 'Driver selection required'}
+                                </span>
                             )}
                         </div>
                         <button
@@ -1119,7 +1439,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                         <th className="add-worktype-header">
                             <button
                                 className="add-worktype-btn"
-                                onClick={() => setShowAddWorkType(true)}
+                                onClick={handleOpenWorkTypeModal}
                                 title="Add new work type"
                             >
                                 + Type
@@ -1147,10 +1467,37 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                             <tr key={dateKey} className={rowClasses}>
                                 <td className="date-cell">
                                     <div className="date-info">
-                                        <span className="date-day">{date.getDate()}</span>
+                                        <span className="date-full">
+                                            {(() => {
+                                                // For custom ranges and when spanning multiple months/years, show full date
+                                                if (viewMode === 'custom') {
+                                                    return date.toLocaleDateString('en-US', { 
+                                                        month: 'short', 
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    });
+                                                }
+                                                
+                                                // For predefined ranges within the same month, show abbreviated format
+                                                const currentYear = new Date().getFullYear();
+                                                if (date.getFullYear() === currentYear && date.getFullYear() === selectedYear) {
+                                                    return date.toLocaleDateString('en-US', { 
+                                                        month: 'short', 
+                                                        day: 'numeric'
+                                                    });
+                                                } else {
+                                                    // Show year if different from current year
+                                                    return date.toLocaleDateString('en-US', { 
+                                                        month: 'short', 
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    });
+                                                }
+                                            })()}
+                                        </span>
                                         <span className="date-weekday">
-                                                {date.toLocaleDateString('en-US', { weekday: 'short' })}
-                                            </span>
+                                            {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                        </span>
                                     </div>
                                 </td>
                                 {workTypes.map((workType, colIndex) => {
@@ -1159,23 +1506,52 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                                     const cellDriverId = cellData?.driverId || selectedDriver;
                                     const isMainDriver = cellDriverId === equipmentData?.mainDriverId;
                                     const driverName = drivers.find(d => d.id === cellDriverId)?.fullName || 'Unknown';
-                                    const hasInvalidDriver = hasValue && (!cellDriverId || cellDriverId === '');
+                                    const hasInvalidDriver = hasValue && !isValidDriverId(cellDriverId);
 
 
                                     return (
                                         <td key={workType.id} className="hours-cell">
                                             <div className="cell-content">
+
                                                 <input
                                                     ref={el => gridRef.current[`${rowIndex}-${colIndex}`] = el}
                                                     type="number"
                                                     min="0"
                                                     max="24"
                                                     step="0.5"
-                                                    value={cellData?.hours || ''}
+                                                    value={cellData?.hours !== undefined && cellData?.hours !== null && cellData?.hours !== 0 ? cellData.hours : ''}
                                                     onChange={(e) => updateCell(dateKey, workType.id, e.target.value)}
-                                                    onKeyDown={(e) => handleKeyDown(e, dateKey, workType.id, rowIndex, colIndex)}
-                                                    onFocus={() => setFocusedCell({ date: dateKey, workType: workType.id })}
-                                                    placeholder="0"
+                                                    onKeyDown={(e) => {
+                                                        // Handle special case for number input to prevent leading zeros
+                                                        if (e.key >= '0' && e.key <= '9' && e.target.value === '0') {
+                                                            e.preventDefault();
+                                                            updateCell(dateKey, workType.id, e.key);
+                                                        } else {
+                                                            handleKeyDown(e, dateKey, workType.id, rowIndex, colIndex);
+                                                        }
+                                                    }}
+                                                    onFocus={(e) => {
+                                                        const inputKey = `${dateKey}-${workType.id}`;
+                                                        setFocusedCell({ date: dateKey, workType: workType.id });
+                                                        setFocusedInput(inputKey);
+
+                                                        // If the value is 0 or empty, clear it completely for fresh input
+                                                        if (e.target.value === '0' || e.target.value === '') {
+                                                            e.target.value = '';
+                                                            updateCell(dateKey, workType.id, '');
+                                                        } else {
+                                                            // Select all text for non-zero values so user can replace
+                                                            e.target.select();
+                                                        }
+                                                    }}
+                                                    onBlur={(e) => {
+                                                        setFocusedInput(null);
+                                                        // If user leaves field empty, set it back to 0
+                                                        if (e.target.value === '' || e.target.value === null) {
+                                                            updateCell(dateKey, workType.id, 0);
+                                                        }
+                                                    }}
+                                                    placeholder=""
                                                     disabled={isBlocked}
                                                     className={`hours-input ${hasValue ? 'has-value' : ''} ${cellData?.isExisting ? 'existing' : ''} ${isBlocked ? 'blocked' : ''} ${hasInvalidDriver ? 'invalid-driver' : ''}`}
                                                     title={blockedMessage || (hasInvalidDriver ? `Driver required for ${workType.name}` : `Enter hours for ${workType.name}`)}
@@ -1189,18 +1565,22 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                                                                 ⚠️
                                                             </div>
                                                         )}
-                                                        <DriverDropdown
-                                                            cellDriverId={cellDriverId}
-                                                            selectedDriver={selectedDriver}
-                                                            driverName={driverName}
-                                                            isMainDriver={isMainDriver}
-                                                            drivers={drivers}
-                                                            isBlocked={isBlocked}
-                                                            dateKey={dateKey}
-                                                            workTypeId={workType.id}
-                                                            onDriverChange={(driverId) => updateCell(dateKey, workType.id, cellData.hours, driverId)}
-                                                            onDropdownStateChange={handleDropdownStateChange}
-                                                        />
+                                                        
+                                                        {/* Only show driver dropdown for drivable equipment */}
+                                                        {equipmentData?.drivable && (
+                                                            <DriverDropdown
+                                                                cellDriverId={cellDriverId}
+                                                                selectedDriver={selectedDriver}
+                                                                driverName={driverName}
+                                                                isMainDriver={isMainDriver}
+                                                                drivers={drivers}
+                                                                isBlocked={isBlocked}
+                                                                dateKey={dateKey}
+                                                                workTypeId={workType.id}
+                                                                onDriverChange={(driverId) => updateCell(dateKey, workType.id, cellData.hours, driverId)}
+                                                                onDropdownStateChange={handleDropdownStateChange}
+                                                            />
+                                                        )}
 
                                                         <button
                                                             className="delete-entry-btn enhanced-delete"
@@ -1275,23 +1655,101 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
 
             {/* Add Work Type Modal */}
             {showAddWorkType && (
-                <div className="modal-overlay" onClick={() => setShowAddWorkType(false)}>
+                <div className="modal-overlay" onClick={handleCloseWorkTypeModal}>
                     <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <h3>Add New Work Type</h3>
-                        <input
-                            type="text"
-                            value={newWorkTypeName}
-                            onChange={(e) => setNewWorkTypeName(e.target.value)}
-                            placeholder="Enter work type name"
-                            autoFocus
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleAddWorkType();
-                                if (e.key === 'Escape') setShowAddWorkType(false);
-                            }}
-                        />
+                        <h3>Add Work Type</h3>
+                        
+                        {/* Selection Mode Tabs */}
+                        <div className="form-group">
+                            <div className="tab-buttons">
+                                <button 
+                                    type="button"
+                                    className={workTypeSelectionMode === 'existing' ? 'tab-active' : 'tab-inactive'}
+                                    onClick={() => setWorkTypeSelectionMode('existing')}
+                                >
+                                    Link Existing Work Type
+                                </button>
+                                <button 
+                                    type="button"
+                                    className={workTypeSelectionMode === 'new' ? 'tab-active' : 'tab-inactive'}
+                                    onClick={() => setWorkTypeSelectionMode('new')}
+                                >
+                                    Create New Work Type
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Existing Work Type Selection */}
+                        {workTypeSelectionMode === 'existing' && (
+                            <div className="form-group">
+                                <label htmlFor="existingWorkType">Select Work Type <span className="required-field">*</span></label>
+                                <select
+                                    id="existingWorkType"
+                                    value={selectedExistingWorkType}
+                                    onChange={(e) => setSelectedExistingWorkType(e.target.value)}
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleAddWorkType();
+                                        if (e.key === 'Escape') handleCloseWorkTypeModal();
+                                    }}
+                                >
+                                    <option value="">-- Select a work type --</option>
+                                    {getAvailableWorkTypes().map(workType => (
+                                        <option key={workType.id} value={workType.id}>
+                                            {workType.name}
+                                            {workType.description && ` - ${workType.description}`}
+                                        </option>
+                                    ))}
+                                </select>
+                                {getAvailableWorkTypes().length === 0 && (
+                                    <p className="no-options-text">
+                                        All available work types are already linked to this equipment type.
+                                        <br />
+                                        <button 
+                                            type="button" 
+                                            className="btn-link" 
+                                            onClick={() => setWorkTypeSelectionMode('new')}
+                                            style={{ marginTop: '8px', fontSize: '14px' }}
+                                        >
+                                            Click here to create a new work type instead
+                                        </button>
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* New Work Type Creation */}
+                        {workTypeSelectionMode === 'new' && (
+                            <div className="form-group">
+                                <label htmlFor="newWorkTypeName">Name <span className="required-field">*</span></label>
+                                <input
+                                    type="text"
+                                    id="newWorkTypeName"
+                                    value={newWorkTypeName}
+                                    onChange={(e) => setNewWorkTypeName(e.target.value)}
+                                    placeholder="Enter work type name (e.g., Excavation, Transportation, Maintenance)"
+                                    autoFocus
+                                    required
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleAddWorkType();
+                                        if (e.key === 'Escape') handleCloseWorkTypeModal();
+                                    }}
+                                />
+                            </div>
+                        )}
+
                         <div className="modal-actions">
-                            <button onClick={() => setShowAddWorkType(false)}>Cancel</button>
-                            <button onClick={handleAddWorkType} className="btn-primary">Add</button>
+                            <button onClick={handleCloseWorkTypeModal}>Cancel</button>
+                            <button 
+                                onClick={handleAddWorkType} 
+                                className="btn-primary"
+                                disabled={
+                                    (workTypeSelectionMode === 'existing' && !selectedExistingWorkType) ||
+                                    (workTypeSelectionMode === 'new' && !newWorkTypeName.trim())
+                                }
+                            >
+                                {workTypeSelectionMode === 'existing' ? 'Link Work Type' : 'Create Work Type'}
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -2,6 +2,8 @@ package com.example.backend.services.equipment;
 
 import com.example.backend.dto.equipment.EquipmentTypeDTO;
 import com.example.backend.dto.equipment.WorkTypeDTO;
+import com.example.backend.exceptions.ResourceConflictException;
+import com.example.backend.exceptions.ResourceInUseException;
 import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.equipment.EquipmentType;
 import com.example.backend.models.equipment.WorkType;
@@ -61,8 +63,11 @@ public class EquipmentTypeService {
 
     @Transactional
     public EquipmentTypeDTO createEquipmentType(EquipmentTypeDTO dto) {
-        if (equipmentTypeRepository.existsByName(dto.getName())) {
-            throw new IllegalArgumentException("Equipment type with name '" + dto.getName() + "' already exists");
+        // Check if equipment type with this name already exists
+        Optional<EquipmentType> existingType = equipmentTypeRepository.findByName(dto.getName());
+        if (existingType.isPresent()) {
+            // For equipment types, we don't have soft delete, so it's always an active duplicate
+            throw ResourceConflictException.duplicateActive("Equipment type", dto.getName());
         }
 
         // Create the equipment type
@@ -88,9 +93,11 @@ public class EquipmentTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + id));
 
         // Check if the name is already used by another type
-        if (!existingType.getName().equals(dto.getName()) &&
-                equipmentTypeRepository.existsByName(dto.getName())) {
-            throw new IllegalArgumentException("Equipment type with name '" + dto.getName() + "' already exists");
+        if (!existingType.getName().equals(dto.getName())) {
+            Optional<EquipmentType> conflictingType = equipmentTypeRepository.findByName(dto.getName());
+            if (conflictingType.isPresent()) {
+                throw ResourceConflictException.duplicateActive("Equipment type", dto.getName());
+            }
         }
 
         // Store the old values to check for changes
@@ -132,7 +139,13 @@ public class EquipmentTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + id));
 
         if (!equipmentType.getEquipments().isEmpty()) {
-            throw new IllegalStateException("Cannot delete equipment type that is used by equipment");
+            int equipmentCount = equipmentType.getEquipments().size();
+            throw ResourceInUseException.create(
+                "equipment type", 
+                equipmentType.getName(), 
+                equipmentCount, 
+                "equipment unit"
+            );
         }
 
         equipmentTypeRepository.delete(equipmentType);

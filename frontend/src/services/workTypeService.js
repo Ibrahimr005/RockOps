@@ -25,5 +25,12 @@ export const workTypeService = {
 
     delete: (id) => {
         return apiClient.delete(WORK_TYPE_ENDPOINTS.DELETE(id));
+    },
+
+    reactivateByName: (name, workTypeData) => {
+        return apiClient.post(`${WORK_TYPE_ENDPOINTS.BASE}/reactivate`, { 
+            name, 
+            workTypeData 
+        });
     }
 }; 

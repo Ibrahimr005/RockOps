@@ -7,6 +7,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import './EquipmentTypeManagement.scss';
+import '../../../styles/form-validation.scss';
 
 const MaintenanceTypeManagement = () => {
     const [maintenanceTypes, setMaintenanceTypes] = useState([]);
@@ -105,11 +106,75 @@ const MaintenanceTypeManagement = () => {
             setShowModal(false);
             fetchMaintenanceTypes(); // Refresh the list
         } catch (err) {
-            if (editingMaintenanceType) {
-                errorHandlers.handleUpdateError(err);
+            console.error('Error saving maintenance type:', err);
+            
+            // Handle specific error cases
+            if (err.response?.status === 409) {
+                // Check if it's our enhanced conflict response
+                if (err.response.data?.conflictType) {
+                    const { conflictType, resourceName, isInactive } = err.response.data;
+                    if (isInactive) {
+                        // Show confirmation dialog to reactivate inactive maintenance type
+                        showConfirmation(
+                            `Maintenance type "${resourceName}" already exists but was previously deactivated. Would you like to reactivate it instead of creating a new one?`,
+                            () => handleReactivateMaintenanceType(resourceName),
+                            () => showError(`To create a new maintenance type, please choose a different name than "${resourceName}".`)
+                        );
+                    } else {
+                        showError(`Maintenance type "${resourceName}" already exists. Please choose a different name.`);
+                    }
+                } else {
+                    // Fallback for legacy error responses
+                    if (err.response.data?.message?.includes('inactive') || err.response.data?.message?.includes('deleted')) {
+                        showError(`Maintenance type "${formData.name}" already exists but was previously deleted. Please contact your administrator to reactivate it, or choose a different name.`);
+                    } else {
+                        showError(`Maintenance type "${formData.name}" already exists. Please choose a different name.`);
+                    }
+                }
+            } else if (err.response?.status === 400) {
+                // Validation errors
+                const message = err.response.data?.message || 'Please check your input and try again';
+                if (message.includes('name') || message.includes('Name')) {
+                    showError(`Maintenance type name is invalid: ${message}`);
+                } else {
+                    showError(`Please check your input: ${message}`);
+                }
+            } else if (err.response?.status === 403) {
+                showError('You don\'t have permission to save maintenance types. Please contact your administrator.');
+            } else if (err.response?.status === 500) {
+                showError('Server error occurred. Please try again later or contact support.');
             } else {
-                errorHandlers.handleCreateError(err);
+                // Fallback to enhanced error handlers for other cases
+                if (editingMaintenanceType) {
+                    errorHandlers.handleUpdateError(err);
+                } else {
+                    errorHandlers.handleCreateError(err);
+                }
             }
+        }
+    };
+
+    const handleReactivateMaintenanceType = async (maintenanceTypeName) => {
+        try {
+            // Use current form data for reactivation, or create default data
+            const reactivationData = {
+                name: formData.name || maintenanceTypeName,
+                description: formData.description || `Reactivated maintenance type: ${maintenanceTypeName}`,
+                active: true
+            };
+            
+            // Call backend to reactivate the maintenance type with form data
+            await maintenanceTypeService.reactivateByName(maintenanceTypeName, reactivationData);
+            
+            // Close modal and refresh data
+            setShowModal(false);
+            setFormData({ name: '', description: '', active: true });
+            
+            showSuccess(`Maintenance type "${maintenanceTypeName}" has been reactivated successfully with updated details.`);
+            fetchMaintenanceTypes(); // Refresh the list
+        } catch (error) {
+            console.error('Error reactivating maintenance type:', error);
+            showError(`Failed to reactivate maintenance type "${maintenanceTypeName}". Please try again or contact your administrator.`);
         }
     };
 
@@ -138,15 +203,66 @@ const MaintenanceTypeManagement = () => {
         {
             header: 'Name',
             accessor: 'name',
-            sortable: true
+            sortable: true,
+            filterType: 'text',
+            exportFormatter: (value) => {
+                // Sanitize name for export to prevent encoding issues
+                if (!value) return '';
+                
+                const cleanValue = String(value)
+                    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
+                    .replace(/[\uFFFD]/g, '') // Remove replacement characters
+                    .trim();
+                
+                return cleanValue;
+            }
         },
         {
             header: 'Description',
             accessor: 'description',
             sortable: true,
-            render: (row) => row.description || 'N/A'
+            filterType: 'text',
+            width: '250px',
+            maxWidth: '250px',
+            render: (row) => {
+                const description = row.description || 'N/A';
+                const maxLength = 80; // Character limit before truncation
+                
+                if (description === 'N/A' || description.length <= maxLength) {
+                    return <span className="description-text">{description}</span>;
+                }
+                
+                const truncated = description.substring(0, maxLength) + '...';
+                return (
+                    <span 
+                        className="description-text truncated" 
+                        title={description}
+                        style={{
+                            display: 'block',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: '230px'
+                        }}
+                    >
+                        {truncated}
+                    </span>
+                );
+            },
+            exportFormatter: (value) => {
+                // For Excel export, return the full description without truncation
+                // Sanitize the value to prevent encoding issues
+                if (!value) return '';
+                
+                // Convert to string and clean any problematic characters
+                const cleanValue = String(value)
+                    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
+                    .replace(/[\uFFFD]/g, '') // Remove replacement characters
+                    .trim();
+                
+                return cleanValue;
+            }
         }
-
     ];
 
     const actions = permissions.canEdit || permissions.canDelete ? [
@@ -164,10 +280,7 @@ const MaintenanceTypeManagement = () => {
         }] : [])
     ] : [];
 
-    const filterableColumns = [
-        { header: 'Name', accessor: 'name' },
-        { header: 'Description', accessor: 'description' }
-    ];
+    // Remove separate filterableColumns definition since we now use columns.filter(col => col.filterType)
 
     if (error) {
         return <div className="equipment-types-error">{error}</div>;
@@ -183,7 +296,7 @@ const MaintenanceTypeManagement = () => {
                 tableTitle="Maintenance Types"
                 showSearch={true}
                 showFilters={true}
-                filterableColumns={filterableColumns}
+                filterableColumns={columns.filter(col => col.filterType)}
                 emptyMessage="No maintenance types found. Create your first maintenance type to get started."
                 showAddButton={permissions.canCreate}
                 addButtonText="Add Maintenance Type"
@@ -199,8 +312,16 @@ const MaintenanceTypeManagement = () => {
                     'description': 'Description',
                     'active': 'Active Status'
                 }}
-                onExportStart={() => showSuccess("Exporting maintenance types...")}
-                onExportComplete={(result) => showSuccess(`Exported ${result.rowCount} maintenance types to Excel`)}
+                // Enforce column width limits and text wrapping for Excel export
+                exportColumnWidths={{
+                    'name': 25,
+                    'description': 50,
+                    'active': 15
+                }}
+                enableTextWrapping={true}
+                preventTextOverflow={true}
+                onExportStart={() => showSuccess("Preparing maintenance types export with optimized formatting...")}
+                onExportComplete={(result) => showSuccess(`Successfully exported ${result.rowCount} maintenance types to Excel`)}
                 onExportError={(error) => showError("Failed to export maintenance types")}
             />
 
@@ -217,7 +338,7 @@ const MaintenanceTypeManagement = () => {
 
                         <form onSubmit={handleSubmit}>
                             <div className="form-group">
-                                <label htmlFor="name">Name *</label>
+                                <label htmlFor="name">Name <span className="required-field">*</span></label>
                                 <input
                                     type="text"
                                     id="name"
@@ -237,8 +358,12 @@ const MaintenanceTypeManagement = () => {
                                     value={formData.description}
                                     onChange={handleChange}
                                     rows="3"
-                                    placeholder="Describe this maintenance type..."
+                                    maxLength="1000"
+                                    placeholder="Describe this maintenance type... (Max 1000 characters)"
                                 />
+                                <div className="character-counter">
+                                    {formData.description.length}/1000 characters
+                                </div>
                             </div>
 
                             <div className="form-group">
