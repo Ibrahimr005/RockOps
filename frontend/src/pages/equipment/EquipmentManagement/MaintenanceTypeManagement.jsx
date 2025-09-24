@@ -156,14 +156,21 @@ const MaintenanceTypeManagement = () => {
 
     const handleReactivateMaintenanceType = async (maintenanceTypeName) => {
         try {
-            // Call backend to reactivate the maintenance type
-            await maintenanceTypeService.reactivateByName(maintenanceTypeName);
+            // Use current form data for reactivation, or create default data
+            const reactivationData = {
+                name: formData.name || maintenanceTypeName,
+                description: formData.description || `Reactivated maintenance type: ${maintenanceTypeName}`,
+                active: true
+            };
+            
+            // Call backend to reactivate the maintenance type with form data
+            await maintenanceTypeService.reactivateByName(maintenanceTypeName, reactivationData);
             
             // Close modal and refresh data
             setShowModal(false);
             setFormData({ name: '', description: '', active: true });
             
-            showSuccess(`Maintenance type "${maintenanceTypeName}" has been reactivated successfully.`);
+            showSuccess(`Maintenance type "${maintenanceTypeName}" has been reactivated successfully with updated details.`);
             fetchMaintenanceTypes(); // Refresh the list
         } catch (error) {
             console.error('Error reactivating maintenance type:', error);
