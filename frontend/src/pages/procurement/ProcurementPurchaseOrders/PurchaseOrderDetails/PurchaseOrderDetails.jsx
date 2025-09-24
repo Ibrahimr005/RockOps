@@ -235,7 +235,7 @@ const PurchaseOrderDetails = () => {
                     </div>
                 </div>
 
-                <div className="stat-card">
+                <div className="proc-stat-card">
                     <div className="stat-icon">
                         <FiCalendar />
                     </div>

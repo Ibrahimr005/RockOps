@@ -123,12 +123,7 @@ const MaintenanceRecordDetail = () => {
         <div className="maintenance-record-detail">
             <div className="detail-header">
                 <div className="header-left">
-                    <button 
-                        className="back-button"
-                        onClick={() => navigate('/maintenance/records')}
-                    >
-                        <FaArrowLeft /> Back to Records
-                    </button>
+                    
                     <h1>Maintenance Record Details</h1>
                 </div>
                 <div className="header-right">

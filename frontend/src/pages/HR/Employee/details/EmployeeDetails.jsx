@@ -17,6 +17,7 @@ import VacationTab from '../tabs/VacationTab.jsx';
 import LoadingPage from "../../../../components/common/LoadingPage/LoadingPage.jsx";
 import {FaUser} from "react-icons/fa";
 import {hrEmployeeService} from "../../../../services/hr/hrEmployeeService.js";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const EmployeeDetails = () => {
     const { id } = useParams();
@@ -118,7 +119,12 @@ const EmployeeDetails = () => {
 
     if (loading) {
         return (
-             <LoadingPage/>
+            <ContentLoader
+                context="employee-details"
+                message="Loading employee information..."
+                fadeIn={true}
+                size="large"
+            />
         );
     }
 

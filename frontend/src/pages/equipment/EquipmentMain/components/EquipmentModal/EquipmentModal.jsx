@@ -9,6 +9,7 @@ import { documentService } from "../../../../../services/documentService.js";
 import { useSnackbar } from "../../../../../contexts/SnackbarContext.jsx";
 import DocumentUpload from '../../../../../components/equipment/DocumentUpload';
 import "./EquipmentModal.scss";
+import '../../../../../styles/form-validation.scss';
 
 const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => {
     const { showSuccess, showError, showInfo, showWarning, hideSnackbar, showConfirmation } = useSnackbar();
@@ -88,7 +89,6 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         workedHours: "0"
     };
 
-
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [equipmentTypes, setEquipmentTypes] = useState([]);
@@ -117,6 +117,16 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
     });
     const [showValidationHint, setShowValidationHint] = useState(true);
     const [formTouched, setFormTouched] = useState(false);
+    const [fieldValidation, setFieldValidation] = useState({
+        serialNumber: { isValid: true, message: '' },
+        egpPrice: { isValid: true, message: '' },
+        dollarPrice: { isValid: true, message: '' },
+        shipping: { isValid: true, message: '' },
+        customs: { isValid: true, message: '' },
+        taxes: { isValid: true, message: '' },
+        workedHours: { isValid: true, message: '' },
+        manufactureYear: { isValid: true, message: '' }
+    });
 
     // Define tabs with required fields based on database schema
     const tabs = [
@@ -148,7 +158,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         TAXES: []
     });
 
-    // 1. Add state for status options (to be fetched from backend)
+    // Status options (to be fetched from backend)
     const [statusOptions, setStatusOptions] = useState([]);
 
     // Brand creation modal state
@@ -233,9 +243,12 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         setFormTouched(true);
     };
 
-    // Fetch necessary data when modal opens
+    // Fetch necessary data when modal opens and prevent background scrolling
     useEffect(() => {
         if (isOpen) {
+            // Prevent background page scrolling when modal is open
+            document.body.style.overflow = 'hidden';
+            
             fetchFormData();
             if (equipmentToEdit) {
                 populateFormForEditing();
@@ -263,9 +276,14 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             if (contentRef.current) {
                 contentRef.current.scrollTop = 0;
             }
+        } else {
+            // Restore background page scrolling when modal is closed
+            document.body.style.overflow = 'unset';
         }
+        
         return () => {
-            // Cleanup function - no longer needed since we use showConfirmation
+            // Cleanup: Always restore scrolling when component unmounts
+            document.body.style.overflow = 'unset';
         };
     }, [isOpen, equipmentToEdit]);
 
@@ -278,6 +296,13 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             setFormTouched(true);
         }
     }, [formData, imageFile]);
+
+    // Re-validate tabs whenever field validation state changes
+    useEffect(() => {
+        if (isOpen) {
+            validateAllTabs();
+        }
+    }, [fieldValidation, isOpen]);
 
     // Fetch eligible drivers whenever the equipment type changes
     useEffect(() => {
@@ -304,8 +329,21 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             setSites(sitesResponse.data);
 
             // Fetch equipment status options
-            const statusResponse = await equipmentService.getEquipmentStatusOptions();
-            setStatusOptions(statusResponse.data);
+            try {
+                const statusResponse = await equipmentService.getEquipmentStatusOptions();
+                setStatusOptions(statusResponse.data);
+            } catch (error) {
+                console.error("Error fetching equipment status options:", error);
+                // Fallback to default status options
+                setStatusOptions([
+                    { value: "AVAILABLE", label: "Available" },
+                    { value: "RENTED", label: "Rented" },
+                    { value: "IN_MAINTENANCE", label: "In Maintenance" },
+                    { value: "RUNNING", label: "Running" },
+                    { value: "SOLD", label: "Sold" },
+                    { value: "SCRAPPED", label: "Scrapped" }
+                ]);
+            }
 
             // Fetch merchants
             try {
@@ -530,19 +568,191 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         }
 
         setFormTouched(true);
+
+        // Trigger real-time validation for specific fields
+        const fieldsToValidate = ['serialNumber', 'egpPrice', 'dollarPrice', 'shipping', 'customs', 'taxes', 'workedHours', 'manufactureYear'];
+        if (fieldsToValidate.includes(name)) {
+            // Use setTimeout to allow state to update first
+            setTimeout(() => {
+                validateField(name, value);
+            }, 100);
+        }
     };
 
-    const handleTypeChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({
-            ...formData,
-            [name]: value
-        });
+    // Validation functions
+    const validateSerialNumber = async (serialNumber) => {
+        if (!serialNumber || serialNumber.trim() === '') {
+            return { isValid: false, message: 'Serial number is required' };
+        }
+
+        try {
+            // Check if this is an edit operation and the serial number hasn't changed
+            if (equipmentToEdit && equipmentToEdit.serialNumber === serialNumber) {
+                return { isValid: true, message: '' };
+            }
+
+            // Check uniqueness by fetching all equipment and comparing serial numbers
+            const response = await equipmentService.getAllEquipment();
+            const existingEquipment = response.data.find(
+                equipment => equipment.serialNumber.toLowerCase() === serialNumber.toLowerCase() &&
+                equipment.id !== (equipmentToEdit?.id)
+            );
+
+            if (existingEquipment) {
+                return { 
+                    isValid: false, 
+                    message: `Serial number already exists for equipment: ${existingEquipment.name || 'Unknown Equipment'}` 
+                };
+            }
+
+            return { isValid: true, message: '' };
+        } catch (error) {
+            console.error('Error validating serial number:', error);
+            return { isValid: false, message: 'Unable to validate serial number. Please try again.' };
+        }
+    };
+
+    const validateNumericField = (value, fieldName) => {
+        if (!value || value.trim() === '') {
+            return { isValid: true, message: '' }; // Empty is valid for optional fields
+        }
+
+        // Remove commas and check if it's a valid number
+        const numericValue = parseNumberInput(value);
+        
+        // Check if it's a valid number
+        if (isNaN(numericValue) || numericValue < 0) {
+            return { 
+                isValid: false, 
+                message: `${fieldName} must be a valid positive number` 
+            };
+        }
+
+        return { isValid: true, message: '' };
+    };
+
+    const validateManufactureYear = (year) => {
+        if (!year || year.trim() === '') {
+            return { isValid: false, message: 'Manufacture year is required' };
+        }
+
+        const currentYear = new Date().getFullYear();
+        const yearNumber = parseInt(year);
+
+        if (isNaN(yearNumber)) {
+            return { isValid: false, message: 'Manufacture year must be a valid number' };
+        }
+
+        if (yearNumber < 1900 || yearNumber > currentYear) {
+            return { 
+                isValid: false, 
+                message: `Manufacture year must be between 1900 and ${currentYear}` 
+            };
+        }
+
+        return { isValid: true, message: '' };
+    };
+
+    const validateImageFile = (file) => {
+        if (!file) {
+            return { isValid: true, message: '' }; // No file is valid
+        }
+
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        const maxSize = 5 * 1024 * 1024; // 5MB
+
+        if (!allowedTypes.includes(file.type)) {
+            return { 
+                isValid: false, 
+                message: 'Only image files are allowed (JPEG, PNG, GIF, WebP)' 
+            };
+        }
+
+        if (file.size > maxSize) {
+            return { 
+                isValid: false, 
+                message: 'Image file size must be less than 5MB' 
+            };
+        }
+
+        return { isValid: true, message: '' };
+    };
+
+    // Real-time field validation
+    const validateField = async (fieldName, value) => {
+        let validationResult = { isValid: true, message: '' };
+
+        switch (fieldName) {
+            case 'serialNumber':
+                validationResult = await validateSerialNumber(value);
+                break;
+            case 'egpPrice':
+                validationResult = validateNumericField(value, 'EGP Price');
+                break;
+            case 'dollarPrice':
+                validationResult = validateNumericField(value, 'USD Price');
+                break;
+            case 'shipping':
+                validationResult = validateNumericField(value, 'Shipping Cost');
+                break;
+            case 'customs':
+                validationResult = validateNumericField(value, 'Customs Cost');
+                break;
+            case 'taxes':
+                validationResult = validateNumericField(value, 'Taxes Cost');
+                break;
+            case 'workedHours':
+                validationResult = validateNumericField(value, 'Worked Hours');
+                break;
+            case 'manufactureYear':
+                validationResult = validateManufactureYear(value);
+                break;
+            default:
+                break;
+        }
+
+        setFieldValidation(prev => ({
+            ...prev,
+            [fieldName]: validationResult
+        }));
+
+        return validationResult;
+    };
+
+    // Prevent wheel events from changing number input values when scrolling
+    const handleNumberInputWheel = (e) => {
+        // Prevent wheel events on number inputs and monetary fields when focused
+        const monetaryFields = ['egpPrice', 'dollarPrice', 'shipping', 'customs', 'taxes', 'workedHours'];
+        if (e.target.type === 'number' || monetaryFields.includes(e.target.name)) {
+            e.preventDefault();
+            e.target.blur(); // Remove focus to prevent accidental changes
+        }
+    };
+
+    // Prevent wheel events on the entire modal content to avoid interference
+    const handleModalWheel = (e) => {
+        // Allow normal scrolling within the modal content area, but prevent changes to focused inputs
+        const monetaryFields = ['egpPrice', 'dollarPrice', 'shipping', 'customs', 'taxes', 'workedHours'];
+        if ((e.target.type === 'number' || monetaryFields.includes(e.target.name)) && 
+            document.activeElement === e.target) {
+            e.preventDefault();
+            e.target.blur();
+        }
     };
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            // Validate the image file
+            const validation = validateImageFile(file);
+            
+            if (!validation.isValid) {
+                showError(validation.message);
+                // Clear the file input
+                e.target.value = '';
+                return;
+            }
+
             setImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -583,9 +793,35 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             formData[field] !== ""
         );
 
-        // Special handling for Basic Information tab - also require image
+        // For tab 0 (Basic Information), check image and field validations
         if (tabId === 0) {
-            isValid = isValid && (imageFile !== null || (equipmentToEdit && equipmentToEdit.imageUrl));
+            // Check image requirement
+            const hasImage = imageFile !== null || (equipmentToEdit && equipmentToEdit.imageUrl);
+            
+            // Check field-specific validations for tab 0
+            const tab0Fields = ['serialNumber', 'manufactureYear'];
+            const fieldsValid = tab0Fields.every(field => fieldValidation[field].isValid);
+            
+            // Tab is valid only if all conditions are met
+            isValid = isValid && hasImage && fieldsValid;
+        }
+
+        // For tab 1 (Purchase Details), check monetary field validations
+        if (tabId === 1) {
+            const tab1Fields = ['egpPrice', 'dollarPrice', 'shipping', 'customs', 'taxes'];
+            const fieldsValid = tab1Fields.every(field => fieldValidation[field].isValid);
+            
+            // Tab is valid only if required fields are filled AND field validations pass
+            isValid = isValid && fieldsValid;
+        }
+
+        // For tab 2 (Additional Info), check worked hours validation
+        if (tabId === 2) {
+            const tab2Fields = ['workedHours'];
+            const fieldsValid = tab2Fields.every(field => fieldValidation[field].isValid);
+            
+            // Tab is valid only if required fields are filled AND field validations pass
+            isValid = isValid && fieldsValid;
         }
 
         setTabValidation(prev => ({
@@ -629,7 +865,25 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
 
     // Get the first missing field and its tab
     const getFirstMissingField = () => {
-        // Check image first (belongs to tab 0)
+        // Check field validation errors first
+        const validationFields = [
+            { field: 'serialNumber', tabId: 0 },
+            { field: 'manufactureYear', tabId: 0 },
+            { field: 'egpPrice', tabId: 1 },
+            { field: 'dollarPrice', tabId: 1 },
+            { field: 'shipping', tabId: 1 },
+            { field: 'customs', tabId: 1 },
+            { field: 'taxes', tabId: 1 },
+            { field: 'workedHours', tabId: 2 }
+        ];
+
+        for (const { field, tabId } of validationFields) {
+            if (!fieldValidation[field].isValid) {
+                return { field, tabId, validationError: fieldValidation[field].message };
+            }
+        }
+
+        // Check image requirement (belongs to tab 0)
         if (!imageFile && (!equipmentToEdit || !equipmentToEdit.imageUrl)) {
             return { field: 'image', tabId: 0 };
         }
@@ -661,8 +915,14 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
 
                 // Show appropriate message based on missing field
                 let message = "Please complete all required fields before submitting.";
-                if (missingField.field === 'image') {
+                
+                // If it's a validation error, use the specific validation message
+                if (missingField.validationError) {
+                    message = missingField.validationError;
+                    showError(message);
+                } else if (missingField.field === 'image') {
                     message = "Please upload an equipment image before submitting.";
+                    showWarning(message);
                 } else {
                     // Create more specific messages for different fields
                     const fieldMessages = {
@@ -685,9 +945,8 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                     if (fieldMessages[missingField.field]) {
                         message = `${fieldMessages[missingField.field]}. Please fill this field to continue.`;
                     }
+                    showWarning(message);
                 }
-
-                showWarning(message);
             }
 
             return false;
@@ -733,7 +992,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         try {
             const formDataToSend = new FormData();
 
-            // FIX: Use 'typeId' and 'brandId' instead of 'type' and 'brand'
+            // Use 'typeId' and 'brandId' instead of 'type' and 'brand'
             formDataToSend.append('typeId', formData.typeId);
             formDataToSend.append('brandId', formData.brandId);
 
@@ -768,7 +1027,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                 ? formData.workedHours : 0;
             formDataToSend.append('workedHours', workedHoursValue);
 
-            // FIX: Add optional fields with proper null checking
+            // Add optional fields with proper null checking
             if (formData.siteId) {
                 formDataToSend.append('siteId', formData.siteId);
             }
@@ -921,7 +1180,33 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             showSuccess(`Brand "${newBrand.name}" created successfully and selected`);
         } catch (error) {
             console.error('Error creating brand:', error);
-            showError(`Failed to create brand: ${error.response?.data?.message || error.message}`);
+            
+            // Handle specific error cases
+            if (error.response?.status === 409) {
+                // Check if it's our enhanced conflict response
+                if (error.response.data?.conflictType) {
+                    const { conflictType, resourceName, isInactive } = error.response.data;
+                    if (isInactive) {
+                        showError(`Equipment brand "${resourceName}" already exists but was previously deleted. Please contact your administrator to reactivate it, or choose a different name.`);
+                    } else {
+                        showError(`Equipment brand "${resourceName}" already exists. Please choose a different name.`);
+                    }
+                } else {
+                    // Fallback for legacy error responses
+                    if (error.response.data?.message?.includes('inactive') || error.response.data?.message?.includes('deleted')) {
+                        showError(`Equipment brand "${newBrandData.name.trim()}" already exists but was previously deleted. Please contact your administrator to reactivate it, or choose a different name.`);
+                    } else {
+                        showError(`Equipment brand "${newBrandData.name.trim()}" already exists. Please choose a different name.`);
+                    }
+                }
+            } else if (error.response?.status === 400) {
+                const message = error.response.data?.message || 'Please check your input and try again';
+                showError(`Brand name is invalid: ${message}`);
+            } else if (error.response?.status === 403) {
+                showError('You don\'t have permission to create equipment brands. Please contact your administrator.');
+            } else {
+                showError(`Failed to create brand: ${error.response?.data?.message || error.message}`);
+            }
         } finally {
             setCreatingBrand(false);
         }
@@ -947,8 +1232,23 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         driver.id !== formData.mainDriverId
     );
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            if (formTouched) {
+                showConfirmation(
+                    "Are you sure you want to close? Any unsaved changes will be lost.",
+                    onClose,
+                    () => hideSnackbar()
+                );
+            } else {
+                onClose();
+            }
+        }
+    };
+
     return (
-        <div className="equipment-modal-overlay">
+        <div className="equipment-modal-overlay" onClick={handleOverlayClick}>
             <div className="equipment-modal">
                 <div className="equipment-modal-header">
                     <h2>{equipmentToEdit ? 'Edit Equipment' : 'Add New Equipment'}</h2>
@@ -985,6 +1285,25 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                     </div>
                 )}
 
+                {/* Show validation error banner when there are field validation issues */}
+                {Object.values(fieldValidation).some(field => !field.isValid) && (
+                    <div className="equipment-validation-error-banner">
+                        <FaExclamationCircle />
+                        <div className="validation-error-content">
+                            <strong>Validation Error</strong>
+                            <p>Please fix the following issues before proceeding:</p>
+                            <ul>
+                                {Object.entries(fieldValidation)
+                                    .filter(([_, field]) => !field.isValid)
+                                    .map(([fieldName, field]) => (
+                                        <li key={fieldName}>{field.message}</li>
+                                    ))
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                )}
+
                 {showValidationHint && !tabValidation[tabIndex] && (
                     <div className="equipment-validation-hint">
                         <FaExclamationCircle />
@@ -1000,7 +1319,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                 )}
 
                 <form onSubmit={handleSubmit} className="equipment-modal-form">
-                    <div className="equipment-modal-content" ref={contentRef}>
+                    <div className="equipment-modal-content" ref={contentRef} onWheel={handleModalWheel}>
                         {/* Tab 1: Basic Information */}
                         <div className={`equipment-modal-tab-content ${tabIndex === 0 ? 'active' : ''}`}>
                             <div className="equipment-modal-form-row">
@@ -1025,8 +1344,15 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         value={formData.serialNumber}
                                         onChange={handleInputChange}
                                         placeholder="Enter serial number"
+                                        className={!fieldValidation.serialNumber.isValid ? 'error' : ''}
                                         required
                                     />
+                                    {!fieldValidation.serialNumber.isValid && (
+                                        <div className="field-error">
+                                            <FaExclamationCircle />
+                                            <span>{fieldValidation.serialNumber.message}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -1072,7 +1398,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         id="typeId"
                                         name="typeId"
                                         value={formData.typeId}
-                                        onChange={handleTypeChange}
+                                        onChange={handleInputChange}
                                         required
                                     >
                                         <option value="">Select equipment type</option>
@@ -1121,10 +1447,18 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         name="manufactureYear"
                                         value={formData.manufactureYear}
                                         onChange={handleInputChange}
+                                        onWheel={handleNumberInputWheel}
+                                        className={!fieldValidation.manufactureYear.isValid ? 'error' : ''}
                                         min="1900"
                                         max={new Date().getFullYear()}
                                         required
                                     />
+                                    {!fieldValidation.manufactureYear.isValid && (
+                                        <div className="field-error">
+                                            <FaExclamationCircle />
+                                            <span>{fieldValidation.manufactureYear.message}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -1225,9 +1559,17 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         name="egpPrice"
                                         value={displayValues.egpPrice}
                                         onChange={handleInputChange}
+                                        onWheel={handleNumberInputWheel}
+                                        className={!fieldValidation.egpPrice.isValid ? 'error' : ''}
                                         placeholder="Enter price in EGP"
                                         required
                                     />
+                                    {!fieldValidation.egpPrice.isValid && (
+                                        <div className="field-error">
+                                            <FaExclamationCircle />
+                                            <span>{fieldValidation.egpPrice.message}</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="equipment-modal-form-group">
                                     <label htmlFor="dollarPrice">Price (USD)</label>
@@ -1237,8 +1579,16 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         name="dollarPrice"
                                         value={displayValues.dollarPrice}
                                         onChange={handleInputChange}
+                                        onWheel={handleNumberInputWheel}
+                                        className={!fieldValidation.dollarPrice.isValid ? 'error' : ''}
                                         placeholder="Enter price in USD"
                                     />
+                                    {!fieldValidation.dollarPrice.isValid && (
+                                        <div className="field-error">
+                                            <FaExclamationCircle />
+                                            <span>{fieldValidation.dollarPrice.message}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -1283,9 +1633,17 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         name="shipping"
                                         value={displayValues.shipping}
                                         onChange={handleInputChange}
+                                        onWheel={handleNumberInputWheel}
+                                        className={!fieldValidation.shipping.isValid ? 'error' : ''}
                                         placeholder="Enter shipping cost"
                                         required
                                     />
+                                    {!fieldValidation.shipping.isValid && (
+                                        <div className="field-error">
+                                            <FaExclamationCircle />
+                                            <span>{fieldValidation.shipping.message}</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="equipment-modal-form-group">
                                     <label htmlFor="customs" className="required-field">Customs Cost (EGP)</label>
@@ -1295,9 +1653,17 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         name="customs"
                                         value={displayValues.customs}
                                         onChange={handleInputChange}
+                                        onWheel={handleNumberInputWheel}
+                                        className={!fieldValidation.customs.isValid ? 'error' : ''}
                                         placeholder="Enter customs cost"
                                         required
                                     />
+                                    {!fieldValidation.customs.isValid && (
+                                        <div className="field-error">
+                                            <FaExclamationCircle />
+                                            <span>{fieldValidation.customs.message}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -1310,9 +1676,17 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         name="taxes"
                                         value={displayValues.taxes}
                                         onChange={handleInputChange}
+                                        onWheel={handleNumberInputWheel}
+                                        className={!fieldValidation.taxes.isValid ? 'error' : ''}
                                         placeholder="Enter taxes cost"
                                         required
                                     />
+                                    {!fieldValidation.taxes.isValid && (
+                                        <div className="field-error">
+                                            <FaExclamationCircle />
+                                            <span>{fieldValidation.taxes.message}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -1437,8 +1811,16 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         name="workedHours"
                                         value={displayValues.workedHours}
                                         onChange={handleInputChange}
+                                        onWheel={handleNumberInputWheel}
+                                        className={!fieldValidation.workedHours.isValid ? 'error' : ''}
                                         placeholder="Enter worked hours"
                                     />
+                                    {!fieldValidation.workedHours.isValid && (
+                                        <div className="field-error">
+                                            <FaExclamationCircle />
+                                            <span>{fieldValidation.workedHours.message}</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="equipment-modal-form-group">
                                     <label htmlFor="examinedBy">Examined By</label>
@@ -1544,7 +1926,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                         <form onSubmit={handleCreateBrand}>
                             <div className="brand-modal-body">
                                 <div className="form-group">
-                                    <label htmlFor="brandName" className="required-field">Brand Name</label>
+                                    <label htmlFor="brandName">Brand Name <span className="required-field">*</span></label>
                                     <input
                                         type="text"
                                         id="brandName"
@@ -1569,10 +1951,9 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                     />
                                 </div>
                             </div>
-                            <div className="brand-modal-footer">
+                            <div className="modal-actions">
                                 <button
                                     type="button"
-                                    className="brand-modal-cancel"
                                     onClick={handleCancelBrandCreation}
                                     disabled={creatingBrand}
                                 >

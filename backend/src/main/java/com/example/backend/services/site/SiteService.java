@@ -159,28 +159,21 @@ public class SiteService
     }
 
     public List<Employee> getUnassignedEmployees() {
-        System.out.println("=== FETCHING UNASSIGNED EMPLOYEES ===");
+        System.out.println("=== FETCHING UNASSIGNED EMPLOYEES (EXCLUDING EQUIPMENT DRIVERS) ===");
 
-        List<Employee> unassignedEmployees = employeeRepository.findBySiteIsNull();
+        List<Employee> unassignedEmployees = employeeRepository.findUnassignedEmployeesNotAssignedAsDrivers();
 
-        System.out.println("Found " + unassignedEmployees.size() + " unassigned employees:");
+        System.out.println("Found " + unassignedEmployees.size() + " available employees:");
         for (Employee emp : unassignedEmployees) {
             System.out.println("- ID: " + emp.getId() +
                     ", Name: " + emp.getFirstName() + " " + emp.getLastName() +
-                    ", Site: " + (emp.getSite() != null ? emp.getSite().getName() : "NULL"));
-        }
-
-        // Also check all employees to see the full picture
-        List<Employee> allEmployees = employeeRepository.findAll();
-        System.out.println("=== ALL EMPLOYEES STATUS ===");
-        for (Employee emp : allEmployees) {
-            System.out.println("- ID: " + emp.getId() +
-                    ", Name: " + emp.getFirstName() + " " + emp.getLastName() +
-                    ", Site: " + (emp.getSite() != null ? emp.getSite().getName() + " (ID: " + emp.getSite().getId() + ")" : "NULL"));
+                    ", Site: " + (emp.getSite() != null ? emp.getSite().getName() : "NULL") +
+                    ", Is Driver: " + emp.isDriver());
         }
 
         return unassignedEmployees;
     }
+    
     public List<Equipment> getUnassignedEquipment() {
         List<Equipment> availableEquipment = equipmentRepository.findBySiteIsNull();
         return availableEquipment;
