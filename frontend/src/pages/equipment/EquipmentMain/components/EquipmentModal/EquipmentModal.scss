@@ -45,6 +45,8 @@ $scrapped-color: #e74c3c;
   z-index: 1000;
   padding: 20px;
   overflow-y: auto;
+  // Prevent scrolling propagation to background
+  overscroll-behavior: contain;
 }
 
 // Modal container
@@ -254,6 +256,73 @@ $scrapped-color: #e74c3c;
   }
 }
 
+// Validation error banner
+.equipment-validation-error-banner {
+  margin: 16px 24px 0;
+  padding: 16px;
+  background-color: rgba(244, 67, 54, 0.05);
+  border: 1px solid rgba(244, 67, 54, 0.2);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--color-danger);
+  font-size: 0.875rem;
+  animation: slideIn 0.3s ease;
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    color: var(--color-danger);
+  }
+
+  .validation-error-content {
+    flex: 1;
+
+    strong {
+      color: var(--color-danger);
+      font-weight: var(--bold-font-weight);
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    p {
+      margin: 0 0 8px 0;
+      color: var(--color-text-primary);
+      line-height: 1.4;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 16px;
+      list-style-type: disc;
+
+      li {
+        margin-bottom: 4px;
+        line-height: 1.4;
+        color: var(--color-danger);
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+}
+
 // Form
 .equipment-modal-form {
   display: flex;
@@ -267,6 +336,10 @@ $scrapped-color: #e74c3c;
   padding: 24px;
   overflow-y: auto;
   scroll-behavior: smooth;
+  // Prevent wheel events from affecting the background page
+  overscroll-behavior: contain;
+  // Ensure proper scrolling within the modal only
+  touch-action: pan-y;
 }
 
 // Tabs content
@@ -653,6 +726,42 @@ $scrapped-color: #e74c3c;
   span {
     flex: 1;
     line-height: 1.4;
+  }
+}
+
+// Field validation errors
+.field-error {
+  margin-top: 5px;
+  font-size: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--color-danger);
+  animation: fadeIn 0.3s ease;
+
+  svg {
+    margin-top: 2px;
+    font-size: 12px;
+    flex-shrink: 0;
+    color: var(--color-danger);
+  }
+
+  span {
+    flex: 1;
+    line-height: 1.4;
+  }
+}
+
+// Error input styling
+input.error,
+select.error,
+textarea.error {
+  border-color: var(--color-danger) !important;
+  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.1) !important;
+
+  &:focus {
+    border-color: var(--color-danger) !important;
+    box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2) !important;
   }
 }
 

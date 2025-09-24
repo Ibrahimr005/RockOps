@@ -103,9 +103,13 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
     const permissions = useEquipmentPermissions(auth);
 
     // State management
-    const [viewMode, setViewMode] = useState('month'); // 'month', '15days', 'week'
+    const [viewMode, setViewMode] = useState('month'); // 'month', '15days', 'week', 'custom'
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    
+    // Custom date range state
+    const [customFromDate, setCustomFromDate] = useState('');
+    const [customToDate, setCustomToDate] = useState('');
     const [equipmentData, setEquipmentData] = useState(null);
     const [workTypes, setWorkTypes] = useState([]);
     const [allWorkTypes, setAllWorkTypes] = useState([]); // All work types available in the system
@@ -161,6 +165,28 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
 
     // Get date range based on view mode
     const getDateRange = () => {
+        if (viewMode === 'custom') {
+            // Handle custom date range
+            if (customFromDate && customToDate) {
+                const start = new Date(customFromDate);
+                const end = new Date(customToDate);
+                
+                // Validate that start date is not after end date
+                if (start > end) {
+                    // Swap dates if they're reversed
+                    return { start: end, end: start };
+                }
+                
+                return { start, end };
+            } else {
+                // Default to current month if custom dates are not set
+                const start = new Date(selectedYear, selectedMonth - 1, 1);
+                const end = new Date(selectedYear, selectedMonth, 0);
+                return { start, end };
+            }
+        }
+
+        // Handle predefined ranges
         const start = new Date(selectedYear, selectedMonth - 1, 1);
         let end;
 
@@ -180,6 +206,75 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         }
 
         return { start, end };
+    };
+
+    // Helper function to format date for input fields (YYYY-MM-DD)
+    const formatDateForInput = (date) => {
+        if (!date) return '';
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    // Set default custom date range when switching to custom mode
+    const handleViewModeChange = (newMode) => {
+        setViewMode(newMode);
+        
+        // If switching to custom mode and dates are not set, initialize with current month
+        if (newMode === 'custom' && (!customFromDate || !customToDate)) {
+            const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
+            const monthEnd = new Date(selectedYear, selectedMonth, 0);
+            setCustomFromDate(formatDateForInput(monthStart));
+            setCustomToDate(formatDateForInput(monthEnd));
+        }
+    };
+
+    // Validate custom date range
+    const validateCustomDateRange = () => {
+        if (viewMode !== 'custom') return true;
+        
+        if (!customFromDate || !customToDate) {
+            showError('Please select both From and To dates for custom range');
+            return false;
+        }
+        
+        const fromDate = new Date(customFromDate);
+        const toDate = new Date(customToDate);
+        const today = new Date();
+        
+        // Check if dates are valid
+        if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+            showError('Please enter valid dates');
+            return false;
+        }
+        
+        // Check if range is not too large (e.g., more than 6 months)
+        const diffInDays = Math.abs((toDate - fromDate) / (1000 * 60 * 60 * 24));
+        if (diffInDays > 180) {
+            showError('Custom date range cannot exceed 6 months');
+            return false;
+        }
+        
+        return true;
+    };
+
+    // Helper function to validate driver ID
+    const isValidDriverId = (driverId) => {
+        // For non-drivable equipment, driver validation is not required
+        if (equipmentData && !equipmentData.drivable) {
+            return true;
+        }
+        
+        // Check if driverId is missing, empty, or not a valid UUID format
+        if (!driverId || driverId === '' || driverId === 'Select Driver') {
+            return false;
+        }
+        
+        // Basic UUID format validation (36 characters with hyphens in correct positions)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(driverId);
     };
 
     // Generate dates array for the matrix
@@ -277,7 +372,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         if (equipmentId) {
             fetchExistingEntries();
         }
-    }, [equipmentId, selectedMonth, selectedYear]);
+    }, [equipmentId, selectedMonth, selectedYear, customFromDate, customToDate, viewMode]);
 
     const fetchExistingEntries = async () => {
         try {
@@ -347,12 +442,15 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
 
             workTypes.forEach(workType => {
                 if (!newGlobalData[dateKey][workType.id]) {
+                    // For non-drivable equipment, use null for driverId
+                    const defaultDriverId = (equipmentData && !equipmentData.drivable) ? null : (selectedDriver || '');
+                    
                     newGlobalData[dateKey][workType.id] = {
                         hours: 0,
-                        driverId: selectedDriver || '',
+                        driverId: defaultDriverId,
                         isExisting: false,
                         originalValue: 0,
-                        originalDriverId: selectedDriver || ''
+                        originalDriverId: defaultDriverId
                     };
                 }
             });
@@ -481,7 +579,10 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
             const prevDateData = prev[dateKey] || {};
             const existingCell = prevDateData[workTypeId] || {};
             const isNewCell = !existingCell.hasOwnProperty('hours') || existingCell.hours === undefined;
-            const newDriverId = driverId !== null ? driverId : (existingCell.driverId || selectedDriver);
+            // For non-drivable equipment, use null for driverId
+            const newDriverId = driverId !== null ? driverId : 
+                (equipmentData && !equipmentData.drivable) ? null : 
+                (existingCell.driverId || selectedDriver);
 
             const updatedCell = {
                 hours: numValue,
@@ -708,8 +809,15 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
             return;
         }
 
-        // Validate that all entries have drivers selected
-        const entriesWithoutDrivers = entriesToSave.filter(entry => !entry.driverId || entry.driverId === '');
+        // Validate that all entries have valid drivers selected
+        const entriesWithoutDrivers = entriesToSave.filter(entry => {
+            if (!isValidDriverId(entry.driverId)) {
+                console.warn('Invalid driver ID:', entry.driverId);
+                return true;
+            }
+            return false;
+        });
+        
         if (entriesWithoutDrivers.length > 0) {
             const invalidEntries = entriesWithoutDrivers.map(entry => {
                 const workTypeName = workTypes.find(wt => wt.id === entry.workTypeId)?.name || 'Unknown Work Type';
@@ -717,9 +825,11 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                 return `${formattedDate} - ${workTypeName}`;
             });
 
-            showError(
-                `❌ Cannot save entries without drivers selected:\n\n${invalidEntries.join('\n')}\n\nPlease select a driver for each entry before saving.`
-            );
+            const errorMessage = equipmentData && !equipmentData.drivable 
+                ? `❌ Invalid entries found:\n\n${invalidEntries.join('\n')}\n\nNote: This equipment is non-drivable and should not require drivers.`
+                : `❌ Cannot save entries without valid drivers selected:\n\n${invalidEntries.join('\n')}\n\nPlease select a driver for each entry before saving.`;
+            
+            showError(errorMessage);
             return;
         }
 
@@ -751,7 +861,12 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                     formData.append('workType', entry.workTypeId);
                     formData.append('workedHours', String(entry.workedHours)); // Ensure it's a string
                     formData.append('date', entry.date);
-                    formData.append('driver', entry.driverId);
+                    
+                    // For non-drivable equipment, don't send driver parameter
+                    // For drivable equipment, always send driver (may be empty if not selected)
+                    if (equipmentData?.drivable) {
+                        formData.append('driver', entry.driverId || '');
+                    }
 
                     console.log(`📤 ${entry.isUpdate ? 'Updating' : 'Creating'} entry:`, {
                         entryId: entry.entryId,
@@ -761,6 +876,8 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                         workedHoursString: String(entry.workedHours),
                         date: entry.date,
                         driverId: entry.driverId,
+                        driverIdType: typeof entry.driverId,
+                        driverIdValid: isValidDriverId(entry.driverId),
                         isUpdate: entry.isUpdate
                     });
 
@@ -1113,7 +1230,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         return allDateKeys.some(dateKey => {
             return workTypes.some(workType => {
                 const cellData = globalMatrixData[dateKey]?.[workType.id];
-                return cellData?.hours > 0 && (!cellData.driverId || cellData.driverId === '');
+                return cellData?.hours > 0 && !isValidDriverId(cellData.driverId);
             });
         });
     };
@@ -1147,76 +1264,143 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                     <div className="view-toggle">
                         <button
                             className={viewMode === 'week' ? 'active' : ''}
-                            onClick={() => setViewMode('week')}
+                            onClick={() => handleViewModeChange('week')}
                         >
                             Week
                         </button>
                         <button
                             className={viewMode === '15days' ? 'active' : ''}
-                            onClick={() => setViewMode('15days')}
+                            onClick={() => handleViewModeChange('15days')}
                         >
                             15 Days
                         </button>
                         <button
                             className={viewMode === 'month' ? 'active' : ''}
-                            onClick={() => setViewMode('month')}
+                            onClick={() => handleViewModeChange('month')}
                         >
                             Month
+                        </button>
+                        <button
+                            className={viewMode === 'custom' ? 'active' : ''}
+                            onClick={() => handleViewModeChange('custom')}
+                        >
+                            Custom Range
                         </button>
                     </div>
 
                     <div className="date-selector">
-                        <select
-                            value={selectedMonth}
-                            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                        >
-                            {Array.from({ length: 12 }, (_, i) => (
-                                <option key={i + 1} value={i + 1}>
-                                    {new Date(2000, i).toLocaleDateString('en-US', { month: 'long' })}
-                                </option>
-                            ))}
-                        </select>
-                        <select
-                            value={selectedYear}
-                            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                        >
-                            {Array.from({ length: 5 }, (_, i) => {
-                                const year = new Date().getFullYear() - 2 + i;
-                                return <option key={year} value={year}>{year}</option>;
-                            })}
-                        </select>
+                        {viewMode === 'custom' ? (
+                            /* Custom Date Range Inputs */
+                            <div className="custom-date-range">
+                                <div className="date-input-group">
+                                    <label htmlFor="fromDate">From:</label>
+                                    <input
+                                        type="date"
+                                        id="fromDate"
+                                        value={customFromDate}
+                                        onChange={(e) => setCustomFromDate(e.target.value)}
+                                        max={formatDateForInput(new Date())}
+                                    />
+                                </div>
+                                <div className="date-input-group">
+                                    <label htmlFor="toDate">To:</label>
+                                    <input
+                                        type="date"
+                                        id="toDate"
+                                        value={customToDate}
+                                        onChange={(e) => setCustomToDate(e.target.value)}
+                                        max={formatDateForInput(new Date())}
+                                        min={customFromDate}
+                                    />
+                                </div>
+                                {customFromDate && customToDate && (
+                                    <button
+                                        className="apply-custom-range-btn"
+                                        onClick={() => {
+                                            if (validateCustomDateRange()) {
+                                                // Force re-render of the matrix with new date range
+                                                setHasChanges(false); // Reset changes since we're switching ranges
+                                            }
+                                        }}
+                                        title="Apply custom date range"
+                                    >
+                                        Apply Range
+                                    </button>
+                                )}
+                            </div>
+                        ) : (
+                            /* Traditional Month/Year Selectors */
+                            <>
+                                <select
+                                    value={selectedMonth}
+                                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                                >
+                                    {Array.from({ length: 12 }, (_, i) => (
+                                        <option key={i + 1} value={i + 1}>
+                                            {new Date(2000, i).toLocaleDateString('en-US', { month: 'long' })}
+                                        </option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={selectedYear}
+                                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                                >
+                                    {Array.from({ length: 5 }, (_, i) => {
+                                        const year = new Date().getFullYear() - 2 + i;
+                                        return <option key={year} value={year}>{year}</option>;
+                                    })}
+                                </select>
+                            </>
+                        )}
 
-                        {/* Monthly documents button */}
+                        {/* Documents button - works for both modes */}
                         <button
                             className="time-range-files-btn"
                             onClick={() => setShowSarkyDocumentModal(true)}
-                            title={`Documents for ${getMonthLabel(selectedMonth)} ${selectedYear}`}
+                            title={viewMode === 'custom' && customFromDate && customToDate 
+                                ? `Documents for ${customFromDate} to ${customToDate}`
+                                : `Documents for ${getMonthLabel(selectedMonth)} ${selectedYear}`}
                             disabled={documentLoading}
                         >
                             📎 Files ({documentLoading ? '...' : monthlyDocuments.length})
                         </button>
                     </div>
 
-                    <div className="driver-selector">
-                        <label>Default Driver (for new entries):</label>
-                        <select
-                            value={selectedDriver}
-                            onChange={(e) => setSelectedDriver(e.target.value)}
-                        >
-                            <option value="">Select Driver</option>
-                            {drivers.map(driver => (
-                                <option key={driver.id} value={driver.id}>
-                                    {driver.fullName}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    {/* Only show driver selector for drivable equipment */}
+                    {equipmentData?.drivable && (
+                        <div className="driver-selector">
+                            <label>Default Driver (for new entries):</label>
+                            <select
+                                value={selectedDriver}
+                                onChange={(e) => setSelectedDriver(e.target.value)}
+                            >
+                                <option value="">Select Driver</option>
+                                {drivers.map(driver => (
+                                    <option key={driver.id} value={driver.id}>
+                                        {driver.fullName}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                    
+                    {/* Show non-drivable indicator for clarity */}
+                    {equipmentData && !equipmentData.drivable && (
+                        <div className="non-drivable-indicator">
+                            <label>Equipment Type:</label>
+                            <span className="no-driver-required">🔧 No Driver Required</span>
+                        </div>
+                    )}
 
                     <div className="header-actions">
                         <div className="changes-indicator">
                             {hasChanges && <span className="unsaved-changes">● Unsaved changes</span>}
                             {hasValidationErrors() && (
-                                <span className="validation-errors">⚠️ Driver selection required</span>
+                                <span className="validation-errors">
+                                    ⚠️ {equipmentData && !equipmentData.drivable 
+                                        ? 'Validation errors found' 
+                                        : 'Driver selection required'}
+                                </span>
                             )}
                         </div>
                         <button
@@ -1283,10 +1467,37 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                             <tr key={dateKey} className={rowClasses}>
                                 <td className="date-cell">
                                     <div className="date-info">
-                                        <span className="date-day">{date.getDate()}</span>
+                                        <span className="date-full">
+                                            {(() => {
+                                                // For custom ranges and when spanning multiple months/years, show full date
+                                                if (viewMode === 'custom') {
+                                                    return date.toLocaleDateString('en-US', { 
+                                                        month: 'short', 
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    });
+                                                }
+                                                
+                                                // For predefined ranges within the same month, show abbreviated format
+                                                const currentYear = new Date().getFullYear();
+                                                if (date.getFullYear() === currentYear && date.getFullYear() === selectedYear) {
+                                                    return date.toLocaleDateString('en-US', { 
+                                                        month: 'short', 
+                                                        day: 'numeric'
+                                                    });
+                                                } else {
+                                                    // Show year if different from current year
+                                                    return date.toLocaleDateString('en-US', { 
+                                                        month: 'short', 
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    });
+                                                }
+                                            })()}
+                                        </span>
                                         <span className="date-weekday">
-                                                {date.toLocaleDateString('en-US', { weekday: 'short' })}
-                                            </span>
+                                            {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                        </span>
                                     </div>
                                 </td>
                                 {workTypes.map((workType, colIndex) => {
@@ -1295,7 +1506,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                                     const cellDriverId = cellData?.driverId || selectedDriver;
                                     const isMainDriver = cellDriverId === equipmentData?.mainDriverId;
                                     const driverName = drivers.find(d => d.id === cellDriverId)?.fullName || 'Unknown';
-                                    const hasInvalidDriver = hasValue && (!cellDriverId || cellDriverId === '');
+                                    const hasInvalidDriver = hasValue && !isValidDriverId(cellDriverId);
 
 
                                     return (
@@ -1354,18 +1565,22 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                                                                 ⚠️
                                                             </div>
                                                         )}
-                                                        <DriverDropdown
-                                                            cellDriverId={cellDriverId}
-                                                            selectedDriver={selectedDriver}
-                                                            driverName={driverName}
-                                                            isMainDriver={isMainDriver}
-                                                            drivers={drivers}
-                                                            isBlocked={isBlocked}
-                                                            dateKey={dateKey}
-                                                            workTypeId={workType.id}
-                                                            onDriverChange={(driverId) => updateCell(dateKey, workType.id, cellData.hours, driverId)}
-                                                            onDropdownStateChange={handleDropdownStateChange}
-                                                        />
+                                                        
+                                                        {/* Only show driver dropdown for drivable equipment */}
+                                                        {equipmentData?.drivable && (
+                                                            <DriverDropdown
+                                                                cellDriverId={cellDriverId}
+                                                                selectedDriver={selectedDriver}
+                                                                driverName={driverName}
+                                                                isMainDriver={isMainDriver}
+                                                                drivers={drivers}
+                                                                isBlocked={isBlocked}
+                                                                dateKey={dateKey}
+                                                                workTypeId={workType.id}
+                                                                onDriverChange={(driverId) => updateCell(dateKey, workType.id, cellData.hours, driverId)}
+                                                                onDropdownStateChange={handleDropdownStateChange}
+                                                            />
+                                                        )}
 
                                                         <button
                                                             className="delete-entry-btn enhanced-delete"
