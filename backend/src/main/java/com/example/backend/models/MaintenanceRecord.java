@@ -49,7 +49,6 @@ public class MaintenanceRecord {
     private LocalDateTime creationDate;
     
     @NotNull(message = "Expected completion date is required")
-    @Future(message = "Expected completion date must be in the future")
     @Column(name = "expected_completion_date", nullable = false)
     private LocalDateTime expectedCompletionDate;
     
