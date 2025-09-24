@@ -111,9 +111,8 @@ const EquipmentMain = () => {
             if (equipmentCardsRefs.current[index]) {
                 // Extract data directly from the DTO
                 console.log();
-                // Get brand name from the brand object instead of directly using brand field
-                const brandName = data.brand && typeof data.brand === 'object' ? data.brand.name : '';
-                const displayName = `${brandName || ''} ${data.model || ''} ${data.name || ''}`.trim() || 'Unknown Equipment';
+                // Use only the equipment name for display
+                const displayName = data.name || 'Unknown Equipment';
                 const siteName = data.siteName ? data.siteName : 'No Site Assigned';
                 const status = data.status || 'Unknown';
                 const driverName = data.mainDriverName ? data.mainDriverName : 'No Driver ';

@@ -174,8 +174,6 @@ const EquipmentCard = forwardRef((props, ref) => {
                                 e.stopPropagation();
                                 if (props.onEdit && equipmentId) {
                                     props.onEdit(equipmentId);
-                                } else {
-                                    navigate(`/EditEquipment/${equipmentId}`);
                                 }
                             }}
                         >
