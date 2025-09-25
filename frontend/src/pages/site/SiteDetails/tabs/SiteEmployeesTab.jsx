@@ -240,6 +240,13 @@ const SiteEmployeesTab = ({ siteId }) => {
         }
     };
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            handleCloseModal();
+        }
+    };
+
     if (loading) {
         return <div className="loading-container">{t('site.loadingEmployees')}</div>;
     }
@@ -282,7 +289,7 @@ const SiteEmployeesTab = ({ siteId }) => {
                         filterableColumns={columns}
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10}
-                        tableTitle="Employees List"
+                       // tableTitle="Employees List"
                         onRowClick={handleRowClick}
                         rowClassName="clickable-row"
                         showAddButton={isSiteAdmin}
@@ -297,7 +304,7 @@ const SiteEmployeesTab = ({ siteId }) => {
             )}
 
             {showModal && (
-                <div className="assign-employee-modal-overlay">
+                <div className="assign-employee-modal-overlay" onClick={handleOverlayClick}>
                     <div className="assign-employee-modal-content">
                         <div className="assign-employee-modal-header">
                             <h2>{t('site.assignEmployee')}</h2>

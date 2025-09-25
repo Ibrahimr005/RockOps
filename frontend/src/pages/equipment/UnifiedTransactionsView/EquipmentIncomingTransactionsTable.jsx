@@ -678,10 +678,10 @@ const EquipmentIncomingTransactionsTable = ({ equipmentId }) => {
                                                     disabled={processingAction}
                                                     required
                                                 >
-                                                    <option value="">Select technician</option>
+                                                    <option value="">Select employee</option>
                                                     {technicians.map(tech => (
                                                         <option key={tech.id} value={tech.id}>
-                                                            {tech.name || tech.fullName}
+                                                            {tech.name || tech.fullName} - {tech.jobPosition?.positionName || 'No Position'}
                                                         </option>
                                                     ))}
                                                 </select>

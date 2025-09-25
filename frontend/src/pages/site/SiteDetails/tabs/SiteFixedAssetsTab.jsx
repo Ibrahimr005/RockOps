@@ -5,6 +5,7 @@ import {useAuth} from "../../../../contexts/AuthContext";
 import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import { siteService } from "../../../../services/siteService";
 import {FaPlus} from "react-icons/fa";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const SiteFixedAssetsTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -160,6 +161,18 @@ const SiteFixedAssetsTab = ({siteId}) => {
         setSnackbar(prev => ({ ...prev, show: false }));
     };
 
+    if (loading) return  <ContentLoader
+        context="employee-details"
+        message={t('site.loadingFixedAssets')}
+        fadeIn={true}
+    />;
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            handleCloseModal();
+        }
+    };
+
     if (loading) return <div className="loading-container">{t('site.loadingFixedAssets')}</div>;
 
     return (
@@ -193,7 +206,7 @@ const SiteFixedAssetsTab = ({siteId}) => {
 
             {/* Updated Modal JSX - Replace the existing modal section in your component */}
             {showModal && (
-                <div className="assign-fixed-asset-modal-overlay">
+                <div className="assign-fixed-asset-modal-overlay" onClick={handleOverlayClick}>
                     <div className="assign-fixed-asset-modal-content">
                         <div className="assign-fixed-asset-modal-header">
                             <h2>{t('site.assignFixedAsset')}</h2>
@@ -270,7 +283,7 @@ const SiteFixedAssetsTab = ({siteId}) => {
                         filterableColumns={columns}
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10} dec
-                        tableTitle="Fixed Assets List"
+                       // tableTitle="Fixed Assets List"
                         showAddButton={isSiteAdmin}
                         addButtonText={t('site.assignFixedAsset')}
                         addButtonIcon={<FaPlus />}

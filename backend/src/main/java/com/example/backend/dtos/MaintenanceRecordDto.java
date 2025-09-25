@@ -3,6 +3,7 @@ package com.example.backend.dtos;
 import com.example.backend.models.MaintenanceRecord;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -37,7 +38,6 @@ public class MaintenanceRecordDto {
     private LocalDateTime creationDate;
     
     @NotNull(message = "Expected completion date is required")
-    @Future(message = "Expected completion date must be in the future")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime expectedCompletionDate;
     
@@ -46,6 +46,8 @@ public class MaintenanceRecordDto {
     
     @DecimalMin(value = "0.0", inclusive = true, message = "Total cost must be non-negative")
     private BigDecimal totalCost;
+
+
     
     private MaintenanceRecord.MaintenanceStatus status;
     
@@ -83,4 +85,14 @@ public class MaintenanceRecordDto {
     private String currentResponsiblePerson;
     private String currentResponsiblePhone;
     private String currentResponsibleEmail;
+
+    @JsonProperty("estimatedCost")
+    public BigDecimal getEstimatedCost() {
+        return this.totalCost;
+    }
+
+    @JsonProperty("estimatedCost")
+    public void setEstimatedCost(BigDecimal estimatedCost) {
+        this.totalCost = estimatedCost;
+    }
 } 

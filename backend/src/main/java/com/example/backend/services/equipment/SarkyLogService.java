@@ -159,13 +159,28 @@ public class SarkyLogService {
                 "' is not supported by equipment type '" + equipment.getType().getName() + "'");
         }
 
-        Employee driver = employeeRepository.findById(sarkyLogDTO.getDriverId())
-                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + sarkyLogDTO.getDriverId()));
-
-        // Check if driver is eligible to operate this equipment type
-        if (!driver.canDrive(equipment.getType())) {
-            throw new IllegalArgumentException("Driver '" + driver.getFullName() + 
-                "' is not authorized to operate equipment type '" + equipment.getType().getName() + "'");
+        Employee driver = null;
+        
+        // Only validate and require driver for drivable equipment
+        if (equipment.getType().isDrivable()) {
+            if(sarkyLogDTO.getDriverId() != null){
+                 driver = employeeRepository.findById(sarkyLogDTO.getDriverId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + sarkyLogDTO.getDriverId()));
+                        
+                // Check if driver is eligible to operate this equipment type
+                if (!driver.canDrive(equipment.getType())) {
+                    throw new IllegalArgumentException("Driver '" + driver.getFullName() + 
+                        "' is not authorized to operate equipment type '" + equipment.getType().getName() + "'");
+                }
+            }
+            // Note: For drivable equipment, we don't enforce driver requirement here 
+            // as it should be handled by frontend validation
+        } else {
+            // For non-drivable equipment, ignore any driver data that might have been sent
+            if(sarkyLogDTO.getDriverId() != null){
+                System.out.println("Warning: Driver ID provided for non-drivable equipment type '" + 
+                    equipment.getType().getName() + "'. Ignoring driver assignment.");
+            }
         }
 
         // Check for existing entries on the same date for 24-hour validation
@@ -374,12 +389,32 @@ public class SarkyLogService {
             sarkyLog.setWorkType(workType);
         }
 
-        // Find driver if changed
-        if (sarkyLogDTO.getDriverId() != null && 
-            (sarkyLog.getDriver() == null || !sarkyLog.getDriver().getId().equals(sarkyLogDTO.getDriverId()))) {
-            Employee driver = employeeRepository.findById(sarkyLogDTO.getDriverId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + sarkyLogDTO.getDriverId()));
-            sarkyLog.setDriver(driver);
+        // Handle driver updates based on equipment type
+        if (sarkyLog.getEquipment().getType().isDrivable()) {
+            // For drivable equipment, validate and update driver
+            if (sarkyLogDTO.getDriverId() != null && 
+                (sarkyLog.getDriver() == null || !sarkyLog.getDriver().getId().equals(sarkyLogDTO.getDriverId()))) {
+                Employee driver = employeeRepository.findById(sarkyLogDTO.getDriverId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + sarkyLogDTO.getDriverId()));
+                        
+                // Check if driver is eligible to operate this equipment type
+                if (!driver.canDrive(sarkyLog.getEquipment().getType())) {
+                    throw new IllegalArgumentException("Driver '" + driver.getFullName() + 
+                        "' is not authorized to operate equipment type '" + sarkyLog.getEquipment().getType().getName() + "'");
+                }
+                
+                sarkyLog.setDriver(driver);
+            } else if (sarkyLogDTO.getDriverId() == null) {
+                // Explicitly removing driver from drivable equipment
+                sarkyLog.setDriver(null);
+            }
+        } else {
+            // For non-drivable equipment, always set driver to null
+            if (sarkyLogDTO.getDriverId() != null) {
+                System.out.println("Warning: Driver ID provided for non-drivable equipment type '" + 
+                    sarkyLog.getEquipment().getType().getName() + "'. Ignoring driver assignment.");
+            }
+            sarkyLog.setDriver(null);
         }
 
         // **REMOVED ENHANCED DATE VALIDATION FOR UPDATES**
@@ -626,9 +661,14 @@ public class SarkyLogService {
         dto.setDate(sarkyLog.getDate());
         dto.setFilePath(sarkyLog.getFileUrl());
 
-        // Add driver information
-        dto.setDriverId(sarkyLog.getDriver().getId());
-        dto.setDriverName(sarkyLog.getDriver().getFirstName() + " " + sarkyLog.getDriver().getLastName());
+        // Add driver information (null-safe for non-drivable equipment)
+        if (sarkyLog.getDriver() != null) {
+            dto.setDriverId(sarkyLog.getDriver().getId());
+            dto.setDriverName(sarkyLog.getDriver().getFirstName() + " " + sarkyLog.getDriver().getLastName());
+        } else {
+            dto.setDriverId(null);
+            dto.setDriverName("No Driver Required");
+        }
 
         if (sarkyLog.getCreatedBy() != null) {
             dto.setCreatedByName(sarkyLog.getCreatedBy().getFirstName() + " " + sarkyLog.getCreatedBy().getLastName());
@@ -823,10 +863,12 @@ public class SarkyLogService {
                 ));
         summary.setWorkTypeBreakdown(workTypeHours);
         
-        // Group by driver
+        // Group by driver (null-safe for non-drivable equipment)
         Map<String, Double> driverHours = dailyLogs.stream()
                 .collect(Collectors.groupingBy(
-                    log -> log.getDriver().getFirstName() + " " + log.getDriver().getLastName(),
+                    log -> log.getDriver() != null 
+                        ? log.getDriver().getFirstName() + " " + log.getDriver().getLastName()
+                        : "No Driver Required",
                     Collectors.summingDouble(SarkyLog::getWorkedHours)
                 ));
         summary.setDriverBreakdown(driverHours);

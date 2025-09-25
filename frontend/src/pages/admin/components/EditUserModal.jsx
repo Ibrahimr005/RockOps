@@ -141,8 +141,15 @@ const EditUserModal = ({user, mode = 'edit', onCancel, onSave}) => {
         ));
     };
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            onCancel();
+        }
+    };
+
     return (
-        <div className="modal-overlay">
+        <div className="modal-overlay"  onClick={handleOverlayClick}>
             <div className="modal-content">
                 <div className="modal-header">
                     <h2>{mode === 'edit' ? t('admin.editUser') : t('admin.addUser')}</h2>

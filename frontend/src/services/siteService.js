@@ -375,4 +375,13 @@ export const siteService = {
         }
     },
 
+    getUnassignedFixedAssets: async ()  => {
+        try {
+            return await apiClient.get(SITE_ENDPOINTS.UNASSIGNED_FIXED_ASSETS);
+        } catch (error) {
+            console.error(`Error fetching unassigned fixed assets:`, error);
+            throw error;
+        }
+    },
+
 };

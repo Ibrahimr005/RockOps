@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaFilter, FaSearch, FaUserPlus, FaUserTimes, FaUserCheck } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaUserTimes, FaUserCheck } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -40,23 +40,23 @@ const Contacts = () => {
         try {
             setLoading(true);
             setError(null);
-            
+
             // Check if all filters are set to 'all' - if so, use the basic getContacts method
             const allFiltersAreAll = Object.values(filters).every(value => value === 'all');
-            
+
             let response;
             if (allFiltersAreAll) {
                 response = await contactService.getContacts();
             } else {
                 response = await contactService.getContactsWithFilters(filters);
             }
-            
+
             console.log('API Response:', response);
-            
-            const contactsData = Array.isArray(response?.data?.content) ? response.data.content : 
-                               Array.isArray(response?.data) ? response.data : 
-                               Array.isArray(response) ? response : [];
-            
+
+            const contactsData = Array.isArray(response?.data?.content) ? response.data.content :
+                Array.isArray(response?.data) ? response.data :
+                    Array.isArray(response) ? response : [];
+
             console.log('Processed contacts data:', contactsData);
             setContacts(contactsData);
         } catch (error) {
@@ -96,7 +96,7 @@ const Contacts = () => {
     const handleDeactivateContact = async (contactId) => {
         try {
             await contactService.deactivateContact(contactId);
-            setContacts(prev => prev.map(contact => 
+            setContacts(prev => prev.map(contact =>
                 contact.id === contactId ? { ...contact, isActive: false } : contact
             ));
             showSuccess('Contact deactivated successfully');
@@ -109,7 +109,7 @@ const Contacts = () => {
     const handleActivateContact = async (contactId) => {
         try {
             await contactService.activateContact(contactId);
-            setContacts(prev => prev.map(contact => 
+            setContacts(prev => prev.map(contact =>
                 contact.id === contactId ? { ...contact, isActive: true } : contact
             ));
             showSuccess('Contact activated successfully');
@@ -123,7 +123,7 @@ const Contacts = () => {
         try {
             if (editingContact) {
                 const response = await contactService.updateContact(editingContact.id, formData);
-                setContacts(prev => prev.map(contact => 
+                setContacts(prev => prev.map(contact =>
                     contact.id === editingContact.id ? response.data : contact
                 ));
                 showSuccess('Contact updated successfully');
@@ -135,20 +135,20 @@ const Contacts = () => {
 
                 if (location.state?.action === 'add-and-return') {
                     const { returnPath, formDataToRestore } = location.state;
-                    
+
                     // Create a new state object for the return trip
                     const newFormData = {
                         ...formDataToRestore,
                         responsibleContactId: newContact.id
                     };
-                    
-                    navigate(returnPath, { 
-                        replace: true, 
-                        state: { 
+
+                    navigate(returnPath, {
+                        replace: true,
+                        state: {
                             restoredFormData: newFormData,
                             openStepModal: true,
                             showRestoredMessage: true
-                        } 
+                        }
                     });
                     return; // Stop further execution
                 }
@@ -177,9 +177,9 @@ const Contacts = () => {
     const getContactTypeBadge = (contactType) => {
         const color = getContactTypeColor(contactType);
         return (
-            <span 
+            <span
                 className="contact-type-badge"
-                style={{ 
+                style={{
                     backgroundColor: color + '20',
                     color: color,
                     border: `1px solid ${color}`
@@ -194,9 +194,9 @@ const Contacts = () => {
         const color = isActive ? 'var(--color-success)' : 'var(--color-danger)';
         const text = isActive ? 'Active' : 'Inactive';
         return (
-            <span 
+            <span
                 className="status-badge"
-                style={{ 
+                style={{
                     backgroundColor: color + '20',
                     color: color,
                     border: `1px solid ${color}`
@@ -342,14 +342,6 @@ const Contacts = () => {
                     <h1>Contacts</h1>
                     <p>Manage maintenance team contacts and responsible persons</p>
                 </div>
-                <div className="header-right">
-                    <button 
-                        className="btn btn-primary"
-                        onClick={() => handleOpenModal()}
-                    >
-                        <FaPlus /> New Contact
-                    </button>
-                </div>
             </div>
 
             <DataTable
@@ -362,6 +354,9 @@ const Contacts = () => {
                 showFilters={true}
                 filterableColumns={filterableColumns}
                 emptyStateMessage="No contacts found. Create your first contact to get started."
+                showAddButton={true}
+                addButtonText="New Contact"
+                onAddClick={() => handleOpenModal()}
             />
 
             {showModal && (
@@ -379,4 +374,4 @@ const Contacts = () => {
     );
 };
 
-export default Contacts; 
+export default Contacts;

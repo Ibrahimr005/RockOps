@@ -443,6 +443,13 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
         {header: 'Last Updated', accessor: 'lastUpdated'}
     ];
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            setIsResolutionModalOpen(false);
+        }
+    };
+
     return (
         <div className="consumables-inventory">
 
@@ -478,13 +485,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
             {/* Info cards for different tabs */}
             {activeTab === 'overReceived' && (
                 <div className="resolution-info-card">
-                    <div className="resolution-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="8" x2="12" y2="12"/>
-                            <line x1="12" y1="16" x2="12.01" y2="16"/>
-                        </svg>
-                    </div>
+
                     <div className="resolution-info-content">
                         <h3>Inventory Surplus</h3>
                         <p>
@@ -612,7 +613,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
 
             {/* Resolution Modal */}
             {isResolutionModalOpen && selectedConsumable && (
-                <div className="resolution-modal-backdrop">
+                <div className="resolution-modal-backdrop"  onClick={handleOverlayClick}>
                     <div className="resolution-modal">
                         <div className="resolution-modal-header">
                             <h2>Resolve Consumable Discrepancy</h2>

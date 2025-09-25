@@ -1,14 +1,15 @@
-import React, { forwardRef, useState, useImperativeHandle, Fragment } from "react";
+import React, { forwardRef, useState, useImperativeHandle, Fragment, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./EquipmentCard.scss";
 import equipmentIcon from "../../../../../assets/imgs/equipment_icon.png";
+import { equipmentService } from "../../../../../services/equipmentService";
 
 const EquipmentCard = forwardRef((props, ref) => {
     const [equipmentId, setEquipmentId] = useState("");
     const [modelName, setModelName] = useState("Equipment Name");
     const [siteName, setSiteName] = useState("N/A");
     const [status, setStatus] = useState("Unknown");
-    const [driver, setDriver] = useState("No Driver Assigned");
+    const [driver, setDriver] = useState("No Driver");
     const [imageUrl, setImageUrl] = useState("");
     const [customActions, setCustomActions] = useState([]);
 
@@ -43,6 +44,33 @@ const EquipmentCard = forwardRef((props, ref) => {
         return "status-unknown";
     };
 
+    // Function to fetch equipment photo from storage service (MinIO/AWS S3)
+    const fetchEquipmentPhoto = async (equipmentId) => {
+        if (!equipmentId) return;
+        
+        try {
+            const response = await equipmentService.getEquipmentMainPhoto(equipmentId);
+            if (response.data) {
+                console.log(`Successfully fetched photo for equipment ${equipmentId}:`, response.data);
+                setImageUrl(response.data);
+            }
+        } catch (error) {
+            console.log(`Failed to fetch photo for equipment ${equipmentId}:`, error);
+            // Try refresh to get new presigned URL (important for AWS S3 which has expiring URLs)
+            try {
+                const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(equipmentId);
+                if (refreshResponse.data) {
+                    console.log(`Successfully refreshed photo for equipment ${equipmentId}:`, refreshResponse.data);
+                    setImageUrl(refreshResponse.data);
+                }
+            } catch (refreshError) {
+                console.log(`Failed to refresh photo for equipment ${equipmentId}:`, refreshError);
+                // Keep existing imageUrl as fallback, or use empty string
+                console.log(`Using fallback image for equipment ${equipmentId}`);
+            }
+        }
+    };
+
     // Function to update the card data
     const updateEquipmentCard = (
         newModelName,
@@ -55,9 +83,13 @@ const EquipmentCard = forwardRef((props, ref) => {
         setModelName(newModelName || "Equipment Name");
         setSiteName(newSiteName || "N/A");
         setStatus(newStatus || "Unknown");
-        setDriver(newDriver || "No Driver Assigned");
-        setImageUrl(newImageUrl || "");
+        setDriver(newDriver || "No Driver");
         setEquipmentId(newEquipmentId || "");
+
+        // Always try to fetch the latest photo from service first
+        // This ensures we get fresh URLs for both MinIO and AWS S3
+        setImageUrl(newImageUrl || ""); // Set initial value
+        fetchEquipmentPhoto(newEquipmentId);
 
         // Log for debugging
         console.log(`EquipmentCard updated for ${newModelName} with siteName: ${newSiteName} and image: ${newImageUrl}`);
@@ -95,14 +127,16 @@ const EquipmentCard = forwardRef((props, ref) => {
                     <div className="spec-row">
                         <div className="spec-item">
                             <span className="spec-label">Site</span>
-                            <span className="spec-value">{siteName}</span>
+                            <span className="spec-value" title={siteName}>{siteName}</span>
                         </div>
 
                         <div className="spec-item">
                             <span className="spec-label">Status</span>
-                            <span className={`status-indicator ${getStatusClass(status)}`}>
-                                {status}
-                            </span>
+                            <div className="spec-value">
+                                <span className={`status-indicator ${getStatusClass(status)}`}>
+                                    {status}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
@@ -140,8 +174,6 @@ const EquipmentCard = forwardRef((props, ref) => {
                                 e.stopPropagation();
                                 if (props.onEdit && equipmentId) {
                                     props.onEdit(equipmentId);
-                                } else {
-                                    navigate(`/EditEquipment/${equipmentId}`);
                                 }
                             }}
                         >

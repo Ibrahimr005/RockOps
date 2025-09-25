@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaFilter, FaSearch, FaList } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaList, FaCheckCircle } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import MaintenanceRecordModal from './MaintenanceRecordModal';
+import MaintenanceRecordViewModal from './MaintenanceRecordViewModal/MaintenanceRecordViewModal';
+import '../../../styles/status-badges.scss';
 import './MaintenanceRecords.scss';
 import maintenanceService from "../../../services/maintenanceService.js";
 
@@ -13,8 +15,9 @@ const MaintenanceRecords = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState(null);
-    const [selectedRecord, setSelectedRecord] = useState(null);
+    const [viewingRecordId, setViewingRecordId] = useState(null);
     const [filters, setFilters] = useState({
         status: 'all',
         site: 'all',
@@ -26,8 +29,6 @@ const MaintenanceRecords = () => {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
 
-    // Mock data - replace with actual API calls
-
     useEffect(() => {
         loadMaintenanceRecords();
     }, [filters]);
@@ -36,11 +37,10 @@ const MaintenanceRecords = () => {
         try {
             setLoading(true);
             setError(null);
-            
+
             const response = await maintenanceService.getAllRecords();
             const records = response.data || [];
-            console.log(records)
-            
+
             // Transform data for display
             const transformedRecords = records.map(record => ({
                 id: record.id,
@@ -64,7 +64,7 @@ const MaintenanceRecords = () => {
                 completedSteps: record.completedSteps || 0,
                 activeSteps: record.activeSteps || 0
             }));
-            
+
             setMaintenanceRecords(transformedRecords);
         } catch (error) {
             console.error('Error loading maintenance records:', error);
@@ -84,12 +84,16 @@ const MaintenanceRecords = () => {
     };
 
     const handleViewRecord = (record) => {
-        setSelectedRecord(record);
-        navigate(`/maintenance/records/${record.id}`);
+        setViewingRecordId(record.id);
+        setIsViewModalOpen(true);
     };
 
     const handleViewSteps = (record) => {
         navigate(`/maintenance/records/${record.id}?tab=steps`);
+    };
+
+    const handleViewDetails = (record) => {
+        navigate(`/maintenance/records/${record.id}`);
     };
 
     const handleDeleteRecord = async (id) => {
@@ -101,7 +105,7 @@ const MaintenanceRecords = () => {
         } catch (error) {
             console.error('Error deleting maintenance record:', error);
             let errorMessage = 'Failed to delete maintenance record. Please try again.';
-            
+
             if (error.response?.data?.error) {
                 errorMessage = error.response.data.error;
             } else if (error.response?.data?.message) {
@@ -109,8 +113,25 @@ const MaintenanceRecords = () => {
             } else if (error.message) {
                 errorMessage = error.message;
             }
-            
+
             showError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCompleteRecord = async (record) => {
+        try {
+            setLoading(true);
+            await maintenanceService.updateRecord(record.id, {
+                status: 'COMPLETED',
+                actualCompletionDate: new Date().toISOString()
+            });
+            showSuccess('Maintenance record marked as completed successfully');
+            loadMaintenanceRecords();
+        } catch (error) {
+            console.error('Error completing maintenance record:', error);
+            showError('Failed to complete maintenance record. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -119,7 +140,7 @@ const MaintenanceRecords = () => {
     const handleSubmit = async (formData) => {
         try {
             setLoading(true);
-            
+
             if (editingRecord) {
                 await maintenanceService.updateRecord(editingRecord.id, formData);
                 showSuccess('Maintenance record updated successfully');
@@ -127,7 +148,7 @@ const MaintenanceRecords = () => {
                 await maintenanceService.createRecord(formData);
                 showSuccess('Maintenance record created successfully');
             }
-            
+
             setEditingRecord(null);
             setIsModalOpen(false);
             loadMaintenanceRecords();
@@ -151,17 +172,10 @@ const MaintenanceRecords = () => {
     };
 
     const getStatusBadge = (status) => {
-        const color = getStatusColor(status);
+        const statusClass = status.toLowerCase().replace(/_/g, '-');
         return (
-            <span 
-                className="status-badge"
-                style={{ 
-                    backgroundColor: color + '20',
-                    color: color,
-                    border: `1px solid ${color}`
-                }}
-            >
-                {status}
+            <span className={`status-badge ${statusClass}`}>
+                {status.replace(/_/g, ' ')}
             </span>
         );
     };
@@ -186,7 +200,7 @@ const MaintenanceRecords = () => {
             sortable: true,
             render: (row) => (
                 <div className="issue-description">
-                    {row.initialIssueDescription.length > 50 
+                    {row.initialIssueDescription.length > 50
                         ? `${row.initialIssueDescription.substring(0, 50)}...`
                         : row.initialIssueDescription
                     }
@@ -221,7 +235,7 @@ const MaintenanceRecords = () => {
             sortable: true,
             render: (row) => (
                 <div className="cost-info">
-                    ${row.totalCost?.toFixed(2) || '0.00'}
+                    {row.totalCost?.toFixed(2) || '0.00'}
                 </div>
             )
         },
@@ -235,7 +249,7 @@ const MaintenanceRecords = () => {
                         Created: {new Date(row.creationDate).toLocaleDateString()}
                     </div>
                     <div className="completion-date">
-                        {row.actualCompletionDate 
+                        {row.actualCompletionDate
                             ? `Completed: ${new Date(row.actualCompletionDate).toLocaleDateString()}`
                             : `Expected: ${new Date(row.expectedCompletionDate).toLocaleDateString()}`
                         }
@@ -247,7 +261,7 @@ const MaintenanceRecords = () => {
 
     const actions = [
         {
-            label: 'View',
+            label: 'Quick View',
             icon: <FaEye />,
             onClick: (row) => handleViewRecord(row),
             className: 'primary'
@@ -262,7 +276,19 @@ const MaintenanceRecords = () => {
             label: 'Edit',
             icon: <FaEdit />,
             onClick: (row) => handleOpenModal(row),
-            className: 'primary'
+            className: 'primary',
+            show: (row) => row.status !== 'COMPLETED'
+        },
+        {
+            label: 'Mark as Final',
+            icon: <FaCheckCircle />,
+            onClick: (row) => {
+                if (window.confirm(`Are you sure you want to mark the maintenance record for ${row.equipmentName} as completed?`)) {
+                    handleCompleteRecord(row);
+                }
+            },
+            className: 'success',
+            show: (row) => row.status === 'ACTIVE'
         },
         {
             label: 'Delete',
@@ -272,7 +298,8 @@ const MaintenanceRecords = () => {
                     handleDeleteRecord(row.id);
                 }
             },
-            className: 'danger'
+            className: 'danger',
+            show: (row) => row.status !== 'COMPLETED'
         }
     ];
 
@@ -304,14 +331,6 @@ const MaintenanceRecords = () => {
                     <h1>Maintenance Records</h1>
                     <p>Track and manage all equipment maintenance activities</p>
                 </div>
-                <div className="header-right">
-                    <button 
-                        className="btn btn-primary"
-                        onClick={() => handleOpenModal()}
-                    >
-                        <FaPlus /> New Maintenance Record
-                    </button>
-                </div>
             </div>
 
             <DataTable
@@ -324,6 +343,9 @@ const MaintenanceRecords = () => {
                 showFilters={true}
                 filterableColumns={filterableColumns}
                 emptyStateMessage="No maintenance records found. Create your first maintenance record to get started."
+                showAddButton={true}
+                addButtonText="New Maintenance Record"
+                onAddClick={() => handleOpenModal()}
             />
 
             {isModalOpen && (
@@ -337,8 +359,19 @@ const MaintenanceRecords = () => {
                     editingRecord={editingRecord}
                 />
             )}
+
+            {isViewModalOpen && (
+                <MaintenanceRecordViewModal
+                    isOpen={isViewModalOpen}
+                    onClose={() => {
+                        setIsViewModalOpen(false);
+                        setViewingRecordId(null);
+                    }}
+                    recordId={viewingRecordId}
+                />
+            )}
         </div>
     );
 };
 
-export default MaintenanceRecords; 
+export default MaintenanceRecords;

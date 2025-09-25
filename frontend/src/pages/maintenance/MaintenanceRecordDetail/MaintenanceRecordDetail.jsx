@@ -3,6 +3,9 @@ import { FaArrowLeft, FaTools, FaUser, FaCalendarAlt, FaDollarSign, FaMapMarkerA
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import MaintenanceSteps from '../MaintenanceSteps/MaintenanceSteps';
+import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
+import '../../../styles/status-badges.scss';
+import '../../../styles/tabs.scss';
 import './MaintenanceRecordDetail.scss';
 import maintenanceService from "../../../services/maintenanceService.js";
 
@@ -64,17 +67,10 @@ const MaintenanceRecordDetail = () => {
     };
 
     const getStatusBadge = (status) => {
-        const color = getStatusColor(status);
+        const statusClass = status.toLowerCase().replace(/_/g, '-');
         return (
-            <span 
-                className="status-badge"
-                style={{ 
-                    backgroundColor: color + '20',
-                    color: color,
-                    border: `1px solid ${color}`
-                }}
-            >
-                {status}
+            <span className={`status-badge ${statusClass}`}>
+                {status.replace(/_/g, ' ')}
             </span>
         );
     };
@@ -98,11 +94,7 @@ const MaintenanceRecordDetail = () => {
     };
 
     if (loading) {
-        return (
-            <div className="maintenance-record-detail-loading">
-                <div className="loading-spinner">Loading...</div>
-            </div>
-        );
+        return <LoadingPage />;
     }
 
     if (error || !maintenanceRecord) {
@@ -123,12 +115,6 @@ const MaintenanceRecordDetail = () => {
         <div className="maintenance-record-detail">
             <div className="detail-header">
                 <div className="header-left">
-                    <button 
-                        className="back-button"
-                        onClick={() => navigate('/maintenance/records')}
-                    >
-                        <FaArrowLeft /> Back to Records
-                    </button>
                     <h1>Maintenance Record Details</h1>
                 </div>
                 <div className="header-right">
@@ -137,7 +123,7 @@ const MaintenanceRecordDetail = () => {
             </div>
 
             <div className="detail-content">
-                <div className="content-tabs">
+                <div className="tabs-header">
                     <button 
                         className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
                         onClick={() => setActiveTab('overview')}
