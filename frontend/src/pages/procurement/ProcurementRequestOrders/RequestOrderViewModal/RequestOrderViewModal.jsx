@@ -75,13 +75,13 @@ const RequestOrderViewModal = ({ requestOrder, isOpen, onClose }) => {
     return (
         <div className="request-order-view-modal-overlay" onClick={onClose}>
             <div className="request-order-view-modal-container" onClick={(e) => e.stopPropagation()}>
+
                 {/* Header */}
                 <div className="request-order-view-modal-header">
                     <div className="request-order-view-modal-header-content">
-                        <h2 className="request-order-view-modal-title">Request Order Details</h2>
-                        <div className={getStatusClass(requestOrder.status)}>
-                            {requestOrder.status || 'Unknown'}
-                        </div>
+                        <h2 className="request-order-view-modal-title">
+                            {requestOrder.title || 'Request Order Details'}
+                        </h2>
                     </div>
                     <button className="btn-close" onClick={onClose}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -89,7 +89,6 @@ const RequestOrderViewModal = ({ requestOrder, isOpen, onClose }) => {
                         </svg>
                     </button>
                 </div>
-
                 {/* Content */}
                 <div className="request-order-view-modal-content">
                     {/* Overview Section */}

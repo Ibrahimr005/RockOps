@@ -38,7 +38,6 @@ public class MaintenanceRecordDto {
     private LocalDateTime creationDate;
     
     @NotNull(message = "Expected completion date is required")
-    @Future(message = "Expected completion date must be in the future")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime expectedCompletionDate;
     

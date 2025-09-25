@@ -111,8 +111,19 @@ const OfferTimeline = ({
             });
         }
 
-        // 3. Add pending steps based on current status
+        // DEBUG LOGGING - Add this right before calling addPendingSteps
+        console.log('=== TIMELINE DEBUG ===');
+        console.log('offer.status:', offer?.status);
+        console.log('timelineEvents:', timelineEvents);
+        console.log('timelineEvents length:', timelineEvents.length);
+        console.log('has OFFER_SUBMITTED:', timelineEvents.some(e => e.eventType === 'OFFER_SUBMITTED'));
+        console.log('steps before addPendingSteps:', steps);
+
+        // 4. Add pending steps based on current status
         addPendingSteps(steps, offer);
+
+        console.log('steps after addPendingSteps:', steps);
+        console.log('=== END TIMELINE DEBUG ===');
 
         return steps;
     };
@@ -200,32 +211,101 @@ const OfferTimeline = ({
     const addPendingSteps = (steps, offer) => {
         if (!offer) return;
 
-        // Add pending finance step if manager accepted but finance hasn't decided
+        console.log('addPendingSteps called with offer.status:', offer.status);
+
+        // Get the latest timeline event to understand current state
+        const latestEvent = timelineEvents.length > 0 ? timelineEvents[timelineEvents.length - 1] : null;
+        console.log('latestEvent:', latestEvent);
+
+        // 1. If offer is INPROGRESS or UNSTARTED, show procurement solutions step
+        const isInProgressOrUnstarted = (offer.status === 'INPROGRESS' || offer.status === 'UNSTARTED');
+        const hasNoSubmittedEvent = !timelineEvents.some(e => e.eventType === 'OFFER_SUBMITTED');
+
+        console.log('isInProgressOrUnstarted:', isInProgressOrUnstarted);
+        console.log('hasNoSubmittedEvent:', hasNoSubmittedEvent);
+
+        if (isInProgressOrUnstarted) {
+            console.log('Adding procurement solutions step');
+            steps.push({
+                id: 'pending-procurement-solutions',
+                title: 'Adding Procurement Solutions',
+                status: 'pending',
+                date: '',
+                user: '',
+                dateLabel: '',
+                userLabel: '',
+                eventType: 'PENDING_PROCUREMENT_SOLUTIONS',
+                description: 'Procurement team is finding and adding solutions that satisfy the required items and quantities'
+            });
+            return; // Don't add more steps after this
+        }
+
+        // Skip manager review step - it's already handled in getTimelineSteps()
+
+        // 2. If manager accepted but finance hasn't processed yet
         if (offer.status === 'MANAGERACCEPTED' &&
-            !['FINANCE_ACCEPTED', 'FINANCE_REJECTED', 'FINANCE_PARTIALLY_ACCEPTED'].includes(offer.financeStatus)) {
+            !timelineEvents.some(e => ['FINANCE_ACCEPTED', 'FINANCE_REJECTED', 'FINANCE_PARTIALLY_ACCEPTED'].includes(e.eventType))) {
             steps.push({
                 id: 'pending-finance',
                 title: 'Finance Processing',
                 status: 'pending',
                 date: 'Pending',
                 user: 'Finance Department',
-                userLabel: 'Awaiting decision from',
-                eventType: 'FINANCE_PROCESSING'
+                dateLabel: 'Awaiting review',
+                userLabel: 'Pending review from',
+                eventType: 'FINANCE_PROCESSING',
+                description: 'Finance team will review each item and approve or reject'
             });
+            return; // Don't add more steps after this
         }
 
-        // Add pending finalization step
-        if (['FINANCE_ACCEPTED', 'FINANCE_PARTIALLY_ACCEPTED'].includes(offer.financeStatus) &&
-            offer.status !== 'COMPLETED') {
+        // 3. If finance has completed review (any finance status) but not yet finalizing/finalized/completed
+        const hasFinanceDecision = timelineEvents.some(e =>
+            ['FINANCE_ACCEPTED', 'FINANCE_REJECTED', 'FINANCE_PARTIALLY_ACCEPTED'].includes(e.eventType)
+        );
+
+        const isFinanceComplete = offer.status === 'FINANCE_ACCEPTED' ||
+            offer.status === 'FINANCE_REJECTED' ||
+            offer.status === 'FINANCE_PARTIALLY_ACCEPTED' ||
+            (offer.financeStatus && ['FINANCE_ACCEPTED', 'FINANCE_REJECTED', 'FINANCE_PARTIALLY_ACCEPTED'].includes(offer.financeStatus));
+
+        if ((hasFinanceDecision || isFinanceComplete) &&
+            !['FINALIZING', 'FINALIZED', 'COMPLETED'].includes(offer.status)) {
+
+            // Only show finalization step if there are accepted items
+            const hasAcceptedItems = offer.offerItems && offer.offerItems.some(item =>
+                item.financeStatus === 'ACCEPTED'
+            );
+
+            if (hasAcceptedItems) {
+                steps.push({
+                    id: 'pending-finalization',
+                    title: 'Awaiting Finalization',
+                    status: 'pending',
+                    date: '',
+                    user: '',
+                    dateLabel: '',
+                    userLabel: '',
+                    eventType: 'PENDING_FINALIZATION',
+                    description: 'Procurement team will finalize accepted items and create purchase orders'
+                });
+            }
+            return; // Don't add more steps after this
+        }
+
+        // 4. If offer is in FINALIZING status but not yet completed
+        if (offer.status === 'FINALIZING' && !timelineEvents.some(e =>
+            ['OFFER_FINALIZED', 'OFFER_COMPLETED'].includes(e.eventType))) {
             steps.push({
-                id: 'pending-finalization',
-                title: 'Awaiting Finalization',
+                id: 'pending-completion',
+                title: 'Completing Finalization',
                 status: 'pending',
-                date: 'Pending',
-                user: 'Procurement Department',
-                dateLabel: 'Ready for',
-                userLabel: 'Pending finalization from',
-                eventType: 'PENDING_FINALIZATION'
+                date: '',
+                user: '',
+                dateLabel: '',
+                userLabel: '',
+                eventType: 'PENDING_COMPLETION',
+                description: 'Creating purchase orders and completing the offer process'
             });
         }
     };

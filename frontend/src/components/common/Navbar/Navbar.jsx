@@ -226,8 +226,9 @@ const Navbar = () => {
         }
     };
 
-    const handleThemeToggle = () => {
-        console.log('Theme toggle clicked. Current theme:', theme);
+    // Fixed theme toggle handler
+    const handleThemeToggle = (e) => {
+        e.stopPropagation();
         toggleTheme();
     };
 
@@ -305,6 +306,15 @@ const Navbar = () => {
                             )}
                         </div>
                     </div>
+
+                    {/* Theme Toggle Button */}
+                    <button
+                        className="theme-toggle-button"
+                        onClick={handleThemeToggle}
+                        title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+                    >
+                        {theme === 'light' ? <FaMoon size={20} /> : <FaSun size={20} />}
+                    </button>
 
                     <button
                         className={`notification-icon ${connectionStatus === 'connected' ? 'connected' : 'disconnected'}`}

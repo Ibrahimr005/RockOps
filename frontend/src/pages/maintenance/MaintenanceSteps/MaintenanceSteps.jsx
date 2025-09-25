@@ -5,6 +5,7 @@ import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import MaintenanceStepModal from './MaintenanceStepModal';
+import '../../../styles/status-badges.scss';
 import './MaintenanceSteps.scss';
 import maintenanceService from "../../../services/maintenanceService.js";
 

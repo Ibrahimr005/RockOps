@@ -78,6 +78,12 @@ public class PurchaseOrderService {
             throw new IllegalArgumentException("No valid items to finalize");
         }
 
+        // MARK ALL FINALIZED ITEMS AS FINALIZED
+        for (OfferItem item : finalizedItems) {
+            item.setFinalized(true);
+            offerItemRepository.save(item);
+        }
+
         // UPDATE OFFER STATUS AND ADD TIMELINE EVENTS
         String previousStatus = offer.getStatus();
 
@@ -95,7 +101,7 @@ public class PurchaseOrderService {
         purchaseOrder.setPoNumber("PO-" + generatePoNumber());
         purchaseOrder.setCreatedAt(LocalDateTime.now());
         purchaseOrder.setUpdatedAt(LocalDateTime.now());
-        purchaseOrder.setStatus("CREATED");
+        purchaseOrder.setStatus("PENDING");
         purchaseOrder.setRequestOrder(offer.getRequestOrder());
         purchaseOrder.setOffer(offer);
         purchaseOrder.setCreatedBy(username);

@@ -401,7 +401,6 @@
 .procurement-request-summary-card-inprogress {
   background: var(--section-background-color);
   border-radius: var(--radius-md);
-  padding: 1.5rem; // Match unstarted scale
   margin-bottom: 1.5rem; // Match unstarted scale
 
   h4 {
@@ -742,5 +741,62 @@
 [data-theme="dark"] {
   .item-notes-info-inprogress {
     border-top-color: var(--border-color-medium);
+  }
+}
+.procurement-request-items-summary {
+  padding: 2rem;
+}
+// Fix for the procurement details header action buttons alignment
+.procurement-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  gap: 2rem;
+
+  .procurement-title-section {
+    flex: 1;
+    min-width: 0; // Allow text to truncate if needed
+  }
+
+  .procurement-details-actions {
+    flex-shrink: 0; // Prevent shrinking
+
+    .action-buttons-group {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+
+      .btn-primary {
+        white-space: nowrap;
+        min-width: auto;
+        padding: 0.75rem 1.25rem;
+
+
+      }
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .procurement-details-header {
+    flex-direction: column;
+    gap: 1.5rem;
+
+    .procurement-details-actions {
+      width: 100%;
+
+      .action-buttons-group {
+        flex-direction: column;
+        width: 100%;
+
+        .btn-primary {
+          width: 100%;
+          justify-content: center;
+          min-width: unset;
+        }
+      }
+    }
   }
 }

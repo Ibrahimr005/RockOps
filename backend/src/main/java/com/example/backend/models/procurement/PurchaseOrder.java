@@ -49,11 +49,9 @@ public class PurchaseOrder {
     private String createdBy;
     private String approvedBy;
 
-    // Purchase Order Items (containing vendor and pricing information)
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonBackReference
+    @JsonManagedReference  // ORIGINAL VALUE
     private List<PurchaseOrderItem> purchaseOrderItems = new ArrayList<>();
-
 
     private LocalDateTime financeApprovalDate;
 

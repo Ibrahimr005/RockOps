@@ -33,7 +33,7 @@ public class MaintenanceStep {
     private MaintenanceRecord maintenanceRecord;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "responsible_contact_id", nullable = false)
+    @JoinColumn(name = "responsible_contact_id")
     private Contact responsibleContact;
     
     @Enumerated(EnumType.STRING)
@@ -52,19 +52,16 @@ public class MaintenanceStep {
     private LocalDateTime startDate;
     
     @NotNull(message = "Expected end date is required")
-    @Future(message = "Expected end date must be in the future")
     @Column(name = "expected_end_date", nullable = false)
     private LocalDateTime expectedEndDate;
     
     @Column(name = "actual_end_date")
     private LocalDateTime actualEndDate;
     
-    @NotBlank(message = "From location is required")
-    @Column(name = "from_location", nullable = false)
+    @Column(name = "from_location")
     private String fromLocation;
     
-    @NotBlank(message = "To location is required")
-    @Column(name = "to_location", nullable = false)
+    @Column(name = "to_location")
     private String toLocation;
     
     @DecimalMin(value = "0.0", inclusive = true, message = "Step cost must be non-negative")

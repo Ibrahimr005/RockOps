@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes, FaSave, FaTools, FaUser } from 'react-icons/fa';
 import contactService from '../../../services/contactService.js';
 import { equipmentService } from '../../../services/equipmentService.js';
+import '../../../styles/primary-button.scss';
+import '../../../styles/close-modal-button.scss';
+import '../../../styles/cancel-modal-button.scss';
+import '../../../styles/modal-styles.scss';
 import './MaintenanceRecordModal.scss';
 
 const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) => {
@@ -119,19 +123,20 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
     if (!isOpen) return null;
 
     return (
-        <div className="maintenance-record-modal-overlay" onClick={onClose}>
-            <div className="maintenance-record-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-backdrop" onClick={onClose}>
+            <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2>
+                    <div className="modal-title">
                         <FaTools />
                         {editingRecord ? 'Edit Maintenance Record' : 'New Maintenance Record'}
-                    </h2>
-                    <button className="modal-close" onClick={onClose}>
+                    </div>
+                    <button className="modal-close btn-cancel" onClick={onClose}>
                         <FaTimes />
                     </button>
                 </div>
+                <div className="modal-body">
 
-                <form onSubmit={handleSubmit} className="maintenance-record-form">
+                <form onSubmit={handleSubmit} className="maintenance-record-form" id="maintenance-record-form">
                     <div className="form-section">
                         <h3>Equipment Information</h3>
                         <div className="form-row">
@@ -221,16 +226,17 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                         </div>
                     </div>
 
-                    <div className="modal-actions">
-                        <button type="button" className="btn btn-secondary" onClick={onClose}>
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn btn-primary">
-                            <FaSave />
-                            {editingRecord ? 'Update Record' : 'Create Record'}
-                        </button>
-                    </div>
                 </form>
+                </div>
+                <div className="modal-footer">
+                    <button type="button" className="btn-cancel" onClick={onClose}>
+                        Cancel
+                    </button>
+                    <button type="submit" className="btn-primary" form="maintenance-record-form">
+                        <FaSave />
+                        {editingRecord ? 'Update Record' : 'Create Record'}
+                    </button>
+                </div>
             </div>
         </div>
     );

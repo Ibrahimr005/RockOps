@@ -11,7 +11,8 @@ import {
     FiFlag,
     FiDollarSign,
     FiArrowRight,
-    FiX
+    FiX,
+    FiShoppingCart
 } from 'react-icons/fi';
 import "../ProcurementOffers.scss";
 import "./CompletedOffers.scss";
@@ -53,13 +54,34 @@ const CompletedOffers = ({
         }
     };
 
-    // Get offer items for a specific request item - Show both accepted and rejected items
-    const getOfferItemsForRequestItem = (requestItemId) => {
-        if (!activeOffer || !activeOffer.offerItems) return [];
-        return activeOffer.offerItems.filter(
-            item => (item.requestOrderItem?.id === requestItemId || item.requestOrderItemId === requestItemId) &&
-                (item.financeStatus === 'ACCEPTED' || item.financeStatus === 'REJECTED')  // Show both accepted and rejected items
-        );
+    // Group offer items by itemType - only show items that have been through finance review
+    const getOfferItemsByItemType = () => {
+        if (!activeOffer || !activeOffer.offerItems) return {};
+
+        const itemsMap = {};
+
+        activeOffer.offerItems.forEach(offerItem => {
+            // Only include items that have been through finance review
+            if (offerItem.financeStatus === 'ACCEPTED' || offerItem.financeStatus === 'REJECTED') {
+                const itemTypeId = offerItem.itemType?.id;
+                const itemTypeName = offerItem.itemType?.name || 'Unknown Item';
+                const measuringUnit = offerItem.itemType?.measuringUnit || 'units';
+
+                if (itemTypeId) {
+                    if (!itemsMap[itemTypeId]) {
+                        itemsMap[itemTypeId] = {
+                            itemType: offerItem.itemType,
+                            name: itemTypeName,
+                            measuringUnit: measuringUnit,
+                            offerItems: []
+                        };
+                    }
+                    itemsMap[itemTypeId].offerItems.push(offerItem);
+                }
+            }
+        });
+
+        return itemsMap;
     };
 
     // Fetch purchase order when active offer changes
@@ -150,69 +172,77 @@ const CompletedOffers = ({
                                     />
                                 </div>
 
-                                {/* Procurement Items */}
+                                {/* Procurement Items - Updated to show finalized status */}
                                 <div className="procurement-submitted-details-completed">
                                     <h4>Completed Items</h4>
                                     <div className="procurement-submitted-items-completed">
-                                        {activeOffer.requestOrder?.requestItems?.map(requestItem => {
-                                            const offerItems = getOfferItemsForRequestItem(requestItem.id);
-
-                                            // Skip request items that don't have finance-accepted offer items
-                                            if (offerItems.length === 0) return null;
-
-                                            return (
-                                                <div key={requestItem.id} className="procurement-submitted-item-card-completed">
-                                                    <div className="submitted-item-header-completed">
-                                                        <div className="item-icon-name-completed">
-                                                            <div className="item-icon-container-completed">
-                                                                <FiPackage size={22} />
-                                                            </div>
-                                                            <h5>{requestItem.itemType?.name || 'Item'}</h5>
+                                        {Object.entries(getOfferItemsByItemType()).map(([itemTypeId, itemGroup]) => (
+                                            <div key={itemTypeId} className="procurement-submitted-item-card-completed">
+                                                <div className="submitted-item-header-completed">
+                                                    <div className="item-icon-name-completed">
+                                                        <div className="item-icon-container-completed">
+                                                            <FiPackage size={22} />
                                                         </div>
-                                                        <div className="submitted-item-quantity-completed">
-                                                            {requestItem.quantity} {requestItem.itemType.measuringUnit}
-                                                        </div>
+                                                        <h5>{itemGroup.name}</h5>
                                                     </div>
-
-                                                    {offerItems.length > 0 && (
-                                                        <div className="submitted-offer-solutions-completed">
-                                                            <table className="procurement-offer-entries-table-completed">
-                                                                <thead>
-                                                                <tr>
-                                                                    <th>Merchant</th>
-                                                                    <th>Quantity</th>
-                                                                    <th>Unit Price</th>
-                                                                    <th>Total</th>
-                                                                    <th>Status</th>
-                                                                </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                {offerItems.map((offerItem, idx) => (
-                                                                    <tr key={offerItem.id || idx} className={`item-${offerItem.financeStatus.toLowerCase()}`}>
-                                                                        <td>{offerItem.merchant?.name || 'Unknown'}</td>
-                                                                        <td>{offerItem.quantity} {requestItem.itemType.measuringUnit}</td>
-                                                                        <td>${parseFloat(offerItem.unitPrice).toFixed(2)}</td>
-                                                                        <td>${parseFloat(offerItem.totalPrice).toFixed(2)}</td>
-                                                                        <td>
-                                                                            {offerItem.financeStatus === 'ACCEPTED' ? (
-                                                                                <span className="completed-item-status accepted">
-                                                                                    <FiCheckCircle size={14} /> Accepted
-                                                                                </span>
-                                                                            ) : (
-                                                                                <span className="completed-item-status rejected">
-                                                                                    <FiX size={14} /> Rejected
-                                                                                </span>
-                                                                            )}
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    )}
+                                                    <div className="submitted-item-quantity-completed">
+                                                        {/* Show total quantity from offer items */}
+                                                        {itemGroup.offerItems.reduce((sum, item) => sum + item.quantity, 0)} {itemGroup.measuringUnit}
+                                                    </div>
                                                 </div>
-                                            );
-                                        })}
+
+                                                {itemGroup.offerItems.length > 0 && (
+                                                    <div className="submitted-offer-solutions-completed">
+                                                        <table className="procurement-offer-entries-table-completed">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>Merchant</th>
+                                                                <th>Quantity</th>
+                                                                <th>Unit Price</th>
+                                                                <th>Total</th>
+                                                                <th>Finance Status</th>
+                                                                <th>Finalization</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            {itemGroup.offerItems.map((offerItem, idx) => (
+                                                                <tr key={offerItem.id || idx} className={`item-${offerItem.financeStatus.toLowerCase()} ${offerItem.finalized ? 'finalized' : 'not-finalized'}`}>
+                                                                    <td>{offerItem.merchant?.name || 'Unknown'}</td>
+                                                                    <td>{offerItem.quantity} {itemGroup.measuringUnit}</td>
+                                                                    <td>${parseFloat(offerItem.unitPrice).toFixed(2)}</td>
+                                                                    <td>${parseFloat(offerItem.totalPrice).toFixed(2)}</td>
+                                                                    <td>
+                                                                        {offerItem.financeStatus === 'ACCEPTED' ? (
+                                                                            <span className="completed-item-status accepted">
+                                                                                <FiCheckCircle size={14} /> Accepted
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="completed-item-status rejected">
+                                                                                <FiX size={14} /> Rejected
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td>
+                                                                        {offerItem.finalized ? (
+                                                                            <span className="finalization-status finalized">
+                                                                                <FiShoppingCart size={14} />
+                                                                                <span>Finalized</span>
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="finalization-status not-finalized">
+                                                                                <FiClock size={14} />
+                                                                                <span>Not Finalized</span>
+                                                                            </span>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
 

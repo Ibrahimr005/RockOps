@@ -2,6 +2,7 @@ package com.example.backend.controllers;
 
 import com.example.backend.dtos.*;
 import com.example.backend.exceptions.MaintenanceException;
+import com.example.backend.models.MaintenanceRecord;
 import com.example.backend.services.MaintenanceService;
 import com.example.backend.services.ContactService;
 import lombok.RequiredArgsConstructor;
@@ -114,6 +115,17 @@ public class MaintenanceController {
             return ResponseEntity.ok(updated);
         } catch (Exception e) {
             log.error("Error updating maintenance record: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    @PostMapping("/records/{id}/complete")
+    public ResponseEntity<MaintenanceRecordDto> completeMaintenanceRecord(@PathVariable UUID id) {
+        try {
+            MaintenanceRecordDto updated = maintenanceService.completeMaintenanceRecord(id);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            log.error("Error completing maintenance record: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }

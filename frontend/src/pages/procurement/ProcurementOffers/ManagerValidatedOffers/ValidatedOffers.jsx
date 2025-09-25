@@ -20,7 +20,8 @@ const ValidatedOffers = ({
                              setActiveOffer,
                              getTotalPrice,
                              onRetryOffer,
-                             onDeleteOffer
+                             onDeleteOffer,
+                             onOfferSentToFinance = null
                          }) => {
     // Snackbar state
     const [showNotification, setShowNotification] = useState(false);
@@ -199,6 +200,15 @@ const ValidatedOffers = ({
             setShowFinanceReview(false);
             setFinanceDecisions({});
             setRejectionReasons({});
+
+            // NEW: Use callback to redirect to finance tab with this offer
+            if (onOfferSentToFinance) {
+                onOfferSentToFinance({
+                    ...activeOffer,
+                    status: overallStatus,
+                    financeStatus: overallStatus
+                });
+            }
 
             // Remove from current list since it's moved to finance tab
             if (onDeleteOffer) {
@@ -418,22 +428,27 @@ const ValidatedOffers = ({
 
                                 {/* Action buttons for rejected offers */}
                                 {activeOffer.status === 'MANAGERREJECTED' && (
-                                    <>
+                                    <div className="action-buttons-group">
                                         <button
                                             className="btn-primary"
                                             onClick={handleRetryClick}
-                                            title="Retry Offer"
+                                            disabled={isRetrying}
+                                            title="Create a new offer"
+                                            style={{ marginRight: '10px' }}
                                         >
-                                            <FiRefreshCw size={16} />
+                                            <FiRefreshCw />
+                                            {isRetrying ? 'Creating...' : 'Retry Offer'}
                                         </button>
                                         <button
                                             className="btn-primary"
                                             onClick={handleDeleteClick}
-                                            title="Delete Offer"
+                                            disabled={isDeleting}
+                                            title="Delete this offer permanently"
                                         >
-                                            <FiTrash2 size={16} />
+                                            <FiTrash2 />
+                                            {isDeleting ? 'Deleting...' : 'Delete Offer'}
                                         </button>
-                                    </>
+                                    </div>
                                 )}
                             </div>
                         </div>

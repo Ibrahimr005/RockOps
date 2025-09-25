@@ -3,7 +3,8 @@ import {
     FiUser,
     FiCalendar,
     FiFileText,
-    FiFlag
+    FiFlag,
+    FiPackage
 } from 'react-icons/fi';
 import './RequestOrderDetails.scss';
 
@@ -17,6 +18,17 @@ const RequestOrderDetails = ({ requestOrder }) => {
             <h4>Request Order Details</h4>
 
             <div className="r0-details-procurement-request-details-grid">
+                {/* Request Order Title */}
+                <div className="r0-details-request-detail-item r0-details-request-detail-item-full-width">
+                    <div className="r0-details-request-detail-icon">
+                        <FiPackage size={18} />
+                    </div>
+                    <div className="r0-details-request-detail-content">
+                        <span className="r0-details-request-detail-label">Request Title</span>
+                        <span className="r0-details-request-detail-value r0-details-request-title">{requestOrder.title}</span>
+                    </div>
+                </div>
+
                 <div className="r0-details-request-detail-item">
                     <div className="r0-details-request-detail-icon">
                         <FiUser size={18} />

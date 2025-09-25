@@ -50,7 +50,8 @@ const ProcurementOffers = () => {
     const [pendingSubmittedOffer, setPendingSubmittedOffer] = useState(null);
     const [pendingFinalizedOffer, setPendingFinalizedOffer] = useState(null);
     const [pendingCompletedOffer, setPendingCompletedOffer] = useState(null);
-    const [pendingValidatedOffer, setPendingValidatedOffer] = useState(null); // NEW: Track validated offer for redirection
+    const [pendingValidatedOffer, setPendingValidatedOffer] = useState(null);
+    const [pendingFinanceOffer, setPendingFinanceOffer] = useState(null); // NEW: Track finance validated offer
 
     // Helper function for authenticated fetch (keep for backward compatibility with child components)
     const fetchWithAuth = async (url, options = {}) => {
@@ -154,17 +155,27 @@ const ProcurementOffers = () => {
                         const submittedOffer = offersData.find(offer => offer.id === pendingSubmittedOffer.id);
                         if (submittedOffer) {
                             setActiveOffer(submittedOffer);
-                            setPendingSubmittedOffer(null); // Clear the pending offer
+                            setPendingSubmittedOffer(null);
                         } else {
                             setActiveOffer(offersData[0]);
                         }
                     }
-                    // NEW: If we have a pending validated offer and we're on the validated tab, select it
+                    // If we have a pending validated offer and we're on the validated tab, select it
                     else if (pendingValidatedOffer && activeTab === 'validated') {
                         const validatedOffer = offersData.find(offer => offer.id === pendingValidatedOffer.id);
                         if (validatedOffer) {
                             setActiveOffer(validatedOffer);
-                            setPendingValidatedOffer(null); // Clear the pending offer
+                            setPendingValidatedOffer(null);
+                        } else {
+                            setActiveOffer(offersData[0]);
+                        }
+                    }
+                    // NEW: If we have a pending finance offer and we're on the finance tab, select it
+                    else if (pendingFinanceOffer && activeTab === 'finance') {
+                        const financeOffer = offersData.find(offer => offer.id === pendingFinanceOffer.id);
+                        if (financeOffer) {
+                            setActiveOffer(financeOffer);
+                            setPendingFinanceOffer(null);
                         } else {
                             setActiveOffer(offersData[0]);
                         }
@@ -174,7 +185,7 @@ const ProcurementOffers = () => {
                         const finalizedOffer = offersData.find(offer => offer.id === pendingFinalizedOffer.id);
                         if (finalizedOffer) {
                             setActiveOffer(finalizedOffer);
-                            setPendingFinalizedOffer(null); // Clear the pending offer
+                            setPendingFinalizedOffer(null);
                         } else {
                             setActiveOffer(offersData[0]);
                         }
@@ -182,14 +193,14 @@ const ProcurementOffers = () => {
                     // If we have a pending completed offer and we're on the completed tab, select it
                     else if (pendingCompletedOffer && activeTab === 'completed') {
                         setActiveOffer(pendingCompletedOffer);
-                        setPendingCompletedOffer(null); // Clear the pending offer
+                        setPendingCompletedOffer(null);
                     }
                     // Add this BEFORE the existing "else if (activeOffer && offersData.find..." condition:
                     else if (pendingNewOffer && activeTab === 'unstarted') {
                         const newOffer = offersData.find(offer => offer.id === pendingNewOffer.id);
                         if (newOffer) {
                             setActiveOffer(newOffer);
-                            setPendingNewOffer(null); // Clear the pending offer
+                            setPendingNewOffer(null);
                         } else {
                             setActiveOffer(offersData[0]);
                         }
@@ -216,7 +227,7 @@ const ProcurementOffers = () => {
         };
 
         fetchData();
-    }, [activeTab, pendingSubmittedOffer, pendingFinalizedOffer, pendingCompletedOffer, pendingNewOffer, pendingValidatedOffer]); // Add pendingValidatedOffer
+    }, [activeTab, pendingSubmittedOffer, pendingFinalizedOffer, pendingCompletedOffer, pendingNewOffer, pendingValidatedOffer, pendingFinanceOffer]); // Add pendingFinanceOffer
 
     // When active offer changes, fetch its request order
     useEffect(() => {
@@ -361,7 +372,7 @@ const ProcurementOffers = () => {
         setActiveTab('finalize');
     };
 
-    // Handle offer completed callback - NEW FUNCTION
+    // Handle offer completed callback
     const handleOfferCompleted = (completedOffer) => {
         // Store the completed offer for selection after tab switch
         setPendingCompletedOffer(completedOffer);
@@ -370,7 +381,7 @@ const ProcurementOffers = () => {
         setActiveTab('completed');
     };
 
-    // NEW: Handle offer validated (approved/declined) callback
+    // Handle offer validated (approved/declined) callback
     const handleOfferValidated = (validatedOffer, action) => {
         console.log(`Offer ${action}:`, validatedOffer);
 
@@ -379,6 +390,17 @@ const ProcurementOffers = () => {
 
         // Switch to validated tab
         setActiveTab('validated');
+    };
+
+    // NEW: Handle offer sent to finance callback
+    const handleOfferSentToFinance = (financeOffer) => {
+        console.log('Offer sent to finance:', financeOffer);
+
+        // Store the finance offer for selection after tab switch
+        setPendingFinanceOffer(financeOffer);
+
+        // Switch to finance tab
+        setActiveTab('finance');
     };
 
     // Prepare stats data for the intro card
@@ -402,6 +424,22 @@ const ProcurementOffers = () => {
         }
     ];
 
+    // Clear search when switching tabs
+    const handleTabChange = (newTab) => {
+        setSearchTerm(''); // Clear search term when switching tabs
+        setActiveTab(newTab);
+    };
+
+    // Handle search input changes
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
+    };
+
+    // Clear search
+    const clearSearch = () => {
+        setSearchTerm('');
+    };
+
     return (
         <div className="procurement-offers-container">
             {/* Header - Intro Card using the new component */}
@@ -418,40 +456,40 @@ const ProcurementOffers = () => {
             <div className="procurement-offers-tabs">
                 <button
                     className={`procurement-offers-tab ${activeTab === 'unstarted' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('unstarted')}
+                    onClick={() => handleTabChange('unstarted')}
                 >
                     <FiInbox /> Unstarted
                 </button>
                 <button
                     className={`procurement-offers-tab ${activeTab === 'inprogress' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('inprogress')}
+                    onClick={() => handleTabChange('inprogress')}
                 >
                     <FiEdit /> In Progress
                 </button>
                 <button
                     className={`procurement-offers-tab ${activeTab === 'submitted' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('submitted')}
+                    onClick={() => handleTabChange('submitted')}
                 >
                     <FiSend /> Submitted
                 </button>
 
                 <button
                     className={`procurement-offers-tab ${activeTab === 'validated' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('validated')}
+                    onClick={() => handleTabChange('validated')}
                 >
                     <FiCheck /> Manager Validated
                 </button>
 
                 <button
                     className={`procurement-offers-tab ${activeTab === 'finance' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('finance')}
+                    onClick={() => handleTabChange('finance')}
                 >
                     <FiDollarSign /> Finance Validated
                 </button>
 
                 <button
                     className={`procurement-offers-tab ${activeTab === 'finalize' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('finalize')}
+                    onClick={() => handleTabChange('finalize')}
                 >
                     <FiCheckCircle /> Finalize
                 </button>
@@ -459,7 +497,7 @@ const ProcurementOffers = () => {
                 {/* Add the Completed Offers tab */}
                 <button
                     className={`procurement-offers-tab ${activeTab === 'completed' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('completed')}
+                    onClick={() => handleTabChange('completed')}
                 >
                     <FiCheckCircle /> Completed
                 </button>
@@ -467,6 +505,53 @@ const ProcurementOffers = () => {
 
             {/* Content Container with Theme Support */}
             <div className="procurement-content-container">
+                {/* Search Bar Section */}
+                <div className="procurement-section-description">
+
+
+                    <div className="procurement-search-container">
+                        <FiSearch className="procurement-search-icon" />
+                        <input
+                            type="text"
+                            className="procurement-search-input"
+                            placeholder={`Search offers in ${getActiveTabLabel().toLowerCase()}...`}
+                            value={searchTerm}
+                            onChange={handleSearchChange}
+                        />
+                        {searchTerm && (
+                            <button
+                                className="procurement-search-clear"
+                                onClick={clearSearch}
+                                style={{
+                                    position: 'absolute',
+                                    right: '0.6rem',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: 'var(--color-text-muted)',
+                                    padding: '0.2rem',
+                                    borderRadius: 'var(--radius-sm)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.backgroundColor = 'var(--color-surface-hover)';
+                                    e.target.style.color = 'var(--color-text-primary)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.backgroundColor = 'transparent';
+                                    e.target.style.color = 'var(--color-text-muted)';
+                                }}
+                            >
+                                <FiX size={16} />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
                 {/* Render the active tab component */}
                 {loading ? (
                     <div className="procurement-loading">
@@ -482,6 +567,7 @@ const ProcurementOffers = () => {
                                 setActiveOffer={setActiveOffer}
                                 handleOfferStatusChange={handleOfferStatusChange}
                                 onOfferStarted={handleOfferStarted}
+                                onDeleteOffer={handleDeleteOffer}  // ADD THIS LINE
                             />
                         )}
 
@@ -495,6 +581,7 @@ const ProcurementOffers = () => {
                                 API_URL={API_URL}
                                 setError={setError}
                                 setSuccess={setSuccess}
+                                onDeleteOffer={handleDeleteOffer}  // ADD THIS LINE
                             />
                         )}
 
@@ -505,7 +592,7 @@ const ProcurementOffers = () => {
                                 activeOffer={activeOffer}
                                 setActiveOffer={setActiveOffer}
                                 getTotalPrice={getTotalPrice}
-                                onOfferValidated={handleOfferValidated} // NEW: Pass the validation handler
+                                onOfferValidated={handleOfferValidated}
                             />
                         )}
 
@@ -517,6 +604,7 @@ const ProcurementOffers = () => {
                                 getTotalPrice={getTotalPrice}
                                 onRetryOffer={handleRetryOffer}
                                 onDeleteOffer={handleDeleteOffer}
+                                onOfferSentToFinance={handleOfferSentToFinance} // NEW: Pass the finance callback
                             />
                         )}
 
@@ -544,6 +632,7 @@ const ProcurementOffers = () => {
                                 setSuccess={setSuccess}
                                 onOfferFinalized={handleOfferFinalized}
                                 onOfferCompleted={handleOfferCompleted}
+                                onDeleteOffer={handleDeleteOffer}
                             />
                         )}
 
