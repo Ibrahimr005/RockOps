@@ -454,4 +454,17 @@ public class OfferController {
                     .body(Map.of("error", "Failed to finalize items: " + e.getMessage()));
         }
     }
+
+    @PostMapping("/{originalOfferId}/copy-timeline-to/{newOfferId}")
+    public ResponseEntity<?> copyTimeline(
+            @PathVariable UUID originalOfferId,
+            @PathVariable UUID newOfferId) {
+        try {
+            offerService.addTimelineHistoryToOffer(originalOfferId, newOfferId);
+            return ResponseEntity.ok(Map.of("message", "Timeline copied successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to copy timeline: " + e.getMessage()));
+        }
+    }
 }

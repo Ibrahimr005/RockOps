@@ -271,58 +271,103 @@ const InProgressOffers = ({
             console.log("Form data received from modal:", formData);
 
             if (modalMode === 'add') {
-                // Add new offer item
-                const itemToAdd = {
-                    ...formData,
-                    requestOrderItemId: selectedRequestItem.id
-                };
+                // Check if an item with the same merchant, unit price, and currency already exists
+                const existingOfferItems = activeOffer.offerItems || [];
+                const existingItem = existingOfferItems.find(item =>
+                    (item.requestOrderItem?.id === selectedRequestItem.id ||
+                        item.requestOrderItemId === selectedRequestItem.id) &&
+                    item.merchantId === formData.merchantId &&
+                    parseFloat(item.unitPrice) === parseFloat(formData.unitPrice) &&
+                    item.currency === formData.currency
+                );
 
-                console.log("Final item to add:", itemToAdd);
-                console.log("Item to add details:");
-                console.log("  requestOrderItemId:", itemToAdd.requestOrderItemId);
-                console.log("  merchantId:", itemToAdd.merchantId);
-                console.log("  quantity:", itemToAdd.quantity, "(type:", typeof itemToAdd.quantity, ")");
-                console.log("  unitPrice:", itemToAdd.unitPrice, "(type:", typeof itemToAdd.unitPrice, ")");
-                console.log("  totalPrice:", itemToAdd.totalPrice, "(type:", typeof itemToAdd.totalPrice, ")");
-                console.log("  currency:", itemToAdd.currency);
-                console.log("  estimatedDeliveryDays:", itemToAdd.estimatedDeliveryDays);
-                console.log("  deliveryNotes:", itemToAdd.deliveryNotes);
-                console.log("  comment:", itemToAdd.comment);
+                if (existingItem) {
+                    // Merge with existing item by updating quantity and total price
+                    const newQuantity = (existingItem.quantity || 0) + (formData.quantity || 0);
+                    const newTotalPrice = newQuantity * parseFloat(formData.unitPrice);
 
-                // Validate data before sending
-                if (!itemToAdd.merchantId) {
-                    throw new Error("Merchant ID is required");
+                    const updateData = {
+                        quantity: newQuantity,
+                        totalPrice: newTotalPrice,
+                        // Update other fields if they're different
+                        estimatedDeliveryDays: formData.estimatedDeliveryDays,
+                        deliveryNotes: formData.deliveryNotes,
+                        comment: formData.comment
+                    };
+
+                    console.log("Merging with existing item:", existingItem.id);
+                    console.log("New quantity:", newQuantity);
+                    console.log("New total price:", newTotalPrice);
+
+                    // Use offerService to update the existing item
+                    const updatedItem = await offerService.updateItem(existingItem.id, updateData);
+
+                    // Update the offer item in the current state
+                    const updatedOfferItems = activeOffer.offerItems.map(item =>
+                        item.id === existingItem.id ? updatedItem : item
+                    );
+
+                    const updatedOffer = {
+                        ...activeOffer,
+                        offerItems: updatedOfferItems
+                    };
+
+                    setActiveOffer(updatedOffer);
+                    showSnackbar('success', 'Procurement solution merged with existing entry!');
+                } else {
+                    // Add new offer item (original logic)
+                    const itemToAdd = {
+                        ...formData,
+                        requestOrderItemId: selectedRequestItem.id
+                    };
+
+                    console.log("Final item to add:", itemToAdd);
+                    console.log("Item to add details:");
+                    console.log("  requestOrderItemId:", itemToAdd.requestOrderItemId);
+                    console.log("  merchantId:", itemToAdd.merchantId);
+                    console.log("  quantity:", itemToAdd.quantity, "(type:", typeof itemToAdd.quantity, ")");
+                    console.log("  unitPrice:", itemToAdd.unitPrice, "(type:", typeof itemToAdd.unitPrice, ")");
+                    console.log("  totalPrice:", itemToAdd.totalPrice, "(type:", typeof itemToAdd.totalPrice, ")");
+                    console.log("  currency:", itemToAdd.currency);
+                    console.log("  estimatedDeliveryDays:", itemToAdd.estimatedDeliveryDays);
+                    console.log("  deliveryNotes:", itemToAdd.deliveryNotes);
+                    console.log("  comment:", itemToAdd.comment);
+
+                    // Validate data before sending
+                    if (!itemToAdd.merchantId) {
+                        throw new Error("Merchant ID is required");
+                    }
+                    if (!itemToAdd.quantity || itemToAdd.quantity <= 0) {
+                        throw new Error("Quantity must be greater than 0");
+                    }
+                    if (!itemToAdd.unitPrice || isNaN(itemToAdd.unitPrice)) {
+                        throw new Error("Valid unit price is required");
+                    }
+                    if (!itemToAdd.totalPrice || isNaN(itemToAdd.totalPrice)) {
+                        throw new Error("Valid total price is required");
+                    }
+                    if (!itemToAdd.currency) {
+                        throw new Error("Currency is required");
+                    }
+
+                    console.log("Validation passed, sending request...");
+
+                    // Use offerService to add items
+                    const addedItems = await offerService.addItems(activeOffer.id, [itemToAdd]);
+
+                    console.log("Response from server:", addedItems);
+
+                    // Update active offer with new items
+                    const updatedOffer = {
+                        ...activeOffer,
+                        offerItems: [...(activeOffer.offerItems || []), ...addedItems]
+                    };
+
+                    setActiveOffer(updatedOffer);
+                    showSnackbar('success', 'Procurement solution added successfully!');
                 }
-                if (!itemToAdd.quantity || itemToAdd.quantity <= 0) {
-                    throw new Error("Quantity must be greater than 0");
-                }
-                if (!itemToAdd.unitPrice || isNaN(itemToAdd.unitPrice)) {
-                    throw new Error("Valid unit price is required");
-                }
-                if (!itemToAdd.totalPrice || isNaN(itemToAdd.totalPrice)) {
-                    throw new Error("Valid total price is required");
-                }
-                if (!itemToAdd.currency) {
-                    throw new Error("Currency is required");
-                }
-
-                console.log("Validation passed, sending request...");
-
-                // Use offerService to add items
-                const addedItems = await offerService.addItems(activeOffer.id, [itemToAdd]);
-
-                console.log("Response from server:", addedItems);
-
-                // Update active offer with new items
-                const updatedOffer = {
-                    ...activeOffer,
-                    offerItems: [...(activeOffer.offerItems || []), ...addedItems]
-                };
-
-                setActiveOffer(updatedOffer);
-                showSnackbar('success', 'Procurement solution added successfully!');
             } else {
-                // Edit existing offer item
+                // Edit existing offer item (original logic)
                 console.log("Editing offer item ID:", selectedOfferItem.id);
                 console.log("Edit form data:", formData);
 

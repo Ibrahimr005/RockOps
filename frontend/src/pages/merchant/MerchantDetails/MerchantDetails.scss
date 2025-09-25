@@ -227,12 +227,13 @@
         margin: 0 auto;
 
         h3 {
-          margin: 0 0 2.5rem 0;
+          margin: 0 0 3.5rem 0;
           font-size: 2rem;
           font-weight: 700;
           color: var(--head-title-color);
           text-align: center;
           position: relative;
+
 
           &::after {
             content: '';
