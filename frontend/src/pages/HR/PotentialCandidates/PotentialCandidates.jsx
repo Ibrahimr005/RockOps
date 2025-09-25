@@ -62,7 +62,7 @@ const PotentialCandidates = () => {
             } else {
                 response = await vacancyService.getPotentialCandidates();
             }
-
+console.log(response.data);
             setPotentialCandidates(response.data || []);
         } catch (error) {
             console.error('Error loading potential candidates:', error);

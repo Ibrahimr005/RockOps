@@ -2,10 +2,7 @@ package com.example.backend.models.hr;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -15,6 +12,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"vacancy"})
 public class Candidate {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -48,7 +46,15 @@ public class Candidate {
     @Column(length = 1000)
     private String notes;
 
-    // New fields for candidate status management
+    // NEW: Rating field (1-5 stars)
+    @Column(name = "rating")
+    private Integer rating;
+
+    // NEW: Rating notes/feedback
+    @Column(name = "rating_notes", length = 500)
+    private String ratingNotes;
+
+    // Candidate status management
     @Enumerated(EnumType.STRING)
     @Column(name = "candidate_status")
     @Builder.Default
@@ -71,11 +77,11 @@ public class Candidate {
         APPLIED,        // Initial application
         UNDER_REVIEW,   // Being reviewed by HR
         INTERVIEWED,    // Completed interview
+        PENDING_HIRE,   // Ready to hire, waiting for employee form
         HIRED,          // Successfully hired
         REJECTED,       // Application rejected
         POTENTIAL,      // Moved to potential list (vacancy full)
-        WITHDRAWN,
-        PENDING_HIRE// Candidate withdrew application
+        WITHDRAWN       // Candidate withdrew application
     }
 
     // Helper methods
@@ -96,5 +102,13 @@ public class Candidate {
                 !CandidateStatus.HIRED.equals(candidateStatus) &&
                 !CandidateStatus.REJECTED.equals(candidateStatus) &&
                 !CandidateStatus.WITHDRAWN.equals(candidateStatus);
+    }
+
+    // NEW: Rating validation
+    public void setRating(Integer rating) {
+        if (rating != null && (rating < 1 || rating > 5)) {
+            throw new IllegalArgumentException("Rating must be between 1 and 5");
+        }
+        this.rating = rating;
     }
 }

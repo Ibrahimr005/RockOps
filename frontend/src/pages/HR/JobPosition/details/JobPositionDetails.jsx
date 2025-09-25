@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { FiEdit, FiArrowLeft, FiUser, FiUsers, FiTrendingUp, FiInfo } from 'react-icons/fi';
+import React, {useEffect, useState} from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
+import {FiArrowLeft, FiEdit, FiInfo, FiTrendingUp, FiUser, FiUsers} from 'react-icons/fi';
 import EditPositionForm from '../components/EditPositionForm.jsx';
 import PositionOverview from './components/PositionOverview.jsx';
 import PositionEmployees from './components/PositionEmployees.jsx';
 import PositionPromotions from './components/PositionPromotions.jsx';
-import { useSnackbar } from '../../../../contexts/SnackbarContext';
-import { jobPositionService } from '../../../../services/hr/jobPositionService.js';
+import {useSnackbar} from '../../../../contexts/SnackbarContext';
+import {jobPositionService} from '../../../../services/hr/jobPositionService.js';
 import './JobPositionDetails.scss';
 
 const JobPositionDetails = () => {
-    const { id } = useParams();
+    const {id} = useParams();
     const navigate = useNavigate();
-    const { showSuccess, showError } = useSnackbar();
+    const {showSuccess, showError} = useSnackbar();
 
     const [position, setPosition] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -25,19 +25,19 @@ const JobPositionDetails = () => {
         {
             id: 'overview',
             label: 'Overview',
-            icon: <FiInfo />,
+            icon: <FiInfo/>,
             component: PositionOverview
         },
         {
             id: 'employees',
             label: 'Employees',
-            icon: <FiUsers />,
+            icon: <FiUsers/>,
             component: PositionEmployees
         },
         {
             id: 'promotions',
             label: 'Promotions',
-            icon: <FiTrendingUp />,
+            icon: <FiTrendingUp/>,
             component: PositionPromotions
         }
     ];
@@ -105,7 +105,7 @@ const JobPositionDetails = () => {
                         className="btn btn-primary"
                         onClick={() => navigate('/hr/positions')}
                     >
-                        <FiArrowLeft /> Back to Positions
+                        <FiArrowLeft/> Back to Positions
                     </button>
                 </div>
             </div>
@@ -117,28 +117,21 @@ const JobPositionDetails = () => {
     return (
         <div className="position-details-container">
             {/* Header Section */}
-            <div className="position-header">
-                <div className="position-header-content">
-                    <button
-                        onClick={() => navigate('/hr/positions')}
-                        className="back-button"
-                        title="Back to positions"
-                    >
-                        <FiArrowLeft />
-                    </button>
-                    <div className="position-title">
-                        <h1>{position.positionName}</h1>
-                        <p className="position-subtitle">
-                            {position.department} • {position.contractType?.replace('_', ' ')}
-                        </p>
-                    </div>
-                </div>
+            <div className="departments-header">
+
+                <h1>{position.positionName}
+                    <p className="employees-header__subtitle">
+                        {position.department} • <span
+                        className="status-badge"> {position.contractType?.replace('_', ' ')}</span>
+                    </p>
+                </h1>
+
                 <div className="position-actions">
                     <button
                         className="btn btn-primary"
                         onClick={() => setShowEditForm(true)}
                     >
-                        <FiEdit /> Edit Position
+                        <FiEdit/> Edit Position
                     </button>
                 </div>
             </div>
@@ -148,7 +141,7 @@ const JobPositionDetails = () => {
                 <div className="summary-grid">
                     <div className="summary-item">
                         <div className="summary-icon">
-                            <FiUser />
+                            <FiUser/>
                         </div>
                         <div className="summary-content">
                             <span className="summary-label">Experience Level</span>
@@ -160,7 +153,7 @@ const JobPositionDetails = () => {
                     </div>
                     <div className="summary-item">
                         <div className="summary-icon">
-                            <FiUsers />
+                            <FiUsers/>
                         </div>
                         <div className="summary-content">
                             <span className="summary-label">Reporting To</span>
@@ -169,7 +162,7 @@ const JobPositionDetails = () => {
                     </div>
                     <div className="summary-item">
                         <div className="summary-icon">
-                            <FiTrendingUp />
+                            <FiTrendingUp/>
                         </div>
                         <div className="summary-content">
                             <span className="summary-label">Status</span>

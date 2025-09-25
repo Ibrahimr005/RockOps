@@ -1,5 +1,5 @@
 package com.example.backend.dto.hr.employee;
-import com.example.backend.dto.hr.DailyAttendanceDTO;
+import com.example.backend.dto.hr.attendance.DailyAttendanceDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

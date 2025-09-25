@@ -9,7 +9,9 @@ import ConfirmationDialog from '../../../../components/common/ConfirmationDialog
 import { candidateService } from '../../../../services/hr/candidateService.js';
 import { vacancyService } from "../../../../services/hr/vacancyService.js";
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
-import { FaFilePdf, FaUserCheck, FaTrashAlt, FaUserPlus, FaEye, FaEdit, FaClock } from 'react-icons/fa';
+import { FaFilePdf, FaUserCheck, FaTrashAlt, FaUserPlus, FaEye, FaEdit, FaClock, FaTasks } from 'react-icons/fa';
+import StarRating from '../../../../components/common/StarRating/StarRating';
+import CandidateStatusModal from '../../../../components/hr/CandidateStatusModal/CandidateStatusModal';
 
 const CandidatesTable = ({ vacancyId }) => {
     const navigate = useNavigate();
@@ -31,6 +33,7 @@ const CandidatesTable = ({ vacancyId }) => {
     const [actionLoading, setActionLoading] = useState(false);
 
     const { showSuccess, showError } = useSnackbar();
+    const [showStatusModal, setShowStatusModal] = useState(false);
 
     // Fetch candidates and vacancy stats
     useEffect(() => {
@@ -49,7 +52,7 @@ const CandidatesTable = ({ vacancyId }) => {
                 candidateService.getByVacancy(vacancyId),
                 vacancyService.getStatistics(vacancyId)
             ]);
-
+            console.log("CANDIDATES", candidatesResponse.data)
             setCandidates(candidatesResponse.data || []);
             setVacancyStats(statsResponse.data);
 
@@ -155,35 +158,54 @@ const CandidatesTable = ({ vacancyId }) => {
             return;
         }
 
-        // Check if already hired or pending
+        // Check if already hired
         if (candidate.candidateStatus === 'HIRED') {
             showError('Candidate is already hired.');
             return;
         }
 
+        // If already pending hire, redirect to complete employee form
         if (candidate.candidateStatus === 'PENDING_HIRE') {
-            showError('Candidate is already pending hire. Complete the employee form to finalize hiring.');
+            setConfirmDialog({
+                isVisible: true,
+                type: 'info',
+                title: 'Complete Hiring Process',
+                message: `"${candidate.firstName} ${candidate.lastName}" is already pending hire. Would you like to complete the employee form now?`,
+                onConfirm: async () => {
+                    setActionLoading(true);
+                    try {
+                        const employeeDataResponse = await candidateService.convertToEmployee(candidate.id);
+                        sessionStorage.setItem('prepopulatedEmployeeData', JSON.stringify(employeeDataResponse.data));
+                        showSuccess('Redirecting to employee form to complete hiring process.');
+                        navigate('/hr/employees/add');
+                    } catch (error) {
+                        console.error('Error preparing candidate data:', error);
+                        showError('Failed to prepare candidate data for hiring');
+                    } finally {
+                        setActionLoading(false);
+                        setConfirmDialog(prev => ({ ...prev, isVisible: false }));
+                    }
+                }
+            });
             return;
         }
 
+        // Set to PENDING_HIRE status first
         setConfirmDialog({
             isVisible: true,
             type: 'success',
             title: 'Set Candidate to Pending Hire',
-            message: `Are you sure you want to mark "${candidate.firstName} ${candidate.lastName}" as pending hire?`,
+            message: `Are you sure you want to mark "${candidate.firstName} ${candidate.lastName}" as pending hire? This will prepare them for the employee creation process.`,
             onConfirm: async () => {
                 setActionLoading(true);
                 try {
-                    // Skip status update for now, go directly to employee form
-                    const employeeDataResponse = await candidateService.convertToEmployee(candidate.id);
-                    sessionStorage.setItem('prepopulatedEmployeeData', JSON.stringify(employeeDataResponse.data));
-
-                    showSuccess('Redirecting to employee form to complete hiring process.');
-                    navigate('/hr/employees/add');
-
+                    // Update status to PENDING_HIRE
+                    await candidateService.updateStatus(candidate.id, 'PENDING_HIRE');
+                    await fetchCandidatesAndStats();
+                    showSuccess('Candidate marked as pending hire. You can now complete the employee form.');
                 } catch (error) {
-                    console.error('Error preparing candidate data:', error);
-                    showError('Failed to prepare candidate data for hiring');
+                    console.error('Error updating candidate status:', error);
+                    showError('Failed to update candidate status');
                 } finally {
                     setActionLoading(false);
                     setConfirmDialog(prev => ({ ...prev, isVisible: false }));
@@ -196,6 +218,34 @@ const CandidatesTable = ({ vacancyId }) => {
     const handleViewDetails = (candidate) => {
         setSelectedCandidate(candidate);
         setShowDetailsModal(true);
+    };
+
+    const handleStatusChange = (candidate) => {
+        setSelectedCandidate(candidate);
+        setShowStatusModal(true);
+    };
+    const handleStatusUpdate = async (updateData) => {
+        try {
+            setActionLoading(true);
+            await candidateService.updateStatusWithDetails(
+                selectedCandidate.id,
+                updateData.status,
+                updateData.rejectionReason,
+                updateData.rating,
+                updateData.ratingNotes
+            );
+
+            await fetchCandidatesAndStats();
+            setShowStatusModal(false);
+            setSelectedCandidate(null);
+            showSuccess('Candidate status updated successfully');
+        } catch (error) {
+            console.error('Error updating candidate status:', error);
+            const errorMessage = error.response?.data?.message || error.message || 'Failed to update candidate status';
+            showError(errorMessage);
+        } finally {
+            setActionLoading(false);
+        }
     };
 
     // Handle editing candidate
@@ -272,6 +322,24 @@ const CandidatesTable = ({ vacancyId }) => {
             filterable: true,
             render: (row) => row.currentPosition || 'N/A'
         },
+        // NEW: Rating column
+        {
+            id: 'rating',
+            header: 'Rating',
+            accessor: 'rating',
+            sortable: true,
+            filterable: false,
+            render: (row) => row.rating ? (
+                <StarRating
+                    rating={row.rating}
+                    readonly={true}
+                    size="small"
+                    showLabel={false}
+                />
+            ) : (
+                <span className="text-muted">Not rated</span>
+            )
+        },
         {
             id: 'candidateStatus',
             header: 'Status',
@@ -282,8 +350,8 @@ const CandidatesTable = ({ vacancyId }) => {
                 const status = getStatusDisplay(row.candidateStatus);
                 return (
                     <span className={`status-badge ${status.class}`}>
-                        {status.text}
-                    </span>
+                    {status.text}
+                </span>
                 );
             }
         },
@@ -296,10 +364,8 @@ const CandidatesTable = ({ vacancyId }) => {
             render: (row) => formatDate(row.applicationDate)
         }
     ];
-
     // Define actions for DataTable
     const actions = [
-
         {
             id: 'edit',
             label: 'Edit',
@@ -307,6 +373,15 @@ const CandidatesTable = ({ vacancyId }) => {
             onClick: (row) => handleEditClick(row),
             isDisabled: (row) => row.candidateStatus === 'HIRED',
             className: 'edit-btn'
+        },
+        // NEW: Status management action
+        {
+            id: 'status',
+            label: 'Change Status',
+            icon: <FaTasks />,
+            onClick: (row) => handleStatusChange(row),
+            isDisabled: (row) => false, // Always enabled
+            className: 'status-btn'
         },
         {
             id: 'view-resume',
@@ -318,25 +393,14 @@ const CandidatesTable = ({ vacancyId }) => {
         },
         {
             id: 'hire',
-            label: (row) => {
-                if (row.candidateStatus === 'PENDING_HIRE') return 'Complete Hiring';
-                if (row.candidateStatus === 'HIRED') return 'Hired';
-                return 'Hire';
+            label: 'Hire',
+            icon: <FaUserCheck />,
+            onClick: (row) => {
+                console.log('Hire clicked:', row);
+                handleHireCandidate(row);
             },
-            icon: (row) => {
-                if (row.candidateStatus === 'PENDING_HIRE') return <FaClock />;
-                return <FaUserCheck />;
-            },
-            onClick: (row) => handleHireCandidate(row),
-            isDisabled: (row) => {
-                // Only disable if already hired - show button for other cases
-                return row.candidateStatus === 'HIRED';
-            },
-            className: (row) => {
-                if (row.candidateStatus === 'PENDING_HIRE') return 'candidates-table__pending-hire-btn';
-                if (row.candidateStatus === 'HIRED') return 'candidates-table__hired-btn';
-                return 'hire-btn';
-            }
+            isDisabled: (row) => row.candidateStatus === 'HIRED',
+            className: 'hire-btn'
         },
         {
             id: 'delete',
@@ -401,7 +465,7 @@ const CandidatesTable = ({ vacancyId }) => {
                 columns={columns}
                 actions={actions}
                 loading={loading}
-                tableTitle="Candidates"
+                tableTitle=""
                 showSearch={true}
                 showFilters={true}
                 showExport={true}
@@ -484,6 +548,19 @@ const CandidatesTable = ({ vacancyId }) => {
                 isLoading={actionLoading}
                 size="medium"
             />
+            {/* Status Change Modal */}
+            {showStatusModal && selectedCandidate && (
+                <CandidateStatusModal
+                    isOpen={showStatusModal}
+                    candidate={selectedCandidate}
+                    onClose={() => {
+                        setShowStatusModal(false);
+                        setSelectedCandidate(null);
+                    }}
+                    onStatusUpdate={handleStatusUpdate}
+                    isLoading={actionLoading}
+                />
+            )}
         </div>
     );
 };
