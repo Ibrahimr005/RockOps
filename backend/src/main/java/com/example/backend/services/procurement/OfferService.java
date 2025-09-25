@@ -742,6 +742,52 @@ public class OfferService {
     }
 
     /**
+     * SIMPLE VERSION FOR TESTING - Just finalize items without creating new offer
+     */
+    @Transactional
+    public Map<String, Object> simpleFinalizeOffer(UUID offerId, List<UUID> finalizedItemIds, String username) {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            System.out.println("=== SIMPLE FINALIZE TEST ===");
+
+            Offer offer = offerRepository.findById(offerId)
+                    .orElseThrow(() -> new RuntimeException("Offer not found"));
+
+            List<OfferItem> itemsToFinalize = offer.getOfferItems().stream()
+                    .filter(item -> finalizedItemIds.contains(item.getId()))
+                    .filter(item -> "ACCEPTED".equals(item.getFinanceStatus()) || "FINANCE_ACCEPTED".equals(item.getFinanceStatus()))
+                    .collect(Collectors.toList());
+
+            if (itemsToFinalize.isEmpty()) {
+                throw new IllegalStateException("No valid items found to finalize");
+            }
+
+            // Just mark items as finalized and create purchase order
+            for (OfferItem item : itemsToFinalize) {
+                item.setFinalized(true);
+                offerItemRepository.save(item);
+            }
+
+            PurchaseOrder po = createPurchaseOrderForItems(offer, itemsToFinalize, username);
+
+            offer.setStatus("COMPLETED");
+            offerRepository.save(offer);
+
+            result.put("success", true);
+            result.put("completedOfferId", offer.getId());
+            result.put("purchaseOrderId", po.getId());
+            result.put("message", "Offer finalized successfully");
+
+            return result;
+
+        } catch (Exception e) {
+            System.err.println("Simple finalize error: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+    /**
      * Finalize selected items and create new offer for unfinalized items
      */
     @Transactional
@@ -778,7 +824,7 @@ public class OfferService {
             for (OfferItem item : allOfferItems) {
                 System.out.println("Processing item: " + item.getId() + ", finance status: " + item.getFinanceStatus());
 
-                if ("ACCEPTED".equals(item.getFinanceStatus())) {
+                if ("ACCEPTED".equals(item.getFinanceStatus()) || "FINANCE_ACCEPTED".equals(item.getFinanceStatus())) {
                     if (finalizedItemIds.contains(item.getId())) {
                         finalizedItems.add(item);
                         System.out.println("  → Added to finalized items");
@@ -815,17 +861,26 @@ public class OfferService {
             Offer completedOffer = offerRepository.save(originalOffer);
             System.out.println("✓ Updated offer status to: " + completedOffer.getStatus());
 
-            // Return only IDs and basic data
+            // Return only IDs and basic data + timeline info
             result.put("success", true);
             result.put("completedOfferId", completedOffer.getId());
             result.put("purchaseOrderId", po.getId());
+            result.put("message", "Offer finalized successfully");
 
             // Create new offer for unfinalized items if any exist
             if (!unfinalizedItems.isEmpty()) {
                 System.out.println("DEBUG: Creating new offer for unfinalized items...");
-                Offer newOffer = createNewOfferForUnfinalizedItems(originalOffer, unfinalizedItems, username);
-                result.put("newOfferId", newOffer.getId());
-                System.out.println("✓ Created new offer: " + newOffer.getId());
+                try {
+                    Offer newOffer = createNewOfferForUnfinalizedItems(originalOffer, unfinalizedItems, username);
+                    result.put("newOfferId", newOffer.getId());
+                    System.out.println("✓ Created new offer: " + newOffer.getId());
+
+                } catch (Exception e) {
+                    System.err.println("Error creating new offer for unfinalized items: " + e.getMessage());
+                    e.printStackTrace();
+                    // Don't fail the whole operation, just log the error
+                    result.put("newOfferError", "Failed to create new offer for remaining items");
+                }
             }
 
             System.out.println("=== DEBUG: finalizeWithRemaining SUCCESS ===");
@@ -839,6 +894,56 @@ public class OfferService {
             throw e;
         }
     }
+
+    /**
+     * Copy timeline history synchronously using DTOs to avoid circular references
+     */
+    private void copyTimelineHistorySynchronously(UUID originalOfferId, Offer newOfferEntity) {
+        try {
+            System.out.println("DEBUG: Getting timeline events from original offer...");
+
+            // Get timeline events directly from timeline service as entities
+            List<OfferTimelineEvent> originalEvents = timelineService.getCompleteTimeline(originalOfferId);
+            System.out.println("✓ Retrieved " + originalEvents.size() + " timeline events");
+
+            // Create new timeline events for the new offer WITHOUT loading the full offer context
+            for (OfferTimelineEvent originalEvent : originalEvents) {
+                System.out.println("DEBUG: Creating timeline event: " + originalEvent.getEventType());
+
+                // Create a new timeline event with minimal data - no complex relationships
+                OfferTimelineEvent newEvent = OfferTimelineEvent.builder()
+                        .offer(newOfferEntity)  // Only reference to new offer
+                        .eventType(originalEvent.getEventType())
+                        .attemptNumber(originalEvent.getAttemptNumber())
+                        .eventTime(originalEvent.getEventTime())
+                        .actionBy(originalEvent.getActionBy())
+                        .notes("Copied from original offer: " + originalEvent.getNotes())
+                        .additionalData(originalEvent.getAdditionalData())
+                        .previousStatus(originalEvent.getPreviousStatus())
+                        .newStatus(originalEvent.getNewStatus())
+                        .displayTitle(originalEvent.getDisplayTitle())
+                        .displayDescription(originalEvent.getDisplayDescription())
+                        .canRetryFromHere(originalEvent.isCanRetryFromHere())
+                        .retryToStatus(originalEvent.getRetryToStatus())
+                        .createdAt(LocalDateTime.now())
+                        .build();
+
+                // Save the timeline event directly to avoid service complexity
+                timelineService.saveTimelineEvent(newEvent);
+            }
+
+            System.out.println("✓ Successfully copied " + originalEvents.size() + " timeline events");
+
+        } catch (Exception e) {
+            System.err.println("Error copying timeline synchronously: " + e.getMessage());
+            e.printStackTrace();
+            // Don't throw - timeline copying shouldn't break the main operation
+        }
+    }
+
+    /**
+     * Remove the async scheduling since we're doing it synchronously now
+     */
 
     /**
      * Core method to create purchase order with items - ensures proper creation every time
@@ -963,7 +1068,65 @@ public class OfferService {
         try {
             System.out.println("=== DEBUG: createNewOfferForUnfinalizedItems START ===");
 
-            // Create new offer with the SAME RequestOrder
+            // Calculate the quantities that were NOT finalized
+            Map<UUID, Double> unfinalizedQuantities = calculateUnfinalizedQuantities(originalOffer, unfinalizedItems);
+            System.out.println("DEBUG: Calculated unfinalized quantities: " + unfinalizedQuantities);
+
+            // Create a NEW RequestOrder with only the unfinalized quantities
+            RequestOrder originalRequestOrder = originalOffer.getRequestOrder();
+
+            RequestOrder newRequestOrder = RequestOrder.builder()
+                    .title(originalRequestOrder.getTitle() + " (Unfinalized Items)")
+                    .description("Unfinalized quantities from original request: " + originalRequestOrder.getId())
+                    .createdAt(LocalDateTime.now())
+                    .createdBy(username)
+                    .status(originalRequestOrder.getStatus())
+                    .partyType(originalRequestOrder.getPartyType())
+                    .requesterId(originalRequestOrder.getRequesterId())
+                    .requesterName(originalRequestOrder.getRequesterName())
+                    .employeeRequestedBy(originalRequestOrder.getEmployeeRequestedBy())
+                    .deadline(originalRequestOrder.getDeadline())
+                    .requestItems(new ArrayList<>())
+                    .offers(new ArrayList<>())
+                    .build();
+
+            RequestOrder savedNewRequestOrder = requestOrderRepository.save(newRequestOrder);
+            System.out.println("✓ Created new request order: " + savedNewRequestOrder.getId());
+
+            // Create new RequestOrderItems with only the unfinalized quantities
+            List<RequestOrderItem> newRequestItems = new ArrayList<>();
+
+            for (Map.Entry<UUID, Double> entry : unfinalizedQuantities.entrySet()) {
+                UUID originalItemId = entry.getKey();
+                Double unfinalizedQuantity = entry.getValue();
+
+                // Find the original request item
+                RequestOrderItem originalItem = originalRequestOrder.getRequestItems().stream()
+                        .filter(item -> item.getId().equals(originalItemId))
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("Original request item not found: " + originalItemId));
+
+                // Create new request item with ONLY the unfinalized quantity
+                RequestOrderItem newRequestItem = RequestOrderItem.builder()
+                        .quantity(unfinalizedQuantity.intValue()) // Only the unfinalized quantity
+                        .comment(originalItem.getComment() + " (Unfinalized: " + unfinalizedQuantity + " from original)")
+                        .itemType(originalItem.getItemType())
+                        .requestOrder(savedNewRequestOrder)
+                        .build();
+
+                RequestOrderItem savedNewRequestItem = requestOrderItemRepository.save(newRequestItem);
+                newRequestItems.add(savedNewRequestItem);
+
+                System.out.println("DEBUG - Created new request item: " + savedNewRequestItem.getId() +
+                        " with quantity: " + unfinalizedQuantity +
+                        " (original item " + originalItemId + " had: " + originalItem.getQuantity() + ")");
+            }
+
+            // Update the new request order with the new items
+            savedNewRequestOrder.setRequestItems(newRequestItems);
+            savedNewRequestOrder = requestOrderRepository.save(savedNewRequestOrder);
+
+            // Create new offer with the NEW RequestOrder (with correct quantities)
             System.out.println("DEBUG: Building new offer...");
             Offer newOffer = Offer.builder()
                     .title(originalOffer.getTitle() + " (Unfinalized)")
@@ -972,8 +1135,8 @@ public class OfferService {
                     .createdBy(username)
                     .status("INPROGRESS")
                     .validUntil(originalOffer.getValidUntil())
-                    .notes("Created for items not finalized in original offer")
-                    .requestOrder(originalOffer.getRequestOrder()) // Use SAME RequestOrder
+                    .notes("Created for items not finalized in original offer. Timeline can be copied using separate endpoint.")
+                    .requestOrder(savedNewRequestOrder) // Use NEW RequestOrder with correct quantities
                     .offerItems(new ArrayList<>())
                     .timelineEvents(new ArrayList<>())
                     .currentAttemptNumber(1)
@@ -985,42 +1148,12 @@ public class OfferService {
             Offer savedNewOffer = offerRepository.save(newOffer);
             System.out.println("✓ Saved new offer with ID: " + savedNewOffer.getId());
 
-            // Copy timeline history INCLUDING the split event
-            System.out.println("DEBUG: Getting original timeline...");
-            List<OfferTimelineEvent> originalTimeline = timelineService.getCompleteTimeline(originalOffer.getId());
-            System.out.println("✓ Retrieved " + originalTimeline.size() + " timeline events");
+            // Add the new offer to the NEW request order's offers list
+            savedNewRequestOrder.getOffers().add(savedNewOffer);
+            requestOrderRepository.save(savedNewRequestOrder);
+            System.out.println("✓ Added new offer to new request order");
 
-            System.out.println("DEBUG: Copying timeline events...");
-            for (OfferTimelineEvent originalEvent : originalTimeline) {
-                timelineService.createTimelineEvent(
-                        savedNewOffer,
-                        originalEvent.getEventType(),
-                        originalEvent.getActionBy(),
-                        originalEvent.getNotes(),
-                        originalEvent.getPreviousStatus(),
-                        originalEvent.getNewStatus()
-                );
-            }
-            System.out.println("✓ Copied all timeline events");
-
-            // Add the new offer to the SAME request order's offers list
-            System.out.println("DEBUG: Getting request order from original offer...");
-            RequestOrder requestOrder = originalOffer.getRequestOrder();
-            System.out.println("✓ Got request order: " + requestOrder.getId());
-
-            System.out.println("DEBUG: Getting offers collection...");
-            List<Offer> offers = requestOrder.getOffers();
-            System.out.println("✓ Got offers collection, current size: " + offers.size());
-
-            System.out.println("DEBUG: Adding new offer to collection...");
-            offers.add(savedNewOffer);
-            System.out.println("✓ Added new offer, new size: " + offers.size());
-
-            System.out.println("DEBUG: Saving request order...");
-            requestOrderRepository.save(requestOrder);
-            System.out.println("✓ Saved request order");
-
-            System.out.println("=== DEBUG: createNewOfferForUnfinalizedItems SUCCESS ===");
+            System.out.println("=== DEBUG: createNewOfferForUnfinalizedItems SUCCESS (no timeline copying) ===");
             return savedNewOffer;
 
         } catch (Exception e) {
@@ -1033,8 +1166,65 @@ public class OfferService {
     }
 
     /**
-     * Method to create purchase order from specific offer items (for any use case)
+     * Calculate quantities that were NOT finalized (opposite of calculateRemainingQuantities)
      */
+    private Map<UUID, Double> calculateUnfinalizedQuantities(Offer originalOffer, List<OfferItem> unfinalizedItems) {
+        Map<UUID, Double> unfinalizedQuantities = new HashMap<>();
+
+        // Group unfinalized items by request order item and sum their quantities
+        Map<UUID, Double> unfinalizedQuantitiesByItem = unfinalizedItems.stream()
+                .collect(Collectors.groupingBy(
+                        item -> item.getRequestOrderItem().getId(),
+                        Collectors.summingDouble(OfferItem::getQuantity)
+                ));
+
+        System.out.println("DEBUG - Unfinalized quantities by item: " + unfinalizedQuantitiesByItem);
+
+        // For each request order item that has unfinalized quantities, calculate how much is unfinalized
+        for (Map.Entry<UUID, Double> entry : unfinalizedQuantitiesByItem.entrySet()) {
+            UUID requestOrderItemId = entry.getKey();
+            Double unfinalizedQuantity = entry.getValue();
+
+            unfinalizedQuantities.put(requestOrderItemId, unfinalizedQuantity);
+
+            System.out.println("DEBUG - Item " + requestOrderItemId +
+                    ": Unfinalized quantity=" + unfinalizedQuantity);
+        }
+
+        return unfinalizedQuantities;
+    }
+
+    /**
+     * SEPARATE METHOD - Add timeline copying to existing offer (call this after finalization)
+     */
+    @Transactional
+    public void addTimelineHistoryToOffer(UUID originalOfferId, UUID newOfferId) {
+        try {
+            System.out.println("=== Adding timeline history to new offer ===");
+
+            Offer newOffer = offerRepository.findById(newOfferId)
+                    .orElseThrow(() -> new RuntimeException("New offer not found"));
+
+            List<OfferTimelineEventDTO> originalEvents = getOfferTimeline(originalOfferId);
+
+            for (OfferTimelineEventDTO event : originalEvents) {
+                timelineService.createTimelineEvent(
+                        newOffer,
+                        event.getEventType(),
+                        event.getActionBy(),
+                        "Copied from original offer: " + event.getNotes(),
+                        event.getPreviousStatus(),
+                        event.getNewStatus()
+                );
+            }
+
+            System.out.println("✓ Successfully added " + originalEvents.size() + " timeline events");
+
+        } catch (Exception e) {
+            System.err.println("Error adding timeline history: " + e.getMessage());
+            // Don't throw - this is optional
+        }
+    }
     @Transactional
     public PurchaseOrderDTO createPurchaseOrderFromItems(UUID offerId, List<UUID> offerItemIds, String username) {
         Offer offer = offerRepository.findById(offerId)

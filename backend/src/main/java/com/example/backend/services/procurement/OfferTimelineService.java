@@ -212,4 +212,9 @@ public class OfferTimelineService {
         return createTimelineEvent(offer, TimelineEventType.OFFER_SPLIT, actionBy, notes,
                 previousStatus, "PROCESSED_SPLIT");
     }
+    // Add this to your OfferTimelineService class
+    public void saveTimelineEvent(OfferTimelineEvent event) {
+        // Assuming you have a repository for timeline events
+        timelineEventRepository.save(event);
+    }
 }

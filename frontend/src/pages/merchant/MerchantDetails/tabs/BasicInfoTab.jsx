@@ -36,34 +36,7 @@ const BasicInfoTab = ({ merchant, formatDate, getSiteName }) => {
                     </div>
                 </div>
 
-                <div className="merchant-details-info-group">
-                    <h4>Categories & Services</h4>
-                    <div className="merchant-details-info-item">
-                        <label>Item Categories</label>
-                        <div>
-                            {merchant.itemCategories && merchant.itemCategories.length > 0 ? (
-                                merchant.itemCategories.map((category, index) => (
-                                    <span key={index} style={{
-                                        display: 'inline-block',
-                                        margin: '0.2rem',
-                                        padding: '0.25rem 0.5rem',
-                                        backgroundColor: 'var(--color-surface-hover)',
-                                        borderRadius: 'var(--radius-sm)',
-                                        fontSize: '0.8rem'
-                                    }}>
-                                        {category.name || category}
-                                    </span>
-                                ))
-                            ) : (
-                                <p>No categories assigned</p>
-                            )}
-                        </div>
-                    </div>
-                    <div className="merchant-details-info-item">
-                        <label>Notes</label>
-                        <p>{merchant.notes || 'No additional notes'}</p>
-                    </div>
-                </div>
+
             </div>
         </div>
     );
