@@ -4,6 +4,7 @@ import contactService from '../../../services/contactService.js';
 import { equipmentService } from '../../../services/equipmentService.js';
 import '../../../styles/primary-button.scss';
 import '../../../styles/close-modal-button.scss';
+import '../../../styles/cancel-modal-button.scss';
 import '../../../styles/modal-styles.scss';
 import './MaintenanceRecordModal.scss';
 
@@ -129,7 +130,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                         <FaTools />
                         {editingRecord ? 'Edit Maintenance Record' : 'New Maintenance Record'}
                     </div>
-                    <button className="btn-close" onClick={onClose}>
+                    <button className="modal-close btn-cancel" onClick={onClose}>
                         <FaTimes />
                     </button>
                 </div>
@@ -228,7 +229,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                 </form>
                 </div>
                 <div className="modal-footer">
-                    <button type="button" className="btn-secondary" onClick={onClose}>
+                    <button type="button" className="btn-cancel" onClick={onClose}>
                         Cancel
                     </button>
                     <button type="submit" className="btn-primary" form="maintenance-record-form">
