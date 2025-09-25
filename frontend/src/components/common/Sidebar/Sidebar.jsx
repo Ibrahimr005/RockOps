@@ -35,16 +35,7 @@ import {
     FaTags,
     FaListAlt,
     FaArrowLeft,
-    FaBook,
-    FaBalanceScale,
-    FaReceipt,
-    FaPiggyBank,
-    FaFileAlt,
-    FaMoneyBillWave,
-    FaChartBar,
-    FaArrowUp,
-    FaMinusCircle,
-    FaCalendarCheck, FaCalendarTimes, FaAddressBook, FaDatabase, FaUserClock,
+    FaBook, FaBalanceScale, FaReceipt, FaPiggyBank, FaFileAlt, FaMoneyBillWave, FaChartBar, FaArrowUp, FaMinusCircle,
 } from 'react-icons/fa';
 import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE } from '../../../utils/roles';
 
@@ -228,13 +219,13 @@ const Sidebar = () => {
             title: 'Dashboard',
             icon: <FaChartLine/>,
             path: '/dashboard',
-            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE]
         },
         {
             title: 'Sites',
             icon: <FaMapMarkerAlt/>,
             path: '/sites',
-            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE]
         },
         {
             title: 'Partners',
@@ -246,14 +237,14 @@ const Sidebar = () => {
             title: 'Equipment',
             icon: <FaTruck/>,
             path: '/equipment',
-            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE],
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'Equipment List',
                     icon: <FaTruck/>,
                     path: '/equipment',
-                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
+                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE]
                 },
                 {
                     title: 'Equipment Types',
@@ -285,26 +276,26 @@ const Sidebar = () => {
             title: 'Warehouses',
             icon: <FaWarehouse/>,
             path: '/warehouses',
-            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER','WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE'],
+            roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER','WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE'],
             hasSubmenu: true,
             submenuItems: [
                 {
                     title: 'Warehouses',
                     icon: <FaWarehouse/>,
                     path: '/warehouses',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE','SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE','SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
                 },
                 {
                     title: 'Item Categories',
                     icon: <FaBoxes/>,
                     path: '/warehouses/item-categories',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER','WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER','WAREHOUSE_EMPLOYEE', 'SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
                 },
                 {
                     title: 'Item Types',
                     icon: <FaTags/>,
                     path: '/warehouses/item-types',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE','SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE', 'MAINTENANCE_MANAGER', 'MAINTENANCE_EMPLOYEE']
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'PROCUREMENT', 'WAREHOUSE_MANAGER', 'WAREHOUSE_EMPLOYEE','SECRETARY', 'EQUIPMENT_MANAGER', 'HR_MANAGER', 'HR_EMPLOYEE']
                 }
             ]
         },
@@ -312,7 +303,7 @@ const Sidebar = () => {
             title: 'Merchants',
             icon: <FaStore/>,
             path: '/merchants',
-            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE]
         },
         {
             title: 'HR',
@@ -340,33 +331,9 @@ const Sidebar = () => {
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
                 },
                 {
-                  title: 'Potential Candidates',
-                  icon: <FaUserClock />,
-                  path: '/hr/potential-candidates',
-                  roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE]
-                },
-                {
                     title: 'Positions',
                     icon: <FaSitemap/>,
                     path: '/hr/positions',
-                    roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
-                },
-                {
-                    title: 'Leave Requests',
-                    icon: <FaCalendarTimes/>,
-                    path: '/hr/leave-requests',
-                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, ]
-                },
-                {
-                    title: 'Vacation Balances',
-                    icon: <FaCalendarCheck/>,
-                    path: '/hr/vacation-balances',
-                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE]
-                },
-                {
-                    title: 'Attendance',
-                    icon: <FaTasks/>,
-                    path: '/hr/attendance',
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
                 },
                 {
@@ -375,7 +342,12 @@ const Sidebar = () => {
                     path: '/hr/promotions',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE],
                 },
-
+                {
+                    title: 'Attendance',
+                    icon: <FaTasks/>,
+                    path: '/hr/attendance',
+                    roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
+                },
             ]
         },
 
@@ -483,28 +455,7 @@ const Sidebar = () => {
             title: 'Maintenance',
             icon: <FaTools/>,
             path: '/maintenance',
-            roles: [ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE],
-            hasSubmenu: true,
-            submenuItems: [
-                {
-                    title: 'Dashboard',
-                    icon: <FaChartLine/>,
-                    path: '/maintenance',
-                    roles: [ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
-                },
-                {
-                    title: 'Maintenance Records',
-                    icon: <FaClipboard/>,
-                    path: '/maintenance/records',
-                    roles: [ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
-                },
-                {
-                    title: 'Contacts',
-                    icon: <FaAddressBook/>,
-                    path: '/maintenance/contacts',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'EQUIPMENT_MANAGER', 'MAINTENANCE_EMPLOYEE', 'MAINTENANCE_MANAGER']
-                }
-            ]
+            roles: [ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER]
         },
         {
             title: 'Secretary',
@@ -522,7 +473,7 @@ const Sidebar = () => {
             title: 'Settings',
             icon: <FaCog/>,
             path: '/settings',
-            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE]
         }
     ];
 
