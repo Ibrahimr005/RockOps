@@ -9,117 +9,74 @@ import {
     Eye, BarChart3, PieChart as PieChartIcon, Filter
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useSnackbar } from '../../../contexts/SnackbarContext';
+import maintenanceService from '../../../services/maintenanceService';
+import { siteService } from '../../../services/siteService';
+import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
+
+
 import './MaintenanceDashboard.scss';
 
 const MaintenanceDashboard = () => {
     const { t } = useTranslation();
-    const [loading, setLoading] = useState(false);
+    const { showError, showSuccess } = useSnackbar();
+    const [loading, setLoading] = useState(true);
     const [timeframe, setTimeframe] = useState('week');
     const [selectedSite, setSelectedSite] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
 
-    // Mock data - replace with actual API calls
-    const [dashboardData, setDashboardData] = useState({
-        activeMaintenance: 12,
-        completedThisWeek: 8,
-        overdueMaintenance: 3,
-        totalEquipment: 45,
-        maintenanceByType: [
-            { name: 'Preventive', value: 6, color: '#4caf50' },
-            { name: 'Corrective', value: 4, color: '#ff9800' },
-            { name: 'Emergency', value: 2, color: '#f44336' }
-        ],
-        maintenanceBySite: [
-            { name: 'Site A', active: 4, completed: 3, overdue: 1 },
-            { name: 'Site B', active: 3, completed: 2, overdue: 1 },
-            { name: 'Site C', active: 5, completed: 3, overdue: 1 }
-        ],
-        weeklyTrend: [
-            { day: 'Mon', active: 8, completed: 2 },
-            { day: 'Tue', active: 10, completed: 3 },
-            { day: 'Wed', active: 12, completed: 5 },
-            { day: 'Thu', active: 9, completed: 4 },
-            { day: 'Fri', active: 7, completed: 6 },
-            { day: 'Sat', active: 5, completed: 3 },
-            { day: 'Sun', active: 3, completed: 2 }
-        ],
-        teamPerformance: [
-            { name: 'John Smith', completed: 15, efficiency: 95 },
-            { name: 'Sarah Johnson', completed: 12, efficiency: 88 },
-            { name: 'Mike Wilson', completed: 18, efficiency: 92 },
-            { name: 'Lisa Brown', completed: 10, efficiency: 85 }
-        ]
-    });
-
-    const [recentMaintenance, setRecentMaintenance] = useState([
-        {
-            id: 1,
-            equipmentName: 'Generator Unit #G001',
-            type: 'Preventive',
-            status: 'IN_PROGRESS',
-            assignedTo: 'John Smith',
-            startDate: '2024-01-15',
-            expectedCompletion: '2024-01-17'
-        },
-        {
-            id: 2,
-            equipmentName: 'Excavator #E005',
-            type: 'Corrective',
-            status: 'COMPLETED',
-            assignedTo: 'Sarah Johnson',
-            startDate: '2024-01-14',
-            completionDate: '2024-01-16'
-        },
-        {
-            id: 3,
-            equipmentName: 'Bulldozer #B003',
-            type: 'Emergency',
-            status: 'OVERDUE',
-            assignedTo: 'Mike Wilson',
-            startDate: '2024-01-10',
-            expectedCompletion: '2024-01-12'
-        }
-    ]);
-
-    const [alerts, setAlerts] = useState([
-        {
-            id: 1,
-            type: 'warning',
-            title: 'Overdue Maintenance',
-            message: 'Bulldozer #B003 maintenance is 3 days overdue',
-            equipment: 'Bulldozer #B003',
-            priority: 'high'
-        },
-        {
-            id: 2,
-            type: 'info',
-            title: 'Scheduled Maintenance',
-            message: 'Generator #G002 preventive maintenance due tomorrow',
-            equipment: 'Generator #G002',
-            priority: 'medium'
-        }
-    ]);
+    // Real data from API
+    const [dashboardData, setDashboardData] = useState(null);
+    const [recentMaintenance, setRecentMaintenance] = useState([]);
+    const [alerts, setAlerts] = useState([]);
+    const [sites, setSites] = useState([]);
 
     useEffect(() => {
         loadDashboardData();
+        loadSites();
     }, [timeframe, selectedSite, selectedStatus]);
+
+    const loadSites = async () => {
+        try {
+            const response = await siteService.getAll();
+            setSites(response.data || []);
+        } catch (error) {
+            console.error('Error loading sites:', error);
+            // Silently fail for sites loading, don't show error to user
+        }
+    };
 
     const loadDashboardData = async () => {
         setLoading(true);
         try {
-            // TODO: Replace with actual API calls
-            // const response = await maintenanceService.getDashboardData({
-            //     timeframe,
-            //     site: selectedSite,
-            //     status: selectedStatus
-            // });
-            // setDashboardData(response.data);
-            
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 500));
-            setLoading(false);
+            // Load dashboard data
+            const dashboardResponse = await maintenanceService.getDashboard();
+            setDashboardData(dashboardResponse.data);
+
+            // Load recent maintenance records
+            const allRecords = await maintenanceService.getAllRecords();
+            const recent = allRecords.data
+                .sort((a, b) => new Date(b.creationDate) - new Date(a.creationDate))
+                .slice(0, 5);
+            setRecentMaintenance(recent);
+
+            // Generate alerts from overdue maintenance
+            const overdueRecords = await maintenanceService.getOverdueRecords();
+            const generatedAlerts = overdueRecords.data.map(record => ({
+                id: record.id,
+                type: 'warning',
+                title: 'Overdue Maintenance',
+                message: `${record.equipmentInfo || record.equipmentName} maintenance is overdue`,
+                equipment: record.equipmentInfo || record.equipmentName,
+                priority: 'high'
+            }));
+            setAlerts(generatedAlerts);
+
+            showSuccess('Dashboard data loaded successfully');
         } catch (error) {
             console.error('Error loading dashboard data:', error);
+            showError('Failed to load dashboard data. Please try again.');
+        } finally {
             setLoading(false);
         }
     };
@@ -127,6 +84,7 @@ const MaintenanceDashboard = () => {
     const getStatusColor = (status) => {
         switch (status) {
             case 'COMPLETED': return 'var(--color-success)';
+            case 'ACTIVE': return 'var(--color-primary)';
             case 'IN_PROGRESS': return 'var(--color-primary)';
             case 'OVERDUE': return 'var(--color-danger)';
             case 'SCHEDULED': return 'var(--color-warning)';
@@ -137,6 +95,7 @@ const MaintenanceDashboard = () => {
     const getStatusIcon = (status) => {
         switch (status) {
             case 'COMPLETED': return <CheckCircle size={16} />;
+            case 'ACTIVE': return <Activity size={16} />;
             case 'IN_PROGRESS': return <Activity size={16} />;
             case 'OVERDUE': return <AlertTriangle size={16} />;
             case 'SCHEDULED': return <Clock size={16} />;
@@ -153,6 +112,28 @@ const MaintenanceDashboard = () => {
             default: return <Settings size={16} />;
         }
     };
+
+    // Show loading page while data is being fetched
+    if (loading) {
+        return <LoadingPage />;
+    }
+
+    // Show error if no dashboard data
+    if (!dashboardData) {
+        return (
+            <div className="maintenance-dashboard">
+                <div className="maintenance-error">
+                    <AlertTriangle size={48} />
+                    <h2>Unable to Load Dashboard</h2>
+                    <p>There was an error loading the maintenance dashboard data.</p>
+                    <button onClick={loadDashboardData} className="btn-primary">
+                        <RefreshCw size={16} />
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="maintenance-dashboard">
@@ -180,13 +161,15 @@ const MaintenanceDashboard = () => {
                                 className="filter-select"
                             >
                                 <option value="all">All Sites</option>
-                                <option value="site-a">Site A</option>
-                                <option value="site-b">Site B</option>
-                                <option value="site-c">Site C</option>
+                                {sites.map(site => (
+                                    <option key={site.id} value={site.id}>
+                                        {site.name}
+                                    </option>
+                                ))}
                             </select>
                             <button 
                                 onClick={loadDashboardData}
-                                className="refresh-btn"
+                                className="btn-primary btn-sm"
                                 disabled={loading}
                             >
                                 <RefreshCw size={16} />
@@ -204,11 +187,11 @@ const MaintenanceDashboard = () => {
                             <Wrench />
                         </div>
                         <div className="maintenance-kpi-content">
-                            <div className="maintenance-kpi-value">{dashboardData.activeMaintenance}</div>
+                            <div className="maintenance-kpi-value">{dashboardData.activeRecords || 0}</div>
                             <div className="maintenance-kpi-label">Active Maintenance</div>
-                            <div className="maintenance-kpi-trend maintenance-positive">
-                                <TrendingUp size={14} />
-                                2 new this week
+                            <div className="maintenance-kpi-trend maintenance-neutral">
+                                <Activity size={14} />
+                                In progress
                             </div>
                         </div>
                     </div>
@@ -218,25 +201,25 @@ const MaintenanceDashboard = () => {
                             <CheckCircle />
                         </div>
                         <div className="maintenance-kpi-content">
-                            <div className="maintenance-kpi-value">{dashboardData.completedThisWeek}</div>
-                            <div className="maintenance-kpi-label">Completed This Week</div>
+                            <div className="maintenance-kpi-value">{dashboardData.completedRecords || 0}</div>
+                            <div className="maintenance-kpi-label">Completed</div>
                             <div className="maintenance-kpi-trend maintenance-positive">
-                                <TrendingUp size={14} />
-                                15% increase
+                                <CheckCircle size={14} />
+                                Total completed
                             </div>
                         </div>
                     </div>
 
-                    <div className="maintenance-kpi-card maintenance-warning">
+                    <div className={`maintenance-kpi-card ${(dashboardData.overdueRecords || 0) > 0 ? 'maintenance-warning' : 'maintenance-success'}`}>
                         <div className="maintenance-kpi-icon">
-                            <AlertTriangle />
+                            {(dashboardData.overdueRecords || 0) > 0 ? <AlertTriangle /> : <CheckCircle />}
                         </div>
                         <div className="maintenance-kpi-content">
-                            <div className="maintenance-kpi-value">{dashboardData.overdueMaintenance}</div>
+                            <div className="maintenance-kpi-value">{dashboardData.overdueRecords || 0}</div>
                             <div className="maintenance-kpi-label">Overdue Maintenance</div>
-                            <div className="maintenance-kpi-trend maintenance-negative">
-                                <AlertTriangle size={14} />
-                                Requires attention
+                            <div className={`maintenance-kpi-trend ${(dashboardData.overdueRecords || 0) > 0 ? 'maintenance-negative' : 'maintenance-positive'}`}>
+                                {(dashboardData.overdueRecords || 0) > 0 ? <AlertTriangle size={14} /> : <CheckCircle size={14} />}
+                                {(dashboardData.overdueRecords || 0) > 0 ? 'Requires attention' : 'All on schedule'}
                             </div>
                         </div>
                     </div>
@@ -246,11 +229,11 @@ const MaintenanceDashboard = () => {
                             <Users />
                         </div>
                         <div className="maintenance-kpi-content">
-                            <div className="maintenance-kpi-value">{dashboardData.totalEquipment}</div>
-                            <div className="maintenance-kpi-label">Total Equipment</div>
+                            <div className="maintenance-kpi-value">{dashboardData.equipmentInMaintenance || 0}</div>
+                            <div className="maintenance-kpi-label">Equipment In Maintenance</div>
                             <div className="maintenance-kpi-trend maintenance-neutral">
-                                <Activity size={14} />
-                                Under maintenance
+                                <Wrench size={14} />
+                                Currently servicing
                             </div>
                         </div>
                     </div>
@@ -270,7 +253,11 @@ const MaintenanceDashboard = () => {
                             <ResponsiveContainer width="100%" height={200}>
                                 <PieChart>
                                     <Pie
-                                        data={dashboardData.maintenanceByType}
+                                        data={[
+                                            { name: 'Active', value: dashboardData.activeRecords || 0, color: 'var(--color-primary)' },
+                                            { name: 'Completed', value: dashboardData.completedRecords || 0, color: 'var(--color-success)' },
+                                            { name: 'Overdue', value: dashboardData.overdueRecords || 0, color: 'var(--color-danger)' }
+                                        ]}
                                         cx="50%"
                                         cy="50%"
                                         innerRadius={40}
@@ -278,7 +265,11 @@ const MaintenanceDashboard = () => {
                                         paddingAngle={5}
                                         dataKey="value"
                                     >
-                                        {dashboardData.maintenanceByType.map((entry, index) => (
+                                        {[
+                                            { name: 'Active', value: dashboardData.activeRecords || 0, color: '#4880ff' },
+                                            { name: 'Completed', value: dashboardData.completedRecords || 0, color: '#4caf50' },
+                                            { name: 'Overdue', value: dashboardData.overdueRecords || 0, color: '#f44336' }
+                                        ].map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={entry.color} />
                                         ))}
                                     </Pie>
@@ -286,7 +277,11 @@ const MaintenanceDashboard = () => {
                                 </PieChart>
                             </ResponsiveContainer>
                             <div className="maintenance-chart-legend">
-                                {dashboardData.maintenanceByType.map((item, index) => (
+                                {[
+                                    { name: 'Active', value: dashboardData.activeRecords || 0, color: '#4880ff' },
+                                    { name: 'Completed', value: dashboardData.completedRecords || 0, color: '#4caf50' },
+                                    { name: 'Overdue', value: dashboardData.overdueRecords || 0, color: '#f44336' }
+                                ].map((item, index) => (
                                     <div key={index} className="legend-item">
                                         <div 
                                             className="legend-color" 
@@ -299,42 +294,47 @@ const MaintenanceDashboard = () => {
                         </div>
                     </div>
 
-                    {/* Weekly Trend */}
+                    {/* Cost Overview */}
                     <div className="maintenance-chart-card">
                         <div className="maintenance-chart-header">
-                            <h3>Weekly Maintenance Trend</h3>
+                            <h3>Cost Overview</h3>
                             <BarChart3 size={20} />
                         </div>
                         <div className="maintenance-chart-content">
-                            <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={dashboardData.weeklyTrend}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="day" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Bar dataKey="active" fill="var(--color-primary)" name="Active" />
-                                    <Bar dataKey="completed" fill="var(--color-success)" name="Completed" />
-                                </BarChart>
-                            </ResponsiveContainer>
+                            <div className="cost-metrics">
+                                <div className="cost-metric">
+                                    <span className="cost-label">Total Cost</span>
+                                    <span className="cost-value">${(dashboardData.totalCost || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="cost-metric">
+                                    <span className="cost-label">Average Cost</span>
+                                    <span className="cost-value">${(dashboardData.averageCost || 0).toLocaleString()}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Site Performance */}
+                    {/* Step Progress */}
                     <div className="maintenance-chart-card">
                         <div className="maintenance-chart-header">
-                            <h3>Site Performance</h3>
-                            <MapPin size={20} />
+                            <h3>Step Progress</h3>
+                            <Activity size={20} />
                         </div>
                         <div className="maintenance-chart-content">
                             <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={dashboardData.maintenanceBySite}>
+                                <BarChart data={[
+                                    { 
+                                        name: 'Steps', 
+                                        completed: dashboardData.completedSteps || 0, 
+                                        active: dashboardData.activeSteps || 0 
+                                    }
+                                ]}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" />
                                     <YAxis />
                                     <Tooltip />
-                                    <Bar dataKey="active" fill="var(--color-primary)" name="Active" />
                                     <Bar dataKey="completed" fill="var(--color-success)" name="Completed" />
-                                    <Bar dataKey="overdue" fill="var(--color-danger)" name="Overdue" />
+                                    <Bar dataKey="active" fill="var(--color-primary)" name="Active" />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -352,25 +352,36 @@ const MaintenanceDashboard = () => {
                             <Eye size={20} />
                         </div>
                         <div className="maintenance-activity-content">
-                            {recentMaintenance.map((maintenance) => (
+                            {recentMaintenance.length > 0 ? recentMaintenance.map((maintenance) => (
                                 <div key={maintenance.id} className="maintenance-activity-item">
                                     <div className="maintenance-activity-icon" style={{ color: getStatusColor(maintenance.status) }}>
                                         {getStatusIcon(maintenance.status)}
                                     </div>
                                     <div className="maintenance-activity-details">
-                                        <div className="maintenance-activity-title">{maintenance.equipmentName}</div>
+                                        <div className="maintenance-activity-title">
+                                            {maintenance.equipmentInfo || maintenance.equipmentName || 'Unknown Equipment'}
+                                        </div>
                                         <div className="maintenance-activity-subtitle">
-                                            {maintenance.type} • {maintenance.assignedTo}
+                                            {maintenance.currentResponsiblePerson || 'Unassigned'}
                                         </div>
                                         <div className="maintenance-activity-date">
-                                            {maintenance.startDate} - {maintenance.expectedCompletion || maintenance.completionDate}
+                                            {new Date(maintenance.creationDate).toLocaleDateString()} - {
+                                                maintenance.expectedCompletionDate 
+                                                    ? new Date(maintenance.expectedCompletionDate).toLocaleDateString()
+                                                    : 'No due date'
+                                            }
                                         </div>
                                     </div>
                                     <div className="maintenance-activity-status" style={{ color: getStatusColor(maintenance.status) }}>
                                         {maintenance.status}
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="maintenance-empty">
+                                    <Activity size={32} />
+                                    <p>No recent maintenance records</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -381,7 +392,7 @@ const MaintenanceDashboard = () => {
                             <AlertTriangle size={20} />
                         </div>
                         <div className="maintenance-activity-content">
-                            {alerts.map((alert) => (
+                            {alerts.length > 0 ? alerts.map((alert) => (
                                 <div key={alert.id} className={`maintenance-alert-item maintenance-alert-${alert.type}`}>
                                     <div className="maintenance-alert-icon">
                                         {getAlertIcon(alert.type)}
@@ -395,52 +406,17 @@ const MaintenanceDashboard = () => {
                                         {alert.priority}
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="maintenance-empty">
+                                    <CheckCircle size={32} />
+                                    <p>No alerts - all maintenance is on schedule</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Team Performance */}
-            <section className="maintenance-team">
-                <div className="maintenance-section-header">
-                    <h2>Team Performance</h2>
-                    <p>Maintenance team efficiency and completion rates</p>
-                </div>
-                <div className="maintenance-team-grid">
-                    {dashboardData.teamPerformance.map((member, index) => (
-                        <div key={index} className="maintenance-team-card">
-                            <div className="maintenance-team-header">
-                                <div className="maintenance-team-avatar">
-                                    {member.name.charAt(0)}
-                                </div>
-                                <div className="maintenance-team-info">
-                                    <h4>{member.name}</h4>
-                                    <span className="maintenance-team-role">Maintenance Technician</span>
-                                </div>
-                            </div>
-                            <div className="maintenance-team-stats">
-                                <div className="maintenance-team-stat">
-                                    <span className="maintenance-team-stat-value">{member.completed}</span>
-                                    <span className="maintenance-team-stat-label">Completed</span>
-                                </div>
-                                <div className="maintenance-team-stat">
-                                    <span className="maintenance-team-stat-value">{member.efficiency}%</span>
-                                    <span className="maintenance-team-stat-label">Efficiency</span>
-                                </div>
-                            </div>
-                            <div className="maintenance-team-progress">
-                                <div className="maintenance-team-progress-bar">
-                                    <div 
-                                        className="maintenance-team-progress-fill"
-                                        style={{ width: `${member.efficiency}%` }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
         </div>
     );
 };

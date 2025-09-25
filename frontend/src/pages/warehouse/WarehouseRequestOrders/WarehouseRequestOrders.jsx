@@ -17,8 +17,8 @@ const WarehouseRequestOrders = ({ warehouseId, onAddButtonClick, restockItems, s
 
     // Tab configuration
     const tabs = [
-        { id: "pending", label: "Pending Requests", component: PendingRequestOrders },
-        { id: "validated", label: "Validated Requests", component: ValidatedRequestOrders }
+        { id: "pending", label: "Pending Orders", component: PendingRequestOrders },
+        { id: "validated", label: "Validated Orders", component: ValidatedRequestOrders }
     ];
 
     // Get user role from localStorage

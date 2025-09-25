@@ -8,7 +8,7 @@ import IntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
 import "./PurchaseOrders.scss";
 import offersImage from "../../../assets/imgs/pro_icon.png";
 // Import dark mode image if available
- import offersImageDark from "../../../assets/imgs/pro_icon_dark.png";
+import offersImageDark from "../../../assets/imgs/pro_icon_dark.png";
 
 const PurchaseOrders = () => {
     const navigate = useNavigate();
@@ -40,28 +40,62 @@ const PurchaseOrders = () => {
         fetchPurchaseOrders();
     };
 
-    // Prepare stats for IntroCard
-    const introStats = [
-        {
-            value: stats.total,
-            label: 'Total Orders'
-        },
+    // Calculate tab-specific stats
+    const getTabStats = () => {
+        if (activeTab === 'pending') {
+            // Filter pending orders (adjust status values based on your data)
+            const pendingOrders = allPurchaseOrders.filter(order =>
+                order.status === 'PENDING' ||
+                order.status === 'CREATED' ||
+                order.status === 'DRAFT'
+            );
 
-    ];
+            const totalValue = pendingOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+            return [
+                {
+                    value: pendingOrders.length,
+                    label: 'Pending Orders'
+                }
+            ];
+        } else if (activeTab === 'validated') {
+            // Filter validated orders
+            const validatedOrders = allPurchaseOrders.filter(order =>
+                order.status === 'VALIDATED' ||
+                order.status === 'APPROVED' ||
+                order.status === 'DELIVERED'
+            );
+
+            const totalValue = validatedOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+            return [
+                {
+                    value: validatedOrders.length,
+                    label: 'Validated Orders'
+                }
+            ];
+        }
+
+        // Default fallback
+        return [
+            {
+                value: stats.total,
+                label: 'Total Orders'
+            }
+        ];
+    };
 
     return (
         <div className="purchase-orders-container">
-            {/* Updated Intro Card */}
+            {/* Updated Intro Card with dynamic stats */}
             <IntroCard
                 title="Purchase Orders"
                 label="PROCUREMENT CENTER"
                 lightModeImage={offersImage}
                 darkModeImage={offersImageDark} // Uncomment if dark mode image is available
-                stats={introStats}
+                stats={getTabStats()} // Use dynamic stats based on active tab
                 icon={false}
             />
-
-
 
             {/* Tabs */}
             <div className="tabs">
@@ -75,12 +109,12 @@ const PurchaseOrders = () => {
                     className={`tab ${activeTab === 'validated' ? 'active' : ''}`}
                     onClick={() => setActiveTab('validated')}
                 >
-                    Validated Orders
+                    Completed Orders
                 </button>
             </div>
 
             {/* Tab Content */}
-            <div className="tab-content">
+            <div className="tab-content-po">
                 {activeTab === 'pending' && (
                     <PendingPurchaseOrders
                         onDataChange={handleDataChange}

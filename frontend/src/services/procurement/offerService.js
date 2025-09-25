@@ -115,6 +115,19 @@ export const offerService = {
         return response.data || response;
     },
 
+// NEW: Finalize with remaining items operation
+    finalizeWithRemaining: async (offerId, finalizedItemIds) => {
+        // Get username from localStorage
+        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+        const username = userInfo?.username || userInfo?.name || 'current-user';
+
+        const response = await apiClient.post(`${OFFER_ENDPOINTS.BASE}/${offerId}/finalize-with-remaining`, {
+            finalizedItemIds,
+            username  // Add username to the request body
+        });
+        return response.data || response;
+    },
+
     // Multiple status operations for complex tabs
     getMultipleStatuses: async (statuses) => {
         const promises = statuses.map(status => offerService.getByStatus(status));

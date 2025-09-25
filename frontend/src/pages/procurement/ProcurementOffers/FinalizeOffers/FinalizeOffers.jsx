@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
     FiPackage, FiCheck, FiClock, FiCheckCircle, FiX, FiFileText, FiList,
-    FiUser, FiCalendar, FiDollarSign, FiTrendingUp
+    FiUser, FiCalendar, FiDollarSign, FiTrendingUp, FiRefreshCw, FiTrash2
 } from 'react-icons/fi';
 import Snackbar from "../../../../components/common/Snackbar/Snackbar.jsx"
 import ConfirmationDialog from "../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
 import RequestOrderDetails from '../../../../components/procurement/RequestOrderDetails/RequestOrderDetails.jsx';
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
 import { offerService } from '../../../../services/procurement/offerService.js';
+import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
 import "../ProcurementOffers.scss";
 import "./FinalizeOffers.scss";
 
@@ -19,12 +20,21 @@ const FinalizeOffers = ({
                             setError,
                             setSuccess,
                             onOfferFinalized, // This should switch to completed tab
-                            onOfferCompleted // New callback for completed offers
+                            onOfferCompleted, // New callback for completed offers
+                            onRetryOffer, // Callback for retry functionality
+                            onDeleteOffer // Callback for delete functionality
                         }) => {
     const [loading, setLoading] = useState(false);
     const [finalizedItems, setFinalizedItems] = useState({});
     const [purchaseOrder, setPurchaseOrder] = useState(null);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+    // New states for retry and delete functionality
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showRetryConfirm, setShowRetryConfirm] = useState(false);
+    const [showUnfinalizedItemsDialog, setShowUnfinalizedItemsDialog] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isRetrying, setIsRetrying] = useState(false);
 
     // Snackbar states
     const [showSnackbar, setShowSnackbar] = useState(false);
@@ -72,55 +82,158 @@ const FinalizeOffers = ({
         setShowConfirmDialog(false);
     };
 
+    // Retry functionality
+    const handleRetryClick = () => {
+        setShowRetryConfirm(true);
+    };
+
+    const confirmRetry = async () => {
+        setIsRetrying(true);
+        try {
+            const response = await offerService.retryOffer(activeOffer.id);
+
+            if (response && response.id) {
+                showNotification(`New offer created successfully (Retry ${response.retryCount}). Old offer has been removed.`, 'success');
+
+                // Remove the old offer from the current offers list
+                if (onDeleteOffer) {
+                    onDeleteOffer(activeOffer.id);
+                }
+
+                // Switch to the new offer in inprogress tab
+                if (onRetryOffer) {
+                    onRetryOffer(response);
+                }
+            }
+
+            setShowRetryConfirm(false);
+        } catch (error) {
+            console.error('Error retrying offer:', error);
+
+            if (error.message && error.message.includes("A retry for this offer is already in progress")) {
+                showNotification('A retry for this offer is already in progress. Please complete the existing retry first.', 'error');
+            } else {
+                showNotification('Failed to create new offer. Please try again.', 'error');
+            }
+        } finally {
+            setIsRetrying(false);
+        }
+    };
+
+    const cancelRetry = () => {
+        setShowRetryConfirm(false);
+    };
+
+    // Delete functionality
+    const handleDeleteClick = () => {
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = async () => {
+        setIsDeleting(true);
+        const offerTitle = activeOffer.title; // Store title before deletion
+        try {
+            await offerService.delete(activeOffer.id);
+
+            // Show success notification first
+            showNotification(`Offer "${offerTitle}" deleted successfully`, 'success');
+
+            // Close the confirmation dialog
+            setShowDeleteConfirm(false);
+
+            // Small delay to ensure snackbar is visible before calling parent callbacks
+            setTimeout(() => {
+                if (onDeleteOffer) {
+                    onDeleteOffer(activeOffer.id);
+                }
+            }, 100);
+
+        } catch (error) {
+            console.error('Error deleting offer:', error);
+            showNotification('Failed to delete offer. Please try again.', 'error');
+            setShowDeleteConfirm(false);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const cancelDelete = () => {
+        setShowDeleteConfirm(false);
+    };
+
     const saveFinalizedOffer = async () => {
         if (!activeOffer) return;
 
+        const finalizedItemIds = Object.entries(finalizedItems)
+            .filter(([_, isFinalized]) => isFinalized)
+            .map(([id, _]) => id);
+
+        if (finalizedItemIds.length === 0) {
+            handleError('Please select at least one item to finalize');
+            return;
+        }
+
+        // Check if there are unfinalized accepted items
+        const allAcceptedItems = activeOffer.offerItems.filter(item =>
+            item.financeStatus === 'ACCEPTED'
+        );
+        const unfinalizedItems = allAcceptedItems.filter(item =>
+            !finalizedItemIds.includes(item.id.toString())
+        );
+
+        if (unfinalizedItems.length > 0) {
+            // Show dialog asking what to do with unfinalized items
+            setShowUnfinalizedItemsDialog(true);
+            return;
+        }
+
+        // If all items are finalized, proceed normally
+        await processFinalizeOffer(finalizedItemIds, false);
+    };
+
+    const handleUnfinalizedItemsDialogClose = () => {
+        setShowUnfinalizedItemsDialog(false);
+    };
+
+    const processFinalizeOffer = async (finalizedItemIds, createOfferForRemaining = false) => {
         setLoading(true);
         setShowConfirmDialog(false);
+        setShowUnfinalizedItemsDialog(false);
+
         try {
-            const finalizedItemIds = Object.entries(finalizedItems)
-                .filter(([_, isFinalized]) => isFinalized)
-                .map(([id, _]) => id);
-
-            if (finalizedItemIds.length === 0) {
-                handleError('Please select at least one item to finalize');
-                setLoading(false);
-                return;
-            }
-
             console.log('Finalizing offer with ID:', activeOffer.id);
             console.log('Finalized item IDs:', finalizedItemIds);
 
-            // Use a direct API call for finalization (since offerService may not have this endpoint)
-            const token = localStorage.getItem("token");
+            let responseData;
 
-            const response = await fetch(`http://localhost:8080/api/v1/purchaseOrders/offers/${activeOffer.id}/finalize`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ finalizedItemIds })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.text();
-                console.error('Server error response:', errorData);
-                throw new Error(`Server responded with ${response.status}: ${errorData}`);
+            if (createOfferForRemaining) {
+                // Use new endpoint for creating offer with remaining items
+                responseData = await offerService.finalizeWithRemaining(activeOffer.id, finalizedItemIds);
+            } else {
+                // Use the purchaseOrderService instead of direct fetch
+                responseData = await purchaseOrderService.finalizeOffer(activeOffer.id, finalizedItemIds);
             }
-
-            const responseData = await response.json();
-            console.log('Response data:', responseData);
 
             // Create the completed offer object
             const completedOffer = {
                 ...activeOffer,
                 status: 'COMPLETED',
                 finalizedAt: new Date().toISOString(),
-                finalizedBy: 'Current User' // Replace with actual user info
+                finalizedBy: 'Current User'
             };
 
-            handleSuccess(responseData.message || 'Offer finalized successfully! A purchase order has been created.');
+            let successMessage = 'Offer finalized successfully! A purchase order has been created.';
+
+            if (createOfferForRemaining && responseData.newOffer) {
+                successMessage += ' A new offer has been created for the remaining items.';
+
+                // Handle the new offer for remaining items
+                if (onRetryOffer) {
+                    onRetryOffer(responseData.newOffer);
+                }
+            }
+
+            handleSuccess(responseData.message || successMessage);
 
             // Call the callback to switch to completed tab with this offer
             if (onOfferCompleted) {
@@ -240,25 +353,47 @@ const FinalizeOffers = ({
                             </div>
                             <div className="procurement-header-actions">
                                 {activeOffer.status !== 'FINALIZED' && !purchaseOrder && (
-                                    <button
-                                        className="btn-primary"
-                                        onClick={handleConfirmFinalization}
-                                        disabled={
-                                            loading ||
-                                            totalFinalizedItems === 0 ||
-                                            purchaseOrder !== null
-                                        }
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <div className="button-spinner"></div> Processing...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <FiCheckCircle /> Confirm Finalization
-                                            </>
-                                        )}
-                                    </button>
+                                    <div className="action-buttons-group">
+                                        <button
+                                            className="btn-primary"
+                                            onClick={handleConfirmFinalization}
+                                            disabled={
+                                                loading ||
+                                                totalFinalizedItems === 0 ||
+                                                purchaseOrder !== null
+                                            }
+                                            style={{ marginRight: '10px' }}
+                                        >
+                                            {loading ? (
+                                                <>
+                                                    <div className="button-spinner"></div> Processing...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FiCheckCircle /> Confirm Finalization
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            className="btn-primary"
+                                            onClick={handleRetryClick}
+                                            disabled={loading || isRetrying}
+                                            title="Start over with entire quantity"
+                                            style={{ marginRight: '10px' }}
+                                        >
+                                            <FiRefreshCw />
+                                            {isRetrying ? 'Creating...' : 'Retry Offer'}
+                                        </button>
+                                        <button
+                                            className="btn-primary"
+                                            onClick={handleDeleteClick}
+                                            disabled={loading || isDeleting}
+                                            title="Delete this offer permanently"
+                                        >
+                                            <FiTrash2 />
+                                            {isDeleting ? 'Deleting...' : 'Delete Offer'}
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -447,6 +582,65 @@ const FinalizeOffers = ({
                 showIcon={true}
                 size="large"
             />
+
+            {/* Retry Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={showRetryConfirm}
+                type="warning"
+                title="Retry Entire Offer"
+                message={`Are you sure you want to create a new offer for the entire quantity based on "${activeOffer?.title}"? This will discard the current finalization progress.`}
+                confirmText="Create New Offer"
+                cancelText="Cancel"
+                onConfirm={confirmRetry}
+                onCancel={cancelRetry}
+                isLoading={isRetrying}
+                showIcon={true}
+                size="large"
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={showDeleteConfirm}
+                type="delete"
+                title="Delete Offer"
+                message={`Are you sure you want to delete the offer "${activeOffer?.title}"? This action cannot be undone.`}
+                confirmText="Delete Offer"
+                cancelText="Cancel"
+                onConfirm={confirmDelete}
+                onCancel={cancelDelete}
+                isLoading={isDeleting}
+                showIcon={true}
+                size="large"
+            />
+
+            {/* Unfinalized Items Dialog */}
+            <ConfirmationDialog
+                isVisible={showUnfinalizedItemsDialog}
+                type="info"
+                title="Handle Unfinalized Items"
+                message={`You have selected to finalize ${Object.values(finalizedItems).filter(v => v).length} items, but ${activeOffer?.offerItems?.filter(item =>
+                    item.financeStatus === 'ACCEPTED' && !Object.keys(finalizedItems).some(id => id === item.id.toString() && finalizedItems[id])
+                ).length || 0} accepted items remain unfinalized. What would you like to do with the unfinalized items?`}
+                confirmText="Create New Offer for Remaining"
+                cancelText="Finalize Selected Only"
+                onConfirm={() => {
+                    const finalizedItemIds = Object.entries(finalizedItems)
+                        .filter(([_, isFinalized]) => isFinalized)
+                        .map(([id, _]) => id);
+                    processFinalizeOffer(finalizedItemIds, true);
+                }}
+                onCancel={() => {
+                    const finalizedItemIds = Object.entries(finalizedItems)
+                        .filter(([_, isFinalized]) => isFinalized)
+                        .map(([id, _]) => id);
+                    processFinalizeOffer(finalizedItemIds, false);
+                }}
+                onClose={handleUnfinalizedItemsDialogClose}
+                isLoading={loading}
+                showIcon={true}
+                size="large"
+            />
+
         </div>
     );
 };

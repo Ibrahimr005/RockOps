@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
@@ -123,27 +124,30 @@ public class PurchaseOrderController {
     @PostMapping("/offers/{offerId}/finalize")
     public ResponseEntity<?> finalizeOffer(
             @PathVariable UUID offerId,
-            @RequestBody Map<String, List<UUID>> requestBody,
+            @RequestBody Map<String, Object> requestBody,  // CHANGED: was Map<String, List<UUID>>
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            // Extract list of finalized item IDs from request body
-            List<UUID> finalizedItemIds = requestBody.get("finalizedItemIds");
-            if (finalizedItemIds == null || finalizedItemIds.isEmpty()) {
+            // Convert string UUIDs to UUID objects
+            @SuppressWarnings("unchecked")
+            List<String> finalizedItemIdStrings = (List<String>) requestBody.get("finalizedItemIds");
+
+            if (finalizedItemIdStrings == null || finalizedItemIdStrings.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of(
                         "message", "No finalized items provided",
                         "success", false
                 ));
             }
 
-            // Get username from authenticated user
+            List<UUID> finalizedItemIds = finalizedItemIdStrings.stream()
+                    .map(UUID::fromString)
+                    .collect(Collectors.toList());
+
             String username = userDetails.getUsername();
 
-            // Call service to finalize offer and create purchase order
             PurchaseOrder purchaseOrder = purchaseOrderService.finalizeOfferAndCreatePurchaseOrder(
                     offerId, finalizedItemIds, username);
 
-            // Create response with purchase order
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Offer finalized successfully. Purchase order created.");
             response.put("success", true);
@@ -151,15 +155,17 @@ public class PurchaseOrderController {
 
             return ResponseEntity.ok(response);
 
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            // Handle validation errors
+        } catch (ClassCastException e) {
             return ResponseEntity.badRequest().body(Map.of(
-                    "message", "Error finalizing offer: " + e.getMessage(),
+                    "message", "Invalid request format",
                     "success", false
             ));
-
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message", "Invalid UUID format: " + e.getMessage(),
+                    "success", false
+            ));
         } catch (Exception e) {
-            // Handle unexpected errors
             return ResponseEntity.internalServerError().body(Map.of(
                     "message", "Unexpected error: " + e.getMessage(),
                     "success", false

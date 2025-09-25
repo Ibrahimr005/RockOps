@@ -115,13 +115,13 @@ const ValidatedPurchaseOrders = () => {
     // Define columns for DataTable
     const columns = [
         {
-            id: 'poNumber',
-            header: 'PO NUMBER',
-            accessor: 'poNumber',
+            id: 'title',
+            header: 'TITLE',
+            accessor: 'requestOrder.title',
             sortable: true,
             filterable: true,
-            minWidth: '150px',
-            render: (row) => row.poNumber || '-'
+            minWidth: '250px',
+            render: (row) => row.requestOrder?.title || '-'
         },
         {
             id: 'requesterName',
@@ -132,15 +132,7 @@ const ValidatedPurchaseOrders = () => {
             minWidth: '200px',
             render: (row) => row.requestOrder?.requesterName || '-'
         },
-        {
-            id: 'title',
-            header: 'TITLE',
-            accessor: 'requestOrder.title',
-            sortable: true,
-            filterable: true,
-            minWidth: '250px',
-            render: (row) => row.requestOrder?.title || '-'
-        },
+
         {
             id: 'status',
             header: 'STATUS',

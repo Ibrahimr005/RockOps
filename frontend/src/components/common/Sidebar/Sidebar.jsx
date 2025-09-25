@@ -44,9 +44,13 @@ import {
     FaChartBar,
     FaArrowUp,
     FaMinusCircle,
-    FaCalendarCheck, FaCalendarTimes, FaAddressBook, FaDatabase, FaUserClock,
+    FaCalendarCheck,
+    FaCalendarTimes,
+    FaAddressBook,
+    FaDatabase,
+    FaUserClock,
 } from 'react-icons/fa';
-import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE , MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE} from '../../../utils/roles';
+import { ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE } from '../../../utils/roles';
 
 import './Sidebar.css';
 import logoDarkImage from "../../../assets/logos/Logo-dark.png";
@@ -340,10 +344,10 @@ const Sidebar = () => {
                     roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
                 },
                 {
-                  title: 'Potential Candidates',
-                  icon: <FaUserClock />,
-                  path: '/hr/potential-candidates',
-                  roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE]
+                    title: 'Potential Candidates',
+                    icon: <FaUserClock />,
+                    path: '/hr/potential-candidates',
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE]
                 },
                 {
                     title: 'Positions',
@@ -355,7 +359,7 @@ const Sidebar = () => {
                     title: 'Leave Requests',
                     icon: <FaCalendarTimes/>,
                     path: '/hr/leave-requests',
-                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, ]
+                    roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE]
                 },
                 {
                     title: 'Vacation Balances',
@@ -375,7 +379,6 @@ const Sidebar = () => {
                     path: '/hr/promotions',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE],
                 },
-
             ]
         },
 
@@ -400,7 +403,7 @@ const Sidebar = () => {
                 },
                 {
                     title: 'Deduction Management',
-                    icon: <FaMinusCircle/>, // You'll need to import this
+                    icon: <FaMinusCircle/>,
                     path: '/payroll/deductions',
                     roles: [ADMIN, HR_MANAGER, HR_EMPLOYEE, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 },
@@ -512,12 +515,6 @@ const Sidebar = () => {
             path: '/secretary',
             roles: [ADMIN, USER, SITE_ADMIN, SECRETARY]
         },
-        // {
-        //     title: 'Equipment MT',
-        //     icon: <FaTruck/>,
-        //     path: '/equipment-team',
-        //     roles: ['ADMIN', 'USER', 'EQUIPMENT_MANAGER']
-        // },
         {
             title: 'Settings',
             icon: <FaCog/>,
@@ -670,42 +667,7 @@ const Sidebar = () => {
                 </div>
 
                 <div className="sidebar-footer">
-                    {/* Back Button with text when expanded */}
-                    <button
-                        className="back-button"
-                        onClick={handleBackClick}
-                        title={t('common.back') || 'Go back'}
-                    >
-                        <FaArrowLeft />
-                        {isExpanded && <span className="back-text">Back</span>}
-                    </button>
-
-                    <div className="theme-toggle-container">
-                        <div
-                            className="theme-toggle-item"
-                            onClick={handleThemeToggle}
-                        >
-                            <div className="menu-icon">
-                                {theme === 'dark' ? <FaMoon/> : <FaSun/>}
-                            </div>
-                            <div className="menu-title">{theme === 'dark' ? 'Dark' : 'Light'} Mode</div>
-                            <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
-                                <input
-                                    type="checkbox"
-                                    checked={theme === 'dark'}
-                                    onChange={handleThemeToggle}
-                                />
-                                <span className="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    {/*<button className="logout-btn" onClick={handleLogout}>*/}
-                    {/*    <span className="menu-icon">*/}
-                    {/*        <FaSignOutAlt />*/}
-                    {/*    </span>*/}
-                    {/*    <span>{t('Logout')}</span>*/}
-                    {/*</button>*/}
+                    {/* Footer content removed - back button and theme toggle removed */}
                 </div>
             </div>
 

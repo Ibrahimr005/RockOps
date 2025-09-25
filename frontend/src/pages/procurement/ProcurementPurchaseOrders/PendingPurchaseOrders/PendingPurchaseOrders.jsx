@@ -4,6 +4,7 @@ import { FiClock, FiCheckCircle } from 'react-icons/fi';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
+import PurchaseOrderViewModal from '../../../../components/procurement/PurchaseOrderViewModal/PurchaseOrderViewModal.jsx';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
 
 const PendingPurchaseOrders = () => {
@@ -18,6 +19,10 @@ const PendingPurchaseOrders = () => {
     const [showValidateDialog, setShowValidateDialog] = useState(false);
     const [selectedOrderForValidation, setSelectedOrderForValidation] = useState(null);
     const [isValidating, setIsValidating] = useState(false);
+
+    // Modal states
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
 
     useEffect(() => {
         fetchPendingPurchaseOrders();
@@ -39,7 +44,13 @@ const PendingPurchaseOrders = () => {
     };
 
     const handleRowClick = (row) => {
-        navigate(`/procurement/purchase-orders/${row.id}`);
+        setSelectedPurchaseOrder(row);
+        setShowViewModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setShowViewModal(false);
+        setSelectedPurchaseOrder(null);
     };
 
     const handleValidateClick = (row, e) => {
@@ -91,14 +102,15 @@ const PendingPurchaseOrders = () => {
 
     // Define columns for DataTable
     const columns = [
+
         {
-            id: 'poNumber',
-            header: 'PO NUMBER',
-            accessor: 'poNumber',
+            id: 'title',
+            header: 'TITLE',
+            accessor: 'requestOrder.title',
             sortable: true,
             filterable: true,
-            minWidth: '150px',
-            render: (row) => row.poNumber || '-'
+            minWidth: '250px',
+            render: (row) => row.requestOrder?.title || '-'
         },
         {
             id: 'requesterName',
@@ -110,15 +122,13 @@ const PendingPurchaseOrders = () => {
             render: (row) => row.requestOrder?.requesterName || '-'
         },
         {
-            id: 'title',
-            header: 'TITLE',
-            accessor: 'requestOrder.title',
+            id: 'totalAmount',
+            header: 'TOTAL AMOUNT',
+            accessor: 'totalAmount',
             sortable: true,
-            filterable: true,
-            minWidth: '250px',
-            render: (row) => row.requestOrder?.title || '-'
+            minWidth: '150px',
+            render: (row) => `${row.currency || 'EGP'} ${parseFloat(row.totalAmount || 0).toFixed(2)}`
         },
-
         {
             id: 'deadline',
             header: 'DEADLINE',
@@ -136,30 +146,19 @@ const PendingPurchaseOrders = () => {
             render: (row) => purchaseOrderService.utils.formatDate(row.expectedDeliveryDate)
         },
 
-
     ];
 
-    // Define actions for DataTable
+    // Define actions for DataTable - keeping validate action
     const actions = [
-        {
-            label: 'View',
-            icon: (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                </svg>
-            ),
-            onClick: (row) => handleValidateClick(row, { stopPropagation: () => {} }),
-            className: 'View',
 
-        }
     ];
 
     // Define filterable columns
+// Define filterable columns
     const filterableColumns = [
         {
-            header: 'PO Number',
-            accessor: 'poNumber',
+            header: 'Title',
+            accessor: 'requestOrder.title',
             filterType: 'text'
         },
         {
@@ -168,9 +167,19 @@ const PendingPurchaseOrders = () => {
             filterType: 'select'
         },
         {
-            header: 'Status',
-            accessor: 'status',
-            filterType: 'select'
+            header: 'Total Amount',
+            accessor: 'totalAmount',
+            filterType: 'range' // or 'number' depending on your DataTable implementation
+        },
+        {
+            header: 'Deadline',
+            accessor: 'requestOrder.deadline',
+            filterType: 'date'
+        },
+        {
+            header: 'Expected Delivery',
+            accessor: 'expectedDeliveryDate',
+            filterType: 'date'
         }
     ];
 
@@ -179,8 +188,6 @@ const PendingPurchaseOrders = () => {
 
     return (
         <div className="pending-purchase-orders-container">
-
-
             {/* Pending Purchase Orders Table */}
             <div className="purchase-orders-section">
                 <DataTable
@@ -198,6 +205,13 @@ const PendingPurchaseOrders = () => {
                     itemsPerPageOptions={[10, 15, 25, 50]}
                 />
             </div>
+
+            {/* Purchase Order View Modal */}
+            <PurchaseOrderViewModal
+                purchaseOrder={selectedPurchaseOrder}
+                isOpen={showViewModal}
+                onClose={handleCloseModal}
+            />
 
             {/* Validation Confirmation Dialog */}
             <ConfirmationDialog

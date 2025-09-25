@@ -446,3 +446,47 @@
     font-size: 0.8rem;
   }
 }
+
+// Add this to your ConfirmationDialog.scss file
+
+// X Close Button
+.confirmation-dialog-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast) ease;
+  z-index: 10;
+  padding: 0;
+
+  &:hover:not(:disabled) {
+    color: var(--color-text-primary);
+    transform: scale(1.1);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
+
+  svg {
+    transition: transform var(--transition-fast) ease;
+  }
+
+  &:hover:not(:disabled) svg {
+    transform: rotate(90deg);
+  }
+}

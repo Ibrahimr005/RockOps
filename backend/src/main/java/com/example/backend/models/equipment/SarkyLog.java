@@ -7,16 +7,7 @@ import java.util.UUID;
 import com.example.backend.models.user.User;
 import com.example.backend.models.hr.Employee;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -41,8 +32,8 @@ public class SarkyLog {
     @JoinColumn(name = "work_type_id", nullable = false)
     private WorkType workType;
 
-    @ManyToOne
-    @JoinColumn(name = "driver_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "driver_id", nullable = true)
     private Employee driver;
 
     @Column(name = "worked_hours", nullable = false)

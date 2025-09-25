@@ -213,6 +213,7 @@ const FinanceValidatedOffers = ({
         setShowContinueAndReturnConfirm(true);
     };
 
+    // Update the confirmContinueAndReturn function in FinanceValidatedOffers.jsx
     const confirmContinueAndReturn = async () => {
         setIsContinueAndReturn(true);
         try {
@@ -231,13 +232,13 @@ const FinanceValidatedOffers = ({
 
             showNotification(successMessage, 'success');
 
-            // Handle accepted offer going to finalization
+            // CHANGED: Prioritize the accepted offer going to finalization
             if (result.acceptedOffer && onOfferFinalized) {
+                // This will switch to the finalize tab and set the accepted offer as active
                 onOfferFinalized(result.acceptedOffer);
             }
-
-            // Handle new offer for remaining quantities
-            if (result.newOffer && onRetryOffer) {
+            // Only handle new offer if there's no accepted offer to finalize
+            else if (result.newOffer && onRetryOffer) {
                 onRetryOffer(result.newOffer);
             }
 
@@ -254,7 +255,7 @@ const FinanceValidatedOffers = ({
         } finally {
             setIsContinueAndReturn(false);
         }
-    };
+    }
 
     const cancelContinueAndReturn = () => {
         setShowContinueAndReturnConfirm(false);
@@ -267,18 +268,27 @@ const FinanceValidatedOffers = ({
 
     const confirmDelete = async () => {
         setIsDeleting(true);
+        const offerTitle = activeOffer.title; // Store title before deletion
         try {
             await offerService.delete(activeOffer.id);
 
-            if (onDeleteOffer) {
-                onDeleteOffer(activeOffer.id);
-            }
+            // Show success notification first
+            showNotification(`Offer "${offerTitle}" deleted successfully`, 'success');
 
-            showNotification(`Offer "${activeOffer.title}" deleted successfully`, 'success');
+            // Close the confirmation dialog
             setShowDeleteConfirm(false);
+
+            // Small delay to ensure snackbar is visible before calling parent callbacks
+            setTimeout(() => {
+                if (onDeleteOffer) {
+                    onDeleteOffer(activeOffer.id);
+                }
+            }, 100);
+
         } catch (error) {
             console.error('Error deleting offer:', error);
             showNotification('Failed to delete offer. Please try again.', 'error');
+            setShowDeleteConfirm(false);
         } finally {
             setIsDeleting(false);
         }
@@ -321,16 +331,38 @@ const FinanceValidatedOffers = ({
         const { hasFullFulfillment, hasAcceptedItems } = calculateFulfillmentStatus(activeOffer);
 
         if (hasFullFulfillment) {
-            // Case 1: Full fulfillment - Auto continue to finalization
+            // Case 1: Full fulfillment (including over-fulfillment) - Show all three options
             return (
-                <button
-                    className="btn-primary"
-                    onClick={() => handleOpenFinalizeDialog(activeOffer.id)}
-                    disabled={loading}
-                    title="All requested quantities accepted - proceed to finalization"
-                >
-                    <FiCheckCircle /> Finalize Offer
-                </button>
+                <div className="action-buttons-group">
+                    <button
+                        className="btn-primary"
+                        onClick={() => handleOpenFinalizeDialog(activeOffer.id)}
+                        disabled={loading}
+                        title="Requested quantities met or exceeded - proceed to finalization"
+                        style={{ marginRight: '10px' }}
+                    >
+                        <FiCheckCircle /> Finalize Offer
+                    </button>
+                    <button
+                        className="btn-primary"
+                        onClick={handleRetryClick}
+                        disabled={loading || isRetrying}
+                        title="Start over with entire quantity"
+                        style={{ marginRight: '10px' }}
+                    >
+                        <FiRefreshCw />
+                        {isRetrying ? 'Creating...' : 'Retry Offer'}
+                    </button>
+                    <button
+                        className="btn-primary"
+                        onClick={handleDeleteClick}
+                        disabled={loading || isDeleting}
+                        title="Delete this offer permanently"
+                    >
+                        <FiTrash2 />
+                        {isDeleting ? 'Deleting...' : 'Delete Offer'}
+                    </button>
+                </div>
             );
         } else if (hasAcceptedItems) {
             // Case 2: Partial fulfillment - User chooses
@@ -347,7 +379,7 @@ const FinanceValidatedOffers = ({
                         {isContinueAndReturn ? 'Processing...' : 'Continue & Return'}
                     </button>
                     <button
-                        className="btn-secondary"
+                        className="btn-primary"
                         onClick={handleRetryClick}
                         disabled={loading || isRetrying}
                         title="Start over with entire quantity"
@@ -357,7 +389,7 @@ const FinanceValidatedOffers = ({
                         {isRetrying ? 'Creating...' : 'Retry Entire Offer'}
                     </button>
                     <button
-                        className="btn-danger"
+                        className="btn-primary"
                         onClick={handleDeleteClick}
                         disabled={loading || isDeleting}
                         title="Delete this offer permanently"
