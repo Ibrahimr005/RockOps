@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes, FaSave, FaTools, FaUser, FaMapMarkerAlt, FaCalendarAlt, FaDollarSign, FaPlus } from 'react-icons/fa';
 import { useNavigate, useLocation } from 'react-router-dom';
 import contactService from '../../../services/contactService.js';
+import '../../../styles/cancel-modal-button.scss';
 import './MaintenanceStepModal.scss';
 
 const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintenanceRecord, restoredFormData }) => {
@@ -195,7 +196,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                         <FaTools />
                         {editingStep ? 'Edit Maintenance Step' : 'New Maintenance Step'}
                     </h2>
-                    <button className="modal-close" onClick={onClose}>
+                    <button className="modal-close btn-cancel" onClick={onClose}>
                         <FaTimes />
                     </button>
                 </div>
@@ -381,7 +382,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                     </div>
 
                     <div className="modal-actions">
-                        <button type="button" className="btn btn-secondary" onClick={onClose}>
+                        <button type="button" className="btn-cancel" onClick={onClose}>
                             Cancel
                         </button>
                         <button type="submit" className="btn btn-primary">

@@ -3,6 +3,7 @@ import { FaTimes, FaEye, FaTools, FaUser, FaCalendarAlt, FaDollarSign, FaInfoCir
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import maintenanceService from '../../../../services/maintenanceService.js';
+import '../../../../styles/cancel-modal-button.scss';
 import './MaintenanceRecordViewModal.scss';
 
 const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId }) => {
@@ -112,7 +113,7 @@ const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId }) => {
                             <FaExternalLinkAlt />
                             Full Details
                         </button>
-                        <button className="btn-close" onClick={onClose}>
+                        <button className="btn-close btn-cancel" onClick={onClose}>
                             <FaTimes />
                         </button>
                     </div>
