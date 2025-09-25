@@ -7,6 +7,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import './EquipmentTypeManagement.scss';
+import '../../../styles/form-validation.scss';
 
 const EquipmentTypeManagement = () => {
     const [types, setTypes] = useState([]);
@@ -35,7 +36,19 @@ const EquipmentTypeManagement = () => {
         try {
             setLoading(true);
             const response = await equipmentService.getAllEquipmentTypes();
-            setTypes(response.data);
+            // Transform data to include display values for filtering
+            const typesWithDisplayValues = response.data.map(type => {
+                // Create a flat list of supported work type names for filtering
+                const supportedWorkTypeNames = type.supportedWorkTypes && type.supportedWorkTypes.length > 0 ? 
+                    type.supportedWorkTypes.map(wt => wt.name) : [];
+                    
+                return {
+                    ...type,
+                    drivableText: type.drivable ? 'Yes' : 'No',
+                    supportedWorkTypeNames: supportedWorkTypeNames
+                };
+            });
+            setTypes(typesWithDisplayValues);
             setLoading(false);
         } catch (err) {
             console.error('Error fetching equipment types:', err);
@@ -127,10 +140,43 @@ const EquipmentTypeManagement = () => {
             }
 
             setShowModal(false);
-            fetchTypes(); // Refresh the list
+            fetchTypes(); // Refresh the list with display values
         } catch (err) {
             console.error('Error saving equipment type:', err);
-            showError(`Failed to ${editingType ? 'update' : 'add'} equipment type: ${err.response?.data?.message || err.message}`);
+            
+            // Handle specific error cases
+            if (err.response?.status === 409) {
+                // Check if it's our enhanced conflict response
+                if (err.response.data?.conflictType) {
+                    const { conflictType, resourceName, isInactive } = err.response.data;
+                    if (isInactive) {
+                        showError(`Equipment type "${resourceName}" already exists but was previously deleted. Please contact your administrator to reactivate it, or choose a different name.`);
+                    } else {
+                        showError(`Equipment type "${resourceName}" already exists. Please choose a different name.`);
+                    }
+                } else {
+                    // Fallback for legacy error responses
+                    if (err.response.data?.message?.includes('inactive') || err.response.data?.message?.includes('deleted')) {
+                        showError(`Equipment type "${formData.name}" already exists but was previously deleted. Please contact your administrator to reactivate it, or choose a different name.`);
+                    } else {
+                        showError(`Equipment type "${formData.name}" already exists. Please choose a different name.`);
+                    }
+                }
+            } else if (err.response?.status === 400) {
+                // Validation errors
+                const message = err.response.data?.message || 'Please check your input and try again';
+                if (message.includes('name') || message.includes('Name')) {
+                    showError(`Equipment type name is invalid: ${message}`);
+                } else {
+                    showError(`Please check your input: ${message}`);
+                }
+            } else if (err.response?.status === 403) {
+                showError('You don\'t have permission to save equipment types. Please contact your administrator.');
+            } else if (err.response?.status === 500) {
+                showError('Server error occurred. Please try again later or contact support.');
+            } else {
+                showError(`Failed to ${editingType ? 'update' : 'add'} equipment type: ${err.response?.data?.message || err.message}`);
+            }
         }
     };
 
@@ -146,10 +192,27 @@ const EquipmentTypeManagement = () => {
         try {
             await equipmentService.deleteEquipmentType(typeId);
             showSuccess(`Equipment type "${typeName}" has been deleted successfully`);
-            fetchTypes(); // Refresh the list
+            fetchTypes(); // Refresh the list with display values
         } catch (err) {
             console.error('Error deleting equipment type:', err);
-            showError(`Failed to delete equipment type: ${err.response?.data?.message || err.message}`);
+            
+            // Handle specific error cases
+            if (err.response?.status === 409) {
+                // Check if it's a resource in use error
+                if (err.response.data?.resourceType && err.response.data?.usageCount) {
+                    const { resourceName, usageCount, dependentType } = err.response.data;
+                    showError(`Cannot delete equipment type "${resourceName}" because it is currently used by ${usageCount} ${dependentType}${usageCount !== 1 ? 's' : ''}. Please reassign or remove the equipment first.`);
+                } else {
+                    // Fallback for other conflict errors
+                    showError(`Cannot delete equipment type "${typeName}": ${err.response.data?.message || 'Resource is in use'}`);
+                }
+            } else if (err.response?.status === 404) {
+                showError(`Equipment type "${typeName}" not found. It may have been already deleted.`);
+            } else if (err.response?.status === 403) {
+                showError('You don\'t have permission to delete equipment types. Please contact your administrator.');
+            } else {
+                showError(`Failed to delete equipment type: ${err.response?.data?.message || err.message}`);
+            }
         } finally {
             setDeletingType(null);
         }
@@ -159,21 +222,55 @@ const EquipmentTypeManagement = () => {
         {
             header: 'Name',
             accessor: 'name',
-            sortable: true
+            sortable: true,
+            filterType: 'text' 
         },
         {
             header: 'Description',
             accessor: 'description',
             sortable: true,
-            render: (row) => row.description || 'N/A'
+            filterType: 'text',
+            width: '250px',
+            maxWidth: '250px',
+            render: (row) => {
+                const description = row.description || 'N/A';
+                const maxLength = 80; // Character limit before truncation
+                
+                if (description === 'N/A' || description.length <= maxLength) {
+                    return <span className="description-text">{description}</span>;
+                }
+                
+                const truncated = description.substring(0, maxLength) + '...';
+                return (
+                    <span 
+                        className="description-text truncated" 
+                        title={description}
+                        style={{
+                            display: 'block',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            maxWidth: '230px'
+                        }}
+                    >
+                        {truncated}
+                    </span>
+                );
+            },
+            exportFormatter: (value) => {
+                // For Excel export, return the full description without truncation
+                return value || '';
+            }
         },
         {
             header: 'Drivable',
-            accessor: 'drivable',
+            accessor: 'drivableText',
             sortable: true,
+            filterType: 'select',
+            filterAllText: 'All',
             render: (row) => (
                 <span className={`status-badge ${row.drivable ? 'drivable' : 'non-drivable'}`}>
-                    {row.drivable ? ' Yes' : 'No'}
+                    {row.drivable ? 'Yes' : 'No'}
                 </span>
             )
         },
@@ -181,6 +278,9 @@ const EquipmentTypeManagement = () => {
             header: 'Supported Work Types',
             accessor: 'supportedWorkTypes',
             sortable: false,
+            filterType: 'select',
+            filterAllText: 'All',
+            customFilterAccessor: 'supportedWorkTypeNames',
             render: (row) => {
                 if (!row.supportedWorkTypes || row.supportedWorkTypes.length === 0) {
                     return 'None';
@@ -191,6 +291,13 @@ const EquipmentTypeManagement = () => {
                         {workTypeNames.length > 50 ? workTypeNames.substring(0, 50) + '...' : workTypeNames}
                     </span>
                 );
+            },
+            exportFormatter: (value) => {
+                // For Excel export, convert object array to readable text
+                if (!value || value.length === 0) {
+                    return 'None';
+                }
+                return value.map(wt => wt.name).join(', ');
             }
         }
     ];
@@ -225,7 +332,7 @@ const EquipmentTypeManagement = () => {
                 tableTitle="Equipment Types"
                 showSearch={true}
                 showFilters={true}
-                filterableColumns={columns}
+                filterableColumns={columns.filter(col => col.filterType)}
                 showAddButton={permissions.canCreate}
                 addButtonText="Add Equipment Type"
                 addButtonIcon={<FaPlus />}
@@ -241,6 +348,14 @@ const EquipmentTypeManagement = () => {
                     'drivable': 'Requires Driver',
                     'supportedWorkTypes': 'Supported Work Types'
                 }}
+                // Enforce consistent column width limits and text wrapping
+                exportColumnWidths={{
+                    'name': 25,
+                    'description': 50,
+                    'drivable': 15,
+                    'supportedWorkTypes': 40
+                }}
+                enableTextWrapping={true}
                 onExportStart={() => showSuccess("Exporting equipment types...")}
                 onExportComplete={(result) => showSuccess(`Exported ${result.rowCount} equipment types to Excel`)}
                 onExportError={(error) => showError("Failed to export equipment types")}
@@ -258,7 +373,7 @@ const EquipmentTypeManagement = () => {
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="form-group">
-                                <label htmlFor="name">Name</label>
+                                <label htmlFor="name">Name <span className="required-field">*</span></label>
                                 <input
                                     type="text"
                                     id="name"
@@ -277,8 +392,12 @@ const EquipmentTypeManagement = () => {
                                     value={formData.description}
                                     onChange={handleChange}
                                     rows="4"
-                                    placeholder="Enter a description of this equipment type..."
+                                    maxLength="1000"
+                                    placeholder="Enter a description of this equipment type... (Max 1000 characters)"
                                 />
+                                <div className="character-counter">
+                                    {formData.description.length}/1000 characters
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label className="checkbox-label">

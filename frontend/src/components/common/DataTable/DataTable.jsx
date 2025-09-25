@@ -42,6 +42,9 @@ const DataTable = ({
                        onExportStart = null, // Callback when export starts
                        onExportComplete = null, // Callback when export completes
                        onExportError = null, // Callback when export fails
+                       exportColumnWidths = {}, // Object mapping column accessors to specific widths
+                       enableTextWrapping = true, // Enable text wrapping in exported Excel
+                       preventTextOverflow = false, // Explicitly prevent text overflow for rightmost columns
                    }) => {
     // States for pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -153,17 +156,28 @@ const DataTable = ({
             return ''; // Empty string for Excel instead of "N/A"
         }
 
+        let exportValue;
+
         // If the column has a custom export formatter, use it
         if (column.exportFormatter) {
-            return column.exportFormatter(value, obj);
+            exportValue = column.exportFormatter(value, obj);
+        } else if (value instanceof Date) {
+            // For dates, ensure proper formatting
+            exportValue = value.toISOString().split('T')[0]; // YYYY-MM-DD format
+        } else {
+            exportValue = value;
         }
 
-        // For dates, ensure proper formatting
-        if (value instanceof Date) {
-            return value.toISOString().split('T')[0]; // YYYY-MM-DD format
+        // Final sanitization to prevent Excel encoding issues
+        if (typeof exportValue === 'string') {
+            exportValue = exportValue
+                .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
+                .replace(/[\uFFFD]/g, '') // Remove replacement characters
+                .replace(/[\u0000-\u001F]/g, '') // Remove additional control characters
+                .trim();
         }
 
-        return value;
+        return exportValue;
     };
 
     // Apply search filter
@@ -195,7 +209,17 @@ const DataTable = ({
                 const filterValue = filters[key];
                 if (!filterValue) return true;
 
-                const itemValue = getValue(item, key);
+                // Find the column definition to check for custom filter logic
+                const column = filterableColumns.find(col => col.accessor === key);
+                let itemValue;
+                
+                if (column && column.customFilterAccessor) {
+                    // Use custom filter accessor for complex filtering (like arrays)
+                    itemValue = getValue(item, column.customFilterAccessor);
+                } else {
+                    // Default behavior
+                    itemValue = getValue(item, key);
+                }
 
                 // Handle different filter types
                 if (Array.isArray(filterValue)) {
@@ -214,7 +238,23 @@ const DataTable = ({
                     const numValue = Number(itemValue);
                     return (min === null || numValue >= min) && (max === null || numValue <= max);
                 } else {
-                    // Simple text filter
+                    // Simple text filter or custom array filtering
+                    if (column && column.customFilterAccessor) {
+                        if (Array.isArray(itemValue)) {
+                            // Handle "None" filter for empty arrays
+                            if (filterValue === 'None') {
+                                return itemValue.length === 0;
+                            }
+                            // For array fields, check if the filter value is contained in the array
+                            return itemValue.includes(filterValue);
+                        } else {
+                            // Handle null/undefined values
+                            if (filterValue === 'None') {
+                                return isEmpty(itemValue);
+                            }
+                        }
+                    }
+                    
                     if (isEmpty(itemValue)) {
                         const emptyText = getEmptyValueText(key);
                         return emptyText.toLowerCase().includes(String(filterValue).toLowerCase());
@@ -337,20 +377,42 @@ const DataTable = ({
 
             // Create data rows
             const rows = dataToExport.map(item => {
-                return exportableColumns.map(column => {
-                    return getExportValue(item, column.accessor, column);
+                const rowData = exportableColumns.map(column => {
+                    const exportValue = getExportValue(item, column.accessor, column);
+                    
+                    // Debug logging for problematic values
+                    if (typeof exportValue === 'string' && exportValue.includes('A')) {
+                        console.log(`Export value for ${column.accessor}:`, exportValue, 'Original:', item[column.accessor]);
+                    }
+                    
+                    return exportValue;
                 });
+                
+                // Only add spacer columns if explicitly requested to prevent text overflow
+                if (preventTextOverflow) {
+                    // Add empty spacer columns to prevent text overflow
+                    rowData.push('', '', ''); // Add 3 empty columns
+                }
+                
+                return rowData;
             });
 
+            // Adjust headers if we added spacer columns
+            let adjustedHeaders = [...headers];
+            if (preventTextOverflow) {
+                // Add empty header columns to match the spacer columns
+                adjustedHeaders.push('', '', '');
+            }
+
             // Combine headers and data
-            const worksheetData = [headers, ...rows];
+            const worksheetData = [adjustedHeaders, ...rows];
 
             // Create workbook and worksheet
             const workbook = XLSX.utils.book_new();
             const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
 
-            // Set column widths based on content
-            const colWidths = exportableColumns.map(column => {
+            // Set column widths based on content with smart limits
+            let colWidths = exportableColumns.map(column => {
                 const headerLength = (customExportHeaders[column.accessor] || column.header).length;
                 const maxDataLength = Math.max(
                     ...dataToExport.map(item => {
@@ -358,10 +420,88 @@ const DataTable = ({
                         return String(value).length;
                     })
                 );
-                return { width: Math.max(headerLength, maxDataLength, 10) };
+                
+                let calculatedWidth = Math.max(headerLength, maxDataLength, 10);
+                
+                // Check if explicit width is specified for this column
+                if (exportColumnWidths[column.accessor]) {
+                    calculatedWidth = exportColumnWidths[column.accessor];
+                } else {
+                    // Apply smart width limits for different column types
+                    if (column.accessor === 'description' || 
+                        (column.header && column.header.toLowerCase().includes('description'))) {
+                        // Limit description columns to reasonable width (Excel will wrap text)
+                        calculatedWidth = Math.min(calculatedWidth, 50);
+                    } else if (column.accessor.includes('Types') || 
+                              column.accessor.includes('Equipment') ||
+                              (column.header && (column.header.toLowerCase().includes('types') || 
+                                               column.header.toLowerCase().includes('equipment')))) {
+                        // Limit columns containing type lists to reasonable width
+                        calculatedWidth = Math.min(calculatedWidth, 40);
+                    } else if (column.accessor === 'name' || 
+                              (column.header && column.header.toLowerCase().includes('name'))) {
+                        // Name columns should have moderate width
+                        calculatedWidth = Math.min(calculatedWidth, 25);
+                    } else {
+                        // General limit for all other columns
+                        calculatedWidth = Math.min(calculatedWidth, 30);
+                    }
+                }
+                
+                return { width: calculatedWidth };
             });
+            
+            // Add spacer column widths if we added spacer columns
+            if (preventTextOverflow) {
+                // Add widths for the spacer columns (small width)
+                colWidths.push({ width: 5 }, { width: 5 }, { width: 5 });
+            }
 
             worksheet['!cols'] = colWidths;
+            
+            // Get worksheet range for formatting and row heights
+            const range = XLSX.utils.decode_range(worksheet['!ref']);
+            
+            // Apply text wrapping and formatting if enabled
+            if (enableTextWrapping) {
+                for (let row = range.s.r; row <= range.e.r; row++) {
+                    for (let col = range.s.c; col <= range.e.c; col++) {
+                        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                        if (worksheet[cellAddress]) {
+                            if (!worksheet[cellAddress].s) worksheet[cellAddress].s = {};
+                            worksheet[cellAddress].s.alignment = { 
+                                wrapText: true, 
+                                vertical: 'top',
+                                horizontal: 'left'
+                            };
+                            
+                            // Add special formatting for description columns
+                            const columnInfo = exportableColumns[col];
+                            if (columnInfo && (columnInfo.accessor === 'description' || 
+                                (columnInfo.header && columnInfo.header.toLowerCase().includes('description')))) {
+                                worksheet[cellAddress].s.alignment.shrinkToFit = false;
+                                
+                                // If this is the rightmost column, prevent text overflow
+                                if (col === range.e.c) {
+                                    // Force text to stay within cell boundaries
+                                    worksheet[cellAddress].s.alignment.wrapText = true;
+                                    worksheet[cellAddress].s.alignment.shrinkToFit = false;
+                                    // Add invisible border to contain text
+                                    if (!worksheet[cellAddress].s.border) worksheet[cellAddress].s.border = {};
+                                    worksheet[cellAddress].s.border.right = { style: 'thin', color: { rgb: 'FFFFFF' } };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Set default row heights for better text display
+            if (!worksheet['!rows']) worksheet['!rows'] = [];
+            for (let i = 0; i <= range.e.r; i++) {
+                if (!worksheet['!rows'][i]) worksheet['!rows'][i] = {};
+                worksheet['!rows'][i].hpt = i === 0 ? 20 : 30; // Header row: 20pt, data rows: 30pt
+            }
 
             // Add worksheet to workbook
             const sheetName = tableTitle || 'Data';
@@ -371,8 +511,12 @@ const DataTable = ({
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
             const filename = `${exportFileName}_${timestamp}.xlsx`;
 
-            // Write and download the file
-            XLSX.writeFile(workbook, filename);
+            // Write and download the file with explicit UTF-8 encoding
+            XLSX.writeFile(workbook, filename, { 
+                bookType: 'xlsx',
+                type: 'binary',
+                compression: true
+            });
 
             // Trigger complete callback
             if (onExportComplete) {
@@ -400,6 +544,30 @@ const DataTable = ({
 
     // Get filter options for a column (including empty value text)
     const getFilterOptions = (columnAccessor) => {
+        // Find the column definition to check for custom filter logic
+        const column = filterableColumns.find(col => col.accessor === columnAccessor);
+        
+        if (column && column.customFilterAccessor) {
+            // For columns with custom filter accessor (like array fields)
+            const allValues = [];
+            data.forEach(row => {
+                const value = getValue(row, column.customFilterAccessor);
+                if (Array.isArray(value)) {
+                    if (value.length === 0) {
+                        allValues.push('None'); // Handle empty arrays
+                    } else {
+                        allValues.push(...value);
+                    }
+                } else if (value && !isEmpty(value)) {
+                    allValues.push(value);
+                } else {
+                    allValues.push('None'); // Handle null/undefined values
+                }
+            });
+            return [...new Set(allValues)].sort();
+        }
+        
+        // Default behavior for simple columns
         const values = data.map(row => {
             const value = getValue(row, columnAccessor);
             return isEmpty(value) ? getEmptyValueText(columnAccessor) : value;
@@ -606,7 +774,7 @@ const DataTable = ({
                                             value={filters[column.accessor] || ''}
                                             onChange={(e) => handleFilterChange(column.accessor, e.target.value)}
                                         >
-                                            <option value="">All {column.header}</option>
+                                            <option value="">{column.filterAllText || `All ${column.header}`}</option>
                                             {getFilterOptions(column.accessor).map(option => (
                                                 <option key={option} value={option}>
                                                     {option}

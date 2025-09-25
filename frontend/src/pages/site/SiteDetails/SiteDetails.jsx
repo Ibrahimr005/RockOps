@@ -16,6 +16,7 @@ import {warehouseService} from "../../../services/warehouseService.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
 import {FaTrash} from "react-icons/fa";
+import ContentLoader from "../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const SiteDetails = () => {
     const { siteId } = useParams();
@@ -281,7 +282,7 @@ const SiteDetails = () => {
 
     if (loading) {
         return (
-            <LoadingPage/>
+            <ContentLoader />
         );
     }
 
@@ -332,6 +333,10 @@ const SiteDetails = () => {
                     </div>
 
                     <div className="site-quick-stats">
+                        <div className="stat-item">
+                            <span className="stat-label">Created</span>
+                            <span className="stat-value">{formatDate(site.creationDate)}</span>
+                        </div>
                         <div className="delete-site">
                             {isAdmin && (
                                 <button
@@ -350,10 +355,7 @@ const SiteDetails = () => {
                         {/*    <span className="stat-label">Efficiency</span>*/}
                         {/*    <span className="stat-value">{site.efficiency || 'N/A'}%</span>*/}
                         {/*</div>*/}
-                        <div className="stat-item">
-                            <span className="stat-label">Created</span>
-                            <span className="stat-value">{formatDate(site.creationDate)}</span>
-                        </div>
+
 
                         {/*<div className="stat-item">*/}
                         {/*    <span className="stat-label">Manager</span>*/}

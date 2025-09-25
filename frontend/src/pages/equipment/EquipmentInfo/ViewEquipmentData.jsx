@@ -5,6 +5,7 @@ import { IoDocumentOutline, IoArrowBackOutline } from "react-icons/io5";
 import { BsPrinter } from "react-icons/bs";
 import { equipmentService } from "../../../services/equipmentService.js";
 import "./ViewEquipmentData.scss";
+import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
 
 const ViewEquipmentData = () => {
     const params = useParams();
@@ -12,6 +13,7 @@ const ViewEquipmentData = () => {
     const [equipmentData, setEquipmentData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [previewImage, setPreviewImage] = useState(null);
 
     useEffect(() => {
         const fetchEquipmentData = async () => {
@@ -28,7 +30,34 @@ const ViewEquipmentData = () => {
             }
         };
 
+        const fetchEquipmentPhoto = async () => {
+            try {
+                // Fetch photo from storage service (MinIO/AWS S3)
+                console.log("Fetching equipment photo for ID:", params.EquipmentID);
+                const response = await equipmentService.getEquipmentMainPhoto(params.EquipmentID);
+                if (response.data) {
+                    console.log("Successfully fetched equipment photo:", response.data);
+                    setPreviewImage(response.data);
+                }
+            } catch (error) {
+                console.error("Error fetching equipment photo:", error);
+                // If direct fetch fails, try refresh to get new presigned URL (important for AWS S3)
+                try {
+                    console.log("Retrying with refresh...");
+                    const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(params.EquipmentID);
+                    if (refreshResponse.data) {
+                        console.log("Successfully refreshed equipment photo:", refreshResponse.data);
+                        setPreviewImage(refreshResponse.data);
+                    }
+                } catch (refreshError) {
+                    console.error("Error refreshing equipment photo:", refreshError);
+                    console.log("Will fall back to equipment.imageUrl if available");
+                }
+            }
+        };
+
         fetchEquipmentData();
+        fetchEquipmentPhoto();
     }, [params.EquipmentID]);
 
     const handleGoBack = () => {
@@ -70,7 +99,7 @@ const ViewEquipmentData = () => {
         );
     };
 
-    if (loading) return <div className="equipment-info-page"><div className="loading-message">Loading equipment details...</div></div>;
+    if (loading) return <LoadingPage />;
     if (error) return <div className="equipment-info-page"><div className="error-message">Error: {error}</div></div>;
     if (!equipmentData) return <div className="equipment-info-page"><div className="error-message">No equipment data found</div></div>;
 
@@ -94,10 +123,27 @@ const ViewEquipmentData = () => {
 
                 <div className="equipment-image">
                     <img
-                        src={equipment.imageUrl}
+                        src={previewImage || equipment.imageUrl}
                         alt="Equipment"
-                        onError={(e) => { 
-                            e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5FcXVpcG1lbnQgSW1hZ2U8L3RleHQ+PC9zdmc+'; 
+                        onError={async (e) => { 
+                            // If image fails to load, try to refresh the URL
+                            if (!e.target.hasAttribute('data-refresh-attempted')) {
+                                e.target.setAttribute('data-refresh-attempted', 'true');
+                                try {
+                                    const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(params.EquipmentID);
+                                    if (refreshResponse.data) {
+                                        e.target.src = refreshResponse.data;
+                                        setPreviewImage(refreshResponse.data);
+                                    }
+                                } catch (refreshError) {
+                                    console.error("Failed to refresh image on error:", refreshError);
+                                    // Fallback to placeholder image
+                                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5FcXVpcG1lbnQgSW1hZ2U8L3RleHQ+PC9zdmc+'; 
+                                }
+                            } else {
+                                // Already attempted refresh, use placeholder
+                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5FcXVpcG1lbnQgSW1hZ2U8L3RleHQ+PC9zdmc+'; 
+                            }
                         }}
                     />
                 </div>

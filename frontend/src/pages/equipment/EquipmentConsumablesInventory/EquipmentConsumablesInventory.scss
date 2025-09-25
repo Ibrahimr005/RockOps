@@ -390,10 +390,10 @@
     gap: 16px;
     padding: 16px;
     margin: 16px;
-    background-color: #fff3cd;
-    border: 1px solid #ffeaa7;
+    background-color: transparent; // Make background transparent
+    border: 1px solid #e5e7eb; // Subtle border
     border-radius: 8px;
-    border-left: 4px solid #f39c12;
+    border-left: 4px solid #3b82f6; // Blue accent color
 
     .resolution-icon {
       flex-shrink: 0;
@@ -406,7 +406,9 @@
       svg {
         width: 24px;
         height: 24px;
-        color: #f39c12;
+        color: #3b82f6; // Blue color for better visibility
+        stroke-width: 2;
+        opacity: 1; // Ensure full visibility
       }
     }
 
@@ -417,13 +419,13 @@
         margin: 0 0 8px 0;
         font-size: 16px;
         font-weight: 600;
-        color: #856404;
+        color: var(--color-text-primary); // Use theme color for better visibility
       }
 
       p {
         margin: 0;
         font-size: 14px;
-        color: #856404;
+        color: var(--color-text-secondary); // Use theme color for better readability
         line-height: 1.4;
       }
     }

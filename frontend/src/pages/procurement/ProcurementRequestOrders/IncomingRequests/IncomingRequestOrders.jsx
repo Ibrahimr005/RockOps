@@ -850,6 +850,13 @@ const IncomingRequestOrders = ({
         }
     ];
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            handleCloseModal();
+        }
+    };
+
     return (
         <div className="pro-roi-incoming-requests-container">
             <DataTable
@@ -876,7 +883,7 @@ const IncomingRequestOrders = ({
 
             {/* Modal for Adding/Editing Request */}
             {showAddModal && (
-                <div className="pro-ro-modal-backdrop">
+                <div className="pro-ro-modal-backdrop" onClick={handleOverlayClick}>
                     <div className="pro-ro-modal">
                         <div className="pro-ro-modal-header">
                             <h2>{isEditMode ? 'Update Request Order' : 'Create New Request'}</h2>

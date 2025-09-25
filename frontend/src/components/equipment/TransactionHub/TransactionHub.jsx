@@ -249,15 +249,15 @@ const TransactionHub = forwardRef(({
                     <currentTab.icon className="transaction-hub-empty-icon" />
                     <h3>No {currentTab.label}</h3>
                     <p>{currentTab.description}</p>
-                    {activeTab === 'incoming' && (
-                        <button 
-                            className="transaction-hub-empty-action"
-                            onClick={() => setShowQuickActions(true)}
-                        >
-                            <Plus size={16} />
-                            Create New Request
-                        </button>
-                    )}
+                    {/*{activeTab === 'incoming' && (*/}
+                    {/*    <button */}
+                    {/*        className="transaction-hub-empty-action"*/}
+                    {/*        onClick={() => setShowQuickActions(true)}*/}
+                    {/*    >*/}
+                    {/*        <Plus size={16} />*/}
+                    {/*        Create New Request*/}
+                    {/*    </button>*/}
+                    {/*)}*/}
                 </div>
             );
         }

@@ -1,0 +1,213 @@
+/* Form Validation Styles */
+
+/* Required field indicator */
+.required-field {
+  color: var(--color-danger);
+  font-weight: bold;
+  font-size: 1em;
+  margin-left: 2px;
+}
+
+/* Ensure no double rendering */
+label .required-field:after {
+  content: none;
+}
+
+/* Form field validation states */
+.form-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+
+    .required-field {
+      color: var(--color-danger);
+      font-weight: bold;
+    }
+  }
+
+  input, textarea, select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+    }
+
+    &:invalid {
+      border-color: var(--color-danger);
+    }
+
+    &:invalid:focus {
+      border-color: var(--color-danger);
+      box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1);
+    }
+
+    &::placeholder {
+      color: var(--color-text-muted);
+      font-size: 0.9rem;
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  /* Validation error state */
+  &.error {
+    input, textarea, select {
+      border-color: var(--color-danger);
+      background-color: rgba(244, 67, 54, 0.05);
+    }
+  }
+
+  /* Success state */
+  &.success {
+    input, textarea, select {
+      border-color: var(--color-success);
+      background-color: rgba(76, 175, 80, 0.05);
+    }
+  }
+}
+
+/* Validation message styles */
+.validation-message {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  
+  &.error {
+    color: var(--color-danger);
+  }
+  
+  &.success {
+    color: var(--color-success);
+  }
+  
+  &.info {
+    color: var(--color-info);
+  }
+}
+
+/* Help text styling */
+.form-help-text {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+/* Character counter for textareas */
+.character-counter {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-align: right;
+  font-family: monospace;
+  
+  /* Change color as limit is approached */
+  &[data-warning="true"] {
+    color: var(--color-warning);
+  }
+  
+  &[data-danger="true"] {
+    color: var(--color-danger);
+    font-weight: bold;
+  }
+}
+
+/* Checkbox styling enhancement for required fields */
+.checkbox-label {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem !important;
+  font-weight: normal !important;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    width: auto !important;
+    margin: 0;
+    margin-top: 2px;
+  }
+
+  .checkbox-text {
+    flex: 1;
+    
+    .required-field {
+      color: var(--color-danger);
+      font-weight: bold;
+    }
+  }
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] {
+  .form-group {
+    input, textarea, select {
+      background-color: var(--color-surface-secondary);
+      border-color: var(--border-color-medium);
+      color: var(--color-text-primary);
+
+      &::placeholder {
+        color: var(--color-text-muted);
+      }
+    }
+
+    &.error {
+      input, textarea, select {
+        background-color: rgba(255, 82, 82, 0.1);
+      }
+    }
+
+    &.success {
+      input, textarea, select {
+        background-color: rgba(92, 188, 96, 0.1);
+      }
+    }
+  }
+}
+
+/* Loading state for form buttons */
+.btn-primary {
+  &.loading {
+    position: relative;
+    color: transparent;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 16px;
+      height: 16px;
+      border: 2px solid transparent;
+      border-top: 2px solid currentColor;
+      border-radius: 50%;
+      animation: button-spin 1s linear infinite;
+      color: white;
+    }
+  }
+}
+
+@keyframes button-spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}

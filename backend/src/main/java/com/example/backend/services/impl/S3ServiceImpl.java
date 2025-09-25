@@ -184,7 +184,8 @@ public class S3ServiceImpl implements FileStorageService {
 
             if (!response.contents().isEmpty()) {
                 String objectKey = response.contents().get(0).key();
-                return getFileUrl(equipmentBucket, objectKey);
+                // Use presigned URL instead of direct URL for secure access
+                return getPresignedDownloadUrl(equipmentBucket, objectKey, 1440); // 24 hours expiration
             }
         } catch (Exception e) {
             System.err.println("Error getting equipment main photo: " + e.getMessage());
@@ -201,7 +202,13 @@ public class S3ServiceImpl implements FileStorageService {
     @Override
     public String getEquipmentFileUrl(UUID equipmentId, String documentPath) {
         String equipmentBucket = "equipment-" + equipmentId.toString();
-        return getFileUrl(equipmentBucket, documentPath);
+        try {
+            // Use presigned URL instead of direct URL for secure access
+            return getPresignedDownloadUrl(equipmentBucket, documentPath, 1440); // 24 hours expiration
+        } catch (Exception e) {
+            System.err.println("Error getting equipment file URL: " + e.getMessage());
+            return null;
+        }
     }
 
     // Entity file methods

@@ -201,6 +201,8 @@ public class WarehouseService {
                         .orElseThrow(() -> new RuntimeException("Manager not found with id: " + managerId));
 
                 newManager.setWarehouse(warehouse);
+                newManager.setSite(warehouse.getSite());
+
                 if (warehouse.getEmployees() == null) {
                     warehouse.setEmployees(new ArrayList<>());
                 }
@@ -240,6 +242,8 @@ public class WarehouseService {
                             !"Warehouse Manager".equalsIgnoreCase(worker.getJobPosition().getPositionName())) {
 
                         worker.setWarehouse(warehouse);
+                        worker.setSite(warehouse.getSite());
+
                         if (warehouse.getEmployees() == null) {
                             warehouse.setEmployees(new ArrayList<>());
                         }

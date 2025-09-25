@@ -209,10 +209,10 @@ const InlineMaintenanceCreation = ({
                             className={validationErrors.technicianId ? 'error' : ''}
                             disabled={loading}
                         >
-                            <option value="">Select Technician</option>
+                            <option value="">Select Employee</option>
                             {technicians.map(tech => (
                                 <option key={tech.id} value={tech.id}>
-                                    {tech.fullName}
+                                    {tech.fullName} - {tech.jobPosition?.positionName || 'No Position'}
                                 </option>
                             ))}
                         </select>

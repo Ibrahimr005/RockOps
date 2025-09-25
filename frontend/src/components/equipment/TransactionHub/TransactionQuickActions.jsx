@@ -316,8 +316,15 @@ const TransactionQuickActions = ({
         </div>
     );
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            onCancel();
+        }
+    };
+
     return (
-        <div className="quick-actions-overlay">
+        <div className="quick-actions-overlay" onClick={handleOverlayClick}>
             <div className="quick-actions-modal">
                 <div className="quick-actions-header">
                     <div className="quick-actions-title">

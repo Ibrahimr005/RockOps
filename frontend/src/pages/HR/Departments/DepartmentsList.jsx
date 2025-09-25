@@ -187,7 +187,7 @@ const DepartmentsList = () => {
                 columns={columns}
                 actions={actions}
                 loading={loading}
-                tableTitle="Departments"
+                tableTitle=""
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={columns}

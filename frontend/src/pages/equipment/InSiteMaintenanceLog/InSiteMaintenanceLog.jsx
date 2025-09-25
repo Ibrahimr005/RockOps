@@ -24,7 +24,7 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
 
-    const { showSuccess, showError, showInfo, showWarning, hideSnackbar } = useSnackbar();
+    const { showSuccess, showError, showInfo, showWarning, showConfirmation, hideSnackbar } = useSnackbar();
 
     // Get authentication context and permissions
     const auth = useAuth();
@@ -33,7 +33,6 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
     const fetchMaintenanceRecords = async () => {
         try {
             setLoading(true);
-            showInfo("Loading maintenance records...");
             const response = await inSiteMaintenanceService.getByEquipmentId(equipmentId);
 
             // Transform data for display
@@ -63,7 +62,6 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
 
             setMaintenanceRecords(transformedData);
             setLoading(false);
-            showSuccess(`Successfully loaded ${transformedData.length} maintenance record${transformedData.length !== 1 ? 's' : ''}`);
         } catch (err) {
             console.error('Error fetching maintenance records:', err);
             setError(err.message);
@@ -79,7 +77,6 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
 
     useEffect(() => {
         if (equipmentId) {
-            showInfo("Initializing maintenance log...");
             fetchMaintenanceRecords();
         }
     }, [equipmentId]);
@@ -147,7 +144,6 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
             setSelectedMaintenanceId(record.id);
             setSelectedBatchNumber(record.batchNumber || null);
             setIsMaintenanceTransactionModalOpen(true);
-            showInfo("Opening transaction creation modal...");
         } catch (error) {
             showError("Failed to open transaction creation modal");
             console.error("Error opening transaction modal:", error);
@@ -179,7 +175,6 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
         try {
             setEditingMaintenance(row);
             setIsEditModalOpen(true);
-            showInfo(`Opening edit modal for maintenance: ${row.maintenanceType}`);
         } catch (error) {
             showError("Failed to open edit maintenance modal");
             console.error("Error opening edit modal:", error);
@@ -187,50 +182,28 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
     };
 
     const handleDeleteMaintenance = async (row) => {
-        // Custom message with buttons
         const message = `Are you sure you want to delete the maintenance record "${row.maintenanceType}" performed by ${row.technicianName}? This action cannot be undone.`;
 
-        // Show persistent confirmation warning that won't auto-hide
-        showWarning(message, 0, true);
-
-        // Create action buttons in the DOM
-        setTimeout(() => {
-            const snackbar = document.querySelector('.global-notification');
-            if (snackbar) {
-                // Create and append action buttons container
-                const actionContainer = document.createElement('div');
-                actionContainer.className = 'snackbar-actions';
-
-                // Yes button
-                const yesButton = document.createElement('button');
-                yesButton.innerText = 'YES';
-                yesButton.className = 'snackbar-action-button confirm';
-                yesButton.onclick = async () => {
-                    try {
-                        showInfo('Deleting maintenance record...');
-                        await inSiteMaintenanceService.delete(equipmentId, row.id);
-                        fetchMaintenanceRecords(); // Refresh the list
-                        showSuccess(`Maintenance record "${row.maintenanceType}" deleted successfully!`);
-                    } catch (error) {
-                        console.error('Error deleting maintenance record:', error);
-                        showError(`Failed to delete maintenance record "${row.maintenanceType}". Please try again.`);
-                    }
-                    hideSnackbar();
-                };
-
-                // No button
-                const noButton = document.createElement('button');
-                noButton.innerText = 'NO';
-                noButton.className = 'snackbar-action-button cancel';
-                noButton.onclick = () => {
-                    hideSnackbar();
-                };
-
-                actionContainer.appendChild(yesButton);
-                actionContainer.appendChild(noButton);
-                snackbar.appendChild(actionContainer);
+        showConfirmation(
+            message,
+            async () => {
+                try {
+                    await inSiteMaintenanceService.delete(equipmentId, row.id);
+                    await fetchMaintenanceRecords(); // Refresh the list and wait for completion
+                    // Small delay to ensure UI updates, then show success message with longer duration
+                    setTimeout(() => {
+                        showSuccess(`Maintenance record "${row.maintenanceType}" deleted successfully!`, 5000);
+                    }, 100);
+                } catch (error) {
+                    console.error('Error deleting maintenance record:', error);
+                    showError(`Failed to delete maintenance record "${row.maintenanceType}". Please try again.`, 5000);
+                }
+            },
+            () => {
+                // Optional: Handle cancel action if needed
+                console.log('Delete cancelled');
             }
-        }, 100);
+        );
     };
 
     const handleCloseEditModal = () => {
@@ -264,7 +237,6 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
             
             setSelectedTransaction(enrichedTransaction);
             setIsTransactionModalOpen(true);
-            showInfo(`Opening transaction details for batch #${transaction.batchNumber || 'N/A'}`);
         } catch (error) {
             showError("Failed to open transaction details");
             console.error("Error opening transaction modal:", error);
@@ -392,7 +364,6 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                         addButtonText="Add Maintenance"
                         addButtonIcon={<FaPlus />}
                         onAddClick={() => {
-                            showInfo("Opening maintenance creation form...");
                             onAddMaintenanceClick();
                         }}
                         showExportButton={true}

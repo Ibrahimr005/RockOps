@@ -263,13 +263,20 @@ const SitePartnersTab = ({siteId}) => {
         }
     };
 
+    const handleOverlayClick = (e) => {
+        // Only close if clicking on the overlay itself, not on the modal content
+        if (e.target === e.currentTarget) {
+            handleCloseModal();
+        }
+    };
+
     if (loading) return <div className="loading-container">Loading Partners...</div>;
 
     return (
         <div className="site-partners-tab">
             {/* Updated Assign Partner Modal JSX - Replace the existing modal section in your component */}
             {showModal && (
-                <div className="assign-partner-modal-overlay">
+                <div className="assign-partner-modal-overlay"  onClick={handleOverlayClick}>
                     <div className="assign-partner-modal-content">
                         <div className="assign-partner-modal-header">
                             <h2>Assign Partner</h2>
@@ -373,7 +380,7 @@ const SitePartnersTab = ({siteId}) => {
                         filterableColumns={columns}
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10}
-                        tableTitle="Partners List"
+                        //tableTitle="Partners List"
                         showAddButton={isSiteAdmin}
                         addButtonText="Assign Partner"
                         addButtonIcon={<FaPlus />}
