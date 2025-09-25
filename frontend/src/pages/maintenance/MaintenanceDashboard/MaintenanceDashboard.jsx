@@ -11,6 +11,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import maintenanceService from '../../../services/maintenanceService';
+import { siteService } from '../../../services/siteService';
 import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
 
 
@@ -28,10 +29,22 @@ const MaintenanceDashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
     const [recentMaintenance, setRecentMaintenance] = useState([]);
     const [alerts, setAlerts] = useState([]);
+    const [sites, setSites] = useState([]);
 
     useEffect(() => {
         loadDashboardData();
+        loadSites();
     }, [timeframe, selectedSite, selectedStatus]);
+
+    const loadSites = async () => {
+        try {
+            const response = await siteService.getAll();
+            setSites(response.data || []);
+        } catch (error) {
+            console.error('Error loading sites:', error);
+            // Silently fail for sites loading, don't show error to user
+        }
+    };
 
     const loadDashboardData = async () => {
         setLoading(true);
@@ -148,9 +161,11 @@ const MaintenanceDashboard = () => {
                                 className="filter-select"
                             >
                                 <option value="all">All Sites</option>
-                                <option value="site-a">Site A</option>
-                                <option value="site-b">Site B</option>
-                                <option value="site-c">Site C</option>
+                                {sites.map(site => (
+                                    <option key={site.id} value={site.id}>
+                                        {site.name}
+                                    </option>
+                                ))}
                             </select>
                             <button 
                                 onClick={loadDashboardData}
@@ -195,16 +210,16 @@ const MaintenanceDashboard = () => {
                         </div>
                     </div>
 
-                    <div className="maintenance-kpi-card maintenance-warning">
+                    <div className={`maintenance-kpi-card ${(dashboardData.overdueRecords || 0) > 0 ? 'maintenance-warning' : 'maintenance-success'}`}>
                         <div className="maintenance-kpi-icon">
-                            <AlertTriangle />
+                            {(dashboardData.overdueRecords || 0) > 0 ? <AlertTriangle /> : <CheckCircle />}
                         </div>
                         <div className="maintenance-kpi-content">
                             <div className="maintenance-kpi-value">{dashboardData.overdueRecords || 0}</div>
                             <div className="maintenance-kpi-label">Overdue Maintenance</div>
-                            <div className="maintenance-kpi-trend maintenance-negative">
-                                <AlertTriangle size={14} />
-                                {dashboardData.overdueRecords > 0 ? 'Requires attention' : 'All on schedule'}
+                            <div className={`maintenance-kpi-trend ${(dashboardData.overdueRecords || 0) > 0 ? 'maintenance-negative' : 'maintenance-positive'}`}>
+                                {(dashboardData.overdueRecords || 0) > 0 ? <AlertTriangle size={14} /> : <CheckCircle size={14} />}
+                                {(dashboardData.overdueRecords || 0) > 0 ? 'Requires attention' : 'All on schedule'}
                             </div>
                         </div>
                     </div>
