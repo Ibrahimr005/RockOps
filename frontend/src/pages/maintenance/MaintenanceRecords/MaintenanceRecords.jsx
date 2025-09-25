@@ -9,6 +9,7 @@ import MaintenanceRecordViewModal from './MaintenanceRecordViewModal/Maintenance
 import '../../../styles/status-badges.scss';
 import './MaintenanceRecords.scss';
 import maintenanceService from "../../../services/maintenanceService.js";
+import {FiPlus} from "react-icons/fi";
 
 const MaintenanceRecords = () => {
     const [maintenanceRecords, setMaintenanceRecords] = useState([]);
@@ -304,10 +305,10 @@ const MaintenanceRecords = () => {
     ];
 
     const filterableColumns = [
-        { header: 'Equipment', accessor: 'equipmentName' },
-        { header: 'Status', accessor: 'status' },
-        { header: 'Site', accessor: 'site' },
-        { header: 'Responsible Person', accessor: 'currentResponsiblePerson' }
+        { header: 'Equipment', accessor: 'equipmentName', filterType: 'select' },
+        { header: 'Status', accessor: 'status', filterType: 'select' },
+        { header: 'Site', accessor: 'site', filterType: 'select' },
+        { header: 'Responsible Person', accessor: 'currentResponsiblePerson', filterType: 'select' }
     ];
 
     if (error) {
@@ -327,10 +328,11 @@ const MaintenanceRecords = () => {
     return (
         <div className="maintenance-records">
             <div className="maintenance-records-header">
-                <div className="header-left">
-                    <h1>Maintenance Records</h1>
-                    <p>Track and manage all equipment maintenance activities</p>
-                </div>
+                <h1>Maintenance Records
+                    <p className="maintenance-records-header__subtitle">
+                        Track and manage all equipment maintenance activities
+                    </p>
+                </h1>
             </div>
 
             <DataTable
@@ -338,7 +340,6 @@ const MaintenanceRecords = () => {
                 columns={columns}
                 loading={loading}
                 actions={actions}
-                tableTitle="Maintenance Records"
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}

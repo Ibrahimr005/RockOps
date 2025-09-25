@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaUser, FaEnvelope, FaPhone, FaBuilding, FaBriefcase, FaCog, FaClock, FaExclamationTriangle } from 'react-icons/fa';
+import '../../../styles/cancel-modal-button.scss';
 import './ContactModal.scss';
 
 const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
@@ -154,7 +155,7 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                         <FaUser />
                         {editingContact ? 'Edit Contact' : 'New Contact'}
                     </h2>
-                    <button className="close-btn" onClick={onClose}>
+                    <button className="close-btn btn-cancel" onClick={onClose}>
                         <FaTimes />
                     </button>
                 </div>
@@ -403,7 +404,7 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                     </div>
 
                     <div className="form-actions">
-                        <button type="button" className="btn btn-secondary" onClick={onClose}>
+                        <button type="button" className="btn-cancel" onClick={onClose}>
                             Cancel
                         </button>
                         <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
