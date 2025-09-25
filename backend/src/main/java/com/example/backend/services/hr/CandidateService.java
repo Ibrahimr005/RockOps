@@ -15,10 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class CandidateService {
@@ -228,7 +226,7 @@ public class CandidateService {
      * Update candidate status with enhanced logic for PENDING_HIRE - UPDATED METHOD
      */
     @Transactional
-    public Candidate updateCandidateStatus(UUID candidateId, String newStatus) {
+     public Candidate updateCandidateStatus(UUID candidateId, String newStatus) {
         try {
             Candidate candidate = candidateRepository.findById(candidateId)
                     .orElseThrow(() -> new EntityNotFoundException("Candidate not found"));
@@ -461,4 +459,432 @@ public class CandidateService {
     }
 
 
+    /**
+     * Get available status transitions for a candidate based on current status and business rules
+     */
+    public List<String> getAvailableStatusTransitions(UUID candidateId) {
+        Candidate candidate = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new EntityNotFoundException("Candidate not found"));
+
+        Candidate.CandidateStatus currentStatus = candidate.getCandidateStatus();
+        if (currentStatus == null) {
+            currentStatus = Candidate.CandidateStatus.APPLIED;
+        }
+
+        return getAvailableTransitionsForStatus(currentStatus, candidate);
+    }
+
+    /**
+     * Business logic for valid status transitions
+     */
+    private boolean isValidStatusTransition(Candidate.CandidateStatus currentStatus, String newStatus) {
+        if (currentStatus == null) {
+            currentStatus = Candidate.CandidateStatus.APPLIED;
+        }
+
+        try {
+            Candidate.CandidateStatus newStatusEnum = Candidate.CandidateStatus.valueOf(newStatus.toUpperCase());
+
+            // Define valid transitions
+            switch (currentStatus) {
+                case APPLIED:
+                    return newStatusEnum == Candidate.CandidateStatus.UNDER_REVIEW ||
+                            newStatusEnum == Candidate.CandidateStatus.INTERVIEWED ||
+                            newStatusEnum == Candidate.CandidateStatus.REJECTED ||
+                            newStatusEnum == Candidate.CandidateStatus.WITHDRAWN;
+
+                case UNDER_REVIEW:
+                    return newStatusEnum == Candidate.CandidateStatus.INTERVIEWED ||
+                            newStatusEnum == Candidate.CandidateStatus.REJECTED ||
+                            newStatusEnum == Candidate.CandidateStatus.WITHDRAWN ||
+                            newStatusEnum == Candidate.CandidateStatus.APPLIED; // Can go back
+
+                case INTERVIEWED:
+                    return newStatusEnum == Candidate.CandidateStatus.PENDING_HIRE || // ADDED THIS
+                            newStatusEnum == Candidate.CandidateStatus.HIRED ||
+                            newStatusEnum == Candidate.CandidateStatus.REJECTED ||
+                            newStatusEnum == Candidate.CandidateStatus.WITHDRAWN;
+
+                case PENDING_HIRE:
+                    return newStatusEnum == Candidate.CandidateStatus.HIRED ||
+                            newStatusEnum == Candidate.CandidateStatus.REJECTED ||
+                            newStatusEnum == Candidate.CandidateStatus.WITHDRAWN ||
+                            newStatusEnum == Candidate.CandidateStatus.INTERVIEWED; // Can go back if needed
+
+                case HIRED:
+                    // Generally final, but allow for corrections
+                    return newStatusEnum == Candidate.CandidateStatus.POTENTIAL;
+
+                case REJECTED:
+                    // Can be reconsidered
+                    return newStatusEnum == Candidate.CandidateStatus.POTENTIAL ||
+                            newStatusEnum == Candidate.CandidateStatus.APPLIED;
+
+                case POTENTIAL:
+                    // Can be moved back to active statuses
+                    return newStatusEnum == Candidate.CandidateStatus.APPLIED ||
+                            newStatusEnum == Candidate.CandidateStatus.UNDER_REVIEW;
+
+                case WITHDRAWN:
+                    // Can be reactivated
+                    return newStatusEnum == Candidate.CandidateStatus.APPLIED ||
+                            newStatusEnum == Candidate.CandidateStatus.POTENTIAL;
+
+                default:
+                    return false;
+            }
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Get available status transitions for display in UI
+     */
+    private List<String> getAvailableTransitionsForStatus(Candidate.CandidateStatus currentStatus, Candidate candidate) {
+        List<String> availableStatuses = new ArrayList<>();
+
+        // Always include current status
+        availableStatuses.add(currentStatus.name());
+
+        switch (currentStatus) {
+            case APPLIED:
+                availableStatuses.addAll(Arrays.asList(
+                        "UNDER_REVIEW", "INTERVIEWED", "REJECTED", "WITHDRAWN"
+                ));
+                break;
+
+            case UNDER_REVIEW:
+                availableStatuses.addAll(Arrays.asList(
+                        "APPLIED", "INTERVIEWED", "REJECTED", "WITHDRAWN"
+                ));
+                break;
+
+            case INTERVIEWED:
+                availableStatuses.addAll(Arrays.asList(
+                        "HIRED", "REJECTED", "WITHDRAWN"
+                ));
+                break;
+
+            case HIRED:
+                availableStatuses.add("POTENTIAL");
+                break;
+
+            case REJECTED:
+                availableStatuses.addAll(Arrays.asList(
+                        "POTENTIAL", "APPLIED"
+                ));
+                break;
+
+            case POTENTIAL:
+                availableStatuses.addAll(Arrays.asList(
+                        "APPLIED", "UNDER_REVIEW"
+                ));
+                break;
+
+            case WITHDRAWN:
+                availableStatuses.addAll(Arrays.asList(
+                        "APPLIED", "POTENTIAL"
+                ));
+                break;
+        }
+
+        return availableStatuses.stream().distinct().collect(Collectors.toList());
+    }
+
+    // Add these methods to your existing CandidateService.java
+
+    /**
+     * NEW: Update candidate rating
+     */
+    @Transactional
+    public Candidate updateCandidateRating(UUID candidateId, Integer rating, String ratingNotes) {
+        try {
+            Candidate candidate = candidateRepository.findById(candidateId)
+                    .orElseThrow(() -> new EntityNotFoundException("Candidate not found"));
+
+            candidate.setRating(rating);
+            candidate.setRatingNotes(ratingNotes);
+
+            Candidate updatedCandidate = candidateRepository.save(candidate);
+
+            // Send notification
+            String candidateName = updatedCandidate.getFirstName() + " " + updatedCandidate.getLastName();
+            String stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+
+            notificationService.sendNotificationToHRUsers(
+                    "Candidate Rated",
+                    "⭐ " + candidateName + " has been rated: " + stars + " (" + rating + "/5)",
+                    NotificationType.INFO,
+                    "/candidates/" + updatedCandidate.getId(),
+                    "candidate-rated-" + updatedCandidate.getId()
+            );
+
+            return updatedCandidate;
+
+        } catch (Exception e) {
+            notificationService.sendNotificationToHRUsers(
+                    "Rating Update Failed",
+                    "Failed to update candidate rating: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/candidates/" + candidateId,
+                    "rating-error-" + candidateId
+            );
+            throw e;
+        }
+    }
+
+    /**
+     * ENHANCED: Update candidate status with all details (rating, rejection reason)
+     */
+  /**  @Transactional
+    public Candidate updateCandidateStatusWithDetails(UUID candidateId, String newStatus,
+                                                      String rejectionReason, Integer rating, String ratingNotes) {
+        try {
+            Candidate candidate = candidateRepository.findById(candidateId)
+                    .orElseThrow(() -> new EntityNotFoundException("Candidate not found"));
+
+
+            String oldStatus = candidate.getCandidateStatus() != null ?
+                    candidate.getCandidateStatus().name() : "APPLIED";
+
+            System.out.println(candidate.getCandidateStatus());
+
+            String candidateName = candidate.getFirstName() + " " + candidate.getLastName();
+
+            // Validate status transition
+            if (!isValidStatusTransition(candidate.getCandidateStatus(), newStatus)) {
+                throw new IllegalArgumentException("Invalid status transition from " + oldStatus + " to " + newStatus);
+            }
+
+            try {
+                Candidate.CandidateStatus status = Candidate.CandidateStatus.valueOf(newStatus.toUpperCase());
+                candidate.setCandidateStatus(status);
+
+                // Update rating if provided
+                if (rating != null) {
+                    candidate.setRating(rating);
+                    candidate.setRatingNotes(ratingNotes);
+                }
+
+                // Handle special status changes
+                switch (status) {
+                    case REJECTED:
+                        if (rejectionReason != null && !rejectionReason.trim().isEmpty()) {
+                            candidate.setRejectionReason(rejectionReason.trim());
+                        }
+                        break;
+                    case PENDING_HIRE:
+                        // Set as pending hire - actual hiring happens when employee form is completed
+                        break;
+                    case HIRED:
+                        // Only set hired date if moving to HIRED
+                        candidate.setHiredDate(LocalDate.now());
+                        break;
+                    default:
+                        break;
+                }
+
+                Candidate updatedCandidate = candidateRepository.save(candidate);
+
+                // Send notifications
+                sendStatusChangeNotifications(candidate, oldStatus, newStatus, candidateName);
+
+                return updatedCandidate;
+
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid candidate status: " + newStatus);
+            }
+
+        } catch (Exception e) {
+            notificationService.sendNotificationToHRUsers(
+                    "Status Update Failed",
+                    "Failed to update candidate status: " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/candidates/" + candidateId,
+                    "status-error-" + candidateId
+            );
+            throw e;
+        }
+    } */
+
+    /**
+     * ENHANCED: Update candidate status with all details (rating, rejection reason)
+     * Added comprehensive debugging and error handling
+     */
+    @Transactional
+    public Candidate updateCandidateStatusWithDetails(UUID candidateId, String newStatus,
+                                                      String rejectionReason, Integer rating, String ratingNotes) {
+        System.out.println("=== updateCandidateStatusWithDetails DEBUG ===");
+        System.out.println("Candidate ID: " + candidateId);
+        System.out.println("New Status: " + newStatus);
+        System.out.println("Rejection Reason: " + rejectionReason);
+        System.out.println("Rating: " + rating);
+        System.out.println("Rating Notes: " + ratingNotes);
+
+        // Validate input parameters
+        if (candidateId == null) {
+            System.out.println("ERROR: Candidate ID is null");
+            throw new IllegalArgumentException("Candidate ID cannot be null");
+        }
+
+        if (newStatus == null || newStatus.trim().isEmpty()) {
+            System.out.println("ERROR: New status is null or empty");
+            throw new IllegalArgumentException("New status cannot be null or empty");
+        }
+
+        // Validate rating if provided
+        if (rating != null && (rating < 1 || rating > 5)) {
+            System.out.println("ERROR: Invalid rating value: " + rating);
+            throw new IllegalArgumentException("Rating must be between 1 and 5, got: " + rating);
+        }
+
+        try {
+            // Find candidate
+            System.out.println("Searching for candidate...");
+            Candidate candidate = candidateRepository.findById(candidateId)
+                    .orElseThrow(() -> {
+                        System.out.println("ERROR: Candidate not found with ID: " + candidateId);
+                        return new EntityNotFoundException("Candidate not found with id: " + candidateId);
+                    });
+
+            System.out.println("Found candidate: " + candidate.getFirstName() + " " + candidate.getLastName());
+            System.out.println("Current status: " + candidate.getCandidateStatus());
+
+            String oldStatus = candidate.getCandidateStatus() != null ?
+                    candidate.getCandidateStatus().name() : "APPLIED";
+            String candidateName = candidate.getFirstName() + " " + candidate.getLastName();
+
+            System.out.println("Old status: " + oldStatus + " -> New status: " + newStatus);
+
+            // Validate status exists in enum
+            Candidate.CandidateStatus statusEnum;
+            try {
+                statusEnum = Candidate.CandidateStatus.valueOf(newStatus.toUpperCase().trim());
+                System.out.println("Status enum validation passed: " + statusEnum);
+            } catch (IllegalArgumentException e) {
+                System.out.println("ERROR: Invalid status enum value: " + newStatus);
+                System.out.println("Available statuses: " + Arrays.toString(Candidate.CandidateStatus.values()));
+                throw new IllegalArgumentException("Invalid candidate status: " + newStatus +
+                        ". Available statuses: " + Arrays.toString(Candidate.CandidateStatus.values()));
+            }
+
+            // Validate status transition
+            System.out.println("Validating status transition...");
+            if (!isValidStatusTransition(candidate.getCandidateStatus(), newStatus)) {
+                String errorMsg = "Invalid status transition from " + oldStatus + " to " + newStatus;
+                System.out.println("ERROR: " + errorMsg);
+
+                // Log available transitions for debugging
+                try {
+                    List<String> availableTransitions = getAvailableTransitionsForStatus(
+                            candidate.getCandidateStatus() != null ? candidate.getCandidateStatus() : Candidate.CandidateStatus.APPLIED,
+                            candidate
+                    );
+                    System.out.println("Available transitions from " + oldStatus + ": " + availableTransitions);
+                    throw new IllegalArgumentException(errorMsg + ". Available transitions: " + availableTransitions);
+                } catch (Exception ex) {
+                    System.out.println("ERROR getting available transitions: " + ex.getMessage());
+                    throw new IllegalArgumentException(errorMsg);
+                }
+            }
+            System.out.println("Status transition validation passed");
+
+            // Update candidate status
+            System.out.println("Updating candidate status to: " + statusEnum);
+            candidate.setCandidateStatus(statusEnum);
+
+            // Update rating if provided
+            if (rating != null) {
+                System.out.println("Updating rating: " + rating + " with notes: " + ratingNotes);
+                try {
+                    candidate.setRating(rating);
+                    candidate.setRatingNotes(ratingNotes != null ? ratingNotes.trim() : null);
+                    System.out.println("Rating updated successfully");
+                } catch (Exception e) {
+                    System.out.println("ERROR updating rating: " + e.getMessage());
+                    throw new IllegalArgumentException("Failed to update rating: " + e.getMessage());
+                }
+            }
+
+            // Handle special status changes
+            System.out.println("Processing special status change logic for: " + statusEnum);
+            try {
+                switch (statusEnum) {
+                    case REJECTED:
+                        if (rejectionReason != null && !rejectionReason.trim().isEmpty()) {
+                            candidate.setRejectionReason(rejectionReason.trim());
+                            System.out.println("Rejection reason set: " + rejectionReason.trim());
+                        } else {
+                            System.out.println("WARNING: No rejection reason provided for REJECTED status");
+                        }
+                        break;
+                    case PENDING_HIRE:
+                        System.out.println("Setting candidate to PENDING_HIRE - no additional actions needed");
+                        break;
+                    case HIRED:
+                        candidate.setHiredDate(LocalDate.now());
+                        System.out.println("Hired date set to: " + LocalDate.now());
+                        break;
+                    default:
+                        System.out.println("No special processing needed for status: " + statusEnum);
+                        break;
+                }
+            } catch (Exception e) {
+                System.out.println("ERROR in status-specific processing: " + e.getMessage());
+                throw new RuntimeException("Failed to process status-specific logic: " + e.getMessage());
+            }
+
+            // Save candidate
+            System.out.println("Saving updated candidate...");
+            Candidate updatedCandidate;
+            try {
+                updatedCandidate = candidateRepository.save(candidate);
+                System.out.println("Candidate saved successfully with ID: " + updatedCandidate.getId());
+                System.out.println("Final status: " + updatedCandidate.getCandidateStatus());
+            } catch (Exception e) {
+                System.out.println("ERROR saving candidate: " + e.getMessage());
+                e.printStackTrace();
+                throw new RuntimeException("Failed to save candidate: " + e.getMessage());
+            }
+
+            // Send notifications
+            System.out.println("Sending status change notifications...");
+            try {
+                sendStatusChangeNotifications(candidate, oldStatus, newStatus, candidateName);
+                System.out.println("Notifications sent successfully");
+            } catch (Exception e) {
+                System.out.println("WARNING: Failed to send notifications: " + e.getMessage());
+                // Don't fail the entire operation for notification errors
+            }
+
+            System.out.println("=== updateCandidateStatusWithDetails COMPLETED SUCCESSFULLY ===");
+            return updatedCandidate;
+
+        } catch (EntityNotFoundException e) {
+            System.out.println("ENTITY_NOT_FOUND: " + e.getMessage());
+            throw e; // Re-throw as-is for proper HTTP status
+        } catch (IllegalArgumentException e) {
+            System.out.println("VALIDATION_ERROR: " + e.getMessage());
+            throw e; // Re-throw as-is for proper HTTP status
+        } catch (Exception e) {
+            System.out.println("UNEXPECTED_ERROR: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            e.printStackTrace();
+
+            // Send error notification
+            try {
+                notificationService.sendNotificationToHRUsers(
+                        "Status Update Failed",
+                        "Failed to update candidate status: " + e.getMessage(),
+                        NotificationType.ERROR,
+                        "/candidates/" + candidateId,
+                        "status-error-" + candidateId
+                );
+            } catch (Exception notificationError) {
+                System.out.println("ERROR sending error notification: " + notificationError.getMessage());
+            }
+
+            throw new RuntimeException("Unexpected error updating candidate status: " + e.getMessage(), e);
+        }
+    }
 }

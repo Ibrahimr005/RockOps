@@ -211,6 +211,10 @@ public class JobPosition {
         }
     }
 
+    public Boolean isActive() {
+        return active;
+    }
+
     // Override baseSalary getter to use contract-specific calculation
     public Double getBaseSalary() {
         // If baseSalary is explicitly set, use it (for backward compatibility)

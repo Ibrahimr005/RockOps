@@ -1,8 +1,9 @@
 package com.example.backend.services.hr;
 
-import com.example.backend.dto.hr.*;
-import com.example.backend.dto.hr.employee.EmployeeResponseDTO;
 import com.example.backend.dto.hr.employee.EmployeeSummaryDTO;
+import com.example.backend.dto.hr.jobposition.JobPositionDTO;
+import com.example.backend.dto.hr.jobposition.JobPositionDetailsDTO;
+import com.example.backend.dto.hr.jobposition.PositionAnalyticsDTO;
 import com.example.backend.dto.hr.promotions.PositionPromotionsDTO;
 import com.example.backend.dto.hr.promotions.PromotionStatsDTO;
 import com.example.backend.dto.hr.promotions.PromotionSummaryDTO;

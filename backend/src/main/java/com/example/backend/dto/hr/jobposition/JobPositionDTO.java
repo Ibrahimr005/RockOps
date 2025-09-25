@@ -1,4 +1,4 @@
-package com.example.backend.dto.hr;
+package com.example.backend.dto.hr.jobposition;
 
 import com.example.backend.models.hr.JobPosition;
 import lombok.AllArgsConstructor;
