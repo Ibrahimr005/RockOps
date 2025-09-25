@@ -141,6 +141,23 @@ export const candidateService = {
 
         return apiClient.get(url);
     },
+    updateRating: (id, rating, ratingNotes = null) => {
+        return apiClient.put(`/api/v1/candidates/${id}/rating`, {
+            rating,
+            ratingNotes
+        });
+    },
+
+    // ENHANCED: Update status with rating and rejection reason
+    updateStatusWithDetails: (id, status, rejectionReason = null, rating = null, ratingNotes = null) => {
+        return apiClient.put(`/api/v1/candidates/${id}/status`, {
+            status,
+            rejectionReason,
+            rating,
+            ratingNotes
+        });
+    },
+
 
     // ===============================
     // CANDIDATE ANALYTICS AND HISTORY

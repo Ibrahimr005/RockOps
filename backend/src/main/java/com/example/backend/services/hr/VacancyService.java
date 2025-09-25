@@ -1,7 +1,9 @@
 package com.example.backend.services.hr;
 
+import com.example.backend.dto.hr.jobposition.MinimalJobPositionDTO;
 import com.example.backend.dto.hr.vacancy.CreateVacancyDTO;
 import com.example.backend.dto.hr.vacancy.UpdateVacancyDTO;
+import com.example.backend.dto.hr.vacancy.VacancyDTO;
 import com.example.backend.models.hr.Candidate;
 import com.example.backend.models.hr.JobPosition;
 import com.example.backend.models.hr.Vacancy;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,19 +39,55 @@ public class VacancyService {
     @Autowired
     private NotificationService notificationService;
 
-    public List<Vacancy> getAllVacancies() {
-        return vacancyRepository.findAll();
+    public List<VacancyDTO> getAllVacancies() {
+        return vacancyRepository.findAll().stream()
+                .map(this::mapVacanciesDTO)
+                .collect(Collectors.toList());
     }
 
-    public Vacancy getVacancyById(UUID id) {
-        return vacancyRepository.findById(id)
+    private VacancyDTO mapVacanciesDTO(Vacancy vacancy) {
+        MinimalJobPositionDTO jobPositionDTO = null;
+        JobPosition jobPosition = vacancy.getJobPosition();
+
+        if (jobPosition != null) {
+            jobPositionDTO = MinimalJobPositionDTO.builder()
+                    .id(jobPosition.getId())
+                    .positionName(jobPosition.getPositionName())
+                    .experienceLevel(jobPosition.getExperienceLevel())
+                    .contractType(jobPosition.getContractType().name())
+                    .active(jobPosition.isActive())
+                    .departmentName(jobPosition.getDepartment() != null ? jobPosition.getDepartment().getName() : null)
+                    .build();
+        }
+
+        return VacancyDTO.builder()
+                .id(vacancy.getId())
+                .title(vacancy.getTitle())
+                .description(vacancy.getDescription())
+                .status(vacancy.getStatus())
+                .postingDate(vacancy.getPostingDate())
+                .closingDate(vacancy.getClosingDate())
+                .numberOfPositions(vacancy.getNumberOfPositions())
+                .hiredCount(vacancy.getHiredCount())
+                .priority(vacancy.getPriority())
+                .requirements(vacancy.getRequirements())
+                .responsibilities(vacancy.getResponsibilities())
+                .jobPosition(jobPositionDTO)
+                .build();
+    }
+
+
+    public VacancyDTO getVacancyById(UUID id) {
+        Vacancy vacancy = vacancyRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Vacancy not found with id: " + id));
+
+        return mapVacanciesDTO(vacancy);
     }
 
     @Transactional
     public Vacancy createVacancy(CreateVacancyDTO dto) {
         System.out.println("=== DEBUG: Starting vacancy creation with DTO ===");
-        System.out.println("DTO: " + dto);
+        System.out.println("DTO: " + dto.toString());
 
         // Basic validations
         if (dto.getTitle() == null || dto.getTitle().isBlank()) {
@@ -79,6 +118,8 @@ public class VacancyService {
             System.out.println("DEBUG: Found job position: " + jobPosition.getPositionName());
         }
 
+        String determinedStatus = determineVacancyStatus(dto);
+
         Vacancy vacancy = Vacancy.builder()
                 .title(dto.getTitle().trim())
                 .description(dto.getDescription().trim())
@@ -86,14 +127,19 @@ public class VacancyService {
                 .responsibilities(dto.getResponsibilities() != null ? dto.getResponsibilities().trim() : null)
                 .postingDate(dto.getPostingDate())
                 .closingDate(dto.getClosingDate())
-                .status(dto.getStatus() != null ? dto.getStatus() : "OPEN")
+                .status(determinedStatus)
                 .priority(dto.getPriority() != null ? dto.getPriority() : "MEDIUM")
                 .numberOfPositions(dto.getNumberOfPositions() != null ? dto.getNumberOfPositions() : 1)
                 .jobPosition(jobPosition)
                 .hiredCount(0)
                 .build();
 
-        Vacancy saved = vacancyRepository.save(vacancy);
+        Vacancy saved;
+        try {
+            saved = vacancyRepository.save(vacancy);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to save vacancy", e);
+        }
 
         // Optional notification logic
         try {
@@ -104,6 +150,7 @@ public class VacancyService {
 
         return saved;
     }
+
 
     /**
      * Send notifications for vacancy creation (isolated from main logic)
@@ -160,7 +207,7 @@ public class VacancyService {
         System.out.println("DTO: " + dto);
 
         try {
-            Vacancy vacancy = getVacancyById(id);
+            Vacancy vacancy = getVacancyEntityById(id); // use entity version
             String oldStatus = vacancy.getStatus();
             String oldPriority = vacancy.getPriority();
             LocalDate oldClosingDate = vacancy.getClosingDate();
@@ -208,11 +255,11 @@ public class VacancyService {
             // Send notifications about significant changes
             sendVacancyUpdateNotifications(updatedVacancy, oldStatus, oldPriority, oldClosingDate);
 
+            // Return DTO instead of entity
             return updatedVacancy;
 
         } catch (Exception e) {
             System.err.println("Error updating vacancy: " + e.getMessage());
-            // Send error notification
             notificationService.sendNotificationToHRUsers(
                     "Vacancy Update Failed",
                     "Failed to update vacancy: " + e.getMessage(),
@@ -223,6 +270,12 @@ public class VacancyService {
             throw e;
         }
     }
+
+    private Vacancy getVacancyEntityById(UUID id) {
+        return vacancyRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Vacancy not found with id: " + id));
+    }
+
     /**
      * Send notifications for vacancy updates
      */
@@ -304,7 +357,7 @@ public class VacancyService {
                 throw new EntityNotFoundException("Vacancy not found with id: " + id);
             }
 
-            Vacancy vacancy = getVacancyById(id);
+            Vacancy vacancy = getVacancyEntityById(id);
             String vacancyTitle = vacancy.getTitle();
 
             // Handle candidates when deleting vacancy
@@ -488,7 +541,7 @@ public class VacancyService {
      * Get vacancy statistics including position information
      */
     public Map<String, Object> getVacancyStatistics(UUID vacancyId) {
-        Vacancy vacancy = getVacancyById(vacancyId);
+        Vacancy vacancy = getVacancyEntityById(vacancyId);
         List<Candidate> candidates = candidateRepository.findByVacancyId(vacancyId);
 
         long appliedCount = candidates.stream()
@@ -584,5 +637,33 @@ public class VacancyService {
         return candidateRepository.findAll().stream()
                 .filter(c -> c.getCandidateStatus() == Candidate.CandidateStatus.POTENTIAL)
                 .collect(Collectors.toList());
+    }
+
+    private String determineVacancyStatus(CreateVacancyDTO dto) {
+        LocalDate today = LocalDate.now();
+        LocalDate closingDate = dto.getClosingDate();
+
+        // If user explicitly sets a status, respect it (with validation)
+        if (dto.getStatus() != null && !dto.getStatus().isEmpty()) {
+            String requestedStatus = dto.getStatus().toUpperCase();
+
+            // Validate that requested status makes sense with dates
+            if ("OPEN".equals(requestedStatus) && closingDate.isBefore(today)) {
+                throw new IllegalArgumentException(
+                        "Cannot set vacancy as OPEN with a past closing date: " + closingDate
+                );
+            }
+
+            return requestedStatus;
+        }
+
+        // Auto-determine status based on dates
+        if (closingDate.isAfter(today)) {
+            return "OPEN";
+        } else if (closingDate.equals(today)) {
+            return "OPEN"; // Still open on closing day
+        } else {
+            return "CLOSED"; // Past closing date
+        }
     }
 }

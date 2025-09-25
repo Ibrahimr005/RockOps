@@ -1,6 +1,6 @@
 package com.example.backend.dto.hr.promotions;
 
-import com.example.backend.dto.hr.JobPositionSummaryDTO;
+import com.example.backend.dto.hr.jobposition.JobPositionSummaryDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

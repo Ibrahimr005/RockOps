@@ -2,7 +2,7 @@
 // 1. JobPositionDetailsDTO.java - Main DTO with all data
 // ===============================
 
-package com.example.backend.dto.hr;
+package com.example.backend.dto.hr.jobposition;
 
 import com.example.backend.dto.hr.employee.EmployeeSummaryDTO;
 import com.example.backend.dto.hr.promotions.PositionPromotionsDTO;

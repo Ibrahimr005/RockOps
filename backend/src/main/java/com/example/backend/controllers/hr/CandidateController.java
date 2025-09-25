@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -109,23 +110,157 @@ public class CandidateController {
         }
     }
 
-    // Update candidate status
-    @PutMapping("/{id}/status")
-    public ResponseEntity<Candidate> updateCandidateStatus(
+    @PutMapping("/{id}/rating")
+    public ResponseEntity<Candidate> updateCandidateRating(
             @PathVariable UUID id,
-            @RequestBody Map<String, String> statusUpdate) {
+            @RequestBody Map<String, Object> ratingData) {
         try {
-            String newStatus = statusUpdate.get("status");
-            if (newStatus == null || newStatus.trim().isEmpty()) {
+            Integer rating = (Integer) ratingData.get("rating");
+            String ratingNotes = (String) ratingData.get("ratingNotes");
+
+            if (rating == null || rating < 1 || rating > 5) {
                 return ResponseEntity.badRequest().build();
             }
 
-            Candidate updatedCandidate = candidateService.updateCandidateStatus(id, newStatus);
+            Candidate updatedCandidate = candidateService.updateCandidateRating(id, rating, ratingNotes);
             return ResponseEntity.ok(updatedCandidate);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<?> updateCandidateStatus(
+            @PathVariable UUID id,
+            @RequestBody Map<String, Object> statusUpdate) {
+
+        System.out.println("=== UPDATE CANDIDATE STATUS ENDPOINT ===");
+        System.out.println("Candidate ID: " + id);
+        System.out.println("Request body: " + statusUpdate);
+
+        try {
+            // Validate request body
+            if (statusUpdate == null || statusUpdate.isEmpty()) {
+                System.out.println("ERROR: Empty request body");
+                return ResponseEntity.badRequest()
+                        .body(Map.of(
+                                "error", "Request body cannot be empty",
+                                "timestamp", LocalDateTime.now(),
+                                "path", "/api/v1/candidates/" + id + "/status"
+                        ));
+            }
+
+            // Extract and validate parameters
+            String newStatus = (String) statusUpdate.get("status");
+            String rejectionReason = (String) statusUpdate.get("rejectionReason");
+            Integer rating = null;
+            String ratingNotes = (String) statusUpdate.get("ratingNotes");
+
+            // Handle rating - can be Integer or String
+            Object ratingObj = statusUpdate.get("rating");
+            if (ratingObj != null) {
+                try {
+                    if (ratingObj instanceof Integer) {
+                        rating = (Integer) ratingObj;
+                    } else if (ratingObj instanceof String && !((String) ratingObj).trim().isEmpty()) {
+                        rating = Integer.parseInt((String) ratingObj);
+                    }
+                    System.out.println("Parsed rating: " + rating);
+                } catch (NumberFormatException e) {
+                    System.out.println("ERROR: Invalid rating format: " + ratingObj);
+                    return ResponseEntity.badRequest()
+                            .body(Map.of(
+                                    "error", "Invalid rating format. Must be a number between 1 and 5.",
+                                    "provided", ratingObj.toString(),
+                                    "timestamp", LocalDateTime.now(),
+                                    "path", "/api/v1/candidates/" + id + "/status"
+                            ));
+                }
+            }
+
+            System.out.println("Extracted parameters:");
+            System.out.println("  Status: " + newStatus);
+            System.out.println("  Rejection Reason: " + rejectionReason);
+            System.out.println("  Rating: " + rating);
+            System.out.println("  Rating Notes: " + ratingNotes);
+
+            // Validate required fields
+            if (newStatus == null || newStatus.trim().isEmpty()) {
+                System.out.println("ERROR: Status is required");
+                return ResponseEntity.badRequest()
+                        .body(Map.of(
+                                "error", "Status is required",
+                                "timestamp", LocalDateTime.now(),
+                                "path", "/api/v1/candidates/" + id + "/status"
+                        ));
+            }
+
+            // Validate rating range
+            if (rating != null && (rating < 1 || rating > 5)) {
+                System.out.println("ERROR: Rating out of range: " + rating);
+                return ResponseEntity.badRequest()
+                        .body(Map.of(
+                                "error", "Rating must be between 1 and 5",
+                                "provided", rating,
+                                "timestamp", LocalDateTime.now(),
+                                "path", "/api/v1/candidates/" + id + "/status"
+                        ));
+            }
+
+            // Call service method
+            Candidate updatedCandidate = candidateService.updateCandidateStatusWithDetails(
+                    id, newStatus.trim(), rejectionReason, rating, ratingNotes);
+
+            System.out.println("Status update successful");
+            return ResponseEntity.ok(updatedCandidate);
+
+        } catch (EntityNotFoundException e) {
+            System.out.println("ENTITY_NOT_FOUND: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of(
+                            "error", "Candidate not found",
+                            "message", e.getMessage(),
+                            "candidateId", id.toString(),
+                            "timestamp", LocalDateTime.now(),
+                            "path", "/api/v1/candidates/" + id + "/status"
+                    ));
+
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
+            System.out.println("VALIDATION_ERROR: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(
+                            "error", "Validation failed",
+                            "message", e.getMessage(),
+                            "candidateId", id.toString(),
+                            "timestamp", LocalDateTime.now(),
+                            "path", "/api/v1/candidates/" + id + "/status"
+                    ));
+
+        } catch (Exception e) {
+            System.out.println("UNEXPECTED_ERROR: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            e.printStackTrace();
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "error", "Internal server error",
+                            "message", "An unexpected error occurred while updating candidate status",
+                            "candidateId", id.toString(),
+                            "timestamp", LocalDateTime.now(),
+                            "path", "/api/v1/candidates/" + id + "/status"
+                    ));
+        }
+    }
+
+    // Get available status transitions for a candidate
+    @GetMapping("/{id}/available-statuses")
+    public ResponseEntity<List<String>> getAvailableStatuses(@PathVariable UUID id) {
+        try {
+            List<String> availableStatuses = candidateService.getAvailableStatusTransitions(id);
+            return ResponseEntity.ok(availableStatuses);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

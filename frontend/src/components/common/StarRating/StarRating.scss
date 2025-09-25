@@ -1,0 +1,73 @@
+// Create: src/components/common/StarRating/StarRating.scss
+.star-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .stars-container {
+    display: flex;
+    gap: 2px;
+  }
+
+  .star {
+    transition: all 0.2s ease;
+
+    &.filled {
+      color: #ffc107;
+    }
+
+    &.empty {
+      color: #e0e0e0;
+    }
+  }
+
+  .rating-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+    margin-left: 4px;
+  }
+
+  // Size variants
+  &.small {
+    .star {
+      font-size: 14px;
+    }
+    .rating-label {
+      font-size: 0.75rem;
+    }
+  }
+
+  &.medium {
+    .star {
+      font-size: 18px;
+    }
+  }
+
+  &.large {
+    .star {
+      font-size: 24px;
+    }
+    .rating-label {
+      font-size: 1rem;
+    }
+  }
+
+  // Interactive vs readonly
+  &.interactive {
+    .star {
+      cursor: pointer;
+
+      &:hover {
+        transform: scale(1.1);
+        filter: brightness(1.2);
+      }
+    }
+  }
+
+  &.readonly {
+    .star {
+      cursor: default;
+    }
+  }
+}

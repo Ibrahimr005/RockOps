@@ -12,7 +12,7 @@ const AddVacancyModal = ({onClose, onSave, jobPositions}) => {
         responsibilities: '',
         postingDate: today,
         closingDate: '',
-        status: 'OPEN',
+        // status: 'OPEN',
         numberOfPositions: 1,
         priority: 'MEDIUM',
         jobPosition: null
@@ -211,19 +211,19 @@ const AddVacancyModal = ({onClose, onSave, jobPositions}) => {
                                         {errors.jobPositionId && <span className="error-message">{errors.jobPositionId}</span>}
                                     </div>
 
-                                    <div className="form-group">
-                                        <label>Status</label>
-                                        <select
-                                            name="status"
-                                            value={formData.status}
-                                            onChange={handleChange}
-                                            disabled={isSubmitting}
-                                        >
-                                            <option value="OPEN">Open</option>
-                                            <option value="CLOSED">Closed</option>
-                                            <option value="FILLED">Filled</option>
-                                        </select>
-                                    </div>
+                                    {/*<div className="form-group">*/}
+                                    {/*    <label>Status</label>*/}
+                                    {/*    <select*/}
+                                    {/*        name="status"*/}
+                                    {/*        value={formData.status}*/}
+                                    {/*        onChange={handleChange}*/}
+                                    {/*        disabled={isSubmitting}*/}
+                                    {/*    >*/}
+                                    {/*        <option value="OPEN">Open</option>*/}
+                                    {/*        <option value="CLOSED">Closed</option>*/}
+                                    {/*        <option value="FILLED">Filled</option>*/}
+                                    {/*    </select>*/}
+                                    {/*</div>*/}
 
                                     <div className="form-group">
                                         <label>Number of Positions <span className="required-asterisk">*</span></label>

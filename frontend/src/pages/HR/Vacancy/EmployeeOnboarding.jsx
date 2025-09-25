@@ -484,7 +484,7 @@ const EmployeeOnboarding = () => {
                 <h3>Basic Information</h3>
                 <div className="form-row">
                     <div className="form-group">
-                        <label>First Name *</label>
+                        <label>First Name  </label>
                         <input
                             type="text"
                             name="firstName"
@@ -503,7 +503,7 @@ const EmployeeOnboarding = () => {
                         />
                     </div>
                     <div className="form-group">
-                        <label>Last Name *</label>
+                        <label>Last Name  </label>
                         <input
                             type="text"
                             name="lastName"
@@ -539,7 +539,7 @@ const EmployeeOnboarding = () => {
                 <h3>Personal Details</h3>
                 <div className="form-row">
                     <div className="form-group">
-                        <label>National ID Number *</label>
+                        <label>National ID Number  </label>
                         <input
                             type="text"
                             name="nationalIDNumber"
@@ -549,7 +549,7 @@ const EmployeeOnboarding = () => {
                         />
                     </div>
                     <div className="form-group">
-                        <label>Date of Birth *</label>
+                        <label>Date of Birth  </label>
                         <input
                             type="date"
                             name="birthDate"
@@ -561,7 +561,7 @@ const EmployeeOnboarding = () => {
                 </div>
                 <div className="form-row">
                     <div className="form-group">
-                        <label>Gender *</label>
+                        <label>Gender  </label>
                         <select name="gender" value={formData.gender} onChange={handleInputChange} required>
                             <option value="">Select Gender</option>
                             <option value="MALE">Male</option>
@@ -611,7 +611,7 @@ const EmployeeOnboarding = () => {
                 <h3>Contact Information</h3>
                 <div className="form-row">
                     <div className="form-group">
-                        <label>Country *</label>
+                        <label>Country  </label>
                         <input
                             type="text"
                             name="country"
@@ -653,7 +653,7 @@ const EmployeeOnboarding = () => {
                     <h3>Position & Department</h3>
                     <div className="form-row">
                         <div className="form-group">
-                            <label>Job Position *</label>
+                            <label>Job Position  </label>
                             <select
                                 name="jobPositionId"
                                 value={formData.jobPositionId}
@@ -703,7 +703,7 @@ const EmployeeOnboarding = () => {
                     <h3>Employment Terms</h3>
                     <div className="form-row">
                         <div className="form-group">
-                            <label>Hire Date *</label>
+                            <label>Hire Date  </label>
                             <input
                                 type="date"
                                 name="hireDate"
