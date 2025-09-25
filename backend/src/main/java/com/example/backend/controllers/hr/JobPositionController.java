@@ -1,7 +1,7 @@
 package com.example.backend.controllers.hr;
 
-import com.example.backend.dto.hr.JobPositionDTO;
-import com.example.backend.dto.hr.JobPositionDetailsDTO;
+import com.example.backend.dto.hr.jobposition.JobPositionDTO;
+import com.example.backend.dto.hr.jobposition.JobPositionDetailsDTO;
 import com.example.backend.dto.hr.employee.EmployeeSummaryDTO;
 import com.example.backend.dto.hr.promotions.PromotionStatsDTO;
 import com.example.backend.dto.hr.promotions.PromotionSummaryDTO;

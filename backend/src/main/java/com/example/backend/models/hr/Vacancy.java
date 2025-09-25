@@ -2,12 +2,8 @@ package com.example.backend.models.hr;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -19,6 +15,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(exclude = {"jobPosition", "candidates"})
 public class Vacancy {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -45,9 +42,8 @@ public class Vacancy {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "job_position_id")
-    @JsonManagedReference("vacancy-jobposition")
+    @JsonBackReference("jobposition-vacancies") // This prevents circular reference
     private JobPosition jobPosition;
-
 
     @OneToMany(mappedBy = "vacancy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore // Exclude from JSON to prevent circular references
@@ -106,5 +102,22 @@ public class Vacancy {
     // Add getter for hiredCount with null safety
     public Integer getHiredCount() {
         return hiredCount != null ? hiredCount : 0;
+    }
+
+    // Helper method to get job position details without circular reference
+    @JsonIgnore
+    public String getJobPositionName() {
+        return jobPosition != null ? jobPosition.getPositionName() : null;
+    }
+
+    @JsonIgnore
+    public String getDepartmentName() {
+        return jobPosition != null && jobPosition.getDepartment() != null
+                ? jobPosition.getDepartment().getName() : null;
+    }
+
+    @JsonIgnore
+    public Double getJobPositionBaseSalary() {
+        return jobPosition != null ? jobPosition.getBaseSalary() : null;
     }
 }

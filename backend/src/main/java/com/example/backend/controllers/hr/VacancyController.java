@@ -2,6 +2,7 @@ package com.example.backend.controllers.hr;
 
 import com.example.backend.dto.hr.vacancy.CreateVacancyDTO;
 import com.example.backend.dto.hr.vacancy.UpdateVacancyDTO;
+import com.example.backend.dto.hr.vacancy.VacancyDTO;
 import com.example.backend.models.hr.Vacancy;
 import com.example.backend.models.hr.Candidate;
 import com.example.backend.services.hr.VacancyService;
@@ -59,15 +60,15 @@ public class VacancyController {
 
     // Get all vacancies
     @GetMapping
-    public ResponseEntity<List<Vacancy>> getAllVacancies() {
-        List<Vacancy> vacancies = vacancyService.getAllVacancies();
+    public ResponseEntity<List<VacancyDTO>> getAllVacancies() {
+        List<VacancyDTO> vacancies = vacancyService.getAllVacancies();
         return ResponseEntity.ok(vacancies);
     }
 
     // Get a specific vacancy by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Vacancy> getVacancyById(@PathVariable UUID id) {
-        Vacancy vacancy = vacancyService.getVacancyById(id);
+    public ResponseEntity<VacancyDTO> getVacancyById(@PathVariable UUID id) {
+        VacancyDTO vacancy = vacancyService.getVacancyById(id);
         return ResponseEntity.ok(vacancy);
     }
 

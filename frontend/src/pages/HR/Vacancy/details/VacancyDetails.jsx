@@ -185,34 +185,33 @@ const VacancyDetails = () => {
     return (
         <div className="vacancy-details-page">
             {/* Header Section */}
-            <div className="vacancy-header">
-                <div className="header-navigation">
-                    <button className="btn btn-secondary" onClick={handleBackClick}>
-                        <FaArrowLeft />
-                        Back to Vacancies
-                    </button>
-                    <div className="header-actions">
-                        {/*<button className="btn btn-primary" onClick={handleEditClick}>*/}
-                        {/*    <FaEdit />*/}
-                        {/*    Edit Vacancy*/}
-                        {/*</button>*/}
-                        {/*<button className="btn modal-btn-danger" onClick={handleDeleteVacancy}>*/}
-                        {/*    <FaTrash />*/}
-                        {/*    Delete*/}
-                        {/*</button>*/}
-                    </div>
+            <div className="departments-header">
+                {/*<div className="header-navigation">*/}
+                {/*    */}
+                {/*    <div className="header-actions">*/}
+                {/*        /!*<button className="btn btn-primary" onClick={handleEditClick}>*!/*/}
+                {/*        /!*    <FaEdit />*!/*/}
+                {/*        /!*    Edit Vacancy*!/*/}
+                {/*        /!*</button>*!/*/}
+                {/*        /!*<button className="btn modal-btn-danger" onClick={handleDeleteVacancy}>*!/*/}
+                {/*        /!*    <FaTrash />*!/*/}
+                {/*        /!*    Delete*!/*/}
+                {/*        /!*</button>*!/*/}
+                {/*    </div>*/}
+                {/*</div>*/}
+
+                <div>
+                    <h1 className="page-title">{vacancy.title}</h1>
+
                 </div>
 
-                <div className="vacancy-title-section">
-                    <h1 className="page-title">{vacancy.title}</h1>
-                    <div className="vacancy-badges">
+                <div className="vacancy-badges">
                         <span className={`status-badge ${getStatusBadgeClass(vacancy.status)}`}>
                             {vacancy.status}
                         </span>
-                        <span className={`status-badge ${getPriorityBadgeClass(vacancy.priority)}`}>
+                    <span className={`status-badge ${getPriorityBadgeClass(vacancy.priority)}`}>
                             {vacancy.priority || 'MEDIUM'} Priority
                         </span>
-                    </div>
                 </div>
             </div>
 
@@ -247,7 +246,7 @@ const VacancyDetails = () => {
                             <div className="info-content">
                                 <span className="info-label">Department</span>
                                 <span className="info-value">
-                                    {vacancy.jobPosition ? vacancy.jobPosition.department.name : 'N/A'}
+                                    {vacancy.jobPosition ? vacancy.jobPosition.departmentName : 'N/A'}
                                 </span>
                             </div>
                         </div>

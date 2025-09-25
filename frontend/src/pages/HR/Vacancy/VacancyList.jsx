@@ -35,6 +35,7 @@ const VacancyList = () => {
 
             if (response && response.data) {
                 // Ensure we always set an array
+                console.log(response.data)
                 const vacancyData = Array.isArray(response.data) ? response.data : [];
                 setVacancies(vacancyData);
             } else {
@@ -233,20 +234,20 @@ const VacancyList = () => {
     // Badge utility functions
     const getStatusBadgeClass = useCallback((status) => {
         const statusClasses = {
-            'OPEN': 'status-badge-success',
-            'CLOSED': 'status-badge-danger',
-            'FILLED': 'status-badge-info'
+            'OPEN': 'success',
+            'CLOSED': 'danger',
+            'FILLED': 'info'
         };
         return statusClasses[status] || 'status-badge-warning';
     }, []);
 
     const getPriorityBadgeClass = useCallback((priority) => {
         const priorityClasses = {
-            'HIGH': 'priority-badge-high',
-            'MEDIUM': 'priority-badge-medium',
-            'LOW': 'priority-badge-low'
+            'HIGH': 'status-badge danger',
+            'MEDIUM': 'status-badge medium',
+            'LOW': 'status-badge low'
         };
-        return priorityClasses[priority] || 'priority-badge-medium';
+        return priorityClasses[priority] || 'status-badge medium';
     }, []);
 
     // Memoized columns to prevent unnecessary re-renders
@@ -268,13 +269,13 @@ const VacancyList = () => {
         {
             header: 'Department',
             accessor: 'jobPosition.department.name',
-            render: (row) => row.jobPosition?.department?.name || 'N/A'
+            render: (row) => row.jobPosition?.departmentName || 'N/A'
         },
         {
             header: 'Status',
             accessor: 'status',
             render: (row) => (
-                <span className={`jv-status-badge ${getStatusBadgeClass(row.status)}`}>
+                <span className={`status-badge ${getStatusBadgeClass(row.status)}`}>
                     {row.status || 'UNKNOWN'}
                 </span>
             )
