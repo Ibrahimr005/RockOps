@@ -4,7 +4,7 @@ import { FiClock, FiCheckCircle } from 'react-icons/fi';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
-import PurchaseOrderViewModal from '../PurchaseOrderViewModal/PurchaseOrderViewModal.jsx';
+import PurchaseOrderViewModal from '../../../../components/procurement/PurchaseOrderViewModal/PurchaseOrderViewModal.jsx';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
 
 const PendingPurchaseOrders = () => {

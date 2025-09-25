@@ -31,8 +31,6 @@ const PurchaseOrderViewModal = ({ purchaseOrder, isOpen, onClose }) => {
 
     if (!isOpen || !purchaseOrder) return null;
 
-
-
     // Format date helper functions
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
@@ -115,7 +113,7 @@ const PurchaseOrderViewModal = ({ purchaseOrder, isOpen, onClose }) => {
 
                 {/* Content */}
                 <div className="purchase-order-view-modal-content">
-                    {/* Overview Section */}
+                    {/* 1. Overview Section */}
                     <div className="purchase-order-view-modal-content-section">
                         <h3 className="purchase-order-view-modal-section-title">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -219,7 +217,7 @@ const PurchaseOrderViewModal = ({ purchaseOrder, isOpen, onClose }) => {
                         </div>
                     </div>
 
-                    {/* Request Order Information */}
+                    {/* 2. Request Order Information */}
                     {purchaseOrder.requestOrder && (
                         <div className="purchase-order-view-modal-content-section">
                             <h3 className="purchase-order-view-modal-section-title">
@@ -244,6 +242,59 @@ const PurchaseOrderViewModal = ({ purchaseOrder, isOpen, onClose }) => {
                                         </span>
                                     </div>
                                 </div>
+
+                                {purchaseOrder.requestOrder.description && (
+                                    <div className="purchase-order-view-modal-request-item">
+                                        <div className="purchase-order-view-modal-request-icon">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M14.828 14.828a4 4 0 010-5.656l5.657 5.656a4 4 0 01-5.657 0z"/>
+                                                <path d="M9.17 9.17a4 4 0 010-5.656L14.828 9.17a4 4 0 01-5.657 0z"/>
+                                            </svg>
+                                        </div>
+                                        <div className="purchase-order-view-modal-request-content">
+                                            <span className="purchase-order-view-modal-request-label">Description</span>
+                                            <span className="purchase-order-view-modal-request-value">
+                                                {purchaseOrder.requestOrder.description}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {purchaseOrder.requestOrder.createdBy && (
+                                    <div className="purchase-order-view-modal-request-item">
+                                        <div className="purchase-order-view-modal-request-icon">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                                <circle cx="12" cy="7" r="4"/>
+                                            </svg>
+                                        </div>
+                                        <div className="purchase-order-view-modal-request-content">
+                                            <span className="purchase-order-view-modal-request-label">Created By</span>
+                                            <span className="purchase-order-view-modal-request-value">
+                                                {purchaseOrder.requestOrder.createdBy}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {purchaseOrder.requestOrder.createdAt && (
+                                    <div className="purchase-order-view-modal-request-item">
+                                        <div className="purchase-order-view-modal-request-icon">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                                <line x1="3" y1="10" x2="21" y2="10"/>
+                                            </svg>
+                                        </div>
+                                        <div className="purchase-order-view-modal-request-content">
+                                            <span className="purchase-order-view-modal-request-label">Created Date</span>
+                                            <span className="purchase-order-view-modal-request-value">
+                                                {formatDate(purchaseOrder.requestOrder.createdAt)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="purchase-order-view-modal-request-item">
                                     <div className="purchase-order-view-modal-request-icon">
@@ -280,7 +331,80 @@ const PurchaseOrderViewModal = ({ purchaseOrder, isOpen, onClose }) => {
                         </div>
                     )}
 
-                    {/* Purchase Order Items Section */}
+                    {/* 3. Offer Information */}
+                    {purchaseOrder.offer && (
+                        <div className="purchase-order-view-modal-content-section">
+                            <h3 className="purchase-order-view-modal-section-title">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M9 12l2 2 4-4"/>
+                                    <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"/>
+                                    <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"/>
+                                    <path d="M3 12h6m12 0h-6"/>
+                                </svg>
+                                Related Offer
+                            </h3>
+                            <div className="purchase-order-view-modal-overview-grid">
+                                <div className="purchase-order-view-modal-overview-item">
+                                    <div className="purchase-order-view-modal-overview-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                            <polyline points="14,2 14,8 20,8"/>
+                                            <line x1="16" y1="13" x2="8" y2="13"/>
+                                            <line x1="16" y1="17" x2="8" y2="17"/>
+                                            <polyline points="10,9 9,9 8,9"/>
+                                        </svg>
+                                    </div>
+                                    <div className="purchase-order-view-modal-overview-content">
+                                        <span className="purchase-order-view-modal-label">Title</span>
+                                        <span className="purchase-order-view-modal-value">{purchaseOrder.offer.title}</span>
+                                    </div>
+                                </div>
+
+                                <div className="purchase-order-view-modal-overview-item">
+                                    <div className="purchase-order-view-modal-overview-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M14.828 14.828a4 4 0 010-5.656l5.657 5.656a4 4 0 01-5.657 0z"/>
+                                            <path d="M9.17 9.17a4 4 0 010-5.656L14.828 9.17a4 4 0 01-5.657 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div className="purchase-order-view-modal-overview-content">
+                                        <span className="purchase-order-view-modal-label">Description</span>
+                                        <span className="purchase-order-view-modal-value">{purchaseOrder.offer.description || 'N/A'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="purchase-order-view-modal-overview-item">
+                                    <div className="purchase-order-view-modal-overview-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="12" cy="7" r="4"/>
+                                        </svg>
+                                    </div>
+                                    <div className="purchase-order-view-modal-overview-content">
+                                        <span className="purchase-order-view-modal-label">Created By</span>
+                                        <span className="purchase-order-view-modal-value">{purchaseOrder.offer.createdBy}</span>
+                                    </div>
+                                </div>
+
+                                <div className="purchase-order-view-modal-overview-item">
+                                    <div className="purchase-order-view-modal-overview-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
+                                    </div>
+                                    <div className="purchase-order-view-modal-overview-content">
+                                        <span className="purchase-order-view-modal-label">Created Date</span>
+                                        <span className="purchase-order-view-modal-value">{formatDate(purchaseOrder.offer.createdAt)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 4. Purchase Order Items Section */}
                     <div className="purchase-order-view-modal-content-section">
                         <h3 className="purchase-order-view-modal-section-title">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -374,79 +498,6 @@ const PurchaseOrderViewModal = ({ purchaseOrder, isOpen, onClose }) => {
                             </div>
                         )}
                     </div>
-
-                    {/* Offer Information */}
-                    {purchaseOrder.offer && (
-                        <div className="purchase-order-view-modal-content-section">
-                            <h3 className="purchase-order-view-modal-section-title">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M9 12l2 2 4-4"/>
-                                    <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3"/>
-                                    <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3"/>
-                                    <path d="M3 12h6m12 0h-6"/>
-                                </svg>
-                                Related Offer
-                            </h3>
-                            <div className="purchase-order-view-modal-overview-grid">
-                                <div className="purchase-order-view-modal-overview-item">
-                                    <div className="purchase-order-view-modal-overview-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                            <polyline points="14,2 14,8 20,8"/>
-                                            <line x1="16" y1="13" x2="8" y2="13"/>
-                                            <line x1="16" y1="17" x2="8" y2="17"/>
-                                            <polyline points="10,9 9,9 8,9"/>
-                                        </svg>
-                                    </div>
-                                    <div className="purchase-order-view-modal-overview-content">
-                                        <span className="purchase-order-view-modal-label">Title</span>
-                                        <span className="purchase-order-view-modal-value">{purchaseOrder.offer.title}</span>
-                                    </div>
-                                </div>
-
-                                <div className="purchase-order-view-modal-overview-item">
-                                    <div className="purchase-order-view-modal-overview-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M14.828 14.828a4 4 0 010-5.656l5.657 5.656a4 4 0 01-5.657 0z"/>
-                                            <path d="M9.17 9.17a4 4 0 010-5.656L14.828 9.17a4 4 0 01-5.657 0z"/>
-                                        </svg>
-                                    </div>
-                                    <div className="purchase-order-view-modal-overview-content">
-                                        <span className="purchase-order-view-modal-label">Description</span>
-                                        <span className="purchase-order-view-modal-value">{purchaseOrder.offer.description || 'N/A'}</span>
-                                    </div>
-                                </div>
-
-                                <div className="purchase-order-view-modal-overview-item">
-                                    <div className="purchase-order-view-modal-overview-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                            <circle cx="12" cy="7" r="4"/>
-                                        </svg>
-                                    </div>
-                                    <div className="purchase-order-view-modal-overview-content">
-                                        <span className="purchase-order-view-modal-label">Created By</span>
-                                        <span className="purchase-order-view-modal-value">{purchaseOrder.offer.createdBy}</span>
-                                    </div>
-                                </div>
-
-                                <div className="purchase-order-view-modal-overview-item">
-                                    <div className="purchase-order-view-modal-overview-icon">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                            <line x1="16" y1="2" x2="16" y2="6"/>
-                                            <line x1="8" y1="2" x2="8" y2="6"/>
-                                            <line x1="3" y1="10" x2="21" y2="10"/>
-                                        </svg>
-                                    </div>
-                                    <div className="purchase-order-view-modal-overview-content">
-                                        <span className="purchase-order-view-modal-label">Created Date</span>
-                                        <span className="purchase-order-view-modal-value">{formatDate(purchaseOrder.offer.createdAt)}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
