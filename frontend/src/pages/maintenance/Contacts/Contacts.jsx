@@ -338,10 +338,11 @@ const Contacts = () => {
     return (
         <div className="contacts">
             <div className="contacts-header">
-                <div className="header-left">
-                    <h1>Contacts</h1>
-                    <p>Manage maintenance team contacts and responsible persons</p>
-                </div>
+                <h1>Contacts
+                    <p className="contacts-header__subtitle">
+                        Manage maintenance team contacts and responsible persons
+                    </p>
+                </h1>
             </div>
 
             <DataTable
@@ -349,7 +350,6 @@ const Contacts = () => {
                 columns={columns}
                 loading={loading}
                 actions={actions}
-                tableTitle="Contacts"
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}
