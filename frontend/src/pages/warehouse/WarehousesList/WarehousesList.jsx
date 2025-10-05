@@ -7,6 +7,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog";
+import UnifiedCard from "../../../components/common/UnifiedCard/UnifiedCard";
 import { warehouseService } from "../../../services/warehouse/warehouseService";
 import { warehouseEmployeeService } from "../../../services/warehouse/warehouseEmployeeService";
 import { itemService } from "../../../services/warehouse/itemService";
@@ -68,7 +69,7 @@ const WarehousesList = () => {
     });
 
     // Check if current user is warehouse manager
-    const isWarehouseManager = currentUser?.role === 'WAREHOUSE_MANAGER' || "ADMIN";
+    const isWarehouseManager = currentUser?.role === 'WAREHOUSE_MANAGER' || currentUser?.role === 'ADMIN';
 
     // Snackbar helper functions
     const showSnackbar = (type, message) => {
@@ -264,14 +265,14 @@ const WarehousesList = () => {
             // Ensure items is always an array
             const itemsArray = Array.isArray(items) ? items : [];
 
-            // Count incoming transactions (same logic as IncomingTransactionsTable)
+            // Count incoming transactions
             const incomingTransactionsCount = transactions.filter(transaction =>
                 transaction.status === "PENDING" &&
                 (transaction.receiverId === warehouseId || transaction.senderId === warehouseId) &&
                 transaction.sentFirst !== warehouseId
             ).length;
 
-            // Count actual discrepancy items like in DiscrepancyItems component
+            // Count actual discrepancy items
             const missingItems = itemsArray.filter(item => item.itemStatus === 'MISSING' && !item.resolved);
             const excessItems = itemsArray.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved);
             const discrepancyCount = missingItems.length + excessItems.length;
@@ -295,9 +296,8 @@ const WarehousesList = () => {
         }
     };
 
-    // Fetch warehouses on initial load - wait for currentUser to be available
+    // Fetch warehouses on initial load
     useEffect(() => {
-        // console.log("Current user in useEffect:", currentUser);
         if (currentUser && currentUser.role) {
             fetchWarehouses();
         }
@@ -325,8 +325,6 @@ const WarehousesList = () => {
             setLoadingNotifications(true);
             const notifications = {};
 
-            // Only fetch notifications for warehouse managers and employees
-// Only fetch notifications for warehouse managers, employees, and admins
             if (currentUser?.role === 'WAREHOUSE_MANAGER' || currentUser?.role === 'WAREHOUSE_EMPLOYEE' || currentUser?.role === 'ADMIN') {
                 await Promise.all(
                     warehouses.map(async (warehouse) => {
@@ -348,7 +346,6 @@ const WarehousesList = () => {
             console.log("Filtering warehouses for employee:", currentUser.username);
             console.log("Total warehouses available:", allWarehouses.length);
 
-            // Get all warehouse assignments for this user
             const assignments = await warehouseEmployeeService.getAssignmentsByUsername(currentUser.username);
             console.log("Found assignments:", assignments);
 
@@ -358,14 +355,12 @@ const WarehousesList = () => {
                 return;
             }
 
-            // Extract warehouse IDs from assignments
             const assignedWarehouseIds = assignments
                 .map(assignment => assignment.warehouse?.id)
-                .filter(Boolean); // Remove null/undefined values
+                .filter(Boolean);
 
             console.log("Assigned warehouse IDs:", assignedWarehouseIds);
 
-            // Filter warehouses to only show assigned ones
             const assignedWarehouses = allWarehouses.filter(warehouse =>
                 assignedWarehouseIds.includes(warehouse.id)
             );
@@ -376,7 +371,6 @@ const WarehousesList = () => {
 
         } catch (error) {
             console.error("Error filtering warehouses for employee:", error);
-            // If filtering fails, show empty list for security
             setWarehouses([]);
         }
     };
@@ -390,13 +384,10 @@ const WarehousesList = () => {
             const respo = await warehouseService.getAll();
             console.log("Fetched warehouse data:", JSON.stringify(respo, null, 2));
 
-            // If user is a warehouse employee, filter warehouses on frontend
             if (currentUser?.role === 'WAREHOUSE_EMPLOYEE') {
                 console.log("User is WAREHOUSE_EMPLOYEE, filtering warehouses");
-                // Get user's assigned warehouses via separate API call
                 await fetchAndFilterWarehousesForEmployee(respo);
             } else {
-                // For other roles, show all warehouses
                 console.log("User is not WAREHOUSE_EMPLOYEE, showing all warehouses");
                 setWarehouses(respo);
                 console.log("Fetched all warehouses for role:", currentUser?.role);
@@ -480,7 +471,6 @@ const WarehousesList = () => {
         setPendingUnassignments([]);
         setHasUnsavedChanges(false);
 
-        // Debug log
         console.log('Opening assignment modal for:', warehouse.name);
     };
 
@@ -531,25 +521,20 @@ const WarehousesList = () => {
         try {
             setAssignmentLoading(true);
 
-            // Process all pending assignments
             for (const employeeId of pendingAssignments) {
                 await assignEmployeeToWarehouseAPI(employeeId, selectedWarehouse.id);
             }
 
-            // Process all pending unassignments
             for (const employeeId of pendingUnassignments) {
                 await unassignEmployeeFromWarehouseAPI(employeeId, selectedWarehouse.id);
             }
 
-            // Refresh data
             await fetchWarehouseAssignedEmployees(selectedWarehouse.id);
             await fetchWarehouseEmployees();
 
-            // Show success message
             const totalChanges = pendingAssignments.length + pendingUnassignments.length;
             showSnackbar('success', `Successfully applied ${totalChanges} change${totalChanges !== 1 ? 's' : ''} to ${selectedWarehouse.name}`);
 
-            // Close modal
             setShowAssignmentModal(false);
             setSelectedWarehouse(null);
             setSelectedEmployee("");
@@ -572,7 +557,6 @@ const WarehousesList = () => {
         setSelectedEmployee(employeeId);
     };
 
-    // Handle employee assignment - ONLY UI changes, NO API calls
     const handleAssignEmployee = () => {
         if (!selectedEmployee || !selectedWarehouse) {
             return;
@@ -583,7 +567,6 @@ const WarehousesList = () => {
             return;
         }
 
-        // Create temporary assignment for UI display only
         const tempAssignment = {
             id: employeeToAssign.id,
             firstName: employeeToAssign.firstName,
@@ -596,22 +579,17 @@ const WarehousesList = () => {
             isPending: true
         };
 
-        // Update UI state only
         setPendingAssignments(prev => [...prev, selectedEmployee]);
         setAssignedEmployees(prev => [...prev, tempAssignment]);
         setHasUnsavedChanges(true);
         setSelectedEmployee("");
     };
 
-    // Handle employee unassignment - remove from UI immediately
     const handleUnassignEmployee = (employeeId) => {
         if (!selectedWarehouse) {
             return;
         }
 
-        const employeeToRemove = assignedEmployees.find(emp => emp.id === employeeId);
-
-        // Check if this employee is in pending assignments (newly added this session)
         if (pendingAssignments.includes(employeeId)) {
             setPendingAssignments(prev => prev.filter(id => id !== employeeId));
             setAssignedEmployees(prev => prev.filter(emp => emp.id !== employeeId));
@@ -623,7 +601,6 @@ const WarehousesList = () => {
             return;
         }
 
-        // Add to pending unassignments and remove from UI
         setPendingUnassignments(prev => [...prev, employeeId]);
         setAssignedEmployees(prev => prev.filter(emp => emp.id !== employeeId));
         setHasUnsavedChanges(true);
@@ -632,24 +609,11 @@ const WarehousesList = () => {
     const getAvailableEmployeesForAssignment = () => {
         if (!selectedWarehouse) return [];
 
-        // Debug logs
-        console.log('=== ASSIGNMENT DEBUG ===');
-        console.log('Selected Warehouse:', selectedWarehouse.name);
-        console.log('All Warehouse Employees:', warehouseEmployees.length);
-        console.log('Assigned to Current Warehouse:', assignedEmployees.length);
-        console.log('Assigned Employee IDs:', assignedEmployees.map(emp => emp.id));
-
-        // For multi-warehouse assignment: Only filter out employees assigned to THIS specific warehouse
         const assignedToCurrentWarehouseIds = assignedEmployees.map(emp => emp.id);
 
-        // Return all warehouse employees who are NOT already assigned to this specific warehouse
         const availableEmployees = warehouseEmployees.filter(emp =>
             !assignedToCurrentWarehouseIds.includes(emp.id)
         );
-
-        console.log('Available Employees for Assignment:', availableEmployees.length);
-        console.log('Available Employee Names:', availableEmployees.map(emp => `${emp.firstName} ${emp.lastName}`));
-        console.log('=== END DEBUG ===');
 
         return availableEmployees;
     };
@@ -657,7 +621,6 @@ const WarehousesList = () => {
     const fetchTotalItemsInWarehouse = async (warehouseId) => {
         try {
             const items = await itemService.getItemsByWarehouse(warehouseId);
-            // Ensure items is always an array
             const itemsArray = Array.isArray(items) ? items : [];
             const inWarehouseItems = itemsArray.filter(item => item.itemStatus === 'IN_WAREHOUSE');
             const total = inWarehouseItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -684,18 +647,13 @@ const WarehousesList = () => {
     if (loading) return <LoadingPage/>;
     if (error) return <div className="warehouse-list-error">{error}</div>;
 
-    // Debug: Show current user info temporarily
-    if (process.env.NODE_ENV === 'development') {
-        console.log("Current user object:", JSON.stringify(currentUser, null, 2));
-    }
-
     return (
         <div className="warehouse-list-container">
             <div className="departments-header">
                 <h1 className="warehouse-list-title">Warehouses</h1>
             </div>
 
-            <div className="warehouse-list-grid">
+            <div className="unified-cards-grid">
                 {warehouses.length > 0 ? (
                     warehouses.map((warehouse) => {
                         const manager = warehouse.employees?.find(
@@ -708,129 +666,75 @@ const WarehousesList = () => {
 
                         // Get notification data for this warehouse
                         const notifications = warehouseNotifications[warehouse.id] || {};
-                        const hasIncomingTransactions = notifications.incomingTransactions > 0;
-                        const hasDiscrepancies = notifications.discrepancies > 0;
-                        const hasAlerts = hasIncomingTransactions || hasDiscrepancies;
+                        const hasAlerts = notifications.incomingTransactions > 0 || notifications.discrepancies > 0;
 
-                        // Optional: Add urgent class for high counts
-                        const isUrgent = notifications.discrepancies > 5 || notifications.incomingTransactions > 3;
+                        const alertTooltip = hasAlerts ? (
+                            notifications.incomingTransactions && notifications.discrepancies
+                                ? `${notifications.incomingTransactions} incoming transactions, ${notifications.discrepancies} inventory issues`
+                                : notifications.incomingTransactions
+                                    ? `${notifications.incomingTransactions} incoming transactions`
+                                    : `${notifications.discrepancies} inventory issues`
+                        ) : '';
+
+                        // Define stats
+                        const stats = [
+                            { label: 'Site', value: warehouse.site?.name || 'Not Assigned' },
+                            { label: 'Total Items', value: totalItemsMap[warehouse.id] || '0' },
+                            {
+                                label: 'Warehouse Manager',
+                                value: manager ? `${manager.firstName} ${manager.lastName}` : 'Not Assigned',
+                                fullWidth: true
+                            },
+                            {
+                                label: 'Warehouse Workers',
+                                value: warehouseWorkers.length > 0
+                                    ? warehouseWorkers.map(w => `${w.firstName} ${w.lastName}`).join(', ')
+                                    : 'Not Assigned',
+                                fullWidth: true
+                            }
+                        ];
+
+                        // Define actions based on role
+                        const actions = [
+                            {
+                                label: 'View Details',
+                                variant: 'primary',
+                                onClick: (id) => navigate(`/warehouses/warehouse-details/${id}`)
+                            }
+                        ];
+
+                        if (isWarehouseManager) {
+                            actions.push({
+                                label: 'Assign Employees',
+                                variant: 'secondary',
+                                onClick: (id) => handleOpenAssignmentModal(warehouse)
+                            });
+                        }
 
                         return (
-                            <div
+                            <UnifiedCard
                                 key={warehouse.id}
-                                className={`warehouse-list-card ${hasAlerts ? 'has-attention' : ''}`}
-                                onClick={() => navigate(`/warehouses/${warehouse.id}`)}
-                                style={{ cursor: "pointer" }}
-                                title={hasAlerts ? (
-                                    hasIncomingTransactions && hasDiscrepancies
-                                        ? `${notifications.incomingTransactions} pending transactions, ${notifications.discrepancies} inventory issues`
-                                        : hasIncomingTransactions
-                                            ? `${notifications.incomingTransactions} pending transactions`
-                                            : `${notifications.discrepancies} inventory issues`
-                                ) : undefined}
-                            >
-                                <div className="warehouse-list-card-image">
-                                    <img src={warehouse.photoUrl ? warehouse.photoUrl : warehouseImg} alt="Warehouse" />
-
-                                    {/* Red Corner Alert */}
-                                    {hasAlerts && (
-                                        <div className="warehouse-status-corner"></div>
-                                    )}
-                                </div>
-
-                                <div className="warehouse-list-card-content">
-                                    <h2 className="warehouse-list-card-name">
-                                        {warehouse.name || 'Unnamed Warehouse'}
-                                    </h2>
-
-                                    <div className="warehouse-list-card-stats">
-                                        <div className="warehouse-list-stat-item">
-                                            <p className="warehouse-list-stat-label">Site:</p>
-                                            <p className="warehouse-list-stat-value">{warehouse.site?.name || "Not Assigned"}</p>
-                                        </div>
-                                        <div className="warehouse-list-stat-item">
-                                            <p className="warehouse-list-stat-label">Total Items:</p>
-                                            <p className="warehouse-list-stat-value">
-                                                {totalItemsMap[warehouse.id] || "0"}
-                                            </p>
-                                        </div>
-                                        <div className="warehouse-list-stat-item warehouse-list-full-width">
-                                            <p className="warehouse-list-stat-label">Warehouse Manager:</p>
-                                            <p className="warehouse-list-stat-value">{manager ? manager.firstName + " " + manager.lastName : "Not Assigned"}</p>
-                                        </div>
-                                        <div className="warehouse-list-stat-item warehouse-list-full-width">
-                                            <p className="warehouse-list-stat-label">Warehouse Workers:</p>
-                                            <p className="warehouse-list-stat-value">
-                                                {warehouseWorkers.length > 0
-                                                    ? warehouseWorkers.map(worker => `${worker.firstName} ${worker.lastName}`).join(', ')
-                                                    : "Not Assigned"}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className={`warehouse-list-card-actions ${isWarehouseManager ? 'has-four-buttons' : ''}`}>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                navigate(`/warehouses/warehouse-details/${warehouse.id}`);
-                                            }}
-                                            className="btn-primary"
-                                        >
-                                            View Details
-                                        </button>
-
-                                        {isWarehouseManager && (
-                                            <>
-
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleOpenAssignmentModal(warehouse);
-                                                    }}
-                                                    className="btn-primary"
-                                                >
-                                                    Assign Employees
-                                                </button>
-
-                                                {/*<button*/}
-                                                {/*    onClick={(e) => {*/}
-                                                {/*        e.stopPropagation();*/}
-                                                {/*        handleOpenEditModal(warehouse);*/}
-                                                {/*    }}*/}
-                                                {/*    className="btn-primary"*/}
-                                                {/*>*/}
-                                                {/*    Edit*/}
-                                                {/*</button>*/}
-
-                                                {/*<button*/}
-                                                {/*    onClick={(e) => {*/}
-                                                {/*        e.stopPropagation();*/}
-                                                {/*        handleOpenDeleteModal(warehouse);*/}
-                                                {/*    }}*/}
-                                                {/*    className="btn-danger"*/}
-                                                {/*>*/}
-                                                {/*    Delete*/}
-                                                {/*</button>*/}
-
-
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                                id={warehouse.id}
+                                title={warehouse.name || 'Unnamed Warehouse'}
+                                imageUrl={warehouse.photoUrl}
+                                imageFallback={warehouseImg}
+                                stats={stats}
+                                actions={actions}
+                                hasAlert={hasAlerts}
+                                alertTooltip={alertTooltip}
+                                onClick={(id) => navigate(`/warehouses/${id}`)}
+                            />
                         );
                     })
                 ) : (
-                    <div className="warehouse-list-empty-message">
-                        <div className="warehouse-list-empty-icon">
+                    <div className="unified-cards-empty">
+                        <div className="unified-cards-empty-icon">
                             <FaWarehouse size={50} />
                         </div>
                         <p>No warehouses found.</p>
                     </div>
                 )}
             </div>
-
-            {/*Replace your Edit Warehouse Modal JSX with this:*/}
 
             {/* Edit Warehouse Modal */}
             {showEditModal && (
@@ -893,9 +797,6 @@ const WarehousesList = () => {
                                                     </select>
                                                 </div>
 
-
-
-                                                {/* Display current site as read-only info */}
                                                 <div className="warehouse-form-group">
                                                     <label>Current Site</label>
                                                     <div className="warehouse-readonly-field">
@@ -928,6 +829,14 @@ const WarehousesList = () => {
                 </div>
             )}
 
+            {/* Snackbar */}
+            <Snackbar
+                show={snackbar.show}
+                type={snackbar.type}
+                message={snackbar.message}
+                onClose={hideSnackbar}
+            />
+
             {/* Confirmation Dialog */}
             <ConfirmationDialog
                 isVisible={confirmDialog.isVisible}
@@ -936,7 +845,7 @@ const WarehousesList = () => {
                 message={confirmDialog.message}
                 onConfirm={confirmDialog.onConfirm}
                 onCancel={hideConfirmDialog}
-                confirmText="Yes, Delete"
+                confirmText="Confirm"
                 cancelText="Cancel"
             />
         </div>

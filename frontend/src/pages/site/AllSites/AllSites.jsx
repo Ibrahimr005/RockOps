@@ -7,9 +7,9 @@ import { FaBuilding } from 'react-icons/fa';
 import { siteService } from "../../../services/siteService.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
+import UnifiedCard from "../../../components/common/UnifiedCard/UnifiedCard";
 
-// Default placeholder for site image
-const siteimg = "data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23ddd'/%3e%3ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23999'%3eSite%3c/text%3e%3c/svg%3e";
+import site2 from "../../../assets/imgs/site2.webp";
 
 const AllSites = () => {
     const { t } = useTranslation();
@@ -123,6 +123,7 @@ const AllSites = () => {
             if (response.data.length > 0) {
                 console.log("First site structure:", Object.keys(response.data[0]));
                 console.log("First site full object:", response.data[0]);
+                console.log("FULL SITE DATA FOR COUNTING:", JSON.stringify(response.data[0], null, 2)); // Add this line
             }
             setSites(response.data);
             setError(null);
@@ -388,62 +389,52 @@ const AllSites = () => {
                 )}
             </div>
 
-            <div className="sites-grid">
+            <div className="unified-cards-grid">
                 {sites.length > 0 ? (
                     sites.map((site) => (
-                        <div key={site.id} className="site-card" onClick={() => navigate(`/sites/details/${site.id}`)} style={{ cursor: "pointer" }}>
-                            <div className="site-image">
-                                <img src={site?.photoUrl ?? siteimg} alt="Site" />
-                            </div>
-
-                            <div className="site-content">
-                                <h2 className="site-name">{site.name || t('common.noData')}</h2>
-
-                                <div className="site-stats">
-                                    <p className="sites-stat-item">
-                                        <span className="stat-label">{t('hr.dashboard.employees')}:</span>
-                                        <span className="stat-value"> {site.employeeCount || 0}</span>
-                                    </p>
-                                    <p className="sites-stat-item">
-                                        <span className="stat-label">{t('equipment.equipment')}:</span>
-                                        <span className="stat-value"> {site.equipmentCount || 0}</span>
-                                    </p>
-                                    {/*<p className="stat-item full-width">*/}
-                                    {/*    <span className="stat-label">{t('site.efficiency')}:</span>*/}
-                                    {/*    <span className="stat-value"> {site.efficiency || '90%'}</span>*/}
-                                    {/*</p>*/}
-                                </div>
-
-                                <div className="site-actions">
-                                    {isSiteAdmin && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // Prevents click event from bubbling to the card
-                                                handleOpenEditModal(site);
-                                            }}
-                                            className="edit-button"
-                                        >
-                                            {t('site.editSite')}
-                                        </button>
-                                    )}
-
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate(`/sites/details/${site.id}`);
-                                        }}
-                                        className="view-button"
-                                    >
-                                        {t('common.details')}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <UnifiedCard
+                            key={site.id}
+                            id={site.id}
+                            title={site.name || t('common.noData')}
+                            imageUrl={site?.photoUrl}
+                            imageFallback={site2}
+                            stats={[
+                                {
+                                    label: t('hr.dashboard.employees'),
+                                    value: site.employeeCount || 0
+                                },
+                                {
+                                    label: t('equipment.equipment'),
+                                    value: site.equipmentCount || 0
+                                },
+                                {
+                                    label: t('warehouse.warehouses'),
+                                    value: site.warehouseCount || 0
+                                },
+                                {
+                                    label: 'Merchants',
+                                    value: site.merchantCount || 0
+                                }
+                            ]}
+                            actions={[
+                                ...(isSiteAdmin ? [{
+                                    label: t('site.editSite'),
+                                    variant: 'secondary',
+                                    onClick: (id) => handleOpenEditModal(site)
+                                }] : []),
+                                {
+                                    label: t('common.details'),
+                                    variant: 'primary',
+                                    onClick: (id) => navigate(`/sites/details/${id}`)
+                                }
+                            ]}
+                            onClick={(id) => navigate(`/sites/details/${id}`)}
+                        />
                     ))
                 ) : (
-                    <div className="no-sites-message">
-                        <div>
-                            <FaBuilding size={50} />
+                    <div className="unified-cards-empty">
+                        <div className="unified-cards-empty-icon">
+                            <FaBuilding size={54} />
                         </div>
                         <p>{t('common.noData')} {isSiteAdmin ? t('site.addSite') : ''}</p>
                     </div>
@@ -528,52 +519,6 @@ const AllSites = () => {
                                                     />
                                                 </div>
                                             </div>
-
-                                            {/* Partners section - commented out but with updated class names */}
-                                            {/*<div className="site-form-group site-partners-section">*/}
-                                            {/*    <label>{t('site.partners')}</label>*/}
-                                            {/*    <div className="site-partners-dropdown" ref={dropdownRef}>*/}
-                                            {/*        <div className="site-dropdown-header" onClick={toggleDropdown}>*/}
-                                            {/*            <span>{t('site.selectPartners')}</span>*/}
-                                            {/*            <span className={`site-dropdown-icon ${isDropdownOpen ? 'open' : ''}`}>▼</span>*/}
-                                            {/*        </div>*/}
-
-                                            {/*        {isDropdownOpen && (*/}
-                                            {/*            <div className="site-dropdown-menu">*/}
-                                            {/*                {partners*/}
-                                            {/*                    .filter(partner => !selectedPartnerIds.includes(partner.id))*/}
-                                            {/*                    .map(partner => (*/}
-                                            {/*                        <div*/}
-                                            {/*                            key={partner.id}*/}
-                                            {/*                            className="site-dropdown-item"*/}
-                                            {/*                            onClick={() => handleSelectPartner(partner)}*/}
-                                            {/*                        >*/}
-                                            {/*                            {partner.firstName} {partner.lastName}*/}
-                                            {/*                        </div>*/}
-                                            {/*                    ))}*/}
-                                            {/*                {partners.filter(partner => !selectedPartnerIds.includes(partner.id)).length === 0 && (*/}
-                                            {/*                    <div className="site-dropdown-item">{t('site.noPartnersAvailable')}</div>*/}
-                                            {/*                )}*/}
-                                            {/*            </div>*/}
-                                            {/*        )}*/}
-                                            {/*    </div>*/}
-
-                                            {/*    {selectedPartners.length > 0 && (*/}
-                                            {/*        <div className="site-partners-list">*/}
-                                            {/*            {selectedPartners.map(partner => (*/}
-                                            {/*                <div key={partner.id} className="site-partner-chip">*/}
-                                            {/*                    <span>{partner.firstName} {partner.lastName}</span>*/}
-                                            {/*                    <span*/}
-                                            {/*                        className="site-remove-partner"*/}
-                                            {/*                        onClick={() => handleRemovePartner(partner.id)}*/}
-                                            {/*                    >*/}
-                                            {/*                        ×*/}
-                                            {/*                    </span>*/}
-                                            {/*                </div>*/}
-                                            {/*            ))}*/}
-                                            {/*        </div>*/}
-                                            {/*    )}*/}
-                                            {/*</div>*/}
 
                                             <div className="site-form-actions">
                                                 <button type="button" className="site-cancel-button" onClick={handleCloseModals}>{t('common.cancel')}</button>
@@ -668,56 +613,9 @@ const AllSites = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Partners section - commented out but with updated class names */}
-                                            {/*<div className="site-form-group site-partners-section">*/}
-                                            {/*    <label>{t('site.partners')}</label>*/}
-                                            {/*    <div className="site-partners-dropdown" ref={dropdownRef}>*/}
-                                            {/*        <div className="site-dropdown-header" onClick={toggleDropdown}>*/}
-                                            {/*            <span>{t('site.selectPartners')}</span>*/}
-                                            {/*            <span className={`site-dropdown-icon ${isDropdownOpen ? 'open' : ''}`}>▼</span>*/}
-                                            {/*        </div>*/}
-
-                                            {/*        {isDropdownOpen && (*/}
-                                            {/*            <div className="site-dropdown-menu">*/}
-                                            {/*                {partners*/}
-                                            {/*                    .filter(partner => !selectedPartnerIds.includes(partner.id))*/}
-                                            {/*                    .map(partner => (*/}
-                                            {/*                        <div*/}
-                                            {/*                            key={partner.id}*/}
-                                            {/*                            className="site-dropdown-item"*/}
-                                            {/*                            onClick={() => handleSelectPartner(partner)}*/}
-                                            {/*                        >*/}
-                                            {/*                            {partner.firstName} {partner.lastName}*/}
-                                            {/*                        </div>*/}
-                                            {/*                    ))}*/}
-                                            {/*                {partners.filter(partner => !selectedPartnerIds.includes(partner.id)).length === 0 && (*/}
-                                            {/*                    <div className="site-dropdown-item">{t('site.noPartnersAvailable')}</div>*/}
-                                            {/*                )}*/}
-                                            {/*            </div>*/}
-                                            {/*        )}*/}
-                                            {/*    </div>*/}
-
-                                            {/*    {selectedPartners.length > 0 && (*/}
-                                            {/*        <div className="site-partners-list">*/}
-                                            {/*            {selectedPartners.map(partner => (*/}
-                                            {/*                <div key={partner.id} className="site-partner-chip">*/}
-                                            {/*                    <span>{partner.firstName} {partner.lastName}</span>*/}
-                                            {/*                    <span*/}
-                                            {/*                        className="site-remove-partner"*/}
-                                            {/*                        onClick={() => handleRemovePartner(partner.id)}*/}
-                                            {/*                    >*/}
-                                            {/*                        ×*/}
-                                            {/*                    </span>*/}
-                                            {/*                </div>*/}
-                                            {/*            ))}*/}
-                                            {/*        </div>*/}
-                                            {/*    )}*/}
-                                            {/*</div>*/}
-
                                             <div className="site-form-actions">
                                                 <button type="button" className="site-cancel-button" onClick={handleCloseModals}>{t('common.cancel')}</button>
                                                 <button type="submit" className="site-submit-button site-save-button">{t('common.save')}</button>
-
                                             </div>
                                         </form>
                                     </div>
