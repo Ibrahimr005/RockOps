@@ -1,0 +1,70 @@
+// PageHeader component styles
+// This component exactly replicates the departments-header pattern
+// to provide consistent styling across all pages
+
+.global-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+
+  h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--head-title-color);
+    font-family: var(--font-family);
+
+    @media (max-width: 768px) {
+      font-size: 1.5rem;
+    }
+  }
+
+  .employees-header__subtitle {
+    margin: 0.5rem 0 0 0;
+    font-size: 1rem;
+    color: var(--paragraph-color);
+    font-weight: normal;
+    font-family: var(--font-family);
+  }
+
+  .page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    // Style for action buttons within the header
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+    }
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+
+    .page-header-actions {
+      justify-content: flex-start;
+    }
+  }
+}
+
+// For responsive adjustments on smaller screens
+@media (max-width: 480px) {
+  .global-page-header {
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+// Compatibility with existing departments-header styles
+// This ensures existing pages that might still reference departments-header work
+.departments-header {
+  @extend .global-page-header;
+}

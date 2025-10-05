@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import './Partners.scss';
 import { FaEdit, FaTrashAlt, FaUsers } from "react-icons/fa";
 import DataTable from '../../components/common/DataTable/DataTable';
+import PageHeader from '../../components/common/PageHeader/PageHeader.jsx';
 import ConfirmationDialog from '../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import { partnerService } from '../../services/partnerService.js';
 import '../../styles/modal-styles.scss';
@@ -211,9 +212,10 @@ const Partners = () => {
 
     return (
         <div className="partner-table-container">
-            <div className="departments-header">
-                <h2>{t('partners.title', 'Partners')}</h2>
-            </div>
+            <PageHeader
+                title="Partners"
+                subtitle="Manage business partners and vendor relationships"
+            />
 
             <DataTable
                 data={partners}
@@ -230,6 +232,9 @@ const Partners = () => {
                 addButtonText={t('partners.addButton', 'Add Partner')}
                 addButtonIcon={<FaUsers />}
                 onAddClick={() => setShowAddModal(true)}
+                showExportButton={true}
+                exportFileName="partners"
+                exportButtonText="Export Partners"
             />
 
             {/* Add Partner Modal */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Clock, Package, CheckCircle, Plus, RefreshCw } from 'lucide-react';
+import PageHeader from '../../common/PageHeader';
 import './TransactionHub.scss';
 import UnifiedTransactionProcessor from './UnifiedTransactionProcessor';
 import TransactionQuickActions from './TransactionQuickActions';
@@ -271,6 +272,11 @@ const TransactionHub = forwardRef(({
 
     return (
         <div className="transaction-hub-container">
+            <PageHeader
+                title="Equipment Transactions"
+                subtitle="Unified interface for all equipment transaction scenarios"
+            />
+
             <div className="transaction-hub-header">
                 <div className="transaction-hub-title-section">
                     <h2 className="transaction-hub-title">Equipment Transaction Management</h2>

@@ -290,9 +290,6 @@ const EquipmentDetails = () => {
                 <div className="tab-content">
                     {activeTab === "dashboard" && (
                         <div className="tab-panel">
-                            <div className="panel-header">
-                                <h2 className="panel-title">Equipment Dashboard</h2>
-                            </div>
                             <div className="tab-content-container">
                                 <EquipmentDashboard
                                     ref={dashboardRef}
@@ -304,9 +301,6 @@ const EquipmentDetails = () => {
 
                     {activeTab === "consumables" && (
                         <div className="tab-panel">
-                            <div className="panel-header">
-                                <h2 className="panel-title">Consumables </h2>
-                            </div>
                             <div className="tab-content-container">
                                 <EquipmentConsumablesInventory
                                     ref={consumablesInventoryRef}
@@ -320,9 +314,6 @@ const EquipmentDetails = () => {
 
                     {activeTab === "sarky" && (
                         <div className="tab-panel">
-                            <div className="panel-header">
-                                <h2 className="panel-title">Daily Work Log</h2>
-                            </div>
                             {/* Remove the tab-content-container wrapper for sarky matrix to allow sticky header */}
                             <EquipmentSarkyMatrix
                                 ref={sarkyAttendanceRef}
@@ -334,9 +325,6 @@ const EquipmentDetails = () => {
 
                     {activeTab === "maintenance" && (
                         <div className="tab-panel">
-                            <div className="panel-header">
-                                <h2 className="panel-title">In-Site Maintenance History</h2>
-                            </div>
                             <div className="tab-content-container">
                                 <InSiteMaintenanceLog
                                     ref={inSiteMaintenanceLogRef}
@@ -351,9 +339,6 @@ const EquipmentDetails = () => {
 
                     {activeTab === "transactions" && permissions.canEdit && (
                         <div className="tab-panel">
-                            <div className="panel-header">
-                                <h2 className="panel-title">Equipment Transactions</h2>
-                            </div>
                             <div className="tab-content-container">
                                 <TransactionHub
                                     ref={unifiedTransactionsRef}

@@ -6,6 +6,7 @@ import { createErrorHandlers } from '../../../utils/errorHandler';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../components/common/PageHeader';
 import './EquipmentTypeManagement.scss';
 import '../../../styles/form-validation.scss';
 
@@ -247,12 +248,17 @@ const EquipmentBrandManagement = () => {
 
     return (
         <div className="equipment-types-container">
+            <PageHeader
+                title="Equipment Brands"
+                subtitle="Manage equipment brands and manufacturers for your fleet"
+            />
+
             <DataTable
                 data={brands}
                 columns={columns}
                 loading={loading}
                 actions={actions}
-                tableTitle="Equipment Brands"
+                tableTitle=""
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={columns.filter(col => col.filterType)}

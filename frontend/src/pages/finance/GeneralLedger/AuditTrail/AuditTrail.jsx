@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaHistory, FaUser, FaCalendarAlt } from 'react-icons/fa';
 import { useAuth } from "../../../../contexts/AuthContext";
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../../components/common/PageHeader';
 import './AuditTrail.css';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
@@ -201,7 +202,10 @@ const AuditTrail = () => {
 
     return (
         <div className="audit-trail-container">
-
+            <PageHeader
+                title="Audit Trail"
+                subtitle="Track all system activities and changes for compliance and security"
+            />
 
             <DataTable
                 data={auditRecords}
@@ -212,7 +216,7 @@ const AuditTrail = () => {
                 filterableColumns={filterableColumns}
                 defaultSortField="timestamp" // Sort by the timestamp field
                 defaultSortDirection="desc"
-                tableTitle="Audit Trail"
+                tableTitle=""
                 emptyMessage="No audit records found"
                 // Export configuration
                 showExportButton={true}

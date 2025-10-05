@@ -380,7 +380,7 @@ const SitePartnersTab = ({siteId}) => {
                         filterableColumns={columns}
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10}
-                        //tableTitle="Partners List"
+                        tableTitle=""
                         showAddButton={isSiteAdmin}
                         addButtonText="Assign Partner"
                         addButtonIcon={<FaPlus />}

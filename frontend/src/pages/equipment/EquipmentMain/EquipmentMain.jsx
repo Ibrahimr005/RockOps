@@ -10,6 +10,7 @@ import EquipmentCard from "./components/card/EquipmentCard.jsx";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useEquipmentPermissions } from "../../../utils/rbac";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
+import PageHeader from "../../../components/common/PageHeader/index.js";
 
 const EquipmentMain = () => {
     const [equipmentData, setEquipmentData] = useState([]);
@@ -235,126 +236,137 @@ const EquipmentMain = () => {
     return (
         <main className="equipment-main-container">
             {/* Header area with stats */}
-            <IntroCard
+            {/*<IntroCard*/}
+            {/*    title="Equipment"*/}
+            {/*    label="EQUIPMENT MANAGEMENT"*/}
+            {/*    lightModeImage={excavatorBlack}*/}
+            {/*    darkModeImage={excavatorWhite}*/}
+            {/*    stats={[*/}
+            {/*        {*/}
+            {/*            value: equipmentData.length,*/}
+            {/*            label: "Total Equipment"*/}
+            {/*        }*/}
+            {/*    ]}*/}
+            {/*    onInfoClick={() => {*/}
+            {/*        // Handle info button click if needed*/}
+            {/*        console.log("Equipment info clicked");*/}
+            {/*    }}*/}
+            {/*/>*/}
+            <PageHeader
                 title="Equipment"
-                label="EQUIPMENT MANAGEMENT"
-                lightModeImage={excavatorBlack}
-                darkModeImage={excavatorWhite}
-                stats={[
-                    {
-                        value: equipmentData.length,
-                        label: "Total Equipment"
-                    }
-                ]}
-                onInfoClick={() => {
-                    // Handle info button click if needed
-                    console.log("Equipment info clicked");
-                }}
+                subtitle="View and manage all equipment in your fleet"
+                actionButton={permissions.canCreate ? {
+                    text: "Add Equipment",
+                    icon: <FaPlus />,
+                    onClick: handleAddEquipment,
+                    disabled: loading
+                } : null}
             />
 
+
             {/* Search and filter toolbar */}
-            <section className="equipment-toolbar">
-                <div className="equipment-toolbar-header">
-                    <div className="equipment-search-section">
-                        <div className="equipment-search-container">
-                            <FaSearch className="equipment-search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Search equipment by name, model, brand, or serial number..."
-                                className="equipment-search-input"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                    </div>
+            {/*<section className="equipment-toolbar">*/}
+            {/*    <div className="equipment-toolbar-header">*/}
+            {/*        <div className="equipment-search-section">*/}
+            {/*            <div className="equipment-search-container">*/}
+            {/*                <FaSearch className="equipment-search-icon" />*/}
+            {/*                <input*/}
+            {/*                    type="text"*/}
+            {/*                    placeholder="Search equipment by name, model, brand, or serial number..."*/}
+            {/*                    className="equipment-search-input"*/}
+            {/*                    value={searchTerm}*/}
+            {/*                    onChange={(e) => setSearchTerm(e.target.value)}*/}
+            {/*                />*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
 
-                    <div className="equipment-actions-section">
-                        {permissions.canCreate && (
-                            <button className="btn-primary" onClick={handleAddEquipment}>
-                                <FaPlus /> Add Equipment
-                            </button>
-                        )}
-                    </div>
-                </div>
+            {/*        <div className="equipment-actions-section">*/}
+            {/*            {permissions.canCreate && (*/}
+            {/*                <button className="btn-primary" onClick={handleAddEquipment}>*/}
+            {/*                    <FaPlus /> Add Equipment*/}
+            {/*                </button>*/}
+            {/*            )}*/}
+            {/*        </div>*/}
+            {/*    </div>*/}
 
-                <div className="equipment-filters-section">
-                    <div className="equipment-filters-header">
-                        <button className="equipment-filter-toggle" onClick={toggleFilters}>
-                            <FaFilter /> 
-                            <span>Filters</span>
-                            {showFilters && <span className="filter-count">({getActiveFilterCount()})</span>}
-                        </button>
-                    </div>
+            {/*    <div className="equipment-filters-section">*/}
+            {/*        <div className="equipment-filters-header">*/}
+            {/*            <button className="equipment-filter-toggle" onClick={toggleFilters}>*/}
+            {/*                <FaFilter /> */}
+            {/*                <span>Filters</span>*/}
+            {/*                {showFilters && <span className="filter-count">({getActiveFilterCount()})</span>}*/}
+            {/*            </button>*/}
+            {/*        </div>*/}
 
-                    {showFilters && (
-                        <div className="equipment-filters-panel">
-                            <div className="equipment-filter-controls">
-                                <div className="equipment-filter-row">
-                                    <div className="equipment-filter-group">
-                                        <label>Equipment Type</label>
-                                        <select
-                                            value={selectedType}
-                                            onChange={(e) => setSelectedType(e.target.value)}
-                                        >
-                                            <option value="">All Types</option>
-                                            {equipmentTypes.map(type => (
-                                                <option key={type.id} value={type.id}>{type.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
+            {/*        {showFilters && (*/}
+            {/*            <div className="equipment-filters-panel">*/}
+            {/*                <div className="equipment-filter-controls">*/}
+            {/*                    <div className="equipment-filter-row">*/}
+            {/*                        <div className="equipment-filter-group">*/}
+            {/*                            <label>Equipment Type</label>*/}
+            {/*                            <select*/}
+            {/*                                value={selectedType}*/}
+            {/*                                onChange={(e) => setSelectedType(e.target.value)}*/}
+            {/*                            >*/}
+            {/*                                <option value="">All Types</option>*/}
+            {/*                                {equipmentTypes.map(type => (*/}
+            {/*                                    <option key={type.id} value={type.id}>{type.name}</option>*/}
+            {/*                                ))}*/}
+            {/*                            </select>*/}
+            {/*                        </div>*/}
 
-                                    <div className="equipment-filter-group">
-                                        <label>Equipment Brand</label>
-                                        <select
-                                            value={selectedBrand}
-                                            onChange={(e) => setSelectedBrand(e.target.value)}
-                                        >
-                                            <option value="">All Brands</option>
-                                            {equipmentBrands.map(brand => (
-                                                <option key={brand.id} value={brand.id}>{brand.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
+            {/*                        <div className="equipment-filter-group">*/}
+            {/*                            <label>Equipment Brand</label>*/}
+            {/*                            <select*/}
+            {/*                                value={selectedBrand}*/}
+            {/*                                onChange={(e) => setSelectedBrand(e.target.value)}*/}
+            {/*                            >*/}
+            {/*                                <option value="">All Brands</option>*/}
+            {/*                                {equipmentBrands.map(brand => (*/}
+            {/*                                    <option key={brand.id} value={brand.id}>{brand.name}</option>*/}
+            {/*                                ))}*/}
+            {/*                            </select>*/}
+            {/*                        </div>*/}
 
-                                    <div className="equipment-filter-group">
-                                        <label>Site</label>
-                                        <select
-                                            value={selectedSite}
-                                            onChange={(e) => setSelectedSite(e.target.value)}
-                                        >
-                                            <option value="">All Sites</option>
-                                            {sites.map(site => (
-                                                <option key={site.id} value={site.id}>{site.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
+            {/*                        <div className="equipment-filter-group">*/}
+            {/*                            <label>Site</label>*/}
+            {/*                            <select*/}
+            {/*                                value={selectedSite}*/}
+            {/*                                onChange={(e) => setSelectedSite(e.target.value)}*/}
+            {/*                            >*/}
+            {/*                                <option value="">All Sites</option>*/}
+            {/*                                {sites.map(site => (*/}
+            {/*                                    <option key={site.id} value={site.id}>{site.name}</option>*/}
+            {/*                                ))}*/}
+            {/*                            </select>*/}
+            {/*                        </div>*/}
 
-                                    <div className="equipment-filter-group">
-                                        <label>Status</label>
-                                        <select
-                                            value={selectedStatus}
-                                            onChange={(e) => setSelectedStatus(e.target.value)}
-                                        >
-                                            <option value="">All Statuses</option>
-                                            {statusOptions.map(status => (
-                                                <option key={status.value} value={status.value}>
-                                                    {status.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
+            {/*                        <div className="equipment-filter-group">*/}
+            {/*                            <label>Status</label>*/}
+            {/*                            <select*/}
+            {/*                                value={selectedStatus}*/}
+            {/*                                onChange={(e) => setSelectedStatus(e.target.value)}*/}
+            {/*                            >*/}
+            {/*                                <option value="">All Statuses</option>*/}
+            {/*                                {statusOptions.map(status => (*/}
+            {/*                                    <option key={status.value} value={status.value}>*/}
+            {/*                                        {status.label}*/}
+            {/*                                    </option>*/}
+            {/*                                ))}*/}
+            {/*                            </select>*/}
+            {/*                        </div>*/}
+            {/*                    </div>*/}
 
-                                <div className="equipment-filter-actions">
-                                    <button className="equipment-filter-reset" onClick={handleResetFilters}>
-                                        Clear All Filters
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </section>
+            {/*                    <div className="equipment-filter-actions">*/}
+            {/*                        <button className="equipment-filter-reset" onClick={handleResetFilters}>*/}
+            {/*                            Clear All Filters*/}
+            {/*                        </button>*/}
+            {/*                    </div>*/}
+            {/*                </div>*/}
+            {/*            </div>*/}
+            {/*        )}*/}
+            {/*    </div>*/}
+            {/*</section>*/}
 
             {/* Equipment cards grid */}
             <section className="equipment-cards-container">
