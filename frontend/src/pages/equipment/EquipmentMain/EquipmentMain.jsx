@@ -1,15 +1,18 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { FaPlus, FaFilter, FaSearch, FaExclamationCircle } from "react-icons/fa";
 import EquipmentModal from "./components/EquipmentModal/EquipmentModal.jsx";
 import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
+import UnifiedCard from "../../../components/common/UnifiedCard/UnifiedCard";
 import "./EquipmentMain.scss";
 import excavatorBlack from "../../../assets/logos/excavator-svgrepo-com black.svg";
 import excavatorWhite from "../../../assets/logos/excavator-svgrepo-com.svg";
 import { equipmentService } from "../../../services/equipmentService";
-import EquipmentCard from "./components/card/EquipmentCard.jsx";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useEquipmentPermissions } from "../../../utils/rbac";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
+
+// Default placeholder for equipment image
+const equipmentPlaceholder = "data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23ddd'/%3e%3ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23999'%3eEquipment%3c/text%3e%3c/svg%3e";
 
 const EquipmentMain = () => {
     const [equipmentData, setEquipmentData] = useState([]);
@@ -30,9 +33,6 @@ const EquipmentMain = () => {
     const [notificationMessage, setNotificationMessage] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [equipmentToEdit, setEquipmentToEdit] = useState(null);
-
-    const equipmentCardsRefs = useRef([]);
-    const actionsSetFlags = useRef({});
 
     // Get authentication context and permissions
     const auth = useAuth();
@@ -94,38 +94,6 @@ const EquipmentMain = () => {
         fetchEquipmentData();
         fetchReferenceLists();
     }, []);
-
-    // Update equipment cards when data is available
-    useEffect(() => {
-        if (!Array.isArray(filteredEquipment) || filteredEquipment.length === 0) return;
-
-        // Reset the actions set flags when equipment data changes
-        actionsSetFlags.current = {};
-
-        // Make sure refs array is the right size
-        if (equipmentCardsRefs.current.length !== filteredEquipment.length) {
-            equipmentCardsRefs.current = Array(filteredEquipment.length).fill(null);
-        }
-
-        filteredEquipment.forEach((data, index) => {
-            if (equipmentCardsRefs.current[index]) {
-                // Extract data directly from the DTO
-                console.log();
-                // Use only the equipment name for display
-                const displayName = data.name || 'Unknown Equipment';
-                const siteName = data.siteName ? data.siteName : 'No Site Assigned';
-                const status = data.status || 'Unknown';
-                const driverName = data.mainDriverName ? data.mainDriverName : 'No Driver ';
-                const imageUrl = data.imageUrl || null;
-                const equipmentId = data.id;
-
-                // Update the card with equipment data
-                equipmentCardsRefs.current[index].updateEquipmentCard(
-                    displayName, siteName, status, driverName, imageUrl, equipmentId
-                );
-            }
-        });
-    }, [filteredEquipment]);
 
     // Filter equipment based on search and filter criteria
     useEffect(() => {
@@ -207,29 +175,28 @@ const EquipmentMain = () => {
         return count;
     };
 
-    // Update EquipmentCard component to add edit functionality
-    const enhanceEquipmentCard = (card, index, equipmentId) => {
-        if (card) {
-            equipmentCardsRefs.current[index] = card;
-            const cardKey = `card_${index}_${equipmentId}`;
+    // Helper function to get status class
+    const getStatusClass = (status) => {
+        const statusMap = {
+            'RUNNING': 'status-running',
+            'AVAILABLE': 'status-available',
+            'IN_USE': 'status-in-use',
+            'RENTED': 'status-rented',
+            'MAINTENANCE': 'status-maintenance',
+            'UNAVAILABLE': 'status-unavailable',
+            'SOLD': 'status-sold',
+            'SCRAPPED': 'status-scrapped'
+        };
+        return statusMap[status] || '';
+    };
 
-            if (!actionsSetFlags.current[cardKey] && card.setActions) {
-                actionsSetFlags.current[cardKey] = true;
-                
-                // Only add edit actions if user has edit permissions
-                const actions = [];
-                if (permissions.canEdit) {
-                    actions.push({
-                        icon: <FaPlus />,
-                        label: "Edit",
-                        className: "btn-edit",
-                        action: () => handleEditEquipment(equipmentId)
-                    });
-                }
-                
-                card.setActions(actions);
-            }
-        }
+    // Helper function to format status for display
+    const formatStatus = (status) => {
+        if (!status) return 'Unknown';
+        return status.replace(/_/g, ' ').toLowerCase()
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
     };
 
     return (
@@ -247,7 +214,6 @@ const EquipmentMain = () => {
                     }
                 ]}
                 onInfoClick={() => {
-                    // Handle info button click if needed
                     console.log("Equipment info clicked");
                 }}
             />
@@ -280,7 +246,7 @@ const EquipmentMain = () => {
                 <div className="equipment-filters-section">
                     <div className="equipment-filters-header">
                         <button className="equipment-filter-toggle" onClick={toggleFilters}>
-                            <FaFilter /> 
+                            <FaFilter />
                             <span>Filters</span>
                             {showFilters && <span className="filter-count">({getActiveFilterCount()})</span>}
                         </button>
@@ -367,23 +333,57 @@ const EquipmentMain = () => {
                         <p>Please try again later or contact support.</p>
                     </div>
                 ) : filteredEquipment.length > 0 ? (
-                    <div className="equipment-grid">
-                        {filteredEquipment.map((data, index) => (
-                            <EquipmentCard
-                                key={data.id || index}
-                                ref={(card) => enhanceEquipmentCard(card, index, data.id)}
+                    <div className="unified-cards-grid">
+                        {filteredEquipment.map((equipment) => (
+                            <UnifiedCard
+                                key={equipment.id}
+                                id={equipment.id}
+                                title={equipment.name || 'Unknown Equipment'}
+                                imageUrl={equipment.imageUrl}
+                                imageFallback={equipmentPlaceholder}
+                                stats={[
+                                    {
+                                        label: 'Site',
+                                        value: equipment.siteName || 'No Site Assigned'
+                                    },
+                                    {
+                                        label: 'Main Driver',
+                                        value: equipment.mainDriverName || 'No Driver'
+                                    },
+                                    {
+                                        label: 'Status',
+                                        value: formatStatus(equipment.status),
+                                        statusIndicator: true,
+                                        statusClass: getStatusClass(equipment.status)
+                                    }
+                                ]}
+                                actions={[
+                                    ...(permissions.canEdit ? [{
+                                        label: 'Edit',
+                                        variant: 'secondary',
+                                        icon: <FaPlus />,
+                                        onClick: (id) => handleEditEquipment(id)
+                                    }] : []),
+                                    {
+                                        label: 'View Details',
+                                        variant: 'primary',
+                                        onClick: (id) => {
+                                            // Navigate to equipment details page
+                                            console.log('View details for equipment:', id);
+                                        }
+                                    }
+                                ]}
                             />
                         ))}
                     </div>
                 ) : (
-                    <div className="equipment-empty-state">
-                        <div className="equipment-empty-icon">
+                    <div className="unified-cards-empty">
+                        <div className="unified-cards-empty-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                 <path d="M20 6L9 17l-5-5" />
                             </svg>
                         </div>
-                        <h3>No equipment found</h3>
-                        <p>Try adjusting your search filters or add new equipment</p>
+                        <p>No equipment found. Try adjusting your search filters or add new equipment</p>
                     </div>
                 )}
             </section>
