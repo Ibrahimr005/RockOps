@@ -261,7 +261,7 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
                     columns={columns}
                     actions={actions}
                     loading={loading}
-                    tableTitle="Employees in this Position"
+                    tableTitle=""
                     showSearch={true}
                     showFilters={true}
                     filterableColumns={['contractType', 'status', 'eligibleForPromotion']}

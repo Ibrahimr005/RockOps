@@ -4,11 +4,8 @@ import { FiChevronRight } from 'react-icons/fi';
 import { purchaseOrderService } from '../../../services/procurement/purchaseOrderService.js';
 import PendingPurchaseOrders from './PendingPurchaseOrders/PendingPurchaseOrders.jsx';
 import ValidatedPurchaseOrders from './ValidatedPurchaseOrders/ValidatedPurchaseOrders.jsx';
-import IntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
+import PageHeader from '../../../components/common/PageHeader/PageHeader.jsx';
 import "./PurchaseOrders.scss";
-import offersImage from "../../../assets/imgs/pro_icon.png";
-// Import dark mode image if available
-import offersImageDark from "../../../assets/imgs/pro_icon_dark.png";
 
 const PurchaseOrders = () => {
     const navigate = useNavigate();
@@ -87,14 +84,9 @@ const PurchaseOrders = () => {
 
     return (
         <div className="purchase-orders-container">
-            {/* Updated Intro Card with dynamic stats */}
-            <IntroCard
+            <PageHeader
                 title="Purchase Orders"
-                label="PROCUREMENT CENTER"
-                lightModeImage={offersImage}
-                darkModeImage={offersImageDark} // Uncomment if dark mode image is available
-                stats={getTabStats()} // Use dynamic stats based on active tab
-                icon={false}
+                subtitle="Manage and track all purchase orders across your procurement workflow"
             />
 
             {/* Tabs */}

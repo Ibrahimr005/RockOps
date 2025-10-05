@@ -5,6 +5,7 @@ import warehouseImg from "../../../assets/imgs/warehouse1.jpg";
 import { FaWarehouse, FaTimes, FaUserCog, FaPlus, FaExclamationTriangle, FaBell } from 'react-icons/fa';
 import { useAuth } from "../../../contexts/AuthContext";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
+import PageHeader from "../../../components/common/PageHeader/PageHeader.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog";
 import { warehouseService } from "../../../services/warehouse/warehouseService";
@@ -691,9 +692,10 @@ const WarehousesList = () => {
 
     return (
         <div className="warehouse-list-container">
-            <div className="departments-header">
-                <h1 className="warehouse-list-title">Warehouses</h1>
-            </div>
+            <PageHeader
+                title="Warehouses"
+                subtitle="Overview and management of warehouse facilities and inventory locations"
+            />
 
             <div className="warehouse-list-grid">
                 {warehouses.length > 0 ? (

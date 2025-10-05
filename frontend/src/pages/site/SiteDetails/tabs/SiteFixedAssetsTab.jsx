@@ -283,7 +283,7 @@ const SiteFixedAssetsTab = ({siteId}) => {
                         filterableColumns={columns}
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10} dec
-                       // tableTitle="Fixed Assets List"
+                        tableTitle=""
                         showAddButton={isSiteAdmin}
                         addButtonText={t('site.assignFixedAsset')}
                         addButtonIcon={<FaPlus />}

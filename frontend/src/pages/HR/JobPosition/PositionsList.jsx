@@ -4,6 +4,7 @@ import { FiPlus, FiEdit, FiTrash2, FiClock, FiEye, FiUsers, FiTrendingUp } from 
 import AddPositionForm from './components/AddPositionForm.jsx';
 import EditPositionForm from './components/EditPositionForm.jsx';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { jobPositionService } from '../../../services/hr/jobPositionService.js';
 import './PositionsList.scss';
@@ -374,19 +375,10 @@ const PositionsList = () => {
 
     return (
         <div className="positions-container">
-            <div className="departments-header">
-                <h1>Job Positions
-                    <p className="employees-header__subtitle">
-                        Manage job positions with salary structures, working schedules, and department assignments
-                    </p>
-                </h1>
-                <button
-                    className="btn btn-primary"
-                    onClick={() => setShowAddForm(true)}
-                >
-                    <FiPlus /> Add Position
-                </button>
-            </div>
+            <PageHeader
+                title="Job Positions"
+                subtitle="Define job positions, roles, and organizational hierarchy"
+            />
 
             {error && (
                 <div className="positions-error">
@@ -420,6 +412,10 @@ const PositionsList = () => {
                 defaultSortDirection="asc"
                 emptyMessage="No job positions found. Click 'Add Position' to create one."
                 onRowClick={handleRowClick}
+                showAddButton={true}
+                addButtonText="Add Position"
+                addButtonIcon={<FiPlus />}
+                onAddClick={() => setShowAddForm(true)}
                 // Export functionality
                 showExportButton={true}
                 exportFileName="job_positions"

@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import './AllSites.css';
 import { useAuth } from "../../../contexts/AuthContext";
 import { useTranslation } from 'react-i18next';
-import { FaBuilding } from 'react-icons/fa';
+import { FaBuilding, FaPlus } from 'react-icons/fa';
 import { siteService } from "../../../services/siteService.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
+import PageHeader from "../../../components/common/PageHeader/PageHeader.jsx";
 
 // Default placeholder for site image
 const siteimg = "data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23ddd'/%3e%3ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23999'%3eSite%3c/text%3e%3c/svg%3e";
@@ -379,14 +380,16 @@ const AllSites = () => {
 
     return (
         <div className="sites-container">
-            <div className="departments-header">
-                <h1 className="sites-title">{t('site.siteList')}</h1>
-                {isSiteAdmin && (
-                    <button onClick={handleOpenAddModal} className="btn btn-primary">
-                        <span>+</span>{t('site.addSite')}
-                    </button>
-                )}
-            </div>
+            <PageHeader
+                title="Sites"
+                subtitle="Manage and monitor all operational sites across your organization"
+                actionButton={isSiteAdmin ? {
+                    text: t('site.addSite'),
+                    icon: <FaPlus />,
+                    onClick: handleOpenAddModal,
+                    disabled: loading
+                } : null}
+            />
 
             <div className="sites-grid">
                 {sites.length > 0 ? (

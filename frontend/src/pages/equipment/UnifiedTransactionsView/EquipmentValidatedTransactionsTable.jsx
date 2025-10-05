@@ -14,6 +14,18 @@ const EquipmentValidatedTransactionsTable = ({ equipmentId }) => {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewTransaction, setViewTransaction] = useState(null);
 
+    // Format status for display (remove underscores and capitalize properly)
+    const formatStatusDisplay = (status) => {
+        if (!status) return "Unknown";
+        
+        // Handle specific status formatting
+        if (status === "IN_MAINTENANCE") return "In Maintenance";
+        if (status === "IN_USE") return "In Use";
+        
+        // For other statuses, replace underscores with spaces and capitalize properly
+        return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    };
+
     // Snackbar state
     const [snackbar, setSnackbar] = useState({
         isOpen: false,
@@ -164,7 +176,7 @@ const EquipmentValidatedTransactionsTable = ({ equipmentId }) => {
             render: (row) => (
                 <div className="status-container">
                     <span className={`status-badge3 ${row.status?.toLowerCase() || 'unknown'}`}>
-                        {row.status || 'UNKNOWN'}
+                        {formatStatusDisplay(row.status) || 'UNKNOWN'}
                     </span>
                 </div>
             )
