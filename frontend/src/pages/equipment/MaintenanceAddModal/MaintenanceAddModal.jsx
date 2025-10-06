@@ -109,10 +109,24 @@ const MaintenanceAddModal = ({
 
     const fetchTechnicians = async () => {
         try {
+            console.log('=== Frontend: Fetching employees for equipment:', equipmentId);
             const response = await inSiteMaintenanceService.getTechnicians(equipmentId);
-            setTechnicians(response.data);
+            console.log('=== Frontend: API Response:', response);
+            const employeesList = response.data || [];
+            console.log('=== Frontend: Employees list:', employeesList);
+            setTechnicians(employeesList);
+            
+            // Show warnings based on the results
+            if (employeesList.length === 0) {
+                console.log('=== Frontend: No employees found, showing warning');
+                showWarning('No employees found for this equipment\'s site. Please ensure employees are assigned to the site or assign the equipment to a site with available employees.');
+            } else {
+                console.log('=== Frontend: Found', employeesList.length, 'employees');
+            }
         } catch (error) {
-            console.error('Error fetching technicians:', error);
+            console.error('=== Frontend: Error fetching employees:', error);
+            setTechnicians([]);
+            showWarning('Unable to load employees. Please try again or contact your administrator.');
         }
     };
 
@@ -627,13 +641,20 @@ const MaintenanceAddModal = ({
                                     onChange={handleInputChange}
                                     required
                                 >
-                                    <option value="">Select Employee</option>
-                                    {technicians.map(tech => (
-                                        <option key={tech.id} value={tech.id}>
-                                            {tech.firstName} {tech.lastName} - {tech.jobPosition?.positionName || 'No Position'}
+                                    <option value="">
+                                        {technicians.length === 0 ? 'No employees available' : 'Select Employee'}
+                                    </option>
+                                    {technicians.map(employee => (
+                                        <option key={employee.id} value={employee.id}>
+                                            {employee.firstName} {employee.lastName} - {employee.jobPosition?.positionName || 'No Position'}
                                         </option>
                                     ))}
                                 </select>
+                                {technicians.length === 0 && (
+                                    <small className="form-helper-text warning">
+                                        No employees found for this equipment's site. Please assign employees to the site first.
+                                    </small>
+                                )}
                             </div>
 
                             <div className="form-group">

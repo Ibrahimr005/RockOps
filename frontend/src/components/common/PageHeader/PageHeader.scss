@@ -1,0 +1,372 @@
+// PageHeader component styles
+// This component exactly replicates the departments-header pattern
+// to provide consistent styling across all pages
+
+.global-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+
+  h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: var(--bold-font-weight);
+    color: var(--head-title-color);
+    font-family: var(--font-family);
+
+    @media (max-width: 768px) {
+      font-size: 1.5rem;
+    }
+  }
+
+  .employees-header__subtitle {
+    margin: 0.5rem 0 0 0;
+    font-size: 1rem;
+    color: var(--paragraph-color);
+    font-weight: normal;
+    font-family: var(--font-family);
+  }
+
+  .page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    // Style for action buttons within the header
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+    }
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+
+    .page-header-actions {
+      justify-content: flex-start;
+    }
+  }
+}
+
+// For responsive adjustments on smaller screens
+@media (max-width: 480px) {
+  .global-page-header {
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+// Compatibility with existing departments-header styles
+// This ensures existing pages that might still reference departments-header work
+.departments-header {
+  @extend .global-page-header;
+}
+.page-header__filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem; // Same padding all around for square shape
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: var(--radius-sm);
+  color: #9ca3af;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast) ease;
+  min-width: auto;
+
+  svg {
+    width: 18px; // Slightly larger icon since it's alone
+    height: 18px;
+    color: #9ca3af;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    background: #4b5563;
+    border-color: #6b7280;
+    color: #d1d5db;
+
+    svg {
+      color: #d1d5db;
+    }
+  }
+
+  &--active {
+    background: #4b5563;
+    border-color: #6b7280;
+    color: #e5e7eb;
+
+    svg {
+      color: #e5e7eb;
+    }
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      background: #374151;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.page-header__filter-count {
+  background: #ef4444;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  min-width: 20px;
+  text-align: center;
+  line-height: 1;
+
+  [data-theme="dark"] & {
+    background: var(--color-danger);
+    color: var(--color-text-inverse);
+  }
+}
+
+.page-header__filter-btn--active .page-header__filter-count {
+  background: white;
+  color: #ef4444;
+
+  [data-theme="dark"] & {
+    background: var(--section-background-color);
+    color: var(--color-danger);
+  }
+}
+
+// Filter Panel - Professional Card Design
+.page-header__filter-panel {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  animation: slideDown 0.3s ease-out;
+
+  [data-theme="dark"] & {
+    background: var(--section-background-color);
+    border-color: var(--border-color);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-header__filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+
+  [data-theme="dark"] & {
+    background: var(--color-surface);
+    border-bottom-color: var(--border-color);
+  }
+
+  h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    [data-theme="dark"] & {
+      color: var(--color-text-primary);
+    }
+  }
+
+  .filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.filter-reset-btn {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+
+  [data-theme="dark"] & {
+    border-color: var(--border-color);
+    color: var(--color-text-secondary);
+  }
+
+  &:hover:not(:disabled) {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+    color: #374151;
+
+    [data-theme="dark"] & {
+      background: var(--color-surface-hover);
+      border-color: var(--color-text-secondary);
+      color: var(--color-text-primary);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.filter-collapse-btn {
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+
+  [data-theme="dark"] & {
+    color: var(--color-text-secondary);
+  }
+
+  &:hover {
+    background: #f3f4f6;
+    color: #374151;
+
+    [data-theme="dark"] & {
+      background: var(--color-surface-hover);
+      color: var(--color-text-primary);
+    }
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+  }
+
+  &.collapsed svg {
+    transform: rotate(180deg);
+  }
+}
+
+.page-header__filter-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+}
+
+.page-header__filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+
+    [data-theme="dark"] & {
+      color: var(--color-text-tertiary);
+    }
+  }
+
+  select {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    background: white;
+    color: #1f2937;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-weight: 400;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+
+    [data-theme="dark"] & {
+      background-color: var(--section-background-color);
+      color: var(--color-text-primary);
+      border-color: var(--border-color);
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+
+      [data-theme="dark"] & {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+      }
+    }
+
+    &:hover {
+      border-color: #9ca3af;
+
+      [data-theme="dark"] & {
+        border-color: var(--color-text-secondary);
+      }
+    }
+  }
+}
+
+// For responsive adjustments on smaller screens
+@media (max-width: 480px) {
+  .global-page-header {
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+// Compatibility with existing departments-header styles
+.departments-header {
+  @extend .global-page-header;
+}

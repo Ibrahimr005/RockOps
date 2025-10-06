@@ -3,22 +3,33 @@ import { useNavigate } from 'react-router-dom';
 import './AllSites.css';
 import { useAuth } from "../../../contexts/AuthContext";
 import { useTranslation } from 'react-i18next';
-import { FaBuilding } from 'react-icons/fa';
+import { FaBuilding, FaPlus, FaChevronDown } from 'react-icons/fa';
 import { siteService } from "../../../services/siteService.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
 import UnifiedCard from "../../../components/common/UnifiedCard/UnifiedCard";
+import PageHeader from "../../../components/common/PageHeader/PageHeader.jsx";
 
-import site2 from "../../../assets/imgs/site2.webp";
+// Default placeholder for site image
+const siteimg = "data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23ddd'/%3e%3ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23999'%3eSite%3c/text%3e%3c/svg%3e";
+import siteimgg from "../../../assets/imgs/siteimgg.jpg"
 
 const AllSites = () => {
     const { t } = useTranslation();
     const [sites, setSites] = useState([]);
+    const [filteredSites, setFilteredSites] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
     const { currentUser } = useAuth();
     const { showError, showSuccess, showWarning } = useSnackbar();
+
+    // Filter states
+    const [showFilters, setShowFilters] = useState(false);
+    const [selectedEmployeeRange, setSelectedEmployeeRange] = useState("");
+    const [selectedEquipmentRange, setSelectedEquipmentRange] = useState("");
+    const [selectedWarehouseRange, setSelectedWarehouseRange] = useState("");
+    const [selectedMerchantRange, setSelectedMerchantRange] = useState("");
 
     // Modal states and data
     const [showAddModal, setShowAddModal] = useState(false);
@@ -111,6 +122,53 @@ const AllSites = () => {
         };
     }, []);
 
+    // Apply filters
+    useEffect(() => {
+        let result = [...sites];
+
+        // Apply employee count filter
+        if (selectedEmployeeRange) {
+            const [min, max] = selectedEmployeeRange.split('-').map(Number);
+            if (max) {
+                result = result.filter(site => site.employeeCount >= min && site.employeeCount <= max);
+            } else {
+                result = result.filter(site => site.employeeCount >= min);
+            }
+        }
+
+        // Apply equipment count filter
+        if (selectedEquipmentRange) {
+            const [min, max] = selectedEquipmentRange.split('-').map(Number);
+            if (max) {
+                result = result.filter(site => site.equipmentCount >= min && site.equipmentCount <= max);
+            } else {
+                result = result.filter(site => site.equipmentCount >= min);
+            }
+        }
+
+        // Apply warehouse count filter
+        if (selectedWarehouseRange) {
+            const [min, max] = selectedWarehouseRange.split('-').map(Number);
+            if (max) {
+                result = result.filter(site => site.warehouseCount >= min && site.warehouseCount <= max);
+            } else {
+                result = result.filter(site => site.warehouseCount >= min);
+            }
+        }
+
+        // Apply merchant count filter
+        if (selectedMerchantRange) {
+            const [min, max] = selectedMerchantRange.split('-').map(Number);
+            if (max) {
+                result = result.filter(site => site.merchantCount >= min && site.merchantCount <= max);
+            } else {
+                result = result.filter(site => site.merchantCount >= min);
+            }
+        }
+
+        setFilteredSites(result);
+    }, [sites, selectedEmployeeRange, selectedEquipmentRange, selectedWarehouseRange, selectedMerchantRange]);
+
     const fetchSites = async () => {
         try {
             setLoading(true);
@@ -126,6 +184,7 @@ const AllSites = () => {
                 console.log("FULL SITE DATA FOR COUNTING:", JSON.stringify(response.data[0], null, 2)); // Add this line
             }
             setSites(response.data);
+            setFilteredSites(response.data);
             setError(null);
         } catch (err) {
             const errorMessage = t('common.error') + ': ' + err.message;
@@ -229,7 +288,7 @@ const AllSites = () => {
             const siteResponse = await siteService.getById(siteId);
             const siteData = siteResponse.data;
             console.log("Raw response from API:", siteData);
-            
+
             try {
                 // Try fetching partners specifically for this site
                 const partnersResponse = await siteService.getSitePartners(siteId);
@@ -375,29 +434,135 @@ const AllSites = () => {
         }
     };
 
+    const handleResetFilters = () => {
+        setSelectedEmployeeRange("");
+        setSelectedEquipmentRange("");
+        setSelectedWarehouseRange("");
+        setSelectedMerchantRange("");
+    };
+
+    const getActiveFilterCount = () => {
+        let count = 0;
+        if (selectedEmployeeRange) count++;
+        if (selectedEquipmentRange) count++;
+        if (selectedWarehouseRange) count++;
+        if (selectedMerchantRange) count++;
+        return count;
+    };
+
     if (loading) return <LoadingPage />;
     if (error) return <div className="error-container">{error}</div>;
 
     return (
         <div className="sites-container">
-            <div className="departments-header">
-                <h1 className="sites-title">{t('site.siteList')}</h1>
-                {isSiteAdmin && (
-                    <button onClick={handleOpenAddModal} className="btn btn-primary">
-                        <span>+</span>{t('site.addSite')}
-                    </button>
-                )}
-            </div>
+            <PageHeader
+                title="Sites"
+                subtitle="Manage and monitor all operational sites across your organization"
+                filterButton={{
+                    onClick: () => setShowFilters(!showFilters),
+                    isActive: showFilters
+                }}
+                actionButton={isSiteAdmin ? {
+                    text: t('site.addSite'),
+                    icon: <FaPlus />,
+                    onClick: handleOpenAddModal,
+                    disabled: loading
+                } : null}
+            />
+
+            {/* Filter Panel */}
+            {showFilters && (
+                <div className="page-header__filter-panel">
+                    <div className="page-header__filter-header">
+                        <h4>Filter Sites</h4>
+                        <div className="filter-actions">
+                            <button
+                                className="filter-reset-btn"
+                                onClick={handleResetFilters}
+                                disabled={getActiveFilterCount() === 0}
+                            >
+                                Clear All
+                            </button>
+                            <button
+                                className={`filter-collapse-btn ${showFilters ? '' : 'collapsed'}`}
+                                onClick={() => setShowFilters(!showFilters)}
+                            >
+                                <FaChevronDown />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="page-header__filter-list">
+                        <div className="page-header__filter-item">
+                            <label>Employee Count</label>
+                            <select
+                                value={selectedEmployeeRange}
+                                onChange={(e) => setSelectedEmployeeRange(e.target.value)}
+                            >
+                                <option value="">All Ranges</option>
+                                <option value="0-10">0-10</option>
+                                <option value="11-50">11-50</option>
+                                <option value="51-100">51-100</option>
+                                <option value="101-500">101-500</option>
+                                <option value="501">500+</option>
+                            </select>
+                        </div>
+
+                        <div className="page-header__filter-item">
+                            <label>Equipment Count</label>
+                            <select
+                                value={selectedEquipmentRange}
+                                onChange={(e) => setSelectedEquipmentRange(e.target.value)}
+                            >
+                                <option value="">All Ranges</option>
+                                <option value="0-5">0-5</option>
+                                <option value="6-20">6-20</option>
+                                <option value="21-50">21-50</option>
+                                <option value="51-100">51-100</option>
+                                <option value="101">100+</option>
+                            </select>
+                        </div>
+
+                        <div className="page-header__filter-item">
+                            <label>Warehouse Count</label>
+                            <select
+                                value={selectedWarehouseRange}
+                                onChange={(e) => setSelectedWarehouseRange(e.target.value)}
+                            >
+                                <option value="">All Ranges</option>
+                                <option value="0-2">0-2</option>
+                                <option value="3-5">3-5</option>
+                                <option value="6-10">6-10</option>
+                                <option value="11">10+</option>
+                            </select>
+                        </div>
+
+                        <div className="page-header__filter-item">
+                            <label>Merchant Count</label>
+                            <select
+                                value={selectedMerchantRange}
+                                onChange={(e) => setSelectedMerchantRange(e.target.value)}
+                            >
+                                <option value="">All Ranges</option>
+                                <option value="0-5">0-5</option>
+                                <option value="6-20">6-20</option>
+                                <option value="21-50">21-50</option>
+                                <option value="51">50+</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="unified-cards-grid">
-                {sites.length > 0 ? (
-                    sites.map((site) => (
+                {filteredSites.length > 0 ? (
+                    filteredSites.map((site) => (
                         <UnifiedCard
                             key={site.id}
                             id={site.id}
                             title={site.name || t('common.noData')}
                             imageUrl={site?.photoUrl}
-                            imageFallback={site2}
+                            imageFallback={siteimgg}
                             stats={[
                                 {
                                     label: t('hr.dashboard.employees'),
@@ -432,12 +597,11 @@ const AllSites = () => {
                         />
                     ))
                 ) : (
-                    <div className="unified-cards-empty">
-                        <div className="unified-cards-empty-icon">
-                            <FaBuilding size={54} />
-                        </div>
-                        <p>{t('common.noData')} {isSiteAdmin ? t('site.addSite') : ''}</p>
-                    </div>
+                    <UnifiedCard
+                        isEmpty={true}
+                        emptyIcon={FaBuilding}
+                        emptyMessage="No sites found. Try adjusting your search filters or add a new site"
+                    />
                 )}
             </div>
 
@@ -519,6 +683,52 @@ const AllSites = () => {
                                                     />
                                                 </div>
                                             </div>
+
+                                            {/* Partners section - commented out but with updated class names */}
+                                            {/*<div className="site-form-group site-partners-section">*/}
+                                            {/*    <label>{t('site.partners')}</label>*/}
+                                            {/*    <div className="site-partners-dropdown" ref={dropdownRef}>*/}
+                                            {/*        <div className="site-dropdown-header" onClick={toggleDropdown}>*/}
+                                            {/*            <span>{t('site.selectPartners')}</span>*/}
+                                            {/*            <span className={`site-dropdown-icon ${isDropdownOpen ? 'open' : ''}`}>▼</span>*/}
+                                            {/*        </div>*/}
+
+                                            {/*        {isDropdownOpen && (*/}
+                                            {/*            <div className="site-dropdown-menu">*/}
+                                            {/*                {partners*/}
+                                            {/*                    .filter(partner => !selectedPartnerIds.includes(partner.id))*/}
+                                            {/*                    .map(partner => (*/}
+                                            {/*                        <div*/}
+                                            {/*                            key={partner.id}*/}
+                                            {/*                            className="site-dropdown-item"*/}
+                                            {/*                            onClick={() => handleSelectPartner(partner)}*/}
+                                            {/*                        >*/}
+                                            {/*                            {partner.firstName} {partner.lastName}*/}
+                                            {/*                        </div>*/}
+                                            {/*                    ))}*/}
+                                            {/*                {partners.filter(partner => !selectedPartnerIds.includes(partner.id)).length === 0 && (*/}
+                                            {/*                    <div className="site-dropdown-item">{t('site.noPartnersAvailable')}</div>*/}
+                                            {/*                )}*/}
+                                            {/*            </div>*/}
+                                            {/*        )}*/}
+                                            {/*    </div>*/}
+
+                                            {/*    {selectedPartners.length > 0 && (*/}
+                                            {/*        <div className="site-partners-list">*/}
+                                            {/*            {selectedPartners.map(partner => (*/}
+                                            {/*                <div key={partner.id} className="site-partner-chip">*/}
+                                            {/*                    <span>{partner.firstName} {partner.lastName}</span>*/}
+                                            {/*                    <span*/}
+                                            {/*                        className="site-remove-partner"*/}
+                                            {/*                        onClick={() => handleRemovePartner(partner.id)}*/}
+                                            {/*                    >*/}
+                                            {/*                        ×*/}
+                                            {/*                    </span>*/}
+                                            {/*                </div>*/}
+                                            {/*            ))}*/}
+                                            {/*        </div>*/}
+                                            {/*    )}*/}
+                                            {/*</div>*/}
 
                                             <div className="site-form-actions">
                                                 <button type="button" className="site-cancel-button" onClick={handleCloseModals}>{t('common.cancel')}</button>
@@ -613,9 +823,56 @@ const AllSites = () => {
                                                 </div>
                                             </div>
 
+                                            {/* Partners section - commented out but with updated class names */}
+                                            {/*<div className="site-form-group site-partners-section">*/}
+                                            {/*    <label>{t('site.partners')}</label>*/}
+                                            {/*    <div className="site-partners-dropdown" ref={dropdownRef}>*/}
+                                            {/*        <div className="site-dropdown-header" onClick={toggleDropdown}>*/}
+                                            {/*            <span>{t('site.selectPartners')}</span>*/}
+                                            {/*            <span className={`site-dropdown-icon ${isDropdownOpen ? 'open' : ''}`}>▼</span>*/}
+                                            {/*        </div>*/}
+
+                                            {/*        {isDropdownOpen && (*/}
+                                            {/*            <div className="site-dropdown-menu">*/}
+                                            {/*                {partners*/}
+                                            {/*                    .filter(partner => !selectedPartnerIds.includes(partner.id))*/}
+                                            {/*                    .map(partner => (*/}
+                                            {/*                        <div*/}
+                                            {/*                            key={partner.id}*/}
+                                            {/*                            className="site-dropdown-item"*/}
+                                            {/*                            onClick={() => handleSelectPartner(partner)}*/}
+                                            {/*                        >*/}
+                                            {/*                            {partner.firstName} {partner.lastName}*/}
+                                            {/*                        </div>*/}
+                                            {/*                    ))}*/}
+                                            {/*                {partners.filter(partner => !selectedPartnerIds.includes(partner.id)).length === 0 && (*/}
+                                            {/*                    <div className="site-dropdown-item">{t('site.noPartnersAvailable')}</div>*/}
+                                            {/*                )}*/}
+                                            {/*            </div>*/}
+                                            {/*        )}*/}
+                                            {/*    </div>*/}
+
+                                            {/*    {selectedPartners.length > 0 && (*/}
+                                            {/*        <div className="site-partners-list">*/}
+                                            {/*            {selectedPartners.map(partner => (*/}
+                                            {/*                <div key={partner.id} className="site-partner-chip">*/}
+                                            {/*                    <span>{partner.firstName} {partner.lastName}</span>*/}
+                                            {/*                    <span*/}
+                                            {/*                        className="site-remove-partner"*/}
+                                            {/*                        onClick={() => handleRemovePartner(partner.id)}*/}
+                                            {/*                    >*/}
+                                            {/*                        ×*/}
+                                            {/*                    </span>*/}
+                                            {/*                </div>*/}
+                                            {/*            ))}*/}
+                                            {/*        </div>*/}
+                                            {/*    )}*/}
+                                            {/*</div>*/}
+
                                             <div className="site-form-actions">
                                                 <button type="button" className="site-cancel-button" onClick={handleCloseModals}>{t('common.cancel')}</button>
                                                 <button type="submit" className="site-submit-button site-save-button">{t('common.save')}</button>
+
                                             </div>
                                         </form>
                                     </div>

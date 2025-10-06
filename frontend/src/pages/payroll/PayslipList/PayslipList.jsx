@@ -490,7 +490,7 @@ const PayslipList = () => {
                 loading={loading}
 
                 // Table configuration
-                tableTitle="Employee Payslips"
+                tableTitle=""
                 emptyStateMessage="No payslips found"
                 noResultsMessage="No payslips match your search criteria"
                 defaultSortField="payDate"

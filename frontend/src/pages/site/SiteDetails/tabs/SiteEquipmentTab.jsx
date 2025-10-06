@@ -326,7 +326,7 @@ const SiteEquipmentTab = ({siteId}) => {
                         filterableColumns={filterableColumns}
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10}
-                        //tableTitle={t('site.siteEquipmentReport')}
+                        tableTitle=""
                         onRowClick={handleRowClick}
                         rowClassName="clickable-row"
                         // Add button configuration - only show for site admins

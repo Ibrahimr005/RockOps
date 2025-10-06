@@ -13,6 +13,7 @@
   --color-surface-hover: #f5f5f5;
   --color-surface-secondary: #f8fafc;
   --color-surface-tertiary: #f1f5f9;
+  --color-surface-disabled: #f5f5f5;
 
   /* Text Colors */
   --text-color: #000;
@@ -24,6 +25,7 @@
   --color-text-muted: #9ca3af;
   --color-text-dark: #1f2937;
   --color-text-medium: #374151;
+  --color-text-disabled: #999999;
   --head-title-color: #000;
   --paragraph-color: #6a6a6a;
   --label-color: #555;
@@ -109,6 +111,7 @@
   --color-surface-hover: #3a3a3a;
   --color-surface-secondary: #2a2a2a;
   --color-surface-tertiary: #333333;
+  --color-surface-disabled: #2a2a2a;
 
   /* Text Colors */
   --text-color: #ffffff;
@@ -120,6 +123,7 @@
   --color-text-muted: #6b7280;
   --color-text-dark: #f8fafc;
   --color-text-medium: #e5e7eb;
+  --color-text-disabled: #666666;
   --head-title-color: #fff;
   --paragraph-color: #aaaaaa;
   --label-color: #cccccc;

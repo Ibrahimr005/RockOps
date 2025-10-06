@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { FaPlus, FaFilter, FaSearch, FaExclamationCircle } from "react-icons/fa";
+import React, { useState, useEffect,useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaPlus, FaFilter, FaSearch, FaExclamationCircle, FaChevronDown } from "react-icons/fa";
 import EquipmentModal from "./components/EquipmentModal/EquipmentModal.jsx";
 import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 import UnifiedCard from "../../../components/common/UnifiedCard/UnifiedCard";
@@ -10,9 +11,13 @@ import { equipmentService } from "../../../services/equipmentService";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useEquipmentPermissions } from "../../../utils/rbac";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
+import PageHeader from "../../../components/common/PageHeader/index.js";
+
+import { FaTools } from 'react-icons/fa';
 
 // Default placeholder for equipment image
 const equipmentPlaceholder = "data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23ddd'/%3e%3ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23999'%3eEquipment%3c/text%3e%3c/svg%3e";
+import equipmentimg from "../../../assets/imgs/equipmentimg.jpg"
 
 const EquipmentMain = () => {
     const [equipmentData, setEquipmentData] = useState([]);
@@ -34,9 +39,13 @@ const EquipmentMain = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [equipmentToEdit, setEquipmentToEdit] = useState(null);
 
+    const equipmentCardsRefs = useRef([]);
+    const actionsSetFlags = useRef({});
+
     // Get authentication context and permissions
     const auth = useAuth();
     const permissions = useEquipmentPermissions(auth);
+    const navigate = useNavigate();
 
     // Fetch equipment data
     const fetchEquipmentData = async () => {
@@ -45,6 +54,10 @@ const EquipmentMain = () => {
             const response = await equipmentService.getAllEquipment();
 
             if (Array.isArray(response.data)) {
+                // Add this console.log
+                console.log("First equipment object:", response.data[0]);
+                console.log("Full equipment structure:", JSON.stringify(response.data[0], null, 2));
+
                 setEquipmentData(response.data);
                 setFilteredEquipment(response.data);
             } else {
@@ -94,6 +107,38 @@ const EquipmentMain = () => {
         fetchEquipmentData();
         fetchReferenceLists();
     }, []);
+
+    // Update equipment cards when data is available
+    useEffect(() => {
+        if (!Array.isArray(filteredEquipment) || filteredEquipment.length === 0) return;
+
+        // Reset the actions set flags when equipment data changes
+        actionsSetFlags.current = {};
+
+        // Make sure refs array is the right size
+        if (equipmentCardsRefs.current.length !== filteredEquipment.length) {
+            equipmentCardsRefs.current = Array(filteredEquipment.length).fill(null);
+        }
+
+        filteredEquipment.forEach((data, index) => {
+            if (equipmentCardsRefs.current[index]) {
+                // Extract data directly from the DTO
+                console.log();
+                // Use only the equipment name for display
+                const displayName = data.name || 'Unknown Equipment';
+                const siteName = data.siteName ? data.siteName : 'No Site Assigned';
+                const status = data.status || 'Unknown';
+                const driverName = data.mainDriverName ? data.mainDriverName : 'No Driver ';
+                const imageUrl = data.imageUrl || null;
+                const equipmentId = data.id;
+
+                // Update the card with equipment data
+                equipmentCardsRefs.current[index].updateEquipmentCard(
+                    displayName, siteName, status, driverName, imageUrl, equipmentId
+                );
+            }
+        });
+    }, [filteredEquipment]);
 
     // Filter equipment based on search and filter criteria
     useEffect(() => {
@@ -202,191 +247,294 @@ const EquipmentMain = () => {
     return (
         <main className="equipment-main-container">
             {/* Header area with stats */}
-            <IntroCard
+            {/*<IntroCard*/}
+            {/*    title="Equipment"*/}
+            {/*    label="EQUIPMENT MANAGEMENT"*/}
+            {/*    lightModeImage={excavatorBlack}*/}
+            {/*    darkModeImage={excavatorWhite}*/}
+            {/*    stats={[*/}
+            {/*        {*/}
+            {/*            value: equipmentData.length,*/}
+            {/*            label: "Total Equipment"*/}
+            {/*        }*/}
+            {/*    ]}*/}
+            {/*    onInfoClick={() => {*/}
+            {/*        // Handle info button click if needed*/}
+            {/*        console.log("Equipment info clicked");*/}
+            {/*    }}*/}
+            {/*/>*/}
+            <PageHeader
                 title="Equipment"
-                label="EQUIPMENT MANAGEMENT"
-                lightModeImage={excavatorBlack}
-                darkModeImage={excavatorWhite}
-                stats={[
-                    {
-                        value: equipmentData.length,
-                        label: "Total Equipment"
-                    }
-                ]}
-                onInfoClick={() => {
-                    console.log("Equipment info clicked");
+                subtitle="View and manage all equipment in your fleet"
+                filterButton={{
+                    onClick: () => setShowFilters(!showFilters),
+                    isActive: showFilters,
+                    activeCount: getActiveFilterCount()
                 }}
+                actionButton={permissions.canCreate ? {
+                    text: "Add Equipment",
+                    icon: <FaPlus />,
+                    onClick: handleAddEquipment,
+                    disabled: loading
+                } : null}
             />
 
-            {/* Search and filter toolbar */}
-            <section className="equipment-toolbar">
-                <div className="equipment-toolbar-header">
-                    <div className="equipment-search-section">
-                        <div className="equipment-search-container">
-                            <FaSearch className="equipment-search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Search equipment by name, model, brand, or serial number..."
-                                className="equipment-search-input"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="equipment-actions-section">
-                        {permissions.canCreate && (
-                            <button className="btn-primary" onClick={handleAddEquipment}>
-                                <FaPlus /> Add Equipment
+            {/* Filter Panel */}
+            {showFilters && (
+                <div className="page-header__filter-panel">
+                    <div className="page-header__filter-header">
+                        <h4>Filter Equipment</h4>
+                        <div className="filter-actions">
+                            <button
+                                className="filter-reset-btn"
+                                onClick={handleResetFilters}
+                                disabled={getActiveFilterCount() === 0}
+                            >
+                                Clear All
                             </button>
-                        )}
-                    </div>
-                </div>
-
-                <div className="equipment-filters-section">
-                    <div className="equipment-filters-header">
-                        <button className="equipment-filter-toggle" onClick={toggleFilters}>
-                            <FaFilter />
-                            <span>Filters</span>
-                            {showFilters && <span className="filter-count">({getActiveFilterCount()})</span>}
-                        </button>
-                    </div>
-
-                    {showFilters && (
-                        <div className="equipment-filters-panel">
-                            <div className="equipment-filter-controls">
-                                <div className="equipment-filter-row">
-                                    <div className="equipment-filter-group">
-                                        <label>Equipment Type</label>
-                                        <select
-                                            value={selectedType}
-                                            onChange={(e) => setSelectedType(e.target.value)}
-                                        >
-                                            <option value="">All Types</option>
-                                            {equipmentTypes.map(type => (
-                                                <option key={type.id} value={type.id}>{type.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="equipment-filter-group">
-                                        <label>Equipment Brand</label>
-                                        <select
-                                            value={selectedBrand}
-                                            onChange={(e) => setSelectedBrand(e.target.value)}
-                                        >
-                                            <option value="">All Brands</option>
-                                            {equipmentBrands.map(brand => (
-                                                <option key={brand.id} value={brand.id}>{brand.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="equipment-filter-group">
-                                        <label>Site</label>
-                                        <select
-                                            value={selectedSite}
-                                            onChange={(e) => setSelectedSite(e.target.value)}
-                                        >
-                                            <option value="">All Sites</option>
-                                            {sites.map(site => (
-                                                <option key={site.id} value={site.id}>{site.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div className="equipment-filter-group">
-                                        <label>Status</label>
-                                        <select
-                                            value={selectedStatus}
-                                            onChange={(e) => setSelectedStatus(e.target.value)}
-                                        >
-                                            <option value="">All Statuses</option>
-                                            {statusOptions.map(status => (
-                                                <option key={status.value} value={status.value}>
-                                                    {status.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="equipment-filter-actions">
-                                    <button className="equipment-filter-reset" onClick={handleResetFilters}>
-                                        Clear All Filters
-                                    </button>
-                                </div>
-                            </div>
+                            <button
+                                className={`filter-collapse-btn ${showFilters ? '' : 'collapsed'}`}
+                                onClick={() => setShowFilters(!showFilters)}
+                            >
+                                <FaChevronDown />
+                            </button>
                         </div>
-                    )}
+                    </div>
+
+                    <div className="page-header__filter-list">
+                        <div className="page-header__filter-item">
+                            <label>Equipment Type</label>
+                            <select
+                                value={selectedType}
+                                onChange={(e) => setSelectedType(e.target.value)}
+                            >
+                                <option value="">All Types</option>
+                                {equipmentTypes.map(type => (
+                                    <option key={type.id} value={type.id}>{type.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="page-header__filter-item">
+                            <label>Equipment Brand</label>
+                            <select
+                                value={selectedBrand}
+                                onChange={(e) => setSelectedBrand(e.target.value)}
+                            >
+                                <option value="">All Brands</option>
+                                {equipmentBrands.map(brand => (
+                                    <option key={brand.id} value={brand.id}>{brand.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="page-header__filter-item">
+                            <label>Site</label>
+                            <select
+                                value={selectedSite}
+                                onChange={(e) => setSelectedSite(e.target.value)}
+                            >
+                                <option value="">All Sites</option>
+                                {sites.map(site => (
+                                    <option key={site.id} value={site.id}>{site.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="page-header__filter-item">
+                            <label>Status</label>
+                            <select
+                                value={selectedStatus}
+                                onChange={(e) => setSelectedStatus(e.target.value)}
+                            >
+                                <option value="">All Statuses</option>
+                                {statusOptions.map(status => (
+                                    <option key={status.value} value={status.value}>
+                                        {status.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                 </div>
-            </section>
+            )}
+
+            {/* Search and filter toolbar */}
+            {/*<section className="equipment-toolbar">*/}
+            {/*    <div className="equipment-toolbar-header">*/}
+            {/*        <div className="equipment-search-section">*/}
+            {/*            <div className="equipment-search-container">*/}
+            {/*                <FaSearch className="equipment-search-icon" />*/}
+            {/*                <input*/}
+            {/*                    type="text"*/}
+            {/*                    placeholder="Search equipment by name, model, brand, or serial number..."*/}
+            {/*                    className="equipment-search-input"*/}
+            {/*                    value={searchTerm}*/}
+            {/*                    onChange={(e) => setSearchTerm(e.target.value)}*/}
+            {/*                />*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
+
+            {/*        <div className="equipment-actions-section">*/}
+            {/*            {permissions.canCreate && (*/}
+            {/*                <button className="btn-primary" onClick={handleAddEquipment}>*/}
+            {/*                    <FaPlus /> Add Equipment*/}
+            {/*                </button>*/}
+            {/*            )}*/}
+            {/*        </div>*/}
+            {/*    </div>*/}
+
+            {/*    <div className="equipment-filters-section">*/}
+            {/*        <div className="equipment-filters-header">*/}
+            {/*            <button className="equipment-filter-toggle" onClick={toggleFilters}>*/}
+            {/*                <FaFilter /> */}
+            {/*                <span>Filters</span>*/}
+            {/*                {showFilters && <span className="filter-count">({getActiveFilterCount()})</span>}*/}
+            {/*            </button>*/}
+            {/*        </div>*/}
+
+            {/*        {showFilters && (*/}
+            {/*            <div className="equipment-filters-panel">*/}
+            {/*                <div className="equipment-filter-controls">*/}
+            {/*                    <div className="equipment-filter-row">*/}
+            {/*                        <div className="equipment-filter-group">*/}
+            {/*                            <label>Equipment Type</label>*/}
+            {/*                            <select*/}
+            {/*                                value={selectedType}*/}
+            {/*                                onChange={(e) => setSelectedType(e.target.value)}*/}
+            {/*                            >*/}
+            {/*                                <option value="">All Types</option>*/}
+            {/*                                {equipmentTypes.map(type => (*/}
+            {/*                                    <option key={type.id} value={type.id}>{type.name}</option>*/}
+            {/*                                ))}*/}
+            {/*                            </select>*/}
+            {/*                        </div>*/}
+
+            {/*                        <div className="equipment-filter-group">*/}
+            {/*                            <label>Equipment Brand</label>*/}
+            {/*                            <select*/}
+            {/*                                value={selectedBrand}*/}
+            {/*                                onChange={(e) => setSelectedBrand(e.target.value)}*/}
+            {/*                            >*/}
+            {/*                                <option value="">All Brands</option>*/}
+            {/*                                {equipmentBrands.map(brand => (*/}
+            {/*                                    <option key={brand.id} value={brand.id}>{brand.name}</option>*/}
+            {/*                                ))}*/}
+            {/*                            </select>*/}
+            {/*                        </div>*/}
+
+            {/*                        <div className="equipment-filter-group">*/}
+            {/*                            <label>Site</label>*/}
+            {/*                            <select*/}
+            {/*                                value={selectedSite}*/}
+            {/*                                onChange={(e) => setSelectedSite(e.target.value)}*/}
+            {/*                            >*/}
+            {/*                                <option value="">All Sites</option>*/}
+            {/*                                {sites.map(site => (*/}
+            {/*                                    <option key={site.id} value={site.id}>{site.name}</option>*/}
+            {/*                                ))}*/}
+            {/*                            </select>*/}
+            {/*                        </div>*/}
+
+            {/*                        <div className="equipment-filter-group">*/}
+            {/*                            <label>Status</label>*/}
+            {/*                            <select*/}
+            {/*                                value={selectedStatus}*/}
+            {/*                                onChange={(e) => setSelectedStatus(e.target.value)}*/}
+            {/*                            >*/}
+            {/*                                <option value="">All Statuses</option>*/}
+            {/*                                {statusOptions.map(status => (*/}
+            {/*                                    <option key={status.value} value={status.value}>*/}
+            {/*                                        {status.label}*/}
+            {/*                                    </option>*/}
+            {/*                                ))}*/}
+            {/*                            </select>*/}
+            {/*                        </div>*/}
+            {/*                    </div>*/}
+
+            {/*                    <div className="equipment-filter-actions">*/}
+            {/*                        <button className="equipment-filter-reset" onClick={handleResetFilters}>*/}
+            {/*                            Clear All Filters*/}
+            {/*                        </button>*/}
+            {/*                    </div>*/}
+            {/*                </div>*/}
+            {/*            </div>*/}
+            {/*        )}*/}
+            {/*    </div>*/}
+            {/*</section>*/}
 
             {/* Equipment cards grid */}
-            <section className="equipment-cards-container">
-                {loading ? (
-                    <LoadingPage />
-                ) : error ? (
-                    <div className="equipment-error">
-                        <FaExclamationCircle />
-                        <p>Error: {error}</p>
-                        <p>Please try again later or contact support.</p>
-                    </div>
-                ) : filteredEquipment.length > 0 ? (
-                    <div className="unified-cards-grid">
-                        {filteredEquipment.map((equipment) => (
-                            <UnifiedCard
-                                key={equipment.id}
-                                id={equipment.id}
-                                title={equipment.name || 'Unknown Equipment'}
-                                imageUrl={equipment.imageUrl}
-                                imageFallback={equipmentPlaceholder}
-                                stats={[
-                                    {
-                                        label: 'Site',
-                                        value: equipment.siteName || 'No Site Assigned'
-                                    },
-                                    {
-                                        label: 'Main Driver',
-                                        value: equipment.mainDriverName || 'No Driver'
-                                    },
-                                    {
-                                        label: 'Status',
-                                        value: formatStatus(equipment.status),
-                                        statusIndicator: true,
-                                        statusClass: getStatusClass(equipment.status)
+
+            {loading ? (
+                <LoadingPage />
+            ) : error ? (
+                <div className="equipment-error">
+                    <FaExclamationCircle />
+                    <p>Error: {error}</p>
+                    <p>Please try again later or contact support.</p>
+                </div>
+            ) : filteredEquipment.length > 0 ? (
+                <div className="unified-cards-grid">
+                    {filteredEquipment.map((equipment) => (
+                        <UnifiedCard
+                            key={equipment.id}
+                            id={equipment.id}
+                            title={equipment.name || 'Unknown Equipment'}
+                            imageUrl={equipment.imageUrl}
+                            imageFallback={equipmentimg}
+                            onClick={(id) => navigate(`/equipment/${id}`)}
+                            stats={[
+                                {
+                                    label: 'Site',
+                                    value: equipment.siteName || 'No Site Assigned'
+                                },
+                                {
+                                    label: 'Equipment Type',
+                                    value: equipment.typeName || 'N/A'
+                                },
+                                {
+                                    label: 'Equipment Brand',
+                                    value: equipment.brandName || 'N/A'
+                                },
+                                {
+                                    label: 'Main Driver',
+                                    value: equipment.mainDriverName || 'No Driver'
+                                },
+                                {
+                                    label: 'Status',
+                                    value: formatStatus(equipment.status),
+                                    statusIndicator: true,
+                                    statusClass: getStatusClass(equipment.status)
+                                }
+                            ]}
+                            actions={[
+                                ...(permissions.canEdit ? [{
+                                    label: 'Edit',
+                                    variant: 'secondary',
+                                    icon: <FaPlus />,
+                                    onClick: (id) => handleEditEquipment(id)
+                                }] : []),
+                                {
+                                    label: 'View Details',
+                                    variant: 'primary',
+                                    onClick: (id) => {
+                                        // Navigate to equipment details page
+                                        navigate(`/equipmentinfo/${id}`)
+
                                     }
-                                ]}
-                                actions={[
-                                    ...(permissions.canEdit ? [{
-                                        label: 'Edit',
-                                        variant: 'secondary',
-                                        icon: <FaPlus />,
-                                        onClick: (id) => handleEditEquipment(id)
-                                    }] : []),
-                                    {
-                                        label: 'View Details',
-                                        variant: 'primary',
-                                        onClick: (id) => {
-                                            // Navigate to equipment details page
-                                            console.log('View details for equipment:', id);
-                                        }
-                                    }
-                                ]}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="unified-cards-empty">
-                        <div className="unified-cards-empty-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                <path d="M20 6L9 17l-5-5" />
-                            </svg>
-                        </div>
-                        <p>No equipment found. Try adjusting your search filters or add new equipment</p>
-                    </div>
-                )}
-            </section>
+                                }
+                            ]}
+                        />
+                    ))}
+                </div>
+            ) : (
+                <UnifiedCard
+                    isEmpty={true}
+                    emptyIcon={FaTools}
+                    emptyMessage="No equipment found. Try adjusting your search filters or add new equipment"
+                />
+            )}
+
 
             {/* Notification */}
             {showNotification && (

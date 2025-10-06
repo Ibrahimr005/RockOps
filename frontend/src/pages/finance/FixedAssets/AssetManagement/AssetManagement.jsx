@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaEdit, FaTrash, FaEye, FaPlus, FaCalculator, FaTimes, FaCalendarAlt, FaDollarSign, FaBarcode, FaInfoCircle } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../../components/common/PageHeader';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 import './AssetManagement.css';
@@ -409,11 +410,16 @@ const AssetManagement = () => {
 
     return (
         <div className="asset-management">
+            <PageHeader
+                title="Fixed Assets Management"
+                subtitle="Track and manage company fixed assets, depreciation, and asset lifecycle"
+            />
+
             <DataTable
                 data={assets}
                 columns={columns}
                 loading={loading}
-                tableTitle="Fixed Assets Management"
+                tableTitle=""
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}
