@@ -2,12 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import "./ProcurementRequestOrder.scss";
-import procurementImage from "../../../assets/imgs/pro_icon.png";
-import procurementImageDark from "../../../assets/imgs/pro_icon_dark.png";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx"
 import IncomingRequestOrders from './IncomingRequests/IncomingRequestOrders';
 import ApprovedRequestOrders from './ApprovedRequests/ApprovedRequestOrders';
-import ProcurementIntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
+import PageHeader from '../../../components/common/PageHeader/PageHeader.jsx';
 import { requestOrderService } from '../../../services/procurement/requestOrderService.js';
 
 const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
@@ -22,9 +20,6 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
 
     // Tab state
     const [activeTab, setActiveTab] = useState('incoming'); // 'incoming' or 'approved'
-
-    // Get the appropriate image based on theme
-    const currentProcurementImage = theme === 'dark' ? procurementImageDark : procurementImage;
 
     useEffect(() => {
         fetchRequestOrders();
@@ -73,14 +68,9 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
 
     return (
         <div className="pro-ro-procurement-requests-container">
-            {/* Intro Card using the new component */}
-            <ProcurementIntroCard
+            <PageHeader
                 title="Request Orders"
-                label="PROCUREMENT CENTER"
-                lightModeImage={procurementImage}
-                darkModeImage={procurementImageDark}
-                stats={statsData}
-                icon={false}
+                subtitle="Create, manage, and approve procurement request orders across your organization"
             />
 
             {/* Tabs Navigation */}

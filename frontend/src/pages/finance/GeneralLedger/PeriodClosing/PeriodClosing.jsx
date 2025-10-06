@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaCalendarAlt, FaLock, FaLockOpen, FaCheck, FaExclamationTriangle, FaPlus } from 'react-icons/fa';
 import { useAuth } from "../../../../contexts/AuthContext";
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../../components/common/PageHeader';
 import './PeriodClosing.css';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
@@ -273,7 +274,10 @@ const PeriodClosing = () => {
 
     return (
         <div className="period-closing-container">
-            {/* Removed custom header with add button */}
+            <PageHeader
+                title="Accounting Periods"
+                subtitle="Manage accounting periods and period closing procedures"
+            />
 
             {error && (
                 <div className="error-banner">
@@ -291,7 +295,7 @@ const PeriodClosing = () => {
                 showFilters={true}
                 defaultSortField="name"
                 defaultSortDirection="desc"
-                tableTitle="Accounting Periods"
+                tableTitle=""
                 emptyMessage="No accounting periods found"
                 // Add button configuration - only show if user is finance manager
                 showAddButton={isFinanceManager}

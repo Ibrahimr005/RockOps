@@ -8,6 +8,7 @@ import { useEquipmentPermissions } from '../../../utils/rbac';
 import { documentService } from '../../../services/documentService';
 import { getMonthLabel } from '../../../constants/documentTypes';
 import SarkyDocumentModal from './SarkyDocumentModal';
+import PageHeader from '../../../components/common/PageHeader';
 import './EquipmentSarkyMatrix.scss';
 import '../../../styles/form-validation.scss';
 
@@ -582,7 +583,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
             // For non-drivable equipment, use null for driverId
             const newDriverId = driverId !== null ? driverId : 
                 (equipmentData && !equipmentData.drivable) ? null : 
-                (existingCell.driverId || selectedDriver);
+                (existingCell.driverId || selectedDriver || '');
 
             const updatedCell = {
                 hours: numValue,
@@ -1230,7 +1231,12 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
         return allDateKeys.some(dateKey => {
             return workTypes.some(workType => {
                 const cellData = globalMatrixData[dateKey]?.[workType.id];
-                return cellData?.hours > 0 && !isValidDriverId(cellData.driverId);
+                if (cellData?.hours > 0) {
+                    // Use the cell's driver ID or fall back to selected default driver
+                    const effectiveDriverId = cellData.driverId || selectedDriver;
+                    return !isValidDriverId(effectiveDriverId);
+                }
+                return false;
             });
         });
     };
@@ -1250,6 +1256,11 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
 
     return (
         <div className="sarky-matrix-container">
+            <PageHeader
+                title="Daily Work Log"
+                subtitle={`Track daily work activities and hours for ${equipmentData.name}`}
+            />
+
             {/* Sticky Header */}
             <div 
                 ref={stickyHeaderRef}
@@ -1369,18 +1380,28 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                     {/* Only show driver selector for drivable equipment */}
                     {equipmentData?.drivable && (
                         <div className="driver-selector">
-                            <label>Default Driver (for new entries):</label>
-                            <select
-                                value={selectedDriver}
-                                onChange={(e) => setSelectedDriver(e.target.value)}
-                            >
-                                <option value="">Select Driver</option>
-                                {drivers.map(driver => (
-                                    <option key={driver.id} value={driver.id}>
-                                        {driver.fullName}
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="driver-selector-header">
+                                <label>Default Driver:</label>
+                                <select
+                                    value={selectedDriver}
+                                    onChange={(e) => setSelectedDriver(e.target.value)}
+                                >
+                                    <option value="">Select Driver</option>
+                                    {drivers.map(driver => (
+                                        <option key={driver.id} value={driver.id}>
+                                            {driver.fullName}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            {selectedDriver && (
+                                <div className="default-driver-info">
+                                    <div className="info-icon">💡</div>
+                                    <div className="info-text">
+                                        <strong>Auto-Assignment Active:</strong> All new work entries will automatically use <strong>{drivers.find(d => d.id === selectedDriver)?.fullName}</strong> as the driver. You can override this for individual entries by clicking the driver icon in each cell.
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                     
@@ -1507,6 +1528,7 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                                     const isMainDriver = cellDriverId === equipmentData?.mainDriverId;
                                     const driverName = drivers.find(d => d.id === cellDriverId)?.fullName || 'Unknown';
                                     const hasInvalidDriver = hasValue && !isValidDriverId(cellDriverId);
+                                    const isUsingDefaultDriver = hasValue && !cellData?.driverId && selectedDriver;
 
 
                                     return (
@@ -1553,8 +1575,8 @@ const EquipmentSarkyMatrix = forwardRef(({ equipmentId, onDataChange }, ref) => 
                                                     }}
                                                     placeholder=""
                                                     disabled={isBlocked}
-                                                    className={`hours-input ${hasValue ? 'has-value' : ''} ${cellData?.isExisting ? 'existing' : ''} ${isBlocked ? 'blocked' : ''} ${hasInvalidDriver ? 'invalid-driver' : ''}`}
-                                                    title={blockedMessage || (hasInvalidDriver ? `Driver required for ${workType.name}` : `Enter hours for ${workType.name}`)}
+                                                    className={`hours-input ${hasValue ? 'has-value' : ''} ${cellData?.isExisting ? 'existing' : ''} ${isBlocked ? 'blocked' : ''} ${hasInvalidDriver ? 'invalid-driver' : ''} ${isUsingDefaultDriver ? 'using-default-driver' : ''}`}
+                                                    title={blockedMessage || (hasInvalidDriver ? `Driver required for ${workType.name}` : isUsingDefaultDriver ? `Using default driver: ${driverName}` : `Enter hours for ${workType.name}`)}
                                                 />
 
                                                 {/* Action buttons container for better alignment */}

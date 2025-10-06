@@ -14,7 +14,12 @@ const UnifiedCard = ({
                          hasAlert = false,
                          alertTooltip = '',
                          onClick,
-                         className = ''
+                         className = '',
+                         // Empty state props
+                         isEmpty = false,
+                         emptyIcon: EmptyIcon,
+                         emptyMessage = 'No data available',
+                         emptyIconSize = 54
                      }) => {
 
     const handleImageError = (e) => {
@@ -24,7 +29,7 @@ const UnifiedCard = ({
     };
 
     const handleCardClick = () => {
-        if (onClick) {
+        if (onClick && !isEmpty) {
             onClick(id);
         }
     };
@@ -37,6 +42,21 @@ const UnifiedCard = ({
         return '';
     };
 
+    // Render empty state
+    if (isEmpty) {
+        return (
+            <div className="unified-cards-empty">
+                {EmptyIcon && (
+                    <div className="unified-cards-empty-icon">
+                        <EmptyIcon size={emptyIconSize} />
+                    </div>
+                )}
+                <p>{emptyMessage}</p>
+            </div>
+        );
+    }
+
+    // Render normal card
     return (
         <div
             className={`unified-card ${className}`}

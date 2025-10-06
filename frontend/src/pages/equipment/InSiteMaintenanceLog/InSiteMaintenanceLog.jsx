@@ -9,6 +9,7 @@ import './InSiteMaintenanceLog.scss';
 import MaintenanceTransactionModal from '../MaintenanceTransactionModal/MaintenanceTransactionModal';
 import MaintenanceAddModal from '../MaintenanceAddModal/MaintenanceAddModal';
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
+import PageHeader from '../../../components/common/PageHeader';
 import TransactionViewModal from '../../warehouse/WarehouseViewTransactions/TransactionViewModal/TransactionViewModal.jsx';
 
 const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, onAddTransactionClick, showAddButton = true, showHeader = true }, ref) => {
@@ -121,6 +122,18 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
             hour: '2-digit',
             minute: '2-digit',
         }).format(date);
+    };
+
+    // Format status for display (remove underscores and capitalize properly)
+    const formatStatusDisplay = (status) => {
+        if (!status) return "Unknown";
+        
+        // Handle specific status formatting
+        if (status === "IN_MAINTENANCE") return "In Maintenance";
+        if (status === "IN_USE") return "In Use";
+        
+        // For other statuses, replace underscores with spaces and capitalize properly
+        return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
 
     // View transactions details
@@ -272,7 +285,7 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
         { header: 'Date', accessor: 'maintenanceDate', render: (rowData) => formatDate(rowData.maintenanceDate) },
         { header: 'Type', accessor: 'maintenanceType' },
         { header: 'Description', accessor: 'description', render: (rowData) => rowData.description?.length > 50 ? `${rowData.description.substring(0, 50)}...` : rowData.description },
-        { header: 'Status', accessor: 'status', render: (rowData) => <span className={`r4m-status-badge r4m-${rowData.status.toLowerCase()}`}>{rowData.status}</span> },
+        { header: 'Status', accessor: 'status', render: (rowData) => <span className={`r4m-status-badge r4m-${rowData.status.toLowerCase()}`}>{formatStatusDisplay(rowData.status)}</span> },
         { 
             header: 'Transaction', 
             accessor: 'transaction', 
@@ -332,7 +345,10 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
 
     return (
         <div className="r4m-maintenance-log-container">
-
+            <PageHeader
+                title="Maintenance Records"
+                subtitle="Track and manage all maintenance activities for this equipment"
+            />
 
             <div className="r4m-maintenance-content">
                 {loading ? (
@@ -351,7 +367,7 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                         actions={actions}
                         onRowClick={handleRowClick}
                         loading={loading}
-                        tableTitle="Maintenance Records"
+                        tableTitle=""
                         showSearch={true}
                         showFilters={true}
                         filterableColumns={filterableColumns}

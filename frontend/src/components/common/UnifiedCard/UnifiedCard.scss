@@ -431,14 +431,26 @@
 /* Empty State - Polished */
 .unified-cards-empty {
   text-align: center;
-  padding: 60px 20px;
+  padding: 32px 16px; /* compact padding */
   border: 2px dashed var(--border-color);
   border-radius: var(--radius-lg);
   color: var(--color-text-tertiary);
   background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-hover) 100%);
   grid-column: 1 / -1;
   transition: all var(--transition-normal);
+
+  /* 👇 prevent it from taking too much height */
+  max-height: 480px;
+  min-height: 480px;
+  height: auto;
+
+  /* 👇 center it nicely */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
+
 
 .unified-cards-empty:hover {
   border-color: var(--color-primary);
@@ -451,6 +463,16 @@
   margin-bottom: 16px;
   opacity: 0.4;
   transition: all var(--transition-normal);
+
+  /* Add these to ensure icon displays */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 54px;
+    height: 54px;
+  }
 }
 
 .unified-cards-empty:hover .unified-cards-empty-icon {

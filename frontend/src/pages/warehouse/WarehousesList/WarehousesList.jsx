@@ -5,6 +5,7 @@ import warehouseImg from "../../../assets/imgs/warehouse1.jpg";
 import { FaWarehouse, FaTimes, FaUserCog, FaPlus, FaExclamationTriangle, FaBell } from 'react-icons/fa';
 import { useAuth } from "../../../contexts/AuthContext";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
+import PageHeader from "../../../components/common/PageHeader/PageHeader.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog";
 import UnifiedCard from "../../../components/common/UnifiedCard/UnifiedCard";
@@ -13,6 +14,7 @@ import { warehouseEmployeeService } from "../../../services/warehouse/warehouseE
 import { itemService } from "../../../services/warehouse/itemService";
 import { transactionService } from "../../../services/transaction/transactionService.js";
 import { siteService } from "../../../services/siteService";
+import warehouseimg from "../../../assets/imgs/warehouseimg.jpg"
 
 const WarehousesList = () => {
     const [warehouses, setWarehouses] = useState([]);
@@ -649,9 +651,10 @@ const WarehousesList = () => {
 
     return (
         <div className="warehouse-list-container">
-            <div className="departments-header">
-                <h1 className="warehouse-list-title">Warehouses</h1>
-            </div>
+            <PageHeader
+                title="Warehouses"
+                subtitle="Overview and management of warehouse facilities and inventory locations"
+            />
 
             <div className="unified-cards-grid">
                 {warehouses.length > 0 ? (
@@ -717,7 +720,7 @@ const WarehousesList = () => {
                                 id={warehouse.id}
                                 title={warehouse.name || 'Unnamed Warehouse'}
                                 imageUrl={warehouse.photoUrl}
-                                imageFallback={warehouseImg}
+                                imageFallback={warehouseimg}
                                 stats={stats}
                                 actions={actions}
                                 hasAlert={hasAlerts}
@@ -727,12 +730,11 @@ const WarehousesList = () => {
                         );
                     })
                 ) : (
-                    <div className="unified-cards-empty">
-                        <div className="unified-cards-empty-icon">
-                            <FaWarehouse size={50} />
-                        </div>
-                        <p>No warehouses found.</p>
-                    </div>
+                    <UnifiedCard
+                        isEmpty={true}
+                        emptyIcon={FaWarehouse}
+                        emptyMessage="No warehouses found. Try adjusting your search filters or add a new warehouse"
+                    />
                 )}
             </div>
 
