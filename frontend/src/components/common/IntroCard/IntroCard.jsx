@@ -10,6 +10,7 @@ const IntroCard = ({
                        icon, // New icon prop
                        stats = [],
                        onInfoClick,
+                       actionButtons = [], // New prop for action buttons
                        className = ""
                    }) => {
     const { theme } = useTheme();
@@ -70,6 +71,23 @@ const IntroCard = ({
             </div>
 
             <div className="intro-card-right">
+                {actionButtons.length > 0 && (
+                    <div className="intro-card-action-buttons">
+                        {actionButtons.map((button, index) => (
+                            <button
+                                key={index}
+                                className={`intro-card-action-button ${button.className || ''}`}
+                                onClick={button.onClick}
+                                disabled={button.disabled}
+                                title={button.title}
+                            >
+                                {button.icon && <span className="intro-card-action-icon">{button.icon}</span>}
+                                {button.text && <span className="intro-card-action-text">{button.text}</span>}
+                                <div className="intro-card-button-ripple"></div>
+                            </button>
+                        ))}
+                    </div>
+                )}
                 {onInfoClick && (
                     <button className="intro-card-info-button" onClick={onInfoClick}>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
