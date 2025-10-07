@@ -98,7 +98,7 @@ public class AttendanceService {
                     "Attendance Sheet Generation Failed",
                     "Failed to generate monthly attendance sheet for " + month + "/" + year + ": " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/attendance/monthly",
+                    "/hr/attendance",
                     "attendance-error-" + siteId + "-" + year + "-" + month
             );
 
@@ -183,7 +183,7 @@ public class AttendanceService {
                     "Attendance Update Failed",
                     "Failed to update attendance for employee: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/attendance",
+                    "/hr/attendance",
                     "attendance-error-" + requestDTO.getEmployeeId()
             );
 
@@ -207,7 +207,7 @@ public class AttendanceService {
                                 "Employee Marked Absent",
                                 employeeName + " has been marked as absent on " + date,
                                 NotificationType.WARNING,
-                                "/attendance/employee/" + employee.getId(),
+                                "/hr/employee-details/" + employee.getId(),
                                 "absent-" + employee.getId() + "-" + date
                         );
                     }
@@ -218,7 +218,7 @@ public class AttendanceService {
                             "Employee Late",
                             employeeName + " arrived late on " + date,
                             NotificationType.WARNING,
-                            "/attendance/employee/" + employee.getId(),
+                            "/hr/employee-details/" + employee.getId(),
                             "late-" + employee.getId() + "-" + date
                     );
                     break;
@@ -229,7 +229,7 @@ public class AttendanceService {
                                 "Leave Approval Required",
                                 employeeName + " has requested leave on " + date + " - approval needed",
                                 NotificationType.INFO,
-                                "/attendance/leave-requests",
+                                "/hr/attendance",
                                 "leave-request-" + employee.getId() + "-" + date
                         );
                     }
@@ -243,7 +243,7 @@ public class AttendanceService {
                     "Overtime Recorded",
                     employeeName + " worked " + attendance.getOvertimeHours() + " hours overtime on " + date,
                     NotificationType.INFO,
-                    "/attendance/overtime",
+                    "/hr/attendance",
                     "overtime-" + employee.getId() + "-" + date
             );
         }
@@ -287,7 +287,7 @@ public class AttendanceService {
                     "Bulk Attendance Update Completed with Errors",
                     "Bulk attendance update completed. " + responses.size() + " successful, " + errors.size() + " errors occurred.",
                     NotificationType.WARNING,
-                    "/attendance/bulk-update",
+                    "/hr/attendance",
                     "bulk-update-" + System.currentTimeMillis()
             );
         } else {
@@ -295,7 +295,7 @@ public class AttendanceService {
                     "Bulk Attendance Update Completed",
                     "Successfully updated attendance for " + responses.size() + " employees",
                     NotificationType.SUCCESS,
-                    "/attendance",
+                    "/hr/attendance",
                     "bulk-update-success-" + System.currentTimeMillis()
             );
         }
@@ -660,7 +660,7 @@ public class AttendanceService {
                     "Attendance Record Deleted",
                     "An attendance record has been deleted",
                     NotificationType.INFO,
-                    "/attendance",
+                    "/hr/attendance",
                     "attendance-deleted-" + attendanceId
             );
 
@@ -671,7 +671,7 @@ public class AttendanceService {
                     "Attendance Deletion Failed",
                     "Failed to delete attendance record: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/attendance",
+                    "/hr/attendance",
                     "attendance-delete-error-" + attendanceId
             );
 
