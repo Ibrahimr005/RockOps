@@ -4,6 +4,7 @@ import './JournalEntries.css';
 import { useAuth } from "../../../../contexts/AuthContext";
 import { FaBook, FaSearch, FaFilter, FaPlus, FaCheck, FaTimes, FaEye, FaEdit, FaTrash } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../../components/common/PageHeader';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 
@@ -394,9 +395,10 @@ const JournalEntries = () => {
 
     return (
         <div className="journal-entries-container">
-            {/* Custom header with external filters */}
-
-
+            <PageHeader
+                title="Journal Entries"
+                subtitle="Record and manage all financial transactions and accounting entries"
+            />
 
             {error && (
                 <div className="error-banner">
@@ -411,7 +413,7 @@ const JournalEntries = () => {
                 columns={columns}
                 actions={actions}
                 loading={loading}
-                tableTitle="Journal Entries" // We're using custom header above
+                tableTitle=""
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}

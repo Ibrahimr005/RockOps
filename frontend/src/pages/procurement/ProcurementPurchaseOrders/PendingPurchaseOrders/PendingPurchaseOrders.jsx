@@ -203,6 +203,9 @@ const PendingPurchaseOrders = () => {
                     filterableColumns={filterableColumns}
                     defaultItemsPerPage={15}
                     itemsPerPageOptions={[10, 15, 25, 50]}
+                    showExportButton={true}
+                    exportFileName="pending-purchase-orders"
+                    exportButtonText="Export Purchase Orders"
                 />
             </div>
 

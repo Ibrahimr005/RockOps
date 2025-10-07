@@ -4,7 +4,8 @@ import './VacancyList.scss';
 import AddVacancyModal from './modals/AddVacancyModal.jsx';
 import EditVacancyModal from './modals/EditVacancyModal.jsx';
 import DataTable from '../../../components/common/DataTable/DataTable';
-import { FaEdit, FaTrashAlt, FaEye } from "react-icons/fa";
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
+import { FaEdit, FaTrashAlt, FaEye, FaUserPlus } from "react-icons/fa";
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { vacancyService } from '../../../services/hr/vacancyService.js';
 import { jobPositionService } from '../../../services/hr/jobPositionService.js';
@@ -428,21 +429,10 @@ const VacancyList = () => {
     return (
         <div className="vacancy-container">
 
-            <div className="departments-header">
-                <h1>
-                    Job Vacancies
-                    <p className="employees-header__subtitle">
-                        Post open positions, manage applications, and track your recruitment process
-                    </p>
-                </h1>
-                <button
-                    className="primary-button"
-                    onClick={() => setShowAddModal(true)}
-                    disabled={loading}
-                >
-                    Post New Vacancy
-                </button>
-            </div>
+            <PageHeader
+                title="Job Vacancies"
+                subtitle="Post open positions, manage applications, and track your recruitment process"
+            />
 
             <DataTable
                 data={filteredVacancies}
@@ -458,6 +448,13 @@ const VacancyList = () => {
                 defaultItemsPerPage={10}
                 itemsPerPageOptions={[10, 25, 50]}
                 className="vacancy-data-table"
+                showAddButton={true}
+                addButtonText="Post New Vacancy"
+                addButtonIcon={<FaUserPlus />}
+                onAddClick={() => setShowAddModal(true)}
+                showExportButton={true}
+                exportFileName="vacancies"
+                exportButtonText="Export Vacancies"
             />
 
             {/* Add Vacancy Modal */}

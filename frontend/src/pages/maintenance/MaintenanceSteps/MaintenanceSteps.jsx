@@ -418,7 +418,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                 columns={columns}
                 loading={loading}
                 actions={actions}
-                tableTitle="Maintenance Steps"
+                tableTitle=""
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}

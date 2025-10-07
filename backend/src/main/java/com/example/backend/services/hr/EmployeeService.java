@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class EmployeeService {
@@ -33,6 +34,24 @@ public class EmployeeService {
 
     public List<Employee> getTechnicians() {
         return employeeRepository.findByJobPositionName("Technician");
+    }
+
+    /**
+     * Get technicians by site ID
+     * @param siteId The site ID to filter technicians by
+     * @return List of technicians assigned to the specified site
+     */
+    public List<Employee> getTechniciansBySite(UUID siteId) {
+        if (siteId == null) {
+            // If no site ID provided, return all technicians
+            return getTechnicians();
+        }
+        
+        // Get all technicians first, then filter by site
+        List<Employee> allTechnicians = employeeRepository.findByJobPositionName("Technician");
+        return allTechnicians.stream()
+                .filter(employee -> employee.getSite() != null && employee.getSite().getId().equals(siteId))
+                .toList();
     }
 
     public List<Employee> getEmployees() {
