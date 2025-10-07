@@ -1,5 +1,7 @@
 package com.example.backend.services.site;
 
+import com.example.backend.models.notification.NotificationType;
+import com.example.backend.models.user.Role;
 import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.repositories.finance.fixedAssets.FixedAssetsRepository;
@@ -16,6 +18,7 @@ import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.site.SitePartnerRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
+import com.example.backend.services.notification.NotificationService;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -37,12 +40,13 @@ public class SiteAdminService
     private final WarehouseRepository warehouseRepository;
     private final FixedAssetsRepository fixedAssetsRepository;
     private final SitePartnerRepository sitePartnerRepository;
+    private final NotificationService notificationService;
 
     @Autowired
     private EntityManager entityManager;
 
     @Autowired
-    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetsRepository fixedAssetsRepository, SitePartnerRepository sitePartnerRepository) {
+    public SiteAdminService(SiteRepository siteRepository, PartnerRepository partnerRepository, EquipmentRepository equipmentRepository, EmployeeRepository employeeRepository, WarehouseRepository warehouseRepository, FixedAssetsRepository fixedAssetsRepository, SitePartnerRepository sitePartnerRepository, NotificationService notificationService) {
         this.siteRepository = siteRepository;
         this.partnerRepository = partnerRepository;
         this.equipmentRepository = equipmentRepository;
@@ -50,6 +54,7 @@ public class SiteAdminService
         this.warehouseRepository= warehouseRepository;
         this.fixedAssetsRepository = fixedAssetsRepository;
         this.sitePartnerRepository = sitePartnerRepository;
+        this.notificationService = notificationService;
     }
 
 
@@ -81,6 +86,31 @@ public class SiteAdminService
             createDefaultPartnerAssignment(savedSite.getId());
 
             System.out.println("=== Site creation completed ===");
+
+            // Send notifications to SITE_ADMIN and ADMIN users
+            try {
+                String notificationTitle = "New Site Created";
+                String notificationMessage = "A new site '" + savedSite.getName() + "' has been created";
+                String actionUrl = "/sites/details/" + savedSite.getId();
+                String relatedEntity = savedSite.getId().toString();
+
+                List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN);
+
+                notificationService.sendNotificationToUsersByRoles(
+                        targetRoles,
+                        notificationTitle,
+                        notificationMessage,
+                        NotificationType.SUCCESS,
+                        actionUrl,
+                        relatedEntity
+                );
+
+                System.out.println("✅ Site creation notifications sent successfully");
+            } catch (Exception e) {
+                System.err.println("⚠️ Failed to send site creation notifications: " + e.getMessage());
+                // Don't fail the site creation if notification fails
+            }
+
             return savedSite;
 
         } catch (Exception e) {
@@ -110,6 +140,29 @@ public class SiteAdminService
             if(site.getFixedAssets() != null && !site.getFixedAssets().isEmpty())
             {
                 throw new RuntimeException("Site already has fixed assets");
+            }
+
+            // Send notifications to SITE_ADMIN and ADMIN users
+            try {
+                String notificationTitle = "Site Deleted";
+                String notificationMessage = "Site '" + site.getName() + "' has been deleted";
+                String actionUrl = "/sites";
+                String relatedEntity = site.getId().toString();
+
+                List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN);
+
+                notificationService.sendNotificationToUsersByRoles(
+                        targetRoles,
+                        notificationTitle,
+                        notificationMessage,
+                        NotificationType.ERROR,
+                        actionUrl,
+                        relatedEntity
+                );
+
+                System.out.println("Site deletion notifications sent successfully");
+            } catch (Exception e) {
+                System.err.println("Failed to send site deletion notifications: " + e.getMessage());
             }
             siteRepository.delete(site);
             System.out.println("Successfully deleted site with id: " + id);
@@ -310,6 +363,29 @@ public class SiteAdminService
             }
         });
 
+        // Send notifications to SITE_ADMIN and ADMIN users
+        try {
+            String notificationTitle = "Site Updated";
+            String notificationMessage = "Site '" + existingSite.getName() + "' has been updated";
+            String actionUrl = "/sites/details/" + existingSite.getId();
+            String relatedEntity = existingSite.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Site update notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send site update notifications: " + e.getMessage());
+        }
+
         return siteRepository.save(existingSite);
     }
 
@@ -446,9 +522,34 @@ public class SiteAdminService
                 }
             }
 
+
             // Save equipment
             Equipment savedEquipment = equipmentRepository.save(equipment);
             System.out.println("Equipment saved successfully");
+
+            // Send notifications to SITE_ADMIN, ADMIN, and EQUIPMENT_MANAGER users
+            try {
+                String notificationTitle = "Equipment Assigned to Site";
+                String notificationMessage = "Equipment '" + savedEquipment.getModel() +
+                        "' has been assigned to site '" + site.getName() + "'";
+                String actionUrl = "/sites/details/" + site.getId();
+                String relatedEntity = site.getId().toString();
+
+                List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN, Role.EQUIPMENT_MANAGER);
+
+                notificationService.sendNotificationToUsersByRoles(
+                        targetRoles,
+                        notificationTitle,
+                        notificationMessage,
+                        NotificationType.SUCCESS,
+                        actionUrl,
+                        relatedEntity
+                );
+
+                System.out.println("Equipment assignment notifications sent successfully");
+            } catch (Exception e) {
+                System.err.println("Failed to send equipment assignment notifications: " + e.getMessage());
+            }
 
             System.out.println("=== Equipment assignment completed ===");
             return savedEquipment;
@@ -498,6 +599,33 @@ public class SiteAdminService
         }
 
         equipment.setSite(null);
+
+        // Send notifications to SITE_ADMIN, ADMIN, and EQUIPMENT_MANAGER users
+        try {
+            Site site = siteRepository.findById(siteId).orElse(null);
+            if (site != null) {
+                String notificationTitle = "Equipment Removed from Site";
+                String notificationMessage = "Equipment '" + equipment.getModel() +
+                        "' has been removed from site '" + site.getName() + "'";
+                String actionUrl = "/sites/details/" + site.getId();
+                String relatedEntity = site.getId().toString();
+
+                List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN, Role.EQUIPMENT_MANAGER);
+
+                notificationService.sendNotificationToUsersByRoles(
+                        targetRoles,
+                        notificationTitle,
+                        notificationMessage,
+                        NotificationType.WARNING,
+                        actionUrl,
+                        relatedEntity
+                );
+
+                System.out.println("Equipment removal notifications sent successfully");
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to send equipment removal notifications: " + e.getMessage());
+        }
         return equipmentRepository.save(equipment);
     }
 
@@ -516,6 +644,31 @@ public class SiteAdminService
         Site site = optionalSite.get();
 
         employee.setSite(site);
+
+        // Send notifications to SITE_ADMIN, ADMIN, and HR users
+        try {
+            String notificationTitle = "Employee Assigned to Site";
+            String notificationMessage = "Employee '" + employee.getFirstName() + " " + employee.getLastName() +
+                    "' has been assigned to site '" + site.getName() + "'";
+            String actionUrl = "/sites/details/" + site.getId();
+            String relatedEntity = site.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN, Role.HR_MANAGER, Role.HR_EMPLOYEE);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.SUCCESS,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Employee assignment notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send employee assignment notifications: " + e.getMessage());
+        }
+
         return employeeRepository.save(employee);
     }
 
@@ -536,6 +689,31 @@ public class SiteAdminService
         }
 
         employee.setSite(null); // Remove site association
+
+        // Send notifications to SITE_ADMIN, ADMIN, and HR users
+        try {
+            Site site = optionalSite.get();
+            String notificationTitle = "Employee Removed from Site";
+            String notificationMessage = "Employee '" + employee.getFirstName() + " " + employee.getLastName() +
+                    "' has been removed from site '" + site.getName() + "'";
+            String actionUrl = "/sites/details/" + site.getId();
+            String relatedEntity = site.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN, Role.HR_MANAGER, Role.HR_EMPLOYEE);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.WARNING,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Employee removal notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send employee removal notifications: " + e.getMessage());
+        }
         return employeeRepository.save(employee);
     }
 
@@ -564,7 +742,31 @@ public class SiteAdminService
 
             // Save employee
             Employee savedEmployee = employeeRepository.save(employee);
+// Send notifications to SITE_ADMIN, ADMIN, WAREHOUSE, and HR users
+            try {
+                String notificationTitle = "Employee Removed from Warehouse";
+                String notificationMessage = "Employee '" + employee.getFirstName() + " " + employee.getLastName() +
+                        "' has been removed from warehouse '" + warehouse.getName() + "'";
+                String actionUrl = warehouse.getSite() != null ? "/sites/details/" + warehouse.getSite().getId() : "/warehouses";
+                String relatedEntity = warehouse.getId().toString();
 
+                List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN,
+                        Role.WAREHOUSE_MANAGER, Role.WAREHOUSE_EMPLOYEE,
+                        Role.HR_MANAGER, Role.HR_EMPLOYEE);
+
+                notificationService.sendNotificationToUsersByRoles(
+                        targetRoles,
+                        notificationTitle,
+                        notificationMessage,
+                        NotificationType.WARNING,
+                        actionUrl,
+                        relatedEntity
+                );
+
+                System.out.println("Employee removal from warehouse notifications sent successfully");
+            } catch (Exception e) {
+                System.err.println("Failed to send employee removal notifications: " + e.getMessage());
+            }
             System.out.println("Employee successfully unassigned from warehouse and site");
             return savedEmployee;
 
@@ -659,55 +861,36 @@ public class SiteAdminService
         // Assign fixed asset to site
         fixedAsset.setSite(site);
 
+        // Send notifications to SITE_ADMIN, ADMIN, and EQUIPMENT_MANAGER users
+        try {
+            if (site != null) {
+                String notificationTitle = "Fixed Assets Assigned to Site";
+                String notificationMessage = "Fixed Asset '" + fixedAsset.getName() +
+                        "' has been assigned to site '" + site.getName() + "'";
+                String actionUrl = "/sites/details/" + site.getId();
+                String relatedEntity = site.getId().toString();
+
+                List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN, Role.FINANCE_EMPLOYEE, Role.FINANCE_MANAGER);
+
+                notificationService.sendNotificationToUsersByRoles(
+                        targetRoles,
+                        notificationTitle,
+                        notificationMessage,
+                        NotificationType.SUCCESS,
+                        actionUrl,
+                        relatedEntity
+                );
+
+                System.out.println("Fixed asset assignment notifications sent successfully");
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to send fixed asset assignment notifications: " + e.getMessage());
+        }
+
         return fixedAssetsRepository.save(fixedAsset);
     }
 
-//    @Transactional
-//    public Warehouse addWarehouse(UUID siteId, Map<String, Object> requestBody) {
-//        // Create new warehouse
-//        Warehouse warehouse = new Warehouse();
-//        warehouse.setName((String) requestBody.get("name"));
-////        warehouse.setCapacity((Integer) requestBody.get("capacity"));
-//
-//        if (requestBody.get("photoUrl") != null) {
-//            warehouse.setPhotoUrl((String) requestBody.get("photoUrl"));
-//        }
-//
-//        // Get and assign the site directly from the siteId parameter
-//        Site site = siteRepository.findById(siteId)
-//                .orElseThrow(() -> new RuntimeException("❌ Site not found with ID: " + siteId));
-//        warehouse.setSite(site);
-//
-//        List<Employee> employees = new ArrayList<>();
-//
-//        // Handle employees if provided
-//        if (requestBody.containsKey("employees")) {
-//            List<Map<String, Object>> employeeList = (List<Map<String, Object>>) requestBody.get("employees");
-//            List<UUID> employeeIds = employeeList.stream()
-//                    .map(emp -> UUID.fromString((String) emp.get("id")))
-//                    .toList();
-//            employees = employeeRepository.findAllById(employeeIds);
-//
-//            for (Employee employee : employees) {
-//                employee.setWarehouse(warehouse);
-//                employee.setSite(site);
-//            }
-//
-//            warehouse.setEmployees(employees);
-//        } else {
-//            warehouse.setEmployees(new ArrayList<>());
-//        }
-//
-//        // Save the warehouse
-//        Warehouse savedWarehouse = warehouseRepository.save(warehouse);
-//
-//        // Save all employees
-//        if (!employees.isEmpty()) {
-//            employeeRepository.saveAll(employees);
-//        }
-//
-//        return savedWarehouse;
-//    }
+
 
     // PRODUCTION-READY VERSION - USE THIS ONE
     // Replace your entire assignPartnerToSite method with this:
@@ -826,6 +1009,35 @@ public class SiteAdminService
             response.setId(responseId);
             response.setPercentage(percentage);
 
+            // Send notifications to SITE_ADMIN and ADMIN users
+            try {
+                Site site = siteRepository.findById(siteId).orElse(null);
+                Partner partner = partnerRepository.findById(partnerId).orElse(null);
+
+                if (site != null && partner != null) {
+                    String notificationTitle = "Partner Assigned to Site";
+                    String notificationMessage = "Partner '" + partner.getFirstName() + " " + partner.getLastName() +
+                            "' has been assigned " + percentage + "% stake in site '" + site.getName() + "'";
+                    String actionUrl = "/sites/details/" + site.getId();
+                    String relatedEntity = site.getId().toString();
+
+                    List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN, Role.FINANCE_MANAGER, Role.FINANCE_EMPLOYEE);
+
+                    notificationService.sendNotificationToUsersByRoles(
+                            targetRoles,
+                            notificationTitle,
+                            notificationMessage,
+                            NotificationType.SUCCESS,
+                            actionUrl,
+                            relatedEntity
+                    );
+
+                    System.out.println("Partner assignment notifications sent successfully");
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to send partner assignment notifications: " + e.getMessage());
+            }
+
             System.out.println("=== Partner assignment completed successfully ===");
             return response;
 
@@ -908,6 +1120,36 @@ public class SiteAdminService
             sitePartnerRepository.save(defaultAssignment);
             SitePartner updated = sitePartnerRepository.save(sitePartner);
 
+            // Send notifications to SITE_ADMIN and ADMIN users
+            try {
+                Site site = siteRepository.findById(siteId).orElse(null);
+                Partner partner = partnerRepository.findById(partnerId).orElse(null);
+
+                if (site != null && partner != null) {
+                    String notificationTitle = "Partner Percentage Updated";
+                    String notificationMessage = "Partner '" + partner.getFirstName() + " " + partner.getLastName() +
+                            "' percentage in site '" + site.getName() +
+                            "' has been updated from " + oldPercentage + "% to " + newPercentage + "%";
+                    String actionUrl = "/sites/details/" + site.getId();
+                    String relatedEntity = site.getId().toString();
+
+                    List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN, Role.FINANCE_MANAGER, Role.FINANCE_EMPLOYEE);
+
+                    notificationService.sendNotificationToUsersByRoles(
+                            targetRoles,
+                            notificationTitle,
+                            notificationMessage,
+                            NotificationType.INFO,
+                            actionUrl,
+                            relatedEntity
+                    );
+
+                    System.out.println("Partner percentage update notifications sent successfully");
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to send partner update notifications: " + e.getMessage());
+            }
+
             System.out.println("Partner percentage updated successfully");
             return updated;
 
@@ -944,6 +1186,35 @@ public class SiteAdminService
             defaultAssignment.setPercentage(defaultAssignment.getPercentage() + percentageToRecover);
             sitePartnerRepository.save(defaultAssignment);
 
+            // Send notifications to SITE_ADMIN and ADMIN users
+            try {
+                Site site = siteRepository.findById(siteId).orElse(null);
+                Partner partner = partnerRepository.findById(partnerId).orElse(null);
+
+                if (site != null && partner != null) {
+                    String notificationTitle = "Partner Removed from Site";
+                    String notificationMessage = "Partner '" + partner.getFirstName() + " " + partner.getLastName() +
+                            "' has been removed from site '" + site.getName() + "'";
+                    String actionUrl = "/sites/details/" + site.getId();
+                    String relatedEntity = site.getId().toString();
+
+                    List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN, Role.FINANCE_MANAGER, Role.FINANCE_EMPLOYEE);
+
+                    notificationService.sendNotificationToUsersByRoles(
+                            targetRoles,
+                            notificationTitle,
+                            notificationMessage,
+                            NotificationType.WARNING,
+                            actionUrl,
+                            relatedEntity
+                    );
+
+                    System.out.println("Partner removal notifications sent successfully");
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to send partner removal notifications: " + e.getMessage());
+            }
+
             // Remove the partner assignment
             sitePartnerRepository.delete(sitePartner);
 
@@ -955,30 +1226,7 @@ public class SiteAdminService
         }
     }
 
-    // Helper methods
-//    private void validateAssignmentInputs(UUID siteId, Integer partnerId, Double percentage) {
-//        if (siteId == null) {
-//            throw new IllegalArgumentException("Site ID cannot be null");
-//        }
-//        if (partnerId == null) {
-//            throw new IllegalArgumentException("Partner ID cannot be null");
-//        }
-//        if (percentage == null || percentage <= 0 || percentage > 100) {
-//            throw new IllegalArgumentException("Percentage must be between 0 and 100");
-//        }
-//    }
 
-//    private Partner ensureDefaultPartnerExists() {
-//        return partnerRepository.findByFirstName("Rock4Mining")
-//                .orElseGet(() -> {
-//                    System.out.println("Creating default Rock4Mining partner");
-//                    Partner defaultPartner = Partner.builder()
-//                            .firstName("Rock4Mining")
-//                            .lastName("")
-//                            .build();
-//                    return partnerRepository.save(defaultPartner);
-//                });
-//    }
 
 
     // Add this method to your SiteAdminService class
@@ -1207,6 +1455,31 @@ public class SiteAdminService
         // Save all employees
         if (!employees.isEmpty()) {
             employeeRepository.saveAll(employees);
+        }
+
+        // Send notifications to SITE_ADMIN, ADMIN, and WAREHOUSE users
+        try {
+            String notificationTitle = "New Warehouse Created";
+            String notificationMessage = "Warehouse '" + savedWarehouse.getName() +
+                    "' has been created at site '" + site.getName() + "'";
+            String actionUrl = "/warehouses/" + savedWarehouse.getId();
+            String relatedEntity = site.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN,
+                    Role.WAREHOUSE_MANAGER, Role.WAREHOUSE_EMPLOYEE);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.SUCCESS,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Warehouse creation notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send warehouse creation notifications: " + e.getMessage());
         }
 
         return savedWarehouse;

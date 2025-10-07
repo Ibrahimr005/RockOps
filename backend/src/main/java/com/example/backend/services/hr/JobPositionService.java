@@ -221,7 +221,7 @@ public class JobPositionService {
                     "New Job Position Created",
                     "Job position '" + savedJobPosition.getPositionName() + "' has been created in " + departmentName + " department",
                     NotificationType.SUCCESS,
-                    "/job-positions/" + savedJobPosition.getId(),
+                    "/hr/positions/" + savedJobPosition.getId(),
                     "new-job-position-" + savedJobPosition.getId()
             );
 
@@ -233,7 +233,7 @@ public class JobPositionService {
                             "Leadership Position Created",
                             "🎯 Leadership position '" + savedJobPosition.getPositionName() + "' created in " + departmentName,
                             NotificationType.INFO,
-                            "/job-positions/" + savedJobPosition.getId(),
+                            "/hr/positions/" + savedJobPosition.getId(),
                             "leadership-position-" + savedJobPosition.getId()
                     );
                 }
@@ -244,7 +244,7 @@ public class JobPositionService {
                             "Driver Position Available",
                             "New driver position '" + savedJobPosition.getPositionName() + "' is now available for recruitment",
                             NotificationType.INFO,
-                            "/job-positions/" + savedJobPosition.getId(),
+                            "/hr/positions/" + savedJobPosition.getId(),
                             "driver-position-" + savedJobPosition.getId()
                     );
                 }
@@ -260,7 +260,7 @@ public class JobPositionService {
                     "Job Position Creation Failed",
                     "Failed to create job position: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/job-positions",
+                    "/hr/positions/",
                     "job-position-error-" + System.currentTimeMillis()
             );
 
@@ -423,7 +423,7 @@ public class JobPositionService {
                     "Job Position Update Failed",
                     "Failed to update job position: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/job-positions/" + id,
+                    "/hr/positions/" + id,
                     "job-position-update-error-" + id
             );
 
@@ -445,7 +445,7 @@ public class JobPositionService {
                     "Job Position Renamed",
                     "Job position renamed from '" + oldPositionName + "' to '" + jobPosition.getPositionName() + "'",
                     NotificationType.INFO,
-                    "/job-positions/" + jobPosition.getId(),
+                    "/hr/positions/" + jobPosition.getId(),
                     "position-renamed-" + jobPosition.getId()
             );
         }
@@ -456,7 +456,7 @@ public class JobPositionService {
                     "Job Position Department Changed",
                     "'" + jobPosition.getPositionName() + "' moved from " + oldDepartmentName + " to " + currentDepartmentName,
                     NotificationType.INFO,
-                    "/job-positions/" + jobPosition.getId(),
+                    "/hr/positions/" + jobPosition.getId(),
                     "position-dept-change-" + jobPosition.getId()
             );
         }
@@ -468,7 +468,7 @@ public class JobPositionService {
                         "Job Position Activated",
                         "Job position '" + jobPosition.getPositionName() + "' has been activated and is now available for hiring",
                         NotificationType.SUCCESS,
-                        "/job-positions/" + jobPosition.getId(),
+                        "/hr/positions/" + jobPosition.getId(),
                         "position-activated-" + jobPosition.getId()
                 );
             } else {
@@ -476,7 +476,7 @@ public class JobPositionService {
                         "Job Position Deactivated",
                         "Job position '" + jobPosition.getPositionName() + "' has been deactivated",
                         NotificationType.WARNING,
-                        "/job-positions/" + jobPosition.getId(),
+                        "/hr/positions/" + jobPosition.getId(),
                         "position-deactivated-" + jobPosition.getId()
                 );
 
@@ -487,7 +487,7 @@ public class JobPositionService {
                             "Deactivated Position Has Employees",
                             "⚠️ Deactivated position '" + jobPosition.getPositionName() + "' still has " + employeeCount + " employee(s) assigned",
                             NotificationType.WARNING,
-                            "/job-positions/" + jobPosition.getId() + "/employees",
+                            "/hr/positions/" + jobPosition.getId() + "/employees",
                             "deactivated-with-employees-" + jobPosition.getId()
                     );
                 }
@@ -528,7 +528,7 @@ public class JobPositionService {
                         "Job Position Deletion Blocked",
                         "Cannot delete '" + positionName + "': " + employeeCount + " employee(s) are assigned to this position",
                         NotificationType.ERROR,
-                        "/job-positions/" + id,
+                        "/hr/positions/" + id,
                         "delete-blocked-" + id
                 );
                 throw new IllegalStateException("Cannot delete job position with assigned employees. Please reassign employees first.");
@@ -554,7 +554,7 @@ public class JobPositionService {
                     "Job Position Deletion Failed",
                     "Failed to delete job position: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/job-positions/" + id,
+                    "/hr/positions/" + id,
                     "delete-error-" + id
             );
 
@@ -748,7 +748,7 @@ public class JobPositionService {
                 "New Job Position Created",
                 "Job position '" + savedJobPosition.getPositionName() + "' has been created in " + departmentName + " department",
                 NotificationType.SUCCESS,
-                "/job-positions/" + savedJobPosition.getId(),
+                "/hr/positions/" + savedJobPosition.getId(),
                 "new-job-position-" + savedJobPosition.getId()
         );
 

@@ -5,11 +5,15 @@ import com.example.backend.exceptions.ResourceAlreadyExistsException;
 import com.example.backend.exceptions.ResourceConflictException;
 import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.equipment.WorkType;
+import com.example.backend.models.notification.NotificationType;
+import com.example.backend.models.user.Role;
 import com.example.backend.repositories.equipment.WorkTypeRepository;
+import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,6 +24,9 @@ public class WorkTypeService {
 
     @Autowired
     private WorkTypeRepository workTypeRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     /**
      * Get all active work types
@@ -70,6 +77,31 @@ public class WorkTypeService {
         workType.setActive(true);
 
         WorkType savedWorkType = workTypeRepository.save(workType);
+
+        // Send notifications
+        try {
+            String notificationTitle = "New Work Type Created";
+            String notificationMessage = "Work type '" + savedWorkType.getName() + "' has been created. " +
+                    (workTypeDTO.getDescription() != null ? workTypeDTO.getDescription() : "");
+            String actionUrl = "/equipment/work-type-management";
+            String relatedEntity = savedWorkType.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.SUCCESS,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Work type creation notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send work type creation notification: " + e.getMessage());
+        }
+
         return convertToDTO(savedWorkType);
     }
 
@@ -99,6 +131,31 @@ public class WorkTypeService {
         workType.setActive(workTypeDTO.isActive());
 
         WorkType updatedWorkType = workTypeRepository.save(workType);
+
+        // Send notifications
+        try {
+            String notificationTitle = "Work Type Updated";
+            String notificationMessage = "Work type '" + updatedWorkType.getName() + "' has been updated. " +
+                    (workTypeDTO.getDescription() != null ? workTypeDTO.getDescription() : "");
+            String actionUrl = "/equipment/work-type-management";
+            String relatedEntity = updatedWorkType.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Work type update notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send work type update notification: " + e.getMessage());
+        }
+
         return convertToDTO(updatedWorkType);
     }
 
@@ -111,6 +168,31 @@ public class WorkTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Work type not found with id: " + id));
 
         workType.setActive(false);
+
+        // Send notifications
+        try {
+            String notificationTitle = "Work Type Deleted";
+            String notificationMessage = "Work type '" + workType.getName() + "' has been deleted. " +
+                    (workType.getDescription() != null ? workType.getDescription() : "");
+            String actionUrl = "/equipment/work-type-management";
+            String relatedEntity = id.toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.WARNING,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Work type deletion notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send work type deletion notification: " + e.getMessage());
+        }
+
         workTypeRepository.save(workType);
     }
 
