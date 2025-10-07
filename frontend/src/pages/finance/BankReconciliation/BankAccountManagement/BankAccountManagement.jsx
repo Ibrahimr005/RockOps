@@ -233,7 +233,7 @@ const BankAccountManagement = () => {
                 exportButtonText="Export Accounts"
                 exportButtonIcon={<FaFileExcel />}
                 exportFileName="bank_accounts"
-                tableTitle="Bank Accounts"
+                tableTitle=""
                 emptyMessage="No bank accounts found"
                 className="bank-reconciliation-table"
                 filterableColumns={filterableColumns}

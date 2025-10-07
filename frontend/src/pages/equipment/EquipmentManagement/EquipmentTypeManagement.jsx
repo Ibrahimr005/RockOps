@@ -6,6 +6,7 @@ import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../components/common/PageHeader';
 import './EquipmentTypeManagement.scss';
 import '../../../styles/form-validation.scss';
 
@@ -324,12 +325,17 @@ const EquipmentTypeManagement = () => {
 
     return (
         <div className="equipment-types-container">
+            <PageHeader
+                title="Equipment Types"
+                subtitle="Define and manage different types of equipment and their capabilities"
+            />
+
             <DataTable
                 data={types}
                 columns={columns}
                 loading={loading}
                 actions={actions}
-                tableTitle="Equipment Types"
+                tableTitle=""
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={columns.filter(col => col.filterType)}

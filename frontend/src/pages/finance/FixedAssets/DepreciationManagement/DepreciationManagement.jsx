@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaCalculator, FaEye, FaFileDownload, FaTimes, FaInfoCircle, FaDollarSign, FaCalendarAlt, FaChartLine, FaClock } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../../components/common/PageHeader';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 
@@ -326,6 +327,11 @@ const DepreciationManagement = () => {
 
     return (
         <div className="depreciation-management">
+            <PageHeader
+                title="Asset Depreciation Schedule"
+                subtitle="Monitor and manage depreciation schedules for all fixed assets"
+            />
+
             {/* Summary Cards */}
             <div className="depreciation-management__summary">
                 <div className="depreciation-management__summary-card depreciation-management__summary-card--monthly">
@@ -353,7 +359,7 @@ const DepreciationManagement = () => {
                 data={depreciationData}
                 columns={columns}
                 loading={loading}
-                tableTitle="Asset Depreciation Schedule"
+                tableTitle=""
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}

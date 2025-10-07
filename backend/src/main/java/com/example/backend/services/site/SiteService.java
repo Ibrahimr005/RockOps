@@ -42,12 +42,16 @@ public class SiteService
     {
         return siteRepository.findById(id).orElse(null);
     }
+
+
     public List<Site> getAllSites() {
         List<Site> sites = siteRepository.findAll();
         for (Site site : sites) {
             // Force load the collections and set the counts
             site.setEquipmentCount(site.getEquipment().size());
             site.setEmployeeCount(site.getEmployees().size());
+            site.setWarehouseCount(site.getWarehouses().size());
+            site.setMerchantCount(site.getMerchants().size());
         }
         return sites;
     }
