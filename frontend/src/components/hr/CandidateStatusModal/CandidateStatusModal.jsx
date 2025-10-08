@@ -34,7 +34,7 @@ const CandidateStatusModal = ({
         const transitionsMap = {
             'APPLIED': ['APPLIED', 'UNDER_REVIEW', 'INTERVIEWED', 'REJECTED', 'WITHDRAWN'],
             'UNDER_REVIEW': ['UNDER_REVIEW', 'INTERVIEWED', 'REJECTED', 'WITHDRAWN', 'APPLIED'],
-            'INTERVIEWED': ['INTERVIEWED', 'PENDING_HIRE', 'HIRED', 'REJECTED', 'WITHDRAWN'],
+            'INTERVIEWED': ['INTERVIEWED', 'APPLIED', 'REJECTED', 'WITHDRAWN'],
             'PENDING_HIRE': ['PENDING_HIRE', 'HIRED', 'REJECTED', 'WITHDRAWN', 'INTERVIEWED'],
             'HIRED': ['HIRED', 'POTENTIAL'],
             'REJECTED': ['REJECTED', 'POTENTIAL', 'APPLIED'],
