@@ -2,14 +2,18 @@ package com.example.backend.controllers.equipment;
 
 import com.example.backend.models.*;
 import com.example.backend.models.PartyType;
+import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.equipment.InSiteMaintenance;
 import com.example.backend.models.hr.Employee;
+import com.example.backend.models.site.Site;
 import com.example.backend.models.transaction.Transaction;
 import com.example.backend.models.transaction.TransactionItem;
 
 import com.example.backend.models.transaction.TransactionPurpose;
 import com.example.backend.models.transaction.TransactionStatus;
 import com.example.backend.models.warehouse.ItemType;
+import com.example.backend.repositories.equipment.EquipmentRepository;
+import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
 import com.example.backend.services.hr.EmployeeService;
 import com.example.backend.services.equipment.InSiteMaintenanceService;
@@ -41,6 +45,12 @@ public class InSiteMaintenanceController {
     @Autowired
     private ItemTypeRepository itemTypeRepository;
 
+    @Autowired
+    private EquipmentRepository equipmentRepository;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
     // Get all maintenance records for equipment
     @GetMapping
     public ResponseEntity<List<InSiteMaintenance>> getAllMaintenanceRecords(@PathVariable UUID equipmentId) {
@@ -54,10 +64,50 @@ public class InSiteMaintenanceController {
         }
     }
 
-    // Get all employees that can be technicians
+    // Get all employees from this equipment's site
     @GetMapping("/technicians")
-    public ResponseEntity<List<Employee>> getAllTechnicians() {
-        return ResponseEntity.ok(employeeService.getTechnicians());
+    public ResponseEntity<List<Employee>> getAllTechnicians(@PathVariable UUID equipmentId) {
+        try {
+            System.out.println("=== Fetching employees for equipment: " + equipmentId + " ===");
+            
+            // Get the equipment to find its site
+            Optional<Equipment> equipmentOpt = equipmentRepository.findById(equipmentId);
+            
+            if (equipmentOpt.isEmpty()) {
+                System.out.println("Equipment not found: " + equipmentId);
+                return ResponseEntity.ok(new ArrayList<>());
+            }
+            
+            Equipment equipment = equipmentOpt.get();
+            Site equipmentSite = equipment.getSite();
+            
+            System.out.println("Equipment found: " + equipment.getName());
+            System.out.println("Equipment site: " + (equipmentSite != null ? equipmentSite.getName() : "No site assigned"));
+            
+            if (equipmentSite == null) {
+                System.out.println("Equipment has no site assigned - returning empty list");
+                return ResponseEntity.ok(new ArrayList<>());
+            }
+            
+            // Get all employees from the equipment's site using existing repository method
+            List<Employee> siteEmployees = employeeRepository.findBySiteIdWithJobPosition(equipmentSite.getId());
+            System.out.println("Found " + (siteEmployees != null ? siteEmployees.size() : 0) + " employees for site: " + equipmentSite.getName());
+            
+            if (siteEmployees != null && !siteEmployees.isEmpty()) {
+                for (Employee emp : siteEmployees) {
+                    System.out.println("Employee: " + emp.getFirstName() + " " + emp.getLastName() + 
+                        " - Position: " + (emp.getJobPosition() != null ? emp.getJobPosition().getPositionName() : "No position"));
+                }
+            }
+            
+            return ResponseEntity.ok(siteEmployees != null ? siteEmployees : new ArrayList<>());
+            
+        } catch (Exception e) {
+            System.err.println("Error fetching employees for equipment " + equipmentId + ": " + e.getMessage());
+            e.printStackTrace();
+            // Return empty list instead of error to avoid breaking the UI
+            return ResponseEntity.ok(new ArrayList<>());
+        }
     }
 
     // Create a new maintenance record with transaction validation

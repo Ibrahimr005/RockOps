@@ -64,7 +64,7 @@ public class VacancyScheduledService {
                                  "%d candidates moved to potential list.", 
                                  vacancy.getTitle(), candidatesMoved),
                     NotificationType.INFO,
-                    "/vacancies/" + vacancy.getId(),
+                    "/hr/vacancies/" + vacancy.getId(),
                     "auto-closed-" + vacancy.getId()
                 );
                 
@@ -77,7 +77,7 @@ public class VacancyScheduledService {
                     String.format("Failed to process expired vacancy '%s': %s", 
                                  vacancy.getTitle(), e.getMessage()),
                     NotificationType.ERROR,
-                    "/vacancies/" + vacancy.getId(),
+                    "/hr/vacancies/" + vacancy.getId(),
                     "auto-close-error-" + vacancy.getId()
                 );
             }
@@ -93,7 +93,7 @@ public class VacancyScheduledService {
                 String.format("Automatically processed %d expired vacancies and moved %d candidates to potential list.", 
                              processedCount, totalCandidatesMoved),
                 NotificationType.SUCCESS,
-                "/vacancies",
+                "/hr/vacancies",
                 "daily-processing-" + today
             );
         }
@@ -145,7 +145,7 @@ public class VacancyScheduledService {
                     String.format("⏰ Vacancy '%s' closes in %d day(s). %d position(s) still available.",
                                  vacancy.getTitle(), daysUntilClose, vacancy.getRemainingPositions()),
                     NotificationType.WARNING,
-                    "/vacancies/" + vacancy.getId(),
+                    "/hr/vacancies/" + vacancy.getId(),
                     "closing-soon-" + vacancy.getId() + "-" + daysUntilClose
                 );
             }

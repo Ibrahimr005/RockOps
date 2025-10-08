@@ -44,6 +44,18 @@ const EquipmentCard = forwardRef((props, ref) => {
         return "status-unknown";
     };
 
+    // Format status for display (remove underscores and capitalize properly)
+    const formatStatusDisplay = (status) => {
+        if (!status) return "Unknown";
+        
+        // Handle specific status formatting
+        if (status === "IN_MAINTENANCE") return "In Maintenance";
+        if (status === "IN_USE") return "In Use";
+        
+        // For other statuses, capitalize first letter and lowercase the rest
+        return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    };
+
     // Function to fetch equipment photo from storage service (MinIO/AWS S3)
     const fetchEquipmentPhoto = async (equipmentId) => {
         if (!equipmentId) return;
@@ -134,7 +146,7 @@ const EquipmentCard = forwardRef((props, ref) => {
                             <span className="spec-label">Status</span>
                             <div className="spec-value">
                                 <span className={`status-indicator ${getStatusClass(status)}`}>
-                                    {status}
+                                    {formatStatusDisplay(status)}
                                 </span>
                             </div>
                         </div>

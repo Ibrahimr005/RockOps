@@ -354,7 +354,7 @@ const LoanManagement = () => {
                     data={loans}
                     columns={columns}
                     loading={loading}
-                    tableTitle="Employee Loans"
+                    tableTitle=""
                     emptyMessage="No loans found"
 
                     // Search and Filter configuration

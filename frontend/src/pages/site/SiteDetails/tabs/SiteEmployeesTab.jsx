@@ -289,7 +289,7 @@ const SiteEmployeesTab = ({ siteId }) => {
                         filterableColumns={columns}
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10}
-                       // tableTitle="Employees List"
+                        tableTitle=""
                         onRowClick={handleRowClick}
                         rowClassName="clickable-row"
                         showAddButton={isSiteAdmin}

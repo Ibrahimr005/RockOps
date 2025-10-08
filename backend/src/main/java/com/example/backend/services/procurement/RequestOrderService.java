@@ -4,13 +4,16 @@ package com.example.backend.services.procurement;
 
 import com.example.backend.models.PartyType;
 import com.example.backend.models.RequestStatus;
+import com.example.backend.models.notification.NotificationType;
 import com.example.backend.models.procurement.RequestOrder;
 import com.example.backend.models.procurement.RequestOrderItem;
+import com.example.backend.models.user.Role;
 import com.example.backend.models.warehouse.ItemType;
 import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.repositories.procurement.RequestOrderRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
+import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +31,9 @@ public class RequestOrderService {
 
     @Autowired
     private WarehouseRepository warehouseRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
 
     public RequestOrder createRequest(Map<String, Object> requestData) {
@@ -192,8 +198,63 @@ public class RequestOrderService {
 
             // Save and return
             try {
+//                RequestOrder savedOrder = requestOrderRepository.save(requestOrder);
+//                System.out.println("Request order created successfully with ID: " + savedOrder.getId());
+//                return savedOrder;
+
                 RequestOrder savedOrder = requestOrderRepository.save(requestOrder);
                 System.out.println("Request order created successfully with ID: " + savedOrder.getId());
+
+// Send notifications only if party type is WAREHOUSE
+                if (partyType == PartyType.WAREHOUSE) {
+                    try {
+                        if (notificationService != null) {
+                            String itemsSummary = savedOrder.getRequestItems().stream()
+                                    .map(item -> item.getQuantity() + "x " + item.getItemType().getName())
+                                    .collect(java.util.stream.Collectors.joining(", "));
+
+                            // Notify ALL warehouse users
+                            String warehouseNotificationTitle = "New Request Order Created";
+                            String warehouseNotificationMessage = "Request order '" + savedOrder.getTitle() +
+                                    "' has been created by " + savedOrder.getRequesterName() + ": " + itemsSummary;
+
+                            List<Role> warehouseRoles = Arrays.asList(
+                                    Role.WAREHOUSE_MANAGER,
+                                    Role.WAREHOUSE_EMPLOYEE
+                            );
+
+                            notificationService.sendNotificationToUsersByRoles(
+                                    warehouseRoles,
+                                    warehouseNotificationTitle,
+                                    warehouseNotificationMessage,
+                                    NotificationType.INFO,
+                                    "/warehouses/" + savedOrder.getRequesterId(),
+                                    "REQUEST_" + savedOrder.getId()
+                            );
+
+                            // Notify ALL procurement users
+                            String procurementNotificationTitle = "New Incoming Request Order";
+                            String procurementNotificationMessage = "New request order '" + savedOrder.getTitle() +
+                                    "' received from " + savedOrder.getRequesterName() + ": " + itemsSummary;
+
+                            List<Role> procurementRoles = Arrays.asList(Role.PROCUREMENT);
+
+                            notificationService.sendNotificationToUsersByRoles(
+                                    procurementRoles,
+                                    procurementNotificationTitle,
+                                    procurementNotificationMessage,
+                                    NotificationType.WARNING,
+                                    "/procurement/request-orders",
+                                    "REQUEST_" + savedOrder.getId()
+                            );
+
+                            System.out.println("✅ Request order creation notifications sent successfully");
+                        }
+                    } catch (Exception e) {
+                        System.err.println("⚠️ Failed to send request order creation notifications: " + e.getMessage());
+                    }
+                }
+
                 return savedOrder;
             } catch (Exception e) {
                 System.err.println("Error saving request order: " + e.getMessage());
@@ -305,8 +366,62 @@ public class RequestOrderService {
                 existingOrder.getRequestItems().add(item);
             }
 
+            RequestOrder updatedOrder = requestOrderRepository.save(existingOrder);
+
+// Send notifications only if party type is WAREHOUSE
+            if (partyType == PartyType.WAREHOUSE) {
+                try {
+                    if (notificationService != null) {
+                        String itemsSummary = updatedOrder.getRequestItems().stream()
+                                .map(item -> item.getQuantity() + "x " + item.getItemType().getName())
+                                .collect(java.util.stream.Collectors.joining(", "));
+
+                        // Notify ALL warehouse users
+                        String warehouseNotificationTitle = "Request Order Updated";
+                        String warehouseNotificationMessage = "Request order '" + updatedOrder.getTitle() +
+                                "' has been updated by " + updatedOrder.getRequesterName() + ": " + itemsSummary;
+
+                        List<Role> warehouseRoles = Arrays.asList(
+                                Role.WAREHOUSE_MANAGER,
+                                Role.WAREHOUSE_EMPLOYEE
+                        );
+
+                        notificationService.sendNotificationToUsersByRoles(
+                                warehouseRoles,
+                                warehouseNotificationTitle,
+                                warehouseNotificationMessage,
+                                NotificationType.INFO,
+                                "/warehouses/" + updatedOrder.getRequesterId(),
+                                "REQUEST_" + updatedOrder.getId()
+                        );
+
+                        // Notify ALL procurement users
+                        String procurementNotificationTitle = "Request Order Updated";
+                        String procurementNotificationMessage = "Request order '" + updatedOrder.getTitle() +
+                                "' has been updated by " + updatedOrder.getRequesterName() + ": " + itemsSummary;
+
+                        List<Role> procurementRoles = Arrays.asList(Role.PROCUREMENT);
+
+                        notificationService.sendNotificationToUsersByRoles(
+                                procurementRoles,
+                                procurementNotificationTitle,
+                                procurementNotificationMessage,
+                                NotificationType.INFO,
+                                "/procurement/request-orders",
+                                "REQUEST_" + updatedOrder.getId()
+                        );
+
+                        System.out.println("✅ Request order update notifications sent successfully");
+                    }
+                } catch (Exception e) {
+                    System.err.println("⚠️ Failed to send request order update notifications: " + e.getMessage());
+                }
+            }
+
+            return updatedOrder;
+
             // Save and return the updated order
-            return requestOrderRepository.save(existingOrder);
+           // return requestOrderRepository.save(existingOrder);
 
         } catch (Exception e) {
             System.err.println("Error updating request order: " + e.getMessage());
@@ -316,6 +431,39 @@ public class RequestOrderService {
     }
 
 
+//    public RequestOrder updateStatus(UUID requestOrderId, String newStatus) {
+//        try {
+//            System.out.println("Updating request order status: " + requestOrderId + " -> " + newStatus);
+//
+//            RequestOrder requestOrder = requestOrderRepository.findById(requestOrderId)
+//                    .orElseThrow(() -> new RuntimeException("Request order not found with ID: " + requestOrderId));
+//
+//            requestOrder.setStatus(newStatus);
+//            requestOrder.setUpdatedAt(LocalDateTime.now());
+//
+//            // Get username if available from SecurityContext, otherwise use system
+//            String username = "system";
+//            try {
+//                org.springframework.security.core.Authentication authentication =
+//                        org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+//                if (authentication != null && authentication.isAuthenticated()) {
+//                    username = authentication.getName();
+//                }
+//            } catch (Exception e) {
+//                System.err.println("Error getting authenticated user: " + e.getMessage());
+//            }
+//
+//            requestOrder.setApprovedBy(username);
+//            requestOrder.setApprovedAt(LocalDateTime.now());
+//
+//            return requestOrderRepository.save(requestOrder);
+//        } catch (Exception e) {
+//            System.err.println("Error updating request order status: " + e.getMessage());
+//            e.printStackTrace();
+//            throw new RuntimeException("Failed to update request order status", e);
+//        }
+//    }
+
     public RequestOrder updateStatus(UUID requestOrderId, String newStatus) {
         try {
             System.out.println("Updating request order status: " + requestOrderId + " -> " + newStatus);
@@ -323,6 +471,7 @@ public class RequestOrderService {
             RequestOrder requestOrder = requestOrderRepository.findById(requestOrderId)
                     .orElseThrow(() -> new RuntimeException("Request order not found with ID: " + requestOrderId));
 
+            String oldStatus = requestOrder.getStatus();
             requestOrder.setStatus(newStatus);
             requestOrder.setUpdatedAt(LocalDateTime.now());
 
@@ -341,7 +490,69 @@ public class RequestOrderService {
             requestOrder.setApprovedBy(username);
             requestOrder.setApprovedAt(LocalDateTime.now());
 
-            return requestOrderRepository.save(requestOrder);
+            RequestOrder updatedOrder = requestOrderRepository.save(requestOrder);
+
+            // Send notifications only if party type is WAREHOUSE
+            if (PartyType.WAREHOUSE.name().equals(requestOrder.getPartyType())) {
+                try {
+                    if (notificationService != null) {
+                        String itemsSummary = updatedOrder.getRequestItems().stream()
+                                .map(item -> item.getQuantity() + "x " + item.getItemType().getName())
+                                .collect(java.util.stream.Collectors.joining(", "));
+
+                        // Determine notification type based on status
+                        NotificationType notificationType;
+                        if ("APPROVED".equalsIgnoreCase(newStatus)) {
+                            notificationType = NotificationType.SUCCESS;
+                        } else if ("REJECTED".equalsIgnoreCase(newStatus)) {
+                            notificationType = NotificationType.ERROR;
+                        } else {
+                            notificationType = NotificationType.INFO;
+                        }
+
+                        // Notify ALL warehouse users
+                        String warehouseNotificationTitle = "Request Order Status Changed";
+                        String warehouseNotificationMessage = "Request order '" + updatedOrder.getTitle() +
+                                "' status changed from " + oldStatus + " to " + newStatus + ": " + itemsSummary;
+
+                        List<Role> warehouseRoles = Arrays.asList(
+                                Role.WAREHOUSE_MANAGER,
+                                Role.WAREHOUSE_EMPLOYEE
+                        );
+
+                        notificationService.sendNotificationToUsersByRoles(
+                                warehouseRoles,
+                                warehouseNotificationTitle,
+                                warehouseNotificationMessage,
+                                notificationType,
+                                "/warehouses/" + updatedOrder.getRequesterId(),
+                                "REQUEST_" + updatedOrder.getId()
+                        );
+
+                        // Notify ALL procurement users
+                        String procurementNotificationTitle = "Request Order Status Changed";
+                        String procurementNotificationMessage = "Request order '" + updatedOrder.getTitle() +
+                                "' status changed from " + oldStatus + " to " + newStatus + ": " + itemsSummary;
+
+                        List<Role> procurementRoles = Arrays.asList(Role.PROCUREMENT);
+
+                        notificationService.sendNotificationToUsersByRoles(
+                                procurementRoles,
+                                procurementNotificationTitle,
+                                procurementNotificationMessage,
+                                notificationType,
+                                "/procurement/request-orders",
+                                "REQUEST_" + updatedOrder.getId()
+                        );
+
+                        System.out.println("✅ Request order status change notifications sent successfully");
+                    }
+                } catch (Exception e) {
+                    System.err.println("⚠️ Failed to send request order status change notifications: " + e.getMessage());
+                }
+            }
+
+            return updatedOrder;
         } catch (Exception e) {
             System.err.println("Error updating request order status: " + e.getMessage());
             e.printStackTrace();

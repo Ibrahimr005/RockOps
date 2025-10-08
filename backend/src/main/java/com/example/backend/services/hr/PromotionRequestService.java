@@ -116,7 +116,7 @@ public class PromotionRequestService {
                     "Promotion Request Creation Failed",
                     "Failed to create promotion request: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/promotions",
+                    "/hr/promotions/",
                     "promotion-error-" + System.currentTimeMillis()
             );
             
@@ -188,7 +188,7 @@ public class PromotionRequestService {
                     "Promotion Review Failed",
                     "Failed to review promotion request: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/promotions/" + requestId,
+                    "/hr/promotions/" + requestId,
                     "promotion-review-error-" + requestId
             );
             
@@ -246,7 +246,7 @@ public class PromotionRequestService {
                     "Promotion Implementation Failed",
                     "Failed to implement promotion: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/promotions/" + requestId,
+                    "/hr/promotions/" + requestId,
                     "promotion-impl-error-" + requestId
             );
             
@@ -361,7 +361,7 @@ public class PromotionRequestService {
                         "New Promotion Request",
                         "New promotion request for " + employeeName + " from " + currentPosition + " to " + promotedPosition,
                         NotificationType.INFO,
-                        "/promotions/" + request.getId(),
+                        "/hr/promotions/" + request.getId(),
                         "new-promotion-" + request.getId()
                 );
 
@@ -372,7 +372,7 @@ public class PromotionRequestService {
                             "🔄 " + employeeName + " promotion involves department change: " + 
                             request.getCurrentDepartmentName() + " → " + request.getPromotedToDepartmentName(),
                             NotificationType.WARNING,
-                            "/promotions/" + request.getId(),
+                            "/hr/promotions/" + request.getId(),
                             "interdept-promotion-" + request.getId()
                     );
                 }
@@ -385,7 +385,7 @@ public class PromotionRequestService {
                         "✅ Promotion approved for " + employeeName + " to " + promotedPosition + 
                         ". Effective date: " + request.getActualEffectiveDate(),
                         NotificationType.SUCCESS,
-                        "/promotions/" + request.getId(),
+                        "/hr/promotions/" + request.getId(),
                         "promotion-approved-" + request.getId()
                 );
 
@@ -396,7 +396,7 @@ public class PromotionRequestService {
                             "Significant Salary Increase",
                             "💰 " + employeeName + " promotion includes " + salaryIncrease + "% salary increase",
                             NotificationType.INFO,
-                            "/promotions/" + request.getId(),
+                            "/hr/promotions/" + request.getId(),
                             "salary-increase-" + request.getId()
                     );
                 }
@@ -408,7 +408,7 @@ public class PromotionRequestService {
                         "Promotion Request Rejected",
                         "❌ Promotion request for " + employeeName + " has been rejected",
                         NotificationType.WARNING,
-                        "/promotions/" + request.getId(),
+                        "/hr/promotions/" + request.getId(),
                         "promotion-rejected-" + request.getId()
                 );
                 break;
@@ -419,7 +419,7 @@ public class PromotionRequestService {
                         "Promotion Implemented",
                         "🎉 " + employeeName + " has been successfully promoted to " + promotedPosition,
                         NotificationType.SUCCESS,
-                        "/employees/" + request.getEmployee().getId(),
+                        "/hr/employee-details/" + request.getEmployee().getId(),
                         "promotion-implemented-" + request.getId()
                 );
 
@@ -430,7 +430,7 @@ public class PromotionRequestService {
                             employeeName + " has transferred from " + request.getCurrentDepartmentName() + 
                             " to " + request.getPromotedToDepartmentName(),
                             NotificationType.INFO,
-                            "/employees/" + request.getEmployee().getId(),
+                            "/hr/employee-details/" + request.getEmployee().getId(),
                             "dept-transfer-" + request.getId()
                     );
                 }
@@ -441,7 +441,7 @@ public class PromotionRequestService {
                         "Promotion Request Cancelled",
                         "Promotion request for " + employeeName + " has been cancelled",
                         NotificationType.INFO,
-                        "/promotions/" + request.getId(),
+                        "/hr/promotions/" + request.getId(),
                         "promotion-cancelled-" + request.getId()
                 );
                 break;
@@ -462,7 +462,7 @@ public class PromotionRequestService {
                     "⏰ Promotion for " + request.getEmployeeName() + 
                     " was scheduled for " + request.getActualEffectiveDate() + " but has not been implemented",
                     NotificationType.WARNING,
-                    "/promotions/" + request.getId(),
+                    "/hr/promotions/" + request.getId(),
                     "overdue-promotion-" + request.getId()
             );
         }

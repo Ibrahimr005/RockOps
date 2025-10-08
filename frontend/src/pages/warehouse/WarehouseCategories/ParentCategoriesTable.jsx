@@ -249,6 +249,9 @@ const ParentCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
                         <path d="M12 5v14M5 12h14" />
                     </svg>
                 }
+                showExportButton={true}
+                exportFileName="parent-categories"
+                exportButtonText="Export Parent Categories"
                 onAddClick={() => openModal()}
             />
 

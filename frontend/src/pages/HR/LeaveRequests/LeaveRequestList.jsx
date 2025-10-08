@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FaPlus, FaEye, FaCheck, FaTimes, FaCalendarAlt, FaClock, FaUser } from 'react-icons/fa';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { leaveRequestService } from '../../../services/hr/leaveRequestService';
@@ -331,20 +332,10 @@ const LeaveRequestList = () => {
 
     return (
         <div className="leave-request-list-container">
-            <div className="departments-header">
-                <h1>Leave Requests
-                    <p className="employees-header__subtitle">
-                        Manage and review employee leave requests
-                    </p>
-                </h1>
-                <button
-                    className="btn btn-primary"
-                    onClick={handleOpenCreateModal}
-                    disabled={loading}
-                >
-                    <FaPlus /> New Request
-                </button>
-            </div>
+            <PageHeader
+                title="Leave Requests"
+                subtitle="Review and manage employee leave requests and time-off approvals"
+            />
 
             {error && !isModalOpen && (
                 <div className="leave-request-error">
@@ -368,6 +359,13 @@ const LeaveRequestList = () => {
                 itemsPerPageOptions={[10, 25, 50, 100]}
                 onRowClick={(leaveRequest) => navigate(`/hr/leave-requests/${leaveRequest.id}`)}
                 emptyMessage="No leave requests found. Create a new request to get started."
+                showAddButton={true}
+                addButtonText="New Request"
+                addButtonIcon={<FaPlus />}
+                onAddClick={handleOpenCreateModal}
+                showExportButton={true}
+                exportFileName="leave-requests"
+                exportButtonText="Export Leave Requests"
             />
 
             {/* Leave Request Modal */}

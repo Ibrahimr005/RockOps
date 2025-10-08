@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './SiteDetails.scss';
 import { useAuth } from '../../../contexts/AuthContext.jsx';
+import IntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
 
 // Import tab components
 import SiteEquipmentTab from './tabs/SiteEquipmentTab';
@@ -38,6 +39,33 @@ const SiteDetails = () => {
 
     const isAdminOrSiteAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'SITE_ADMIN';
     const isAdmin = currentUser?.role === "ADMIN";
+
+    // Get site stats for IntroCard
+    const getSiteStats = () => {
+        if (!site) return [];
+        
+        return [
+            { value: site.status || 'Active', label: 'Status' },
+            { value: formatDate(site.creationDate), label: 'Created' }
+        ];
+    };
+
+    // Get action buttons for IntroCard
+    const getActionButtons = () => {
+        const buttons = [];
+        
+        if (isAdmin) {
+            buttons.push({
+                text: 'Delete Site',
+                icon: <FaTrash />,
+                onClick: handleOpenDeleteModal,
+                className: 'danger',
+                title: 'Delete this site permanently'
+            });
+        }
+        
+        return buttons;
+    };
 
 
     useEffect(() => {
@@ -315,54 +343,18 @@ const SiteDetails = () => {
 
     return (
         <div className="site-details-container">
-            
+            {/* Site Intro Card */}
+            <IntroCard
+                title={site.name}
+                label="SITE MANAGEMENT"
+                lightModeImage={site.photoUrl || 'https://via.placeholder.com/120x80?text=Site'}
+                darkModeImage={site.photoUrl || 'https://via.placeholder.com/120x80?text=Site'}
+                stats={getSiteStats()}
+                actionButtons={getActionButtons()}
+                className="site-intro-card"
+            />
+
             <div className="site-details-content">
-                <div className="site-compact-header">
-                    <div className="site-basic-info">
-                        <div className="site-avatar">
-                            <img
-                                src={site.photoUrl || 'https://via.placeholder.com/60?text=Site'}
-                                alt={site.name}
-                            />
-                            <div className={`site-status-indicator ${site.status?.toLowerCase() || 'active'}`}></div>
-                        </div>
-                        <div className="site-title">
-                            <h1>{site.name}</h1>
-                            {/*<p className="site-location">{site.location || 'Location not specified'}</p>*/}
-                        </div>
-                    </div>
-
-                    <div className="site-quick-stats">
-                        <div className="stat-item">
-                            <span className="stat-label">Created</span>
-                            <span className="stat-value">{formatDate(site.creationDate)}</span>
-                        </div>
-                        <div className="delete-site">
-                            {isAdmin && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation(); // Prevents click event from bubbling to the card
-                                        handleOpenDeleteModal();
-                                    }}
-                                    className="site-danger"
-                                >
-                                    <FaTrash />
-                                </button>
-                            )}
-
-                        </div>
-                        {/*<div className="stat-item">*/}
-                        {/*    <span className="stat-label">Efficiency</span>*/}
-                        {/*    <span className="stat-value">{site.efficiency || 'N/A'}%</span>*/}
-                        {/*</div>*/}
-
-
-                        {/*<div className="stat-item">*/}
-                        {/*    <span className="stat-label">Manager</span>*/}
-                        {/*    <span className="stat-value">{site.managerName || 'Not assigned'}</span>*/}
-                        {/*</div>*/}
-                    </div>
-                </div>
 
                 <div className="site-details-tabs">
                     <div className="tabs-header">

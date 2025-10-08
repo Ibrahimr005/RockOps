@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import "./ProcurementMerchants.scss"
-import merchantsImage from "../../../assets/imgs/pro_icon.png";
-import merchantsImagedark from "../../../assets/imgs/pro_icon_dark.png";
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
+import PageHeader from '../../../components/common/PageHeader/PageHeader.jsx';
 import Snackbar from '../../../components/common/Snackbar/Snackbar.jsx'
 import MerchantModal from './MerchantModal.jsx';
-import IntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import EmployeeAvatar from '../../../components/common/EmployeeAvatar/EmployeeAvatar.jsx';
 import { procurementService } from '../../../services/procurement/procurementService.js';
@@ -460,14 +458,10 @@ const ProcurementMerchants = () => {
 
     return (
         <div className="procurement-merchants-container">
-            {/* Updated IntroCard */}
-            <IntroCard
+            {/* Page Header */}
+            <PageHeader
                 title="Merchants"
-                label="PROCUREMENT CENTER"
-                lightModeImage={merchantsImage}
-                darkModeImage={merchantsImagedark}
-                stats={getMerchantStats()}
-                onInfoClick={false}
+                subtitle="Manage merchant accounts and vendor relationships"
             />
 
             {/* DataTable */}
@@ -493,6 +487,10 @@ const ProcurementMerchants = () => {
                         <path d="M12 5v14M5 12h14" />
                     </svg>}
                     onAddClick={handleOpenModal}
+                    // Add export functionality
+                    showExportButton={true}
+                    exportFileName="merchants"
+                    exportButtonText="Export Merchants"
                     // Add row click handler to make rows clickable
                     onRowClick={handleRowClick}
                     clickableRows={true}

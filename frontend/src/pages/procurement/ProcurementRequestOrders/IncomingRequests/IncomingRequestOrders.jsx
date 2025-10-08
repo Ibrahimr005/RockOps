@@ -876,6 +876,9 @@ const IncomingRequestOrders = ({
                 addButtonText="Add Request Order"
                 addButtonIcon={<FaPlus />}
                 onAddClick={handleAddClick}
+                showExportButton={true}
+                exportFileName="incoming-request-orders"
+                exportButtonText="Export Request Orders"
                 addButtonProps={{
                     title: "Create new request order"
                 }}

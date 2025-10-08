@@ -2,6 +2,8 @@ package com.example.backend.services.equipment;
 
 import com.example.backend.dto.equipment.*;
 import com.example.backend.exceptions.ResourceNotFoundException;
+import com.example.backend.models.notification.NotificationType;
+import com.example.backend.models.user.Role;
 import com.example.backend.models.user.User;
 import com.example.backend.models.equipment.*;
 import com.example.backend.repositories.user.UserRepository;
@@ -12,6 +14,7 @@ import com.example.backend.repositories.equipment.SarkyLogRepository;
 import com.example.backend.repositories.equipment.WorkTypeRepository;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.repositories.hr.EmployeeRepository;
+import com.example.backend.services.notification.NotificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.Map;
 
 /**
  * Service for managing Sarky Log entries for equipment work tracking.
@@ -85,6 +85,9 @@ public class SarkyLogService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     private final ObjectMapper objectMapper;
 
@@ -241,6 +244,32 @@ public class SarkyLogService {
         // Save sarky log
         SarkyLog savedSarkyLog = sarkyLogRepository.save(sarkyLog);
 
+        // Send notification to EQUIPMENT_MANAGER
+        try {
+            String notificationTitle = "New Sarky Log Created";
+            String notificationMessage = "Sarky log for equipment '" + equipment.getName() + "' (" + equipment.getModel() +
+                    ") created - Date: " + sarkyLogDTO.getDate() +
+                    ", Work Type: " + workType.getName() +
+                    ", Hours: " + sarkyLogDTO.getWorkedHours();
+            String actionUrl = "/equipment/" + equipment.getId();
+            String relatedEntity = savedSarkyLog.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.SUCCESS,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Sarky log creation notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send sarky log creation notification: " + e.getMessage());
+        }
+
         return SarkyLogResponseDTO.fromEntity(savedSarkyLog);
     }
 
@@ -346,6 +375,35 @@ public class SarkyLogService {
 
         // Save again with work entries and file URL
         savedSarkyLogRange = sarkyLogRangeRepository.save(savedSarkyLogRange);
+
+        // Send notification to EQUIPMENT_MANAGER
+        try {
+            double totalHours = sarkyLogRangeDTO.getWorkEntries().stream()
+                    .mapToDouble(WorkEntryDTO::getWorkedHours)
+                    .sum();
+
+            String notificationTitle = "New Sarky Log Range Created";
+            String notificationMessage = "Sarky log range for equipment '" + equipment.getName() + "' (" + equipment.getModel() +
+                    ") created - Period: " + sarkyLogRangeDTO.getStartDate() + " to " +
+                    sarkyLogRangeDTO.getEndDate() + ", Total Hours: " + totalHours;
+            String actionUrl = "/equipment/" + equipment.getId();
+            String relatedEntity = savedSarkyLogRange.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.SUCCESS,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Sarky log range creation notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send sarky log range creation notification: " + e.getMessage());
+        }
 
         return convertRangeToResponseDTO(savedSarkyLogRange);
     }
@@ -484,6 +542,33 @@ public class SarkyLogService {
         }
 
         SarkyLog updatedSarkyLog = sarkyLogRepository.save(sarkyLog);
+
+        // Send notification to EQUIPMENT_MANAGER
+        try {
+            String notificationTitle = "Sarky Log Updated";
+            String notificationMessage = "Sarky log for equipment '" + sarkyLog.getEquipment().getName() +
+                    "' (" + sarkyLog.getEquipment().getModel() + ") updated - Date: " +
+                    sarkyLogDTO.getDate() + ", Work Type: " + sarkyLog.getWorkType().getName() +
+                    ", Hours: " + sarkyLogDTO.getWorkedHours();
+            String actionUrl = "/equipment/" + sarkyLog.getEquipment().getId();
+            String relatedEntity = updatedSarkyLog.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Sarky log update notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send sarky log update notification: " + e.getMessage());
+        }
+
         return convertToResponseDTO(updatedSarkyLog);
     }
 
@@ -594,6 +679,37 @@ public class SarkyLogService {
         }
 
         SarkyLogRange updatedSarkyLogRange = sarkyLogRangeRepository.save(sarkyLogRange);
+
+        // Send notification to EQUIPMENT_MANAGER
+        try {
+            double totalHours = sarkyLogRangeDTO.getWorkEntries().stream()
+                    .mapToDouble(WorkEntryDTO::getWorkedHours)
+                    .sum();
+
+            String notificationTitle = "Sarky Log Range Updated";
+            String notificationMessage = "Sarky log range for equipment '" + sarkyLogRange.getEquipment().getName() +
+                    "' (" + sarkyLogRange.getEquipment().getModel() + ") updated - Period: " +
+                    sarkyLogRangeDTO.getStartDate() + " to " + sarkyLogRangeDTO.getEndDate() +
+                    ", Total Hours: " + totalHours;
+            String actionUrl = "/equipment/" + sarkyLogRange.getEquipment().getId();
+            String relatedEntity = updatedSarkyLogRange.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Sarky log range update notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send sarky log range update notification: " + e.getMessage());
+        }
+
         return convertRangeToResponseDTO(updatedSarkyLogRange);
     }
 
@@ -616,6 +732,32 @@ public class SarkyLogService {
             }
         }
 
+        // Send notification to EQUIPMENT_MANAGER
+        try {
+            String notificationTitle = "Sarky Log Deleted";
+            String notificationMessage = "Sarky log for equipment '" + sarkyLog.getEquipment().getName() +
+                    "' (" + sarkyLog.getEquipment().getModel() + ") deleted - Date: " +
+                    sarkyLog.getDate() + ", Work Type: " + sarkyLog.getWorkType().getName() +
+                    ", Hours: " + sarkyLog.getWorkedHours();
+            String actionUrl = "/equipment/" + sarkyLog.getEquipment().getId();
+            String relatedEntity = sarkyLog.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.WARNING,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Sarky log deletion notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send sarky log deletion notification: " + e.getMessage());
+        }
+
         sarkyLogRepository.delete(sarkyLog);
     }
 
@@ -636,6 +778,31 @@ public class SarkyLogService {
                 // Log error but continue with deletion
                 System.err.println("Error deleting file from MinIO: " + e.getMessage());
             }
+        }
+
+        // Send notification to EQUIPMENT_MANAGER
+        try {
+            String notificationTitle = "Sarky Log Range Deleted";
+            String notificationMessage = "Sarky log range for equipment '" + sarkyLogRange.getEquipment().getName() +
+                    "' (" + sarkyLogRange.getEquipment().getModel() + ") deleted - Period: " +
+                    sarkyLogRange.getStartDate() + " to " + sarkyLogRange.getEndDate();
+            String actionUrl = "/equipment/" + sarkyLogRange.getEquipment().getId();
+            String relatedEntity = sarkyLogRange.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.WARNING,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Sarky log range deletion notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send sarky log range deletion notification: " + e.getMessage());
         }
 
         sarkyLogRangeRepository.delete(sarkyLogRange);

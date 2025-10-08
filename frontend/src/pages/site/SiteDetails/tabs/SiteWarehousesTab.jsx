@@ -1245,7 +1245,7 @@ const SiteWarehousesTab = ({siteId}) => {
                         filterableColumns={columns}
                         itemsPerPageOptions={[10, 25, 50, 100]}
                         defaultItemsPerPage={10}
-                        //tableTitle="Site Warehouses"
+                        tableTitle=""
                         onRowClick={handleRowClick}
                         rowClassName="clickable-row"
                         showAddButton={isSiteAdmin}
@@ -1583,7 +1583,7 @@ const SiteWarehousesTab = ({siteId}) => {
                                 filterableColumns={warehouseEmployeeFilterableColumns}
                                 itemsPerPageOptions={[5, 10, 15, 20]}
                                 defaultItemsPerPage={10}
-                                tableTitle={`Assigned Employees (${warehouseEmployees.length})`}
+                                tableTitle=""
                                 emptyMessage="No employees assigned to this warehouse"
                                 className="warehouse-manage-employees-data-table"
                                 showAddButton={false}
