@@ -167,7 +167,7 @@ public class VacancyService {
                     "New Vacancy Created",
                     "New vacancy '" + savedVacancy.getTitle() + "' has been created for " + departmentName + " department",
                     NotificationType.INFO,
-                    "/vacancies/" + savedVacancy.getId(),
+                    "/hr/vacancies/" + savedVacancy.getId(),
                     "new-vacancy-" + savedVacancy.getId()
             );
 
@@ -177,7 +177,7 @@ public class VacancyService {
                         "High Priority Vacancy",
                         "🚨 HIGH PRIORITY: " + savedVacancy.getTitle() + " - " + savedVacancy.getNumberOfPositions() + " position(s) needed urgently",
                         NotificationType.WARNING,
-                        "/vacancies/" + savedVacancy.getId(),
+                        "/hr/vacancies/" + savedVacancy.getId(),
                         "high-priority-vacancy-" + savedVacancy.getId()
                 );
             }
@@ -190,7 +190,7 @@ public class VacancyService {
                             "New Procurement Vacancy",
                             "New vacancy in procurement: " + savedVacancy.getTitle(),
                             NotificationType.INFO,
-                            "/vacancies/" + savedVacancy.getId(),
+                            "/hr/vacancies/" + savedVacancy.getId(),
                             "procurement-vacancy-" + savedVacancy.getId()
                     );
                 }
@@ -264,7 +264,7 @@ public class VacancyService {
                     "Vacancy Update Failed",
                     "Failed to update vacancy: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/vacancies/" + id,
+                    "/hr/vacancies/" + id,
                     "vacancy-update-error-" + id
             );
             throw e;
@@ -288,7 +288,7 @@ public class VacancyService {
                     "Vacancy Status Changed",
                     "Vacancy '" + vacancy.getTitle() + "' status changed from " + oldStatus + " to " + vacancy.getStatus(),
                     notificationType,
-                    "/vacancies/" + vacancy.getId(),
+                    "/hr/vacancies/" + vacancy.getId(),
                     "status-change-" + vacancy.getId() + "-" + vacancy.getStatus()
             );
 
@@ -299,7 +299,7 @@ public class VacancyService {
                         "Vacancy '" + vacancy.getTitle() + "' has been closed. " +
                                 vacancy.getHiredCount() + "/" + vacancy.getNumberOfPositions() + " positions filled.",
                         NotificationType.SUCCESS,
-                        "/vacancies/" + vacancy.getId() + "/statistics",
+                        "/hr/vacancies/" + vacancy.getId() + "/statistics",
                         "vacancy-closed-" + vacancy.getId()
                 );
             }
@@ -312,7 +312,7 @@ public class VacancyService {
                         "Vacancy Priority Elevated",
                         "🚨 Vacancy '" + vacancy.getTitle() + "' has been marked as HIGH PRIORITY",
                         NotificationType.WARNING,
-                        "/vacancies/" + vacancy.getId(),
+                        "/hr/vacancies/" + vacancy.getId(),
                         "priority-high-" + vacancy.getId()
                 );
             }
@@ -325,7 +325,7 @@ public class VacancyService {
                         "Vacancy Closing Soon",
                         "⏰ Vacancy '" + vacancy.getTitle() + "' will close on " + vacancy.getClosingDate(),
                         NotificationType.WARNING,
-                        "/vacancies/" + vacancy.getId(),
+                        "/hr/vacancies/" + vacancy.getId(),
                         "closing-soon-" + vacancy.getId()
                 );
             }
@@ -379,7 +379,7 @@ public class VacancyService {
                     "Vacancy Deleted",
                     "Vacancy '" + vacancyTitle + "' has been deleted. " + candidatesAffected + " candidates moved to potential list.",
                     NotificationType.WARNING,
-                    "/vacancies",
+                    "/hr/vacancies",
                     "vacancy-deleted-" + id
             );
 
@@ -389,7 +389,7 @@ public class VacancyService {
                         "Candidates Affected by Vacancy Deletion",
                         candidatesAffected + " candidates from '" + vacancyTitle + "' have been moved to the potential candidates list",
                         NotificationType.INFO,
-                        "/candidates/potential",
+                        "/hr/potential-candidates",
                         "candidates-affected-" + id
                 );
             }
@@ -400,7 +400,7 @@ public class VacancyService {
                     "Vacancy Deletion Failed",
                     "Failed to delete vacancy: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/vacancies",
+                    "/hr/vacancies",
                     "vacancy-delete-error-" + id
             );
             throw e;
@@ -444,7 +444,7 @@ public class VacancyService {
                     "🎉 " + candidateName + " has been hired for " + vacancyTitle + ". " +
                             "Positions filled: " + vacancy.getHiredCount() + "/" + vacancy.getNumberOfPositions(),
                     NotificationType.SUCCESS,
-                    "/candidates/" + candidateId,
+                    "/hr/potential-candidates/" + candidateId,
                     "hired-success-" + candidateId
             );
 
@@ -455,7 +455,7 @@ public class VacancyService {
                         "✅ All positions for '" + vacancyTitle + "' have been filled! " +
                                 "Remaining candidates will be moved to potential list.",
                         NotificationType.SUCCESS,
-                        "/vacancies/" + vacancy.getId() + "/statistics",
+                        "/hr/vacancies/" + vacancy.getId() + "/statistics",
                         "vacancy-full-" + vacancy.getId()
                 );
 
@@ -468,7 +468,7 @@ public class VacancyService {
                         "Vacancy Update",
                         vacancyTitle + " - " + remaining + " position(s) still available",
                         NotificationType.INFO,
-                        "hr/vacancies/" + vacancy.getId(),
+                        "/hr/vacancies/" + vacancy.getId(),
                         "positions-remaining-" + vacancy.getId()
                 );
             }
@@ -491,7 +491,7 @@ public class VacancyService {
                     "Hiring Process Failed",
                     "Failed to hire candidate: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "hr/candidates/" + candidateId,
+                    "/hr/potential-candidates/" + candidateId,
                     "hire-error-" + candidateId
             );
             throw e;
@@ -521,7 +521,7 @@ public class VacancyService {
                         "Candidates Moved to Potential List",
                         candidatesMoved + " candidates have been moved to the potential candidates list",
                         NotificationType.INFO,
-                        "hr/candidates/potential",
+                        "/hr/potential-candidates",
                         "moved-to-potential-" + vacancyId + "-" + candidatesMoved
                 );
             }
@@ -531,7 +531,7 @@ public class VacancyService {
                     "Error Moving Candidates",
                     "Failed to move candidates to potential list: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "hr/candidates",
+                    "/hr/potential-candidates",
                     "move-error-" + vacancyId
             );
         }
@@ -597,7 +597,7 @@ public class VacancyService {
                         "⏰ Vacancy '" + vacancy.getTitle() + "' closes in " + daysUntilClose + " day(s). " +
                                 vacancy.getRemainingPositions() + " position(s) still available.",
                         NotificationType.WARNING,
-                        "/vacancies/" + vacancy.getId(),
+                        "/hr/vacancies/" + vacancy.getId(),
                         "closing-alert-" + vacancy.getId() + "-" + daysUntilClose
                 );
             }
@@ -609,7 +609,7 @@ public class VacancyService {
                     "High Priority Vacancy Needs Attention",
                     "🚨 HIGH PRIORITY vacancy '" + vacancy.getTitle() + "' has no candidates yet!",
                     NotificationType.ERROR,
-                    "/vacancies/" + vacancy.getId(),
+                    "/hr/vacancies/" + vacancy.getId(),
                     "no-candidates-high-priority-" + vacancy.getId()
             );
         }
@@ -623,7 +623,7 @@ public class VacancyService {
                         "Long-Open Vacancy Alert",
                         "📅 Vacancy '" + vacancy.getTitle() + "' has been open for " + daysOpen + " days with no hires. Review may be needed.",
                         NotificationType.WARNING,
-                        "/vacancies/" + vacancy.getId(),
+                        "/hr/vacancies/" + vacancy.getId(),
                         "long-open-" + vacancy.getId()
                 );
             }

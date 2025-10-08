@@ -386,7 +386,7 @@ const PayablesDashboard = () => {
             <div className="dashboard-tables">
                 <div className="table-section">
                     <DataTable
-                        tableTitle="Recent Invoices"
+                        tableTitle=""
                         data={dashboardData.recentInvoices}
                         columns={recentInvoicesColumns}
                         // actions={recentInvoicesActions}
@@ -400,7 +400,7 @@ const PayablesDashboard = () => {
 
                 <div className="table-section">
                     <DataTable
-                        tableTitle="Recent Payments"
+                        tableTitle=""
                         data={dashboardData.recentPayments}
                         columns={recentPaymentsColumns}
                         // actions={recentPaymentsActions}

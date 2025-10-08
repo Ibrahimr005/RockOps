@@ -107,7 +107,7 @@ public class CandidateService {
                     "New Candidate Application",
                     "📝 " + candidateName + " has applied" + vacancyInfo,
                     NotificationType.INFO,
-                    "/candidates/" + savedCandidate.getId(),
+                    "/hr/potential-candidates/" + savedCandidate.getId(),
                     "new-candidate-" + savedCandidate.getId()
             );
 
@@ -123,7 +123,7 @@ public class CandidateService {
                     "Candidate Creation Failed",
                     "Failed to create new candidate: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/candidates",
+                    "/hr/potential-candidates",
                     "candidate-creation-error"
             );
             throw e;
@@ -199,7 +199,7 @@ public class CandidateService {
                     "Candidate Updated",
                     "✏️ " + candidateName + "'s profile has been updated",
                     NotificationType.INFO,
-                    "/candidates/" + updatedCandidate.getId(),
+                    "/hr/potential-candidates/" + updatedCandidate.getId(),
                     "candidate-updated-" + updatedCandidate.getId()
             );
 
@@ -215,7 +215,7 @@ public class CandidateService {
                     "Candidate Update Failed",
                     "Failed to update candidate: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/candidates/" + id,
+                    "/hr/potential-candidates/" + id,
                     "candidate-update-error-" + id
             );
             throw e;
@@ -269,7 +269,7 @@ public class CandidateService {
                     "Status Update Failed",
                     "Failed to update candidate status: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/candidates/" + candidateId,
+                    "/hr/potential-candidates/" + candidateId,
                     "status-error-" + candidateId
             );
             throw e;
@@ -308,7 +308,7 @@ public class CandidateService {
                     "Candidate Deleted",
                     "🗑️ " + candidateName + " has been removed from the system",
                     NotificationType.WARNING,
-                    "/candidates",
+                    "/hr/potential-candidates/",
                     "candidate-deleted-" + id
             );
 
@@ -318,7 +318,7 @@ public class CandidateService {
                     "Candidate Deletion Failed",
                     "Failed to delete candidate: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/candidates/" + id,
+                    "/hr/potential-candidates/" + id,
                     "candidate-delete-error-" + id
             );
             throw e;
@@ -379,7 +379,7 @@ public class CandidateService {
                         "Candidate Under Review",
                         candidateName + " is now under review" + vacancyInfo,
                         NotificationType.INFO,
-                        "/candidates/" + candidate.getId(),
+                        "/hr/potential-candidates/" + candidate.getId(),
                         "under-review-" + candidate.getId()
                 );
                 break;
@@ -389,7 +389,7 @@ public class CandidateService {
                         "Candidate Interviewed",
                         candidateName + " has been interviewed" + vacancyInfo,
                         NotificationType.INFO,
-                        "/candidates/" + candidate.getId(),
+                        "/hr/potential-candidates/" + candidate.getId(),
                         "interviewed-" + candidate.getId()
                 );
                 break;
@@ -399,7 +399,7 @@ public class CandidateService {
                         "Candidate Pending Hire",
                         "⏳ " + candidateName + " is now pending hire" + vacancyInfo + ". Please complete the employee form to finalize hiring.",
                         NotificationType.WARNING,
-                        "/candidates/" + candidate.getId(),
+                        "/hr/potential-candidates/" + candidate.getId(),
                         "pending-hire-" + candidate.getId()
                 );
                 break;
@@ -410,7 +410,7 @@ public class CandidateService {
                         "Candidate Hired",
                         "🎉 " + candidateName + " has been HIRED" + vacancyInfo + "! Please proceed with onboarding.",
                         NotificationType.SUCCESS,
-                        "/candidates/" + candidate.getId(),
+                        "/hr/potential-candidates/" + candidate.getId(),
                         "hired-" + candidate.getId()
                 );
                 break;
@@ -420,7 +420,7 @@ public class CandidateService {
                         "Candidate Rejected",
                         "❌ " + candidateName + " has been rejected" + vacancyInfo,
                         NotificationType.INFO,
-                        "/candidates/" + candidate.getId(),
+                        "/hr/potential-candidates/" + candidate.getId(),
                         "rejected-" + candidate.getId()
                 );
                 break;
@@ -430,7 +430,7 @@ public class CandidateService {
                         "Candidate Moved to Potential",
                         candidateName + " has been moved to potential candidates list" + vacancyInfo,
                         NotificationType.INFO,
-                        "/candidates/" + candidate.getId(),
+                        "/hr/potential-candidates/" + candidate.getId(),
                         "potential-" + candidate.getId()
                 );
                 break;
@@ -440,7 +440,7 @@ public class CandidateService {
                         "Candidate Withdrawn",
                         candidateName + " has withdrawn their application" + vacancyInfo,
                         NotificationType.INFO,
-                        "/candidates/" + candidate.getId(),
+                        "/hr/potential-candidates/" + candidate.getId(),
                         "withdrawn-" + candidate.getId()
                 );
                 break;
@@ -451,7 +451,7 @@ public class CandidateService {
                         "Candidate Status Updated",
                         candidateName + "'s status changed from " + oldStatus + " to " + newStatus + vacancyInfo,
                         NotificationType.INFO,
-                        "/candidates/" + candidate.getId(),
+                        "/hr/potential-candidates/" + candidate.getId(),
                         "status-change-" + candidate.getId()
                 );
                 break;
@@ -616,7 +616,7 @@ public class CandidateService {
                     "Candidate Rated",
                     "⭐ " + candidateName + " has been rated: " + stars + " (" + rating + "/5)",
                     NotificationType.INFO,
-                    "/candidates/" + updatedCandidate.getId(),
+                    "/hr/potential-candidates/" + updatedCandidate.getId(),
                     "candidate-rated-" + updatedCandidate.getId()
             );
 
@@ -627,7 +627,7 @@ public class CandidateService {
                     "Rating Update Failed",
                     "Failed to update candidate rating: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/candidates/" + candidateId,
+                    "/hr/potential-candidates/" + candidateId,
                     "rating-error-" + candidateId
             );
             throw e;
@@ -877,7 +877,7 @@ public class CandidateService {
                         "Status Update Failed",
                         "Failed to update candidate status: " + e.getMessage(),
                         NotificationType.ERROR,
-                        "/candidates/" + candidateId,
+                        "/hr/potential-candidates/" + candidateId,
                         "status-error-" + candidateId
                 );
             } catch (Exception notificationError) {

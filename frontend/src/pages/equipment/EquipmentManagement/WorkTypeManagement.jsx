@@ -7,6 +7,7 @@ import { createErrorHandlers } from '../../../utils/errorHandler';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../components/common/PageHeader';
 import './EquipmentTypeManagement.scss';
 import '../../../styles/form-validation.scss';
 
@@ -407,12 +408,17 @@ const WorkTypeManagement = () => {
 
     return (
         <div className="equipment-types-container">
+            <PageHeader
+                title="Work Types"
+                subtitle="Manage different types of work activities and operations"
+            />
+
             <DataTable
                 data={workTypes}
                 columns={columns}
                 loading={loading}
                 actions={actions}
-                tableTitle="Work Types"
+                tableTitle=""
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={columns.filter(col => col.filterType)}

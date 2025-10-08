@@ -621,7 +621,7 @@ const DeductionManagement = () => {
                         onAddClick={() => setShowCreateModal(true)}
 
                         // Table configuration
-                        tableTitle="Manual Deductions"
+                        tableTitle=""
                         defaultItemsPerPage={20}
                         itemsPerPageOptions={[10, 20, 50, 100]}
                         defaultSortField="createdAt"
@@ -661,7 +661,7 @@ const DeductionManagement = () => {
                         onAddClick={() => setShowAddTypeModal(true)}
 
                         // Table configuration
-                        tableTitle="Deduction Types"
+                        tableTitle=""
                         defaultItemsPerPage={20}
                         itemsPerPageOptions={[10, 20, 50, 100]}
                         defaultSortField="name"

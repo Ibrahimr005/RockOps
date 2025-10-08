@@ -1,15 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import DataTable from "../../../components/common/DataTable/DataTable.jsx";
+import PageHeader from "../../../components/common/PageHeader/PageHeader.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
-import ProcurementIntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 import "./WarehouseViewItemTypesTable.scss";
 import { itemTypeService } from '../../../services/warehouse/itemTypeService'; // ADD THIS LINE
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService'; // ADD THIS LINE
-
-// Import your item types images (you'll need to add these to your assets)
-import itemTypesImg from "../../../assets/imgs/itemType.png"; // Add this image
-import itemTypesDarkImg from "../../../assets/imgs/itemTypeDarkk.png"; // Add this image
+import { FaPlus } from 'react-icons/fa';
 
 const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
     const [tableData, setTableData] = useState([]);
@@ -431,14 +428,10 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
 
     return (
         <>
-            {/* Item Types Intro Card */}
-            <ProcurementIntroCard
+            {/* Item Types Page Header */}
+            <PageHeader
                 title="Item Types"
-                label="WAREHOUSE MANAGEMENT"
-                lightModeImage={itemTypesImg}
-                darkModeImage={itemTypesDarkImg}
-                stats={getItemTypeStats()}
-                className="item-types-intro"
+                subtitle="Define and categorize different types of items in your inventory"
             />
 
             {/* DataTable with integrated search and filters */}
@@ -448,6 +441,13 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
                 loading={loading}
                 emptyMessage="No item types found. Try adjusting your search or add a new item type"
                 actions={actions}
+                showAddButton={userRole === "WAREHOUSE_MANAGER" || userRole === "ADMIN"}
+                addButtonText="Add Item Type"
+                addButtonIcon={<FaPlus />}
+                onAddClick={() => openItemModal()}
+                showExportButton={true}
+                exportFileName="item-types"
+                exportButtonText="Export Item Types"
                 className="item-types-table"
                 showSearch={true}
                 showFilters={true}
@@ -455,14 +455,6 @@ const WarehouseViewItemTypesTable = ({ warehouseId, onAddButtonClick }) => {
                 itemsPerPageOptions={[5, 10, 15, 20]}
                 defaultItemsPerPage={10}
                 actionsColumnWidth="160px"
-                showAddButton={true}
-                addButtonText="Add Item Type"
-                addButtonIcon={
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 5v14M5 12h14" />
-                    </svg>
-                }
-                onAddClick={() => openItemModal()}
             />
 
             {/* Modal */}

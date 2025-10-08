@@ -325,7 +325,7 @@ const DiscrepancyManagement = () => {
                 exportButtonText="Export Discrepancies"
                 exportButtonIcon={<FaFileExcel />}
                 exportFileName="discrepancies"
-                tableTitle={`Discrepancies - ${activeTab.replace('-', ' ').toUpperCase()}`}
+                tableTitle=""
                 emptyMessage="No discrepancies found"
                 className="bank-reconciliation-table"
                 filterableColumns={filterableColumns}

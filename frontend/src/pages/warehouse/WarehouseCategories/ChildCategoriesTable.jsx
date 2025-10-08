@@ -294,6 +294,9 @@ const ChildCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
                         <path d="M12 5v14M5 12h14" />
                     </svg>
                 }
+                showExportButton={true}
+                exportFileName="child-categories"
+                exportButtonText="Export Child Categories"
                 onAddClick={() => openModal()}
             />
 

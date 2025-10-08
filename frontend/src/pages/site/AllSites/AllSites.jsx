@@ -3,22 +3,33 @@ import { useNavigate } from 'react-router-dom';
 import './AllSites.css';
 import { useAuth } from "../../../contexts/AuthContext";
 import { useTranslation } from 'react-i18next';
-import { FaBuilding } from 'react-icons/fa';
+import { FaBuilding, FaPlus, FaChevronDown } from 'react-icons/fa';
 import { siteService } from "../../../services/siteService.js";
 import { useSnackbar } from "../../../contexts/SnackbarContext.jsx";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
+import UnifiedCard from "../../../components/common/UnifiedCard/UnifiedCard";
+import PageHeader from "../../../components/common/PageHeader/PageHeader.jsx";
 
 // Default placeholder for site image
 const siteimg = "data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23ddd'/%3e%3ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23999'%3eSite%3c/text%3e%3c/svg%3e";
+import siteimgg from "../../../assets/imgs/siteimgg.jpg"
 
 const AllSites = () => {
     const { t } = useTranslation();
     const [sites, setSites] = useState([]);
+    const [filteredSites, setFilteredSites] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
     const { currentUser } = useAuth();
     const { showError, showSuccess, showWarning } = useSnackbar();
+
+    // Filter states
+    const [showFilters, setShowFilters] = useState(false);
+    const [selectedEmployeeRange, setSelectedEmployeeRange] = useState("");
+    const [selectedEquipmentRange, setSelectedEquipmentRange] = useState("");
+    const [selectedWarehouseRange, setSelectedWarehouseRange] = useState("");
+    const [selectedMerchantRange, setSelectedMerchantRange] = useState("");
 
     // Modal states and data
     const [showAddModal, setShowAddModal] = useState(false);
@@ -111,6 +122,53 @@ const AllSites = () => {
         };
     }, []);
 
+    // Apply filters
+    useEffect(() => {
+        let result = [...sites];
+
+        // Apply employee count filter
+        if (selectedEmployeeRange) {
+            const [min, max] = selectedEmployeeRange.split('-').map(Number);
+            if (max) {
+                result = result.filter(site => site.employeeCount >= min && site.employeeCount <= max);
+            } else {
+                result = result.filter(site => site.employeeCount >= min);
+            }
+        }
+
+        // Apply equipment count filter
+        if (selectedEquipmentRange) {
+            const [min, max] = selectedEquipmentRange.split('-').map(Number);
+            if (max) {
+                result = result.filter(site => site.equipmentCount >= min && site.equipmentCount <= max);
+            } else {
+                result = result.filter(site => site.equipmentCount >= min);
+            }
+        }
+
+        // Apply warehouse count filter
+        if (selectedWarehouseRange) {
+            const [min, max] = selectedWarehouseRange.split('-').map(Number);
+            if (max) {
+                result = result.filter(site => site.warehouseCount >= min && site.warehouseCount <= max);
+            } else {
+                result = result.filter(site => site.warehouseCount >= min);
+            }
+        }
+
+        // Apply merchant count filter
+        if (selectedMerchantRange) {
+            const [min, max] = selectedMerchantRange.split('-').map(Number);
+            if (max) {
+                result = result.filter(site => site.merchantCount >= min && site.merchantCount <= max);
+            } else {
+                result = result.filter(site => site.merchantCount >= min);
+            }
+        }
+
+        setFilteredSites(result);
+    }, [sites, selectedEmployeeRange, selectedEquipmentRange, selectedWarehouseRange, selectedMerchantRange]);
+
     const fetchSites = async () => {
         try {
             setLoading(true);
@@ -123,8 +181,10 @@ const AllSites = () => {
             if (response.data.length > 0) {
                 console.log("First site structure:", Object.keys(response.data[0]));
                 console.log("First site full object:", response.data[0]);
+                console.log("FULL SITE DATA FOR COUNTING:", JSON.stringify(response.data[0], null, 2)); // Add this line
             }
             setSites(response.data);
+            setFilteredSites(response.data);
             setError(null);
         } catch (err) {
             const errorMessage = t('common.error') + ': ' + err.message;
@@ -228,7 +288,7 @@ const AllSites = () => {
             const siteResponse = await siteService.getById(siteId);
             const siteData = siteResponse.data;
             console.log("Raw response from API:", siteData);
-            
+
             try {
                 // Try fetching partners specifically for this site
                 const partnersResponse = await siteService.getSitePartners(siteId);
@@ -374,79 +434,174 @@ const AllSites = () => {
         }
     };
 
+    const handleResetFilters = () => {
+        setSelectedEmployeeRange("");
+        setSelectedEquipmentRange("");
+        setSelectedWarehouseRange("");
+        setSelectedMerchantRange("");
+    };
+
+    const getActiveFilterCount = () => {
+        let count = 0;
+        if (selectedEmployeeRange) count++;
+        if (selectedEquipmentRange) count++;
+        if (selectedWarehouseRange) count++;
+        if (selectedMerchantRange) count++;
+        return count;
+    };
+
     if (loading) return <LoadingPage />;
     if (error) return <div className="error-container">{error}</div>;
 
     return (
         <div className="sites-container">
-            <div className="departments-header">
-                <h1 className="sites-title">{t('site.siteList')}</h1>
-                {isSiteAdmin && (
-                    <button onClick={handleOpenAddModal} className="btn btn-primary">
-                        <span>+</span>{t('site.addSite')}
-                    </button>
-                )}
-            </div>
+            <PageHeader
+                title="Sites"
+                subtitle="Manage and monitor all operational sites across your organization"
+                filterButton={{
+                    onClick: () => setShowFilters(!showFilters),
+                    isActive: showFilters
+                }}
+                actionButton={isSiteAdmin ? {
+                    text: t('site.addSite'),
+                    icon: <FaPlus />,
+                    onClick: handleOpenAddModal,
+                    disabled: loading
+                } : null}
+            />
 
-            <div className="sites-grid">
-                {sites.length > 0 ? (
-                    sites.map((site) => (
-                        <div key={site.id} className="site-card" onClick={() => navigate(`/sites/details/${site.id}`)} style={{ cursor: "pointer" }}>
-                            <div className="site-image">
-                                <img src={site?.photoUrl ?? siteimg} alt="Site" />
-                            </div>
-
-                            <div className="site-content">
-                                <h2 className="site-name">{site.name || t('common.noData')}</h2>
-
-                                <div className="site-stats">
-                                    <p className="sites-stat-item">
-                                        <span className="stat-label">{t('hr.dashboard.employees')}:</span>
-                                        <span className="stat-value"> {site.employeeCount || 0}</span>
-                                    </p>
-                                    <p className="sites-stat-item">
-                                        <span className="stat-label">{t('equipment.equipment')}:</span>
-                                        <span className="stat-value"> {site.equipmentCount || 0}</span>
-                                    </p>
-                                    {/*<p className="stat-item full-width">*/}
-                                    {/*    <span className="stat-label">{t('site.efficiency')}:</span>*/}
-                                    {/*    <span className="stat-value"> {site.efficiency || '90%'}</span>*/}
-                                    {/*</p>*/}
-                                </div>
-
-                                <div className="site-actions">
-                                    {isSiteAdmin && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // Prevents click event from bubbling to the card
-                                                handleOpenEditModal(site);
-                                            }}
-                                            className="edit-button"
-                                        >
-                                            {t('site.editSite')}
-                                        </button>
-                                    )}
-
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate(`/sites/details/${site.id}`);
-                                        }}
-                                        className="view-button"
-                                    >
-                                        {t('common.details')}
-                                    </button>
-                                </div>
-                            </div>
+            {/* Filter Panel */}
+            {showFilters && (
+                <div className="page-header__filter-panel">
+                    <div className="page-header__filter-header">
+                        <h4>Filter Sites</h4>
+                        <div className="filter-actions">
+                            <button
+                                className="filter-reset-btn"
+                                onClick={handleResetFilters}
+                                disabled={getActiveFilterCount() === 0}
+                            >
+                                Clear All
+                            </button>
+                            <button
+                                className={`filter-collapse-btn ${showFilters ? '' : 'collapsed'}`}
+                                onClick={() => setShowFilters(!showFilters)}
+                            >
+                                <FaChevronDown />
+                            </button>
                         </div>
+                    </div>
+
+                    <div className="page-header__filter-list">
+                        <div className="page-header__filter-item">
+                            <label>Employee Count</label>
+                            <select
+                                value={selectedEmployeeRange}
+                                onChange={(e) => setSelectedEmployeeRange(e.target.value)}
+                            >
+                                <option value="">All Ranges</option>
+                                <option value="0-10">0-10</option>
+                                <option value="11-50">11-50</option>
+                                <option value="51-100">51-100</option>
+                                <option value="101-500">101-500</option>
+                                <option value="501">500+</option>
+                            </select>
+                        </div>
+
+                        <div className="page-header__filter-item">
+                            <label>Equipment Count</label>
+                            <select
+                                value={selectedEquipmentRange}
+                                onChange={(e) => setSelectedEquipmentRange(e.target.value)}
+                            >
+                                <option value="">All Ranges</option>
+                                <option value="0-5">0-5</option>
+                                <option value="6-20">6-20</option>
+                                <option value="21-50">21-50</option>
+                                <option value="51-100">51-100</option>
+                                <option value="101">100+</option>
+                            </select>
+                        </div>
+
+                        <div className="page-header__filter-item">
+                            <label>Warehouse Count</label>
+                            <select
+                                value={selectedWarehouseRange}
+                                onChange={(e) => setSelectedWarehouseRange(e.target.value)}
+                            >
+                                <option value="">All Ranges</option>
+                                <option value="0-2">0-2</option>
+                                <option value="3-5">3-5</option>
+                                <option value="6-10">6-10</option>
+                                <option value="11">10+</option>
+                            </select>
+                        </div>
+
+                        <div className="page-header__filter-item">
+                            <label>Merchant Count</label>
+                            <select
+                                value={selectedMerchantRange}
+                                onChange={(e) => setSelectedMerchantRange(e.target.value)}
+                            >
+                                <option value="">All Ranges</option>
+                                <option value="0-5">0-5</option>
+                                <option value="6-20">6-20</option>
+                                <option value="21-50">21-50</option>
+                                <option value="51">50+</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="unified-cards-grid">
+                {filteredSites.length > 0 ? (
+                    filteredSites.map((site) => (
+                        <UnifiedCard
+                            key={site.id}
+                            id={site.id}
+                            title={site.name || t('common.noData')}
+                            imageUrl={site?.photoUrl}
+                            imageFallback={siteimgg}
+                            stats={[
+                                {
+                                    label: t('hr.dashboard.employees'),
+                                    value: site.employeeCount || 0
+                                },
+                                {
+                                    label: t('equipment.equipment'),
+                                    value: site.equipmentCount || 0
+                                },
+                                {
+                                    label: t('warehouse.warehouses'),
+                                    value: site.warehouseCount || 0
+                                },
+                                {
+                                    label: 'Merchants',
+                                    value: site.merchantCount || 0
+                                }
+                            ]}
+                            actions={[
+                                ...(isSiteAdmin ? [{
+                                    label: t('site.editSite'),
+                                    variant: 'secondary',
+                                    onClick: (id) => handleOpenEditModal(site)
+                                }] : []),
+                                {
+                                    label: t('common.details'),
+                                    variant: 'primary',
+                                    onClick: (id) => navigate(`/sites/details/${id}`)
+                                }
+                            ]}
+                            onClick={(id) => navigate(`/sites/details/${id}`)}
+                        />
                     ))
                 ) : (
-                    <div className="no-sites-message">
-                        <div>
-                            <FaBuilding size={50} />
-                        </div>
-                        <p>{t('common.noData')} {isSiteAdmin ? t('site.addSite') : ''}</p>
-                    </div>
+                    <UnifiedCard
+                        isEmpty={true}
+                        emptyIcon={FaBuilding}
+                        emptyMessage="No sites found. Try adjusting your search filters or add a new site"
+                    />
                 )}
             </div>
 

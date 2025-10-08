@@ -70,6 +70,13 @@ public class Site
     @Transient
     private int employeeCount;
 
+    @Transient
+    private int warehouseCount;
+
+    @Transient
+    private int merchantCount;
+
+
     public int getEquipmentCount() {
         return equipment != null ? equipment.size() : 0;
     }
@@ -85,4 +92,21 @@ public class Site
     public void setEmployeeCount(int count) {
         this.employeeCount = count;
     }
+
+    public int getWarehouseCount() {
+        return warehouseCount;
+    }
+
+    public void setWarehouseCount(int warehouseCount) {
+        this.warehouseCount = warehouseCount;
+    }
+
+    public int getMerchantCount() {
+        return merchantCount;
+    }
+
+    public void setMerchantCount(int merchantCount) {
+        this.merchantCount = merchantCount;
+    }
+
 }

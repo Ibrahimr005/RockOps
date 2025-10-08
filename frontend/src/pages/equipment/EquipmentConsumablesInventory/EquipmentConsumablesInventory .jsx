@@ -6,6 +6,7 @@ import { transactionService } from '../../../services/transaction/transactionSer
 import { consumableService } from '../../../services/consumableService';
 import './EquipmentConsumablesInventory.scss';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../components/common/PageHeader';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
 import EquipmentConsumablesHistoryModal from "./EquipmentConsumablesHistoryModal.jsx";
@@ -452,6 +453,10 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
 
     return (
         <div className="consumables-inventory">
+            <PageHeader
+                title="Consumables Inventory"
+                subtitle="Track and manage consumable materials for this equipment"
+            />
 
             {/* Inventory Tabs */}
             <div className="inventory-tabs">
@@ -528,7 +533,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                             data={resolutionHistory}
                             columns={historyColumns}
                             loading={loading}
-                            tableTitle="Resolution History"
+                            tableTitle=""
                             showSearch={true}
                             showFilters={true}
                             filterableColumns={[
@@ -562,7 +567,7 @@ const EquipmentConsumablesInventory = forwardRef(({equipmentId, onAddClick}, ref
                             data={filteredConsumables}
                             columns={columns}
                             loading={loading}
-                            tableTitle={`${activeTab === 'current' ? 'Consumed Material' : 'Surplus Items'}`}
+                            tableTitle=""
                             showSearch={true}
                             showFilters={true}
                             filterableColumns={filterableColumns}
