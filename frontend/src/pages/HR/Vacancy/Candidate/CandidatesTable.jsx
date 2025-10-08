@@ -399,7 +399,7 @@ const CandidatesTable = ({ vacancyId }) => {
                 console.log('Hire clicked:', row);
                 handleHireCandidate(row);
             },
-            isDisabled: (row) => !['INTERVIEWED', 'PENDING HIRE'].includes(row.candidateStatus),
+            isDisabled: (row) => !['INTERVIEWED', 'PENDING HIRE', 'PENDING_HIRE'].includes(row.candidateStatus),
             className: 'hire-btn'
         },
         {
