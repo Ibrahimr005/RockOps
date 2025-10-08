@@ -1,0 +1,1 @@
+ALTER TABLE candidate DROP CONSTRAINT candidate_candidate_status_check;
