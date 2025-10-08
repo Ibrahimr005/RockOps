@@ -333,7 +333,7 @@ const TransactionMatching = () => {
                 exportButtonText="Export Matches"
                 exportButtonIcon={<FaFileExcel />}
                 exportFileName="transaction_matches"
-                tableTitle={`Transaction Matches - ${activeTab.replace('-', ' ').toUpperCase()}`}
+                tableTitle=""
                 emptyMessage={selectedAccountId ? "No transaction matches found" : "Please select a bank account to view matches"}
                 className="bank-reconciliation-table"
                 filterableColumns={filterableColumns}

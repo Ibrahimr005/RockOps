@@ -294,7 +294,7 @@ const PositionPromotions = ({ position, positionId, onRefresh }) => {
                     columns={columns}
                     actions={actions}
                     loading={loading}
-                    tableTitle="Promotions"
+                    tableTitle=""
                     showSearch={true}
                     showFilters={true}
                     filterableColumns={['status', 'fromPosition']}

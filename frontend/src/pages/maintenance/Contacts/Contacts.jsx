@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FaEdit, FaTrash, FaUserTimes, FaUserCheck } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaUserTimes, FaUserCheck, FaPlus } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import ContactModal from './ContactModal';
 import './Contacts.scss';
 import contactService from '../../../services/contactService.js';
@@ -337,26 +338,28 @@ const Contacts = () => {
 
     return (
         <div className="contacts">
-            <div className="contacts-header">
-                <div className="header-left">
-                    <h1>Contacts</h1>
-                    <p>Manage maintenance team contacts and responsible persons</p>
-                </div>
-            </div>
+            <PageHeader
+                title="Contacts"
+                subtitle="Manage maintenance service providers and emergency contacts"
+            />
 
             <DataTable
                 data={contacts}
                 columns={columns}
                 loading={loading}
                 actions={actions}
-                tableTitle="Contacts"
+                tableTitle=""
                 showSearch={true}
+                showAddButton={true}
+                addButtonText="Add Contact"
+                addButtonIcon={<FaPlus />}
+                onAddClick={() => handleOpenModal()}
+                showExportButton={true}
+                exportFileName="maintenance-contacts"
+                exportButtonText="Export Contacts"
                 showFilters={true}
                 filterableColumns={filterableColumns}
                 emptyStateMessage="No contacts found. Create your first contact to get started."
-                showAddButton={true}
-                addButtonText="New Contact"
-                onAddClick={() => handleOpenModal()}
             />
 
             {showModal && (

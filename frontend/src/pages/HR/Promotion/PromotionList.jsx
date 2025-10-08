@@ -13,6 +13,7 @@ import {
     XCircle
 } from 'lucide-react';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import {useSnackbar} from '../../../contexts/SnackbarContext';
 import {useAuth} from '../../../contexts/AuthContext';
 import promotionService from '../../../services/hr/promotionService';
@@ -658,28 +659,11 @@ const PromotionList = () => {
 
     return (
         <div className="promotion-list-container">
-            {/* Header with IntroCard */}
-            {/*<IntroCard*/}
-            {/*    icon={<TrendingUp size={48} />}*/}
-            {/*    label="Human Resources"*/}
-            {/*    title={getPageTitle()}*/}
-            {/*    description={getPageDescription()}*/}
-            {/*    stats={introStats}*/}
-            {/*/>*/}
+            <PageHeader
+                title="Promotions"
+                subtitle="Track and manage employee promotions and career advancement"
+            />
 
-            <div className="departments-header">
-                <h1>Employee Promotions
-                    <p className="employees-header__subtitle">
-                        {getPageDescription()}
-                    </p>
-                </h1>
-                <button
-                    className="btn btn-primary"
-                    onClick={() => setShowAddForm(true)}
-                >
-                    <FiPlus /> New Promotion Request
-                </button>
-            </div>
             {!permissions.isHRManager && !permissions.isAdmin && permissions.canView && (
                 <div className="alert alert-info" style={{margin: '10px 0'}}>
                     <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
@@ -713,7 +697,7 @@ const PromotionList = () => {
                 onExportClick={handleExportData}
                 showAddButton={permissions.canCreate}
                 addButtonText="New Promotion Request"
-                addButtonIcon={<Plus size={18}/>}
+                addButtonIcon={<FiPlus />}
                 onAddClick={() => setShowAddForm(true)}
                 emptyMessage="No promotion requests found"
                 emptyDescription={

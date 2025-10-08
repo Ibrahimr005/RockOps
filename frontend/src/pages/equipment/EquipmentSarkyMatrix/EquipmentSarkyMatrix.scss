@@ -1,4 +1,5 @@
 @import '../../../styles/theme-variables.css';
+@import '../../../styles/primary-button.scss';
 
 .sarky-matrix-container {
   // CSS custom property for navbar height - matches Navbar.css
@@ -6,8 +7,10 @@
   background: var(--main-background-color);
   padding: 0;
   border-radius: var(--radius-md);
-  // Improve scrolling performance
-  scroll-behavior: smooth;
+  // Remove scroll behavior from container to avoid conflicts
+  // Only the matrix-wrapper should handle scrolling
+  height: auto;
+  overflow: visible;
   contain: layout style paint;
 
   // Loading state
@@ -34,7 +37,7 @@
     }
   }
 
-  // Sticky Header section - Simplified sticky positioning
+  // Header section - Optimized for single scroll container
   .matrix-header-sticky {
     background: var(--section-background-color);
     border: 1px solid var(--border-color);
@@ -42,17 +45,16 @@
     padding: 24px;
     margin-bottom: 20px;
     box-shadow: var(--shadow-sm);
-    // Remove sticky positioning to eliminate conflicts
-    position: relative;
-    z-index: 100;
+    // Static positioning to avoid scroll conflicts
+    position: static;
+    z-index: auto;
     
-    // Optimize rendering performance
-    will-change: transform;
-    transform: translateZ(0); // Force hardware acceleration
+    // Remove hardware acceleration to prevent layer conflicts
+    will-change: auto;
+    transform: none;
     
-    // Remove stuck state styling to prevent visual conflicts
+    // Consistent styling regardless of scroll position
     &.stuck {
-      // Keep same appearance for consistency
       box-shadow: var(--shadow-sm);
     }
 
@@ -129,20 +131,15 @@
         }
 
         .time-range-files-btn {
-          padding: 8px 12px;
-          border: 1px solid var(--color-primary);
-          border-radius: var(--radius-sm);
-          background: var(--color-primary-light);
-          color: var(--color-primary);
-          font-weight: 500;
-          cursor: pointer;
-          font-size: 12px;
-          transition: all var(--transition-fast);
-
-          &:hover {
-            background: var(--color-primary);
-            color: var(--text-hover);
-          }
+          // Use global button styling - extends .btn class
+          @extend .btn;
+          @extend .btn-info;
+          @extend .btn-sm;
+          
+          // Override only specific properties for this context
+          font-size: 13px;
+          white-space: nowrap;
+          min-width: auto;
         }
 
         // Custom date range styling
@@ -223,27 +220,61 @@
 
       .driver-selector {
         display: flex;
-        align-items: center;
-        gap: 8px;
+        flex-direction: column;
+        gap: 12px;
 
-        label {
-          color: var(--color-text-secondary);
-          font-weight: 500;
+        .driver-selector-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          label {
+            color: var(--color-text-secondary);
+            font-weight: 500;
+          }
+
+          select {
+            background: var(--color-surface);
+            color: var(--color-text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            min-width: 150px;
+
+            &:focus {
+              outline: none;
+              border-color: var(--color-primary);
+              box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.1);
+            }
+          }
         }
 
-        select {
-          padding: 8px 12px;
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-sm);
-          background: var(--color-surface);
-          color: var(--color-text-primary);
-          font-weight: 500;
-          min-width: 150px;
+        .default-driver-info {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          background: var(--color-info-light);
+          border: 1px solid var(--color-info);
+          border-radius: var(--radius-md);
+          padding: 12px;
+          margin-top: 4px;
 
-          &:focus {
-            outline: none;
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.1);
+          .info-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+            margin-top: 1px;
+          }
+
+          .info-text {
+            font-size: 14px;
+            line-height: 1.4;
+            color: var(--color-info-dark);
+
+            strong {
+              color: var(--color-info-darker);
+              font-weight: 600;
+            }
           }
         }
       }
@@ -259,16 +290,17 @@
         }
 
         .no-driver-required {
-          padding: 6px 12px;
-          background: var(--color-info-light);
-          color: var(--color-info);
-          border: 1px solid var(--color-info);
-          border-radius: var(--radius-sm);
-          font-size: 14px;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
+          // Use global button styling - extends .btn class
+          @extend .btn;
+          @extend .btn-success;
+          @extend .btn-sm;
+          
+          // Override only specific properties for this context
+          font-size: 13px;
+          white-space: nowrap;
+          min-width: auto;
           gap: 6px;
+          pointer-events: none; // This is just an indicator, not clickable
         }
       }
 
@@ -361,21 +393,25 @@
     }
   }
 
-  // Matrix wrapper
+  // Matrix wrapper - Fixed scrolling behavior
   .matrix-wrapper {
     background: var(--section-background-color);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
+    // Single scroll container - remove conflicting scroll settings
     overflow: auto;
-    // Improve scrolling performance
+    // Optimize scrolling performance
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    // Set max height to enable proper scrolling
-    max-height: 70vh;
-    // Optimize rendering
+    // Set reasonable max height to prevent triple scrolling
+    max-height: calc(100vh - 300px);
+    min-height: 400px;
+    // Optimize rendering performance
     will-change: scroll-position;
     contain: layout style paint;
+    // Ensure proper scroll containment
+    overscroll-behavior: contain;
 
     .sarky-matrix {
       width: 100%;
@@ -581,10 +617,15 @@
               }
 
               &.invalid-driver {
-                background: var(--color-warning-light, #fff3cd);
-                border-color: var(--color-warning, #ffc107);
-                border-width: 2px;
-                animation: pulseWarning 2s infinite;
+                background: var(--color-danger-light);
+                border: 2px solid var(--color-danger);
+                color: var(--color-danger-dark);
+                box-shadow: 0 0 8px rgba(var(--color-danger-rgb), 0.3);
+              }
+
+              &.using-default-driver {
+                border-left: 3px solid var(--color-info);
+                background: rgba(var(--color-info-rgb, 59, 130, 246), 0.02);
               }
 
               &:disabled {
@@ -911,66 +952,146 @@
     }
 
     .dropdown-header {
-      padding: 10px 14px;
-      background: var(--color-surface-hover);
+      padding: 12px 16px;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
       font-weight: var(--bold-font-weight);
       font-size: 13px;
-      color: var(--color-text-secondary);
-      border-bottom: 1px solid var(--border-color);
+      color: white;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      border-bottom: 2px solid var(--color-primary-dark);
       border-top-left-radius: var(--radius-md);
       border-top-right-radius: var(--radius-md);
+      letter-spacing: 0.5px;
     }
 
     .current-driver-info {
-      padding: 8px 14px;
-      font-size: 12px;
-      color: var(--color-text-secondary);
-      border-bottom: 1px solid var(--border-color);
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-info-dark);
+      border-bottom: 2px solid var(--color-info);
       background: var(--color-info-light);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      &::before {
+        content: '👤';
+        font-size: 14px;
+      }
     }
 
     .driver-option {
-      padding: 10px 14px;
+      padding: 12px 16px;
       cursor: pointer;
       font-size: 14px;
       color: var(--color-text-primary);
-      transition: all var(--transition-fast);
+      background: var(--color-surface);
+      transition: all 0.2s ease;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      border-bottom: 1px solid var(--color-surface-hover);
+      position: relative;
+
+      &:last-child {
+        border-bottom: none;
+        border-bottom-left-radius: var(--radius-md);
+        border-bottom-right-radius: var(--radius-md);
+      }
 
       &:hover {
         background: var(--color-surface-hover);
-        transform: translateX(2px);
+        transform: translateX(4px);
+        padding-left: 20px;
+        box-shadow: inset 4px 0 0 var(--color-primary-light);
       }
 
       &.selected {
-        background: var(--color-primary-light);
-        color: var(--color-primary);
-        font-weight: var(--bold-font-weight);
-        position: relative;
+        background: linear-gradient(135deg, var(--color-success-light), rgba(var(--color-success-rgb), 0.1));
+        color: var(--color-success-dark);
+        font-weight: 700;
+        border-left: 5px solid var(--color-success);
+        box-shadow: inset 0 0 10px rgba(var(--color-success-rgb), 0.1);
 
         &::after {
-          content: '✓';
-          font-size: 16px;
-          color: var(--color-primary);
+          content: '✓ CURRENT';
+          background: var(--color-success);
+          color: white;
+          font-weight: 800;
+          font-size: 10px;
+          padding: 3px 8px;
+          border-radius: 12px;
+          text-shadow: none;
+          letter-spacing: 0.5px;
+        }
+
+        &:hover {
+          background: linear-gradient(135deg, var(--color-success), rgba(var(--color-success-rgb), 0.2));
+          transform: translateX(2px);
+          padding-left: 16px;
         }
       }
 
       &.default {
-        font-style: italic;
+        background: linear-gradient(135deg, var(--color-info-light), rgba(var(--color-info-rgb), 0.1));
+        color: var(--color-info-dark);
+        font-weight: 600;
+        border-left: 5px solid var(--color-info);
+        box-shadow: inset 0 0 10px rgba(var(--color-info-rgb), 0.1);
 
         &:not(.selected)::after {
-          content: '(Default)';
-          font-size: 11px;
-          color: var(--color-text-secondary);
-          font-style: normal;
+          content: '⭐ DEFAULT';
+          background: var(--color-info);
+          color: white;
+          font-weight: 800;
+          font-size: 10px;
+          padding: 3px 8px;
+          border-radius: 12px;
+          letter-spacing: 0.5px;
+        }
+
+        &:hover {
+          background: linear-gradient(135deg, var(--color-info), rgba(var(--color-info-rgb), 0.2));
+          transform: translateX(2px);
+          padding-left: 16px;
         }
       }
 
-      &:last-child {
-        border-bottom-left-radius: var(--radius-md);
-        border-bottom-right-radius: var(--radius-md);
+      &.selected.default {
+        background: linear-gradient(135deg, var(--color-warning-light), rgba(var(--color-warning-rgb), 0.15));
+        color: var(--color-warning-dark);
+        border-left: 5px solid var(--color-warning);
+        box-shadow: inset 0 0 15px rgba(var(--color-warning-rgb), 0.1);
+
+        &::after {
+          content: '✓⭐ ACTIVE DEFAULT';
+          background: var(--color-warning);
+          color: white;
+          font-weight: 800;
+          font-size: 9px;
+          padding: 4px 10px;
+          border-radius: 14px;
+          animation: pulse 2s infinite;
+          letter-spacing: 0.3px;
+        }
+
+        &:hover {
+          background: linear-gradient(135deg, var(--color-warning), rgba(var(--color-warning-rgb), 0.25));
+          transform: translateX(2px);
+          padding-left: 16px;
+        }
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+      }
+      50% { 
+        opacity: 0.9; 
+        transform: scale(1.02);
       }
     }
   }

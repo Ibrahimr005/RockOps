@@ -7,6 +7,7 @@ import com.example.backend.models.equipment.Consumable;
 import com.example.backend.models.equipment.ConsumableResolution;
 import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.PartyType;
+import com.example.backend.models.notification.NotificationType;
 import com.example.backend.models.transaction.Transaction;
 import com.example.backend.models.transaction.TransactionItem;
 import com.example.backend.models.transaction.TransactionStatus;
@@ -19,6 +20,7 @@ import com.example.backend.repositories.equipment.ConsumableResolutionRepository
 import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.repositories.transaction.TransactionRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
+import com.example.backend.services.notification.NotificationService;
 import com.example.backend.services.transaction.TransactionMapperService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +53,9 @@ public class ConsumablesService {
 
     @Autowired
     private ItemTypeRepository itemTypeRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Transactional
     public void createConsumableTransaction(Equipment equipment, Warehouse warehouse, Integer quantity, LocalDateTime timestamp) {
@@ -213,7 +218,51 @@ public class ConsumablesService {
                 .fullyResolved(consumable.isResolved()) // Set based on whether consumable was actually resolved
                 .build();
 
-        return consumableResolutionRepository.save(consumableResolution);
+        ConsumableResolution savedResolution = consumableResolutionRepository.save(consumableResolution);
+
+// Send notifications to equipment managers and warehouse users
+        try {
+            String equipmentName = consumable.getEquipment() != null ?
+                    consumable.getEquipment().getName() : "Unknown Equipment";
+
+            String itemTypeName = consumable.getItemType() != null ?
+                    consumable.getItemType().getName() : "Unknown Item";
+
+            String resolutionTypeText = request.getResolutionType().toString().replace("_", " ");
+
+            String message = "Consumable discrepancy resolved for " + equipmentName +
+                    ": " + consumable.getQuantity() + "x " + itemTypeName +
+                    " - Resolution: " + resolutionTypeText;
+
+            String actionUrl = "/equipment/" + consumable.getEquipment().getId();
+            String relatedEntity = "CONSUMABLE_" + consumable.getId();
+
+            // Notify all equipment managers
+            notificationService.sendNotificationToEquipmentUsers(
+                    "Consumable Discrepancy Resolved",
+                    message,
+                    NotificationType.SUCCESS,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            // Notify all warehouse users
+            notificationService.sendNotificationToWarehouseUsers(
+                    "Consumable Discrepancy Resolved",
+                    message,
+                    NotificationType.SUCCESS,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Consumable resolution notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send consumable resolution notifications: " + e.getMessage());
+        }
+
+        return savedResolution;
+
+//        return consumableResolutionRepository.save(consumableResolution);
     }
 
     // Helper method to handle counting error resolution with quantity validation

@@ -522,7 +522,7 @@ const PayslipManagement = () => {
                 onAddClick={handleCreatePayslip}
 
                 // Table configuration
-                tableTitle="Employee Payslips"
+                tableTitle=""
                 defaultItemsPerPage={20}
                 itemsPerPageOptions={[10, 20, 50, 100]}
                 defaultSortField="payDate"

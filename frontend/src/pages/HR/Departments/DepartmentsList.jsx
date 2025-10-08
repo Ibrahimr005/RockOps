@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiCheck, FiEdit, FiPlus, FiTrash2, FiX, FiUsers, FiBriefcase, FiEye } from 'react-icons/fi';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { departmentService } from '../../../services/hr/departmentService.js';
@@ -158,20 +159,10 @@ const DepartmentsList = () => {
 
     return (
         <div className="departments-list-container">
-            <div className="departments-header">
-                <h1>Departments
-                    <p className="employees-header__subtitle">
-                        Manage departments to structure your workforce effectively
-                    </p>
-                </h1>
-                <button
-                    className="btn btn-primary"
-                    onClick={handleOpenCreateModal}
-                    disabled={loading}
-                >
-                    <FiPlus /> Add Department
-                </button>
-            </div>
+            <PageHeader
+                title="Departments"
+                subtitle="Manage departments to structure your workforce effectively"
+            />
 
             {error && !isModalOpen && (
                 <div className="departments-error">
@@ -196,6 +187,13 @@ const DepartmentsList = () => {
                 onRowClick={handleRowClick}
                 rowClickable={true}
                 emptyMessage="No departments found. Create your first department to get started."
+                showAddButton={true}
+                addButtonText="Add Department"
+                addButtonIcon={<FiPlus />}
+                onAddClick={handleOpenCreateModal}
+                showExportButton={true}
+                exportFileName="departments"
+                exportButtonText="Export Departments"
             />
 
             {/* Reusable Department Modal */}

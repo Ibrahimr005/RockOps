@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import DataTable from '../../components/common/DataTable/DataTable';
+import PageHeader from '../../components/common/PageHeader';
 import UserStatsCard from './components/UserStatsCard';
 import EditUserModal from './components/EditUserModal';
 import { FaEdit, FaTrash, FaUserPlus } from 'react-icons/fa';
@@ -199,6 +200,11 @@ const AdminPage = () => {
             <div className="admin-content">
                 <main className="admin-main">
                     <div className="">
+                        <PageHeader
+                            title={t('admin.usersList')}
+                            subtitle="Manage system users, roles, and access permissions"
+                        />
+
                         {/* Summary Cards */}
                         <div className="summary-section">
                             <UserStatsCard users={users} />
@@ -212,7 +218,7 @@ const AdminPage = () => {
                             data={users}
                             columns={columns}
                             loading={loading}
-                            tableTitle={t('admin.usersList')}
+                            tableTitle=""
                             showSearch={true}
                             showFilters={true}
                             filterableColumns={filterableColumns}

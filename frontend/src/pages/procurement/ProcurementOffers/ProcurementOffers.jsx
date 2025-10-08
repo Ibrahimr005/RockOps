@@ -16,8 +16,8 @@ import FinanceValidatedOffers from "./FinanceValidatedOffers/FinanceValidatedOff
 import FinalizeOffers from "./FinalizeOffers/FinalizeOffers.jsx";
 import CompletedOffers from "./CompletedOffers/CompletedOffers.jsx";
 
-// Import the new component
-import ProcurementIntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
+// Import PageHeader component
+import PageHeader from '../../../components/common/PageHeader/PageHeader.jsx';
 
 // Icons
 import {
@@ -27,8 +27,6 @@ import {
 
 // Add this to your imports at the top
 import { FiCheck } from 'react-icons/fi';
-import offersImage from "../../../assets/imgs/pro_icon.png";
-import offersImageDark from "../../../assets/imgs/pro_icon_dark.png";
 
 const API_URL = 'http://localhost:8080/api/v1';
 
@@ -442,14 +440,9 @@ const ProcurementOffers = () => {
 
     return (
         <div className="procurement-offers-container">
-            {/* Header - Intro Card using the new component */}
-            <ProcurementIntroCard
+            <PageHeader
                 title="Offers"
-                label="PROCUREMENT CENTER"
-                lightModeImage={offersImage}
-                darkModeImage={offersImageDark}
-                stats={statsData}
-                icon={false}
+                subtitle="Manage procurement offers and vendor proposals throughout the entire procurement lifecycle"
             />
 
             {/* Tabs Navigation */}
