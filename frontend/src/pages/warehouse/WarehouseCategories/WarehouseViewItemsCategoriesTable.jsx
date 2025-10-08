@@ -2,11 +2,9 @@ import React, { useState, useEffect } from "react";
 import "./WarehouseViewItemCategories.scss";
 import ParentCategoriesTable from "./ParentCategoriesTable";
 import ChildCategoriesTable from "./ChildCategoriesTable";
+import PageHeader from "../../../components/common/PageHeader/PageHeader.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
-import ProcurementIntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
-import itemCategoryImg from "../../../assets/imgs/itemCategoryLight.png";
-import itemCategoryDarkImg from "../../../assets/imgs/itemCategoryDarky.png";
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService';
 
 const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => {
@@ -148,20 +146,11 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
 
   return (
       <>
-        {/* Item Categories Intro Card */}
-        <div className="item-categories-intro-wrapper">
-          <ProcurementIntroCard
-              title="Item Categories"
-              label="WAREHOUSE MANAGEMENT"
-              lightModeImage={itemCategoryImg}
-              darkModeImage={itemCategoryDarkImg}
-              stats={[
-                { value: allCategories.filter(cat => !cat.parentCategory).length.toString(), label: "Parent Categories" },
-                { value: allCategories.filter(cat => cat.parentCategory).length.toString(), label: "Child Categories" },
-              ]}
-              className="item-categories-intro"
-          />
-        </div>
+        {/* Item Categories Page Header */}
+        <PageHeader
+            title="Item Categories"
+            subtitle="Organize inventory items into logical categories for better management"
+        />
 
         {/* Tabs Container */}
         <div className="categories-tabs-container">

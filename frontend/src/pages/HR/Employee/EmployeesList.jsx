@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaUserPlus, FaEdit, FaTrash,  FaUser } from 'react-icons/fa';
 import './EmployeesList.scss';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import EmployeeAvatar from '../../../components/common/EmployeeAvatar';
 import AddEmployeeModal from './modals/AddEmployeeModal.jsx';
 import EditEmployeeModal from './modals/EditEmployeeModal.jsx';
@@ -568,21 +569,10 @@ const EmployeesList = () => {
 
     return (
         <div className="employees-container">
-            <div className="departments-header">
-                <div className="employees-header__content">
-                    <h1 className="employees-header__title">Employees Directory</h1>
-                    <p className="employees-header__subtitle">
-                        Manage your workforce and employee information
-                    </p>
-                </div>
-                <button
-                    className="btn btn-primary"
-                    onClick={() => setShowAddModal(true)}
-                >
-                    <FaUserPlus />
-                    <span>Add Employee</span>
-                </button>
-            </div>
+            <PageHeader
+                title="Employees"
+                subtitle="Manage employee records, assignments, and organizational structure"
+            />
 
             {/* DataTable Component */}
             <DataTable
@@ -601,6 +591,13 @@ const EmployeesList = () => {
                 defaultSortField="fullName"
                 defaultSortDirection="asc"
                 className="employees-datatable"
+                showAddButton={true}
+                addButtonText="Add Employee"
+                addButtonIcon={<FaUserPlus />}
+                onAddClick={() => setShowAddModal(true)}
+                showExportButton={true}
+                exportFileName="employees"
+                exportButtonText="Export Employees"
             />
 
             {showAddModal && (

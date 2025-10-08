@@ -147,7 +147,7 @@ const SiteMerchantsTab = ({ siteId }) => {
                                 type: 'info'
                             });
                         }}
-                        //tableTitle="Merchants List"
+                        tableTitle=""
                     />
                 </div>
             )}

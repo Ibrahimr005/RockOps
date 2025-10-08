@@ -2,6 +2,7 @@ import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'rea
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Clock, Package, Wrench, TrendingUp, Activity, AlertTriangle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
+import PageHeader from '../../../components/common/PageHeader';
 import './EquipmentDashboard.scss';
 import { equipmentService } from '../../../services/equipmentService';
 import { sarkyService } from '../../../services/sarkyService';
@@ -245,6 +246,11 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
 
     return (
         <div className="rockops-equipment-dashboard">
+            <PageHeader
+                title="Equipment Dashboard"
+                subtitle="Comprehensive overview of equipment metrics and maintenance history"
+            />
+
             {/* Header */}
             <div className="rockops-dashboard-header">
                 <div className="rockops-dashboard-title">

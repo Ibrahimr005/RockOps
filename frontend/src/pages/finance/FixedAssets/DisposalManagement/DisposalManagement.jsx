@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaTrash, FaEye, FaPlus, FaFileDownload, FaTimes, FaInfoCircle, FaDollarSign, FaCalendarAlt, FaChartLine, FaUser, FaClipboardList, FaFile } from 'react-icons/fa';
 import DataTable from '../../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../../components/common/PageHeader';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { financeService } from '../../../../services/financeService.js';
 import './DisposalManagement.css';
@@ -360,6 +361,17 @@ const DisposalManagement = () => {
 
     return (
         <div className="disposal-management">
+            <PageHeader
+                title="Asset Disposals"
+                subtitle="Track and manage asset disposals, sales, and write-offs"
+                actionButton={{
+                    text: "New Disposal",
+                    icon: <FaTrash />,
+                    onClick: handleNewDisposal,
+                    disabled: loading
+                }}
+            />
+
             {/* Summary Cards */}
             <div className="disposal-management__summary">
                 <div className="disposal-management__summary-card disposal-management__summary-card--total-gain-loss">
@@ -393,15 +405,11 @@ const DisposalManagement = () => {
                 data={disposalData}
                 columns={columns}
                 loading={loading}
-                tableTitle="Asset Disposals"
+                tableTitle=""
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}
                 actions={actions}
-                showAddButton={true}
-                addButtonText="New Disposal"
-                addButtonIcon={<FaTrash />}
-                onAddClick={handleNewDisposal}
                 emptyMessage="No asset disposals recorded."
                 onRowClick={handleRowClick}
             />

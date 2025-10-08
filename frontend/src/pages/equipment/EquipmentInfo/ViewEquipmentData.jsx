@@ -73,6 +73,18 @@ const ViewEquipmentData = () => {
         window.location.reload();
     };
 
+    // Format status for display (remove underscores and capitalize properly)
+    const formatStatusDisplay = (status) => {
+        if (!status) return "Unknown";
+        
+        // Handle specific status formatting
+        if (status === "IN_MAINTENANCE") return "In Maintenance";
+        if (status === "IN_USE") return "In Use";
+        
+        // For other statuses, capitalize first letter and lowercase the rest
+        return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    };
+
     // Field component for displaying label/value pairs
     const FieldItem = ({ label, value, type = "default" }) => {
         const getValueClass = () => {
@@ -91,10 +103,16 @@ const ViewEquipmentData = () => {
             }
         };
 
+        const getDisplayValue = () => {
+            if (!value) return "Not available";
+            if (type === "status") return formatStatusDisplay(value);
+            return value;
+        };
+
         return (
             <div className="field-item">
                 <div className="field-label">{label}</div>
-                <div className={`field-value ${getValueClass()}`}>{value || "Not available"}</div>
+                <div className={`field-value ${getValueClass()}`}>{getDisplayValue()}</div>
             </div>
         );
     };

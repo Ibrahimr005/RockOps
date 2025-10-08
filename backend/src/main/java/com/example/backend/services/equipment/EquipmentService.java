@@ -13,6 +13,8 @@ import com.example.backend.dto.hr.employee.EmployeeSummaryDTO;
 import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.equipment.*;
 import com.example.backend.models.merchant.Merchant;
+import com.example.backend.models.notification.NotificationType;
+import com.example.backend.models.user.Role;
 import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.services.MinioService;
 import com.example.backend.repositories.equipment.EquipmentBrandRepository;
@@ -23,6 +25,7 @@ import com.example.backend.models.hr.Employee;
 import com.example.backend.models.site.Site;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.site.SiteRepository;
+import com.example.backend.services.notification.NotificationService;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,13 +33,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.Year;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.ArrayList;
-import java.util.Comparator;
-
 
 
 @Service
@@ -56,6 +54,9 @@ public class EquipmentService {
 
     @Autowired
     private SarkyLogRepository sarkyLogRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Autowired
     public EquipmentService(
@@ -257,6 +258,29 @@ public class EquipmentService {
             resultDTO.setImageUrl(null);
         }
 
+        // Send notifications to EQUIPMENT_MANAGER and ADMIN users
+        try {
+            String notificationTitle = "New Equipment Created";
+            String notificationMessage = "Equipment '" + savedEquipment.getName() + "' (" + savedEquipment.getModel() + ") has been created";
+            String actionUrl = "/equipment/" + savedEquipment.getId();
+            String relatedEntity = savedEquipment.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.SUCCESS,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Equipment creation notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send equipment creation notifications: " + e.getMessage());
+        }
+
         return resultDTO;
     }
 
@@ -339,6 +363,7 @@ public class EquipmentService {
         } else if (requestBody.get("subDriver") != null) {
             createDTO.setSubDriverId(UUID.fromString(requestBody.get("subDriver").toString()));
         }
+
 
         return createEquipment(createDTO, equipmentPhoto);
     }
@@ -489,6 +514,29 @@ public class EquipmentService {
             resultDTO.setImageUrl(null);
         }
 
+        // Send notifications to EQUIPMENT_MANAGER and ADMIN users
+        try {
+            String notificationTitle = "Equipment Updated";
+            String notificationMessage = "Equipment '" + updatedEquipment.getName() + "' (" + updatedEquipment.getModel() + ") has been updated";
+            String actionUrl = "/equipment/" + updatedEquipment.getId();
+            String relatedEntity = updatedEquipment.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Equipment update notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send equipment update notifications: " + e.getMessage());
+        }
+
         return resultDTO;
     }
     // Support for the old Map-based updateEquipment method
@@ -585,9 +633,11 @@ public class EquipmentService {
     }
 
     public EquipmentDTO updateEquipmentStatus(UUID id, EquipmentStatusUpdateDTO statusDTO) {
-        // Check if equipment exists
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + id));
+
+        // Capture old status before update
+        EquipmentStatus oldStatus = equipment.getStatus();
 
         // Update status
         equipment.setStatus(statusDTO.getStatus());
@@ -603,6 +653,33 @@ public class EquipmentService {
             resultDTO.setImageUrl(imageUrl);
         } catch (Exception e) {
             resultDTO.setImageUrl(null);
+        }
+
+        // Send notifications
+        try {
+            String oldStatusStr = oldStatus != null ? oldStatus.toString() : "UNKNOWN";
+            String newStatusStr = statusDTO.getStatus().toString();
+
+            String notificationTitle = "Equipment Status Changed";
+            String notificationMessage = "Equipment '" + updatedEquipment.getName() + "' (" + updatedEquipment.getModel() +
+                    ") status changed from " + oldStatusStr + " to " + newStatusStr;
+            String actionUrl = "/equipment/" + updatedEquipment.getId();
+            String relatedEntity = updatedEquipment.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Equipment status change notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send equipment status change notifications: " + e.getMessage());
         }
 
         return resultDTO;
@@ -630,6 +707,28 @@ public class EquipmentService {
     public void deleteEquipment(UUID id) {
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + id));
+// Send notifications to EQUIPMENT_MANAGER and ADMIN users
+        try {
+            String notificationTitle = "Equipment Deleted";
+            String notificationMessage = "Equipment '" + equipment.getName() + "' (" + equipment.getModel() + ") has been deleted";
+            String actionUrl = "/equipment";
+            String relatedEntity = equipment.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.WARNING,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Equipment deletion notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send equipment deletion notifications: " + e.getMessage());
+        }
 
         equipmentRepository.delete(equipment);
     }
