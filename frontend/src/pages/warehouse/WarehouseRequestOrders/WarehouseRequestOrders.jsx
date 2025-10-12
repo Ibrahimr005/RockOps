@@ -40,7 +40,6 @@ const WarehouseRequestOrders = ({ warehouseId, onAddButtonClick, restockItems, s
     };
 
     // Handle restock modal opening
-    // REPLACE the restock modal useEffect:
     useEffect(() => {
         if (shouldOpenRestockModal && restockItems && pendingOrdersRef.current) {
             // Switch to pending tab first
@@ -55,7 +54,7 @@ const WarehouseRequestOrders = ({ warehouseId, onAddButtonClick, restockItems, s
         }
     }, [shouldOpenRestockModal, restockItems]);
 
-// REPLACE the add function useEffect:
+    // Handle add function
     useEffect(() => {
         if (onAddButtonClick && pendingOrdersRef.current) {
             onAddButtonClick(() => {
@@ -81,7 +80,7 @@ const WarehouseRequestOrders = ({ warehouseId, onAddButtonClick, restockItems, s
         setShowNotification(false);
     };
 
-// FINAL VERSION of renderActiveTabContent:
+    // Render active tab content
     const renderActiveTabContent = () => {
         if (activeTab === 'pending') {
             return (
@@ -111,14 +110,12 @@ const WarehouseRequestOrders = ({ warehouseId, onAddButtonClick, restockItems, s
 
     return (
         <div className="warehouse-request-orders-container">
-
-
             {/* Tab navigation */}
-            <div className="inventory-tabs">
+            <div className="tabs-header">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
-                        className={`inventory-tab ${activeTab === tab.id ? 'active' : ''}`}
+                        className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
                         onClick={() => setActiveTab(tab.id)}
                     >
                         {tab.label}

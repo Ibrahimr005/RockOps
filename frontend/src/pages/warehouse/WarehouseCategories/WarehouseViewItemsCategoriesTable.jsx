@@ -170,22 +170,22 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
           </div>
         </div>
 
-        {/* Category Info Cards */}
-        <div className="category-info-card">
-          <div className="category-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
-          </div>
-          <div className="category-info-content">
-            <h3>Item Types Can Only Be Assigned to Child Categories</h3>
-            <p>
-              <strong>Important:</strong> To create or assign item types, you must use child categories only.
-              Child categories require a parent category to be created first. This two-level hierarchy ensures proper organization:
-              Parent → Child → Item Types.
-            </p>
-          </div>
-        </div>
+        {/*/!* Category Info Cards *!/*/}
+        {/*<div className="category-info-card">*/}
+        {/*  <div className="category-icon">*/}
+        {/*    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">*/}
+        {/*      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />*/}
+        {/*    </svg>*/}
+        {/*  </div>*/}
+        {/*  <div className="category-info-content">*/}
+        {/*    <h3>Item Types Can Only Be Assigned to Child Categories</h3>*/}
+        {/*    <p>*/}
+        {/*      <strong>Important:</strong> To create or assign item types, you must use child categories only.*/}
+        {/*      Child categories require a parent category to be created first. This two-level hierarchy ensures proper organization:*/}
+        {/*      Parent → Child → Item Types.*/}
+        {/*    </p>*/}
+        {/*  </div>*/}
+        {/*</div>*/}
 
         {/* Tab Content */}
         {activeTab === 'parent' && (
