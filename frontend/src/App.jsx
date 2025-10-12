@@ -33,7 +33,7 @@ import LeaveRequestDetailPage from './pages/HR/LeaveRequests/LeaveRequestDetailP
 import VacationBalancePage from './pages/HR/VacationBalance/VacationBalancePage';
 
 // ===================== Warehouse Imports =====================
-import WarehousesList from "./pages/warehouse/WarehousesList/WarehousesList.jsx";
+import WarehousesList from "./pages/warehouse/WarehousesList/Warehouse List/WarehousesList.jsx";
 import WarehouseDetails from "./pages/warehouse/WarehousesDetails/WarehouseDetails.jsx";
 import WarehouseInformation from "./pages/warehouse/WarehousesInformation/WarehouseInformation.jsx";
 import WarehouseViewItemCategoriesTable from "./pages/warehouse/WarehouseCategories/WarehouseViewItemsCategoriesTable.jsx";

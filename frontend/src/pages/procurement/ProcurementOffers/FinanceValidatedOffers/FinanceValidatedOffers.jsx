@@ -214,32 +214,51 @@ const FinanceValidatedOffers = ({
     };
 
     // Update the confirmContinueAndReturn function in FinanceValidatedOffers.jsx
+    // Update the confirmContinueAndReturn function in FinanceValidatedOffers.jsx
     const confirmContinueAndReturn = async () => {
         setIsContinueAndReturn(true);
         try {
+            console.log('Starting continue and return...'); // Debug log
+
             // Call backend service to split the offer
             const result = await offerService.continueAndReturnOffer(activeOffer.id);
 
+            console.log('Backend result:', result); // Debug log
+
             let successMessage = '';
 
-            if (result.acceptedOffer && result.newOffer) {
+            // The backend returns IDs, not full objects
+            if (result.acceptedOfferId && result.newOfferId) {
                 successMessage = 'Accepted items sent to finalization. New offer created for remaining quantities.';
-            } else if (result.acceptedOffer) {
+            } else if (result.acceptedOfferId) {
                 successMessage = 'Accepted items sent to finalization.';
-            } else if (result.newOffer) {
+            } else if (result.newOfferId) {
                 successMessage = 'New offer created for remaining quantities.';
             }
 
             showNotification(successMessage, 'success');
 
-            // CHANGED: Prioritize the accepted offer going to finalization
-            if (result.acceptedOffer && onOfferFinalized) {
+            // FIXED: Check for acceptedOfferId (not acceptedOffer)
+            if (result.acceptedOfferId && onOfferFinalized) {
+                // Create a minimal offer object with the ID and status for the finalize tab
+                const finalizedOffer = {
+                    ...activeOffer, // Copy current offer data
+                    id: result.acceptedOfferId,
+                    status: 'FINALIZING'
+                };
+
+                console.log('Switching to finalize tab with offer:', finalizedOffer); // Debug log
+
                 // This will switch to the finalize tab and set the accepted offer as active
-                onOfferFinalized(result.acceptedOffer);
+                onOfferFinalized(finalizedOffer);
             }
             // Only handle new offer if there's no accepted offer to finalize
-            else if (result.newOffer && onRetryOffer) {
-                onRetryOffer(result.newOffer);
+            else if (result.newOfferId && onRetryOffer) {
+                const newOffer = {
+                    id: result.newOfferId,
+                    status: 'INPROGRESS'
+                };
+                onRetryOffer(newOffer);
             }
 
             // Remove current offer from finance validated tab
@@ -255,7 +274,8 @@ const FinanceValidatedOffers = ({
         } finally {
             setIsContinueAndReturn(false);
         }
-    }
+    };
+
 
     const cancelContinueAndReturn = () => {
         setShowContinueAndReturnConfirm(false);
