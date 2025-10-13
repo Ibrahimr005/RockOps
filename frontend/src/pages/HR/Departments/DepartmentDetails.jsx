@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {  FiUsers, FiBriefcase, FiEdit, FiArrowLeft, FiCalendar, FiTrendingUp } from 'react-icons/fi';
+import {FiUsers, FiBriefcase, FiEdit, FiArrowLeft, FiCalendar, FiTrendingUp, FiHome} from 'react-icons/fi';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { departmentService } from '../../../services/hr/departmentService.js';
 import { jobPositionService } from '../../../services/hr/jobPositionService.js';
@@ -9,6 +9,7 @@ import DataTable from '../../../components/common/DataTable/DataTable';
 import DepartmentModal from './DepartmentModal';
 import './DepartmentDetails.scss';
 import {FaBuilding} from "react-icons/fa";
+import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
 
 const DepartmentDetails = () => {
     const { id } = useParams();
@@ -209,39 +210,65 @@ const DepartmentDetails = () => {
         }
     ];
 
+    const getBreadcrumbs = () => {
+        return [
+            {
+                label: 'Home',
+                icon: <FiHome />,
+                onClick: () => navigate('/')
+            },
+            {
+                label: 'HR',
+                onClick: () => navigate('/hr')
+            },
+            {
+                label: 'Departments',
+                icon: <FaBuilding />,
+                onClick: () => navigate('/hr/departments')
+            },
+            {
+                label: department.name
+            }
+        ];
+    };
+
+    const getDepartmentStats = () => {
+        return [
+            {
+                value: stats.totalEmployees || '0',
+                label: 'Total Employees'
+            },
+            {
+                value: stats.totalPositions || '0',
+                label: 'Job Positions'
+            }
+        ];
+    };
+
+    const getActionButtons = () => {
+        return [
+            {
+                text: 'Edit Department',
+                icon: <FiEdit />,
+                onClick: () => setIsEditModalOpen(true),
+                className: 'primary'
+            }
+        ];
+    };
+
+
     return (
         <div className="department-details-container">
             {/* Header */}
-            <div className="department-details-header">
-                <div className="header-left">
-                    <button
-                        onClick={handleBackClick}
-                        className="back-button"
-                        title="Back to departments"
-                    >
-                        <FiArrowLeft />
-                    </button>
-                    <div className="department-info">
-                        <h1>
-                            <FaBuilding /> {department.name}
-                        </h1>
-                        {department.description && (
-                            <p className="department-description">
-                                {department.description}
-                            </p>
-                        )}
-                    </div>
-                </div>
-                <div className="header-actions">
-                    <button
-                        onClick={() => setIsEditModalOpen(true)}
-                        className="btn-primary"
-                    >
-                        <FiEdit /> Edit Department
-                    </button>
-                </div>
-            </div>
-
+            <IntroCard
+                title={department.name}
+                label="DEPARTMENT DETAILS"
+                breadcrumbs={getBreadcrumbs()}
+                icon={<FaBuilding />}
+                stats={getDepartmentStats()}
+                actionButtons={getActionButtons()}
+                className="department-intro-card"
+            />
             {/* Statistics Cards */}
             <div className="department-stats-grid">
                 <div className="stat-card">

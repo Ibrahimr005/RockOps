@@ -15,6 +15,8 @@ import { transactionService } from "../../../services/transaction/transactionSer
 import { warehouseService } from "../../../services/warehouse/warehouseService";
 // NEW: Import the WarehousePurchaseOrders component
 import WarehousePurchaseOrders from "../../warehouse/WarehousePurchaseOrders/WarehousePurchaseOrders";
+import {FiHome, FiPackage} from "react-icons/fi";
+import ContentLoader from "../../../components/common/ContentLoader/ContentLoader.jsx";
 
 // Simple Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -183,7 +185,7 @@ const WarehouseDetails = () => {
   };
 
   if (loading || !warehouseData) {
-    return <LoadingPage />;
+    return <ContentLoader />;
   }
 
   const getTabHeader = () => {
@@ -312,17 +314,36 @@ const WarehouseDetails = () => {
     navigate(`/warehouses/warehouse-details/${id}`);
   };
 
+  const getBreadcrumbs = () => {
+    return [
+      {
+        label: 'Home',
+        icon: <FiHome />,
+        onClick: () => navigate('/')
+      },
+      {
+        label: 'Warehouses',
+        icon: <FiPackage />,
+        onClick: () => navigate('/warehouses')
+      },
+      {
+        label: warehouseData.name
+      }
+    ];
+  };
+
+
   return (
       <Fragment>
         <div className="WarehouseDetailsContainer">
           <IntroCard
               title={warehouseData.name}
               label="WAREHOUSE MANAGEMENT"
+              breadcrumbs={getBreadcrumbs()}
               lightModeImage={warehouseData?.photoUrl || warehouseImg}
               darkModeImage={warehouseData?.photoUrl || warehouseImg}
               stats={getWarehouseStats()}
               onInfoClick={handleInfoClick}
-              className="warehouse-intro-card"
           />
 
           {(userRole === 'WAREHOUSE_MANAGER' || userRole === 'ADMIN') && (

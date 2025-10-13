@@ -1265,156 +1265,167 @@ const SiteWarehousesTab = ({siteId}) => {
 
             {/* Add Warehouse Modal */}
             {showAddModal && (
-                <div className="add-warehouse-modal-overlay"  onClick={handleOverlayClick}>
-                    <div className="add-warehouse-modal-content">
-                        <div className="add-warehouse-modal-header">
+                <div className="modern-modal-overlay" onClick={handleOverlayClick}>
+                    <div className="modern-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modern-modal-header">
                             <h2>Add New Warehouse</h2>
-                            <button
-                                className="add-warehouse-modal-close-button"
-                                onClick={handleCloseAddModal}
-                            >
+                            <button className="modern-modal-close" onClick={handleCloseAddModal}>
                                 ×
                             </button>
                         </div>
 
-                        <div className="add-warehouse-modal-body">
-                            <div className="add-warehouse-form-container">
-                                <div className="add-warehouse-form-card">
-                                    <div className="add-warehouse-profile-section">
-                                        <label htmlFor="imageUpload" className="add-warehouse-image-upload-label">
-                                            {previewImage ? (
-                                                <img
-                                                    src={previewImage}
-                                                    alt="Warehouse"
-                                                    className="add-warehouse-image-preview"
-                                                />
-                                            ) : (
-                                                <div className="add-warehouse-image-placeholder"></div>
-                                            )}
-                                            <span className="add-warehouse-upload-text">
-                                                {t('common.uploadPhoto')}
-                                            </span>
+                        <div className="modern-modal-body">
+                            {formError && (
+                                <div className="modern-form-error">{formError}</div>
+                            )}
+
+                            <div className="modern-modal-layout">
+                                {/* Image Upload */}
+                                <label className={`modern-image-upload ${previewImage ? 'has-image' : ''}`}>
+                                    <input
+                                        type="file"
+                                        name="photo"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                    />
+                                    {previewImage ? (
+                                        <>
+                                            <img src={previewImage} alt="Warehouse" className="modern-image-preview" />
+                                            <div className="modern-image-overlay">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setPreviewImage(null);
+                                                    }}
+                                                >
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <polyline points="3 6 5 6 21 6" />
+                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="modern-image-placeholder">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                                <polyline points="21 15 16 10 5 21" />
+                                            </svg>
+                                            <span className="upload-text">{t('common.uploadPhoto')}</span>
+                                            <span className="upload-hint">JPG, PNG or GIF</span>
+                                        </div>
+                                    )}
+                                </label>
+
+                                {/* Form Fields */}
+                                <form className="modern-form-section" onSubmit={handleAddWarehouse}>
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">
+                                            Warehouse Name <span className="required">*</span>
                                         </label>
                                         <input
-                                            type="file"
-                                            id="imageUpload"
-                                            name="photo"
-                                            accept="image/*"
-                                            onChange={handleFileChange}
-                                            style={{ display: "none" }}
+                                            type="text"
+                                            name="name"
+                                            className="modern-form-input"
+                                            placeholder="Enter warehouse name"
+                                            required
                                         />
                                     </div>
 
-                                    <div className="add-warehouse-form-fields-section">
-                                        {formError && (
-                                            <div className="add-warehouse-form-error">{formError}</div>
-                                        )}
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">Warehouse Manager</label>
+                                        <select
+                                            name="managerId"
+                                            className="modern-form-select"
+                                            onChange={(e) => handleSelectManager(e.target.value)}
+                                        >
+                                            <option value="">Select Warehouse Manager</option>
+                                            {managers.map(manager => (
+                                                <option key={manager.id} value={manager.id}>
+                                                    {manager.firstName} {manager.lastName}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                                        <form onSubmit={handleAddWarehouse}>
-                                            <div className="add-warehouse-form-grid">
-                                                <div className="add-warehouse-form-group">
-                                                    <label>
-                                                        Warehouse Name <span className="required-asterisk">*</span>
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        name="name"
-                                                        required
-                                                        placeholder="Enter warehouse name"
-                                                    />
-                                                </div>
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">Warehouse Workers</label>
+                                        <div className="modern-dropdown" ref={workersDropdownRef}>
+                                            <div
+                                                className="modern-dropdown-header"
+                                                onClick={toggleWorkersDropdown}
+                                            >
+                                                <span>Select Workers</span>
+                                                <span className={`modern-dropdown-icon ${isWorkersDropdownOpen ? 'open' : ''}`}>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <polyline points="6 9 12 15 18 9" />
+                                        </svg>
+                                    </span>
+                                            </div>
 
-                                                <div className="add-warehouse-form-group">
-                                                    <label>Warehouse Manager</label>
-                                                    <select
-                                                        name="managerId"
-                                                        onChange={(e) => handleSelectManager(e.target.value)}
-                                                    >
-                                                        <option value="">Select Warehouse Manager</option>
-                                                        {managers.map(manager => (
-                                                            <option key={manager.id} value={manager.id}>
-                                                                {manager.firstName} {manager.lastName}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                <div className="add-warehouse-form-group add-warehouse-workers-section">
-                                                    <label>Warehouse Workers</label>
-                                                    <div className="add-warehouse-workers-dropdown" ref={workersDropdownRef}>
-                                                        <div
-                                                            className="add-warehouse-dropdown-header"
-                                                            onClick={toggleWorkersDropdown}
-                                                        >
-                                                            <span>Select Workers</span>
-                                                            <span
-                                                                className={`add-warehouse-dropdown-icon ${isWorkersDropdownOpen ? 'open' : ''}`}
+                                            {isWorkersDropdownOpen && (
+                                                <div className="modern-dropdown-menu">
+                                                    {workers
+                                                        .filter(worker => !selectedWorkerIds.includes(worker.id))
+                                                        .map(worker => (
+                                                            <div
+                                                                key={worker.id}
+                                                                className="modern-dropdown-item"
+                                                                onClick={() => handleSelectWorker(worker)}
                                                             >
-                                                                ▼
-                                                            </span>
-                                                        </div>
-
-                                                        {isWorkersDropdownOpen && (
-                                                            <div className="add-warehouse-dropdown-menu">
-                                                                {workers
-                                                                    .filter(worker => !selectedWorkerIds.includes(worker.id))
-                                                                    .map(worker => (
-                                                                        <div
-                                                                            key={worker.id}
-                                                                            className="add-warehouse-dropdown-item"
-                                                                            onClick={() => handleSelectWorker(worker)}
-                                                                        >
-                                                                            {worker.firstName} {worker.lastName}
-                                                                        </div>
-                                                                    ))}
-                                                                {workers.filter(worker => !selectedWorkerIds.includes(worker.id)).length === 0 && (
-                                                                    <div className="add-warehouse-dropdown-item">
-                                                                        No workers available
-                                                                    </div>
-                                                                )}
+                                                                {worker.firstName} {worker.lastName}
                                                             </div>
-                                                        )}
-                                                    </div>
-
-                                                    {selectedWorkers.length > 0 && (
-                                                        <div className="add-warehouse-workers-list">
-                                                            {selectedWorkers.map(worker => (
-                                                                <div key={worker.id} className="add-warehouse-worker-chip">
-                                                                    <span>{worker.firstName} {worker.lastName}</span>
-                                                                    <span
-                                                                        className="add-warehouse-remove-worker"
-                                                                        onClick={() => handleRemoveWorker(worker.id)}
-                                                                    >
-                                                                        ×
-                                                                    </span>
-                                                                </div>
-                                                            ))}
+                                                        ))}
+                                                    {workers.filter(worker => !selectedWorkerIds.includes(worker.id)).length === 0 && (
+                                                        <div className="modern-dropdown-item disabled">
+                                                            No workers available
                                                         </div>
                                                     )}
                                                 </div>
-                                            </div>
+                                            )}
+                                        </div>
 
-                                            <div className="add-warehouse-form-actions">
-                                                <button
-                                                    type="button"
-                                                    className="add-warehouse-cancel-button"
-                                                    onClick={handleCloseAddModal}
-                                                    disabled={isSubmitting}
-                                                >
-                                                    {t('common.cancel')}
-                                                </button>
-                                                <button
-                                                    type="submit"
-                                                    className="add-warehouse-submit-button"
-                                                    disabled={isSubmitting}
-                                                >
-                                                    {isSubmitting ? 'Adding Warehouse...' : 'Add Warehouse'}
-                                                </button>
+                                        {selectedWorkers.length > 0 && (
+                                            <div className="modern-chips-container">
+                                                {selectedWorkers.map(worker => (
+                                                    <div key={worker.id} className="modern-chip">
+                                                        <span>{worker.firstName} {worker.lastName}</span>
+                                                        <button
+                                                            type="button"
+                                                            className="modern-chip-remove"
+                                                            onClick={() => handleRemoveWorker(worker.id)}
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        </form>
+                                        )}
                                     </div>
-                                </div>
+                                </form>
                             </div>
+                        </div>
+
+                        <div className="modern-modal-footer">
+                            <button
+                                type="button"
+                                className="modern-btn modern-btn-cancel"
+                                onClick={handleCloseAddModal}
+                                disabled={isSubmitting}
+                            >
+                                {t('common.cancel')}
+                            </button>
+                            <button
+                                type="submit"
+                                className="modern-btn modern-btn-primary"
+                                onClick={handleAddWarehouse}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? 'Adding...' : 'Add Warehouse'}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1422,142 +1433,164 @@ const SiteWarehousesTab = ({siteId}) => {
 
             {/* Edit Warehouse Modal */}
             {showEditModal && (
-                <div className="add-warehouse-modal-overlay" onClick={handleOverlayClick}>
-                    <div className="add-warehouse-modal-content">
-                        <div className="add-warehouse-modal-header">
+                <div className="modern-modal-overlay" onClick={handleOverlayClick}>
+                    <div className="modern-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modern-modal-header">
                             <h2>Edit Warehouse</h2>
-                            <button className="add-warehouse-modal-close-button" onClick={handleCloseEditModal}>×</button>
+                            <button className="modern-modal-close" onClick={handleCloseEditModal}>
+                                ×
+                            </button>
                         </div>
 
-                        <div className="add-warehouse-modal-body">
-                            <div className="add-warehouse-form-container">
-                                <div className="add-warehouse-form-card">
-                                    <div className="add-warehouse-profile-section">
-                                        <label htmlFor="warehouseEditImageUpload" className="add-warehouse-image-upload-label">
-                                            {editPreviewImage ? (
-                                                <img src={editPreviewImage} alt="Warehouse" className="add-warehouse-image-preview" />
-                                            ) : (
-                                                <div className="add-warehouse-image-placeholder"></div>
-                                            )}
-                                            <span className="add-warehouse-upload-text">Upload Photo</span>
+                        <div className="modern-modal-body">
+                            <div className="modern-modal-layout">
+                                {/* Image Upload */}
+                                <label className={`modern-image-upload ${editPreviewImage ? 'has-image' : ''}`}>
+                                    <input
+                                        type="file"
+                                        name="photo"
+                                        accept="image/*"
+                                        onChange={handleEditFileChange}
+                                    />
+                                    {editPreviewImage ? (
+                                        <>
+                                            <img src={editPreviewImage} alt="Warehouse" className="modern-image-preview" />
+                                            <div className="modern-image-overlay">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setEditPreviewImage(null);
+                                                    }}
+                                                >
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <polyline points="3 6 5 6 21 6" />
+                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="modern-image-placeholder">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                                <polyline points="21 15 16 10 5 21" />
+                                            </svg>
+                                            <span className="upload-text">Upload Photo</span>
+                                            <span className="upload-hint">JPG, PNG or GIF</span>
+                                        </div>
+                                    )}
+                                </label>
+
+                                {/* Form Fields */}
+                                <form className="modern-form-section" onSubmit={handleUpdateWarehouse}>
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">
+                                            Warehouse Name <span className="required">*</span>
                                         </label>
                                         <input
-                                            type="file"
-                                            id="warehouseEditImageUpload"
-                                            name="photo"
-                                            accept="image/*"
-                                            onChange={handleEditFileChange}
-                                            style={{ display: "none" }}
+                                            type="text"
+                                            name="name"
+                                            value={editFormData.name}
+                                            onChange={handleEditInputChange}
+                                            className="modern-form-input"
+                                            placeholder="Enter warehouse name"
+                                            required
                                         />
                                     </div>
 
-                                    <div className="add-warehouse-form-fields-section">
-                                        <form onSubmit={handleUpdateWarehouse}>
-                                            <div className="add-warehouse-form-grid">
-                                                <div className="add-warehouse-form-group">
-                                                    <label>
-                                                        Warehouse Name <span className="required-asterisk">*</span>
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        name="name"
-                                                        value={editFormData.name}
-                                                        onChange={handleEditInputChange}
-                                                        required
-                                                        placeholder="Enter warehouse name"
-                                                    />
-                                                </div>
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">Warehouse Manager</label>
+                                        <select
+                                            name="managerId"
+                                            value={selectedEditManagerId}
+                                            onChange={handleEditInputChange}
+                                            className="modern-form-select"
+                                        >
+                                            <option value="">Select Manager</option>
+                                            {Array.isArray(editManagers) && editManagers.map(manager => (
+                                                <option key={manager.id} value={manager.id}>
+                                                    {manager.firstName} {manager.lastName}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
 
-                                                <div className="add-warehouse-form-group">
-                                                    <label>Warehouse Manager</label>
-                                                    <select
-                                                        name="managerId"
-                                                        value={selectedEditManagerId}
-                                                        onChange={handleEditInputChange}
-                                                    >
-                                                        <option value="">Select Manager</option>
-                                                        {Array.isArray(editManagers) && editManagers.map(manager => (
-                                                            <option key={manager.id} value={manager.id}>
-                                                                {manager.firstName} {manager.lastName}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">Warehouse Workers</label>
+                                        <div className="modern-dropdown" ref={workersDropdownRef}>
+                                            <div
+                                                className="modern-dropdown-header"
+                                                onClick={toggleWorkersDropdown}
+                                            >
+                                                <span>Select Workers (Optional)</span>
+                                                <span className={`modern-dropdown-icon ${isWorkersDropdownOpen ? 'open' : ''}`}>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <polyline points="6 9 12 15 18 9" />
+                                        </svg>
+                                    </span>
+                                            </div>
 
-                                                <div className="add-warehouse-form-group add-warehouse-workers-section">
-                                                    <label>Warehouse Workers</label>
-                                                    <div className="add-warehouse-workers-dropdown" ref={workersDropdownRef}>
-                                                        <div
-                                                            className="add-warehouse-dropdown-header"
-                                                            onClick={toggleWorkersDropdown}
-                                                        >
-                                                            <span>Select Workers (Optional)</span>
-                                                            <span
-                                                                className={`add-warehouse-dropdown-icon ${isWorkersDropdownOpen ? 'open' : ''}`}
+                                            {isWorkersDropdownOpen && (
+                                                <div className="modern-dropdown-menu">
+                                                    {editWorkers
+                                                        .filter(worker => !editSelectedWorkerIds.includes(worker.id))
+                                                        .map(worker => (
+                                                            <div
+                                                                key={worker.id}
+                                                                className="modern-dropdown-item"
+                                                                onClick={() => handleSelectEditWorker(worker)}
                                                             >
-                                                    ▼
-                                                </span>
-                                                        </div>
-
-                                                        {isWorkersDropdownOpen && (
-                                                            <div className="add-warehouse-dropdown-menu">
-                                                                {editWorkers
-                                                                    .filter(worker => !editSelectedWorkerIds.includes(worker.id))
-                                                                    .map(worker => (
-                                                                        <div
-                                                                            key={worker.id}
-                                                                            className="add-warehouse-dropdown-item"
-                                                                            onClick={() => handleSelectEditWorker(worker)}
-                                                                        >
-                                                                            {worker.firstName} {worker.lastName}
-                                                                        </div>
-                                                                    ))}
-                                                                {editWorkers.filter(worker => !editSelectedWorkerIds.includes(worker.id)).length === 0 && (
-                                                                    <div className="add-warehouse-dropdown-item">
-                                                                        No workers available
-                                                                    </div>
-                                                                )}
+                                                                {worker.firstName} {worker.lastName}
                                                             </div>
-                                                        )}
-                                                    </div>
-
-                                                    {editSelectedWorkers.length > 0 && (
-                                                        <div className="add-warehouse-workers-list">
-                                                            {editSelectedWorkers.map(worker => (
-                                                                <div key={worker.id} className="add-warehouse-worker-chip">
-                                                                    <span>{worker.firstName} {worker.lastName}</span>
-                                                                    <span
-                                                                        className="add-warehouse-remove-worker"
-                                                                        onClick={() => handleRemoveEditWorker(worker.id)}
-                                                                    >
-                                                            ×
-                                                        </span>
-                                                                </div>
-                                                            ))}
+                                                        ))}
+                                                    {editWorkers.filter(worker => !editSelectedWorkerIds.includes(worker.id)).length === 0 && (
+                                                        <div className="modern-dropdown-item disabled">
+                                                            No workers available
                                                         </div>
                                                     )}
                                                 </div>
-                                            </div>
+                                            )}
+                                        </div>
 
-                                            <div className="add-warehouse-form-actions">
-                                                <button
-                                                    type="button"
-                                                    className="add-warehouse-cancel-button"
-                                                    onClick={handleCloseEditModal}
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    type="submit"
-                                                    className="add-warehouse-submit-button"
-                                                >
-                                                    Update Warehouse
-                                                </button>
+                                        {editSelectedWorkers.length > 0 && (
+                                            <div className="modern-chips-container">
+                                                {editSelectedWorkers.map(worker => (
+                                                    <div key={worker.id} className="modern-chip">
+                                                        <span>{worker.firstName} {worker.lastName}</span>
+                                                        <button
+                                                            type="button"
+                                                            className="modern-chip-remove"
+                                                            onClick={() => handleRemoveEditWorker(worker.id)}
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        </form>
+                                        )}
                                     </div>
-                                </div>
+                                </form>
                             </div>
+                        </div>
+
+                        <div className="modern-modal-footer">
+                            <button
+                                type="button"
+                                className="modern-btn modern-btn-cancel"
+                                onClick={handleCloseEditModal}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="modern-btn modern-btn-primary"
+                                onClick={handleUpdateWarehouse}
+                            >
+                                Update Warehouse
+                            </button>
                         </div>
                     </div>
                 </div>
