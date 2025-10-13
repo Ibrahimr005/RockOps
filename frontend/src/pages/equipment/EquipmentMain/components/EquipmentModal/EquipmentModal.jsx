@@ -401,7 +401,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         }
     };
 
-    const populateFormForEditing = () => {
+    const populateFormForEditing = async () => {
         if (!equipmentToEdit) return;
 
         // Set form data from equipment being edited
@@ -447,8 +447,38 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             workedHours: formatNumberWithCommas(equipmentToEdit.workedHours) || "0"
         });
 
-        // Set preview image if equipment has an image
-        if (equipmentToEdit.imageUrl) {
+        // Fetch fresh presigned URL for equipment image (important for S3/MinIO)
+        if (equipmentToEdit.id) {
+            try {
+                console.log(`Fetching fresh presigned URL for equipment ${equipmentToEdit.id}`);
+                const photoResponse = await equipmentService.getEquipmentMainPhoto(equipmentToEdit.id);
+                if (photoResponse.data) {
+                    console.log("Fresh presigned URL fetched successfully");
+                    setPreviewImage(photoResponse.data);
+                } else if (equipmentToEdit.imageUrl) {
+                    // Fallback to existing URL if fresh fetch fails
+                    setPreviewImage(equipmentToEdit.imageUrl);
+                }
+            } catch (error) {
+                console.error("Error fetching fresh equipment photo:", error);
+                // Try refresh endpoint as fallback
+                try {
+                    console.log("Retrying with refresh endpoint...");
+                    const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(equipmentToEdit.id);
+                    if (refreshResponse.data) {
+                        console.log("Fresh presigned URL fetched via refresh");
+                        setPreviewImage(refreshResponse.data);
+                    }
+                } catch (refreshError) {
+                    console.error("Error refreshing equipment photo:", refreshError);
+                    // Use existing URL as last resort
+                    if (equipmentToEdit.imageUrl) {
+                        setPreviewImage(equipmentToEdit.imageUrl);
+                    }
+                }
+            }
+        } else if (equipmentToEdit.imageUrl) {
+            // Fallback for equipment without ID
             setPreviewImage(equipmentToEdit.imageUrl);
         }
 

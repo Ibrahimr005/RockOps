@@ -150,3 +150,4 @@ The component uses the existing `.global-page-header` and `.departments-header` 
 
 The action buttons use the standard `btn btn-primary` classes, making them consistent with the rest of the application's button styling.
 
+
