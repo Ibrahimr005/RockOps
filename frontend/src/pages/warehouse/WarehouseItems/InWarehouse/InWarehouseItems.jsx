@@ -657,7 +657,7 @@ const InWarehouseItems = ({
             {isAddItemModalOpen && (
                 <div className="resolution-modal-backdrop" onClick={handleOverlayClick}>
                     <div className="add-item-modal">
-                        <div className="resolution-modal-header">
+                        <div className="modal-header">
                             <h2>Add New Item</h2>
                             <button
                                 className="btn-close"
@@ -666,8 +666,8 @@ const InWarehouseItems = ({
                             </button>
                         </div>
 
-                        <div className="add-item-modal-body">
-                            <form onSubmit={handleAddItemSubmit} className="add-item-form">
+                        <div className="add-item-modal-body modal-body">
+                            <form onSubmit={handleAddItemSubmit} className="add-item-form modal-body">
                                 {/* NEW: Filter Toggle Section */}
                                 <div className="add-item-filter-section">
                                     <div className="add-item-filter-header">
@@ -826,23 +826,26 @@ const InWarehouseItems = ({
                                     </div>
                                 </div>
 
-                                <div className="add-item-modal-footer">
-                                    <button
-                                        type="submit"
-                                        className="btn-primary"
-                                    >
-                                        {addItemLoading ? (
-                                            <>
-                                                <div className="button-spinner"></div>
-                                                Adding...
-                                            </>
-                                        ) : (
-                                            "Add Item"
-                                        )}
-                                    </button>
-                                </div>
+
                             </form>
                         </div>
+                        <div className="modal-footer">
+                            <button
+                                type="submit"
+                                className="btn-primary"
+                                onClick={handleAddItemSubmit}
+                            >
+                                {addItemLoading ? (
+                                    <>
+                                        <div className="button-spinner"></div>
+                                        Adding...
+                                    </>
+                                ) : (
+                                    "Add Item"
+                                )}
+                            </button>
+                        </div>
+
                     </div>
                 </div>
             )}
