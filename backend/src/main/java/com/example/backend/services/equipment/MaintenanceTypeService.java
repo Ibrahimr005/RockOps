@@ -5,11 +5,15 @@ import com.example.backend.exceptions.ResourceAlreadyExistsException;
 import com.example.backend.exceptions.ResourceConflictException;
 import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.equipment.MaintenanceType;
+import com.example.backend.models.notification.NotificationType;
+import com.example.backend.models.user.Role;
 import com.example.backend.repositories.equipment.MaintenanceTypeRepository;
+import com.example.backend.services.notification.NotificationService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,6 +24,9 @@ public class MaintenanceTypeService {
 
     @Autowired
     private MaintenanceTypeRepository maintenanceTypeRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     /**
      * Get all active maintenance types
@@ -78,6 +85,30 @@ public class MaintenanceTypeService {
         maintenanceType.setActive(true);
 
         MaintenanceType savedMaintenanceType = maintenanceTypeRepository.save(maintenanceType);
+
+        // Send notifications
+        try {
+            String notificationTitle = "New Maintenance Type Created";
+            String notificationMessage = "Maintenance type '" + savedMaintenanceType.getName() + "' has been created. " +
+                    (maintenanceTypeDTO.getDescription() != null ? maintenanceTypeDTO.getDescription() : "");
+            String actionUrl = "/equipment/maintenance-type-management";
+            String relatedEntity = savedMaintenanceType.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.SUCCESS,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Maintenance type creation notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send maintenance type creation notification: " + e.getMessage());
+        }
         return convertToDTO(savedMaintenanceType);
     }
 
@@ -107,6 +138,31 @@ public class MaintenanceTypeService {
         maintenanceType.setActive(maintenanceTypeDTO.isActive());
 
         MaintenanceType updatedMaintenanceType = maintenanceTypeRepository.save(maintenanceType);
+
+        // Send notifications
+        try {
+            String notificationTitle = "Maintenance Type Updated";
+            String notificationMessage = "Maintenance type '" + updatedMaintenanceType.getName() + "' has been updated. " +
+                    (maintenanceTypeDTO.getDescription() != null ? maintenanceTypeDTO.getDescription() : "");
+            String actionUrl = "/equipment/maintenance-type-management";
+            String relatedEntity = updatedMaintenanceType.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Maintenance type update notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send maintenance type update notification: " + e.getMessage());
+        }
+
         return convertToDTO(updatedMaintenanceType);
     }
 
@@ -119,6 +175,31 @@ public class MaintenanceTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Maintenance type not found with id: " + id));
 
         maintenanceType.setActive(false);
+
+        // Send notifications
+        try {
+            String notificationTitle = "Maintenance Type Deleted";
+            String notificationMessage = "Maintenance type '" + maintenanceType.getName() + "' has been deleted. " +
+                    (maintenanceType.getDescription() != null ? maintenanceType.getDescription() : "");
+            String actionUrl = "/equipment/maintenance-type-management";
+            String relatedEntity = id.toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.WARNING,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Maintenance type deletion notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send maintenance type deletion notification: " + e.getMessage());
+        }
+
         maintenanceTypeRepository.save(maintenanceType);
     }
 

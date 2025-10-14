@@ -9,6 +9,7 @@
 @import url('./styles/textarea-styles.scss');
 @import url("./styles/tabs.scss");
 @import url("./styles/cancel-modal-button.scss");
+@import url("./styles/compact-modal-styles.scss");
 
 /* ==============================
    APP-WIDE 80% ZOOM EFFECT

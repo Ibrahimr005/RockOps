@@ -240,7 +240,7 @@ const Partners = () => {
             {/* Add Partner Modal */}
             {showAddModal && (
                 <div className="modal-backdrop" onClick={handleOverlayClick}>
-                    <div className="modal-container">
+                    <div className="modal-container modal-md">
                         <div className="modal-header">
                             <h3>{t('partners.addTitle', 'Add New Partner')}</h3>
                             <button className="btn-close" onClick={() => setShowAddModal(false)}>×</button>
@@ -304,7 +304,7 @@ const Partners = () => {
             {/* Edit Partner Modal */}
             {showEditModal && editingPartner && (
                 <div className="modal-backdrop" onClick={handleOverlayClick}>
-                    <div className="modal-container">
+                    <div className="modal-container modal-md">
                         <div className="modal-header">
                             <h3>{t('partners.editTitle', 'Edit Partner')}</h3>
                             <button className="btn-close" onClick={() => {
@@ -337,34 +337,35 @@ const Partners = () => {
                                     disabled={actionLoading}
                                 />
                             </div>
-                            <div className="modal-footer">
-                                <button
-                                    type="button"
-                                    className="modal-btn-secondary"
-                                    onClick={() => {
-                                        setShowEditModal(false);
-                                        setEditingPartner(null);
-                                    }}
-                                    disabled={actionLoading}
-                                >
-                                    {t('common.cancel', 'Cancel')}
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary"
-                                    disabled={actionLoading}
-                                >
-                                    {actionLoading ? (
-                                        <>
-                                            <span className="spinner"></span>
-                                            {t('common.updating', 'Updating...')}
-                                        </>
-                                    ) : (
-                                        t('common.update', 'Update')
-                                    )}
-                                </button>
-                            </div>
                         </form>
+                        <div className="modal-footer">
+                            <button
+                                type="button"
+                                className="modal-btn-secondary"
+                                onClick={() => {
+                                    setShowEditModal(false);
+                                    setEditingPartner(null);
+                                }}
+                                disabled={actionLoading}
+                            >
+                                {t('common.cancel', 'Cancel')}
+                            </button>
+                            <button
+                                type="submit"
+                                className="btn btn-primary"
+                                onClick={handleUpdatePartner}
+                                disabled={actionLoading}
+                            >
+                                {actionLoading ? (
+                                    <>
+                                        <span className="spinner"></span>
+                                        {t('common.updating', 'Updating...')}
+                                    </>
+                                ) : (
+                                    t('common.update', 'Update')
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
