@@ -99,7 +99,7 @@ public class HREmployeeService {
                     "Salary Statistics Error",
                     "Failed to calculate salary statistics: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/employees/statistics",
+                    "/hr/employees/statistics",
                     "salary-stats-error-" + System.currentTimeMillis()
             );
 
@@ -143,7 +143,7 @@ public class HREmployeeService {
                     "Employee Distribution Error",
                     "Failed to calculate employee distribution: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/employees/distribution",
+                    "/hr/employees/distribution",
                     "distribution-error-" + System.currentTimeMillis()
             );
 
@@ -196,7 +196,7 @@ public class HREmployeeService {
                     "New Employee Added",
                     "New employee " + employeeName + " has been added as " + positionName + " in " + departmentName,
                     NotificationType.SUCCESS,
-                    "/employees/" + savedEmployee.getId(),
+                    "/hr/employee-details/" + savedEmployee.getId(),
                     "new-employee-" + savedEmployee.getId()
             );
 
@@ -207,7 +207,7 @@ public class HREmployeeService {
                         "New Team Member - " + departmentName,
                         "👋 " + employeeName + " has joined " + departmentName + " as " + positionName,
                         NotificationType.INFO,
-                        "/employees/" + savedEmployee.getId(),
+                        "/hr/employee-details/" + savedEmployee.getId(),
                         "new-team-member-" + savedEmployee.getId()
                 );
 
@@ -218,7 +218,7 @@ public class HREmployeeService {
                             "New Warehouse Team Member",
                             employeeName + " has joined the warehouse team as " + positionName,
                             NotificationType.INFO,
-                            "/employees/" + savedEmployee.getId(),
+                            "/hr/employee-details/" + savedEmployee.getId(),
                             "new-warehouse-employee-" + savedEmployee.getId()
                     );
                 } else if (deptLower.contains("finance")) {
@@ -226,7 +226,7 @@ public class HREmployeeService {
                             "New Finance Team Member",
                             employeeName + " has joined the finance team as " + positionName,
                             NotificationType.INFO,
-                            "/employees/" + savedEmployee.getId(),
+                            "/hr/employee-details/" + savedEmployee.getId(),
                             "new-finance-employee-" + savedEmployee.getId()
                     );
                 }
@@ -240,7 +240,7 @@ public class HREmployeeService {
                             "Employee Onboarding Required",
                             "📋 " + employeeName + " requires onboarding. Start date: " + savedEmployee.getHireDate(),
                             NotificationType.WARNING,
-                            "/employees/" + savedEmployee.getId() + "/onboarding",
+                            "/hr/employees/" + savedEmployee.getId() + "/onboarding",
                             "onboarding-required-" + savedEmployee.getId()
                     );
                 }
@@ -256,7 +256,7 @@ public class HREmployeeService {
                     "Employee Creation Failed",
                     "Failed to create new employee: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/employees",
+                    "/hr/employees",
                     "employee-creation-error-" + System.currentTimeMillis()
             );
 
@@ -342,7 +342,7 @@ public class HREmployeeService {
                     "Employee Update Failed",
                     "Failed to update employee: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/employees/" + id,
+                    "/hr/employees/" + id,
                     "employee-update-error-" + id
             );
 
@@ -363,7 +363,7 @@ public class HREmployeeService {
                     "Employee Name Updated",
                     "Employee name changed from '" + oldEmployeeName + "' to '" + currentEmployeeName + "'",
                     NotificationType.INFO,
-                    "/employees/" + employee.getId(),
+                    "/hr/employee-details/" + employee.getId(),
                     "name-change-" + employee.getId()
             );
         }
@@ -376,7 +376,7 @@ public class HREmployeeService {
                     "Employee Status Changed",
                     currentEmployeeName + " status changed from " + oldStatus + " to " + employee.getStatus(),
                     notificationType,
-                    "/employees/" + employee.getId(),
+                    "/hr/employee-details/" + employee.getId(),
                     "status-change-" + employee.getId()
             );
 
@@ -386,7 +386,7 @@ public class HREmployeeService {
                         "Employee Departure",
                         "⚠️ " + currentEmployeeName + " has left the company (" + employee.getStatus() + "). Exit procedures may be required.",
                         NotificationType.ERROR,
-                        "/employees/" + employee.getId() + "/exit",
+                        "/hr/employee-details/" + employee.getId() + "/exit",
                         "departure-" + employee.getId()
                 );
             }
@@ -403,7 +403,7 @@ public class HREmployeeService {
                     "Employee Position Changed",
                     currentEmployeeName + " moved from " + oldPositionName + " to " + newPositionName,
                     NotificationType.INFO,
-                    "/employees/" + employee.getId(),
+                    "/hr/employee-details/" + employee.getId(),
                     "position-change-" + employee.getId()
             );
 
@@ -418,7 +418,7 @@ public class HREmployeeService {
                         "Employee Department Transfer",
                         "🔄 " + currentEmployeeName + " transferred from " + oldDeptName + " to " + newDeptName,
                         NotificationType.WARNING,
-                        "/employees/" + employee.getId(),
+                        "/hr/employee-details/" + employee.getId(),
                         "dept-transfer-" + employee.getId()
                 );
             }
@@ -435,7 +435,7 @@ public class HREmployeeService {
                     "Employee Site Assignment Changed",
                     currentEmployeeName + " site assignment changed from " + oldSiteName + " to " + newSiteName,
                     NotificationType.INFO,
-                    "/employees/" + employee.getId(),
+                    "/hr/employee-details/" + employee.getId(),
                     "site-change-" + employee.getId()
             );
         }
@@ -515,7 +515,7 @@ public class HREmployeeService {
                     "Employee Record Deleted",
                     "Employee record for " + employeeName + " from " + departmentName + " has been permanently deleted",
                     NotificationType.ERROR,
-                    "/employees",
+                    "/hr/employees",
                     "employee-deleted-" + id
             );
 
@@ -524,7 +524,7 @@ public class HREmployeeService {
                     "Employee Data Permanently Removed",
                     "⚠️ All data for " + employeeName + " has been permanently removed from the system. This action cannot be undone.",
                     NotificationType.ERROR,
-                    "/employees",
+                    "/hr/employees",
                     "data-loss-warning-" + id
             );
 
@@ -535,7 +535,7 @@ public class HREmployeeService {
                     "Employee Deletion Failed",
                     "Failed to delete employee: " + e.getMessage(),
                     NotificationType.ERROR,
-                    "/employees/" + id,
+                    "/hr/employees/" + id,
                     "employee-delete-error-" + id
             );
 

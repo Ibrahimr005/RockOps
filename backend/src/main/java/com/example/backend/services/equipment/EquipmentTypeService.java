@@ -9,15 +9,19 @@ import com.example.backend.models.equipment.EquipmentType;
 import com.example.backend.models.equipment.WorkType;
 import com.example.backend.models.hr.Department;
 import com.example.backend.models.hr.JobPosition;
+import com.example.backend.models.notification.NotificationType;
+import com.example.backend.models.user.Role;
 import com.example.backend.repositories.equipment.EquipmentTypeRepository;
 import com.example.backend.repositories.equipment.WorkTypeRepository;
 import com.example.backend.repositories.hr.DepartmentRepository;
 import com.example.backend.repositories.hr.JobPositionRepository;
+import com.example.backend.services.notification.NotificationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,6 +35,9 @@ public class EquipmentTypeService {
     private final WorkTypeRepository workTypeRepository;
     private final DepartmentRepository departmentRepository;
     private final JobPositionRepository jobPositionRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Autowired
     public EquipmentTypeService(EquipmentTypeRepository equipmentTypeRepository,
@@ -83,6 +90,30 @@ public class EquipmentTypeService {
             createJobPositionForEquipmentType(savedEntity);
         }
 
+        // Send notifications
+        try {
+            String notificationTitle = "New Equipment Type Created";
+            String notificationMessage = "Equipment type '" + savedEntity.getName() + "' has been created. " +
+                    (dto.getDescription() != null ? dto.getDescription() : "");
+            String actionUrl = "/equipment/type-management";
+            String relatedEntity = savedEntity.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.SUCCESS,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Equipment type creation notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send equipment type creation notification: " + e.getMessage());
+        }
+
         return EquipmentTypeDTO.fromEntity(savedEntity);
     }
 
@@ -131,6 +162,30 @@ public class EquipmentTypeService {
             // Note: We don't automatically delete job positions as they might have employees
         }
 
+        // Send notifications
+        try {
+            String notificationTitle = "Equipment Type Updated";
+            String notificationMessage = "Equipment type '" + updatedEntity.getName() + "' has been updated. " +
+                    (dto.getDescription() != null ? dto.getDescription() : "");
+            String actionUrl = "/equipment/type-management";
+            String relatedEntity = updatedEntity.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Equipment type update notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send equipment type update notification: " + e.getMessage());
+        }
+
         return EquipmentTypeDTO.fromEntity(updatedEntity);
     }
 
@@ -146,6 +201,30 @@ public class EquipmentTypeService {
                 equipmentCount, 
                 "equipment unit"
             );
+        }
+
+        // Send notifications
+        try {
+            String notificationTitle = "Equipment Type Deleted";
+            String notificationMessage = "Equipment type '" + equipmentType.getName() + "' has been deleted. " +
+                    (equipmentType.getDescription() != null ? equipmentType.getDescription() : "");
+            String actionUrl = "/equipment/type-management";
+            String relatedEntity = id.toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.WARNING,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Equipment type deletion notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send equipment type deletion notification: " + e.getMessage());
         }
 
         equipmentTypeRepository.delete(equipmentType);
@@ -173,6 +252,41 @@ public class EquipmentTypeService {
         }
 
         EquipmentType savedEntity = equipmentTypeRepository.save(equipmentType);
+
+        // Send notifications
+        try {
+            String workTypeNames = workTypeIds.stream()
+                    .map(id -> {
+                        try {
+                            return workTypeRepository.findById(id).map(wt -> wt.getName()).orElse("Unknown");
+                        } catch (Exception e) {
+                            return "Unknown";
+                        }
+                    })
+                    .collect(Collectors.joining(", "));
+
+            String notificationTitle = "Work Types Added to Equipment Type";
+            String notificationMessage = "Work types (" + workTypeNames + ") added to equipment type '" +
+                    equipmentType.getName() + "'";
+            String actionUrl = "/equipment/type-management";
+            String relatedEntity = equipmentType.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Work types addition notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send work types addition notification: " + e.getMessage());
+        }
+
         return EquipmentTypeDTO.fromEntity(savedEntity);
     }
 
@@ -189,6 +303,31 @@ public class EquipmentTypeService {
         }
 
         EquipmentType savedEntity = equipmentTypeRepository.save(equipmentType);
+
+        // Send notifications
+        try {
+            String notificationTitle = "Work Types Removed from Equipment Type";
+            String notificationMessage = "Work types have been removed from equipment type '" +
+                    equipmentType.getName() + "'";
+            String actionUrl = "/equipment/type-management";
+            String relatedEntity = equipmentType.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Work types removal notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send work types removal notification: " + e.getMessage());
+        }
+
         return EquipmentTypeDTO.fromEntity(savedEntity);
     }
 
@@ -211,6 +350,31 @@ public class EquipmentTypeService {
         }
 
         EquipmentType savedEntity = equipmentTypeRepository.save(equipmentType);
+
+        // Send notifications
+        try {
+            String notificationTitle = "Work Types Updated for Equipment Type";
+            String notificationMessage = "Supported work types have been updated for equipment type '" +
+                    equipmentType.getName() + "'";
+            String actionUrl = "/equipment/type-management";
+            String relatedEntity = equipmentType.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Work types update notification sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send work types update notification: " + e.getMessage());
+        }
+
         return EquipmentTypeDTO.fromEntity(savedEntity);
     }
 

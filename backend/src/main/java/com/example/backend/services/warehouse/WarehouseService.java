@@ -2,10 +2,13 @@ package com.example.backend.services.warehouse;
 
 
 import com.example.backend.models.hr.Employee;
+import com.example.backend.models.notification.NotificationType;
+import com.example.backend.models.user.Role;
 import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
+import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +26,9 @@ public class WarehouseService {
 
     @Autowired
     private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
 
     public List<Map<String, Object>> getAllWarehouses() {
@@ -167,6 +173,31 @@ public class WarehouseService {
                 handleWorkerAssignments(existingWarehouse, warehouseData.get("workerIds"));
             }
 
+            // Send notifications to SITE_ADMIN, ADMIN, and WAREHOUSE users
+            try {
+                String notificationTitle = "Warehouse Updated";
+                String notificationMessage = "Warehouse '" + existingWarehouse.getName() + "' has been updated";
+                String actionUrl = existingWarehouse.getSite() != null ?
+                        "/warehouses/" + existingWarehouse.getId() : "/warehouses";
+                String relatedEntity = existingWarehouse.getId().toString();
+
+                List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN,
+                        Role.WAREHOUSE_MANAGER, Role.WAREHOUSE_EMPLOYEE);
+
+                notificationService.sendNotificationToUsersByRoles(
+                        targetRoles,
+                        notificationTitle,
+                        notificationMessage,
+                        NotificationType.INFO,
+                        actionUrl,
+                        relatedEntity
+                );
+
+                System.out.println("Warehouse update notifications sent successfully");
+            } catch (Exception e) {
+                System.err.println("Failed to send warehouse update notifications: " + e.getMessage());
+            }
+
             return warehouseRepository.save(existingWarehouse);
 
         } catch (Exception e) {
@@ -275,6 +306,31 @@ public class WarehouseService {
             // Check if warehouse has employee assignments
             if (warehouse.getEmployeeAssignments() != null && !warehouse.getEmployeeAssignments().isEmpty()) {
                 throw new RuntimeException("Cannot delete warehouse with employee assignments. Please remove assignments first.");
+            }
+
+            // Send notifications to SITE_ADMIN, ADMIN, and WAREHOUSE users
+            try {
+                String notificationTitle = "Warehouse Deleted";
+                String notificationMessage = "Warehouse '" + warehouse.getName() + "' has been deleted";
+                String actionUrl = warehouse.getSite() != null ?
+                        "/sites/details/" + warehouse.getSite().getId() : "/warehouses";
+                String relatedEntity = warehouse.getId().toString();
+
+                List<Role> targetRoles = Arrays.asList(Role.SITE_ADMIN, Role.ADMIN,
+                        Role.WAREHOUSE_MANAGER, Role.WAREHOUSE_EMPLOYEE);
+
+                notificationService.sendNotificationToUsersByRoles(
+                        targetRoles,
+                        notificationTitle,
+                        notificationMessage,
+                        NotificationType.ERROR,
+                        actionUrl,
+                        relatedEntity
+                );
+
+                System.out.println("Warehouse deletion notifications sent successfully");
+            } catch (Exception e) {
+                System.err.println("Failed to send warehouse deletion notifications: " + e.getMessage());
             }
 
             warehouseRepository.delete(warehouse);

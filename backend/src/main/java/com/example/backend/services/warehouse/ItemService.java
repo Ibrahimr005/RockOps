@@ -1,24 +1,24 @@
 package com.example.backend.services.warehouse;
 
 import com.example.backend.dto.item.ItemResolutionDTO;
+import com.example.backend.models.notification.NotificationType;
 import com.example.backend.models.transaction.Transaction;
 import com.example.backend.models.transaction.TransactionItem;
 import com.example.backend.models.transaction.TransactionStatus;
+import com.example.backend.models.user.Role;
 import com.example.backend.models.warehouse.*;
 import com.example.backend.repositories.transaction.TransactionRepository;
 import com.example.backend.repositories.warehouse.ItemRepository;
 import com.example.backend.repositories.warehouse.ItemResolutionRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
+import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class ItemService {
@@ -37,6 +37,9 @@ public class ItemService {
 
     @Autowired
     private ItemResolutionRepository itemResolutionRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     // Your existing methods...
 
@@ -101,8 +104,47 @@ public class ItemService {
             System.out.println("   - CreatedAt: " + newItem.getCreatedAt());
             System.out.println("   - CreatedBy: " + newItem.getCreatedBy());
 
+//            Item savedItem = itemRepository.save(newItem);
+//            System.out.println("✅ Successfully saved item with ID: " + savedItem.getId());
+//            return savedItem;
+
             Item savedItem = itemRepository.save(newItem);
             System.out.println("✅ Successfully saved item with ID: " + savedItem.getId());
+
+// Send notification to warehouse users and ADMIN
+            try {
+                if (notificationService != null) {
+                    String warehouseName = savedItem.getWarehouse() != null ?
+                            savedItem.getWarehouse().getName() : "Unknown Warehouse";
+
+                    String itemTypeName = savedItem.getItemType() != null ?
+                            savedItem.getItemType().getName() : "Unknown Item";
+
+                    String notificationTitle = "New Item Added to Warehouse";
+                    String notificationMessage = itemTypeName + " (" + savedItem.getQuantity() +
+                            " units) has been added to " + warehouseName;
+
+                    List<Role> targetRoles = Arrays.asList(
+                            Role.WAREHOUSE_MANAGER,
+                            Role.WAREHOUSE_EMPLOYEE,
+                            Role.ADMIN
+                    );
+
+                    notificationService.sendNotificationToUsersByRoles(
+                            targetRoles,
+                            notificationTitle,
+                            notificationMessage,
+                            NotificationType.SUCCESS,
+                            "/warehouses/" + savedItem.getWarehouse().getId(),
+                            "ITEM_" + savedItem.getId()
+                    );
+
+                    System.out.println("✅ Item creation notifications sent successfully");
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ Failed to send item creation notification: " + e.getMessage());
+            }
+
             return savedItem;
 
         } catch (Exception e) {
@@ -195,7 +237,48 @@ public class ItemService {
                 .resolvedAt(LocalDateTime.now())
                 .build();
 
-        return itemResolutionRepository.save(itemResolution);
+        ItemResolution savedResolution = itemResolutionRepository.save(itemResolution);
+
+// Send notification to warehouse users and ADMIN
+        try {
+            if (notificationService != null) {
+                String warehouseName = item.getWarehouse() != null ?
+                        item.getWarehouse().getName() : "Unknown Warehouse";
+
+                String itemTypeName = item.getItemType() != null ?
+                        item.getItemType().getName() : "Unknown Item";
+
+                String resolutionTypeText = request.getResolutionType().toString().replace("_", " ");
+
+                String notificationTitle = "Item Discrepancy Resolved";
+                String notificationMessage = "Discrepancy resolved at " + warehouseName +
+                        ": " + item.getQuantity() + "x " + itemTypeName +
+                        " - Resolution: " + resolutionTypeText;
+
+                List<Role> targetRoles = Arrays.asList(
+                        Role.WAREHOUSE_MANAGER,
+                        Role.WAREHOUSE_EMPLOYEE,
+                        Role.ADMIN
+                );
+
+                notificationService.sendNotificationToUsersByRoles(
+                        targetRoles,
+                        notificationTitle,
+                        notificationMessage,
+                        NotificationType.SUCCESS,
+                        "/warehouses/" + item.getWarehouse().getId(),
+                        "ITEM_" + item.getId()
+                );
+
+                System.out.println("✅ Item resolution notifications sent successfully");
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ Failed to send item resolution notification: " + e.getMessage());
+        }
+
+        return savedResolution;
+
+//return itemResolutionRepository.save(itemResolution);
     }
 
     // 🆕 NEW METHOD: Update transaction status based on item resolution

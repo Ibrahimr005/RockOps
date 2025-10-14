@@ -1,6 +1,7 @@
 package com.example.backend.services.warehouse;
 
 import com.example.backend.models.notification.NotificationType;
+import com.example.backend.models.user.Role;
 import com.example.backend.models.warehouse.ItemCategory;
 import com.example.backend.repositories.warehouse.ItemCategoryRepository;
 import com.example.backend.services.notification.NotificationService;
@@ -8,10 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,30 +51,64 @@ public class ItemCategoryService {
             itemCategory.setParentCategory(null);
         }
 
-        // Save the category
+//        // Save the category
+//        ItemCategory savedCategory = itemCategoryRepository.save(itemCategory);
+//
+//        // Send notification to warehouse users (AUTO USER DETECTION)
+//        try {
+//            if (notificationService != null) {
+//                String broadcastTitle = "New Category Available";
+//                String broadcastMessage = String.format(
+//                        "A new category '%s' has been added to the system%s",
+//                        categoryName,
+//                        parentCategoryId != null ? " as a subcategory" : ""
+//                );
+//
+//                notificationService.sendNotificationToWarehouseUsers(
+//                        broadcastTitle,
+//                        broadcastMessage,
+//                        NotificationType.INFO,
+//                        "/warehouses/item-categories",
+//                        "ItemCategory"
+//                );
+//            }
+//        } catch (Exception e) {
+//            System.err.println("❌ Failed to send category creation notification: " + e.getMessage());
+//            // Don't fail the operation if notification fails
+//        }
+//
+//        return savedCategory;
         ItemCategory savedCategory = itemCategoryRepository.save(itemCategory);
 
-        // Send notification to warehouse users (AUTO USER DETECTION)
+// Send notification to warehouse users and ADMIN
         try {
             if (notificationService != null) {
-                String broadcastTitle = "New Category Available";
-                String broadcastMessage = String.format(
+                String notificationTitle = "New Category Available";
+                String notificationMessage = String.format(
                         "A new category '%s' has been added to the system%s",
                         categoryName,
                         parentCategoryId != null ? " as a subcategory" : ""
                 );
 
-                notificationService.sendNotificationToWarehouseUsers(
-                        broadcastTitle,
-                        broadcastMessage,
+                List<Role> targetRoles = Arrays.asList(
+                        Role.WAREHOUSE_MANAGER,
+                        Role.WAREHOUSE_EMPLOYEE,
+                        Role.ADMIN
+                );
+
+                notificationService.sendNotificationToUsersByRoles(
+                        targetRoles,
+                        notificationTitle,
+                        notificationMessage,
                         NotificationType.INFO,
                         "/warehouses/item-categories",
-                        "ItemCategory"
+                        "ItemCategory_" + savedCategory.getId()
                 );
+
+                System.out.println("✅ Category creation notifications sent successfully");
             }
         } catch (Exception e) {
-            System.err.println("❌ Failed to send category creation notification: " + e.getMessage());
-            // Don't fail the operation if notification fails
+            System.err.println("⚠️ Failed to send category creation notification: " + e.getMessage());
         }
 
         return savedCategory;
@@ -159,30 +191,63 @@ public class ItemCategoryService {
             throw new RuntimeException("ITEM_TYPES_EXIST");
         }
 
-        // If no dependencies, proceed with deletion
+//        // If no dependencies, proceed with deletion
+//        itemCategoryRepository.delete(itemCategory);
+//        System.out.println("Item category deleted successfully");
+//
+//        // Send notification to warehouse users (AUTO USER DETECTION)
+//        try {
+//            if (notificationService != null) {
+//                String broadcastTitle = "Category Removed";
+//                String broadcastMessage = String.format(
+//                        "Category '%s' has been removed from the system",
+//                        categoryName
+//                );
+//
+//                notificationService.sendNotificationToWarehouseUsers(
+//                        broadcastTitle,
+//                        broadcastMessage,
+//                        NotificationType.WARNING,
+//                        "/warehouses/item-categories",
+//                        "ItemCategory"
+//                );
+//            }
+//        } catch (Exception e) {
+//            System.err.println("❌ Failed to send category deletion notification: " + e.getMessage());
+//            // Don't fail the operation if notification fails
+//        }
+
         itemCategoryRepository.delete(itemCategory);
         System.out.println("Item category deleted successfully");
 
-        // Send notification to warehouse users (AUTO USER DETECTION)
+// Send notification to warehouse users and ADMIN
         try {
             if (notificationService != null) {
-                String broadcastTitle = "Category Removed";
-                String broadcastMessage = String.format(
+                String notificationTitle = "Category Removed";
+                String notificationMessage = String.format(
                         "Category '%s' has been removed from the system",
                         categoryName
                 );
 
-                notificationService.sendNotificationToWarehouseUsers(
-                        broadcastTitle,
-                        broadcastMessage,
+                List<Role> targetRoles = Arrays.asList(
+                        Role.WAREHOUSE_MANAGER,
+                        Role.WAREHOUSE_EMPLOYEE,
+                        Role.ADMIN
+                );
+
+                notificationService.sendNotificationToUsersByRoles(
+                        targetRoles,
+                        notificationTitle,
+                        notificationMessage,
                         NotificationType.WARNING,
                         "/warehouses/item-categories",
                         "ItemCategory"
                 );
+
+                System.out.println("✅ Category deletion notifications sent successfully");
             }
         } catch (Exception e) {
-            System.err.println("❌ Failed to send category deletion notification: " + e.getMessage());
-            // Don't fail the operation if notification fails
+            System.err.println("⚠️ Failed to send category deletion notification: " + e.getMessage());
         }
     }
 
@@ -228,41 +293,84 @@ public class ItemCategoryService {
                 itemCategory.setParentCategory(null);
             }
         }
-
-        // Save the updated category
+//
+//        // Save the updated category
+//        ItemCategory updatedCategory = itemCategoryRepository.save(itemCategory);
+//
+//        // Send notification to warehouse users (AUTO USER DETECTION)
+//        try {
+//            if (notificationService != null) {
+//                String broadcastTitle = "Category Updated";
+//                String broadcastMessage;
+//
+//                // Check if name changed
+//                if (!oldCategoryName.equals(newCategoryName)) {
+//                    broadcastMessage = String.format(
+//                            "Category '%s' has been renamed to '%s'",
+//                            oldCategoryName,
+//                            newCategoryName
+//                    );
+//                } else {
+//                    broadcastMessage = String.format(
+//                            "Category '%s' has been updated",
+//                            newCategoryName
+//                    );
+//                }
+//
+//                notificationService.sendNotificationToWarehouseUsers(
+//                        broadcastTitle,
+//                        broadcastMessage,
+//                        NotificationType.INFO,
+//                        "/warehouses/item-categories",
+//                        "ItemCategory"
+//                );
+//            }
+//        } catch (Exception e) {
+//            System.err.println("❌ Failed to send category update notification: " + e.getMessage());
+//            // Don't fail the operation if notification fails
+//        }
+//
+//        return updatedCategory;
         ItemCategory updatedCategory = itemCategoryRepository.save(itemCategory);
 
-        // Send notification to warehouse users (AUTO USER DETECTION)
+// Send notification to warehouse users and ADMIN
         try {
             if (notificationService != null) {
-                String broadcastTitle = "Category Updated";
-                String broadcastMessage;
+                String notificationTitle = "Category Updated";
+                String notificationMessage;
 
-                // Check if name changed
                 if (!oldCategoryName.equals(newCategoryName)) {
-                    broadcastMessage = String.format(
+                    notificationMessage = String.format(
                             "Category '%s' has been renamed to '%s'",
                             oldCategoryName,
                             newCategoryName
                     );
                 } else {
-                    broadcastMessage = String.format(
+                    notificationMessage = String.format(
                             "Category '%s' has been updated",
                             newCategoryName
                     );
                 }
 
-                notificationService.sendNotificationToWarehouseUsers(
-                        broadcastTitle,
-                        broadcastMessage,
+                List<Role> targetRoles = Arrays.asList(
+                        Role.WAREHOUSE_MANAGER,
+                        Role.WAREHOUSE_EMPLOYEE,
+                        Role.ADMIN
+                );
+
+                notificationService.sendNotificationToUsersByRoles(
+                        targetRoles,
+                        notificationTitle,
+                        notificationMessage,
                         NotificationType.INFO,
                         "/warehouses/item-categories",
-                        "ItemCategory"
+                        "ItemCategory_" + updatedCategory.getId()
                 );
+
+                System.out.println("✅ Category update notifications sent successfully");
             }
         } catch (Exception e) {
-            System.err.println("❌ Failed to send category update notification: " + e.getMessage());
-            // Don't fail the operation if notification fails
+            System.err.println("⚠️ Failed to send category update notification: " + e.getMessage());
         }
 
         return updatedCategory;

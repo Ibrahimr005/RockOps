@@ -1,6 +1,7 @@
 package com.example.backend.services.transaction;
 
 import com.example.backend.models.*;
+import com.example.backend.models.notification.NotificationType;
 import com.example.backend.models.transaction.Transaction;
 import com.example.backend.models.transaction.TransactionItem;
 import com.example.backend.models.transaction.TransactionPurpose;
@@ -18,6 +19,7 @@ import com.example.backend.repositories.transaction.TransactionRepository;
 import com.example.backend.repositories.warehouse.ItemRepository;
 import com.example.backend.repositories.warehouse.ItemTypeRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
+import com.example.backend.services.notification.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -46,6 +48,10 @@ public class TransactionService {
     private EquipmentRepository equipmentRepository;
     @Autowired
     private ConsumableRepository consumableRepository;
+
+    @Autowired
+    private NotificationService notificationService;
+
 
     // ========================================
     // BATCH MATCHING LOGIC - NEW ADDITION
@@ -157,6 +163,31 @@ public class TransactionService {
         System.out.println("🎉 Batch matching completed successfully for batch #" + senderTransaction.getBatchNumber());
         System.out.println("✅ Sender claimed: " + senderTransaction.getItems().stream().mapToInt(TransactionItem::getQuantity).sum() + " total items");
         System.out.println("✅ Receiver claimed: " + receiverTransaction.getItems().stream().mapToInt(TransactionItem::getQuantity).sum() + " total items");
+
+        acceptTransaction(senderTransaction.getId(), receivedQuantities, itemsNotReceived, username, acceptanceComment);
+
+// Send batch matching notifications to ALL warehouse users
+        try {
+            String warehouseName1 = getEntityName(PartyType.WAREHOUSE, senderTransaction.getSenderId());
+            String warehouseName2 = getEntityName(PartyType.WAREHOUSE, senderTransaction.getReceiverId());
+
+            String message = "Transactions (Batch #" + senderTransaction.getBatchNumber() +
+                    ") between " + warehouseName1 + " and " + warehouseName2 + " were auto-matched and completed";
+
+            notificationService.sendNotificationToWarehouseUsers(
+                    "Transactions Auto-Matched",
+                    message,
+                    NotificationType.SUCCESS,
+                    "/warehouses",
+                    "BATCH_" + senderTransaction.getBatchNumber()
+            );
+
+            System.out.println("Batch matching notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send batch matching notifications: " + e.getMessage());
+        }
+
+        System.out.println("Batch matching completed successfully for batch #" + senderTransaction.getBatchNumber());
     }
 
     /**
@@ -285,24 +316,84 @@ public class TransactionService {
         }
 
         Transaction saved = transactionRepository.save(transaction);
-        System.out.println("✅ Transaction saved with immediate inventory updates applied");
+        System.out.println("Transaction saved with immediate inventory updates applied");
 
 // Handle receiver-initiated warehouse inventory AFTER transaction is saved
         if (sentFirst.equals(receiverId) && receiverType == PartyType.WAREHOUSE) {
-            System.out.println("🏭 Receiver is warehouse - adding inventory AFTER transaction save");
+            System.out.println("Receiver is warehouse - adding inventory AFTER transaction save");
             for (TransactionItem item : saved.getItems()) {
                 addToWarehouseInventoryOnReceive(receiverId, item);
             }
-            System.out.println("✅ Added inventory to receiver warehouse after transaction save");
+            System.out.println("Added inventory to receiver warehouse after transaction save");
         }
 
-// Handle equipment receiver inventory after transaction is saved (to avoid TransientObjectException)
+// Handle equipment receiver inventory after transaction is saved
         if (sentFirst.equals(receiverId) && receiverType == PartyType.EQUIPMENT) {
-            System.out.println("⚙️ Equipment receiver initiated - adding items after transaction save");
+            System.out.println("Equipment receiver initiated - adding items after transaction save");
             for (TransactionItem item : saved.getItems()) {
                 addToEquipmentConsumables(receiverId, item.getItemType(), item.getQuantity(), saved);
             }
-            System.out.println("✅ Added items to equipment receiver after transaction save");
+            System.out.println("Added items to equipment receiver after transaction save");
+        }
+
+// Send creation notifications to BOTH parties
+        try {
+            String senderName = getEntityName(senderType, senderId);
+            String receiverName = getEntityName(receiverType, receiverId);
+
+            String itemsSummary = saved.getItems().stream()
+                    .map(item -> item.getQuantity() + "x " + item.getItemType().getName())
+                    .collect(Collectors.joining(", "));
+
+            // Notify sender (initiator)
+            if (senderType == PartyType.WAREHOUSE) {
+                String senderMessage = "You created transaction (Batch #" + saved.getBatchNumber() +
+                        ") to " + receiverName + ": " + itemsSummary;
+                notificationService.sendNotificationToWarehouseUsers(
+                        "Transaction Created",
+                        senderMessage,
+                        NotificationType.INFO,
+                        "/warehouses/" + senderId,
+                        "TRANSACTION_" + saved.getId()
+                );
+            } else if (senderType == PartyType.EQUIPMENT) {
+                String senderMessage = "You created transaction (Batch #" + saved.getBatchNumber() +
+                        ") to " + receiverName + ": " + itemsSummary;
+                notificationService.sendNotificationToEquipmentUsers(
+                        "Transaction Created",
+                        senderMessage,
+                        NotificationType.INFO,
+                        "/equipment/" + senderId,
+                        "TRANSACTION_" + saved.getId()
+                );
+            }
+
+            // Notify receiver (awaiting response)
+            if (receiverType == PartyType.WAREHOUSE) {
+                String receiverMessage = "New pending transaction (Batch #" + saved.getBatchNumber() +
+                        ") from " + senderName + ": " + itemsSummary;
+                notificationService.sendNotificationToWarehouseUsers(
+                        "New Transaction Pending",
+                        receiverMessage,
+                        NotificationType.WARNING,
+                        "/warehouses/" + receiverId,
+                        "TRANSACTION_" + saved.getId()
+                );
+            } else if (receiverType == PartyType.EQUIPMENT) {
+                String receiverMessage = "New pending transaction (Batch #" + saved.getBatchNumber() +
+                        ") from " + senderName + ": " + itemsSummary;
+                notificationService.sendNotificationToEquipmentUsers(
+                        "New Transaction Pending",
+                        receiverMessage,
+                        NotificationType.WARNING,
+                        "/equipment/" + receiverId,
+                        "TRANSACTION_" + saved.getId()
+                );
+            }
+
+            System.out.println("Transaction creation notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send transaction creation notifications: " + e.getMessage());
         }
 
         return saved;
@@ -511,13 +602,131 @@ public class TransactionService {
         }
 
         // At the end of acceptTransactionWithPurpose method, replace the return statement with:
+//        try {
+//            System.out.println("🔍 DEBUG: About to save updated transaction...");
+//            Transaction savedTransaction = transactionRepository.save(transaction);
+//            System.out.println("✅ Transaction acceptance completed successfully. Transaction ID: " + savedTransaction.getId());
+//            return savedTransaction;
+//        } catch (Exception e) {
+//            System.err.println("❌ ERROR saving transaction:");
+//            System.err.println("  Error type: " + e.getClass().getSimpleName());
+//            System.err.println("  Error message: " + e.getMessage());
+//            e.printStackTrace();
+//            throw new RuntimeException("Failed to save transaction after acceptance", e);
+//        }
+
         try {
-            System.out.println("🔍 DEBUG: About to save updated transaction...");
+            System.out.println("DEBUG: About to save updated transaction...");
             Transaction savedTransaction = transactionRepository.save(transaction);
-            System.out.println("✅ Transaction acceptance completed successfully. Transaction ID: " + savedTransaction.getId());
+            System.out.println("Transaction acceptance completed successfully. Transaction ID: " + savedTransaction.getId());
+
+            // Send notifications to BOTH parties
+            try {
+                String senderName = getEntityName(savedTransaction.getSenderType(), savedTransaction.getSenderId());
+                String receiverName = getEntityName(savedTransaction.getReceiverType(), savedTransaction.getReceiverId());
+
+                if (savedTransaction.getStatus() == TransactionStatus.ACCEPTED) {
+                    String itemsSummary = savedTransaction.getItems().stream()
+                            .filter(item -> item.getStatus() == TransactionStatus.ACCEPTED)
+                            .map(item -> item.getReceivedQuantity() + "x " + item.getItemType().getName())
+                            .collect(Collectors.joining(", "));
+
+                    // Notify sender
+                    if (savedTransaction.getSenderType() == PartyType.WAREHOUSE) {
+                        notificationService.sendNotificationToWarehouseUsers(
+                                "Transaction Accepted",
+                                "Transaction (Batch #" + savedTransaction.getBatchNumber() + ") to " +
+                                        receiverName + " was accepted: " + itemsSummary,
+                                NotificationType.SUCCESS,
+                                "/warehouses/" + savedTransaction.getSenderId(),
+                                "TRANSACTION_" + savedTransaction.getId()
+                        );
+                    } else if (savedTransaction.getSenderType() == PartyType.EQUIPMENT) {
+                        notificationService.sendNotificationToEquipmentUsers(
+                                "Transaction Accepted",
+                                "Transaction (Batch #" + savedTransaction.getBatchNumber() + ") to " +
+                                        receiverName + " was accepted: " + itemsSummary,
+                                NotificationType.SUCCESS,
+                                "/equipment/" + savedTransaction.getSenderId(),
+                                "TRANSACTION_" + savedTransaction.getId()
+                        );
+                    }
+
+                    // Notify receiver
+                    if (savedTransaction.getReceiverType() == PartyType.WAREHOUSE) {
+                        notificationService.sendNotificationToWarehouseUsers(
+                                "Transaction Completed",
+                                "You accepted transaction (Batch #" + savedTransaction.getBatchNumber() +
+                                        ") from " + senderName + ": " + itemsSummary,
+                                NotificationType.SUCCESS,
+                                "/warehouses/" + savedTransaction.getReceiverId(),
+                                "TRANSACTION_" + savedTransaction.getId()
+                        );
+                    } else if (savedTransaction.getReceiverType() == PartyType.EQUIPMENT) {
+                        notificationService.sendNotificationToEquipmentUsers(
+                                "Transaction Completed",
+                                "You accepted transaction (Batch #" + savedTransaction.getBatchNumber() +
+                                        ") from " + senderName + ": " + itemsSummary,
+                                NotificationType.SUCCESS,
+                                "/equipment/" + savedTransaction.getReceiverId(),
+                                "TRANSACTION_" + savedTransaction.getId()
+                        );
+                    }
+                } else if (savedTransaction.getStatus() == TransactionStatus.REJECTED) {
+                    String reason = savedTransaction.getRejectionReason() != null ?
+                            savedTransaction.getRejectionReason() : "Some items had issues";
+
+                    // Notify sender
+                    if (savedTransaction.getSenderType() == PartyType.WAREHOUSE) {
+                        notificationService.sendNotificationToWarehouseUsers(
+                                "Transaction Rejected",
+                                "Transaction (Batch #" + savedTransaction.getBatchNumber() + ") to " +
+                                        receiverName + " was rejected. Reason: " + reason,
+                                NotificationType.ERROR,
+                                "/warehouses/" + savedTransaction.getSenderId(),
+                                "TRANSACTION_" + savedTransaction.getId()
+                        );
+                    } else if (savedTransaction.getSenderType() == PartyType.EQUIPMENT) {
+                        notificationService.sendNotificationToEquipmentUsers(
+                                "Transaction Rejected",
+                                "Transaction (Batch #" + savedTransaction.getBatchNumber() + ") to " +
+                                        receiverName + " was rejected. Reason: " + reason,
+                                NotificationType.ERROR,
+                                "/equipment/" + savedTransaction.getSenderId(),
+                                "TRANSACTION_" + savedTransaction.getId()
+                        );
+                    }
+
+                    // Notify receiver
+                    if (savedTransaction.getReceiverType() == PartyType.WAREHOUSE) {
+                        notificationService.sendNotificationToWarehouseUsers(
+                                "Transaction Rejected",
+                                "You rejected transaction (Batch #" + savedTransaction.getBatchNumber() +
+                                        ") from " + senderName + ". Reason: " + reason,
+                                NotificationType.INFO,
+                                "/warehouses/" + savedTransaction.getReceiverId(),
+                                "TRANSACTION_" + savedTransaction.getId()
+                        );
+                    } else if (savedTransaction.getReceiverType() == PartyType.EQUIPMENT) {
+                        notificationService.sendNotificationToEquipmentUsers(
+                                "Transaction Rejected",
+                                "You rejected transaction (Batch #" + savedTransaction.getBatchNumber() +
+                                        ") from " + senderName + ". Reason: " + reason,
+                                NotificationType.INFO,
+                                "/equipment/" + savedTransaction.getReceiverId(),
+                                "TRANSACTION_" + savedTransaction.getId()
+                        );
+                    }
+                }
+
+                System.out.println("Transaction acceptance/rejection notifications sent successfully");
+            } catch (Exception e) {
+                System.err.println("Failed to send transaction notifications: " + e.getMessage());
+            }
+
             return savedTransaction;
         } catch (Exception e) {
-            System.err.println("❌ ERROR saving transaction:");
+            System.err.println("ERROR saving transaction:");
             System.err.println("  Error type: " + e.getClass().getSimpleName());
             System.err.println("  Error message: " + e.getMessage());
             e.printStackTrace();
@@ -1141,12 +1350,73 @@ public class TransactionService {
         transaction.setCompletedAt(LocalDateTime.now());
         transaction.setApprovedBy(username);
 
+//        for (TransactionItem item : transaction.getItems()) {
+//            item.setStatus(TransactionStatus.REJECTED);
+//        }
+//
+//        System.out.println("✅ Transaction rejected cleanly - no inventory changes were made");
+//        return transactionRepository.save(transaction);
+
         for (TransactionItem item : transaction.getItems()) {
             item.setStatus(TransactionStatus.REJECTED);
         }
 
-        System.out.println("✅ Transaction rejected cleanly - no inventory changes were made");
-        return transactionRepository.save(transaction);
+        Transaction rejectedTransaction = transactionRepository.save(transaction);
+
+// Send rejection notifications to BOTH parties
+        try {
+            String senderName = getEntityName(transaction.getSenderType(), transaction.getSenderId());
+            String receiverName = getEntityName(transaction.getReceiverType(), transaction.getReceiverId());
+
+            // Notify sender
+            if (transaction.getSenderType() == PartyType.WAREHOUSE) {
+                notificationService.sendNotificationToWarehouseUsers(
+                        "Transaction Rejected",
+                        "Transaction (Batch #" + transaction.getBatchNumber() + ") to " +
+                                receiverName + " was rejected. Reason: " + rejectionReason,
+                        NotificationType.ERROR,
+                        "/warehouses/" + transaction.getSenderId(),
+                        "TRANSACTION_" + transaction.getId()
+                );
+            } else if (transaction.getSenderType() == PartyType.EQUIPMENT) {
+                notificationService.sendNotificationToEquipmentUsers(
+                        "Transaction Rejected",
+                        "Transaction (Batch #" + transaction.getBatchNumber() + ") to " +
+                                receiverName + " was rejected. Reason: " + rejectionReason,
+                        NotificationType.ERROR,
+                        "/equipment/" + transaction.getSenderId(),
+                        "TRANSACTION_" + transaction.getId()
+                );
+            }
+
+            // Notify receiver
+            if (transaction.getReceiverType() == PartyType.WAREHOUSE) {
+                notificationService.sendNotificationToWarehouseUsers(
+                        "Transaction Rejected",
+                        "You rejected transaction (Batch #" + transaction.getBatchNumber() +
+                                ") from " + senderName + ". Reason: " + rejectionReason,
+                        NotificationType.INFO,
+                        "/warehouses/" + transaction.getReceiverId(),
+                        "TRANSACTION_" + transaction.getId()
+                );
+            } else if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
+                notificationService.sendNotificationToEquipmentUsers(
+                        "Transaction Rejected",
+                        "You rejected transaction (Batch #" + transaction.getBatchNumber() +
+                                ") from " + senderName + ". Reason: " + rejectionReason,
+                        NotificationType.INFO,
+                        "/equipment/" + transaction.getReceiverId(),
+                        "TRANSACTION_" + transaction.getId()
+                );
+            }
+
+            System.out.println("Transaction rejection notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send rejection notifications: " + e.getMessage());
+        }
+
+        System.out.println("Transaction rejected cleanly - no inventory changes were made");
+        return rejectedTransaction;
     }
 
     // ========================================
@@ -1234,8 +1504,65 @@ public class TransactionService {
             System.out.println("   - New values: " + updatedItem.getItemType().getName() + " = " + updatedItem.getQuantity());
         }
 
-        System.out.println("✅ Transaction update completed successfully");
-        return transactionRepository.save(transaction);
+//        System.out.println("✅ Transaction update completed successfully");
+//        return transactionRepository.save(transaction);
+
+        System.out.println("Transaction update completed successfully");
+        Transaction updatedTransaction = transactionRepository.save(transaction);
+
+// Send update notifications to BOTH parties
+        try {
+            String senderName = getEntityName(transaction.getSenderType(), transaction.getSenderId());
+            String receiverName = getEntityName(transaction.getReceiverType(), transaction.getReceiverId());
+
+            // Notify sender
+            if (transaction.getSenderType() == PartyType.WAREHOUSE) {
+                notificationService.sendNotificationToWarehouseUsers(
+                        "Transaction Updated",
+                        "Your transaction (Batch #" + transaction.getBatchNumber() + ") to " +
+                                receiverName + " has been updated",
+                        NotificationType.INFO,
+                        "/warehouses/" + transaction.getSenderId(),
+                        "TRANSACTION_" + transaction.getId()
+                );
+            } else if (transaction.getSenderType() == PartyType.EQUIPMENT) {
+                notificationService.sendNotificationToEquipmentUsers(
+                        "Transaction Updated",
+                        "Your transaction (Batch #" + transaction.getBatchNumber() + ") to " +
+                                receiverName + " has been updated",
+                        NotificationType.INFO,
+                        "/equipment/" + transaction.getSenderId(),
+                        "TRANSACTION_" + transaction.getId()
+                );
+            }
+
+            // Notify receiver
+            if (transaction.getReceiverType() == PartyType.WAREHOUSE) {
+                notificationService.sendNotificationToWarehouseUsers(
+                        "Transaction Updated",
+                        "Transaction (Batch #" + transaction.getBatchNumber() + ") from " +
+                                senderName + " has been updated",
+                        NotificationType.INFO,
+                        "/warehouses/" + transaction.getReceiverId(),
+                        "TRANSACTION_" + transaction.getId()
+                );
+            } else if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
+                notificationService.sendNotificationToEquipmentUsers(
+                        "Transaction Updated",
+                        "Transaction (Batch #" + transaction.getBatchNumber() + ") from " +
+                                senderName + " has been updated",
+                        NotificationType.INFO,
+                        "/equipment/" + transaction.getReceiverId(),
+                        "TRANSACTION_" + transaction.getId()
+                );
+            }
+
+            System.out.println("Transaction update notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send update notifications: " + e.getMessage());
+        }
+
+        return updatedTransaction;
     }
 
     /**
@@ -1639,6 +1966,62 @@ public class TransactionService {
         // Revert immediate inventory changes based on who initiated the transaction
         revertImmediateInventoryChanges(transaction);
 
+        // Send deletion notifications to BOTH parties
+        try {
+            String senderName = getEntityName(transaction.getSenderType(), transaction.getSenderId());
+            String receiverName = getEntityName(transaction.getReceiverType(), transaction.getReceiverId());
+
+            // Notify sender
+            if (transaction.getSenderType() == PartyType.WAREHOUSE) {
+                notificationService.sendNotificationToWarehouseUsers(
+                        "Transaction Cancelled",
+                        "Your transaction (Batch #" + transaction.getBatchNumber() + ") to " +
+                                receiverName + " has been cancelled",
+                        NotificationType.WARNING,
+                        "/warehouses/" + transaction.getSenderId(),
+                        "TRANSACTION_" + transaction.getId()
+                );
+            } else if (transaction.getSenderType() == PartyType.EQUIPMENT) {
+                notificationService.sendNotificationToEquipmentUsers(
+                        "Transaction Cancelled",
+                        "Your transaction (Batch #" + transaction.getBatchNumber() + ") to " +
+                                receiverName + " has been cancelled",
+                        NotificationType.WARNING,
+                        "/equipment/" + transaction.getSenderId(),
+                        "TRANSACTION_" + transaction.getId()
+                );
+            }
+
+            // Notify receiver
+            if (transaction.getReceiverType() == PartyType.WAREHOUSE) {
+                notificationService.sendNotificationToWarehouseUsers(
+                        "Transaction Cancelled",
+                        "Transaction (Batch #" + transaction.getBatchNumber() + ") from " +
+                                senderName + " has been cancelled",
+                        NotificationType.WARNING,
+                        "/warehouses/" + transaction.getReceiverId(),
+                        "TRANSACTION_" + transaction.getId()
+                );
+            } else if (transaction.getReceiverType() == PartyType.EQUIPMENT) {
+                notificationService.sendNotificationToEquipmentUsers(
+                        "Transaction Cancelled",
+                        "Transaction (Batch #" + transaction.getBatchNumber() + ") from " +
+                                senderName + " has been cancelled",
+                        NotificationType.WARNING,
+                        "/equipment/" + transaction.getReceiverId(),
+                        "TRANSACTION_" + transaction.getId()
+                );
+            }
+
+            System.out.println("Transaction deletion notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send deletion notifications: " + e.getMessage());
+        }
+
+// Delete the transaction and its items (cascade should handle TransactionItems)
+        System.out.println("Deleting transaction and its items...");
+        transactionRepository.delete(transaction);
+
         // Delete the transaction and its items (cascade should handle TransactionItems)
         System.out.println("🗑️ Deleting transaction and its items...");
         transactionRepository.delete(transaction);
@@ -1712,5 +2095,25 @@ public class TransactionService {
         }
 
         System.out.println("✅ Inventory reversion completed");
+    }
+
+    // ========================================
+// NOTIFICATION HELPER METHOD
+// ========================================
+
+    /**
+     * Get entity name (warehouse or equipment) by ID and type
+     */
+    private String getEntityName(PartyType type, UUID entityId) {
+        if (type == PartyType.WAREHOUSE) {
+            return warehouseRepository.findById(entityId)
+                    .map(Warehouse::getName)
+                    .orElse("Unknown Warehouse");
+        } else if (type == PartyType.EQUIPMENT) {
+            return equipmentRepository.findById(entityId)
+                    .map(Equipment::getName)
+                    .orElse("Unknown Equipment");
+        }
+        return "Unknown Entity";
     }
 }

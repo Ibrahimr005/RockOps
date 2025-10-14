@@ -607,137 +607,137 @@ const AllSites = () => {
 
             {/* Add Site Modal */}
             {showAddModal && (
-                <div className="site-modal-overlay" onClick={handleOverlayClick}>
-                    <div className="site-modal-content">
-                        <div className="site-modal-header">
+                <div className="modern-modal-overlay" onClick={handleOverlayClick}>
+                    <div className="modern-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modern-modal-header">
                             <h2>{t('site.addSite')}</h2>
-                            <button className="site-modal-close-button" onClick={handleCloseModals}>×</button>
+                            <button className="modern-modal-close" onClick={handleCloseModals}>
+                                ×
+                            </button>
                         </div>
 
-                        <div className="site-modal-body">
-                            <div className="site-form-container">
-                                <div className="site-form-card">
-                                    <div className="site-profile-section">
-                                        <label htmlFor="siteImageUpload" className="site-image-upload-label">
-                                            {previewImage ? (
-                                                <img src={previewImage} alt="Site" className="site-image-preview" />
-                                            ) : (
-                                                <div className="site-image-placeholder"></div>
-                                            )}
-                                            <span className="site-upload-text">{t('common.uploadPhoto')}</span>
+                        <div className="modern-modal-body">
+                            <div className="modern-modal-layout">
+                                {/* Image Upload */}
+                                <label className={`modern-image-upload ${previewImage ? 'has-image' : ''}`}>
+                                    <input
+                                        type="file"
+                                        name="photo"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                    />
+                                    {previewImage ? (
+                                        <>
+                                            <img src={previewImage} alt="Site" className="modern-image-preview" />
+                                            <div className="modern-image-overlay">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setPreviewImage(null);
+                                                        setFormData({...formData, photo: null});
+                                                    }}
+                                                >
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <polyline points="3 6 5 6 21 6" />
+                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="modern-image-placeholder">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                                <polyline points="21 15 16 10 5 21" />
+                                            </svg>
+                                            <span className="upload-text">{t('common.uploadPhoto')}</span>
+                                            <span className="upload-hint">JPG, PNG or GIF</span>
+                                        </div>
+                                    )}
+                                </label>
+
+                                {/* Form Fields */}
+                                <div className="modern-form-section">
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">
+                                            {t('site.siteName')} <span className="required">*</span>
                                         </label>
                                         <input
-                                            type="file"
-                                            id="siteImageUpload"
-                                            name="photo"
-                                            accept="image/*"
-                                            onChange={handleFileChange}
-                                            style={{ display: "none" }}
+                                            type="text"
+                                            name="name"
+                                            value={formData.name}
+                                            onChange={handleInputChange}
+                                            className="modern-form-input"
+                                            placeholder="Enter site name"
+                                            required
                                         />
                                     </div>
 
-                                    <div className="site-form-fields-section">
-                                        <form onSubmit={handleAddSite}>
-                                            <div className="site-form-grid">
-                                                <div className="site-form-group">
-                                                    <label>{t('site.siteName')} <span className="required-asterisk">*</span></label>
-                                                    <input
-                                                        type="text"
-                                                        name="name"
-                                                        value={formData.name}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                    />
-                                                </div>
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">
+                                            {t('site.physicalAddress')} <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="physicalAddress"
+                                            value={formData.physicalAddress}
+                                            onChange={handleInputChange}
+                                            className="modern-form-input"
+                                            placeholder="Enter physical address"
+                                            required
+                                        />
+                                    </div>
 
-                                                <div className="site-form-group">
-                                                    <label>{t('site.physicalAddress')} <span className="required-asterisk">*</span></label>
-                                                    <input
-                                                        type="text"
-                                                        name="physicalAddress"
-                                                        value={formData.physicalAddress}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                    />
-                                                </div>
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">
+                                            {t('site.companyAddress')} <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="companyAddress"
+                                            value={formData.companyAddress}
+                                            onChange={handleInputChange}
+                                            className="modern-form-input"
+                                            placeholder="Enter company address"
+                                            required
+                                        />
+                                    </div>
 
-                                                <div className="site-form-group">
-                                                    <label>{t('site.companyAddress')} <span className="required-asterisk">*</span></label>
-                                                    <input
-                                                        type="text"
-                                                        name="companyAddress"
-                                                        value={formData.companyAddress}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                    />
-                                                </div>
-
-                                                <div className="site-form-group">
-                                                    <label>{t('site.creationDate')} <span className="required-asterisk">*</span></label>
-                                                    <input
-                                                        type="date"
-                                                        name="creationDate"
-                                                        value={formData.creationDate}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Partners section - commented out but with updated class names */}
-                                            {/*<div className="site-form-group site-partners-section">*/}
-                                            {/*    <label>{t('site.partners')}</label>*/}
-                                            {/*    <div className="site-partners-dropdown" ref={dropdownRef}>*/}
-                                            {/*        <div className="site-dropdown-header" onClick={toggleDropdown}>*/}
-                                            {/*            <span>{t('site.selectPartners')}</span>*/}
-                                            {/*            <span className={`site-dropdown-icon ${isDropdownOpen ? 'open' : ''}`}>▼</span>*/}
-                                            {/*        </div>*/}
-
-                                            {/*        {isDropdownOpen && (*/}
-                                            {/*            <div className="site-dropdown-menu">*/}
-                                            {/*                {partners*/}
-                                            {/*                    .filter(partner => !selectedPartnerIds.includes(partner.id))*/}
-                                            {/*                    .map(partner => (*/}
-                                            {/*                        <div*/}
-                                            {/*                            key={partner.id}*/}
-                                            {/*                            className="site-dropdown-item"*/}
-                                            {/*                            onClick={() => handleSelectPartner(partner)}*/}
-                                            {/*                        >*/}
-                                            {/*                            {partner.firstName} {partner.lastName}*/}
-                                            {/*                        </div>*/}
-                                            {/*                    ))}*/}
-                                            {/*                {partners.filter(partner => !selectedPartnerIds.includes(partner.id)).length === 0 && (*/}
-                                            {/*                    <div className="site-dropdown-item">{t('site.noPartnersAvailable')}</div>*/}
-                                            {/*                )}*/}
-                                            {/*            </div>*/}
-                                            {/*        )}*/}
-                                            {/*    </div>*/}
-
-                                            {/*    {selectedPartners.length > 0 && (*/}
-                                            {/*        <div className="site-partners-list">*/}
-                                            {/*            {selectedPartners.map(partner => (*/}
-                                            {/*                <div key={partner.id} className="site-partner-chip">*/}
-                                            {/*                    <span>{partner.firstName} {partner.lastName}</span>*/}
-                                            {/*                    <span*/}
-                                            {/*                        className="site-remove-partner"*/}
-                                            {/*                        onClick={() => handleRemovePartner(partner.id)}*/}
-                                            {/*                    >*/}
-                                            {/*                        ×*/}
-                                            {/*                    </span>*/}
-                                            {/*                </div>*/}
-                                            {/*            ))}*/}
-                                            {/*        </div>*/}
-                                            {/*    )}*/}
-                                            {/*</div>*/}
-
-                                            <div className="site-form-actions">
-                                                <button type="button" className="site-cancel-button" onClick={handleCloseModals}>{t('common.cancel')}</button>
-                                                <button type="submit" className="site-submit-button">{t('site.addSite')}</button>
-                                            </div>
-                                        </form>
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">
+                                            {t('site.creationDate')} <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            type="date"
+                                            name="creationDate"
+                                            value={formData.creationDate}
+                                            onChange={handleInputChange}
+                                            className="modern-form-input"
+                                            required
+                                        />
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        <div className="modern-modal-footer">
+                            <button
+                                type="button"
+                                className="modern-btn modern-btn-cancel"
+                                onClick={handleCloseModals}
+                            >
+                                {t('common.cancel')}
+                            </button>
+                            <button
+                                type="submit"
+                                className="modern-btn modern-btn-primary"
+                                onClick={handleAddSite}
+                            >
+                                {t('site.addSite')}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -745,139 +745,139 @@ const AllSites = () => {
 
             {/* Edit Site Modal */}
             {showEditModal && (
-                <div className="site-modal-overlay" onClick={handleOverlayClick}>
-                    <div className="site-modal-content">
-                        <div className="site-modal-header">
+                <div className="modern-modal-overlay" onClick={handleOverlayClick}>
+                    <div className="modern-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modern-modal-header">
                             <h2>{t('site.editSite')}</h2>
-                            <button className="site-modal-close-button" onClick={handleCloseModals}>×</button>
+                            <button className="modern-modal-close" onClick={handleCloseModals}>
+                                ×
+                            </button>
                         </div>
 
-                        <div className="site-modal-body">
-                            <div className="site-form-container">
-                                <div className="site-form-card">
-                                    <div className="site-profile-section">
-                                        <label htmlFor="siteEditImageUpload" className="site-image-upload-label">
-                                            {previewImage ? (
-                                                <img src={previewImage} alt="Site" className="site-image-preview" />
-                                            ) : (
-                                                <div className="site-image-placeholder"></div>
-                                            )}
-                                            <span className="site-upload-text">{t('common.uploadPhoto')}</span>
+                        <div className="modern-modal-body">
+                            <div className="modern-modal-layout">
+                                {/* Image Upload */}
+                                <label className={`modern-image-upload ${previewImage ? 'has-image' : ''}`}>
+                                    <input
+                                        type="file"
+                                        name="photo"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                    />
+                                    {previewImage ? (
+                                        <>
+                                            <img src={previewImage} alt="Site" className="modern-image-preview" />
+                                            <div className="modern-image-overlay">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setPreviewImage(null);
+                                                        setFormData({...formData, photo: null});
+                                                    }}
+                                                >
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <polyline points="3 6 5 6 21 6" />
+                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="modern-image-placeholder">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                                <polyline points="21 15 16 10 5 21" />
+                                            </svg>
+                                            <span className="upload-text">{t('common.uploadPhoto')}</span>
+                                            <span className="upload-hint">JPG, PNG or GIF</span>
+                                        </div>
+                                    )}
+                                </label>
+
+                                {/* Form Fields */}
+                                <div className="modern-form-section">
+                                    <input type="hidden" name="id" value={formData.id} />
+
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">
+                                            {t('site.siteName')} <span className="required">*</span>
                                         </label>
                                         <input
-                                            type="file"
-                                            id="siteEditImageUpload"
-                                            name="photo"
-                                            accept="image/*"
-                                            onChange={handleFileChange}
-                                            style={{ display: "none" }}
+                                            type="text"
+                                            name="name"
+                                            value={formData.name}
+                                            onChange={handleInputChange}
+                                            className="modern-form-input"
+                                            placeholder="Enter site name"
+                                            required
                                         />
                                     </div>
 
-                                    <div className="site-form-fields-section">
-                                        <form onSubmit={handleUpdateSite}>
-                                            <input type="hidden" name="id" value={formData.id} />
-                                            <div className="site-form-grid">
-                                                <div className="site-form-group">
-                                                    <label>{t('site.siteName')}</label>
-                                                    <input
-                                                        type="text"
-                                                        name="name"
-                                                        value={formData.name}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                    />
-                                                </div>
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">
+                                            {t('site.physicalAddress')} <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="physicalAddress"
+                                            value={formData.physicalAddress}
+                                            onChange={handleInputChange}
+                                            className="modern-form-input"
+                                            placeholder="Enter physical address"
+                                            required
+                                        />
+                                    </div>
 
-                                                <div className="site-form-group">
-                                                    <label>{t('site.physicalAddress')}</label>
-                                                    <input
-                                                        type="text"
-                                                        name="physicalAddress"
-                                                        value={formData.physicalAddress}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                    />
-                                                </div>
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">
+                                            {t('site.companyAddress')} <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="companyAddress"
+                                            value={formData.companyAddress}
+                                            onChange={handleInputChange}
+                                            className="modern-form-input"
+                                            placeholder="Enter company address"
+                                            required
+                                        />
+                                    </div>
 
-                                                <div className="site-form-group">
-                                                    <label>{t('site.companyAddress')}</label>
-                                                    <input
-                                                        type="text"
-                                                        name="companyAddress"
-                                                        value={formData.companyAddress}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                    />
-                                                </div>
-
-                                                <div className="site-form-group">
-                                                    <label>{t('site.creationDate')}</label>
-                                                    <input
-                                                        type="date"
-                                                        name="creationDate"
-                                                        value={formData.creationDate}
-                                                        onChange={handleInputChange}
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Partners section - commented out but with updated class names */}
-                                            {/*<div className="site-form-group site-partners-section">*/}
-                                            {/*    <label>{t('site.partners')}</label>*/}
-                                            {/*    <div className="site-partners-dropdown" ref={dropdownRef}>*/}
-                                            {/*        <div className="site-dropdown-header" onClick={toggleDropdown}>*/}
-                                            {/*            <span>{t('site.selectPartners')}</span>*/}
-                                            {/*            <span className={`site-dropdown-icon ${isDropdownOpen ? 'open' : ''}`}>▼</span>*/}
-                                            {/*        </div>*/}
-
-                                            {/*        {isDropdownOpen && (*/}
-                                            {/*            <div className="site-dropdown-menu">*/}
-                                            {/*                {partners*/}
-                                            {/*                    .filter(partner => !selectedPartnerIds.includes(partner.id))*/}
-                                            {/*                    .map(partner => (*/}
-                                            {/*                        <div*/}
-                                            {/*                            key={partner.id}*/}
-                                            {/*                            className="site-dropdown-item"*/}
-                                            {/*                            onClick={() => handleSelectPartner(partner)}*/}
-                                            {/*                        >*/}
-                                            {/*                            {partner.firstName} {partner.lastName}*/}
-                                            {/*                        </div>*/}
-                                            {/*                    ))}*/}
-                                            {/*                {partners.filter(partner => !selectedPartnerIds.includes(partner.id)).length === 0 && (*/}
-                                            {/*                    <div className="site-dropdown-item">{t('site.noPartnersAvailable')}</div>*/}
-                                            {/*                )}*/}
-                                            {/*            </div>*/}
-                                            {/*        )}*/}
-                                            {/*    </div>*/}
-
-                                            {/*    {selectedPartners.length > 0 && (*/}
-                                            {/*        <div className="site-partners-list">*/}
-                                            {/*            {selectedPartners.map(partner => (*/}
-                                            {/*                <div key={partner.id} className="site-partner-chip">*/}
-                                            {/*                    <span>{partner.firstName} {partner.lastName}</span>*/}
-                                            {/*                    <span*/}
-                                            {/*                        className="site-remove-partner"*/}
-                                            {/*                        onClick={() => handleRemovePartner(partner.id)}*/}
-                                            {/*                    >*/}
-                                            {/*                        ×*/}
-                                            {/*                    </span>*/}
-                                            {/*                </div>*/}
-                                            {/*            ))}*/}
-                                            {/*        </div>*/}
-                                            {/*    )}*/}
-                                            {/*</div>*/}
-
-                                            <div className="site-form-actions">
-                                                <button type="button" className="site-cancel-button" onClick={handleCloseModals}>{t('common.cancel')}</button>
-                                                <button type="submit" className="site-submit-button site-save-button">{t('common.save')}</button>
-
-                                            </div>
-                                        </form>
+                                    <div className="modern-form-field">
+                                        <label className="modern-form-label">
+                                            {t('site.creationDate')} <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            type="date"
+                                            name="creationDate"
+                                            value={formData.creationDate}
+                                            onChange={handleInputChange}
+                                            className="modern-form-input"
+                                            required
+                                        />
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        <div className="modern-modal-footer">
+                            <button
+                                type="button"
+                                className="modern-btn modern-btn-cancel"
+                                onClick={handleCloseModals}
+                            >
+                                {t('common.cancel')}
+                            </button>
+                            <button
+                                type="submit"
+                                className="modern-btn modern-btn-primary"
+                                onClick={handleUpdateSite}
+                            >
+                                {t('common.save')}
+                            </button>
                         </div>
                     </div>
                 </div>

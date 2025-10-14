@@ -59,40 +59,6 @@ export const candidateService = {
     // NEW METHODS FOR POTENTIAL CANDIDATES
     // ===============================
 
-    // Update candidate status with rejection reason
-    updateStatusWithReason: (id, status, rejectionReason = null) => {
-        return apiClient.put(CANDIDATE_ENDPOINTS.UPDATE_STATUS_WITH_REASON(id), {
-            status,
-            rejectionReason
-        });
-    },
-
-    // Bulk update candidate statuses
-    bulkUpdateStatus: (candidateUpdates) => {
-        return apiClient.put(CANDIDATE_ENDPOINTS.BULK_UPDATE_STATUS, {
-            updates: candidateUpdates
-        });
-    },
-
-    // Get potential candidates
-    getPotentialCandidates: () => {
-        return apiClient.get(CANDIDATE_ENDPOINTS.POTENTIAL);
-    },
-
-    // Move candidate to potential list
-    moveToPotential: (id, reason = null) => {
-        return apiClient.post(CANDIDATE_ENDPOINTS.MOVE_TO_POTENTIAL(id), {
-            reason
-        });
-    },
-
-    // Restore candidate from potential list (back to active)
-    restoreFromPotential: (id, vacancyId) => {
-        return apiClient.post(CANDIDATE_ENDPOINTS.RESTORE_FROM_POTENTIAL(id), {
-            vacancyId
-        });
-    },
-
     // ===============================
     // SEARCH AND FILTERING
     // ===============================
@@ -157,6 +123,7 @@ export const candidateService = {
             ratingNotes
         });
     },
+
 
 
     // ===============================
