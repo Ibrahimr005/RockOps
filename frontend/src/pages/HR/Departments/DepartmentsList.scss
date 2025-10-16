@@ -134,12 +134,12 @@
   }
 }
 
-.department-description {
+.department-table-description {
   color: var(--paragraph-color);
   font-family: var(--font-family);
   line-height: 1.4;
   max-width: 300px;
-  overflow: hidden;
+  overflow: clip;
   text-overflow: ellipsis;
   white-space: nowrap;
 
