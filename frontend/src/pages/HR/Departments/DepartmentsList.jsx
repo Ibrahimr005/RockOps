@@ -113,7 +113,7 @@ const DepartmentsList = () => {
             accessor: 'description',
             sortable: true,
             render: (row, value) => (
-                <span className="department-description">
+                <span className="department-table-description">
                     {value || 'No description'}
                 </span>
             )

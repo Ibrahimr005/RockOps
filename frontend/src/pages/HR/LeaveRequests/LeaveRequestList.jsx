@@ -215,6 +215,7 @@ const LeaveRequestList = () => {
                     </div>
                 </div>
             )
+
         },
         {
             header: 'Status',
