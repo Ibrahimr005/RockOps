@@ -6,10 +6,7 @@ import com.example.backend.models.transaction.Transaction;
 import com.example.backend.models.transaction.TransactionItem;
 import com.example.backend.models.transaction.TransactionPurpose;
 import com.example.backend.models.transaction.TransactionStatus;
-import com.example.backend.models.warehouse.Item;
-import com.example.backend.models.warehouse.ItemStatus;
-import com.example.backend.models.warehouse.ItemType;
-import com.example.backend.models.warehouse.Warehouse;
+import com.example.backend.models.warehouse.*;
 import com.example.backend.repositories.equipment.ConsumableRepository;
 import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.models.equipment.Consumable;
@@ -420,6 +417,7 @@ public class TransactionService {
         newItem.setResolved(false);
         newItem.setCreatedAt(LocalDateTime.now());
         newItem.setCreatedBy("Created by a Transaction");
+        newItem.setItemSource(ItemSource.TRANSACTION_TRANSFER);
 
         itemRepository.save(newItem);
 
@@ -951,6 +949,7 @@ public class TransactionService {
         returnedItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
         returnedItem.setWarehouse(warehouse);
         returnedItem.setResolved(false);
+        returnedItem.setItemSource(ItemSource.TRANSACTION_TRANSFER);
 
         itemRepository.save(returnedItem);
         System.out.println("✅ Added back " + quantity + " units to warehouse inventory");
@@ -1187,6 +1186,7 @@ public class TransactionService {
 
             System.out.println("🔍 DEBUG: Setting resolved status to false");
             newItem.setResolved(false);
+            newItem.setItemSource(ItemSource.TRANSACTION_TRANSFER);
 
             LocalDateTime now = LocalDateTime.now();
             System.out.println("🔍 DEBUG: Setting createdAt to: " + now);

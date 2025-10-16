@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import com.example.backend.dto.procurement.ReceivedItemDTO; // ADD
+import com.example.backend.dto.procurement.ReceiveItemsRequestDTO; // ADD
 
 import java.util.HashMap;
 import java.util.List;
@@ -169,6 +171,48 @@ public class PurchaseOrderController {
             return ResponseEntity.internalServerError().body(Map.of(
                     "message", "Unexpected error: " + e.getMessage(),
                     "success", false
+            ));
+        }
+    }
+
+    @PostMapping("/{purchaseOrderId}/receive")
+    public ResponseEntity<?> receiveItems(
+            @PathVariable UUID purchaseOrderId,
+            @RequestBody ReceiveItemsRequestDTO request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            System.out.println("=== Receive Items Endpoint Called ===");
+            System.out.println("PO ID: " + purchaseOrderId);
+            System.out.println("Items to receive: " + request.getReceivedItems().size());
+
+            String username = userDetails.getUsername();
+
+            PurchaseOrder updatedPO = purchaseOrderService.receiveItems(
+                    purchaseOrderId,
+                    request.getReceivedItems(),
+                    username
+            );
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Items received successfully");
+            response.put("purchaseOrder", updatedPO);
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            System.err.println("Validation error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            System.err.println("Error receiving items: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Error receiving items: " + e.getMessage()
             ));
         }
     }

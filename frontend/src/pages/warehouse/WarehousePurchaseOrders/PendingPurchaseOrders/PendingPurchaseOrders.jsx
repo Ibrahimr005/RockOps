@@ -4,6 +4,7 @@ import { purchaseOrderService } from '../../../../services/procurement/purchaseO
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import PurchaseOrderViewModal from '../../../../components/procurement/PurchaseOrderViewModal/PurchaseOrderViewModal';
 import PurchaseOrderApprovalModal from '../PurchaseOrderApproveModal/PurchaseOrderApprovalModal';
+import ReportIssueModal from '../ReportIssueModal/ReportIssueModal'; // NEW
 
 const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
     const [pendingOrders, setPendingOrders] = useState([]);
@@ -12,6 +13,10 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
     const [showModal, setShowModal] = useState(false);
     const [showApprovalModal, setShowApprovalModal] = useState(false);
     const [purchaseOrderToApprove, setPurchaseOrderToApprove] = useState(null);
+
+    // NEW: Report Issue states
+    const [showReportIssueModal, setShowReportIssueModal] = useState(false);
+    const [purchaseOrderToReport, setPurchaseOrderToReport] = useState(null);
 
     // Fetch initial data
     useEffect(() => {
@@ -53,29 +58,57 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         setShowApprovalModal(true);
     };
 
+    // NEW: Handle report issue
+    const handleReportIssue = (purchaseOrder) => {
+        setPurchaseOrderToReport(purchaseOrder);
+        setShowReportIssueModal(true);
+    };
+
     // Handle approval from modal
-    const handleApprovalConfirm = async (approvalData) => {
+    const handleApprovalConfirm = async (updatedPurchaseOrder) => {
         try {
-            setIsLoading(true);
-
-            // Call the service to approve the purchase order with item details
-            await purchaseOrderService.approveWithItems(approvalData);
-
             // Show success message
             if (onShowSnackbar) {
-                onShowSnackbar(`Purchase order ${purchaseOrderToApprove.poNumber} approved successfully!`, 'success');
+                const status = updatedPurchaseOrder.status;
+                let message = '';
+
+                if (status === 'COMPLETED') {
+                    message = `All items received! Purchase order ${updatedPurchaseOrder.poNumber} is now complete.`;
+                } else if (status === 'PARTIAL') {
+                    message = `Items received! Purchase order ${updatedPurchaseOrder.poNumber} is now partially fulfilled.`;
+                } else {
+                    message = `Purchase order ${updatedPurchaseOrder.poNumber} updated successfully!`;
+                }
+
+                onShowSnackbar(message, 'success');
             }
 
-            // Refresh the data to remove the approved order from the pending list
+            // Refresh the data to update the list
             await fetchPendingPurchaseOrders();
 
         } catch (error) {
-            console.error('Error approving purchase order:', error);
+            console.error('Error after receiving items:', error);
             if (onShowSnackbar) {
-                onShowSnackbar('Failed to approve purchase order. Please try again.', 'error');
+                onShowSnackbar('An error occurred after receiving items.', 'error');
             }
-        } finally {
-            setIsLoading(false);
+        }
+    };
+
+    // NEW: Handle issue report submission
+    const handleIssueReportSubmit = async () => {
+        try {
+            if (onShowSnackbar) {
+                onShowSnackbar(`Issue reported for purchase order ${purchaseOrderToReport.poNumber}`, 'success');
+            }
+
+            // Refresh the data
+            await fetchPendingPurchaseOrders();
+
+        } catch (error) {
+            console.error('Error reporting issue:', error);
+            if (onShowSnackbar) {
+                onShowSnackbar('Failed to report issue.', 'error');
+            }
         }
     };
 
@@ -83,6 +116,12 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
     const handleApprovalModalClose = () => {
         setShowApprovalModal(false);
         setPurchaseOrderToApprove(null);
+    };
+
+    // NEW: Handle closing report issue modal
+    const handleReportIssueModalClose = () => {
+        setShowReportIssueModal(false);
+        setPurchaseOrderToReport(null);
     };
 
     // Handle row click to show purchase order details
@@ -97,7 +136,7 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         setSelectedPurchaseOrder(null);
     };
 
-    // Column configuration for pending purchase orders (removed requester column)
+    // Column configuration for pending purchase orders
     const pendingOrderColumns = [
         {
             id: 'poNumber',
@@ -148,10 +187,10 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         }
     ];
 
-    // Actions configuration
+    // Actions configuration - UPDATED with Report Issue
     const actions = [
         {
-            label: 'Approve',
+            label: 'Receive',
             icon: (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 6L9 17l-5-5" />
@@ -159,6 +198,18 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
             ),
             onClick: (row) => handleApprovePurchaseOrder(row),
             className: 'approve'
+        },
+        {
+            label: 'Report Issue',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+            ),
+            onClick: (row) => handleReportIssue(row),
+            className: 'danger'
         }
     ];
 
@@ -178,7 +229,7 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
                 showFilters={true}
                 filterableColumns={filterableColumns}
                 actions={actions}
-                actionsColumnWidth="100px"
+                actionsColumnWidth="150px" // Increased width for two buttons
                 onRowClick={handleRowClick}
             />
 
@@ -195,6 +246,14 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
                 isOpen={showApprovalModal}
                 onClose={handleApprovalModalClose}
                 onApprove={handleApprovalConfirm}
+            />
+
+            {/* NEW: Report Issue Modal */}
+            <ReportIssueModal
+                purchaseOrder={purchaseOrderToReport}
+                isOpen={showReportIssueModal}
+                onClose={handleReportIssueModalClose}
+                onSubmit={handleIssueReportSubmit}
             />
         </div>
     );

@@ -33,10 +33,8 @@ public class PurchaseOrder {
     // PENDING_FINANCE_APPROVAL, APPROVED, REJECTED)
     private String status;
 
-    // Associated request
-    @OneToOne
-    @JoinColumn(name = "request_order_id")
-    @JsonManagedReference
+    @ManyToOne
+    @JoinColumn(name = "request_order_id") // Removed 'unique = true'
     private RequestOrder requestOrder;
 
     // Associated offer (the offer that generated this PO)

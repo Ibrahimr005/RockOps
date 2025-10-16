@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime; // ADD THIS IMPORT
 import java.util.UUID;
 
 @Data
@@ -22,6 +23,11 @@ public class PurchaseOrderItemDTO {
     private String status;
     private int estimatedDeliveryDays;
     private String deliveryNotes;
+
+    // ADD THESE THREE FIELDS:
+    private Double receivedQuantity;  // Quantity received
+    private LocalDateTime receivedAt; // When received
+    private String receivedBy;        // Who received it
 
     // Parent Purchase Order reference (minimal to avoid circular deps)
     private UUID purchaseOrderId;

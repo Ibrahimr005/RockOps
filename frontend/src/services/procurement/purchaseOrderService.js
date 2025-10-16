@@ -234,5 +234,22 @@ export const purchaseOrderService = {
 
             return stats;
         }
-    }
+    },
+    receiveItems: async (purchaseOrderId, receivedItems) => {
+        try {
+            console.log('Receiving items for PO:', purchaseOrderId);
+            console.log('Items:', receivedItems);
+
+            const response = await apiClient.post(
+                PURCHASE_ORDER_ENDPOINTS.RECEIVE_ITEMS(purchaseOrderId),
+                { receivedItems }
+            );
+
+            console.log('Receive items response:', response);
+            return response.data || response;
+        } catch (error) {
+            console.error('Error receiving items:', error);
+            throw error;
+        }
+    },
 };
