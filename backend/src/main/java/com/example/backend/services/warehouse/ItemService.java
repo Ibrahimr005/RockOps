@@ -95,6 +95,7 @@ public class ItemService {
             newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
             newItem.setCreatedAt(createdAt);
             newItem.setCreatedBy(username);
+            newItem.setItemSource(ItemSource.MANUAL_ENTRY);
 
             System.out.println("✅ Created item object - about to save with:");
             System.out.println("   - ItemType: " + newItem.getItemType().getName());

@@ -42,7 +42,6 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
     return item.quantity < item.itemType.minQuantity;
   };
 
-  // Fetch items data
   const fetchItems = async () => {
     if (!warehouseId) {
       console.error("Warehouse ID is not available");
@@ -51,12 +50,30 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
     setLoading(true);
     try {
       const data = await itemService.getItemsByWarehouse(warehouseId);
-      // Ensure data is always an array
+
+      // ADD THESE DEBUG LOGS
+      console.log('=== DEBUG: API Response ===');
+      console.log('1. Raw data from API:', data);
+      console.log('2. Total items received:', data?.length);
+
+      const macbooksFromAPI = data?.filter(item =>
+          item.itemType?.name?.toLowerCase().includes('macbook')
+      );
+      console.log('3. ALL Macbooks from API (before any filtering):', macbooksFromAPI);
+      console.log('4. Macbook details:', macbooksFromAPI?.map(m => ({
+        id: m.id,
+        quantity: m.quantity,
+        itemSource: m.itemSource,
+        itemStatus: m.itemStatus,
+        resolved: m.resolved
+      })));
+      console.log('=== END DEBUG ===');
+
       const itemsArray = Array.isArray(data) ? data : [];
       setTableData(itemsArray);
     } catch (error) {
       console.error("Failed to fetch items:", error);
-      setTableData([]); // Set empty array on error
+      setTableData([]);
     } finally {
       setLoading(false);
     }

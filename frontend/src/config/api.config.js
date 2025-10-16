@@ -716,14 +716,15 @@ export const PROCUREMENT_ENDPOINTS = {
 };
 
 // Add this to your existing api.config.js file
-
+// In your api.config.js or wherever PURCHASE_ORDER_ENDPOINTS is defined
 export const PURCHASE_ORDER_ENDPOINTS = {
     BASE: '/api/v1/purchaseOrders',
     BY_ID: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}`,
     PENDING_OFFERS: '/api/v1/purchaseOrders/pending-offers',
     BY_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/purchase-order`,
     UPDATE_STATUS: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}/status`,
-    FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`
+    FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`,
+    RECEIVE_ITEMS: (id) => `/api/v1/purchaseOrders/${id}/receive` // ADD THIS
 };
 export const MAINTENANCE_ENDPOINTS = {
     // Dashboard

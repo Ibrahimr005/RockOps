@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -31,6 +32,10 @@ public class PurchaseOrderItem {
     private String status;
     private int estimatedDeliveryDays;
     private String deliveryNotes;
+
+    private Double receivedQuantity; // Quantity actually received (null if not received yet)
+    private LocalDateTime receivedAt; // When items were received
+    private String receivedBy; // Who marked them as received
 
     // ADD THESE DIRECT RELATIONSHIPS:
     @ManyToOne(fetch = FetchType.EAGER)

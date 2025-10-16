@@ -34,8 +34,7 @@ public class RequestOrderDTO {
     // Request items - full DTOs
     private List<RequestOrderItemDTO> requestItems;
 
-    // Purchase Order reference (minimal to avoid circular deps)
-    private UUID purchaseOrderId;
+    private List<UUID> purchaseOrderIds;
 
     // Offers list (minimal references to avoid circular deps)
     private List<UUID> offerIds;

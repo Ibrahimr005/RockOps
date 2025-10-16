@@ -16,7 +16,7 @@ public interface RequestOrderRepository extends JpaRepository<RequestOrder, UUID
             "LEFT JOIN FETCH ro.requestItems ri " +
             "LEFT JOIN FETCH ri.itemType it " +
             "LEFT JOIN FETCH it.itemCategory " +
-            "LEFT JOIN FETCH ro.purchaseOrder po " +
+            "LEFT JOIN FETCH ro.purchaseOrders po " +  // CHANGED THIS LINE
             "WHERE ro.id = :id")
     Optional<RequestOrder> findByIdWithItems(@Param("id") UUID id);
 
