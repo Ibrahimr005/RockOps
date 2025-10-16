@@ -362,7 +362,6 @@ const promotionService = {
      */
     checkEmployeePromotionEligibility: async (employeeId) => {
         try {
-            console.log('Checking promotion eligibility for employee:', employeeId);
 
             if (!employeeId) {
                 throw new Error('Employee ID is required');

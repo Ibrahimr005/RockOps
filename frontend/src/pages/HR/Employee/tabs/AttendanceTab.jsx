@@ -760,7 +760,7 @@ const AttendanceTab = ({ employee, formatDate }) => {
                     showFilters={true}
                     showExport={true}
                     exportFileName={`${employee.firstName}_${employee.lastName}_Attendance_${months.find(m => m.value === selectedMonth)?.label}_${selectedYear}`}
-                    defaultItemsPerPage={15}
+                    defaultItemsPerPage={31}
                     itemsPerPageOptions={[10, 15, 25, 50]}
                     defaultSortField="date"
                     defaultSortDirection="desc"
