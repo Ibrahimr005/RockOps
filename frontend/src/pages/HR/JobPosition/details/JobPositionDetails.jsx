@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {FiArrowLeft, FiEdit, FiInfo, FiTrendingUp, FiUser, FiUsers} from 'react-icons/fi';
+import {FiArrowLeft, FiBriefcase, FiEdit, FiHome, FiInfo, FiTrendingUp, FiUser, FiUsers} from 'react-icons/fi';
 import EditPositionForm from '../components/EditPositionForm.jsx';
 import PositionOverview from './components/PositionOverview.jsx';
 import PositionEmployees from './components/PositionEmployees.jsx';
@@ -8,6 +8,7 @@ import PositionPromotions from './components/PositionPromotions.jsx';
 import {useSnackbar} from '../../../../contexts/SnackbarContext';
 import {jobPositionService} from '../../../../services/hr/jobPositionService.js';
 import './JobPositionDetails.scss';
+import IntroCard from "../../../../components/common/IntroCard/IntroCard.jsx";
 
 const JobPositionDetails = () => {
     const {id} = useParams();
@@ -114,27 +115,70 @@ const JobPositionDetails = () => {
 
     const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
 
+    const getBreadcrumbs = () => {
+        return [
+            {
+                label: 'Home',
+                icon: <FiHome />,
+                onClick: () => navigate('/')
+            },
+            {
+                label: 'HR',
+                onClick: () => navigate('/hr')
+            },
+            {
+                label: 'Job Positions',
+                icon: <FiBriefcase />,
+                onClick: () => navigate('/hr/positions')
+            },
+            {
+                label: position.positionName
+            }
+        ];
+    };
+
+    const getPositionStats = () => {
+        return [
+            {
+                value: position.totalEmployees || '0',
+                label: 'Total Employees'
+            },
+            {
+                value: position.experienceLevel?.replace('_', ' ').toLowerCase()
+                    .replace(/\b\w/g, l => l.toUpperCase()) || 'N/A',
+                label: 'Experience Level'
+            },
+            {
+                value: position.active ? 'Active' : 'Inactive',
+                label: 'Status'
+            }
+        ];
+    };
+
+
+    const getActionButtons = () => {
+        return [
+            {
+                text: 'Edit Position',
+                icon: <FiEdit />,
+                onClick: () => setShowEditForm(true),
+                className: 'primary'
+            }
+        ];
+    };
+
     return (
         <div className="position-details-container">
             {/* Header Section */}
-            <div className="departments-header">
-
-                <h1>{position.positionName}
-                    <p className="employees-header__subtitle">
-                        {position.department} • <span
-                        className="status-badge"> {position.contractType?.replace('_', ' ')}</span>
-                    </p>
-                </h1>
-
-                <div className="position-actions">
-                    <button
-                        className="btn btn-primary"
-                        onClick={() => setShowEditForm(true)}
-                    >
-                        <FiEdit/> Edit Position
-                    </button>
-                </div>
-            </div>
+            <IntroCard
+                title={position.positionName}
+                label="JOB POSITION DETAILS"
+                breadcrumbs={getBreadcrumbs()}
+                icon={<FiBriefcase />}
+                stats={getPositionStats()}
+                actionButtons={getActionButtons()}
+                className="position-intro-card"
+            />
 
             {/* Position Summary Card */}
             <div className="position-summary-card">

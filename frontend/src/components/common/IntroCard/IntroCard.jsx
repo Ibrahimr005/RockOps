@@ -5,12 +5,13 @@ import './IntroCard.scss';
 const IntroCard = ({
                        title,
                        label = "PROCUREMENT CENTER",
+                       breadcrumbs = [], // New breadcrumbs prop
                        lightModeImage,
                        darkModeImage,
-                       icon, // New icon prop
+                       icon,
                        stats = [],
                        onInfoClick,
-                       actionButtons = [], // New prop for action buttons
+                       actionButtons = [],
                        className = ""
                    }) => {
     const { theme } = useTheme();
@@ -50,6 +51,48 @@ const IntroCard = ({
             </div>
 
             <div className="intro-card-content">
+                {/* Breadcrumbs */}
+                {breadcrumbs.length > 0 && (
+                    <nav className="intro-card-breadcrumbs" aria-label="Breadcrumb">
+                        <ol className="intro-card-breadcrumb-list">
+                            {breadcrumbs.map((crumb, index) => (
+                                <li key={index} className="intro-card-breadcrumb-item">
+                                    {crumb.onClick ? (
+                                        <button
+                                            className="intro-card-breadcrumb-link"
+                                            onClick={crumb.onClick}
+                                            type="button"
+                                        >
+                                            {crumb.icon && (
+                                                <span className="intro-card-breadcrumb-icon">
+                                                    {crumb.icon}
+                                                </span>
+                                            )}
+                                            {crumb.label}
+                                        </button>
+                                    ) : (
+                                        <span className="intro-card-breadcrumb-current">
+                                            {crumb.icon && (
+                                                <span className="intro-card-breadcrumb-icon">
+                                                    {crumb.icon}
+                                                </span>
+                                            )}
+                                            {crumb.label}
+                                        </span>
+                                    )}
+                                    {index < breadcrumbs.length - 1 && (
+                                        <span className="intro-card-breadcrumb-separator">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <polyline points="9 18 15 12 9 6" />
+                                            </svg>
+                                        </span>
+                                    )}
+                                </li>
+                            ))}
+                        </ol>
+                    </nav>
+                )}
+
                 <div className="intro-card-header">
                     <span className="intro-card-label">{label}</span>
                     <h2 className="intro-card-title">{title}</h2>
