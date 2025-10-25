@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
 import { FaCalendarCheck, FaUsers, FaUserCheck, FaUserTimes, FaClock, FaSave, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import AttendanceMonthlyView from './components/AttendanceMonthlyView';
@@ -12,6 +13,8 @@ import ContentLoader from "../../../components/common/ContentLoader/ContentLoade
 
 const AttendancePage = () => {
     const { showSnackbar } = useSnackbar();
+    const navigate = useNavigate();
+    const location = useLocation();
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -26,6 +29,10 @@ const AttendancePage = () => {
     // Confirmation dialog states
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingAction, setPendingAction] = useState(null);
+
+    // Navigation blocking
+    const pendingNavigationRef = useRef(null);
+    const allowNavigationRef = useRef(false);
 
     // Check if there are unsaved changes
     const hasUnsavedChanges = modifiedRecords.size > 0;
@@ -44,6 +51,56 @@ const AttendancePage = () => {
 
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [hasUnsavedChanges]);
+
+    // Intercept all navigation attempts
+    useEffect(() => {
+        const handleClick = (e) => {
+            // Skip if we're already allowing navigation
+            if (allowNavigationRef.current || !hasUnsavedChanges) {
+                return;
+            }
+
+            // Find the closest link or button that might trigger navigation
+            const target = e.target.closest('a[href], button[type="button"]');
+
+            if (!target) return;
+
+            // Check if it's a link that would navigate away
+            if (target.tagName === 'A') {
+                const href = target.getAttribute('href');
+
+                // Skip if it's an anchor link or external link
+                if (!href || href.startsWith('#') || href.startsWith('http')) {
+                    return;
+                }
+
+                // Check if the link would navigate to a different route
+                const isInternalNavigation = href.startsWith('/') || !href.includes('://');
+
+                if (isInternalNavigation) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // Store the intended destination
+                    pendingNavigationRef.current = href;
+
+                    // Show confirmation dialog
+                    setShowConfirmDialog(true);
+                    setPendingAction({
+                        type: 'navigation',
+                        path: href
+                    });
+                }
+            }
+        };
+
+        // Capture phase to intercept before React Router processes the click
+        document.addEventListener('click', handleClick, true);
+
+        return () => {
+            document.removeEventListener('click', handleClick, true);
         };
     }, [hasUnsavedChanges]);
 
@@ -285,6 +342,7 @@ const AttendancePage = () => {
                 // If save failed, don't proceed with the action
                 setShowConfirmDialog(false);
                 setPendingAction(null);
+                pendingNavigationRef.current = null;
                 return;
             }
         }
@@ -298,17 +356,34 @@ const AttendancePage = () => {
                 case 'siteChange':
                     executeSiteChange(pendingAction.siteId);
                     break;
+                case 'navigation':
+                    // Allow navigation by setting flag and clearing changes
+                    allowNavigationRef.current = true;
+                    setModifiedRecords(new Map());
+
+                    // Navigate to the pending path
+                    if (pendingAction.path) {
+                        navigate(pendingAction.path);
+                    }
+
+                    // Reset flag after navigation
+                    setTimeout(() => {
+                        allowNavigationRef.current = false;
+                    }, 100);
+                    break;
             }
         }
 
         // Close dialog and reset
         setShowConfirmDialog(false);
         setPendingAction(null);
+        pendingNavigationRef.current = null;
     };
 
     const handleCancelDialog = () => {
         setShowConfirmDialog(false);
         setPendingAction(null);
+        pendingNavigationRef.current = null;
     };
 
     // Calculate summary statistics
@@ -451,7 +526,7 @@ const AttendancePage = () => {
             {/* Confirmation Dialog for Unsaved Changes */}
             <ConfirmationDialog
                 isVisible={showConfirmDialog}
-                type="warning"
+                type="danger"
                 title="Unsaved Changes"
                 message={`You have ${modifiedRecords.size} unsaved change(s). Do you want to save them before continuing?`}
                 confirmText="Save & Continue"
