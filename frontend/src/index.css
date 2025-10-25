@@ -4,6 +4,7 @@ body {
   margin: 0;
   font-family: "Nunito Sans", sans-serif;
   font-optical-sizing: auto;
+
 }
 
 
@@ -16,7 +17,7 @@ img {
 }
 
 html {
-  font-size:12px;
+  font-size:14px;
 }
 
 body.modal-open {

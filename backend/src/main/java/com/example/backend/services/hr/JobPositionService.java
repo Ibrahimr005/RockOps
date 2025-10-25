@@ -1539,7 +1539,7 @@ public JobPositionDetailsDTO getJobPositionDetailsDTO(UUID id) {
         try {
             builder.id(jobPosition.getId())
                     .positionName(jobPosition.getPositionName())
-                    .department(jobPosition.getDepartment())
+//                    .department(jobPosition.getDepartment())
                     .departmentName(jobPosition.getDepartment() != null ? jobPosition.getDepartment().getName() : null)
                     .head(jobPosition.getHead())
                     .baseSalary(jobPosition.getBaseSalary())
@@ -1626,35 +1626,35 @@ public JobPositionDetailsDTO getJobPositionDetailsDTO(UUID id) {
         // ===============================
         // ANALYTICS DATA
         // ===============================
-        logger.debug("📈 Building analytics data");
-        PositionAnalyticsDTO analytics = null;
-        try {
-            analytics = buildPositionAnalytics(jobPosition, employees);
-            builder.analytics(analytics);
-            logger.debug("✅ Analytics data built successfully");
-        } catch (Exception e) {
-            logger.error("❌ Error building analytics data: {}", e.getMessage(), e);
-            // Create minimal analytics data
-            analytics = PositionAnalyticsDTO.builder()
-                    .averageEmployeeSalary(BigDecimal.ZERO)
-                    .minEmployeeSalary(BigDecimal.ZERO)
-                    .maxEmployeeSalary(BigDecimal.ZERO)
-                    .totalPayroll(BigDecimal.ZERO)
-                    .positionBaseSalary(BigDecimal.valueOf(jobPosition.getBaseSalary() != null ? jobPosition.getBaseSalary() : 0))
-                    .totalEmployees(employees.size())
-                    .activeEmployees(0)
-                    .eligibleForPromotionCount(0)
-                    .promotionEligibilityRate(0.0)
-                    .averageMonthsInPosition(0.0)
-                    .statusDistribution(new HashMap<>())
-                    .contractTypeDistribution(new HashMap<>())
-                    .isValidConfiguration(true)
-                    .validationIssueCount(0)
-                    .validationIssues(Collections.emptyList())
-                    .recommendations(Collections.emptyList())
-                    .build();
-            builder.analytics(analytics);
-        }
+//        logger.debug("📈 Building analytics data");
+//        PositionAnalyticsDTO analytics = null;
+//        try {
+//            analytics = buildPositionAnalytics(jobPosition, employees);
+//            builder.analytics(analytics);
+//            logger.debug("✅ Analytics data built successfully");
+//        } catch (Exception e) {
+//            logger.error("❌ Error building analytics data: {}", e.getMessage(), e);
+//            // Create minimal analytics data
+//            analytics = PositionAnalyticsDTO.builder()
+//                    .averageEmployeeSalary(BigDecimal.ZERO)
+//                    .minEmployeeSalary(BigDecimal.ZERO)
+//                    .maxEmployeeSalary(BigDecimal.ZERO)
+//                    .totalPayroll(BigDecimal.ZERO)
+//                    .positionBaseSalary(BigDecimal.valueOf(jobPosition.getBaseSalary() != null ? jobPosition.getBaseSalary() : 0))
+//                    .totalEmployees(employees.size())
+//                    .activeEmployees(0)
+//                    .eligibleForPromotionCount(0)
+//                    .promotionEligibilityRate(0.0)
+//                    .averageMonthsInPosition(0.0)
+//                    .statusDistribution(new HashMap<>())
+//                    .contractTypeDistribution(new HashMap<>())
+//                    .isValidConfiguration(true)
+//                    .validationIssueCount(0)
+//                    .validationIssues(Collections.emptyList())
+//                    .recommendations(Collections.emptyList())
+//                    .build();
+//            builder.analytics(analytics);
+//        }
 
         // ===============================
         // PROMOTIONS DATA
@@ -1703,37 +1703,37 @@ public JobPositionDetailsDTO getJobPositionDetailsDTO(UUID id) {
         // ===============================
         // SUMMARY COUNTS
         // ===============================
-        logger.debug("🔢 Building summary counts");
-        try {
-            int vacancyCount = getVacancyCountForPosition(id);
-            int activeVacancyCount = getActiveVacancyCountForPosition(id);
-
-            int totalPromotionsCount = 0;
-            int pendingPromotionsCount = 0;
-
-            if (promotions != null) {
-                totalPromotionsCount = (promotions.getTotalPromotionsFrom() != null ? promotions.getTotalPromotionsFrom().intValue() : 0) +
-                        (promotions.getTotalPromotionsTo() != null ? promotions.getTotalPromotionsTo().intValue() : 0);
-                pendingPromotionsCount = (promotions.getPendingPromotionsFromCount() != null ? promotions.getPendingPromotionsFromCount().intValue() : 0) +
-                        (promotions.getPendingPromotionsToCount() != null ? promotions.getPendingPromotionsToCount().intValue() : 0);
-            }
-
-            builder.vacancyCount(vacancyCount)
-                    .activeVacancyCount(activeVacancyCount)
-                    .totalPromotionsCount(totalPromotionsCount)
-                    .pendingPromotionsCount(pendingPromotionsCount);
-
-            logger.debug("✅ Summary counts: vacancies={}, activeVacancies={}, promotions={}, pending={}",
-                    vacancyCount, activeVacancyCount, totalPromotionsCount, pendingPromotionsCount);
-
-        } catch (Exception e) {
-            logger.error("❌ Error building summary counts: {}", e.getMessage(), e);
-            // Use zero counts
-            builder.vacancyCount(0)
-                    .activeVacancyCount(0)
-                    .totalPromotionsCount(0)
-                    .pendingPromotionsCount(0);
-        }
+//        logger.debug("🔢 Building summary counts");
+//        try {
+//            int vacancyCount = getVacancyCountForPosition(id);
+//            int activeVacancyCount = getActiveVacancyCountForPosition(id);
+//
+//            int totalPromotionsCount = 0;
+//            int pendingPromotionsCount = 0;
+//
+////            if (promotions != null) {
+////                totalPromotionsCount = (promotions.getTotalPromotionsFrom() != null ? promotions.getTotalPromotionsFrom().intValue() : 0) +
+////                        (promotions.getTotalPromotionsTo() != null ? promotions.getTotalPromotionsTo().intValue() : 0);
+////                pendingPromotionsCount = (promotions.getPendingPromotionsFromCount() != null ? promotions.getPendingPromotionsFromCount().intValue() : 0) +
+////                        (promotions.getPendingPromotionsToCount() != null ? promotions.getPendingPromotionsToCount().intValue() : 0);
+////            }
+//
+//            builder.vacancyCount(vacancyCount)
+//                    .activeVacancyCount(activeVacancyCount)
+//                    .totalPromotionsCount(totalPromotionsCount)
+//                    .pendingPromotionsCount(pendingPromotionsCount);
+//
+//            logger.debug("✅ Summary counts: vacancies={}, activeVacancies={}, promotions={}, pending={}",
+//                    vacancyCount, activeVacancyCount, totalPromotionsCount, pendingPromotionsCount);
+//
+//        } catch (Exception e) {
+//            logger.error("❌ Error building summary counts: {}", e.getMessage(), e);
+//            // Use zero counts
+//            builder.vacancyCount(0)
+//                    .activeVacancyCount(0)
+//                    .totalPromotionsCount(0)
+//                    .pendingPromotionsCount(0);
+//        }
 
         // Build and return
         logger.info("🎉 Successfully built JobPositionDetailsDTO for position: {}", jobPosition.getPositionName());
