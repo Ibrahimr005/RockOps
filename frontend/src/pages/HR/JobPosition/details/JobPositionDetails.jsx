@@ -9,6 +9,7 @@ import {useSnackbar} from '../../../../contexts/SnackbarContext';
 import {jobPositionService} from '../../../../services/hr/jobPositionService.js';
 import './JobPositionDetails.scss';
 import IntroCard from "../../../../components/common/IntroCard/IntroCard.jsx";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const JobPositionDetails = () => {
     const {id} = useParams();
@@ -88,12 +89,7 @@ const JobPositionDetails = () => {
 
     if (loading) {
         return (
-            <div className="position-details-container">
-                <div className="loading-container">
-                    <div className="loading-spinner"></div>
-                    <p>Loading position details...</p>
-                </div>
-            </div>
+           <ContentLoader message={"Loading Position Details.."} />
         );
     }
 
