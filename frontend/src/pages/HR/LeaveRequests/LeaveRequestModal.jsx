@@ -99,7 +99,7 @@ const LeaveRequestModal = ({
 
         while (current <= end) {
             const dayOfWeek = current.getDay();
-            if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Not Sunday (0) or Saturday (6)
+            if (dayOfWeek !== 5 && dayOfWeek !== 6) { // Not Sunday (0) or Saturday (6)
                 count++;
             }
             current.setDate(current.getDate() + 1);
@@ -257,7 +257,7 @@ const LeaveRequestModal = ({
 
     return (
         <div className="modal-backdrop" onClick={handleBackdropClick}>
-            <div className="modal-container modal-container--large">
+            <div className="modal-container modal-lg">
                 {/* Modal Header */}
                 <div className="modal-header">
                     <h2 className="modal-title modal-title-primary">

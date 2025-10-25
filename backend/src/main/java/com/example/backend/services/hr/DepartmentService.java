@@ -83,191 +83,191 @@ public class DepartmentService {
         }
     }
 
-    /**
-     * Create department from Map
-     */
-    @Transactional
-    public Map<String, Object> createDepartmentFromMap(Map<String, Object> departmentData) {
-        try {
-            logger.info("Creating department: {}", departmentData.get("name"));
+        /**
+         * Create department from Map
+         */
+        @Transactional
+        public Map<String, Object> createDepartmentFromMap(Map<String, Object> departmentData) {
+            try {
+                logger.info("Creating department: {}", departmentData.get("name"));
 
-            // Basic validation
-            if (departmentData.get("name") == null ||
-                    departmentData.get("name").toString().trim().isEmpty()) {
-                throw new IllegalArgumentException("Department name is required");
-            }
-
-            String name = departmentData.get("name").toString().trim();
-            String description = departmentData.get("description") != null ?
-                    departmentData.get("description").toString().trim() : null;
-
-            // Check if department with same name already exists
-            if (departmentRepository.existsByName(name)) {
-                throw new IllegalArgumentException("Department with name '" + name + "' already exists");
-            }
-
-            // Create new department
-            Department department = Department.builder()
-                    .name(name)
-                    .description(description != null && !description.isEmpty() ? description : null)
-                    .jobPositions(new ArrayList<>())
-                    .build();
-
-            Department savedDepartment = departmentRepository.save(department);
-            logger.info("Successfully created department with id: {}", savedDepartment.getId());
-
-            // Send notification about new department creation
-            notificationService.sendNotificationToHRUsers(
-                    "New Department Created",
-                    "Department '" + name + "' has been successfully created",
-                    NotificationType.SUCCESS,
-                    "/hr/departments/" + savedDepartment.getId(),
-                    "new-department-" + savedDepartment.getId()
-            );
-
-            // If it's a strategic department, send additional notification
-            if (isStrategicDepartment(name)) {
-                notificationService.sendNotificationToHRUsers(
-                        "Strategic Department Added",
-                        "🏢 Strategic department '" + name + "' has been added to the organization",
-                        NotificationType.INFO,
-                        "/hr/departments/" + savedDepartment.getId(),
-                        "strategic-dept-" + savedDepartment.getId()
-                );
-            }
-
-            return convertDepartmentToMap(savedDepartment);
-
-        } catch (IllegalArgumentException e) {
-            logger.warn("Validation error: {}", e.getMessage());
-
-            notificationService.sendNotificationToHRUsers(
-                    "Department Creation Failed",
-                    "Failed to create department: " + e.getMessage(),
-                    NotificationType.ERROR,
-                    "/hr/departments",
-                    "dept-creation-error-" + System.currentTimeMillis()
-            );
-
-            throw e;
-        } catch (Exception e) {
-            logger.error("Error creating department: ", e);
-
-            notificationService.sendNotificationToHRUsers(
-                    "Department Creation Error",
-                    "Unexpected error creating department: " + e.getMessage(),
-                    NotificationType.ERROR,
-                    "/hr/departments",
-                    "dept-creation-error-" + System.currentTimeMillis()
-            );
-
-            throw new RuntimeException("Failed to create department: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Update department from Map
-     */
-    @Transactional
-    public Map<String, Object> updateDepartmentFromMap(UUID id, Map<String, Object> departmentData) {
-        try {
-            logger.info("Updating department with id: {}", id);
-
-            Department existingDepartment = departmentRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Department not found with id: " + id));
-
-            String oldName = existingDepartment.getName();
-            String oldDescription = existingDepartment.getDescription();
-
-            // Validate name if provided
-            if (departmentData.get("name") != null) {
-                String newName = departmentData.get("name").toString().trim();
-                if (newName.isEmpty()) {
-                    throw new IllegalArgumentException("Department name cannot be empty");
+                // Basic validation
+                if (departmentData.get("name") == null ||
+                        departmentData.get("name").toString().trim().isEmpty()) {
+                    throw new IllegalArgumentException("Department name is required");
                 }
 
-                // Check if another department with the same name exists
-                if (!existingDepartment.getName().equals(newName) &&
-                        departmentRepository.existsByName(newName)) {
-                    throw new IllegalArgumentException("Department with name '" + newName + "' already exists");
-                }
-
-                existingDepartment.setName(newName);
-            }
-
-            // Update description if provided
-            if (departmentData.containsKey("description")) {
+                String name = departmentData.get("name").toString().trim();
                 String description = departmentData.get("description") != null ?
                         departmentData.get("description").toString().trim() : null;
-                existingDepartment.setDescription(description != null && !description.isEmpty() ? description : null);
-            }
 
-            Department updatedDepartment = departmentRepository.save(existingDepartment);
-            logger.info("Successfully updated department: {}", updatedDepartment.getName());
+                // Check if department with same name already exists
+                if (departmentRepository.existsByNameIgnoreCase(name)) {
+                    throw new IllegalArgumentException("Department with name '" + name + "' already exists");
+                }
 
-            // Send notification about department update
-            StringBuilder updateMessage = new StringBuilder("Department updated: ");
-            if (!oldName.equals(updatedDepartment.getName())) {
-                updateMessage.append("Name changed from '").append(oldName).append("' to '").append(updatedDepartment.getName()).append("'");
-            } else {
-                updateMessage.append("'").append(updatedDepartment.getName()).append("' information updated");
-            }
+                // Create new department
+                Department department = Department.builder()
+                        .name(name)
+                        .description(description != null && !description.isEmpty() ? description : null)
+                        .jobPositions(new ArrayList<>())
+                        .build();
 
-            notificationService.sendNotificationToHRUsers(
-                    "Department Updated",
-                    updateMessage.toString(),
-                    NotificationType.INFO,
-                    "/hr/departments/" + updatedDepartment.getId(),
-                    "dept-updated-" + updatedDepartment.getId()
-            );
+                Department savedDepartment = departmentRepository.save(department);
+                logger.info("Successfully created department with id: {}", savedDepartment.getId());
 
-            // If the department name changed, notify affected job positions
-            if (!oldName.equals(updatedDepartment.getName())) {
-                int jobPositionCount = updatedDepartment.getJobPositions() != null ?
-                        updatedDepartment.getJobPositions().size() : 0;
+                // Send notification about new department creation
+                notificationService.sendNotificationToHRUsers(
+                        "New Department Created",
+                        "Department '" + name + "' has been successfully created",
+                        NotificationType.SUCCESS,
+                        "/hr/departments/" + savedDepartment.getId(),
+                        "new-department-" + savedDepartment.getId()
+                );
 
-                if (jobPositionCount > 0) {
+                // If it's a strategic department, send additional notification
+                if (isStrategicDepartment(name)) {
                     notificationService.sendNotificationToHRUsers(
-                            "Department Rename Impact",
-                            "Department rename from '" + oldName + "' to '" + updatedDepartment.getName() +
-                                    "' affects " + jobPositionCount + " job position(s)",
-                            NotificationType.WARNING,
-                            "/hr/departments/" + updatedDepartment.getId(),
-                            "dept-rename-impact-" + updatedDepartment.getId()
+                            "Strategic Department Added",
+                            "🏢 Strategic department '" + name + "' has been added to the organization",
+                            NotificationType.INFO,
+                            "/hr/departments/" + savedDepartment.getId(),
+                            "strategic-dept-" + savedDepartment.getId()
                     );
                 }
+
+                return convertDepartmentToMap(savedDepartment);
+
+            } catch (IllegalArgumentException e) {
+                logger.warn("Validation error: {}", e.getMessage());
+
+                notificationService.sendNotificationToHRUsers(
+                        "Department Creation Failed",
+                        "Failed to create department: " + e.getMessage(),
+                        NotificationType.ERROR,
+                        "/hr/departments",
+                        "dept-creation-error-" + System.currentTimeMillis()
+                );
+
+                throw e;
+            } catch (Exception e) {
+                logger.error("Error creating department: ", e);
+
+                notificationService.sendNotificationToHRUsers(
+                        "Department Creation Error",
+                        "Unexpected error creating department: " + e.getMessage(),
+                        NotificationType.ERROR,
+                        "/hr/departments",
+                        "dept-creation-error-" + System.currentTimeMillis()
+                );
+
+                throw new RuntimeException("Failed to create department: " + e.getMessage());
             }
-
-            return convertDepartmentToMap(updatedDepartment);
-
-        } catch (IllegalArgumentException e) {
-            logger.warn("Validation error: {}", e.getMessage());
-
-            notificationService.sendNotificationToHRUsers(
-                    "Department Update Failed",
-                    "Failed to update department: " + e.getMessage(),
-                    NotificationType.ERROR,
-                    "/hr/departments/" + id,
-                    "dept-update-error-" + id
-            );
-
-            throw e;
-        } catch (Exception e) {
-            logger.error("Error updating department: ", e);
-
-            notificationService.sendNotificationToHRUsers(
-                    "Department Update Error",
-                    "Unexpected error updating department: " + e.getMessage(),
-                    NotificationType.ERROR,
-                    "/hr/departments/" + id,
-                    "dept-update-error-" + id
-            );
-
-            throw new RuntimeException("Failed to update department: " + e.getMessage());
         }
-    }
 
-    /**
+        /**
+         * Update department from Map
+         */
+        @Transactional
+        public Map<String, Object> updateDepartmentFromMap(UUID id, Map<String, Object> departmentData) {
+            try {
+                logger.info("Updating department with id: {}", id);
+
+                Department existingDepartment = departmentRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("Department not found with id: " + id));
+
+                String oldName = existingDepartment.getName();
+                String oldDescription = existingDepartment.getDescription();
+
+                // Validate name if provided
+                if (departmentData.get("name") != null) {
+                    String newName = departmentData.get("name").toString().trim();
+                    if (newName.isEmpty()) {
+                        throw new IllegalArgumentException("Department name cannot be empty");
+                    }
+
+                    // Check if another department with the same name exists
+                    if (!existingDepartment.getName().equals(newName) &&
+                            departmentRepository.existsByNameIgnoreCase(newName)) {
+                        throw new IllegalArgumentException("Department with name '" + newName + "' already exists");
+                    }
+
+                    existingDepartment.setName(newName);
+                }
+
+                // Update description if provided
+                if (departmentData.containsKey("description")) {
+                    String description = departmentData.get("description") != null ?
+                            departmentData.get("description").toString().trim() : null;
+                    existingDepartment.setDescription(description != null && !description.isEmpty() ? description : null);
+                }
+
+                Department updatedDepartment = departmentRepository.save(existingDepartment);
+                logger.info("Successfully updated department: {}", updatedDepartment.getName());
+
+                // Send notification about department update
+                StringBuilder updateMessage = new StringBuilder("Department updated: ");
+                if (!oldName.equals(updatedDepartment.getName())) {
+                    updateMessage.append("Name changed from '").append(oldName).append("' to '").append(updatedDepartment.getName()).append("'");
+                } else {
+                    updateMessage.append("'").append(updatedDepartment.getName()).append("' information updated");
+                }
+
+                notificationService.sendNotificationToHRUsers(
+                        "Department Updated",
+                        updateMessage.toString(),
+                        NotificationType.INFO,
+                        "/hr/departments/" + updatedDepartment.getId(),
+                        "dept-updated-" + updatedDepartment.getId()
+                );
+
+                // If the department name changed, notify affected job positions
+                if (!oldName.equals(updatedDepartment.getName())) {
+                    int jobPositionCount = updatedDepartment.getJobPositions() != null ?
+                            updatedDepartment.getJobPositions().size() : 0;
+
+                    if (jobPositionCount > 0) {
+                        notificationService.sendNotificationToHRUsers(
+                                "Department Rename Impact",
+                                "Department rename from '" + oldName + "' to '" + updatedDepartment.getName() +
+                                        "' affects " + jobPositionCount + " job position(s)",
+                                NotificationType.WARNING,
+                                "/hr/departments/" + updatedDepartment.getId(),
+                                "dept-rename-impact-" + updatedDepartment.getId()
+                        );
+                    }
+                }
+
+                return convertDepartmentToMap(updatedDepartment);
+
+            } catch (IllegalArgumentException e) {
+                logger.warn("Validation error: {}", e.getMessage());
+
+                notificationService.sendNotificationToHRUsers(
+                        "Department Update Failed",
+                        "Failed to update department: " + e.getMessage(),
+                        NotificationType.ERROR,
+                        "/hr/departments/" + id,
+                        "dept-update-error-" + id
+                );
+
+                throw e;
+            } catch (Exception e) {
+                logger.error("Error updating department: ", e);
+
+                notificationService.sendNotificationToHRUsers(
+                        "Department Update Error",
+                        "Unexpected error updating department: " + e.getMessage(),
+                        NotificationType.ERROR,
+                        "/hr/departments/" + id,
+                        "dept-update-error-" + id
+                );
+
+                throw new RuntimeException("Failed to update department: " + e.getMessage());
+            }
+        }
+
+        /**
      * Delete department by ID
      */
     @Transactional
@@ -589,14 +589,7 @@ public class DepartmentService {
         }
     }
 
-    public boolean existsByName(String name) {
-        try {
-            return departmentRepository.existsByName(name);
-        } catch (Exception e) {
-            logger.error("Error checking if department exists: ", e);
-            return false;
-        }
-    }
+
 
     public long getTotalCount() {
         try {
