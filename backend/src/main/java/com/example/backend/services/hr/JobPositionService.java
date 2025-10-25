@@ -1659,46 +1659,46 @@ public JobPositionDetailsDTO getJobPositionDetailsDTO(UUID id) {
         // ===============================
         // PROMOTIONS DATA
         // ===============================
-        logger.debug("🚀 Building promotions data");
-        PositionPromotionsDTO promotions = null;
-        try {
-            promotions = buildPositionPromotions(jobPosition);
-            builder.promotions(promotions);
-            logger.debug("✅ Promotions data built successfully");
-        } catch (Exception e) {
-            logger.error("❌ Error building promotions data: {}", e.getMessage(), e);
-            // Create minimal promotions data
-            promotions = PositionPromotionsDTO.builder()
-                    .totalPromotionsFrom(0L)
-                    .totalPromotionsTo(0L)
-                    .pendingPromotionsFromCount(0L)
-                    .pendingPromotionsToCount(0L)
-                    .implementedPromotionsFrom(0L)
-                    .implementedPromotionsTo(0L)
-                    .rejectedPromotionsFrom(0L)
-                    .rejectedPromotionsTo(0L)
-                    .averageSalaryIncrease(BigDecimal.ZERO)
-                    .averageTimeBeforePromotion(0.0)
-                    .promotionRate(0.0)
-                    .promotionSuccessRate(0.0)
-                    .hasCareerProgression(false)
-                    .isPromotionDestination(false)
-                    .topPromotionDestinations(new HashMap<>())
-                    .commonPromotionSources(new HashMap<>())
-                    .promotionsFromList(Collections.emptyList())
-                    .promotionsToList(Collections.emptyList())
-                    .pendingPromotionsFromList(Collections.emptyList())
-                    .pendingPromotionsToList(Collections.emptyList())
-                    .recentPromotions(Collections.emptyList())
-                    .careerPathSuggestions(Collections.emptyList())
-                    .promotionDestinations(Collections.emptyList())
-                    .promotionSources(Collections.emptyList())
-                    .promotionsLastYear(0L)
-                    .promotionsLastQuarter(0L)
-                    .promotionsThisMonth(0L)
-                    .build();
-            builder.promotions(promotions);
-        }
+//        logger.debug("🚀 Building promotions data");
+//        PositionPromotionsDTO promotions = null;
+//        try {
+//            promotions = buildPositionPromotions(jobPosition);
+//            builder.promotions(promotions);
+//            logger.debug("✅ Promotions data built successfully");
+//        } catch (Exception e) {
+//            logger.error("❌ Error building promotions data: {}", e.getMessage(), e);
+//            // Create minimal promotions data
+//            promotions = PositionPromotionsDTO.builder()
+//                    .totalPromotionsFrom(0L)
+//                    .totalPromotionsTo(0L)
+//                    .pendingPromotionsFromCount(0L)
+//                    .pendingPromotionsToCount(0L)
+//                    .implementedPromotionsFrom(0L)
+//                    .implementedPromotionsTo(0L)
+//                    .rejectedPromotionsFrom(0L)
+//                    .rejectedPromotionsTo(0L)
+//                    .averageSalaryIncrease(BigDecimal.ZERO)
+//                    .averageTimeBeforePromotion(0.0)
+//                    .promotionRate(0.0)
+//                    .promotionSuccessRate(0.0)
+//                    .hasCareerProgression(false)
+//                    .isPromotionDestination(false)
+//                    .topPromotionDestinations(new HashMap<>())
+//                    .commonPromotionSources(new HashMap<>())
+//                    .promotionsFromList(Collections.emptyList())
+//                    .promotionsToList(Collections.emptyList())
+//                    .pendingPromotionsFromList(Collections.emptyList())
+//                    .pendingPromotionsToList(Collections.emptyList())
+//                    .recentPromotions(Collections.emptyList())
+//                    .careerPathSuggestions(Collections.emptyList())
+//                    .promotionDestinations(Collections.emptyList())
+//                    .promotionSources(Collections.emptyList())
+//                    .promotionsLastYear(0L)
+//                    .promotionsLastQuarter(0L)
+//                    .promotionsThisMonth(0L)
+//                    .build();
+//            builder.promotions(promotions);
+//        }
 
         // ===============================
         // SUMMARY COUNTS
