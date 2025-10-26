@@ -1,16 +1,20 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
 import { FaCalendarCheck, FaUsers, FaUserCheck, FaUserTimes, FaClock, FaSave, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import AttendanceMonthlyView from './components/AttendanceMonthlyView';
 import AttendanceSummaryCard from './components/AttendanceSummaryCard';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './attendance.scss';
 import { siteService } from '../../../services/siteService';
 import { attendanceService } from '../../../services/hr/attendanceService.js';
-import ContentLoader from "../../../components/common/ContentLoader/ContentLoader.jsx"; // Import the new service
+import ContentLoader from "../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const AttendancePage = () => {
     const { showSnackbar } = useSnackbar();
+    const navigate = useNavigate();
+    const location = useLocation();
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
 
@@ -21,6 +25,84 @@ const AttendancePage = () => {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [monthlyAttendance, setMonthlyAttendance] = useState([]);
     const [modifiedRecords, setModifiedRecords] = useState(new Map());
+
+    // Confirmation dialog states
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null);
+
+    // Navigation blocking
+    const pendingNavigationRef = useRef(null);
+    const allowNavigationRef = useRef(false);
+
+    // Check if there are unsaved changes
+    const hasUnsavedChanges = modifiedRecords.size > 0;
+
+    // Handle browser back/forward/refresh
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [hasUnsavedChanges]);
+
+    // Intercept all navigation attempts
+    useEffect(() => {
+        const handleClick = (e) => {
+            // Skip if we're already allowing navigation
+            if (allowNavigationRef.current || !hasUnsavedChanges) {
+                return;
+            }
+
+            // Find the closest link or button that might trigger navigation
+            const target = e.target.closest('a[href], button[type="button"]');
+
+            if (!target) return;
+
+            // Check if it's a link that would navigate away
+            if (target.tagName === 'A') {
+                const href = target.getAttribute('href');
+
+                // Skip if it's an anchor link or external link
+                if (!href || href.startsWith('#') || href.startsWith('http')) {
+                    return;
+                }
+
+                // Check if the link would navigate to a different route
+                const isInternalNavigation = href.startsWith('/') || !href.includes('://');
+
+                if (isInternalNavigation) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // Store the intended destination
+                    pendingNavigationRef.current = href;
+
+                    // Show confirmation dialog
+                    setShowConfirmDialog(true);
+                    setPendingAction({
+                        type: 'navigation',
+                        path: href
+                    });
+                }
+            }
+        };
+
+        // Capture phase to intercept before React Router processes the click
+        document.addEventListener('click', handleClick, true);
+
+        return () => {
+            document.removeEventListener('click', handleClick, true);
+        };
+    }, [hasUnsavedChanges]);
 
     // Fetch sites on component mount
     useEffect(() => {
@@ -72,8 +154,6 @@ const AttendancePage = () => {
         }
     };
 
-    // Complete fix for date handling in AttendancePage.jsx
-
     const handleAttendanceUpdate = useCallback((employeeId, date, updates) => {
         const key = `${employeeId}_${date}`;
 
@@ -94,7 +174,7 @@ const AttendancePage = () => {
 
         const updateRecord = {
             employeeId,
-            date: formattedDate, // Use the formatted date
+            date: formattedDate,
             ...updates
         };
 
@@ -161,14 +241,13 @@ const AttendancePage = () => {
 
             // Create bulk attendance DTO
             const bulkAttendanceData = {
-                date: null, // Individual records have their own dates
+                date: null,
                 siteId: selectedSite,
                 attendanceRecords: recordsToSave
             };
 
             console.log('Sending bulk attendance data:', JSON.stringify(bulkAttendanceData, null, 2));
 
-            // Use the attendance service
             const response = await attendanceService.bulkSaveAttendance(bulkAttendanceData);
             const result = response.data;
 
@@ -178,10 +257,10 @@ const AttendancePage = () => {
             setModifiedRecords(new Map());
             await fetchMonthlyAttendance();
 
+            return true; // Indicate success
         } catch (error) {
             console.error('Error saving attendance:', error);
 
-            // Enhanced error message extraction
             let message = 'Failed to save attendance';
 
             if (error?.response?.data?.error) {
@@ -192,18 +271,52 @@ const AttendancePage = () => {
                 message = error.message;
             }
 
-            // Check for specific database constraint errors
             if (message.includes('null value in column "date"')) {
                 message = 'Date field is missing for one or more attendance records. Please refresh and try again.';
             }
 
             showSnackbar(message, 'error');
+            return false; // Indicate failure
         } finally {
             setSaving(false);
         }
     };
 
     const handleMonthChange = (direction) => {
+        if (hasUnsavedChanges) {
+            // Show confirmation dialog
+            setShowConfirmDialog(true);
+            setPendingAction({
+                type: 'monthChange',
+                direction
+            });
+        } else {
+            // Proceed with month change
+            executeMonthChange(direction);
+        }
+    };
+
+    const executeSiteChange = (siteId) => {
+        setSelectedSite(siteId);
+    };
+
+    const handleSiteChange = (e) => {
+        const newSiteId = e.target.value;
+
+        if (hasUnsavedChanges) {
+            // Show confirmation dialog
+            setShowConfirmDialog(true);
+            setPendingAction({
+                type: 'siteChange',
+                siteId: newSiteId
+            });
+        } else {
+            // Proceed with site change
+            executeSiteChange(newSiteId);
+        }
+    };
+
+    const executeMonthChange = (direction) => {
         if (direction === 'prev') {
             if (selectedMonth === 1) {
                 setSelectedMonth(12);
@@ -221,6 +334,58 @@ const AttendancePage = () => {
         }
     };
 
+    const handleConfirmDialogAction = async (saveChanges) => {
+        if (saveChanges) {
+            // Save changes first
+            const success = await handleSaveAttendance();
+            if (!success) {
+                // If save failed, don't proceed with the action
+                setShowConfirmDialog(false);
+                setPendingAction(null);
+                pendingNavigationRef.current = null;
+                return;
+            }
+        }
+
+        // Execute the pending action
+        if (pendingAction) {
+            switch (pendingAction.type) {
+                case 'monthChange':
+                    executeMonthChange(pendingAction.direction);
+                    break;
+                case 'siteChange':
+                    executeSiteChange(pendingAction.siteId);
+                    break;
+                case 'navigation':
+                    // Allow navigation by setting flag and clearing changes
+                    allowNavigationRef.current = true;
+                    setModifiedRecords(new Map());
+
+                    // Navigate to the pending path
+                    if (pendingAction.path) {
+                        navigate(pendingAction.path);
+                    }
+
+                    // Reset flag after navigation
+                    setTimeout(() => {
+                        allowNavigationRef.current = false;
+                    }, 100);
+                    break;
+            }
+        }
+
+        // Close dialog and reset
+        setShowConfirmDialog(false);
+        setPendingAction(null);
+        pendingNavigationRef.current = null;
+    };
+
+    const handleCancelDialog = () => {
+        setShowConfirmDialog(false);
+        setPendingAction(null);
+        pendingNavigationRef.current = null;
+    };
+
     // Calculate summary statistics
     const summary = useMemo(() => {
         const stats = {
@@ -233,7 +398,6 @@ const AttendancePage = () => {
         };
 
         monthlyAttendance.forEach(employee => {
-
             stats.totalPresent += employee.presentDays || 0;
             stats.totalAbsent += employee.absentDays || 0;
             stats.totalOnLeave += employee.leaveDays || 0;
@@ -282,7 +446,7 @@ const AttendancePage = () => {
                     <label>Site</label>
                     <select
                         value={selectedSite}
-                        onChange={(e) => setSelectedSite(e.target.value)}
+                        onChange={handleSiteChange}
                         className="form-control"
                     >
                         <option value="">Select Site</option>
@@ -358,6 +522,22 @@ const AttendancePage = () => {
                     </div>
                 )}
             </div>
+
+            {/* Confirmation Dialog for Unsaved Changes */}
+            <ConfirmationDialog
+                isVisible={showConfirmDialog}
+                type="danger"
+                title="Unsaved Changes"
+                message={`You have ${modifiedRecords.size} unsaved change(s). Do you want to save them before continuing?`}
+                confirmText="Save & Continue"
+                cancelText="Discard Changes"
+                onConfirm={() => handleConfirmDialogAction(true)}
+                onCancel={() => handleConfirmDialogAction(false)}
+                onClose={handleCancelDialog}
+                isLoading={saving}
+                showIcon={true}
+                size="medium"
+            />
         </div>
     );
 };
