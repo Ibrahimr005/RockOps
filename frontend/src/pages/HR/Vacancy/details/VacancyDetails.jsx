@@ -248,7 +248,6 @@ const VacancyDetails = () => {
                 breadcrumbs={getBreadcrumbs()}
                 icon={<FiBriefcase />}
                 stats={getVacancyStats()}
-                actionButtons={getActionButtons()}
             />
             {/* Main Content */}
             <div className="vacancy-content">

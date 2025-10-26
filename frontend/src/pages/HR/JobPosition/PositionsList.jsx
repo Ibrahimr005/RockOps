@@ -359,14 +359,14 @@ const PositionsList = () => {
             { accessor: 'department', header: 'Department', filterType: 'select' },
             { accessor: 'contractType', header: 'Contract Type', filterType: 'select' },
             { accessor: 'experienceLevel', header: 'Experience Level', filterType: 'select' },
-            { accessor: 'active', header: 'Status', filterType: 'select' }
+            // { accessor: 'active', header: 'Status', filterType: 'select' }
         ];
 
         // Only add hierarchy filters if hierarchy data exists
         if (positions.some(p => p.hierarchyLevel !== undefined || p.isRootPosition !== undefined)) {
             baseColumns.push(
                 { accessor: 'hierarchyLevel', header: 'Hierarchy Level', filterType: 'select' },
-                { accessor: 'isRootPosition', header: 'Position Type', filterType: 'select' }
+                // { accessor: 'isRootPosition', header: 'Position Type', filterType: 'select' }
             );
         }
 
