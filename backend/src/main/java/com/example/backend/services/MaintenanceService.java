@@ -3,6 +3,8 @@ package com.example.backend.services;
 import com.example.backend.dtos.*;
 import com.example.backend.models.*;
 import com.example.backend.models.hr.Employee;
+import com.example.backend.models.notification.NotificationType;
+import com.example.backend.models.user.Role;
 import com.example.backend.repositories.*;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.exceptions.MaintenanceException;
@@ -11,6 +13,7 @@ import com.example.backend.models.equipment.EquipmentStatus;
 import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.models.StepType;
 import com.example.backend.repositories.StepTypeRepository;
+import com.example.backend.services.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,6 +43,7 @@ public class MaintenanceService {
     private final StepTypeRepository stepTypeRepository;
     private final EmployeeRepository employeeRepository;
     private final ContactRepository contactRepository;
+    private final NotificationService notificationService;
     
     // Maintenance Record Operations
     
@@ -99,6 +104,34 @@ public class MaintenanceService {
         if (equipment.getStatus() != EquipmentStatus.IN_MAINTENANCE) {
             equipment.setStatus(EquipmentStatus.IN_MAINTENANCE);
             equipmentRepository.save(equipment);
+        }
+        
+        // Send notifications to MAINTENANCE_MANAGER, EQUIPMENT_MANAGER, and ADMIN
+        try {
+            String notificationTitle = "New Maintenance Record Created";
+            String notificationMessage = String.format("Maintenance record created for equipment '%s' (%s). Issue: %s", 
+                    equipment.getName(), 
+                    equipment.getFullModelName(),
+                    dto.getInitialIssueDescription() != null && dto.getInitialIssueDescription().length() > 100 
+                        ? dto.getInitialIssueDescription().substring(0, 100) + "..." 
+                        : dto.getInitialIssueDescription());
+            String actionUrl = "/maintenance/records/" + savedRecord.getId();
+            String relatedEntity = savedRecord.getId().toString();
+            
+            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.EQUIPMENT_MANAGER, Role.ADMIN);
+            
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+            
+            log.info("Maintenance record creation notifications sent successfully");
+        } catch (Exception e) {
+            log.error("Failed to send maintenance record creation notifications: {}", e.getMessage());
         }
         
         log.info("Created maintenance record: {} for equipment: {}", savedRecord.getId(), dto.getEquipmentId());
@@ -361,6 +394,39 @@ public class MaintenanceService {
         }
         maintenanceRecordRepository.save(record);
         
+        // Send notifications
+        try {
+            Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
+                    .orElseThrow(() -> new MaintenanceException("Equipment not found"));
+            
+            String notificationTitle = "New Maintenance Step Added";
+            String notificationMessage = String.format("New %s step added for equipment '%s'. Responsible: %s", 
+                    stepType.getName(),
+                    equipment.getName(),
+                    responsibleEmployee != null 
+                        ? responsibleEmployee.getFirstName() + " " + responsibleEmployee.getLastName()
+                        : (responsibleContact != null 
+                            ? responsibleContact.getFirstName() + " " + responsibleContact.getLastName()
+                            : "Not assigned"));
+            String actionUrl = "/maintenance/records/" + record.getId() + "?tab=steps";
+            String relatedEntity = record.getId().toString();
+            
+            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE, Role.EQUIPMENT_MANAGER, Role.ADMIN);
+            
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+            
+            log.info("Maintenance step creation notifications sent successfully");
+        } catch (Exception e) {
+            log.error("Failed to send maintenance step creation notifications: {}", e.getMessage());
+        }
+        
         return convertToDto(savedStep);
     }
     
@@ -431,6 +497,34 @@ public class MaintenanceService {
         stepToMark.setFinalStep(true);
         MaintenanceStep savedStep = maintenanceStepRepository.save(stepToMark);
         
+        // Send notifications for marking step as final
+        try {
+            Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
+                    .orElseThrow(() -> new MaintenanceException("Equipment not found"));
+            
+            String notificationTitle = "Final Maintenance Step Designated";
+            String notificationMessage = String.format("%s step has been marked as the final step for equipment '%s'", 
+                    savedStep.getStepType().getName(),
+                    equipment.getName());
+            String actionUrl = "/maintenance/records/" + record.getId() + "?tab=steps";
+            String relatedEntity = record.getId().toString();
+            
+            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE, Role.EQUIPMENT_MANAGER, Role.ADMIN);
+            
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.WARNING,
+                    actionUrl,
+                    relatedEntity
+            );
+            
+            log.info("Final step designation notifications sent successfully");
+        } catch (Exception e) {
+            log.error("Failed to send final step designation notifications: {}", e.getMessage());
+        }
+        
         // If this step is already completed, trigger record completion logic
         if (savedStep.isCompleted()) {
             completeMaintenanceRecordIfFinalStepCompleted(record);
@@ -459,6 +553,36 @@ public class MaintenanceService {
         
         // Recalculate total cost of parent record
         updateRecordTotalCost(step.getMaintenanceRecord().getId());
+        
+        // Send notifications for step completion
+        try {
+            MaintenanceRecord record = step.getMaintenanceRecord();
+            Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
+                    .orElseThrow(() -> new MaintenanceException("Equipment not found"));
+            
+            String notificationTitle = "Maintenance Step Completed";
+            String notificationMessage = String.format("%s step completed for equipment '%s'. Cost: %.2f", 
+                    step.getStepType().getName(),
+                    equipment.getName(),
+                    step.getStepCost() != null ? step.getStepCost() : BigDecimal.ZERO);
+            String actionUrl = "/maintenance/records/" + record.getId() + "?tab=steps";
+            String relatedEntity = record.getId().toString();
+            
+            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE, Role.EQUIPMENT_MANAGER, Role.ADMIN);
+            
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.SUCCESS,
+                    actionUrl,
+                    relatedEntity
+            );
+            
+            log.info("Maintenance step completion notifications sent successfully");
+        } catch (Exception e) {
+            log.error("Failed to send maintenance step completion notifications: {}", e.getMessage());
+        }
         
         // If this was the final step, complete the parent record
         if (step.isFinalStep()) {
@@ -505,6 +629,33 @@ public class MaintenanceService {
             log.info("Equipment {} remains IN_MAINTENANCE - {} other active maintenance records exist", 
                     equipment.getId(), otherActiveRecords.size());
         }
+        
+        // Send notifications for maintenance record completion
+        try {
+            String notificationTitle = "Maintenance Completed";
+            String notificationMessage = String.format("Maintenance completed for equipment '%s' (%s). Total cost: %.2f. Equipment status: %s", 
+                    equipment.getName(),
+                    equipment.getFullModelName(),
+                    record.getTotalCost() != null ? record.getTotalCost() : BigDecimal.ZERO,
+                    otherActiveRecords.isEmpty() ? "Available" : "Still in maintenance");
+            String actionUrl = "/maintenance/records/" + record.getId();
+            String relatedEntity = record.getId().toString();
+            
+            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE, Role.EQUIPMENT_MANAGER, Role.ADMIN);
+            
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.SUCCESS,
+                    actionUrl,
+                    relatedEntity
+            );
+            
+            log.info("Maintenance record completion notifications sent successfully");
+        } catch (Exception e) {
+            log.error("Failed to send maintenance record completion notifications: {}", e.getMessage());
+        }
     }
     
     public MaintenanceStepDto assignContactToStep(UUID stepId, UUID contactId) {
@@ -532,6 +683,36 @@ public class MaintenanceService {
         if (currentStep.isPresent() && currentStep.get().getId().equals(stepId)) {
             record.setCurrentResponsibleContact(contact);
             maintenanceRecordRepository.save(record);
+        }
+        
+        // Send notifications for responsible person assignment
+        try {
+            Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
+                    .orElseThrow(() -> new MaintenanceException("Equipment not found"));
+            
+            String notificationTitle = "Maintenance Responsibility Assigned";
+            String notificationMessage = String.format("%s %s has been assigned as responsible person for %s step on equipment '%s'", 
+                    contact.getFirstName(),
+                    contact.getLastName(),
+                    savedStep.getStepType().getName(),
+                    equipment.getName());
+            String actionUrl = "/maintenance/records/" + record.getId() + "?tab=steps";
+            String relatedEntity = record.getId().toString();
+            
+            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE, Role.EQUIPMENT_MANAGER, Role.ADMIN);
+            
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+            
+            log.info("Responsible person assignment notifications sent successfully");
+        } catch (Exception e) {
+            log.error("Failed to send responsible person assignment notifications: {}", e.getMessage());
         }
         
         return convertToDto(savedStep);

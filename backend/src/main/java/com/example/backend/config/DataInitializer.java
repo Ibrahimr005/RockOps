@@ -270,9 +270,9 @@ public class DataInitializer implements ApplicationRunner, CommandLineRunner {
         log.info("Initializing default step types...");
 
         // Ensure TRANSPORT step type exists
-        if (!stepTypeRepository.existsByName("TRANSPORT")) {
+        if (!stepTypeRepository.existsByName("TRANSPORT") && !stepTypeRepository.existsByName("Transport") ) {
             StepType transportStepType = new StepType();
-            transportStepType.setName("TRANSPORT");
+            transportStepType.setName("Transport");
             transportStepType.setDescription("Transportation of equipment between locations");
             transportStepType.setActive(true);
             stepTypeRepository.save(transportStepType);
