@@ -36,6 +36,10 @@ public class EmployeeService {
         return employeeRepository.findByJobPositionName("Technician");
     }
 
+    public List<Employee> getEmployeesBySiteId(UUID siteId) {
+        return employeeRepository.findBySiteId(siteId);
+    }
+
     /**
      * Get technicians by site ID
      * @param siteId The site ID to filter technicians by

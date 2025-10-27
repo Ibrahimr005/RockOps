@@ -51,7 +51,7 @@ const EmployeesList = () => {
             setFilteredEmployees(data);
             setLoading(false);
 
-            // Extract unique departments and positions for filters - FIX: Handle department objects
+            // Extract unique departments and positions for filters
             const depts = [...new Set(data.map(emp => {
                 // Handle department as object or string
                 if (emp.jobPositionDepartment && typeof emp.jobPositionDepartment === 'object') {
@@ -60,7 +60,8 @@ const EmployeesList = () => {
                 return emp.jobPositionDepartment;
             }).filter(Boolean))];
 
-            const pos = [...new Set(data.map(emp => emp.position).filter(Boolean))];
+            // Extract unique job positions from jobPositionName
+            const pos = [...new Set(data.map(emp => emp.jobPositionName).filter(Boolean))];
             setDepartments(depts);
             setPositions(pos);
 
@@ -187,9 +188,9 @@ const EmployeesList = () => {
                     <div className="salary-info__period">
                         {/* {employee.jobPositionType === 'HOURLY' ? 'per hour' :
                          employee.jobPositionType === 'DAILY' ? 'per day' : */}
-                         {/* ' */}
-                         per month
-                         {/* '} */}
+                        {/* ' */}
+                        per month
+                        {/* '} */}
                     </div>
                 </div>
             )
@@ -222,7 +223,6 @@ const EmployeesList = () => {
     // Fetch sites for the dropdown
     const fetchSites = async () => {
         try {
-            // siteService.getAll() is assumed to return a response with a .data property (like axios)
             const response = await siteService.getAll();
             setSites(response.data);
         } catch (error) {
@@ -231,99 +231,57 @@ const EmployeesList = () => {
         }
     };
 
-    // Load all necessary data when component mounts
+    // Fetch data on component mount
     useEffect(() => {
         fetchEmployees();
         fetchJobPositions();
         fetchSites();
     }, []);
 
-    // Filter employees based on search term and filters
+    // Apply filters to employees
     useEffect(() => {
-        let result = employees;
+        let filtered = employees;
 
-        if (searchTerm) {
-            const lowerSearchTerm = searchTerm.toLowerCase();
-            result = result.filter(
-                employee =>
-                    (employee.firstName && employee.firstName.toLowerCase().includes(lowerSearchTerm)) ||
-                    (employee.lastName && employee.lastName.toLowerCase().includes(lowerSearchTerm)) ||
-                    (employee.email && employee.email.toLowerCase().includes(lowerSearchTerm)) ||
-                    (employee.fullName && employee.fullName.toLowerCase().includes(lowerSearchTerm))
-            );
-        }
-
+        // Apply department filter
         if (departmentFilter) {
-            result = result.filter(employee => {
-                // Handle department as object or string
-                const empDept = employee.jobPositionDepartment;
-                if (empDept && typeof empDept === 'object') {
-                    return empDept.name === departmentFilter;
-                }
-                return empDept === departmentFilter;
+            filtered = filtered.filter(emp => {
+                const deptName = getDepartmentName(emp);
+                return deptName === departmentFilter;
             });
         }
 
+        // Apply position filter
         if (positionFilter) {
-            result = result.filter(employee =>
-                employee.position === positionFilter ||
-                employee.jobPositionName === positionFilter
+            filtered = filtered.filter(emp =>
+                emp.jobPositionName === positionFilter
             );
         }
 
+        // Apply status filter
         if (statusFilter) {
-            result = result.filter(employee => employee.status === statusFilter);
+            filtered = filtered.filter(emp => emp.status === statusFilter);
         }
 
+        // Apply type filter (jobPositionType)
         if (typeFilter) {
-            result = result.filter(employee => employee.contractType === typeFilter);
+            filtered = filtered.filter(emp => emp.jobPositionType === typeFilter);
         }
 
-        setFilteredEmployees(result);
-    }, [searchTerm, departmentFilter, positionFilter, statusFilter, typeFilter, employees]);
+        setFilteredEmployees(filtered);
+    }, [employees, departmentFilter, positionFilter, statusFilter, typeFilter]);
 
     // Handle adding a new employee
-    const handleAddEmployee = async (employeeData, photoFile, idFrontFile, idBackFile) => {
+    const handleAddEmployee = async (employeeData) => {
         try {
             setLoading(true);
 
-            console.log("Employee data being sent:", employeeData);
-
-            // Create FormData for multipart/form-data request
-            const formData = new FormData();
-
-            // Add employee data as a JSON string
-            formData.append("employeeData", new Blob([JSON.stringify(employeeData)], {
-                type: "application/json"
-            }));
-
-            // Add image files if provided
-            if (photoFile) {
-                formData.append('photo', photoFile);
-                console.log('Added photo file:', photoFile.name);
-            }
-
-            if (idFrontFile) {
-                formData.append('idFrontImage', idFrontFile);
-                console.log('Added ID front file:', idFrontFile.name);
-            }
-
-            if (idBackFile) {
-                formData.append('idBackImage', idBackFile);
-                console.log('Added ID back file:', idBackFile.name);
-            }
-
-            // Debug FormData contents (can't directly console.log FormData)
-            for (let pair of formData.entries()) {
-                console.log(pair[0], pair[1] instanceof Blob ? `Blob: ${pair[1].type}, size: ${pair[1].size}` : pair[1]);
-            }
-
-            // Make API request using HR employee service
-            const response = await hrEmployeeService.employee.create(formData);
-            console.log('Employee added successfully:', response.data);
+            // Create employee using the HR employee service
+            await hrEmployeeService.employee.create(employeeData);
 
             // Refresh the employee list
             await fetchEmployees();
+
+            // Close modal
             setShowAddModal(false);
 
             // Show success message
@@ -331,58 +289,46 @@ const EmployeesList = () => {
 
         } catch (error) {
             console.error('Error adding employee:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to add employee';
+
+            // Extract error message
+            let errorMessage = 'Failed to add employee';
+
+            if (error.response?.data) {
+                // API error response
+                const errorData = error.response.data;
+                if (typeof errorData === 'string') {
+                    errorMessage = errorData;
+                } else if (errorData.message) {
+                    errorMessage = errorData.message;
+                } else if (errorData.error) {
+                    errorMessage = errorData.error;
+                }
+            } else if (error.message) {
+                // Network or other error
+                errorMessage = error.message;
+            }
+
             setError(`Failed to add employee: ${errorMessage}`);
-            showError('Failed to add employee. Please try again.');
+            showError(errorMessage);
         } finally {
             setLoading(false);
         }
     };
 
     // Handle editing an employee
-    const handleEditEmployee = async (updatedEmployee, photoFile, idFrontFile, idBackFile) => {
+    const handleEditEmployee = async (employeeId, updatedData) => {
         try {
             setLoading(true);
 
-            console.log("Updated employee data being sent:", updatedEmployee);
+            console.log('Updating employee:', employeeId, updatedData);
 
-            // Create FormData for multipart/form-data request
-            const formData = new FormData();
-
-            // Add employee data as a JSON blob with proper content type
-            formData.append("employeeData", new Blob([JSON.stringify(updatedEmployee)], {
-                type: "application/json"
-            }));
-
-            // Add image files if provided
-            if (photoFile) {
-                formData.append('photo', photoFile);
-                console.log('Added photo file:', photoFile.name);
-            }
-
-            if (idFrontFile) {
-                formData.append('idFrontImage', idFrontFile);
-                console.log('Added ID front file:', idFrontFile.name);
-            }
-
-            if (idBackFile) {
-                formData.append('idBackImage', idBackFile);
-                console.log('Added ID back file:', idBackFile.name);
-            }
-
-            // Debug FormData contents
-            console.log("FormData contents for update:");
-            for (let pair of formData.entries()) {
-                console.log(pair[0], pair[1] instanceof Blob ? `Blob: ${pair[1].type}, size: ${pair[1].size}` : pair[1]);
-            }
-
-            // Use HR employee service for update
-            const response = await hrEmployeeService.employee.update(selectedEmployee.id, formData);
-
-            console.log('Employee updated successfully:', response.data);
+            // Update employee using the HR employee service
+            await hrEmployeeService.employee.update(employeeId, updatedData);
 
             // Refresh the employee list
             await fetchEmployees();
+
+            // Close modal
             setShowEditModal(false);
             setSelectedEmployee(null);
 
@@ -391,22 +337,26 @@ const EmployeesList = () => {
 
         } catch (error) {
             console.error('Error updating employee:', error);
+            console.error('Error response:', error.response);
+            console.error('Error request:', error.request);
 
-            // Enhanced error handling
+            // Extract detailed error message
             let errorMessage = 'Failed to update employee';
 
             if (error.response) {
-                // Server responded with an error
-                console.error('Server error:', error.response.status, error.response.data);
+                // API error response
+                console.error('Response data:', error.response.data);
+                console.error('Response status:', error.response.status);
 
-                if (error.response.status === 415) {
-                    errorMessage = 'Invalid data format. Please check the form data.';
-                } else if (error.response.status === 400) {
-                    errorMessage = error.response.data?.message || 'Invalid request data';
-                } else if (error.response.status === 404) {
-                    errorMessage = 'Employee not found';
+                const errorData = error.response.data;
+                if (typeof errorData === 'string') {
+                    errorMessage = errorData;
+                } else if (errorData.message) {
+                    errorMessage = errorData.message;
+                } else if (errorData.error) {
+                    errorMessage = errorData.error;
                 } else {
-                    errorMessage = error.response.data?.message || `Server error: ${error.response.status}`;
+                    errorMessage = `Failed to update employee (Status: ${error.response.status})`;
                 }
             } else if (error.request) {
                 // Network error
@@ -480,16 +430,44 @@ const EmployeesList = () => {
         return new Date(dateString).toLocaleDateString();
     };
 
-    // Define filterable columns
+    // Define filterable columns - removed Department from here
     const filterableColumns = [
         { header: 'Name', accessor: 'fullName' },
-        { header: 'Email', accessor: 'email' },
-        { header: 'Position', accessor: 'position' },
-        { header: 'Department', accessor: 'jobPositionDepartment' }
+        { header: 'Email', accessor: 'email' }
     ];
 
-    // Define custom filters
+    // Define custom filters - Position, Department, Status, and Contract Type as dropdowns
     const customFilters = [
+        {
+            label: 'Department',
+            component: (
+                <select
+                    value={departmentFilter}
+                    onChange={(e) => setDepartmentFilter(e.target.value)}
+                    className="filter-select"
+                >
+                    <option value="">All Departments</option>
+                    {departments.map(dept => (
+                        <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                </select>
+            )
+        },
+        {
+            label: 'Position',
+            component: (
+                <select
+                    value={positionFilter}
+                    onChange={(e) => setPositionFilter(e.target.value)}
+                    className="filter-select"
+                >
+                    <option value="">All Positions</option>
+                    {positions.map(position => (
+                        <option key={position} value={position}>{position}</option>
+                    ))}
+                </select>
+            )
+        },
         {
             label: 'Status',
             component: (
@@ -520,21 +498,6 @@ const EmployeesList = () => {
                     <option value="HOURLY">Hourly</option>
                     <option value="DAILY">Daily</option>
                     <option value="MONTHLY">Monthly</option>
-                </select>
-            )
-        },
-        {
-            label: 'Department',
-            component: (
-                <select
-                    value={departmentFilter}
-                    onChange={(e) => setDepartmentFilter(e.target.value)}
-                    className="filter-select"
-                >
-                    <option value="">All Departments</option>
-                    {departments.map(dept => (
-                        <option key={dept} value={dept}>{dept}</option>
-                    ))}
                 </select>
             )
         }

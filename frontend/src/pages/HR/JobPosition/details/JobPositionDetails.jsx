@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {FiArrowLeft, FiEdit, FiInfo, FiTrendingUp, FiUser, FiUsers} from 'react-icons/fi';
+import {FiArrowLeft, FiBriefcase, FiEdit, FiHome, FiInfo, FiTrendingUp, FiUser, FiUsers} from 'react-icons/fi';
 import EditPositionForm from '../components/EditPositionForm.jsx';
 import PositionOverview from './components/PositionOverview.jsx';
 import PositionEmployees from './components/PositionEmployees.jsx';
@@ -8,6 +8,8 @@ import PositionPromotions from './components/PositionPromotions.jsx';
 import {useSnackbar} from '../../../../contexts/SnackbarContext';
 import {jobPositionService} from '../../../../services/hr/jobPositionService.js';
 import './JobPositionDetails.scss';
+import IntroCard from "../../../../components/common/IntroCard/IntroCard.jsx";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const JobPositionDetails = () => {
     const {id} = useParams();
@@ -34,12 +36,12 @@ const JobPositionDetails = () => {
             icon: <FiUsers/>,
             component: PositionEmployees
         },
-        {
-            id: 'promotions',
-            label: 'Promotions',
-            icon: <FiTrendingUp/>,
-            component: PositionPromotions
-        }
+        // {
+        //     id: 'promotions',
+        //     label: 'Promotions',
+        //     icon: <FiTrendingUp/>,
+        //     component: PositionPromotions
+        // }
     ];
 
     useEffect(() => {
@@ -52,7 +54,8 @@ const JobPositionDetails = () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await jobPositionService.getById(id);
+            const response = await jobPositionService.getDetails(id);
+            console.log(response.data)
             setPosition(response.data);
         } catch (err) {
             console.error('Error fetching position details:', err);
@@ -86,12 +89,7 @@ const JobPositionDetails = () => {
 
     if (loading) {
         return (
-            <div className="position-details-container">
-                <div className="loading-container">
-                    <div className="loading-spinner"></div>
-                    <p>Loading position details...</p>
-                </div>
-            </div>
+           <ContentLoader message={"Loading Position Details.."} />
         );
     }
 
@@ -114,65 +112,108 @@ const JobPositionDetails = () => {
 
     const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component;
 
+    const getBreadcrumbs = () => {
+        return [
+            {
+                label: 'Home',
+                icon: <FiHome />,
+                onClick: () => navigate('/')
+            },
+            {
+                label: 'HR',
+                onClick: () => navigate('/hr')
+            },
+            {
+                label: 'Job Positions',
+                icon: <FiBriefcase />,
+                onClick: () => navigate('/hr/positions')
+            },
+            {
+                label: position.positionName
+            }
+        ];
+    };
+
+    const getPositionStats = () => {
+        return [
+            {
+                value: position.activeEmployeeCount || '0',
+                label: 'Total Employees'
+            },
+            {
+                value: position.experienceLevel?.replace('_', ' ').toLowerCase()
+                    .replace(/\b\w/g, l => l.toUpperCase()) || 'N/A',
+                label: 'Experience Level'
+            },
+            {
+                value: position.active ? 'Active' : 'Inactive',
+                label: 'Status'
+            }
+        ];
+    };
+
+
+    const getActionButtons = () => {
+        return [
+            {
+                text: 'Edit Position',
+                icon: <FiEdit />,
+                onClick: () => setShowEditForm(true),
+                className: 'primary'
+            }
+        ];
+    };
+
     return (
         <div className="position-details-container">
             {/* Header Section */}
-            <div className="departments-header">
-
-                <h1>{position.positionName}
-                    <p className="employees-header__subtitle">
-                        {position.department} • <span
-                        className="status-badge"> {position.contractType?.replace('_', ' ')}</span>
-                    </p>
-                </h1>
-
-                <div className="position-actions">
-                    <button
-                        className="btn btn-primary"
-                        onClick={() => setShowEditForm(true)}
-                    >
-                        <FiEdit/> Edit Position
-                    </button>
-                </div>
-            </div>
+            <IntroCard
+                title={position.positionName}
+                label="JOB POSITION DETAILS"
+                breadcrumbs={getBreadcrumbs()}
+                icon={<FiBriefcase />}
+                stats={getPositionStats()}
+                actionButtons={getActionButtons()}
+                className="position-intro-card"
+            />
 
             {/* Position Summary Card */}
-            <div className="position-summary-card">
-                <div className="summary-grid">
-                    <div className="summary-item">
-                        <div className="summary-icon">
-                            <FiUser/>
-                        </div>
-                        <div className="summary-content">
-                            <span className="summary-label">Experience Level</span>
-                            <span className="summary-value">
-                                {position.experienceLevel?.replace('_', ' ').toLowerCase()
-                                    .replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}
-                            </span>
-                        </div>
-                    </div>
-                    <div className="summary-item">
-                        <div className="summary-icon">
-                            <FiUsers/>
-                        </div>
-                        <div className="summary-content">
-                            <span className="summary-label">Reporting To</span>
-                            <span className="summary-value">{position.head || 'Direct Report'}</span>
-                        </div>
-                    </div>
-                    <div className="summary-item">
-                        <div className="summary-icon">
-                            <FiTrendingUp/>
-                        </div>
-                        <div className="summary-content">
-                            <span className="summary-label">Status</span>
-                            <span className={`status-badge ${position.active ? 'active' : 'inactive'}`}>
-                                {position.active ? 'Active' : 'Inactive'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {/*<div className="position-summary-card">*/}
+            {/*    <div className="summary-grid">*/}
+            {/*        <div className="summary-item">*/}
+            {/*            <div className="summary-icon">*/}
+            {/*                <FiUser/>*/}
+            {/*            </div>*/}
+            {/*            <div className="summary-content">*/}
+            {/*                <span className="summary-label">Experience Level</span>*/}
+            {/*                <span className="summary-value">*/}
+            {/*                    {position.experienceLevel?.replace('_', ' ').toLowerCase()*/}
+            {/*                        .replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}*/}
+            {/*                </span>*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
+            {/*        <div className="summary-item">*/}
+            {/*            <div className="summary-icon">*/}
+            {/*                <FiUsers/>*/}
+            {/*            </div>*/}
+            {/*            <div className="summary-content">*/}
+            {/*                <span className="summary-label">Reporting To</span>*/}
+            {/*                <span className="summary-value">{position.head || 'Direct Report'}</span>*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
+            {/*        <div className="summary-item">*/}
+            {/*            <div className="summary-icon">*/}
+            {/*                <FiTrendingUp/>*/}
+            {/*            </div>*/}
+            {/*            <div className="summary-content">*/}
+            {/*                <span className="summary-label">Status</span>*/}
+            {/*                <span className={`status-badge ${position.active ? 'active' : 'inactive'}`}>*/}
+            {/*                    {position.active ? 'Active' : 'Inactive'}*/}
+            {/*                </span>*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             {/* Tabs Navigation */}
             <div className="tabs-container">

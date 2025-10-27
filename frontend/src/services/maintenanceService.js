@@ -128,9 +128,9 @@ export const maintenanceService = {
         }
     },
 
-    completeStep: async (stepId) => {
+    completeStep: async (stepId, completionData) => {
         try {
-            const response = await apiClient.post(MAINTENANCE_ENDPOINTS.STEPS.COMPLETE(stepId));
+            const response = await apiClient.put(MAINTENANCE_ENDPOINTS.STEPS.COMPLETE(stepId), completionData);
             return response;
         } catch (error) {
             console.error('Error completing maintenance step:', error);

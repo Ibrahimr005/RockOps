@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { FiUsers, FiPlus, FiEye, FiEdit, FiUserCheck, FiUserX } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiUsers, FiPlus, FiEye, FiEdit, FiUserCheck, FiUserX, FiRefreshCw } from 'react-icons/fi';
 import DataTable from '../../../../../components/common/DataTable/DataTable';
 import { useSnackbar } from '../../../../../contexts/SnackbarContext';
 import { jobPositionService } from '../../../../../services/hr/jobPositionService.js';
 
 const PositionEmployees = ({ position, positionId, onRefresh }) => {
+    const navigate = useNavigate();
     const { showSuccess, showError } = useSnackbar();
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -20,35 +22,48 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
 
     const fetchEmployees = async () => {
         setLoading(true);
-        showError(null);
         try {
             const response = await jobPositionService.getEmployees(positionId);
             const data = response.data;
 
             console.log(data);
-            setEmployees(Array.isArray(data) ? data : []);
+            const employeeList = Array.isArray(data) ? data : [];
+            setEmployees(employeeList);
+
+            // Calculate statistics
+            const activeCount = employeeList.filter(emp => emp.status === 'ACTIVE').length;
+            const inactiveCount = employeeList.filter(emp => emp.status !== 'ACTIVE').length;
+
+            setStats({
+                total: employeeList.length,
+                active: activeCount,
+                inactive: inactiveCount
+            });
         } catch (err) {
             const errorMessage = err.response?.data?.message || err.message || 'Failed to load employees';
             showError(errorMessage);
-            showError('Failed to load positions. Please try again.');
             setEmployees([]);
+            setStats({ total: 0, active: 0, inactive: 0 });
         } finally {
             setLoading(false);
         }
     };
 
     const handleViewEmployee = (employee) => {
-        // Navigate to employee details
-        console.log('View employee:', employee);
-        // TODO: Add navigation to employee details page
-        // navigate(`/hr/employees/${employee.id}`);
+        navigate(`/hr/employee-details/${employee.id}`);
     };
 
     const handleEditEmployee = (employee) => {
-        // Navigate to employee edit
-        console.log('Edit employee:', employee);
-        // TODO: Add navigation to employee edit page
-        // navigate(`/hr/employees/${employee.id}/edit`);
+        navigate(`/hr/employees/${employee.id}/edit`);
+    };
+
+    const handleRowClick = (employee) => {
+        navigate(`/hr/employee-details/${employee.id}`);
+    };
+
+    const handleAssignEmployee = () => {
+        console.log('Assign employee clicked');
+        // TODO: Open assign employee modal or navigate to assign page
     };
 
     const formatContractType = (contractType) => {
@@ -69,7 +84,6 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
     };
 
     const formatSalary = (employee) => {
-        // ✅ FIXED: Handle salary from EmployeeSummaryDTO structure
         const salary = employee.monthlySalary || employee.salary;
         if (!salary) return 'N/A';
 
@@ -85,7 +99,6 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
         }
     };
 
-    // ✅ FIXED: Employee columns updated for EmployeeSummaryDTO structure
     const columns = [
         {
             header: 'Employee ID',
@@ -112,7 +125,6 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
                 </div>
             )
         },
-
         {
             header: 'Employment Type',
             accessor: 'contractType',
@@ -254,86 +266,46 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
                 </div>
             </div>
 
-         
             {/* Employees Data Table */}
-                <DataTable
-                    data={employees}
-                    columns={columns}
-                    actions={actions}
-                    loading={loading}
-                    tableTitle=""
-                    showSearch={true}
-                    showFilters={true}
-                    filterableColumns={['contractType', 'status', 'eligibleForPromotion']}
-                    defaultSortField="fullName"
-                    defaultSortDirection="asc"
-                    showAddButton={true}
-                    addButtonText="Assign Employee"
-                    addButtonIcon={<FiPlus />}
-                    onAddClick={() => {
-                        console.log('Assign employee clicked');
-                        // TODO: Open assign employee modal or navigate to assign page
-                    }}
-                    customActions={[
-                        {
-                            label: 'Refresh',
-                            icon: '🔄',
-                            onClick: fetchEmployees,
-                            disabled: loading,
-                            className: 'btn-secondary'
-                        }
-                    ]}
-                    emptyMessage={
-                        <div className="position-empty-state">
-                            <FiUsers className="empty-icon" />
-                            <h4>No Employees Assigned</h4>
-                            <p>This position doesn't have any employees assigned yet.</p>
-                            <button
-                                className="btn btn-primary"
-                                onClick={() => {
-                                    console.log('Assign first employee clicked');
-                                    // TODO: Open assign employee modal or navigate to assign page
-                                }}
-                            >
-                                <FiPlus /> Assign First Employee
-                            </button>
-                        </div>
+            <DataTable
+                data={employees}
+                columns={columns}
+                actions={actions}
+                loading={loading}
+                tableTitle=""
+                showSearch={true}
+                showFilters={true}
+                filterableColumns={['contractType', 'status', 'eligibleForPromotion']}
+                defaultSortField="fullName"
+                defaultSortDirection="asc"
+                showAddButton={true}
+                addButtonText="Assign Employee"
+                addButtonIcon={<FiPlus />}
+                onAddClick={handleAssignEmployee}
+                onRowClick={handleRowClick}
+                customActions={[
+                    {
+                        label: 'Refresh',
+                        icon: <FiRefreshCw />,
+                        onClick: fetchEmployees,
+                        disabled: loading,
+                        className: 'btn-secondary'
                     }
-                />
-
-            {/* Quick Actions */}
-            <div className="quick-actions">
-                <div className="action-card">
-                    <div className="action-icon">
-                        <FiPlus />
+                ]}
+                emptyMessage={
+                    <div className="position-empty-state">
+                        <FiUsers className="empty-icon" />
+                        <h4>No Employees Assigned</h4>
+                        <p>This position doesn't have any employees assigned yet.</p>
+                        <button
+                            className="btn btn-primary"
+                            onClick={handleAssignEmployee}
+                        >
+                            <FiPlus /> Assign First Employee
+                        </button>
                     </div>
-                    <div className="action-content">
-                        <h4>Assign Employee</h4>
-                        <p>Add an existing employee to this position</p>
-                        <button className="btn btn-outline">Assign</button>
-                    </div>
-                </div>
-                <div className="action-card">
-                    <div className="action-icon">
-                        <FiUsers />
-                    </div>
-                    <div className="action-content">
-                        <h4>Bulk Operations</h4>
-                        <p>Perform bulk actions on multiple employees</p>
-                        <button className="btn btn-outline">Manage</button>
-                    </div>
-                </div>
-                <div className="action-card">
-                    <div className="action-icon">
-                        <FiUserCheck />
-                    </div>
-                    <div className="action-content">
-                        <h4>Promotion Report</h4>
-                        <p>View promotion eligibility and history</p>
-                        <button className="btn btn-outline">View Report</button>
-                    </div>
-                </div>
-            </div>
+                }
+            />
         </div>
     );
 };

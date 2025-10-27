@@ -11,6 +11,8 @@ import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { leaveRequestService } from '../../../services/hr/leaveRequestService';
 import './LeaveRequestDetailPage.scss';
+import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
+import {FiCalendar, FiCheck, FiHome, FiX} from "react-icons/fi";
 
 const LeaveRequestDetailPage = () => {
     const { id } = useParams();
@@ -228,50 +230,98 @@ const LeaveRequestDetailPage = () => {
     const canReject = leaveRequest.status === 'PENDING';
     const canCancel = leaveRequest.status === 'PENDING' && leaveRequest.canBeModified;
 
+
+    const getBreadcrumbs = () => {
+        return [
+            {
+                label: 'Home',
+                icon: <FiHome />,
+                onClick: () => navigate('/')
+            },
+            {
+                label: 'HR',
+                onClick: () => navigate('/hr')
+            },
+            {
+                label: 'Leave Requests',
+                icon: <FiCalendar />,
+                onClick: () => navigate('/hr/leave-requests')
+            },
+            {
+                label: `${leaveRequest.employeeName || 'Leave Request'}`
+            }
+        ];
+    };
+
+    const getLeaveRequestStats = () => {
+        // Calculate duration
+        const startDate = new Date(leaveRequest.startDate);
+        const endDate = new Date(leaveRequest.endDate);
+        const duration = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+        return [
+            {
+                value: leaveRequest.status,
+                label: 'Status'
+            },
+            {
+                value: leaveRequest.leaveType || 'N/A',
+                label: 'Leave Type'
+            },
+            {
+                value: `${duration} ${duration === 1 ? 'Day' : 'Days'}`,
+                label: 'Duration'
+            }
+        ];
+    };
+
+    const getActionButtons = () => {
+        const buttons = [];
+
+        if (canApprove) {
+            buttons.push({
+                text: 'Approve',
+                icon: <FiCheck />,
+                onClick: handleApprove,
+                disabled: actionLoading,
+                className: 'success'
+            });
+        }
+
+        if (canReject) {
+            buttons.push({
+                text: 'Reject',
+                icon: <FiX />,
+                onClick: handleReject,
+                disabled: actionLoading,
+                className: 'danger'
+            });
+        }
+
+        if (canCancel) {
+            buttons.push({
+                text: 'Cancel',
+                icon: <FiX />,
+                onClick: handleCancel,
+                disabled: actionLoading,
+                className: 'secondary'
+            });
+        }
+
+        return buttons;
+    };
     return (
         <div className="leave-request-detail-page">
             {/* Header */}
-            <div className="page-header">
-                <div className="header-content">
-                    <div className="header-title">
-                        <FaCalendarAlt className="page-icon" />
-                        <h1>Leave Request Details</h1>
-                        {getStatusBadge(leaveRequest.status)}
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="header-actions">
-                        {canApprove && (
-                            <button
-                                className="btn-success"
-                                onClick={handleApprove}
-                                disabled={actionLoading}
-                            >
-                                <FaCheck /> Approve
-                            </button>
-                        )}
-                        {canReject && (
-                            <button
-                                className="btn-danger"
-                                onClick={handleReject}
-                                disabled={actionLoading}
-                            >
-                                <FaTimes /> Reject
-                            </button>
-                        )}
-                        {canCancel && (
-                            <button
-                                className="btn-secondary"
-                                onClick={handleCancel}
-                                disabled={actionLoading}
-                            >
-                                <FaTimes /> Cancel
-                            </button>
-                        )}
-                    </div>
-                </div>
-            </div>
-
+            <IntroCard
+                title="Leave Request Details"
+                label={`${leaveRequest.employeeName || 'EMPLOYEE'} - LEAVE REQUEST`}
+                breadcrumbs={getBreadcrumbs()}
+                icon={<FaCalendarAlt />}
+                stats={getLeaveRequestStats()}
+                actionButtons={getActionButtons()}
+                className="leave-request-intro-card"
+            />
             {/* Main Content */}
             <div className="detail-container">
                 {/* Employee & Request Info */}

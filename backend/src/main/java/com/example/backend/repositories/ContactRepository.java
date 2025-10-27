@@ -103,4 +103,11 @@ public interface ContactRepository extends JpaRepository<Contact, UUID> {
     @Query("SELECT DISTINCT c FROM Contact c JOIN c.contactLogs cl " +
            "WHERE cl.followUpRequired = true AND cl.followUpDate < CURRENT_TIMESTAMP")
     List<Contact> findContactsNeedingFollowUp();
+    
+    // Merchant-related queries
+    List<Contact> findByMerchantId(UUID merchantId);
+    
+    List<Contact> findByMerchantIsNull();
+    
+    List<Contact> findByMerchantIsNotNull();
 } 

@@ -283,7 +283,7 @@ const VacancyList = () => {
         },
         {
             header: 'Priority',
-            accessor: 'priority',
+            accessor: 'priorityNumeric', // Sort by numeric value
             render: (row) => (
                 <span className={`priority-badge ${getPriorityBadgeClass(row.priority)}`}>
                     {row.priority || 'MEDIUM'}
@@ -387,14 +387,22 @@ const VacancyList = () => {
             return [];
         }
 
-        return vacancies.filter(vacancy => {
-            // Additional safety check for vacancy object
-            if (!vacancy) return false;
+        // Map priority to numeric values for proper sorting
+        const priorityMap = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
 
-            const statusMatch = !statusFilter || vacancy.status === statusFilter;
-            const priorityMatch = !priorityFilter || vacancy.priority === priorityFilter;
-            return statusMatch && priorityMatch;
-        });
+        return vacancies
+            .map(vacancy => ({
+                ...vacancy,
+                priorityNumeric: priorityMap[vacancy.priority] || 0
+            }))
+            .filter(vacancy => {
+                // Additional safety check for vacancy object
+                if (!vacancy) return false;
+
+                const statusMatch = !statusFilter || vacancy.status === statusFilter;
+                const priorityMatch = !priorityFilter || vacancy.priority === priorityFilter;
+                return statusMatch && priorityMatch;
+            });
     }, [vacancies, statusFilter, priorityFilter]);
 
     // Modal close handlers

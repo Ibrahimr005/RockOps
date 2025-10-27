@@ -57,6 +57,11 @@ public class ContactDto {
     
     private Boolean isActive;
     
+    // Merchant relationship
+    private UUID merchantId;
+    
+    private String merchantName;
+    
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
     

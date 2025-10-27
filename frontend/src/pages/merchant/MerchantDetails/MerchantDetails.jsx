@@ -11,6 +11,7 @@ import ContactDetailsTab from './tabs/ContactDetailsTab.jsx';
 import PerformanceTab from './tabs/PerformanceTab.jsx';
 import DocumentsTab from './tabs/DocumentsTab.jsx';
 import TransactionsTab from './tabs/TransactionsTab.jsx';
+import ContactsTab from './tabs/ContactsTab.jsx';
 
 const MerchantDetails = () => {
     const { id } = useParams();
@@ -196,6 +197,12 @@ const MerchantDetails = () => {
                         >
                             Transactions
                         </button>
+                        <button
+                            className={`tab-button ${activeTab === 'contacts' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('contacts')}
+                        >
+                            Contacts
+                        </button>
                     </div>
 
                     <div className="tab-content">
@@ -204,6 +211,7 @@ const MerchantDetails = () => {
                         {activeTab === 'performance' && <PerformanceTab merchant={merchant} formatDate={formatDate} />}
                         {activeTab === 'documents' && <DocumentsTab merchant={merchant} />}
                         {activeTab === 'transactions' && <TransactionsTab merchant={merchant} />}
+                        {activeTab === 'contacts' && <ContactsTab merchant={merchant} />}
                     </div>
                 </div>
             </div>

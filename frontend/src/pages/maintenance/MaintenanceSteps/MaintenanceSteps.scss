@@ -121,34 +121,39 @@
     }
 
     .location-info {
-        .from-location {
+        .current-location {
             display: flex;
             align-items: center;
             gap: 6px;
             color: var(--color-text-primary);
             font-size: 12px;
-            margin-bottom: 2px;
+            font-weight: 500;
 
             svg {
                 color: var(--color-info);
                 font-size: 10px;
             }
         }
-
-        .to-location {
-            color: var(--color-text-secondary);
-            font-size: 11px;
-            margin-left: 16px;
-        }
     }
 
     .cost-info {
         display: flex;
-        align-items: center;
-        gap: 4px;
+        flex-direction: column;
+        gap: 2px;
         color: var(--color-text-primary);
         font-weight: 500;
         font-size: 13px;
+
+        .estimated-cost {
+            color: var(--color-text-secondary);
+            font-size: 12px;
+        }
+
+        .actual-cost {
+            color: var(--color-success);
+            font-weight: 600;
+            font-size: 13px;
+        }
 
         svg {
             color: var(--color-success);

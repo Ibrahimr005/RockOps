@@ -1,5 +1,7 @@
 package com.example.backend.models;
 
+import com.example.backend.models.StepType;
+import com.example.backend.models.hr.Employee;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -36,8 +38,12 @@ public class MaintenanceStep {
     @JoinColumn(name = "responsible_contact_id")
     private Contact responsibleContact;
     
-    @Enumerated(EnumType.STRING)
-    @Column(name = "step_type", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "responsible_employee_id")
+    private Employee responsibleEmployee;
+    
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "step_type_id", nullable = false)
     private StepType stepType;
     
     @NotBlank(message = "Step description is required")
@@ -86,10 +92,6 @@ public class MaintenanceStep {
     @Column(name = "version")
     private Long version;
     
-    public enum StepType {
-        TRANSPORT, INSPECTION, REPAIR, TESTING, DIAGNOSIS, ESCALATION, RETURN_TO_SERVICE
-    }
-    
     // Helper methods
     public boolean isCompleted() {
         return actualEndDate != null;
@@ -117,16 +119,25 @@ public class MaintenanceStep {
         this.lastContactDate = LocalDateTime.now();
     }
     
-    // Get responsible person name from contact
+    // Get responsible person name from contact or employee
     public String getResponsiblePersonName() {
+        if (responsibleEmployee != null) {
+            return responsibleEmployee.getFirstName() + " " + responsibleEmployee.getLastName();
+        }
         return responsibleContact != null ? responsibleContact.getFullName() : null;
     }
     
     public String getResponsiblePersonPhone() {
+        if (responsibleEmployee != null) {
+            return responsibleEmployee.getPhoneNumber();
+        }
         return responsibleContact != null ? responsibleContact.getPhoneNumber() : null;
     }
     
     public String getResponsiblePersonEmail() {
+        if (responsibleEmployee != null) {
+            return responsibleEmployee.getEmail();
+        }
         return responsibleContact != null ? responsibleContact.getEmail() : null;
     }
 } 
