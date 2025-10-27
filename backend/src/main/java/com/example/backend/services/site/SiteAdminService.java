@@ -246,61 +246,6 @@ public class SiteAdminService
     }
 
 
-//    @Transactional
-//    public Site addSite(Map<String, Object> siteData) {
-//        Site site = new Site();
-//        site.setName((String) siteData.get("name"));
-//        site.setPhysicalAddress((String) siteData.get("physicalAddress"));
-//        site.setCompanyAddress((String) siteData.get("companyAddress"));
-//
-//        // Store the photo URL if provided
-//        if (siteData.get("photoUrl") != null) {
-//            site.setPhotoUrl((String) siteData.get("photoUrl"));
-//        }
-//
-//        // Convert and set creation date
-//        if (siteData.get("creationDate") != null) {
-//            site.setCreationDate(LocalDate.parse((String) siteData.get("creationDate")));
-//        }
-//
-//        // Initialize the sitePartners list if it's null
-//        if (site.getSitePartners() == null) {
-//            site.setSitePartners(new ArrayList<>());
-//        }
-//
-//        // Save site entity first to get an ID
-//        site = siteRepository.save(site);
-//
-//        // Handle partners (if provided)
-//        if (siteData.get("partners") instanceof List<?> partnersList) {
-//            for (Object partnerData : partnersList) {
-//                if (partnerData instanceof Map<?, ?> partnerMap) {
-//                    int partnerId = ((Number) partnerMap.get("partnerId")).intValue();
-//                    Double percentage = partnerMap.get("percentage") != null ?
-//                            ((Number) partnerMap.get("percentage")).doubleValue() : 0.0;
-//
-//                    Partner partner = partnerRepository.findById(partnerId)
-//                            .orElseThrow(() -> new RuntimeException("❌ Partner not found with ID: " + partnerId));
-//
-//                    // Create the SitePartner entity with percentage
-//                    SitePartnerId id = new SitePartnerId(site.getId(), partner.getId());
-//                    SitePartner sitePartner = new SitePartner();
-//                    sitePartner.setId(id);
-//                    sitePartner.setSite(site);
-//                    sitePartner.setPartner(partner);
-//                    sitePartner.setPercentage(percentage);
-//
-//                    // Add to site collection only - don't modify partner collection here
-//                    site.getSitePartners().add(sitePartner);
-//
-//                    // Let the cascade do the work of saving the SitePartner
-//                }
-//            }
-//        }
-//
-//        // Save the site again with its partners
-//        return siteRepository.save(site);
-//    }
 
     @Transactional
     public Site updateSite(UUID siteId, Map<String, Object> updates) {
