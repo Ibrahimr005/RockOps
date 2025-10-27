@@ -70,12 +70,17 @@ const Contacts = () => {
     };
 
     const handleOpenModal = (contact = null) => {
-        if (contact) {
-            setEditingContact(contact);
-        } else {
-            setEditingContact(null);
+        try {
+            if (contact) {
+                setEditingContact(contact);
+            } else {
+                setEditingContact(null);
+            }
+            setShowModal(true);
+        } catch (error) {
+            console.error('Error opening contact modal:', error);
+            showError('Failed to open contact form');
         }
-        setShowModal(true);
     };
 
     const handleViewContact = (contact) => {
@@ -227,6 +232,16 @@ const Contacts = () => {
             render: (row) => getContactTypeBadge(row.contactType)
         },
         {
+            header: 'Merchant',
+            accessor: 'merchantName',
+            sortable: true,
+            render: (row) => (
+                <div className="merchant-info">
+                    <div className="merchant-name">{row.merchantName || 'No Merchant'}</div>
+                </div>
+            )
+        },
+        {
             header: 'Company',
             accessor: 'company',
             sortable: true,
@@ -318,6 +333,7 @@ const Contacts = () => {
     const filterableColumns = [
         { header: 'Name', accessor: 'firstName' },
         { header: 'Contact Type', accessor: 'contactType' },
+        { header: 'Merchant', accessor: 'merchantName' },
         { header: 'Company', accessor: 'company' },
         { header: 'Status', accessor: 'isActive' }
     ];

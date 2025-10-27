@@ -116,6 +116,27 @@ public class ContactController {
         return ResponseEntity.ok(contacts);
     }
     
+    // Get contacts by merchant
+    @GetMapping("/merchant/{merchantId}")
+    public ResponseEntity<List<ContactDto>> getContactsByMerchant(@PathVariable UUID merchantId) {
+        List<ContactDto> contacts = contactService.getContactsByMerchant(merchantId);
+        return ResponseEntity.ok(contacts);
+    }
+    
+    // Get contacts without merchant
+    @GetMapping("/without-merchant")
+    public ResponseEntity<List<ContactDto>> getContactsWithoutMerchant() {
+        List<ContactDto> contacts = contactService.getContactsWithoutMerchant();
+        return ResponseEntity.ok(contacts);
+    }
+    
+    // Get contacts with merchant
+    @GetMapping("/with-merchant")
+    public ResponseEntity<List<ContactDto>> getContactsWithMerchant() {
+        List<ContactDto> contacts = contactService.getContactsWithMerchant();
+        return ResponseEntity.ok(contacts);
+    }
+    
     // Search contacts
     @GetMapping("/search")
     public ResponseEntity<List<ContactDto>> searchContacts(@RequestParam String searchTerm) {

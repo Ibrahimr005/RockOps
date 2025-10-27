@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -36,6 +37,34 @@ public class EmployeeController {
     @GetMapping("/technicians")
     public List<Employee> getTechnicians() {
         return employeeService.getTechnicians();
+    }
+
+    /**
+     * Get employees by site ID for maintenance step assignment
+     * @param siteId Site ID
+     * @return List of employees with minimal data
+     */
+    @GetMapping("/site/{siteId}")
+    public ResponseEntity<List<Map<String, Object>>> getEmployeesBySite(@PathVariable UUID siteId) {
+        try {
+            List<Employee> employees = employeeService.getEmployeesBySiteId(siteId);
+            List<Map<String, Object>> employeeList = employees.stream().map(emp -> {
+                Map<String, Object> employeeData = new HashMap<>();
+                employeeData.put("id", emp.getId());
+                employeeData.put("firstName", emp.getFirstName());
+                employeeData.put("lastName", emp.getLastName());
+                employeeData.put("fullName", emp.getFirstName() + " " + emp.getLastName());
+                employeeData.put("email", emp.getEmail());
+                employeeData.put("phoneNumber", emp.getPhoneNumber());
+                if (emp.getJobPosition() != null) {
+                    employeeData.put("jobPosition", emp.getJobPosition().getPositionName());
+                }
+                return employeeData;
+            }).collect(Collectors.toList());
+            return ResponseEntity.ok(employeeList);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**

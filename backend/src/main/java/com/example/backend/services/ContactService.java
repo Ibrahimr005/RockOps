@@ -2,7 +2,9 @@ package com.example.backend.services;
 
 import com.example.backend.dtos.ContactDto;
 import com.example.backend.models.Contact;
+import com.example.backend.models.merchant.Merchant;
 import com.example.backend.repositories.ContactRepository;
+import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.exceptions.ContactException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 public class ContactService {
     
     private final ContactRepository contactRepository;
+    private final MerchantRepository merchantRepository;
     
     // Create a new contact
     public ContactDto createContact(ContactDto dto) {
@@ -48,6 +51,13 @@ public class ContactService {
                     .notes(dto.getNotes())
                     .isActive(dto.getIsActive() != null ? dto.getIsActive() : true)
                     .build();
+            
+            // Handle merchant relationship
+            if (dto.getMerchantId() != null) {
+                Merchant merchant = merchantRepository.findById(dto.getMerchantId())
+                        .orElseThrow(() -> new ContactException("Merchant not found with ID: " + dto.getMerchantId()));
+                contact.setMerchant(merchant);
+            }
             
             Contact savedContact = contactRepository.save(contact);
             return convertToDto(savedContact);
@@ -180,6 +190,16 @@ public class ContactService {
             contact.setNotes(dto.getNotes());
             contact.setIsActive(dto.getIsActive());
             
+            // Handle merchant relationship update
+            if (dto.getMerchantId() != null) {
+                Merchant merchant = merchantRepository.findById(dto.getMerchantId())
+                        .orElseThrow(() -> new ContactException("Merchant not found with ID: " + dto.getMerchantId()));
+                contact.setMerchant(merchant);
+            } else {
+                // If merchantId is null, remove the relationship
+                contact.setMerchant(null);
+            }
+            
             Contact updatedContact = contactRepository.save(contact);
             return convertToDto(updatedContact);
         } catch (Exception e) {
@@ -251,9 +271,27 @@ public class ContactService {
         };
     }
     
+    // Get contacts by merchant
+    public List<ContactDto> getContactsByMerchant(UUID merchantId) {
+        List<Contact> contacts = contactRepository.findByMerchantId(merchantId);
+        return contacts.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+    
+    // Get contacts without merchant
+    public List<ContactDto> getContactsWithoutMerchant() {
+        List<Contact> contacts = contactRepository.findByMerchantIsNull();
+        return contacts.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+    
+    // Get contacts with merchant
+    public List<ContactDto> getContactsWithMerchant() {
+        List<Contact> contacts = contactRepository.findByMerchantIsNotNull();
+        return contacts.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+    
     // Convert entity to DTO
     private ContactDto convertToDto(Contact contact) {
-        return ContactDto.builder()
+        ContactDto.ContactDtoBuilder builder = ContactDto.builder()
                 .id(contact.getId())
                 .firstName(contact.getFirstName())
                 .lastName(contact.getLastName())
@@ -275,7 +313,14 @@ public class ContactService {
                 .version(contact.getVersion())
                 .fullName(contact.getFullName())
                 .activeAssignments(contact.getActiveAssignments())
-                .isAvailable(contact.isAvailable())
-                .build();
+                .isAvailable(contact.isAvailable());
+        
+        // Add merchant information if present
+        if (contact.getMerchant() != null) {
+            builder.merchantId(contact.getMerchant().getId())
+                   .merchantName(contact.getMerchant().getName());
+        }
+        
+        return builder.build();
     }
 } 

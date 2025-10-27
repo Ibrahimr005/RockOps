@@ -240,10 +240,10 @@ public class EquipmentService {
         // Save the equipment
         Equipment savedEquipment = equipmentRepository.save(equipment);
 
-        // Create MinIO bucket for this equipment
+        // Ensure storage folder exists for this equipment (uses single bucket with folder structure)
         minioService.createEquipmentBucket(savedEquipment.getId());
 
-        // Upload photo if provided
+        // Upload photo if provided (stored in equipment/{equipmentId}/ folder)
         if (equipmentPhoto != null && !equipmentPhoto.isEmpty()) {
             minioService.uploadEquipmentFile(savedEquipment.getId(), equipmentPhoto, "Main_Image");
         }
@@ -499,7 +499,7 @@ public class EquipmentService {
         // Save the equipment
         Equipment updatedEquipment = equipmentRepository.save(equipment);
 
-        // Upload photo if provided
+        // Upload photo if provided (stored in equipment/{equipmentId}/ folder)
         if (equipmentPhoto != null && !equipmentPhoto.isEmpty()) {
             minioService.uploadEquipmentFile(id, equipmentPhoto, "Main_Image");
         }
