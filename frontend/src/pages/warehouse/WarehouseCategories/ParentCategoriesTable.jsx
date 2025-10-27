@@ -257,9 +257,9 @@ const ParentCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
 
             {/* Modal for adding/editing parent categories */}
             {isModalOpen && (
-                <div className="category-modal-backdrop">
-                    <div className="category-modal" ref={modalRef}>
-                        <div className="category-modal-header">
+                <div className="modal-backdrop">
+                    <div className="modal-content modal-md" ref={modalRef}>
+                        <div className="modal-header">
                             <h2>{categoryAction === 'update' ? 'Edit Parent Category' : 'Add Parent Category'}</h2>
                             <button className="category-modal-close" onClick={closeModal}>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -268,8 +268,7 @@ const ParentCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
                             </button>
                         </div>
 
-                        <div className="category-modal-content">
-                            <form onSubmit={handleSubmit}>
+                            <form onSubmit={handleSubmit} className="modal-body">
                                 <div className="form-row2">
                                     <div className="form-group2">
                                         <label htmlFor="parentCategoryName">
@@ -298,14 +297,15 @@ const ParentCategoriesTable = ({ onDelete, onRefresh, displaySnackbar }) => {
                                     </div>
                                 </div>
 
-                                <div className="category-modal-footer">
-                                    <button type="submit" className="btn-primary">
-                                        {categoryAction === 'update' ? 'Update Category' : 'Add Category'}
-                                    </button>
-                                </div>
+
                             </form>
+
+                            <div className="modal-footer">
+                                <button onClick={handleSubmit} type="submit" className="btn-primary">
+                                    {categoryAction === 'update' ? 'Update Category' : 'Add Category'}
+                                </button>
+                            </div>
                         </div>
-                    </div>
                 </div>
             )}
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaEdit, FaTrash, FaEye, FaList, FaCheckCircle } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaList, FaCheckCircle, FaPlus } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -10,6 +10,7 @@ import '../../../styles/status-badges.scss';
 import './MaintenanceRecords.scss';
 import maintenanceService from "../../../services/maintenanceService.js";
 import {FiPlus} from "react-icons/fi";
+import { ROLES } from '../../../utils/roles';
 
 const MaintenanceRecords = () => {
     const [maintenanceRecords, setMaintenanceRecords] = useState([]);
@@ -29,6 +30,17 @@ const MaintenanceRecords = () => {
     const { showSuccess, showError, showInfo, showWarning } = useSnackbar();
     const { currentUser } = useAuth();
     const navigate = useNavigate();
+
+    // Helper function to check if user has maintenance team access
+    const hasMaintenanceAccess = (user) => {
+        const maintenanceRoles = [
+            ROLES.ADMIN, 
+            ROLES.MAINTENANCE_MANAGER, 
+            ROLES.MAINTENANCE_EMPLOYEE, 
+            ROLES.EQUIPMENT_MANAGER
+        ];
+        return user?.roles?.some(role => maintenanceRoles.includes(role));
+    };
 
     useEffect(() => {
         loadMaintenanceRecords();
@@ -189,9 +201,7 @@ const MaintenanceRecords = () => {
             render: (row) => (
                 <div className="equipment-info">
                     <div className="equipment-name">{row.equipmentName}</div>
-                    <div className="equipment-details">
-                        {row.equipmentModel} • {row.equipmentSerialNumber}
-                    </div>
+
                 </div>
             )
         },
@@ -274,22 +284,20 @@ const MaintenanceRecords = () => {
             className: 'info'
         },
         {
+            label: 'Add Step',
+            icon: <FaPlus />,
+            onClick: (row) => navigate(`/maintenance/records/${row.id}?tab=steps`, {
+                state: { openStepModal: true }
+            }),
+            className: 'info',
+            show: (row) => row.status !== 'COMPLETED'
+        },
+        {
             label: 'Edit',
             icon: <FaEdit />,
             onClick: (row) => handleOpenModal(row),
             className: 'primary',
-            show: (row) => row.status !== 'COMPLETED'
-        },
-        {
-            label: 'Mark as Final',
-            icon: <FaCheckCircle />,
-            onClick: (row) => {
-                if (window.confirm(`Are you sure you want to mark the maintenance record for ${row.equipmentName} as completed?`)) {
-                    handleCompleteRecord(row);
-                }
-            },
-            className: 'success',
-            show: (row) => row.status === 'ACTIVE'
+            show: (row) => row.status !== 'COMPLETED' && hasMaintenanceAccess(currentUser)
         },
         {
             label: 'Delete',
@@ -300,7 +308,7 @@ const MaintenanceRecords = () => {
                 }
             },
             className: 'danger',
-            show: (row) => row.status !== 'COMPLETED'
+            show: (row) => hasMaintenanceAccess(currentUser)
         }
     ];
 

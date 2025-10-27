@@ -341,12 +341,41 @@ const SiteDetails = () => {
         );
     }
 
+    const getBreadcrumbs = () => {
+        return [
+            {
+                label: 'Home',
+                icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                        <polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
+                ),
+                onClick: () => navigate('/')
+            },
+            {
+                label: 'Sites',
+                icon: (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                    </svg>
+                ),
+                onClick: () => navigate('/sites')
+            },
+            {
+                label: site.name,
+                // No onClick - this is the current page
+            }
+        ];
+    };
     return (
         <div className="site-details-container">
             {/* Site Intro Card */}
             <IntroCard
                 title={site.name}
                 label="SITE MANAGEMENT"
+                breadcrumbs={getBreadcrumbs()}
                 lightModeImage={site.photoUrl || 'https://via.placeholder.com/120x80?text=Site'}
                 darkModeImage={site.photoUrl || 'https://via.placeholder.com/120x80?text=Site'}
                 stats={getSiteStats()}

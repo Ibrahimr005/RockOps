@@ -1,28 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaUser, FaEnvelope, FaPhone, FaBuilding, FaBriefcase, FaCog, FaClock, FaExclamationTriangle } from 'react-icons/fa';
+import { FaTimes, FaUser, FaEnvelope, FaPhone, FaBuilding, FaBriefcase, FaCog, FaClock, FaExclamationTriangle, FaStore } from 'react-icons/fa';
+import '../../../styles/modal-styles.scss';
 import '../../../styles/cancel-modal-button.scss';
 import './ContactModal.scss';
+import { merchantService } from '../../../services/merchant/merchantService';
+import contactTypeService from '../../../services/contactTypeService';
 
 const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
-    const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phoneNumber: '',
-        alternatePhone: '',
-        contactType: 'TECHNICIAN',
-        company: '',
-        position: '',
-        department: '',
-        specialization: '',
-        availabilityHours: '',
-        emergencyContact: false,
-        preferredContactMethod: 'PHONE',
-        notes: '',
-        isActive: true
+    console.log('ContactModal rendered:', { isOpen, editingContact });
+    const [formData, setFormData] = useState(() => {
+        try {
+            return {
+                firstName: '',
+                lastName: '',
+                email: '',
+                phoneNumber: '',
+                alternatePhone: '',
+                contactType: 'TECHNICIAN',
+                company: '',
+                position: '',
+                department: '',
+                specialization: '',
+                availabilityHours: '',
+                emergencyContact: false,
+                preferredContactMethod: 'PHONE',
+                notes: '',
+                isActive: true,
+                merchantId: null
+            };
+        } catch (error) {
+            console.error('Error initializing form data:', error);
+            return {};
+        }
     });
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [merchants, setMerchants] = useState([]);
+    const [loadingMerchants, setLoadingMerchants] = useState(false);
+    const [contactTypes, setContactTypes] = useState([]);
+    const [loadingContactTypes, setLoadingContactTypes] = useState(false);
 
     useEffect(() => {
         if (editingContact) {
@@ -41,7 +57,8 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                 emergencyContact: editingContact.emergencyContact || false,
                 preferredContactMethod: editingContact.preferredContactMethod || 'PHONE',
                 notes: editingContact.notes || '',
-                isActive: editingContact.isActive !== undefined ? editingContact.isActive : true
+                isActive: editingContact.isActive !== undefined ? editingContact.isActive : true,
+                merchantId: editingContact.merchantId || null
             });
         } else {
             setFormData({
@@ -59,17 +76,100 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                 emergencyContact: false,
                 preferredContactMethod: 'PHONE',
                 notes: '',
-                isActive: true
+                isActive: true,
+                merchantId: null
             });
         }
         setErrors({});
     }, [editingContact, isOpen]);
 
+    // Load merchants and contact types when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            // Load merchants and contact types asynchronously without blocking modal
+            setTimeout(() => {
+                loadMerchants().catch(error => {
+                    console.error('Failed to load merchants, but modal will still work:', error);
+                });
+                loadContactTypes().catch(error => {
+                    console.error('Failed to load contact types, but modal will still work:', error);
+                });
+            }, 100); // Delay to ensure modal renders first
+        }
+    }, [isOpen]);
+
+    const loadMerchants = async () => {
+        try {
+            setLoadingMerchants(true);
+            console.log('Loading merchants...');
+            
+            // Check if merchantService is available
+            if (!merchantService || !merchantService.getAll) {
+                console.warn('Merchant service not available');
+                setMerchants([]);
+                return;
+            }
+            
+            const response = await merchantService.getAll();
+            console.log('Merchant service response:', response);
+            
+            const merchantsData = Array.isArray(response?.data) ? response.data : 
+                                 Array.isArray(response) ? response : [];
+            
+            console.log('Processed merchants data:', merchantsData);
+            setMerchants(merchantsData);
+        } catch (error) {
+            console.error('Error loading merchants:', error);
+            console.error('Error details:', error.response?.data || error.message);
+            // Don't break the modal if merchants fail to load
+            setMerchants([]);
+        } finally {
+            setLoadingMerchants(false);
+        }
+    };
+
+    const loadContactTypes = async () => {
+        try {
+            setLoadingContactTypes(true);
+            console.log('Loading contact types...');
+            
+            const response = await contactTypeService.getActiveContactTypes();
+            console.log('Contact types response:', response);
+            
+            const contactTypesData = Array.isArray(response) ? response : [];
+            console.log('Processed contact types data:', contactTypesData);
+            setContactTypes(contactTypesData);
+        } catch (error) {
+            console.error('Error loading contact types:', error);
+            console.error('Error details:', error.response?.data || error.message);
+            // Don't break the modal if contact types fail to load - use fallback
+            setContactTypes([
+                { name: 'Technician', description: 'Technical maintenance personnel' },
+                { name: 'Supervisor', description: 'Maintenance supervisor or team lead' },
+                { name: 'Manager', description: 'Maintenance manager' },
+                { name: 'Supplier', description: 'Equipment or parts supplier' },
+                { name: 'Contractor', description: 'External contractor' },
+                { name: 'Customer', description: 'Customer or client contact' },
+                { name: 'Internal Staff', description: 'Internal company staff' }
+            ]);
+        } finally {
+            setLoadingContactTypes(false);
+        }
+    };
+
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
+        
+        let processedValue = type === 'checkbox' ? checked : value;
+        
+        // Handle merchantId specifically - convert empty string to null
+        if (name === 'merchantId' && processedValue === '') {
+            processedValue = null;
+        }
+        
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: processedValue
         }));
         
         // Clear error when user starts typing
@@ -127,15 +227,7 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
         }
     };
 
-    const contactTypes = [
-        { value: 'TECHNICIAN', label: 'Technician' },
-        { value: 'SUPERVISOR', label: 'Supervisor' },
-        { value: 'MANAGER', label: 'Manager' },
-        { value: 'SUPPLIER', label: 'Supplier' },
-        { value: 'CONTRACTOR', label: 'Contractor' },
-        { value: 'CUSTOMER', label: 'Customer' },
-        { value: 'INTERNAL_STAFF', label: 'Internal Staff' }
-    ];
+    // contactTypes is now loaded dynamically from the state
 
     const contactMethods = [
         { value: 'PHONE', label: 'Phone' },
@@ -147,25 +239,28 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
 
     if (!isOpen) return null;
 
-    return (
-        <div className="contact-modal-overlay">
-            <div className="contact-modal">
-                <div className="contact-modal-header">
-                    <h2>
+    // Error boundary pattern - if anything fails, show a basic modal
+    try {
+        return (
+        <div className="modal-backdrop" onClick={onClose}>
+            <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                    <div className="modal-title">
                         <FaUser />
                         {editingContact ? 'Edit Contact' : 'New Contact'}
-                    </h2>
-                    <button className="close-btn btn-cancel" onClick={onClose}>
+                    </div>
+                    <button className="modal-close btn-cancel" onClick={onClose}>
                         <FaTimes />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="contact-modal-form">
+                <div className="modal-body">
+                <form onSubmit={handleSubmit} className="contact-form" id="contact-form">
                     <div className="form-section">
                         <h3>Basic Information</h3>
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="firstName">First Name *</label>
+                                <label htmlFor="firstName" data-required="true">First Name</label>
                                 <input
                                     type="text"
                                     id="firstName"
@@ -178,7 +273,7 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                                 {errors.firstName && <span className="error-message">{errors.firstName}</span>}
                             </div>
                             <div className="form-group">
-                                <label htmlFor="lastName">Last Name *</label>
+                                <label htmlFor="lastName" data-required="true">Last Name</label>
                                 <input
                                     type="text"
                                     id="lastName"
@@ -194,7 +289,7 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="email">Email *</label>
+                                <label htmlFor="email" data-required="true">Email</label>
                                 <div className="input-with-icon">
                                     <FaEnvelope />
                                     <input
@@ -210,19 +305,30 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                                 {errors.email && <span className="error-message">{errors.email}</span>}
                             </div>
                             <div className="form-group">
-                                <label htmlFor="contactType">Contact Type *</label>
+                                <label htmlFor="contactType" data-required="true">Contact Type</label>
                                 <select
                                     id="contactType"
                                     name="contactType"
                                     value={formData.contactType}
                                     onChange={handleInputChange}
                                     className={errors.contactType ? 'error' : ''}
+                                    required
+                                    disabled={loadingContactTypes}
                                 >
-                                    {contactTypes.map(type => (
-                                        <option key={type.value} value={type.value}>
-                                            {type.label}
-                                        </option>
-                                    ))}
+                                    {loadingContactTypes ? (
+                                        <option value="">Loading contact types...</option>
+                                    ) : contactTypes.length === 0 ? (
+                                        <option value="">No contact types available</option>
+                                    ) : (
+                                        <>
+                                            <option value="">Select contact type</option>
+                                            {contactTypes.map(type => (
+                                                <option key={type.name} value={type.name}>
+                                                    {type.name} {type.description && `- ${type.description}`}
+                                                </option>
+                                            ))}
+                                        </>
+                                    )}
                                 </select>
                                 {errors.contactType && <span className="error-message">{errors.contactType}</span>}
                             </div>
@@ -233,7 +339,7 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                         <h3>Contact Information</h3>
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="phoneNumber">Phone Number *</label>
+                                <label htmlFor="phoneNumber" data-required="true">Phone Number</label>
                                 <div className="input-with-icon">
                                     <FaPhone />
                                     <input
@@ -301,6 +407,28 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                         <h3>Professional Information</h3>
                         <div className="form-row">
                             <div className="form-group">
+                                <label htmlFor="merchantId">Merchant (Service Provider)</label>
+                                <div className="input-with-icon">
+                                    <FaStore />
+                                    <select
+                                        id="merchantId"
+                                        name="merchantId"
+                                        value={formData.merchantId || ''}
+                                        onChange={handleInputChange}
+                                        disabled={loadingMerchants}
+                                    >
+                                        <option value="">
+                                            {loadingMerchants ? 'Loading merchants...' : 'No Merchant'}
+                                        </option>
+                                        {merchants && merchants.length > 0 && merchants.map(merchant => (
+                                            <option key={merchant.id} value={merchant.id}>
+                                                {merchant.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="form-group">
                                 <label htmlFor="company">Company</label>
                                 <div className="input-with-icon">
                                     <FaBuilding />
@@ -314,6 +442,9 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                                     />
                                 </div>
                             </div>
+                        </div>
+
+                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="position">Position</label>
                                 <div className="input-with-icon">
@@ -328,9 +459,6 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                                     />
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="department">Department</label>
                                 <input
@@ -342,6 +470,9 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                                     placeholder="Enter department"
                                 />
                             </div>
+                        </div>
+
+                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="specialization">Specialization</label>
                                 <div className="input-with-icon">
@@ -356,9 +487,6 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                                     />
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="form-row">
                             <div className="form-group">
                                 <label htmlFor="availabilityHours">Availability Hours</label>
                                 <div className="input-with-icon">
@@ -373,6 +501,9 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                                     />
                                 </div>
                             </div>
+                        </div>
+
+                        <div className="form-row">
                             <div className="form-group checkbox-group">
                                 <label className="checkbox-label">
                                     <input
@@ -403,18 +534,44 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                         </div>
                     </div>
 
-                    <div className="form-actions">
-                        <button type="button" className="btn-cancel" onClick={onClose}>
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                            {isSubmitting ? 'Saving...' : (editingContact ? 'Update Contact' : 'Create Contact')}
-                        </button>
-                    </div>
                 </form>
+                </div>
+                <div className="modal-footer">
+                    <button type="button" className="btn-cancel" onClick={onClose}>
+                        Cancel
+                    </button>
+                    <button type="submit" className="btn-primary" form="contact-form" disabled={isSubmitting}>
+                        {isSubmitting ? 'Saving...' : (editingContact ? 'Update Contact' : 'Create Contact')}
+                    </button>
+                </div>
             </div>
         </div>
-    );
+        );
+    } catch (error) {
+        console.error('Error rendering ContactModal:', error);
+        // Fallback UI if modal fails to render
+        return (
+            <div className="modal-backdrop" onClick={onClose}>
+                <div className="modal-container" onClick={e => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <div className="modal-title">Contact Form Error</div>
+                        <button className="modal-close btn-cancel" onClick={onClose}>
+                            <FaTimes />
+                        </button>
+                    </div>
+                    <div className="modal-body">
+                        <p>There was an error loading the contact form. Please try again.</p>
+                        <p>Error: {error.message}</p>
+                    </div>
+                    <div className="modal-footer">
+                        <button type="button" className="btn-cancel" onClick={onClose}>
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 };
 
 export default ContactModal; 

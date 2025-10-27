@@ -6,6 +6,8 @@ import ConfirmationDialog from '../../../../components/common/ConfirmationDialog
 import { vacancyService } from '../../../../services/hr/vacancyService.js';
 import { useSnackbar } from '../../../../contexts/SnackbarContext.jsx';
 import { FaArrowLeft, FaEdit, FaTrash, FaUsers, FaBriefcase, FaCalendar, FaClock, FaBuilding } from 'react-icons/fa';
+import {FiBriefcase, FiEdit, FiHome, FiTrash} from "react-icons/fi";
+import IntroCard from "../../../../components/common/IntroCard/IntroCard.jsx";
 
 const VacancyDetails = () => {
     const { id } = useParams();
@@ -182,39 +184,71 @@ const VacancyDetails = () => {
         );
     }
 
+    const getBreadcrumbs = () => {
+        return [
+            {
+                label: 'Home',
+                icon: <FiHome />,
+                onClick: () => navigate('/')
+            },
+            {
+                label: 'HR',
+                onClick: () => navigate('/hr')
+            },
+            {
+                label: 'Vacancies',
+                icon: <FiBriefcase />,
+                onClick: () => navigate('/hr/vacancies')
+            },
+            {
+                label: vacancy.title
+            }
+        ];
+    };
+
+    const getVacancyStats = () => {
+        return [
+            {
+                value: vacancy.status,
+                label: 'Status'
+            },
+            {
+                value: `${vacancy.priority || 'MEDIUM'} `,
+                label: 'Priority Level'
+            },
+            {
+                value: vacancy.numberOfPositions || '0',
+                label: 'Number of Positions'
+            }
+        ];
+    };
+
+    const getActionButtons = () => {
+        return [
+            {
+                text: 'Edit Vacancy',
+                icon: <FiEdit />,
+                onClick: handleEditClick,
+                className: 'secondary'
+            },
+            {
+                text: 'Delete',
+                icon: <FiTrash />,
+                onClick: handleDeleteVacancy,
+                className: 'danger'
+            }
+        ];
+    };
     return (
         <div className="vacancy-details-page">
             {/* Header Section */}
-            <div className="departments-header">
-                {/*<div className="header-navigation">*/}
-                {/*    */}
-                {/*    <div className="header-actions">*/}
-                {/*        /!*<button className="btn btn-primary" onClick={handleEditClick}>*!/*/}
-                {/*        /!*    <FaEdit />*!/*/}
-                {/*        /!*    Edit Vacancy*!/*/}
-                {/*        /!*</button>*!/*/}
-                {/*        /!*<button className="btn modal-btn-danger" onClick={handleDeleteVacancy}>*!/*/}
-                {/*        /!*    <FaTrash />*!/*/}
-                {/*        /!*    Delete*!/*/}
-                {/*        /!*</button>*!/*/}
-                {/*    </div>*/}
-                {/*</div>*/}
-
-                <div>
-                    <h1 className="page-title">{vacancy.title}</h1>
-
-                </div>
-
-                <div className="vacancy-badges">
-                        <span className={`status-badge ${getStatusBadgeClass(vacancy.status)}`}>
-                            {vacancy.status}
-                        </span>
-                    <span className={`status-badge ${getPriorityBadgeClass(vacancy.priority)}`}>
-                            {vacancy.priority || 'MEDIUM'} Priority
-                        </span>
-                </div>
-            </div>
-
+            <IntroCard
+                title={vacancy.title}
+                label="VACANCY DETAILS"
+                breadcrumbs={getBreadcrumbs()}
+                icon={<FiBriefcase />}
+                stats={getVacancyStats()}
+            />
             {/* Main Content */}
             <div className="vacancy-content">
                 {/* Vacancy Details Section */}

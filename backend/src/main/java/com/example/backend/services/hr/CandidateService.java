@@ -562,7 +562,7 @@ public class CandidateService {
 
             case INTERVIEWED:
                 availableStatuses.addAll(Arrays.asList(
-                        "HIRED", "REJECTED", "WITHDRAWN"
+                        "HIRED", "REJECTED", "WITHDRAWN", "APPLIED"
                 ));
                 break;
 

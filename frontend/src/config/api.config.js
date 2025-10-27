@@ -370,6 +370,14 @@ export const WORK_TYPE_ENDPOINTS = {
     DELETE: (id) => `/api/v1/worktypes/${id}`
 };
 
+// Contact Type module endpoints
+export const CONTACT_TYPE_ENDPOINTS = {
+    BASE: '/api/v1/contacttypes',
+    MANAGEMENT: '/api/v1/contacttypes/management',
+    ACTIVE: '/api/v1/contacttypes/active',
+    BY_ID: (id) => `/api/v1/contacttypes/${id}`,
+};
+
 // Job Position module endpoints
 export const JOB_POSITION_ENDPOINTS = {
     // Basic CRUD endpoints
@@ -783,7 +791,10 @@ export const CONTACT_ENDPOINTS = {
     ACTIVATE: (id) => `/api/contacts/${id}/activate`,
     OVERDUE_ASSIGNMENTS: '/api/contacts/overdue-assignments',
     NEEDING_FOLLOWUP: '/api/contacts/needing-followup',
-    STATISTICS: '/api/contacts/statistics'
+    STATISTICS: '/api/contacts/statistics',
+    BY_MERCHANT: (merchantId) => `/api/contacts/merchant/${merchantId}`,
+    WITHOUT_MERCHANT: '/api/contacts/without-merchant',
+    WITH_MERCHANT: '/api/contacts/with-merchant'
 };
 
 

@@ -72,6 +72,24 @@ const EmployeeSelector = ({
         }
     };
 
+    const renderAvatar = (employee, className) => {
+        return (
+            <div className={className}>
+                {employee.photoUrl ? (
+                    <img
+                        src={employee.photoUrl}
+                        alt={`${employee.firstName} ${employee.lastName}`}
+                        onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                        }}
+                    />
+                ) : null}
+                <FaUser style={{ display: employee.photoUrl ? 'none' : 'flex' }} />
+            </div>
+        );
+    };
+
     return (
         <div
             className={`employee-selector-component ${error ? 'employee-selector-has-error' : ''} ${disabled ? 'employee-selector-disabled' : ''}`}
@@ -80,9 +98,7 @@ const EmployeeSelector = ({
             <div className="employee-selector-input" onClick={handleInputClick}>
                 {selectedEmployee ? (
                     <div className="employee-selector-selected-employee">
-                        <div className="employee-selector-avatar">
-                            <FaUser />
-                        </div>
+                        {renderAvatar(selectedEmployee, "employee-selector-avatar")}
                         <div className="employee-selector-details">
                             <span className="employee-selector-name">
                                 {selectedEmployee.firstName} {selectedEmployee.lastName}
@@ -130,9 +146,7 @@ const EmployeeSelector = ({
                                     className="employee-selector-option"
                                     onClick={() => handleEmployeeSelect(employee)}
                                 >
-                                    <div className="employee-selector-option-avatar">
-                                        <FaUser />
-                                    </div>
+                                    {renderAvatar(employee, "employee-selector-option-avatar")}
                                     <div className="employee-selector-option-details">
                                         <div className="employee-selector-option-name">
                                             {employee.firstName} {employee.lastName}

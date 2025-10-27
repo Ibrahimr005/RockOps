@@ -204,6 +204,39 @@ export const contactService = {
             console.error('Error fetching contact statistics:', error);
             throw error;
         }
+    },
+
+    // Get contacts by merchant
+    getContactsByMerchant: async (merchantId) => {
+        try {
+            const response = await apiClient.get(CONTACT_ENDPOINTS.BY_MERCHANT(merchantId));
+            return response;
+        } catch (error) {
+            console.error('Error fetching contacts by merchant:', error);
+            throw error;
+        }
+    },
+
+    // Get contacts without merchant
+    getContactsWithoutMerchant: async () => {
+        try {
+            const response = await apiClient.get(CONTACT_ENDPOINTS.WITHOUT_MERCHANT);
+            return response;
+        } catch (error) {
+            console.error('Error fetching contacts without merchant:', error);
+            throw error;
+        }
+    },
+
+    // Get contacts with merchant
+    getContactsWithMerchant: async () => {
+        try {
+            const response = await apiClient.get(CONTACT_ENDPOINTS.WITH_MERCHANT);
+            return response;
+        } catch (error) {
+            console.error('Error fetching contacts with merchant:', error);
+            throw error;
+        }
     }
 };
 

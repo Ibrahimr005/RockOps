@@ -47,6 +47,18 @@ const EquipmentMain = () => {
     const permissions = useEquipmentPermissions(auth);
     const navigate = useNavigate();
 
+    // Function to refresh presigned URL for equipment image
+    const handleImageRefresh = async (equipmentId) => {
+        try {
+            console.log(`Refreshing presigned URL for equipment ${equipmentId}`);
+            const response = await equipmentService.refreshEquipmentMainPhoto(equipmentId);
+            return response.data;
+        } catch (error) {
+            console.error(`Error refreshing image URL for equipment ${equipmentId}:`, error);
+            return null;
+        }
+    };
+
     // Fetch equipment data
     const fetchEquipmentData = async () => {
         try {
@@ -482,6 +494,7 @@ const EquipmentMain = () => {
                             title={equipment.name || 'Unknown Equipment'}
                             imageUrl={equipment.imageUrl}
                             imageFallback={equipmentimg}
+                            onImageRefresh={handleImageRefresh}
                             onClick={(id) => navigate(`/equipment/${id}`)}
                             stats={[
                                 {
