@@ -2,11 +2,15 @@ package com.example.backend.services;
 
 import com.example.backend.dtos.*;
 import com.example.backend.models.*;
+import com.example.backend.models.hr.Employee;
 import com.example.backend.repositories.*;
+import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.exceptions.MaintenanceException;
 import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.equipment.EquipmentStatus;
 import com.example.backend.repositories.equipment.EquipmentRepository;
+import com.example.backend.models.StepType;
+import com.example.backend.repositories.StepTypeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +36,9 @@ public class MaintenanceService {
     private final ContactLogRepository contactLogRepository;
     private final EquipmentRepository equipmentRepository;
     private final ContactService contactService;
+    private final StepTypeRepository stepTypeRepository;
+    private final EmployeeRepository employeeRepository;
+    private final ContactRepository contactRepository;
     
     // Maintenance Record Operations
     
@@ -56,7 +63,7 @@ public class MaintenanceService {
                         (dto.getEstimatedCost() != null ? dto.getEstimatedCost() : BigDecimal.ZERO))
                 .build();
         
-        // Set current responsible contact if provided
+        // Set current responsible contact if provided, otherwise use equipment's main driver
         if (dto.getCurrentResponsibleContactId() != null) {
             try {
                 ContactDto contactDto = contactService.getContact(dto.getCurrentResponsibleContactId());
@@ -72,6 +79,17 @@ public class MaintenanceService {
                 record.setCurrentResponsibleContact(contact);
             } catch (Exception e) {
                 log.warn("Could not assign contact with ID {} to record: {}", dto.getCurrentResponsibleContactId(), e.getMessage());
+            }
+        } else if (equipment.getMainDriver() != null) {
+            // Automatically assign equipment's main driver as responsible person
+            try {
+                Employee mainDriver = equipment.getMainDriver();
+                Contact driverContact = findOrCreateContactForEmployee(mainDriver);
+                record.setCurrentResponsibleContact(driverContact);
+                log.info("Automatically assigned main driver {} {} as responsible person for maintenance record", 
+                        mainDriver.getFirstName(), mainDriver.getLastName());
+            } catch (Exception e) {
+                log.warn("Could not assign main driver as responsible contact: {}", e.getMessage());
             }
         }
         
@@ -227,15 +245,50 @@ public class MaintenanceService {
         MaintenanceRecord record = maintenanceRecordRepository.findById(maintenanceRecordId)
                 .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + maintenanceRecordId));
         
-        // Complete the current step if it exists
-        Optional<MaintenanceStep> currentStep = maintenanceStepRepository.findCurrentStepByMaintenanceRecordId(maintenanceRecordId);
-        if (currentStep.isPresent()) {
-            completeMaintenanceStep(currentStep.get().getId());
+        // Get all existing steps ordered by start date
+        List<MaintenanceStep> existingSteps = maintenanceStepRepository.findByMaintenanceRecordIdOrderByStartDateAsc(maintenanceRecordId);
+        
+        // VALIDATION 1: All previous steps must be completed before adding a new step
+        List<MaintenanceStep> incompleteSteps = existingSteps.stream()
+                .filter(step -> step.getActualEndDate() == null)
+                .collect(Collectors.toList());
+        
+        if (!incompleteSteps.isEmpty()) {
+            String incompleteStepDescriptions = incompleteSteps.stream()
+                    .map(step -> step.getDescription())
+                    .collect(Collectors.joining(", "));
+            throw new MaintenanceException("Cannot add new step. Please complete all previous steps first. Incomplete steps: " + incompleteStepDescriptions);
         }
         
-        // Get the responsible contact (optional)
+        // VALIDATION 2: New step's start date must be >= latest step's actual completion date
+        if (!existingSteps.isEmpty()) {
+            MaintenanceStep latestStep = existingSteps.get(existingSteps.size() - 1);
+            if (latestStep.getActualEndDate() != null && dto.getStartDate() != null) {
+                if (dto.getStartDate().isBefore(latestStep.getActualEndDate())) {
+                    throw new MaintenanceException("New step start date must be on or after " + 
+                        latestStep.getActualEndDate().toLocalDate() + 
+                        ". The previous step was completed on " + 
+                        latestStep.getActualEndDate().toLocalDate() + ".");
+                }
+            }
+        }
+        
+        // Get the step type
+        StepType stepType = stepTypeRepository.findById(dto.getStepTypeId())
+                .orElseThrow(() -> new MaintenanceException("Step type not found with id: " + dto.getStepTypeId()));
+        
+        // Get the responsible person (can be either employee or contact, not both)
         Contact responsibleContact = null;
-        if (dto.getResponsibleContactId() != null) {
+        Employee responsibleEmployee = null;
+        
+        // Priority 1: Check if employee ID is provided (site employee assignment)
+        if (dto.getResponsibleEmployeeId() != null) {
+            responsibleEmployee = employeeRepository.findById(dto.getResponsibleEmployeeId())
+                    .orElseThrow(() -> new MaintenanceException("Employee not found with id: " + dto.getResponsibleEmployeeId()));
+            log.info("Assigned employee {} as responsible person for step", responsibleEmployee.getFirstName() + " " + responsibleEmployee.getLastName());
+        }
+        // Priority 2: Check if contact ID is provided (external contact assignment)
+        else if (dto.getResponsibleContactId() != null) {
             try {
                 ContactDto contactDto = contactService.getContact(dto.getResponsibleContactId());
                 responsibleContact = Contact.builder()
@@ -247,28 +300,65 @@ public class MaintenanceService {
                         .contactType(contactDto.getContactType())
                         .version(contactDto.getVersion())
                         .build();
+                log.info("Assigned contact {} as responsible person for step", contactDto.getFirstName() + " " + contactDto.getLastName());
             } catch (Exception e) {
                 log.warn("Could not assign contact with ID {} to step: {}", dto.getResponsibleContactId(), e.getMessage());
             }
         }
         
+        // LOCATION TRACKING LOGIC
+        // Determine current location based on previous steps and equipment site
+        String currentLocation = "";
+        if (!existingSteps.isEmpty()) {
+            // Get the last completed step
+            MaintenanceStep lastStep = existingSteps.get(existingSteps.size() - 1);
+            // If last step was a TRANSPORT, current location is its toLocation
+            if (lastStep.getStepType() != null && "TRANSPORT".equalsIgnoreCase(lastStep.getStepType().getName())) {
+                currentLocation = lastStep.getToLocation() != null ? lastStep.getToLocation() : "";
+            } else {
+                // Otherwise, inherit location from last step (whether fromLocation or toLocation)
+                currentLocation = lastStep.getToLocation() != null && !lastStep.getToLocation().isEmpty() 
+                    ? lastStep.getToLocation() 
+                    : (lastStep.getFromLocation() != null ? lastStep.getFromLocation() : "");
+            }
+        } else {
+            // No previous steps, get location from equipment's site
+            Equipment equipment = equipmentRepository.findById(record.getEquipmentId()).orElse(null);
+            if (equipment != null && equipment.getSite() != null) {
+                currentLocation = equipment.getSite().getName();
+            }
+        }
+        
+        // For TRANSPORT steps, fromLocation is current location, toLocation is user-specified
+        // For non-TRANSPORT steps, both fromLocation and toLocation can be the current location
+        String fromLocation = dto.getFromLocation() != null && !dto.getFromLocation().isEmpty() 
+            ? dto.getFromLocation() 
+            : currentLocation;
+        String toLocation = dto.getToLocation() != null ? dto.getToLocation() : "";
+        
         MaintenanceStep step = MaintenanceStep.builder()
                 .maintenanceRecord(record)
-                .stepType(dto.getStepType())
+                .stepType(stepType)
                 .description(dto.getDescription())
                 .responsibleContact(responsibleContact)
+                .responsibleEmployee(responsibleEmployee)
                 .startDate(dto.getStartDate() != null ? dto.getStartDate() : LocalDateTime.now())
                 .expectedEndDate(dto.getExpectedEndDate())
-                .fromLocation(dto.getFromLocation() != null ? dto.getFromLocation() : "")
-                .toLocation(dto.getToLocation() != null ? dto.getToLocation() : "")
+                .fromLocation(fromLocation)
+                .toLocation(toLocation)
                 .stepCost(dto.getStepCost() != null ? dto.getStepCost() : BigDecimal.ZERO)
                 .notes(dto.getNotes())
                 .build();
         
         MaintenanceStep savedStep = maintenanceStepRepository.save(step);
         
-        // Update main record's current responsible contact if this is the current step
-        record.setCurrentResponsibleContact(responsibleContact);
+        // Update main record's current responsible contact (prefer employee over contact for display)
+        if (responsibleEmployee != null) {
+            // We still need a contact for the record, so keep as null or handle differently
+            record.setCurrentResponsibleContact(responsibleContact);
+        } else {
+            record.setCurrentResponsibleContact(responsibleContact);
+        }
         maintenanceRecordRepository.save(record);
         
         return convertToDto(savedStep);
@@ -349,12 +439,26 @@ public class MaintenanceService {
         return convertToDto(savedStep);
     }
     
-    public void completeMaintenanceStep(UUID stepId) {
+    public void completeMaintenanceStep(UUID stepId, MaintenanceStepDto completionData) {
         MaintenanceStep step = maintenanceStepRepository.findById(stepId)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + stepId));
         
-        step.setActualEndDate(LocalDateTime.now());
+        // Set actual end date from request, or use current time if not provided
+        if (completionData.getActualEndDate() != null) {
+            step.setActualEndDate(completionData.getActualEndDate());
+        } else {
+            step.setActualEndDate(LocalDateTime.now());
+        }
+        
+        // Update actual cost if provided
+        if (completionData.getStepCost() != null) {
+            step.setStepCost(completionData.getStepCost());
+        }
+        
         maintenanceStepRepository.save(step);
+        
+        // Recalculate total cost of parent record
+        updateRecordTotalCost(step.getMaintenanceRecord().getId());
         
         // If this was the final step, complete the parent record
         if (step.isFinalStep()) {
@@ -363,7 +467,10 @@ public class MaintenanceService {
     }
     
     public void handoffToNextStep(UUID stepId, MaintenanceStepDto nextStepDto) {
-        completeMaintenanceStep(stepId);
+        // Complete with current timestamp and existing cost
+        MaintenanceStepDto completionData = new MaintenanceStepDto();
+        completionData.setActualEndDate(LocalDateTime.now());
+        completeMaintenanceStep(stepId, completionData);
         createMaintenanceStep(nextStepDto.getMaintenanceRecordId(), nextStepDto);
     }
     
@@ -576,14 +683,26 @@ public class MaintenanceService {
     }
     
     private MaintenanceStepDto convertToDto(MaintenanceStep step) {
+        // Format step type name in title case (TRANSPORT -> Transport)
+        String stepTypeName = null;
+        if (step.getStepType() != null && step.getStepType().getName() != null) {
+            String name = step.getStepType().getName();
+            stepTypeName = name.substring(0, 1).toUpperCase() + name.substring(1).toLowerCase();
+        }
+        
         return MaintenanceStepDto.builder()
                 .id(step.getId())
                 .maintenanceRecordId(step.getMaintenanceRecord().getId())
-                .stepType(step.getStepType())
+                .stepTypeId(step.getStepType() != null ? step.getStepType().getId() : null)
+                .stepTypeName(stepTypeName)
                 .description(step.getDescription())
                 .responsibleContactId(step.getResponsibleContact() != null ? step.getResponsibleContact().getId() : null)
-                .contactEmail(step.getResponsibleContact() != null ? step.getResponsibleContact().getEmail() : null)
-                .contactSpecialization(step.getResponsibleContact() != null ? step.getResponsibleContact().getSpecialization() : null)
+                .responsibleEmployeeId(step.getResponsibleEmployee() != null ? step.getResponsibleEmployee().getId() : null)
+                .contactEmail(step.getResponsibleContact() != null ? step.getResponsibleContact().getEmail() : 
+                             (step.getResponsibleEmployee() != null ? step.getResponsibleEmployee().getEmail() : null))
+                .contactSpecialization(step.getResponsibleContact() != null ? step.getResponsibleContact().getSpecialization() : 
+                                      (step.getResponsibleEmployee() != null && step.getResponsibleEmployee().getJobPosition() != null ? 
+                                       step.getResponsibleEmployee().getJobPosition().getPositionName() : null))
                 .lastContactDate(step.getLastContactDate())
                 .startDate(step.getStartDate())
                 .expectedEndDate(step.getExpectedEndDate())
@@ -600,9 +719,8 @@ public class MaintenanceService {
                 .isOverdue(step.isOverdue())
                 .durationInHours(step.getDurationInHours())
                 .needsFollowUp(step.needsFollowUp())
-                .responsiblePerson(step.getResponsibleContact() != null ? 
-                    step.getResponsibleContact().getFirstName() + " " + step.getResponsibleContact().getLastName() : null)
-                .personPhoneNumber(step.getResponsibleContact() != null ? step.getResponsibleContact().getPhoneNumber() : null)
+                .responsiblePerson(step.getResponsiblePersonName())
+                .personPhoneNumber(step.getResponsiblePersonPhone())
                 .build();
     }
     
@@ -639,5 +757,42 @@ public class MaintenanceService {
         
         record.setTotalCost(totalCost);
         maintenanceRecordRepository.save(record);
+    }
+    
+    /**
+     * Find or create a Contact entity for an Employee.
+     * This is used to automatically assign equipment's main driver as responsible person
+     * when creating a maintenance record.
+     * 
+     * @param employee The employee to find or create a contact for
+     * @return The Contact entity for the employee
+     */
+    private Contact findOrCreateContactForEmployee(Employee employee) {
+        // Try to find existing contact by email
+        Optional<Contact> existingContact = contactRepository.findByEmail(employee.getEmail());
+        
+        if (existingContact.isPresent()) {
+            log.info("Found existing contact for employee {} {}", employee.getFirstName(), employee.getLastName());
+            return existingContact.get();
+        }
+        
+        // Create new contact for the employee
+        Contact newContact = Contact.builder()
+                .firstName(employee.getFirstName())
+                .lastName(employee.getLastName())
+                .email(employee.getEmail())
+                .phoneNumber(employee.getPhoneNumber())
+                .contactType(Contact.ContactType.INTERNAL_STAFF)
+                .position(employee.getJobPosition() != null ? employee.getJobPosition().getPositionName() : null)
+                .company(employee.getSite() != null ? employee.getSite().getName() : null)
+                .isActive(true)
+                .notes("Auto-created from employee record for maintenance tracking")
+                .build();
+        
+        Contact savedContact = contactRepository.save(newContact);
+        log.info("Created new contact for employee {} {} with ID {}", 
+                employee.getFirstName(), employee.getLastName(), savedContact.getId());
+        
+        return savedContact;
     }
 } 

@@ -14,6 +14,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import com.example.backend.models.merchant.Merchant;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Table(name = "contacts")
@@ -102,6 +104,12 @@ public class Contact {
     @OneToMany(mappedBy = "contact", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ContactLog> contactLogs = new ArrayList<>();
+    
+    // Merchant relationship (optional)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "merchant_id")
+    @JsonBackReference("merchant-contacts")
+    private Merchant merchant;
     
     public enum ContactType {
         TECHNICIAN, SUPERVISOR, MANAGER, SUPPLIER, CONTRACTOR, CUSTOMER, INTERNAL_STAFF

@@ -3,6 +3,7 @@ import { FaTimes, FaEye, FaTools, FaUser, FaCalendarAlt, FaDollarSign, FaInfoCir
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import maintenanceService from '../../../../services/maintenanceService.js';
+import '../../../../styles/modal-styles.scss';
 import '../../../../styles/cancel-modal-button.scss';
 import './MaintenanceRecordViewModal.scss';
 
@@ -89,19 +90,17 @@ const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="maintenance-modal-overlay" onClick={onClose}>
-            <div className="maintenance-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-backdrop" onClick={onClose}>
+            <div className="modal-container modal-lg" onClick={e => e.stopPropagation()}>
                 {/* Header */}
-                <div className="maintenance-modal-header">
-                    <div className="header-content">
-                        <div className="header-title">
-                            <FaEye className="header-icon" />
-                            <h2>Maintenance Record Overview</h2>
-                        </div>
+                <div className="modal-header">
+                    <div className="modal-title">
+                        <FaEye />
+                        Maintenance Record Overview
                         {maintenanceRecord && (
-                            <div className="header-status">
+                            <span className="record-status-badge">
                                 {getStatusBadge(maintenanceRecord.status)}
-                            </div>
+                            </span>
                         )}
                     </div>
                     <div className="header-actions">
@@ -113,14 +112,14 @@ const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId }) => {
                             <FaExternalLinkAlt />
                             Full Details
                         </button>
-                        <button className="btn-close btn-cancel" onClick={onClose}>
+                        <button className="modal-close btn-cancel" onClick={onClose}>
                             <FaTimes />
                         </button>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="maintenance-modal-content">
+                <div className="modal-body">
                     {loading ? (
                         <div className="loading-state">
                             <div className="loading-spinner"></div>
@@ -271,8 +270,8 @@ const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId }) => {
                 </div>
 
                 {/* Footer */}
-                <div className="maintenance-modal-footer">
-                    <button className="btn-secondary" onClick={onClose}>
+                <div className="modal-footer">
+                    <button className="btn-cancel" onClick={onClose}>
                         Close
                     </button>
                     <button className="btn-primary" onClick={handleViewFullDetails}>

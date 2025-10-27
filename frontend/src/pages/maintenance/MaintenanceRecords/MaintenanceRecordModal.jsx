@@ -130,7 +130,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                         <FaTools />
                         {editingRecord ? 'Edit Maintenance Record' : 'New Maintenance Record'}
                     </div>
-                    <button className="modal-close btn-cancel" onClick={onClose}>
+                    <button className="btn-close" onClick={onClose}>
                         <FaTimes />
                     </button>
                 </div>
@@ -141,7 +141,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                         <h3>Equipment Information</h3>
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="equipmentId">Equipment *</label>
+                                <label htmlFor="equipmentId">Equipment <span className="required">*</span></label>
                                 <select
                                     id="equipmentId"
                                     name="equipmentId"
@@ -178,7 +178,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                     <div className="form-section">
                         <h3>Issue Details</h3>
                         <div className="form-group">
-                            <label htmlFor="initialIssueDescription">Issue Description *</label>
+                            <label htmlFor="initialIssueDescription">Issue Description <span className="required">*</span></label>
                             <textarea
                                 id="initialIssueDescription"
                                 name="initialIssueDescription"
@@ -196,7 +196,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                         <h3>Schedule & Cost</h3>
                         <div className="form-row">
                             <div className="form-group">
-                                <label htmlFor="expectedCompletionDate">Expected Completion Date *</label>
+                                <label htmlFor="expectedCompletionDate">Expected Completion Date <span className="required">*</span></label>
                                 <input
                                     type="date"
                                     id="expectedCompletionDate"

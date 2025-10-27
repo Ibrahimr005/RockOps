@@ -1,6 +1,5 @@
 package com.example.backend.dtos;
 
-import com.example.backend.models.MaintenanceStep;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
@@ -26,12 +25,16 @@ public class MaintenanceStepDto {
     private UUID maintenanceRecordId;
     
     @NotNull(message = "Step type is required")
-    private MaintenanceStep.StepType stepType;
+    private UUID stepTypeId;
+    
+    private String stepTypeName;
     
     @NotBlank(message = "Step description is required")
     private String description;
     
     private UUID responsibleContactId;
+    
+    private UUID responsibleEmployeeId;
     
     // Contact assignment
     private String contactEmail;
