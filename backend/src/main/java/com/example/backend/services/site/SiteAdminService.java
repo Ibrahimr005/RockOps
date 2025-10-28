@@ -633,6 +633,33 @@ public class SiteAdminService
             throw new RuntimeException("Employee is not assigned to this site");
         }
 
+        List<Equipment> equipmentAtSite = equipmentRepository.findBySiteId(siteId);
+
+        for (Equipment equipment : equipmentAtSite) {
+            boolean equipmentUpdated = false;
+
+            // Check if employee is main driver
+            if (equipment.getMainDriver() != null &&
+                    equipment.getMainDriver().getId().equals(employeeId)) {
+                equipment.setMainDriver(null);
+                equipmentUpdated = true;
+                System.out.println("Removed employee as main driver from equipment: " + equipment.getModel());
+            }
+
+            // Check if employee is sub driver
+            if (equipment.getSubDriver() != null &&
+                    equipment.getSubDriver().getId().equals(employeeId)) {
+                equipment.setSubDriver(null);
+                equipmentUpdated = true;
+                System.out.println("Removed employee as sub driver from equipment: " + equipment.getModel());
+            }
+
+            // Save equipment if it was modified
+            if (equipmentUpdated) {
+                equipmentRepository.save(equipment);
+            }
+        }
+
         employee.setSite(null); // Remove site association
 
         // Send notifications to SITE_ADMIN, ADMIN, and HR users

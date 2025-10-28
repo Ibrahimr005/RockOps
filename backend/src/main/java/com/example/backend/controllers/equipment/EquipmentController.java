@@ -2,6 +2,7 @@ package com.example.backend.controllers.equipment;
 
 import com.example.backend.dto.equipment.*;
 import com.example.backend.dto.hr.employee.EmployeeSummaryDTO;
+import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.equipment.Consumable;
 import com.example.backend.models.warehouse.ItemStatus;
 import com.example.backend.services.equipment.ConsumablesService;
@@ -387,4 +388,99 @@ public class EquipmentController {
         }
     }
 
+    /**
+     * Unassign a driver from equipment
+     * @param equipmentId The equipment ID
+     * @param driverId The driver (employee) ID
+     * @param type The driver type: "main" or "sub"
+     */
+    @DeleteMapping("/{equipmentId}/driver/{driverId}")
+    public ResponseEntity<?> unassignDriverFromEquipment(
+            @PathVariable UUID equipmentId,
+            @PathVariable UUID driverId,
+            @RequestParam String type) {
+        try {
+            EquipmentDTO updatedEquipment = equipmentService.unassignDriverFromEquipment(equipmentId, driverId, type);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Driver successfully unassigned from equipment");
+            response.put("equipment", updatedEquipment);
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Bad Request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("status", 400);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        } catch (ResourceNotFoundException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Not Found");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("status", 404);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        } catch (Exception e) {
+            System.err.println("Error unassigning driver: " + e.getMessage());
+            e.printStackTrace();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Internal Server Error");
+            errorResponse.put("message", "Failed to unassign driver: " + e.getMessage());
+            errorResponse.put("status", 500);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Get all drivers assigned to a specific equipment
+     */
+    /**
+     * Get all drivers assigned to a specific equipment
+     */
+    @GetMapping("/{equipmentId}/drivers")
+    public ResponseEntity<Map<String, Object>> getEquipmentDrivers(@PathVariable UUID equipmentId) {
+        try {
+            EquipmentDTO equipment = equipmentService.getEquipmentById(equipmentId);
+
+            Map<String, Object> response = new HashMap<>();
+            List<Map<String, Object>> drivers = new ArrayList<>();
+
+            // Add main driver if exists
+            if (equipment.getMainDriverId() != null && equipment.getMainDriverName() != null) {
+                Map<String, Object> mainDriver = new HashMap<>();
+                mainDriver.put("id", equipment.getMainDriverId());
+                mainDriver.put("name", equipment.getMainDriverName());
+                mainDriver.put("role", "Main Driver");
+                mainDriver.put("type", "main");
+                drivers.add(mainDriver);
+            }
+
+            // Add sub driver if exists
+            if (equipment.getSubDriverId() != null && equipment.getSubDriverName() != null) {
+                Map<String, Object> subDriver = new HashMap<>();
+                subDriver.put("id", equipment.getSubDriverId());
+                subDriver.put("name", equipment.getSubDriverName());
+                subDriver.put("role", "Sub Driver");
+                subDriver.put("type", "sub");
+                drivers.add(subDriver);
+            }
+
+            response.put("equipmentId", equipmentId);
+            response.put("equipmentName", equipment.getName());
+            response.put("equipmentModel", equipment.getModel());
+            response.put("drivers", drivers);
+            response.put("driverCount", drivers.size());
+
+            return ResponseEntity.ok(response);
+        } catch (ResourceNotFoundException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Equipment not found");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to fetch equipment drivers");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
 }

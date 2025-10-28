@@ -44,7 +44,10 @@ export const EQUIPMENT_ENDPOINTS = {
     MAINTENANCE_FOR_LINKING: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/for-linking`,
     ACCEPT_TRANSACTION_WITH_MAINTENANCE: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept-with-maintenance`,
     ITEMS: (equipmentId) => `/api/equipment/${equipmentId}/items`,
-    CHECK_BATCH_EXISTS: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`
+    CHECK_BATCH_EXISTS: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`,
+    DRIVERS: (equipmentId) => `/api/equipment/${equipmentId}/drivers`,
+    UNASSIGN_DRIVER: (equipmentId, driverId) => `/api/equipment/${equipmentId}/driver/${driverId}`,
+
 };
 
 // Batch Validation endpoints

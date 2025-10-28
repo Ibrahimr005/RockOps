@@ -26,6 +26,7 @@ import com.example.backend.models.site.Site;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import com.example.backend.services.notification.NotificationService;
+import jakarta.transaction.Transactional;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -1026,6 +1027,106 @@ public class EquipmentService {
         private boolean compatible;
         private String message;
         private String requiredPosition;
+    }
+
+    /**
+     * Unassign a driver from equipment (either main or sub driver)
+     * Also removes the driver from the site
+     */
+    @Transactional
+    public EquipmentDTO unassignDriverFromEquipment(UUID equipmentId, UUID driverId, String driverType) {
+        // Validate inputs
+        if (equipmentId == null || driverId == null || driverType == null) {
+            throw new IllegalArgumentException("Equipment ID, Driver ID, and Driver Type cannot be null");
+        }
+
+        // Validate driver type
+        if (!driverType.equalsIgnoreCase("main") && !driverType.equalsIgnoreCase("sub")) {
+            throw new IllegalArgumentException("Driver type must be either 'main' or 'sub'");
+        }
+
+        // Find equipment
+        Equipment equipment = equipmentRepository.findById(equipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + equipmentId));
+
+        // Find driver
+        Employee driver = employeeRepository.findById(driverId)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
+
+        System.out.println("=== Unassigning driver from equipment ===");
+        System.out.println("Equipment: " + equipment.getName() + " (" + equipment.getModel() + ")");
+        System.out.println("Driver: " + driver.getFullName());
+        System.out.println("Driver Type: " + driverType);
+
+        // Verify the driver is actually assigned to this equipment
+        boolean driverFound = false;
+        if (driverType.equalsIgnoreCase("main")) {
+            if (equipment.getMainDriver() != null && equipment.getMainDriver().getId().equals(driverId)) {
+                equipment.setMainDriver(null);
+                driverFound = true;
+                System.out.println("Removed main driver from equipment");
+            } else {
+                throw new IllegalArgumentException("Employee is not assigned as main driver to this equipment");
+            }
+        } else if (driverType.equalsIgnoreCase("sub")) {
+            if (equipment.getSubDriver() != null && equipment.getSubDriver().getId().equals(driverId)) {
+                equipment.setSubDriver(null);
+                driverFound = true;
+                System.out.println("Removed sub driver from equipment");
+            } else {
+                throw new IllegalArgumentException("Employee is not assigned as sub driver to this equipment");
+            }
+        }
+
+        if (!driverFound) {
+            throw new IllegalArgumentException("Driver not found on this equipment");
+        }
+
+        // Remove driver from site (Option B from your requirements)
+        driver.setSite(null);
+        employeeRepository.save(driver);
+        System.out.println("Removed driver from site");
+
+        // Save equipment (status remains unchanged as per your requirements)
+        Equipment savedEquipment = equipmentRepository.save(equipment);
+
+        // Create response DTO
+        EquipmentDTO resultDTO = EquipmentDTO.fromEntity(savedEquipment);
+
+        try {
+            String imageUrl = minioService.getEquipmentMainPhoto(savedEquipment.getId());
+            resultDTO.setImageUrl(imageUrl);
+        } catch (Exception e) {
+            resultDTO.setImageUrl(null);
+        }
+
+        // Send notifications
+        try {
+            String driverTypeLabel = driverType.equalsIgnoreCase("main") ? "Main Driver" : "Sub Driver";
+            String notificationTitle = "Driver Unassigned from Equipment";
+            String notificationMessage = driver.getFullName() + " has been unassigned as " +
+                    driverTypeLabel + " from equipment '" + equipment.getName() + "' (" + equipment.getModel() + ")";
+            String actionUrl = "/equipment/" + equipment.getId();
+            String relatedEntity = equipment.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.WARNING,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Driver unassignment notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send driver unassignment notifications: " + e.getMessage());
+        }
+
+        System.out.println("=== Driver unassignment completed ===");
+        return resultDTO;
     }
 
 }

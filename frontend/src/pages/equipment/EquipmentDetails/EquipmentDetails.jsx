@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { RiDeleteBin6Line } from "react-icons/ri";
-import { FaInfoCircle, FaWrench, FaTools, FaBoxOpen, FaTachometerAlt, FaCalendarAlt } from "react-icons/fa";
-import "./EquipmentDetails.scss";
+import { FaInfoCircle, FaWrench, FaTools, FaBoxOpen, FaTachometerAlt, FaCalendarAlt, FaUserTimes } from "react-icons/fa";import "./EquipmentDetails.scss";
 import InSiteMaintenanceLog from "../InSiteMaintenanceLog/InSiteMaintenanceLog";
 import EquipmentConsumablesInventory from "../EquipmentConsumablesInventory/EquipmentConsumablesInventory ";
 import EquipmentDashboard from "../EquipmentDashboard/EquipmentDashboard";
@@ -16,6 +15,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { useEquipmentPermissions } from "../../../utils/rbac";
 import TransactionHub from "../../../components/equipment/TransactionHub/TransactionHub";
 import EquipmentSarkyMatrix from '../EquipmentSarkyMatrix/EquipmentSarkyMatrix';
+import UnassignDriverModal from './UnassignDriverModal';
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
 
 // Set the app element for accessibility
@@ -55,6 +55,7 @@ const EquipmentDetails = () => {
     const inSiteMaintenanceLogRef = useRef(null);
     const consumablesInventoryRef = useRef(null);
     const unifiedTransactionsRef = useRef();
+    const [isUnassignDriverModalOpen, setIsUnassignDriverModalOpen] = useState(false);
 
     // Fetch equipment data
     useEffect(() => {
@@ -96,6 +97,17 @@ const EquipmentDetails = () => {
         fetchEquipmentData();
         fetchEquipmentPhoto();
     }, [params.EquipmentID]);
+
+    const handleDriverUnassigned = async () => {
+        try {
+            const response = await equipmentService.getEquipmentById(params.EquipmentID);
+            setEquipmentData(response.data);
+            showSuccess('Driver successfully unassigned from equipment and site');
+        } catch (error) {
+            console.error('Error refreshing equipment data:', error);
+            showError('Driver unassigned but failed to refresh data');
+        }
+    };
 
     const handleAddTransactionToMaintenance = (maintenanceId) => {
         setSelectedMaintenanceId(maintenanceId);
@@ -242,6 +254,15 @@ const EquipmentDetails = () => {
                     </div>
                 </div>
                 <div className="right-side">
+                    {equipmentData?.drivable && (equipmentData?.mainDriverName || equipmentData?.subDriverName) && permissions.canEdit && (
+                        <button
+                            className="manage-drivers-button-eq"
+                            onClick={() => setIsUnassignDriverModalOpen(true)}
+                            title="Manage Drivers"
+                        >
+                            <FaUserTimes />
+                        </button>
+                    )}
                     <button className="info-button-eq" onClick={handleViewFullDetails}>
                         <FaInfoCircle />
                     </button>
@@ -380,6 +401,15 @@ const EquipmentDetails = () => {
                     equipmentId={params.EquipmentID}
                     maintenanceId={selectedMaintenanceId}
                     onTransactionAdded={refreshAllTabs}
+                />
+            )}
+
+            {isUnassignDriverModalOpen && permissions.canEdit && (
+                <UnassignDriverModal
+                    isOpen={isUnassignDriverModalOpen}
+                    onClose={() => setIsUnassignDriverModalOpen(false)}
+                    equipmentId={params.EquipmentID}
+                    onDriverUnassigned={handleDriverUnassigned}
                 />
             )}
         </div>

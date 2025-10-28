@@ -440,5 +440,27 @@ export const equipmentService = {
     // Get equipment by site
     getEquipmentBySite: (siteId) => {
         return apiClient.get(`/api/equipment/site/${siteId}`);
-    }
+    },
+
+    /**
+     * Get all drivers assigned to a specific equipment
+     * @param {string} equipmentId - The equipment UUID
+     * @returns {Promise} Response containing drivers list
+     */
+    getEquipmentDrivers: (equipmentId) => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.DRIVERS(equipmentId));
+    },
+
+    /**
+     * Unassign a driver from equipment
+     * @param {string} equipmentId - The equipment UUID
+     * @param {string} driverId - The driver (employee) UUID
+     * @param {string} type - Driver type: "main" or "sub"
+     * @returns {Promise} Response containing updated equipment data
+     */
+    unassignDriverFromEquipment: (equipmentId, driverId, type) => {
+        return apiClient.delete(EQUIPMENT_ENDPOINTS.UNASSIGN_DRIVER(equipmentId, driverId), {
+            params: { type }
+        });
+    },
 };
