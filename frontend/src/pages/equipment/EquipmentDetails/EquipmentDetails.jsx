@@ -21,7 +21,7 @@ import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
 import IntroCard from "../../../components/common/IntroCard/IntroCard";
 
 // Set the app element for accessibility
-Modal.setAppElement('#root'); // Adjust this to match your root element ID
+Modal.setAppElement('#root');
 
 const EquipmentDetails = () => {
     const params = useParams();
@@ -49,6 +49,7 @@ const EquipmentDetails = () => {
     const [showCreateNotification, setShowCreateNotification] = useState(false);
     const [isAddMaintenanceModalOpen, setIsAddMaintenanceModalOpen] = useState(false);
     const [isMaintenanceTransactionModalOpen, setIsMaintenanceTransactionModalOpen] = useState(false);
+    const [isUnassignDriverModalOpen, setIsUnassignDriverModalOpen] = useState(false);
 
     // Refs for child components
     const dashboardRef = useRef(null);
@@ -57,7 +58,6 @@ const EquipmentDetails = () => {
     const inSiteMaintenanceLogRef = useRef(null);
     const consumablesInventoryRef = useRef(null);
     const unifiedTransactionsRef = useRef();
-    const [isUnassignDriverModalOpen, setIsUnassignDriverModalOpen] = useState(false);
 
     // Fetch equipment data
     useEffect(() => {
@@ -80,12 +80,10 @@ const EquipmentDetails = () => {
         };
         const fetchEquipmentPhoto = async () => {
             try {
-                // You can use the custom equipmentService method for fetching photos
                 const response = await equipmentService.getEquipmentMainPhoto(params.EquipmentID);
                 setPreviewImage(response.data);
             } catch (error) {
                 console.error("Error fetching equipment photo:", error);
-                // If direct fetch fails, try refresh to get new presigned URL
                 try {
                     console.log("Retrying with refresh...");
                     const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(params.EquipmentID);
@@ -157,27 +155,6 @@ const EquipmentDetails = () => {
         setIsAddMaintenanceModalOpen(true);
     };
 
-    // Add handlers for transaction accept/reject
-    const handleAcceptTransaction = (transaction) => {
-        // You can implement accept logic here
-        // For now, just show an alert - you can expand this later
-        alert(`Accept transaction ${transaction.id} - Feature to be implemented`);
-        console.log('Accepting transaction:', transaction);
-    };
-
-    const handleRejectTransaction = (transaction) => {
-        // You can implement reject logic here
-        // For now, just show an alert - you can expand this later
-        alert(`Reject transaction ${transaction.id} - Feature to be implemented`);
-        console.log('Rejecting transaction:', transaction);
-    };
-
-    const handleUpdateTransaction = (transaction) => {
-        // Implement update transaction logic
-        console.log('Updating transaction:', transaction);
-        alert(`Update transaction ${transaction.id} - Feature to be implemented`);
-    };
-
     const handleViewFullDetails = () => {
         navigate(`../info/${params.EquipmentID}`);
     };
@@ -223,8 +200,15 @@ const EquipmentDetails = () => {
             label: 'Main Driver',
             value: equipmentData?.mainDriverName || 'Not Assigned'
         });
+        if (equipmentData?.subDriverName) {
+            stats.push({
+                label: 'Sub Driver',
+                value: equipmentData.subDriverName
+            });
+        }
     }
 
+    // Build action buttons array
     const actionButtons = [
         {
             icon: <FaInfoCircle />,
@@ -233,6 +217,18 @@ const EquipmentDetails = () => {
             className: 'secondary'
         }
     ];
+
+    // Add Manage Drivers button if conditions are met
+    if (equipmentData?.drivable &&
+        (equipmentData?.mainDriverName || equipmentData?.subDriverName) &&
+        permissions.canEdit) {
+        actionButtons.push({
+            icon: <FaUserTimes />,
+            text: 'Manage Drivers',
+            onClick: () => setIsUnassignDriverModalOpen(true),
+            className: 'warning' // or 'secondary' depending on your preference
+        });
+    }
 
     return (
         <div className="equipment-details-container">
@@ -246,93 +242,8 @@ const EquipmentDetails = () => {
                 actionButtons={actionButtons}
             />
 
-            {/* Equipment Summary Section */}
-            {/* Equipment Summary Section */}
-
-            {/*<h1 className="SectionHeaderLabel">Equipment Details</h1>*/}
-
-            {/* Equipment Card - styled like warehouse card */}
-
-            <div className="equipment-card-header">
-                <div className="left-side">
-                    <img
-                        src={previewImage || equipmentData?.imageUrl}
-                        alt="Equipment"
-                        className="equipment-image"
-                        onError={async (e) => {
-                            // If image fails to load, try to refresh the URL
-                            if (!e.target.hasAttribute('data-refresh-attempted')) {
-                                e.target.setAttribute('data-refresh-attempted', 'true');
-                                try {
-                                    const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(params.EquipmentID);
-                                    if (refreshResponse.data) {
-                                        e.target.src = refreshResponse.data;
-                                        setPreviewImage(refreshResponse.data);
-                                    }
-                                } catch (refreshError) {
-                                    console.error("Failed to refresh image on error:", refreshError);
-                                    // Fallback to a placeholder or default image
-                                    e.target.src = '/assets/imgs/equipment-placeholder.png';
-                                }
-                            } else {
-                                // Already attempted refresh, use placeholder
-                                e.target.src = '/assets/imgs/equipment-placeholder.png';
-                            }
-                        }}
-                    />
-                </div>
-                <div className="center-content">
-                    <div className="label">EQUIPMENT NAME</div>
-                    <div className="value">{equipmentData?.name || "Equipment"}</div>
-
-                    {/* Driver Information Section */}
-                    <div className="driver-info-section">
-                        <div className="driver-config">
-                            <span className={`driver-status ${equipmentData?.drivable ? 'drivable' : 'non-drivable'}`}>
-                                {equipmentData?.drivable ? '🚗 Driver Assignable' : '🔧 No Driver Required'}
-                            </span>
-                        </div>
-
-                        {equipmentData?.drivable && (
-                            <div className="driver-assignments">
-                                <div className="driver-item">
-                                    <span className="driver-label">Main Driver:</span>
-                                    <span className="driver-name">
-                                        {equipmentData?.mainDriverName || 'Not Assigned'}
-                                    </span>
-                                </div>
-                                {equipmentData?.subDriverName && (
-                                    <div className="driver-item">
-                                        <span className="driver-label">Sub Driver:</span>
-                                        <span className="driver-name">
-                                            {equipmentData.subDriverName}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                <div className="right-side">
-                    {equipmentData?.drivable && (equipmentData?.mainDriverName || equipmentData?.subDriverName) && permissions.canEdit && (
-                        <button
-                            className="manage-drivers-button-eq"
-                            onClick={() => setIsUnassignDriverModalOpen(true)}
-                            title="Manage Drivers"
-                        >
-                            <FaUserTimes />
-                        </button>
-                    )}
-                    <button className="info-button-eq" onClick={handleViewFullDetails}>
-                        <FaInfoCircle />
-                    </button>
-
-                </div>
-            </div>
             {/* Tab Navigation */}
-
             <div className="new-tabs-container">
-
                 <div className="new-tabs-header">
                     <button
                         className={`new-tab-button ${activeTab === "dashboard" ? "active" : ""}`}
@@ -392,10 +303,8 @@ const EquipmentDetails = () => {
                         </div>
                     )}
 
-
                     {activeTab === "sarky" && (
                         <div className="tab-panel">
-                            {/* Remove the tab-content-container wrapper for sarky matrix to allow sticky header */}
                             <EquipmentSarkyMatrix
                                 ref={sarkyAttendanceRef}
                                 equipmentId={params.EquipmentID}
@@ -412,7 +321,7 @@ const EquipmentDetails = () => {
                                     equipmentId={params.EquipmentID}
                                     onAddMaintenanceClick={handleAddInSiteMaintenance}
                                     onAddTransactionClick={handleAddTransactionToMaintenance}
-                                    showAddButton={true} // Use DataTable's add button for consistency
+                                    showAddButton={true}
                                 />
                             </div>
                         </div>
@@ -430,7 +339,6 @@ const EquipmentDetails = () => {
                         </div>
                     )}
                 </div>
-
             </div>
 
             {/* Add Consumable Modal */}
