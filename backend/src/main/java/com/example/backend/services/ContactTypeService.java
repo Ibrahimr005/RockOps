@@ -46,13 +46,25 @@ public class ContactTypeService {
     }
 
     public ContactTypeDto createContactType(ContactTypeDto dto) {
+        String normalizedName = dto.getName().trim();
+        
         // Check if contact type with same name already exists (case-insensitive)
-        if (contactTypeRepository.existsByNameIgnoreCase(dto.getName().trim())) {
-            throw new RuntimeException("Contact type with name '" + dto.getName() + "' already exists");
+        if (contactTypeRepository.existsByNameIgnoreCase(normalizedName)) {
+            // Find the existing contact type to show its exact name
+            ContactType existing = contactTypeRepository.findByNameIgnoreCase(normalizedName)
+                    .orElseThrow(() -> new RuntimeException("Contact type exists but couldn't be found"));
+            
+            throw new RuntimeException(
+                "A contact type with this name already exists as '" + existing.getName() + "'. " +
+                "Contact type names are case-insensitive (e.g., 'Customer', 'customer', and 'CUSTOMER' are considered the same)."
+            );
         }
 
+        // Standardize name to Title Case for consistency
+        String titleCaseName = toTitleCase(normalizedName);
+        
         ContactType contactType = ContactType.builder()
-                .name(dto.getName().trim())
+                .name(titleCaseName)
                 .description(dto.getDescription() != null ? dto.getDescription().trim() : null)
                 .isActive(dto.getIsActive() != null ? dto.getIsActive() : true)
                 .build();
@@ -70,10 +82,21 @@ public class ContactTypeService {
         String newName = dto.getName().trim();
         if (!existingContactType.getName().equalsIgnoreCase(newName) &&
             contactTypeRepository.existsByNameIgnoreCase(newName)) {
-            throw new RuntimeException("Contact type with name '" + newName + "' already exists");
+            
+            // Find the conflicting contact type to show its exact name
+            ContactType conflicting = contactTypeRepository.findByNameIgnoreCase(newName)
+                    .orElseThrow(() -> new RuntimeException("Contact type exists but couldn't be found"));
+            
+            throw new RuntimeException(
+                "A contact type with this name already exists as '" + conflicting.getName() + "'. " +
+                "Contact type names are case-insensitive (e.g., 'Customer', 'customer', and 'CUSTOMER' are considered the same)."
+            );
         }
 
-        existingContactType.setName(newName);
+        // Standardize name to Title Case for consistency
+        String titleCaseName = toTitleCase(newName);
+        
+        existingContactType.setName(titleCaseName);
         existingContactType.setDescription(dto.getDescription() != null ? dto.getDescription().trim() : null);
         existingContactType.setIsActive(dto.getIsActive());
 
@@ -100,5 +123,38 @@ public class ContactTypeService {
                 .createdAt(contactType.getCreatedAt())
                 .updatedAt(contactType.getUpdatedAt())
                 .build();
+    }
+    
+    /**
+     * Converts a string to Title Case for standardization
+     * Example: "customer" -> "Customer", "INTERNAL_STAFF" -> "Internal Staff"
+     */
+    private String toTitleCase(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+        
+        // Replace underscores with spaces
+        String normalized = input.replace('_', ' ');
+        
+        // Split into words and capitalize first letter of each word
+        String[] words = normalized.split("\\s+");
+        StringBuilder result = new StringBuilder();
+        
+        for (int i = 0; i < words.length; i++) {
+            if (i > 0) {
+                result.append(" ");
+            }
+            
+            String word = words[i].toLowerCase();
+            if (!word.isEmpty()) {
+                result.append(Character.toUpperCase(word.charAt(0)));
+                if (word.length() > 1) {
+                    result.append(word.substring(1));
+                }
+            }
+        }
+        
+        return result.toString();
     }
 }

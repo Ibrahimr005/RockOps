@@ -531,9 +531,8 @@ const EquipmentMain = () => {
                                     label: 'View Details',
                                     variant: 'primary',
                                     onClick: (id) => {
-                                        // Navigate to equipment details page
-                                        navigate(`/equipmentinfo/${id}`)
-
+                                        // Navigate to equipment info page (ViewEquipmentData component)
+                                        navigate(`/equipment/info/${id}`)
                                     }
                                 }
                             ]}

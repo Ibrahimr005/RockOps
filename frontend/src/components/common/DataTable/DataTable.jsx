@@ -969,7 +969,9 @@ const DataTable = ({
 
                                                         {activeActionRow === rowIndex && (
                                                             <div className="rockops-table__actions-dropdown">
-                                                                {actions.map((action, idx) => (
+                                                                {actions
+                                                                    .filter(action => !action.show || action.show(row))
+                                                                    .map((action, idx) => (
                                                                     <button
                                                                         key={idx}
                                                                         className={`rockops-table__action-item ${action.className || ''}`}
@@ -986,7 +988,9 @@ const DataTable = ({
                                                 ) : (
                                                     // Inline buttons for 1-2 actions
                                                     <div className="rockops-table__actions-inline">
-                                                        {actions.map((action, idx) => (
+                                                        {actions
+                                                            .filter(action => !action.show || action.show(row))
+                                                            .map((action, idx) => (
                                                             <button
                                                                 key={idx}
                                                                 className={`rockops-table__action-button ${action.className || ''}`}

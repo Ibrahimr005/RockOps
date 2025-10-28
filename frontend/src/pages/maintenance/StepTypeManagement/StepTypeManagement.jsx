@@ -29,9 +29,11 @@ const StepTypeManagement = () => {
     const errorHandlers = createErrorHandlers(showError, 'step type');
 
     // Check permissions (maintenance managers and admins)
-    const hasManagementAccess = currentUser?.roles?.some(role => 
-        ['ADMIN', 'MAINTENANCE_MANAGER'].includes(role)
-    );
+    const hasManagementAccess = currentUser?.role === 'ADMIN' || 
+                                 currentUser?.role === 'MAINTENANCE_MANAGER' ||
+                                 currentUser?.roles?.some(role => 
+                                     ['ADMIN', 'MAINTENANCE_MANAGER'].includes(role)
+                                 );
 
     // Fetch all step types
     const fetchStepTypes = async () => {

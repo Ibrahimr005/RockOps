@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import MaintenanceStepModal from './MaintenanceStepModal';
 import CompleteStepModal from './CompleteStepModal';
 import '../../../styles/status-badges.scss';
@@ -409,11 +410,30 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             onClick: (row) => handleMarkAsFinal(row.id),
             className: 'warning',
             show: (row) => {
-                // Only show for the latest completed step that is not already final
-                if (row.isFinalStep || !row.isCompleted) return false;
+                // CRITICAL: A step is only completed if it has BOTH flags
+                const isStepCompleted = row.isCompleted === true && row.actualEndDate != null;
                 
-                // Find all completed steps
-                const completedSteps = maintenanceSteps.filter(s => s.isCompleted);
+                // Don't show if already marked as final or not completed
+                if (row.isFinalStep || !isStepCompleted) {
+                    return false;
+                }
+                
+                // Check if ALL steps are completed (have actualEndDate)
+                const allStepsCompleted = maintenanceSteps.every(s => {
+                    return s.isCompleted === true && s.actualEndDate != null;
+                });
+                
+                // If not all steps are completed, don't show "Mark as Final" for any step
+                if (!allStepsCompleted) {
+                    return false;
+                }
+                
+                // All steps are completed - only show for the latest completed step
+                // Filter to only truly completed steps (those with actualEndDate)
+                const completedSteps = maintenanceSteps.filter(s => {
+                    return s.isCompleted === true && s.actualEndDate != null;
+                });
+                
                 if (completedSteps.length === 0) return false;
                 
                 // Sort by actual end date (most recent first)
@@ -423,7 +443,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                     return dateB - dateA;
                 });
                 
-                // Only show for the latest completed step
+                // Only show for the latest completed step (the one with the most recent completion date)
                 return sortedCompletedSteps[0].id === row.id;
             }
         },
@@ -473,14 +493,10 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
 
     return (
         <div className="maintenance-steps">
-            <div className="maintenance-steps-header">
-                <div className="header-left">
-                    <h2>Maintenance Steps</h2>
-                    {maintenanceRecord && (
-                        <p>Equipment: {maintenanceRecord.equipmentInfo} - {maintenanceRecord.initialIssueDescription}</p>
-                    )}
-                </div>
-            </div>
+            <PageHeader
+                title="Maintenance Steps"
+                subtitle={maintenanceRecord ? `Equipment: ${maintenanceRecord.equipmentInfo} - ${maintenanceRecord.initialIssueDescription}` : ''}
+            />
 
             <DataTable
                 data={maintenanceSteps}

@@ -37,7 +37,9 @@ public class ContactDto {
     private String alternatePhone;
     
     @NotNull(message = "Contact type is required")
-    private Contact.ContactType contactType;
+    private UUID contactTypeId;
+    
+    private String contactTypeName;
     
     private String company;
     
