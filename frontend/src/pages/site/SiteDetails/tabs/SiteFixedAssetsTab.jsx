@@ -61,6 +61,19 @@ const SiteFixedAssetsTab = ({siteId}) => {
         fetchFixedAssets();
     }, [siteId]);
 
+    useEffect(() => {
+        if (showModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        // Cleanup function to ensure scroll is restored if component unmounts
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showModal]);
+
     const fetchFixedAssets = async () => {
         try {
             const response = await siteService.getSiteFixedAssets(siteId);
