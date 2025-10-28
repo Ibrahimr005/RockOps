@@ -82,9 +82,9 @@ public class ContactController {
     }
     
     // Get contacts by type
-    @GetMapping("/type/{contactType}")
-    public ResponseEntity<List<ContactDto>> getContactsByType(@PathVariable Contact.ContactType contactType) {
-        List<ContactDto> contacts = contactService.getContactsByType(contactType);
+    @GetMapping("/type/{contactTypeId}")
+    public ResponseEntity<List<ContactDto>> getContactsByType(@PathVariable UUID contactTypeId) {
+        List<ContactDto> contacts = contactService.getContactsByType(contactTypeId);
         return ResponseEntity.ok(contacts);
     }
     
@@ -103,9 +103,9 @@ public class ContactController {
     }
     
     // Get available contacts by type
-    @GetMapping("/available/type/{contactType}")
-    public ResponseEntity<List<ContactDto>> getAvailableContactsByType(@PathVariable Contact.ContactType contactType) {
-        List<ContactDto> contacts = contactService.getAvailableContactsByType(contactType);
+    @GetMapping("/available/type/{contactTypeId}")
+    public ResponseEntity<List<ContactDto>> getAvailableContactsByType(@PathVariable UUID contactTypeId) {
+        List<ContactDto> contacts = contactService.getAvailableContactsByType(contactTypeId);
         return ResponseEntity.ok(contacts);
     }
     

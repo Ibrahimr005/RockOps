@@ -43,6 +43,7 @@ public class MaintenanceService {
     private final StepTypeRepository stepTypeRepository;
     private final EmployeeRepository employeeRepository;
     private final ContactRepository contactRepository;
+    private final ContactTypeRepository contactTypeRepository;
     private final NotificationService notificationService;
     
     // Maintenance Record Operations
@@ -71,16 +72,8 @@ public class MaintenanceService {
         // Set current responsible contact if provided, otherwise use equipment's main driver
         if (dto.getCurrentResponsibleContactId() != null) {
             try {
-                ContactDto contactDto = contactService.getContact(dto.getCurrentResponsibleContactId());
-                Contact contact = Contact.builder()
-                        .id(contactDto.getId())
-                        .firstName(contactDto.getFirstName())
-                        .lastName(contactDto.getLastName())
-                        .email(contactDto.getEmail())
-                        .phoneNumber(contactDto.getPhoneNumber())
-                        .contactType(contactDto.getContactType())
-                        .version(contactDto.getVersion())
-                        .build();
+                Contact contact = contactRepository.findById(dto.getCurrentResponsibleContactId())
+                        .orElseThrow(() -> new MaintenanceException("Contact not found with ID: " + dto.getCurrentResponsibleContactId()));
                 record.setCurrentResponsibleContact(contact);
             } catch (Exception e) {
                 log.warn("Could not assign contact with ID {} to record: {}", dto.getCurrentResponsibleContactId(), e.getMessage());
@@ -227,16 +220,8 @@ public class MaintenanceService {
         // Update current responsible contact if provided
         if (dto.getCurrentResponsibleContactId() != null) {
             try {
-                ContactDto contactDto = contactService.getContact(dto.getCurrentResponsibleContactId());
-                Contact contact = Contact.builder()
-                        .id(contactDto.getId())
-                        .firstName(contactDto.getFirstName())
-                        .lastName(contactDto.getLastName())
-                        .email(contactDto.getEmail())
-                        .phoneNumber(contactDto.getPhoneNumber())
-                        .contactType(contactDto.getContactType())
-                        .version(contactDto.getVersion())
-                        .build();
+                Contact contact = contactRepository.findById(dto.getCurrentResponsibleContactId())
+                        .orElseThrow(() -> new MaintenanceException("Contact not found with ID: " + dto.getCurrentResponsibleContactId()));
                 record.setCurrentResponsibleContact(contact);
             } catch (Exception e) {
                 log.warn("Could not assign contact with ID {} to record: {}", dto.getCurrentResponsibleContactId(), e.getMessage());
@@ -323,17 +308,9 @@ public class MaintenanceService {
         // Priority 2: Check if contact ID is provided (external contact assignment)
         else if (dto.getResponsibleContactId() != null) {
             try {
-                ContactDto contactDto = contactService.getContact(dto.getResponsibleContactId());
-                responsibleContact = Contact.builder()
-                        .id(contactDto.getId())
-                        .firstName(contactDto.getFirstName())
-                        .lastName(contactDto.getLastName())
-                        .email(contactDto.getEmail())
-                        .phoneNumber(contactDto.getPhoneNumber())
-                        .contactType(contactDto.getContactType())
-                        .version(contactDto.getVersion())
-                        .build();
-                log.info("Assigned contact {} as responsible person for step", contactDto.getFirstName() + " " + contactDto.getLastName());
+                responsibleContact = contactRepository.findById(dto.getResponsibleContactId())
+                        .orElseThrow(() -> new MaintenanceException("Contact not found with ID: " + dto.getResponsibleContactId()));
+                log.info("Assigned contact {} as responsible person for step", responsibleContact.getFirstName() + " " + responsibleContact.getLastName());
             } catch (Exception e) {
                 log.warn("Could not assign contact with ID {} to step: {}", dto.getResponsibleContactId(), e.getMessage());
             }
@@ -662,16 +639,8 @@ public class MaintenanceService {
         MaintenanceStep step = maintenanceStepRepository.findById(stepId)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + stepId));
         
-        ContactDto contactDto = contactService.getContact(contactId);
-        Contact contact = Contact.builder()
-                .id(contactDto.getId())
-                .firstName(contactDto.getFirstName())
-                .lastName(contactDto.getLastName())
-                .email(contactDto.getEmail())
-                .phoneNumber(contactDto.getPhoneNumber())
-                .contactType(contactDto.getContactType())
-                .version(contactDto.getVersion())
-                .build();
+        Contact contact = contactRepository.findById(contactId)
+                .orElseThrow(() -> new MaintenanceException("Contact not found with ID: " + contactId));
         
         step.setResponsibleContact(contact);
         
@@ -958,12 +927,26 @@ public class MaintenanceService {
         }
         
         // Create new contact for the employee
+        // Find or create "INTERNAL_STAFF" contact type
+        ContactType internalStaffType = contactTypeRepository.findByNameIgnoreCase("INTERNAL_STAFF")
+                .or(() -> contactTypeRepository.findByNameIgnoreCase("INTERNAL STAFF"))
+                .or(() -> contactTypeRepository.findByNameIgnoreCase("Internal Staff"))
+                .orElseGet(() -> {
+                    // Create INTERNAL_STAFF type if it doesn't exist
+                    ContactType newType = ContactType.builder()
+                            .name("INTERNAL_STAFF")
+                            .description("Internal staff member")
+                            .isActive(true)
+                            .build();
+                    return contactTypeRepository.save(newType);
+                });
+        
         Contact newContact = Contact.builder()
                 .firstName(employee.getFirstName())
                 .lastName(employee.getLastName())
                 .email(employee.getEmail())
                 .phoneNumber(employee.getPhoneNumber())
-                .contactType(Contact.ContactType.INTERNAL_STAFF)
+                .contactType(internalStaffType)
                 .position(employee.getJobPosition() != null ? employee.getJobPosition().getPositionName() : null)
                 .company(employee.getSite() != null ? employee.getSite().getName() : null)
                 .isActive(true)

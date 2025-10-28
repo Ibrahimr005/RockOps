@@ -50,8 +50,8 @@ public class Contact {
     @Column(name = "alternate_phone")
     private String alternatePhone;
     
-    @Enumerated(EnumType.STRING)
-    @Column(name = "contact_type", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "contact_type_id", nullable = false)
     private ContactType contactType;
     
     @Column(name = "company")
@@ -110,10 +110,6 @@ public class Contact {
     @JoinColumn(name = "merchant_id")
     @JsonBackReference("merchant-contacts")
     private Merchant merchant;
-    
-    public enum ContactType {
-        TECHNICIAN, SUPERVISOR, MANAGER, SUPPLIER, CONTRACTOR, CUSTOMER, INTERNAL_STAFF
-    }
     
     public enum ContactMethod {
         PHONE, EMAIL, SMS, IN_PERSON, VIDEO_CALL

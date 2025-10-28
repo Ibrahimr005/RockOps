@@ -1,6 +1,7 @@
 package com.example.backend.repositories;
 
 import com.example.backend.models.Contact;
+import com.example.backend.models.ContactType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,9 +26,9 @@ public interface ContactRepository extends JpaRepository<Contact, UUID> {
     Optional<Contact> findByEmail(String email);
     
     // Contact type filtering
-    List<Contact> findByContactType(Contact.ContactType contactType);
+    List<Contact> findByContactType(ContactType contactType);
     
-    List<Contact> findByContactTypeAndIsActiveTrue(Contact.ContactType contactType);
+    List<Contact> findByContactTypeAndIsActiveTrue(ContactType contactType);
     
     // Company and department filtering
     List<Contact> findByCompanyContainingIgnoreCase(String company);
@@ -62,7 +63,7 @@ public interface ContactRepository extends JpaRepository<Contact, UUID> {
     List<Contact> findContactsWithFilters(
             @Param("firstName") String firstName,
             @Param("lastName") String lastName,
-            @Param("contactType") Contact.ContactType contactType,
+            @Param("contactType") ContactType contactType,
             @Param("company") String company,
             @Param("isActive") Boolean isActive
     );
@@ -82,7 +83,7 @@ public interface ContactRepository extends JpaRepository<Contact, UUID> {
     @Query("SELECT c FROM Contact c WHERE c.isActive = true AND " +
            "c.contactType = :contactType AND " +
            "SIZE(c.assignedSteps) < 5")
-    List<Contact> findAvailableContactsByType(@Param("contactType") Contact.ContactType contactType);
+    List<Contact> findAvailableContactsByType(@Param("contactType") ContactType contactType);
     
     // Statistics queries
     @Query("SELECT c.contactType, COUNT(c) FROM Contact c GROUP BY c.contactType")
