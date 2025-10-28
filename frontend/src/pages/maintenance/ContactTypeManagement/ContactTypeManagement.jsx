@@ -151,7 +151,8 @@ const ContactTypeManagement = () => {
             
             // Handle specific error cases
             if (err.response?.status === 409 || errorMessage.toLowerCase().includes('already exists')) {
-                showError(`Contact type "${formData.name}" already exists. Please choose a different name.`);
+                // Show the detailed backend message which explains case-insensitive matching
+                showError(errorMessage);
             } else if (err.response?.status === 404) {
                 showError('Contact type not found. It may have been deleted by another user.');
             } else if (err.response?.status === 400) {

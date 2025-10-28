@@ -167,21 +167,23 @@ const Contacts = () => {
         }
     };
 
-    const getContactTypeColor = (contactType) => {
-        switch (contactType) {
+    const getContactTypeColor = (contactTypeName) => {
+        const upperCaseName = contactTypeName?.toUpperCase();
+        switch (upperCaseName) {
             case 'TECHNICIAN': return 'var(--color-primary)';
             case 'SUPERVISOR': return 'var(--color-success)';
             case 'MANAGER': return 'var(--color-warning)';
             case 'SUPPLIER': return 'var(--color-info)';
             case 'CONTRACTOR': return 'var(--color-secondary)';
             case 'CUSTOMER': return 'var(--color-danger)';
-            case 'INTERNAL_STAFF': return 'var(--color-text-secondary)';
+            case 'INTERNAL_STAFF': 
+            case 'INTERNAL STAFF': return 'var(--color-text-secondary)';
             default: return 'var(--color-text-secondary)';
         }
     };
 
-    const getContactTypeBadge = (contactType) => {
-        const color = getContactTypeColor(contactType);
+    const getContactTypeBadge = (contactTypeName) => {
+        const color = getContactTypeColor(contactTypeName);
         return (
             <span
                 className="contact-type-badge"
@@ -191,7 +193,7 @@ const Contacts = () => {
                     border: `1px solid ${color}`
                 }}
             >
-                {contactType?.replace('_', ' ')}
+                {contactTypeName}
             </span>
         );
     };
@@ -227,9 +229,9 @@ const Contacts = () => {
         },
         {
             header: 'Contact Type',
-            accessor: 'contactType',
+            accessor: 'contactTypeName',
             sortable: true,
-            render: (row) => getContactTypeBadge(row.contactType)
+            render: (row) => getContactTypeBadge(row.contactTypeName)
         },
         {
             header: 'Merchant',

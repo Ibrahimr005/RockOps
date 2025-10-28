@@ -2,8 +2,10 @@ package com.example.backend.services;
 
 import com.example.backend.dtos.ContactDto;
 import com.example.backend.models.Contact;
+import com.example.backend.models.ContactType;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.repositories.ContactRepository;
+import com.example.backend.repositories.ContactTypeRepository;
 import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.exceptions.ContactException;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class ContactService {
     
     private final ContactRepository contactRepository;
     private final MerchantRepository merchantRepository;
+    private final ContactTypeRepository contactTypeRepository;
     
     // Create a new contact
     public ContactDto createContact(ContactDto dto) {
@@ -34,13 +37,17 @@ public class ContactService {
                 throw new ContactException("Contact with email " + dto.getEmail() + " already exists");
             }
             
+            // Fetch ContactType entity
+            ContactType contactType = contactTypeRepository.findById(dto.getContactTypeId())
+                    .orElseThrow(() -> new ContactException("Contact type not found with ID: " + dto.getContactTypeId()));
+            
             Contact contact = Contact.builder()
                     .firstName(dto.getFirstName())
                     .lastName(dto.getLastName())
                     .email(dto.getEmail())
                     .phoneNumber(dto.getPhoneNumber())
                     .alternatePhone(dto.getAlternatePhone())
-                    .contactType(dto.getContactType())
+                    .contactType(contactType)
                     .company(dto.getCompany())
                     .position(dto.getPosition())
                     .department(dto.getDepartment())
@@ -82,19 +89,20 @@ public class ContactService {
     
     // Get contacts with filters
     public List<ContactDto> getContactsWithFilters(
-            String firstName, String lastName, String contactType,
+            String firstName, String lastName, String contactTypeId,
             String company, String isActive) {
         
-        log.info("Processing filters - firstName: {}, lastName: {}, contactType: {}, company: {}, isActive: {}", 
-                firstName, lastName, contactType, company, isActive);
+        log.info("Processing filters - firstName: {}, lastName: {}, contactTypeId: {}, company: {}, isActive: {}", 
+                firstName, lastName, contactTypeId, company, isActive);
         
         // Handle "all" case for contactType
-        Contact.ContactType contactTypeEnum = null;
-        if (contactType != null && !contactType.equalsIgnoreCase("all")) {
+        ContactType contactType = null;
+        if (contactTypeId != null && !contactTypeId.equalsIgnoreCase("all")) {
             try {
-                contactTypeEnum = Contact.ContactType.valueOf(contactType.toUpperCase());
+                UUID typeId = UUID.fromString(contactTypeId);
+                contactType = contactTypeRepository.findById(typeId).orElse(null);
             } catch (IllegalArgumentException e) {
-                log.warn("Invalid contact type: {}", contactType);
+                log.warn("Invalid contact type ID: {}", contactTypeId);
                 // If invalid contact type, we'll pass null to get all contacts
             }
         }
@@ -105,10 +113,10 @@ public class ContactService {
             isActiveBoolean = Boolean.valueOf(isActive);
         }
         
-        log.info("Processed filters - contactTypeEnum: {}, isActiveBoolean: {}", contactTypeEnum, isActiveBoolean);
+        log.info("Processed filters - contactType: {}, isActiveBoolean: {}", contactType, isActiveBoolean);
         
         List<Contact> contacts = contactRepository.findContactsWithFilters(
-                firstName, lastName, contactTypeEnum, company, isActiveBoolean);
+                firstName, lastName, contactType, company, isActiveBoolean);
         
         log.info("Found {} contacts from repository", contacts.size());
         
@@ -126,7 +134,9 @@ public class ContactService {
     }
     
     // Get contacts by type
-    public List<ContactDto> getContactsByType(Contact.ContactType contactType) {
+    public List<ContactDto> getContactsByType(UUID contactTypeId) {
+        ContactType contactType = contactTypeRepository.findById(contactTypeId)
+                .orElseThrow(() -> new ContactException("Contact type not found with ID: " + contactTypeId));
         List<Contact> contacts = contactRepository.findByContactTypeAndIsActiveTrue(contactType);
         return contacts.stream().map(this::convertToDto).collect(Collectors.toList());
     }
@@ -144,7 +154,9 @@ public class ContactService {
     }
     
     // Get available contacts by type
-    public List<ContactDto> getAvailableContactsByType(Contact.ContactType contactType) {
+    public List<ContactDto> getAvailableContactsByType(UUID contactTypeId) {
+        ContactType contactType = contactTypeRepository.findById(contactTypeId)
+                .orElseThrow(() -> new ContactException("Contact type not found with ID: " + contactTypeId));
         List<Contact> contacts = contactRepository.findAvailableContactsByType(contactType);
         return contacts.stream().map(this::convertToDto).collect(Collectors.toList());
     }
@@ -174,12 +186,18 @@ public class ContactService {
                 throw new ContactException("Contact with email " + dto.getEmail() + " already exists");
             }
             
+            // Fetch ContactType entity if provided
+            if (dto.getContactTypeId() != null) {
+                ContactType contactType = contactTypeRepository.findById(dto.getContactTypeId())
+                        .orElseThrow(() -> new ContactException("Contact type not found with ID: " + dto.getContactTypeId()));
+                contact.setContactType(contactType);
+            }
+            
             contact.setFirstName(dto.getFirstName());
             contact.setLastName(dto.getLastName());
             contact.setEmail(dto.getEmail());
             contact.setPhoneNumber(dto.getPhoneNumber());
             contact.setAlternatePhone(dto.getAlternatePhone());
-            contact.setContactType(dto.getContactType());
             contact.setCompany(dto.getCompany());
             contact.setPosition(dto.getPosition());
             contact.setDepartment(dto.getDepartment());
@@ -298,7 +316,6 @@ public class ContactService {
                 .email(contact.getEmail())
                 .phoneNumber(contact.getPhoneNumber())
                 .alternatePhone(contact.getAlternatePhone())
-                .contactType(contact.getContactType())
                 .company(contact.getCompany())
                 .position(contact.getPosition())
                 .department(contact.getDepartment())
@@ -314,6 +331,12 @@ public class ContactService {
                 .fullName(contact.getFullName())
                 .activeAssignments(contact.getActiveAssignments())
                 .isAvailable(contact.isAvailable());
+        
+        // Add contact type information
+        if (contact.getContactType() != null) {
+            builder.contactTypeId(contact.getContactType().getId())
+                   .contactTypeName(contact.getContactType().getName());
+        }
         
         // Add merchant information if present
         if (contact.getMerchant() != null) {

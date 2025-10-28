@@ -16,7 +16,7 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                 email: '',
                 phoneNumber: '',
                 alternatePhone: '',
-                contactType: 'TECHNICIAN',
+                contactTypeId: '',
                 company: '',
                 position: '',
                 department: '',
@@ -48,7 +48,7 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                 email: editingContact.email || '',
                 phoneNumber: editingContact.phoneNumber || '',
                 alternatePhone: editingContact.alternatePhone || '',
-                contactType: editingContact.contactType || 'TECHNICIAN',
+                contactTypeId: editingContact.contactTypeId || '',
                 company: editingContact.company || '',
                 position: editingContact.position || '',
                 department: editingContact.department || '',
@@ -67,7 +67,7 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                 email: '',
                 phoneNumber: '',
                 alternatePhone: '',
-                contactType: 'TECHNICIAN',
+                contactTypeId: '',
                 company: '',
                 position: '',
                 department: '',
@@ -142,16 +142,8 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
         } catch (error) {
             console.error('Error loading contact types:', error);
             console.error('Error details:', error.response?.data || error.message);
-            // Don't break the modal if contact types fail to load - use fallback
-            setContactTypes([
-                { name: 'Technician', description: 'Technical maintenance personnel' },
-                { name: 'Supervisor', description: 'Maintenance supervisor or team lead' },
-                { name: 'Manager', description: 'Maintenance manager' },
-                { name: 'Supplier', description: 'Equipment or parts supplier' },
-                { name: 'Contractor', description: 'External contractor' },
-                { name: 'Customer', description: 'Customer or client contact' },
-                { name: 'Internal Staff', description: 'Internal company staff' }
-            ]);
+            // Don't break the modal if contact types fail to load - show empty list
+            setContactTypes([]);
         } finally {
             setLoadingContactTypes(false);
         }
@@ -202,8 +194,8 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
             newErrors.phoneNumber = 'Phone number is required';
         }
 
-        if (!formData.contactType) {
-            newErrors.contactType = 'Contact type is required';
+        if (!formData.contactTypeId) {
+            newErrors.contactTypeId = 'Contact type is required';
         }
 
         setErrors(newErrors);
@@ -305,13 +297,13 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                                 {errors.email && <span className="error-message">{errors.email}</span>}
                             </div>
                             <div className="form-group">
-                                <label htmlFor="contactType" data-required="true">Contact Type</label>
+                                <label htmlFor="contactTypeId" data-required="true">Contact Type</label>
                                 <select
-                                    id="contactType"
-                                    name="contactType"
-                                    value={formData.contactType}
+                                    id="contactTypeId"
+                                    name="contactTypeId"
+                                    value={formData.contactTypeId}
                                     onChange={handleInputChange}
-                                    className={errors.contactType ? 'error' : ''}
+                                    className={errors.contactTypeId ? 'error' : ''}
                                     required
                                     disabled={loadingContactTypes}
                                 >
@@ -323,14 +315,14 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                                         <>
                                             <option value="">Select contact type</option>
                                             {contactTypes.map(type => (
-                                                <option key={type.name} value={type.name}>
+                                                <option key={type.id} value={type.id}>
                                                     {type.name} {type.description && `- ${type.description}`}
                                                 </option>
                                             ))}
                                         </>
                                     )}
                                 </select>
-                                {errors.contactType && <span className="error-message">{errors.contactType}</span>}
+                                {errors.contactTypeId && <span className="error-message">{errors.contactTypeId}</span>}
                             </div>
                         </div>
                     </div>
