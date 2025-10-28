@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { RiDeleteBin6Line } from "react-icons/ri";
-import { FaInfoCircle, FaWrench, FaTools, FaBoxOpen, FaTachometerAlt, FaCalendarAlt, FaUserTimes } from "react-icons/fa";import "./EquipmentDetails.scss";
+import { FaInfoCircle, FaWrench, FaTools, FaBoxOpen, FaTachometerAlt, FaCalendarAlt, FaCog, FaClipboardList, FaMapMarkerAlt, FaUserTimes } from "react-icons/fa";
+import "./EquipmentDetails.scss";
 import InSiteMaintenanceLog from "../InSiteMaintenanceLog/InSiteMaintenanceLog";
 import EquipmentConsumablesInventory from "../EquipmentConsumablesInventory/EquipmentConsumablesInventory ";
 import EquipmentDashboard from "../EquipmentDashboard/EquipmentDashboard";
@@ -17,6 +18,7 @@ import TransactionHub from "../../../components/equipment/TransactionHub/Transac
 import EquipmentSarkyMatrix from '../EquipmentSarkyMatrix/EquipmentSarkyMatrix';
 import UnassignDriverModal from './UnassignDriverModal';
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
+import IntroCard from "../../../components/common/IntroCard/IntroCard";
 
 // Set the app element for accessibility
 Modal.setAppElement('#root'); // Adjust this to match your root element ID
@@ -183,8 +185,66 @@ const EquipmentDetails = () => {
     if (loading) return <LoadingPage />;
     if (error) return <div className="error-message">Error: {error}</div>;
 
+    const breadcrumbs = [
+        {
+            label: 'Equipment',
+            icon: <FaCog />,
+            onClick: () => navigate('/equipment')
+        },
+        {
+            label: 'Details',
+            icon: <FaClipboardList />,
+            onClick: () => navigate('/equipment')
+        },
+        {
+            label: equipmentData?.name || 'Equipment',
+            icon: <FaTools />
+        }
+    ];
+
+    const stats = [
+        {
+            label: 'Type',
+            value: equipmentData?.typeName || 'N/A'
+        },
+        {
+            label: 'Model',
+            value: equipmentData?.model || 'N/A'
+        },
+        {
+            label: 'Site',
+            value: equipmentData?.siteName || 'N/A'
+        }
+    ];
+
+    // Add driver info to stats if applicable
+    if (equipmentData?.drivable) {
+        stats.push({
+            label: 'Main Driver',
+            value: equipmentData?.mainDriverName || 'Not Assigned'
+        });
+    }
+
+    const actionButtons = [
+        {
+            icon: <FaInfoCircle />,
+            text: 'Full Details',
+            onClick: handleViewFullDetails,
+            className: 'secondary'
+        }
+    ];
+
     return (
         <div className="equipment-details-container">
+            <IntroCard
+                title={equipmentData?.name || "Equipment"}
+                label="EQUIPMENT MANAGEMENT"
+                breadcrumbs={breadcrumbs}
+                lightModeImage={previewImage || equipmentData?.imageUrl}
+                darkModeImage={previewImage || equipmentData?.imageUrl}
+                stats={stats}
+                actionButtons={actionButtons}
+            />
 
             {/* Equipment Summary Section */}
             {/* Equipment Summary Section */}
@@ -199,7 +259,7 @@ const EquipmentDetails = () => {
                         src={previewImage || equipmentData?.imageUrl}
                         alt="Equipment"
                         className="equipment-image"
-                        onError={async (e) => { 
+                        onError={async (e) => {
                             // If image fails to load, try to refresh the URL
                             if (!e.target.hasAttribute('data-refresh-attempted')) {
                                 e.target.setAttribute('data-refresh-attempted', 'true');
@@ -224,7 +284,7 @@ const EquipmentDetails = () => {
                 <div className="center-content">
                     <div className="label">EQUIPMENT NAME</div>
                     <div className="value">{equipmentData?.name || "Equipment"}</div>
-                    
+
                     {/* Driver Information Section */}
                     <div className="driver-info-section">
                         <div className="driver-config">
@@ -232,7 +292,7 @@ const EquipmentDetails = () => {
                                 {equipmentData?.drivable ? '🚗 Driver Assignable' : '🔧 No Driver Required'}
                             </span>
                         </div>
-                        
+
                         {equipmentData?.drivable && (
                             <div className="driver-assignments">
                                 <div className="driver-item">
