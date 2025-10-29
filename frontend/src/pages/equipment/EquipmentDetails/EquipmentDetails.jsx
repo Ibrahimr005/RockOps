@@ -16,7 +16,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { useEquipmentPermissions } from "../../../utils/rbac";
 import TransactionHub from "../../../components/equipment/TransactionHub/TransactionHub";
 import EquipmentSarkyMatrix from '../EquipmentSarkyMatrix/EquipmentSarkyMatrix';
-import UnassignDriverModal from './UnassignDriverModal';
+import DriverManagementModal from './DriverManagementModal';
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
 import IntroCard from "../../../components/common/IntroCard/IntroCard";
 
@@ -179,6 +179,15 @@ const EquipmentDetails = () => {
         }
     ];
 
+    // Helper function to format status text
+    const formatStatus = (status) => {
+        if (!status) return 'N/A';
+        // Convert underscore to space and capitalize each word
+        return status.split('_').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        ).join(' ');
+    };
+
     const stats = [
         {
             label: 'Type',
@@ -191,6 +200,12 @@ const EquipmentDetails = () => {
         {
             label: 'Site',
             value: equipmentData?.siteName || 'N/A'
+        },
+        {
+            label: 'Status',
+            value: formatStatus(equipmentData?.status),
+            badge: true,
+            badgeType: equipmentData?.status?.toLowerCase().replace('_', '-')
         }
     ];
 
@@ -218,15 +233,31 @@ const EquipmentDetails = () => {
         }
     ];
 
-    // Add Manage Drivers button if conditions are met
-    if (equipmentData?.drivable &&
-        (equipmentData?.mainDriverName || equipmentData?.subDriverName) &&
-        permissions.canEdit) {
+    // Add Active Maintenance Record button if equipment is in maintenance
+    if (equipmentData?.status === 'IN_MAINTENANCE' && equipmentData?.activeMaintenanceRecordId) {
+        actionButtons.push({
+            icon: <FaWrench />,
+            text: 'Active Maintenance Record',
+            onClick: () => {
+                // Navigate to the active maintenance record with overview tab
+                navigate(`/maintenance/records/${equipmentData.activeMaintenanceRecordId}?tab=overview`);
+            },
+            className: 'warning'
+        });
+    }
+    
+    // Debug: Log equipment status and activeMaintenanceRecordId
+    console.log('Equipment Status:', equipmentData?.status);
+    console.log('Active Maintenance Record ID:', equipmentData?.activeMaintenanceRecordId);
+    console.log('Button should show:', equipmentData?.status === 'IN_MAINTENANCE' && equipmentData?.activeMaintenanceRecordId);
+
+    // Add Manage Drivers button for all drivable equipment (regardless of assignment status)
+    if (equipmentData?.drivable && permissions.canEdit) {
         actionButtons.push({
             icon: <FaUserTimes />,
             text: 'Manage Drivers',
             onClick: () => setIsUnassignDriverModalOpen(true),
-            className: 'warning' // or 'secondary' depending on your preference
+            className: 'secondary'
         });
     }
 
@@ -373,11 +404,12 @@ const EquipmentDetails = () => {
             )}
 
             {isUnassignDriverModalOpen && permissions.canEdit && (
-                <UnassignDriverModal
+                <DriverManagementModal
                     isOpen={isUnassignDriverModalOpen}
                     onClose={() => setIsUnassignDriverModalOpen(false)}
                     equipmentId={params.EquipmentID}
-                    onDriverUnassigned={handleDriverUnassigned}
+                    equipmentData={equipmentData}
+                    onDriverChanged={handleDriverUnassigned}
                 />
             )}
         </div>

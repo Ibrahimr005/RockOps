@@ -34,13 +34,34 @@ public class StepTypeController {
     }
 
     @PostMapping
-    public ResponseEntity<StepTypeDto> createStepType(@RequestBody StepTypeDto stepTypeDto) {
-        return new ResponseEntity<>(stepTypeService.createStepType(stepTypeDto), HttpStatus.CREATED);
+    public ResponseEntity<?> createStepType(@RequestBody StepTypeDto stepTypeDto) {
+        try {
+            return new ResponseEntity<>(stepTypeService.createStepType(stepTypeDto), HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<StepTypeDto> updateStepType(@PathVariable UUID id, @RequestBody StepTypeDto stepTypeDto) {
-        return ResponseEntity.ok(stepTypeService.updateStepType(id, stepTypeDto));
+    public ResponseEntity<?> updateStepType(@PathVariable UUID id, @RequestBody StepTypeDto stepTypeDto) {
+        try {
+            return ResponseEntity.ok(stepTypeService.updateStepType(id, stepTypeDto));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        }
+    }
+    
+    // Simple error response class
+    private static class ErrorResponse {
+        public String message;
+        
+        public ErrorResponse(String message) {
+            this.message = message;
+        }
+        
+        public String getMessage() {
+            return message;
+        }
     }
 
     @DeleteMapping("/{id}")
@@ -49,6 +70,7 @@ public class StepTypeController {
         return ResponseEntity.noContent().build();
     }
 }
+
 
 
 

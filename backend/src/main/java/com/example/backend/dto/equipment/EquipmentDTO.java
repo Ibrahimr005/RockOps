@@ -47,6 +47,7 @@ public class EquipmentDTO {
     private UUID purchasedFromId;
     private String purchasedFromName;
     private boolean drivable;
+    private UUID activeMaintenanceRecordId;
 
     // Convert Entity to DTO
     public static EquipmentDTO fromEntity(Equipment equipment) {

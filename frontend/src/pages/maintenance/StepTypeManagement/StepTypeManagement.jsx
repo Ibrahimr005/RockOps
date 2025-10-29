@@ -40,11 +40,11 @@ const StepTypeManagement = () => {
         try {
             setLoading(true);
             const response = await stepTypeService.getAllStepTypesForManagement();
-            const activeStepTypes = response.filter(stepType => stepType.active);
-            setStepTypes(activeStepTypes);
+            // Show ALL step types (both active and inactive) for management view
+            setStepTypes(response);
             
-            if (activeStepTypes.length === 0) {
-                showInfo('No active step types found. Add your first step type!');
+            if (response.length === 0) {
+                showInfo('No step types found. Add your first step type!');
             }
             setLoading(false);
         } catch (err) {
@@ -106,8 +106,9 @@ const StepTypeManagement = () => {
             if (err.response?.status === 409) {
                 showError(`Step type "${formData.name}" already exists. Please choose a different name.`);
             } else if (err.response?.status === 400) {
-                const message = err.response.data?.message || 'Please check your input and try again';
-                showError(`Please check your input: ${message}`);
+                // Check if it's a validation error from backend
+                const message = err.response.data?.message || err.response.data || 'Please check your input and try again';
+                showError(message);
             } else if (err.response?.status === 403) {
                 showError('You don\'t have permission to save step types. Please contact your administrator.');
             } else if (err.response?.status === 500) {
@@ -180,6 +181,23 @@ const StepTypeManagement = () => {
                     </span>
                 );
             }
+        },
+        {
+            header: 'Status',
+            accessor: 'active',
+            sortable: true,
+            filterType: 'select',
+            filterOptions: [
+                { value: 'all', label: 'All' },
+                { value: 'true', label: 'Active' },
+                { value: 'false', label: 'Inactive' }
+            ],
+            width: '120px',
+            render: (row) => (
+                <span className={`status-badge ${row.active ? 'status-active' : 'status-inactive'}`}>
+                    {row.active ? 'Active' : 'Inactive'}
+                </span>
+            )
         }
     ];
 

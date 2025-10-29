@@ -389,6 +389,48 @@ public class EquipmentController {
     }
 
     /**
+     * Assign a driver to equipment
+     * @param equipmentId The equipment ID
+     * @param driverId The driver (employee) ID
+     * @param type The driver type: "main" or "sub"
+     */
+    @PostMapping("/{equipmentId}/driver/{driverId}")
+    public ResponseEntity<?> assignDriverToEquipment(
+            @PathVariable UUID equipmentId,
+            @PathVariable UUID driverId,
+            @RequestParam String type) {
+        try {
+            EquipmentDTO updatedEquipment = equipmentService.assignDriverToEquipment(equipmentId, driverId, type);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Driver successfully assigned to equipment");
+            response.put("equipment", updatedEquipment);
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Bad Request");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("status", 400);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        } catch (ResourceNotFoundException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Not Found");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("status", 404);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        } catch (Exception e) {
+            System.err.println("Error assigning driver: " + e.getMessage());
+            e.printStackTrace();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Internal Server Error");
+            errorResponse.put("message", "Failed to assign driver: " + e.getMessage());
+            errorResponse.put("status", 500);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
      * Unassign a driver from equipment
      * @param equipmentId The equipment ID
      * @param driverId The driver (employee) ID

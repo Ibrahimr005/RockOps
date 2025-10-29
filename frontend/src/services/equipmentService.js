@@ -452,6 +452,19 @@ export const equipmentService = {
     },
 
     /**
+     * Assign a driver to equipment
+     * @param {string} equipmentId - The equipment UUID
+     * @param {string} driverId - The driver (employee) UUID
+     * @param {string} type - Driver type: "main" or "sub"
+     * @returns {Promise} Response containing updated equipment data
+     */
+    assignDriverToEquipment: (equipmentId, driverId, type) => {
+        return apiClient.post(EQUIPMENT_ENDPOINTS.ASSIGN_DRIVER(equipmentId, driverId), null, {
+            params: { type }
+        });
+    },
+
+    /**
      * Unassign a driver from equipment
      * @param {string} equipmentId - The equipment UUID
      * @param {string} driverId - The driver (employee) UUID

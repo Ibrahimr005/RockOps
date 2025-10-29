@@ -25,6 +25,8 @@ import com.example.backend.models.hr.Employee;
 import com.example.backend.models.site.Site;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.site.SiteRepository;
+import com.example.backend.repositories.MaintenanceRecordRepository;
+import com.example.backend.models.MaintenanceRecord;
 import com.example.backend.services.notification.NotificationService;
 import jakarta.transaction.Transactional;
 import lombok.Data;
@@ -58,6 +60,9 @@ public class EquipmentService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private MaintenanceRecordRepository maintenanceRecordRepository;
 
     @Autowired
     public EquipmentService(
@@ -104,6 +109,16 @@ public class EquipmentService {
             dto.setImageUrl(imageUrl);
         } catch (Exception e) {
             dto.setImageUrl(null);
+        }
+
+        // If equipment is in maintenance, populate the active maintenance record ID
+        if (equipment.getStatus() == EquipmentStatus.IN_MAINTENANCE) {
+            Optional<MaintenanceRecord> activeRecord = maintenanceRecordRepository
+                    .findFirstByEquipmentIdAndStatusOrderByCreationDateDesc(
+                            id, 
+                            MaintenanceRecord.MaintenanceStatus.ACTIVE
+                    );
+            activeRecord.ifPresent(record -> dto.setActiveMaintenanceRecordId(record.getId()));
         }
 
         return dto;
@@ -1027,6 +1042,125 @@ public class EquipmentService {
         private boolean compatible;
         private String message;
         private String requiredPosition;
+    }
+
+    /**
+     * Assign a driver to equipment (either as main or sub driver)
+     * Validates driver compatibility and ensures only one main driver across all equipment
+     */
+    @Transactional
+    public EquipmentDTO assignDriverToEquipment(UUID equipmentId, UUID driverId, String driverType) {
+        // Validate inputs
+        if (equipmentId == null || driverId == null || driverType == null) {
+            throw new IllegalArgumentException("Equipment ID, Driver ID, and Driver Type cannot be null");
+        }
+
+        // Validate driver type
+        if (!driverType.equalsIgnoreCase("main") && !driverType.equalsIgnoreCase("sub")) {
+            throw new IllegalArgumentException("Driver type must be either 'main' or 'sub'");
+        }
+
+        // Find equipment
+        Equipment equipment = equipmentRepository.findById(equipmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + equipmentId));
+
+        // Find driver
+        Employee driver = employeeRepository.findById(driverId)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
+
+        System.out.println("=== Assigning driver to equipment ===");
+        System.out.println("Equipment: " + equipment.getName() + " (" + equipment.getModel() + ")");
+        System.out.println("Driver: " + driver.getFullName());
+        System.out.println("Driver Type: " + driverType);
+
+        // Get equipment type for driver validation
+        EquipmentType equipmentType = equipment.getType();
+        
+        // Validate that equipment is drivable
+        if (!equipmentType.isDrivable()) {
+            throw new IllegalArgumentException("This equipment type (" + equipmentType.getName() + ") is not drivable");
+        }
+
+        // Validate driver compatibility
+        if (!driver.canDrive(equipmentType)) {
+            String requiredPosition = equipmentType.getRequiredDriverPosition() != null
+                    ? equipmentType.getRequiredDriverPosition()
+                    : equipmentType.getName() + " Driver";
+            
+            throw new IllegalArgumentException("Employee " + driver.getFullName()
+                    + " cannot be assigned as a driver for " + equipmentType.getName()
+                    + ". Required position: " + requiredPosition);
+        }
+
+        // For main driver: Check if driver is already main driver of another equipment
+        if (driverType.equalsIgnoreCase("main")) {
+            // Find if driver is already main driver of another equipment
+            List<Equipment> allEquipment = equipmentRepository.findAll();
+            for (Equipment eq : allEquipment) {
+                if (!eq.getId().equals(equipmentId) && eq.getMainDriver() != null 
+                    && eq.getMainDriver().getId().equals(driverId)) {
+                    throw new IllegalArgumentException("Employee " + driver.getFullName()
+                            + " is already the main driver of equipment '" + eq.getName() + "'. "
+                            + "A driver can only be the main driver of one equipment at a time.");
+                }
+            }
+            
+            // Assign as main driver
+            equipment.setMainDriver(driver);
+            System.out.println("Assigned as main driver");
+        } else if (driverType.equalsIgnoreCase("sub")) {
+            // Assign as sub driver
+            equipment.setSubDriver(driver);
+            System.out.println("Assigned as sub driver");
+        }
+
+        // Assign driver to equipment's site if equipment has a site
+        if (equipment.getSite() != null) {
+            driver.setSite(equipment.getSite());
+            employeeRepository.save(driver);
+            System.out.println("Assigned driver to equipment's site: " + equipment.getSite().getName());
+        }
+
+        // Save equipment
+        Equipment savedEquipment = equipmentRepository.save(equipment);
+
+        // Create response DTO
+        EquipmentDTO resultDTO = EquipmentDTO.fromEntity(savedEquipment);
+
+        try {
+            String imageUrl = minioService.getEquipmentMainPhoto(savedEquipment.getId());
+            resultDTO.setImageUrl(imageUrl);
+        } catch (Exception e) {
+            resultDTO.setImageUrl(null);
+        }
+
+        // Send notifications
+        try {
+            String driverTypeLabel = driverType.equalsIgnoreCase("main") ? "Main Driver" : "Sub Driver";
+            String notificationTitle = "Driver Assigned to Equipment";
+            String notificationMessage = driver.getFullName() + " has been assigned as " +
+                    driverTypeLabel + " to equipment '" + equipment.getName() + "' (" + equipment.getModel() + ")";
+            String actionUrl = "/equipment/" + equipment.getId();
+            String relatedEntity = equipment.getId().toString();
+
+            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
+            notificationService.sendNotificationToUsersByRoles(
+                    targetRoles,
+                    notificationTitle,
+                    notificationMessage,
+                    NotificationType.INFO,
+                    actionUrl,
+                    relatedEntity
+            );
+
+            System.out.println("Driver assignment notifications sent successfully");
+        } catch (Exception e) {
+            System.err.println("Failed to send driver assignment notifications: " + e.getMessage());
+        }
+
+        System.out.println("=== Driver assignment completed ===");
+        return resultDTO;
     }
 
     /**
