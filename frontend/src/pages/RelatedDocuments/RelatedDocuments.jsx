@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { documentService } from '../../services/documentService';
 import { useSnackbar } from '../../contexts/SnackbarContext';
+import ConfirmationDialog from '../../components/common/ConfirmationDialog/ConfirmationDialog';
+import PageHeader from '../../components/common/PageHeader/PageHeader';
 import { 
     GENERAL_DOCUMENT_TYPES, 
     SARKY_DOCUMENT_TYPES, 
@@ -62,6 +64,10 @@ const RelatedDocuments = () => {
     const [documentToPromote, setDocumentToPromote] = useState(null);
     const [promoteMonth, setPromoteMonth] = useState(new Date().getMonth() + 1);
     const [promoteYear, setPromoteYear] = useState(new Date().getFullYear());
+
+    // Delete confirmation dialog state
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+    const [documentToDelete, setDocumentToDelete] = useState(null);
 
     // Get document types based on entity type
     const documentTypes = useMemo(() => {
@@ -210,22 +216,32 @@ const RelatedDocuments = () => {
         }
     };
 
-    const handleDelete = async (documentId) => {
-        if (!window.confirm('Are you sure you want to delete this document? This action cannot be undone.')) {
-            return;
-        }
+    const handleDelete = (documentId) => {
+        setDocumentToDelete(documentId);
+        setShowDeleteConfirmation(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!documentToDelete) return;
 
         setLoading(true);
         try {
-            await documentService.delete(documentId);
+            await documentService.delete(documentToDelete);
             showSnackbar('Document deleted successfully', 'success');
             loadDocuments();
+            setShowDeleteConfirmation(false);
+            setDocumentToDelete(null);
         } catch (error) {
             console.error('Error deleting document:', error);
             showSnackbar('Failed to delete document', 'error');
         } finally {
             setLoading(false);
         }
+    };
+
+    const cancelDelete = () => {
+        setShowDeleteConfirmation(false);
+        setDocumentToDelete(null);
     };
 
     const handleFileChange = (e) => {
@@ -255,26 +271,17 @@ const RelatedDocuments = () => {
     const handleDownload = async (doc) => {
         try {
             if (doc.url) {
-                // Create a temporary anchor element to trigger download
-                const link = document.createElement('a');
-                link.href = doc.url;
-                link.download = doc.name || 'document';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                // Open document in new tab for preview
+                window.open(doc.url, '_blank', 'noopener,noreferrer');
             } else {
                 // Fetch document details to get URL
                 const response = await documentService.view(doc.id);
                 const docData = response.data;
                 if (docData.url) {
-                    const link = document.createElement('a');
-                    link.href = docData.url;
-                    link.download = docData.name || 'document';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                    // Open document in new tab for preview
+                    window.open(docData.url, '_blank', 'noopener,noreferrer');
                 } else {
-                    showSnackbar('Download URL not available', 'error');
+                    showSnackbar('Document URL not available', 'error');
                 }
             }
         } catch (error) {
@@ -374,30 +381,16 @@ const RelatedDocuments = () => {
     return (
         <div className="rockops-documents-page">
             {/* Header */}
-            <div className="rockops-documents-header">
-                <div className="rockops-documents-header-left">
-
-                    <div className="rockops-documents-header-info">
-                        <h1 className="rockops-documents-title">
-                            <FolderOpen size={24} />
-                            Related Documents
-                        </h1>
-                        <p className="rockops-documents-subtitle">
-                            {entityName} • {documents.length} document{documents.length !== 1 ? 's' : ''}
-                        </p>
-                    </div>
-                </div>
-                <div className="rockops-documents-header-actions">
-                    <button
-                        className="btn-primary"
-                        onClick={() => setShowUploadModal(true)}
-                        disabled={loading}
-                    >
-                        <Plus size={16} />
-                        Upload Document
-                    </button>
-                </div>
-            </div>
+            <PageHeader
+                title="Related Documents"
+                subtitle={`${entityName} • ${documents.length} document${documents.length !== 1 ? 's' : ''}`}
+                actionButton={{
+                    text: 'Upload Document',
+                    icon: <Plus size={16} />,
+                    onClick: () => setShowUploadModal(true),
+                    disabled: loading
+                }}
+            />
 
             {/* Filters and Controls */}
             <div className="rockops-documents-controls">
@@ -873,6 +866,19 @@ const RelatedDocuments = () => {
                     </div>
                 </div>
             )}
+
+            {/* Delete Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={showDeleteConfirmation}
+                type="delete"
+                title="Delete Document"
+                message="Are you sure you want to delete this document? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={confirmDelete}
+                onCancel={cancelDelete}
+                isLoading={loading}
+            />
         </div>
     );
 };

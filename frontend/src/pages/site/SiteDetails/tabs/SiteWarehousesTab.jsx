@@ -75,6 +75,19 @@ const SiteWarehousesTab = ({siteId}) => {
 
     const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || currentUser?.role === "ADMIN";
 
+    useEffect(() => {
+        if (showAddModal || showEditModal || showManageEmployeesModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        // Cleanup function
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddModal, showEditModal, showManageEmployeesModal]);
+
     // Helper function to parse user-friendly error messages specific to warehouse management
     const parseErrorMessage = (error, context = 'general') => {
         // If it's already a user-friendly message, return as is

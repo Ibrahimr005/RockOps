@@ -246,61 +246,6 @@ public class SiteAdminService
     }
 
 
-//    @Transactional
-//    public Site addSite(Map<String, Object> siteData) {
-//        Site site = new Site();
-//        site.setName((String) siteData.get("name"));
-//        site.setPhysicalAddress((String) siteData.get("physicalAddress"));
-//        site.setCompanyAddress((String) siteData.get("companyAddress"));
-//
-//        // Store the photo URL if provided
-//        if (siteData.get("photoUrl") != null) {
-//            site.setPhotoUrl((String) siteData.get("photoUrl"));
-//        }
-//
-//        // Convert and set creation date
-//        if (siteData.get("creationDate") != null) {
-//            site.setCreationDate(LocalDate.parse((String) siteData.get("creationDate")));
-//        }
-//
-//        // Initialize the sitePartners list if it's null
-//        if (site.getSitePartners() == null) {
-//            site.setSitePartners(new ArrayList<>());
-//        }
-//
-//        // Save site entity first to get an ID
-//        site = siteRepository.save(site);
-//
-//        // Handle partners (if provided)
-//        if (siteData.get("partners") instanceof List<?> partnersList) {
-//            for (Object partnerData : partnersList) {
-//                if (partnerData instanceof Map<?, ?> partnerMap) {
-//                    int partnerId = ((Number) partnerMap.get("partnerId")).intValue();
-//                    Double percentage = partnerMap.get("percentage") != null ?
-//                            ((Number) partnerMap.get("percentage")).doubleValue() : 0.0;
-//
-//                    Partner partner = partnerRepository.findById(partnerId)
-//                            .orElseThrow(() -> new RuntimeException("❌ Partner not found with ID: " + partnerId));
-//
-//                    // Create the SitePartner entity with percentage
-//                    SitePartnerId id = new SitePartnerId(site.getId(), partner.getId());
-//                    SitePartner sitePartner = new SitePartner();
-//                    sitePartner.setId(id);
-//                    sitePartner.setSite(site);
-//                    sitePartner.setPartner(partner);
-//                    sitePartner.setPercentage(percentage);
-//
-//                    // Add to site collection only - don't modify partner collection here
-//                    site.getSitePartners().add(sitePartner);
-//
-//                    // Let the cascade do the work of saving the SitePartner
-//                }
-//            }
-//        }
-//
-//        // Save the site again with its partners
-//        return siteRepository.save(site);
-//    }
 
     @Transactional
     public Site updateSite(UUID siteId, Map<String, Object> updates) {
@@ -686,6 +631,33 @@ public class SiteAdminService
         // Ensure the employee is currently assigned to the given site
         if (!employee.getSite().getId().equals(siteId)) {
             throw new RuntimeException("Employee is not assigned to this site");
+        }
+
+        List<Equipment> equipmentAtSite = equipmentRepository.findBySiteId(siteId);
+
+        for (Equipment equipment : equipmentAtSite) {
+            boolean equipmentUpdated = false;
+
+            // Check if employee is main driver
+            if (equipment.getMainDriver() != null &&
+                    equipment.getMainDriver().getId().equals(employeeId)) {
+                equipment.setMainDriver(null);
+                equipmentUpdated = true;
+                System.out.println("Removed employee as main driver from equipment: " + equipment.getModel());
+            }
+
+            // Check if employee is sub driver
+            if (equipment.getSubDriver() != null &&
+                    equipment.getSubDriver().getId().equals(employeeId)) {
+                equipment.setSubDriver(null);
+                equipmentUpdated = true;
+                System.out.println("Removed employee as sub driver from equipment: " + equipment.getModel());
+            }
+
+            // Save equipment if it was modified
+            if (equipmentUpdated) {
+                equipmentRepository.save(equipment);
+            }
         }
 
         employee.setSite(null); // Remove site association

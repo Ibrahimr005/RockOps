@@ -211,6 +211,12 @@ const DataTable = ({
 
                 // Find the column definition to check for custom filter logic
                 const column = filterableColumns.find(col => col.accessor === key);
+                
+                // Check if column has a custom filter function
+                if (column && column.customFilterFunction) {
+                    return column.customFilterFunction(item, filterValue);
+                }
+                
                 let itemValue;
                 
                 if (column && column.customFilterAccessor) {
@@ -264,7 +270,7 @@ const DataTable = ({
                 }
             });
         });
-    }, [searchFiltered, filters, emptyValueText, emptyValuesByColumn]);
+    }, [searchFiltered, filters, emptyValueText, emptyValuesByColumn, filterableColumns]);
 
     // Apply sorting
     const sortedData = useMemo(() => {
@@ -969,7 +975,9 @@ const DataTable = ({
 
                                                         {activeActionRow === rowIndex && (
                                                             <div className="rockops-table__actions-dropdown">
-                                                                {actions.map((action, idx) => (
+                                                                {actions
+                                                                    .filter(action => !action.show || action.show(row))
+                                                                    .map((action, idx) => (
                                                                     <button
                                                                         key={idx}
                                                                         className={`rockops-table__action-item ${action.className || ''}`}
@@ -986,7 +994,9 @@ const DataTable = ({
                                                 ) : (
                                                     // Inline buttons for 1-2 actions
                                                     <div className="rockops-table__actions-inline">
-                                                        {actions.map((action, idx) => (
+                                                        {actions
+                                                            .filter(action => !action.show || action.show(row))
+                                                            .map((action, idx) => (
                                                             <button
                                                                 key={idx}
                                                                 className={`rockops-table__action-button ${action.className || ''}`}

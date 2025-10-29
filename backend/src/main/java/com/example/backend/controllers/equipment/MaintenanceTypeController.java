@@ -40,17 +40,39 @@ public class MaintenanceTypeController {
 
     // Create new maintenance type
     @PostMapping()
-    public ResponseEntity<MaintenanceTypeDTO> createMaintenanceType(@RequestBody MaintenanceTypeDTO maintenanceTypeDTO) {
-        return new ResponseEntity<>(maintenanceTypeService.createMaintenanceType(maintenanceTypeDTO), HttpStatus.CREATED);
+    public ResponseEntity<?> createMaintenanceType(@RequestBody MaintenanceTypeDTO maintenanceTypeDTO) {
+        try {
+            return new ResponseEntity<>(maintenanceTypeService.createMaintenanceType(maintenanceTypeDTO), HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        }
     }
 
     // Update maintenance type
     @PutMapping("/{id}")
-    public ResponseEntity<MaintenanceTypeDTO> updateMaintenanceType(@PathVariable UUID id, @RequestBody MaintenanceTypeDTO maintenanceTypeDTO) {
-        return ResponseEntity.ok(maintenanceTypeService.updateMaintenanceType(id, maintenanceTypeDTO));
+    public ResponseEntity<?> updateMaintenanceType(@PathVariable UUID id, @RequestBody MaintenanceTypeDTO maintenanceTypeDTO) {
+        try {
+            return ResponseEntity.ok(maintenanceTypeService.updateMaintenanceType(id, maintenanceTypeDTO));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        }
+    }
+    
+    // Simple error response class
+    private static class ErrorResponse {
+        public String message;
+        
+        public ErrorResponse(String message) {
+            this.message = message;
+        }
+        
+        public String getMessage() {
+            return message;
+        }
     }
 
-    // Delete maintenance type (soft delete)
+    // Delete maintenance type (permanent deletion)
+    // Note: Users should mark types as inactive to hide them from regular users
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteMaintenanceType(@PathVariable UUID id) {
         maintenanceTypeService.deleteMaintenanceType(id);

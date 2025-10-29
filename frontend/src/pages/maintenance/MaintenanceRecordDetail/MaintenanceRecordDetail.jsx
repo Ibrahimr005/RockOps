@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FaArrowLeft, FaTools, FaUser, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaInfoCircle } from 'react-icons/fa';
+import { FaArrowLeft, FaTools, FaUser, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaInfoCircle, FaWrench, FaClipboardList, FaCheckCircle, FaHourglassHalf } from 'react-icons/fa';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import MaintenanceSteps from '../MaintenanceSteps/MaintenanceSteps';
 import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
+import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import '../../../styles/status-badges.scss';
 import '../../../styles/tabs.scss';
 import './MaintenanceRecordDetail.scss';
@@ -111,27 +112,69 @@ const MaintenanceRecordDetail = () => {
         );
     }
 
+    const breadcrumbs = [
+        {
+            label: 'Maintenance',
+            icon: <FaTools />,
+            onClick: () => navigate('/maintenance')
+        },
+        {
+            label: 'Records',
+            icon: <FaClipboardList />,
+            onClick: () => navigate('/maintenance/records')
+        },
+        {
+            label: maintenanceRecord.equipmentName || maintenanceRecord.equipmentInfo || 'Record Details',
+            icon: <FaWrench />
+        }
+    ];
+
+    const stats = [
+        {
+            label: 'Total Steps',
+            value: maintenanceRecord.totalSteps || 0
+        },
+        {
+            label: 'Completed',
+            value: maintenanceRecord.completedSteps || 0
+        },
+        {
+            label: 'Active',
+            value: maintenanceRecord.activeSteps || 0
+        },
+        {
+            label: 'Total Cost',
+            value: formatCurrency(maintenanceRecord.totalCost)
+        }
+    ];
+
     return (
         <div className="maintenance-record-detail">
-            <div className="detail-header">
-                <div className="header-left">
-                    <h1>Maintenance Record Details</h1>
-                </div>
-                <div className="header-right">
-                    {getStatusBadge(maintenanceRecord.status)}
-                </div>
-            </div>
+            <IntroCard
+                title={maintenanceRecord.equipmentName || maintenanceRecord.equipmentInfo || 'Maintenance Record'}
+                label="MAINTENANCE TRACKING"
+                breadcrumbs={breadcrumbs}
+                icon={<FaTools />}
+                stats={stats}
+                actionButtons={[
+                    {
+                        text: getStatusBadge(maintenanceRecord.status),
+                        className: 'secondary',
+                        disabled: true
+                    }
+                ]}
+            />
 
             <div className="detail-content">
-                <div className="tabs-header">
+                <div className="new-tabs-header">
                     <button 
-                        className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
+                        className={`new-tab-button ${activeTab === 'overview' ? 'active' : ''}`}
                         onClick={() => setActiveTab('overview')}
                     >
                         <FaInfoCircle /> Overview
                     </button>
                     <button 
-                        className={`tab-button ${activeTab === 'steps' ? 'active' : ''}`}
+                        className={`new-tab-button ${activeTab === 'steps' ? 'active' : ''}`}
                         onClick={() => setActiveTab('steps')}
                     >
                         <FaTools /> Maintenance Steps ({maintenanceRecord.totalSteps || 0})

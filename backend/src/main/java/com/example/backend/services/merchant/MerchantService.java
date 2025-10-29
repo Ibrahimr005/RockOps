@@ -37,6 +37,7 @@ public class MerchantService {
                 m.getItemCategories().forEach(itemCategory -> {
                     System.out.println("\t- " + itemCategory.getName());
                 });
+                System.out.println("Contacts: " + (m.getContacts() != null ? m.getContacts().size() : 0));
             });
             return merchants;
         } catch (Exception e) {
