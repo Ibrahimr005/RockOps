@@ -6,7 +6,6 @@
   flex: 1;
   margin: 0 auto;
   padding: 1.5rem;
-  font-family: var(--font-family);
   color: var(--color-text-primary);
   background-color: var(--main-background-color);
   display: flex;
@@ -143,10 +142,8 @@
 
   // Main content container
   .employee-details-content {
-    background-color: var(--section-background-color);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
+      overflow: hidden;
   }
 
   // Minimal Info Bar Section
@@ -316,6 +313,8 @@
 
   // Tabs for different information sections
   .employee-details-tabs {
+    background-color: var(--section-background-color);
+
     .tabs-header {
       display: flex;
       border-bottom: 1px solid var(--border-color);

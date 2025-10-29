@@ -1,6 +1,6 @@
 // EmployeeDetails.jsx
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, {useEffect, useState} from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
 import './EmployeeDetails.scss';
 
 // Import tab components
@@ -14,13 +14,14 @@ import CommissionsTab from '../tabs/CommissionsTab.jsx';
 import LoansTab from '../tabs/LoansTab.jsx';
 import PayslipsTab from '../tabs/PayslipsTab.jsx';
 import VacationTab from '../tabs/VacationTab.jsx';
-import LoadingPage from "../../../../components/common/LoadingPage/LoadingPage.jsx";
-import {FaUser} from "react-icons/fa";
-import {hrEmployeeService} from "../../../../services/hr/hrEmployeeService.js";
+import IntroCard from "../../../../components/common/IntroCard/IntroCard.jsx";
 import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
+import {FaBuilding, FaEdit, FaFileDownload, FaMapMarkerAlt, FaUser} from "react-icons/fa";
+import {FiBriefcase, FiHome, FiUsers} from "react-icons/fi";
+import {hrEmployeeService} from "../../../../services/hr/hrEmployeeService.js";
 
 const EmployeeDetails = () => {
-    const { id } = useParams();
+    const {id} = useParams();
     const navigate = useNavigate();
     const [employee, setEmployee] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -47,6 +48,7 @@ const EmployeeDetails = () => {
             setLoading(false);
         }
     };
+
     // Format date for display - moved to a utility function to be used by all tabs
     const formatDate = (dateString) => {
         if (!dateString) return 'Not specified';
@@ -85,7 +87,7 @@ const EmployeeDetails = () => {
         try {
             const today = new Date();
             let hire;
-            
+
             if (typeof hireDate === 'string') {
                 hire = new Date(hireDate);
             } else if (hireDate instanceof Date) {
@@ -184,68 +186,94 @@ const EmployeeDetails = () => {
         return employee.siteName || 'No site assigned';
     };
 
+    // Get full name
+    const getFullName = () => {
+        return employee.fullName || `${employee.firstName} ${employee.middleName ? employee.middleName + ' ' : ''}${employee.lastName}`;
+    };
+
+    // IntroCard configuration
+    const getBreadcrumbs = () => {
+        return [
+            {
+                label: 'Home',
+                icon: <FiHome/>,
+                onClick: () => navigate('/')
+            },
+            {
+                label: 'HR',
+                onClick: () => navigate('/hr')
+            },
+            {
+                label: 'Employees',
+                icon: <FiUsers/>,
+                onClick: () => navigate('/hr/employees')
+            },
+            {
+                label: getFullName()
+            }
+        ];
+    };
+
+    const getEmployeeStats = () => {
+        return [
+            {
+                value: getPosition(),
+                label: 'Position',
+                icon: <FiBriefcase/>
+            },
+            {
+                value: getDepartment(),
+                label: 'Department',
+                icon: <FaBuilding/>
+            },
+            {
+                value: getSiteName(),
+                label: 'Site',
+                icon: <FaMapMarkerAlt/>
+            },
+            {
+                value: employee.status || 'Active',
+                label: 'Status',
+                className: `status-badge ${employee.status?.toLowerCase() || 'active'}`
+            }
+        ];
+    };
+
+    const getActionButtons = () => {
+        return [
+            {
+                text: 'Edit Employee',
+                icon: <FaEdit/>,
+                onClick: () => console.log('Edit employee'), // Implement edit functionality
+                className: 'primary'
+            },
+            {
+                text: 'Export Report',
+                icon: <FaFileDownload/>,
+                onClick: () => console.log('Export report'), // Implement export functionality
+                className: 'secondary'
+            }
+        ];
+    };
+
     return (
         <div className="employee-details-container">
             <div className="employee-details-content">
-                {/* Minimal Info Bar */}
-                <div className="employee-info-bar">
-                    <div className="employee-details-avatar">
-                        {employee.photoUrl ? (
-                            <img
-                                src={employee.photoUrl}
-                                alt={`${employee.firstName} ${employee.lastName}`}
-                                onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.nextSibling.style.display = 'flex';
-                                }}
-                            />
-                        ) : (
-                            <div className="employee-details-avatar__placeholder">
-                                <FaUser />
-                            </div>
-                        )}
-                        <div className="employee-details-avatar__placeholder" style={{ display: 'none' }}>
-                            <FaUser />
-                        </div>
-                        <div className={`employee-status-indicator ${employee.status?.toLowerCase() || 'active'}`}></div>
-                    </div>
+                {/* IntroCard replacing the employee-info-bar */}
+                <IntroCard
+                    title={getFullName()}
+                    label="EMPLOYEE DETAILS"
+                    subtitle={`Employee ID: #${employee.id} • Hired ${formatDate(employee.hireDate)} (${calculateDaysSinceHire(employee.hireDate)})`}
+                    breadcrumbs={getBreadcrumbs()}
+                    lightModeImage={employee.photoUrl || null}
+                    darkModeImage={employee.photoUrl||null}// Pass URL or null
+                    icon={employee.photoUrl ? null : <FaUser/>}  // Show icon only when no photo
+                    stats={getEmployeeStats()}
+                    actionButtons={getActionButtons()}
+                    className="employee-intro-card"
+                />
 
-                    <div className="employee-basic-info">
-                        <h1 className="employee-name">
-                            {employee.fullName || `${employee.firstName} ${employee.middleName ? employee.middleName + ' ' : ''}${employee.lastName}`}
-                        </h1>
-                        <div className="employee-meta">
-                            <span className="position">{getPosition()}</span>
-                            <span className="separator">•</span>
-                            <span className="department">{getDepartment()}</span>
-                            <span className="separator">•</span>
-                            <span className="site">{getSiteName()}</span>
-                        </div>
-                    </div>
-
-                    <div className="employee-quick-stats">
-                        <div className="emp-stat-item">
-                            <span className="stat-label">Status</span>
-                            <span className={`status-badge ${employee.status?.toLowerCase() || 'active'}`}>
-                                {employee.status || 'N/A'}
-                            </span>
-                        </div>
-                        <div className="emp-stat-item">
-                            <span className="stat-label">Employee ID</span>
-                            <span className="stat-value">#{employee.id}</span>
-                        </div>
-                        <div className="emp-stat-item">
-                            <span className="stat-label">Hire Date</span>
-                            <span className="stat-value">
-                                {formatDate(employee.hireDate)}
-                                <span className="days-since-hire">
-                                    ({calculateDaysSinceHire(employee.hireDate)})
-                                </span>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
+                {/* Tabs Section */}
                 <div className="employee-details-tabs">
                     <div className="tabs-header">
                         <button
@@ -321,16 +349,21 @@ const EmployeeDetails = () => {
                                                     activeTab === 'loans' ? 'Loans' :
                                                         activeTab === 'payslips' ? 'Payslips' : 'Vacation'
                     }>
-                        {activeTab === 'personal' && <PersonalInfoTab employee={employee} formatDate={formatDate} />}
-                        {activeTab === 'employment' && <EmploymentTab employee={employee} formatDate={formatDate} getPosition={getPosition} getDepartment={getDepartment} getSiteName={getSiteName} />}
-                        {activeTab === 'documents' && <DocumentsTab employee={employee} />}
-                        {activeTab === 'compensation' && <CompensationTab employee={employee} formatCurrency={formatCurrency} />}
-                        {activeTab === 'attendance' && <AttendanceTab employee={employee} formatDate={formatDate} />}
-                        {activeTab === 'deductions' && <DeductionsTab employee={employee} formatCurrency={formatCurrency} />}
-                        {activeTab === 'commissions' && <CommissionsTab employee={employee} formatCurrency={formatCurrency} />}
-                        {activeTab === 'loans' && <LoansTab employee={employee} formatCurrency={formatCurrency} />}
-                        {activeTab === 'payslips' && <PayslipsTab employee={employee} formatCurrency={formatCurrency} />}
-                        {activeTab === 'vacation' && <VacationTab employee={employee} formatDate={formatDate} />}
+                        {activeTab === 'personal' && <PersonalInfoTab employee={employee} formatDate={formatDate}/>}
+                        {activeTab === 'employment' &&
+                            <EmploymentTab employee={employee} formatDate={formatDate} getPosition={getPosition}
+                                           getDepartment={getDepartment} getSiteName={getSiteName}/>}
+                        {activeTab === 'documents' && <DocumentsTab employee={employee}/>}
+                        {activeTab === 'compensation' &&
+                            <CompensationTab employee={employee} formatCurrency={formatCurrency}/>}
+                        {activeTab === 'attendance' && <AttendanceTab employee={employee} formatDate={formatDate}/>}
+                        {activeTab === 'deductions' &&
+                            <DeductionsTab employee={employee} formatCurrency={formatCurrency}/>}
+                        {activeTab === 'commissions' &&
+                            <CommissionsTab employee={employee} formatCurrency={formatCurrency}/>}
+                        {activeTab === 'loans' && <LoansTab employee={employee} formatCurrency={formatCurrency}/>}
+                        {activeTab === 'payslips' && <PayslipsTab employee={employee} formatCurrency={formatCurrency}/>}
+                        {activeTab === 'vacation' && <VacationTab employee={employee} formatDate={formatDate}/>}
                     </div>
                 </div>
             </div>

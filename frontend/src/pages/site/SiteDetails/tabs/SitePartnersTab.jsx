@@ -5,6 +5,7 @@ import {useAuth} from "../../../../contexts/AuthContext.jsx";
 import {FaTrash, FaEdit, FaSave, FaTimes, FaPlus} from 'react-icons/fa';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
 import { siteService } from "../../../../services/siteService.js";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const SitePartnersTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -270,7 +271,7 @@ const SitePartnersTab = ({siteId}) => {
         }
     };
 
-    if (loading) return <div className="loading-container">Loading Partners...</div>;
+    if (loading) return <ContentLoader message={"Loading Partnets..."}/>;
 
     return (
         <div className="site-partners-tab">

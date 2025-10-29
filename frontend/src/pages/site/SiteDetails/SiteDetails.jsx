@@ -75,22 +75,22 @@ const SiteDetails = () => {
     const fetchSiteDetails = async () => {
         try {
             setLoading(true);
-            console.log('=== Site Details Debug ===');
-            console.log('Site ID:', siteId);
-            console.log('Environment:', import.meta.env.MODE);
-            console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL);
+            // console.log('=== Site Details Debug ===');
+            // console.log('Site ID:', siteId);
+            // console.log('Environment:', import.meta.env.MODE);
+            // console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL);
 
             // Log the exact endpoint being called
             const endpoint = `/api/v1/site/${siteId}`;
-            console.log('Endpoint:', endpoint);
-            console.log('Full URL should be:', `${import.meta.env.VITE_API_BASE_URL}${endpoint}`);
+            // console.log('Endpoint:', endpoint);
+            // console.log('Full URL should be:', `${import.meta.env.VITE_API_BASE_URL}${endpoint}`);
 
-            console.log('Calling siteService.getById...');
+            // console.log('Calling siteService.getById...');
             const response = await siteService.getById(siteId);
-            console.log('Raw response:', response);
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
-            console.log('Response data:', response.data);
+            // console.log('Raw response:', response);
+            // console.log('Response status:', response.status);
+            // console.log('Response headers:', response.headers);
+            // console.log('Response data:', response.data);
 
             setSite(response.data);
             setLoading(false);
@@ -310,7 +310,7 @@ const SiteDetails = () => {
 
     if (loading) {
         return (
-            <ContentLoader />
+            <ContentLoader message={"Loading Site Details"}/>
         );
     }
 

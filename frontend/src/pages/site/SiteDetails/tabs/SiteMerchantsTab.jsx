@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {useNavigate} from "react-router-dom";
 import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import { siteService } from "../../../../services/siteService";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const SiteMerchantsTab = ({ siteId }) => {
     const { t } = useTranslation();
@@ -101,7 +102,7 @@ const SiteMerchantsTab = ({ siteId }) => {
         return counts;
     }, {});
 
-    if (loading) return <div className="loading-container">{t('site.loadingMerchants')}</div>;
+    if (loading) return <ContentLoader message={"Loading Merchants..."}/>;
 
     return (
         <div className="site-merchants-tab">

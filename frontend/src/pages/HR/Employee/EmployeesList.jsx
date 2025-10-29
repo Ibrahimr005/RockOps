@@ -27,6 +27,8 @@ const EmployeesList = () => {
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(null);
+
 
     // Fetch departments and positions for dropdowns
     const [departments, setDepartments] = useState([]);
@@ -271,138 +273,122 @@ const EmployeesList = () => {
     }, [employees, departmentFilter, positionFilter, statusFilter, typeFilter]);
 
     // Handle adding a new employee
-    const handleAddEmployee = async (employeeData) => {
+    // In EmployeesList.jsx
+
+    const handleAddEmployee = async (employeeData, photoFile, idFrontFile, idBackFile) => {
         try {
-            setLoading(true);
+            setIsSubmitting(true);
 
-            // Create employee using the HR employee service
-            await hrEmployeeService.employee.create(employeeData);
+            // Create FormData
+            const formData = new FormData();
 
-            // Refresh the employee list
+            // Add employeeData as JSON blob
+            const employeeDataBlob = new Blob([JSON.stringify(employeeData)], {
+                type: 'application/json'
+            });
+            formData.append('employeeData', employeeDataBlob);
+
+            // Add files if they exist
+            if (photoFile) {
+                formData.append('photo', photoFile);
+            }
+            if (idFrontFile) {
+                formData.append('idFrontImage', idFrontFile);
+            }
+            if (idBackFile) {
+                formData.append('idBackImage', idBackFile);
+            }
+
+            // Call the service
+            await hrEmployeeService.employee.create(formData);
+            showSuccess('Employee added successfully!');
+
+            // Refresh the list and close modal
             await fetchEmployees();
-
-            // Close modal
             setShowAddModal(false);
 
             // Show success message
-            showSuccess('Employee added successfully!');
-
         } catch (error) {
             console.error('Error adding employee:', error);
 
-            // Extract error message
-            let errorMessage = 'Failed to add employee';
-
-            if (error.response?.data) {
-                // API error response
-                const errorData = error.response.data;
-                if (typeof errorData === 'string') {
-                    errorMessage = errorData;
-                } else if (errorData.message) {
-                    errorMessage = errorData.message;
-                } else if (errorData.error) {
-                    errorMessage = errorData.error;
-                }
-            } else if (error.message) {
-                // Network or other error
-                errorMessage = error.message;
-            }
-
-            setError(`Failed to add employee: ${errorMessage}`);
-            showError(errorMessage);
+            showError(
+                error.response?.data?.message || 'Failed to add employee. Please try again.'
+            );
+            // Show error message
         } finally {
-            setLoading(false);
+            setIsSubmitting(false);
         }
     };
 
-    // Handle editing an employee
-    const handleEditEmployee = async (employeeId, updatedData) => {
+    const handleEditEmployee = async (employeeData, photoFile, idFrontFile, idBackFile) => {
         try {
-            setLoading(true);
+            setIsSubmitting(true);
 
-            console.log('Updating employee:', employeeId, updatedData);
+            // Create FormData
+            const formData = new FormData();
 
-            // Update employee using the HR employee service
-            await hrEmployeeService.employee.update(employeeId, updatedData);
+            // Add employeeData as JSON blob
+            const employeeDataBlob = new Blob([JSON.stringify(employeeData)], {
+                type: 'application/json'
+            });
+            formData.append('employeeData', employeeDataBlob);
 
-            // Refresh the employee list
-            await fetchEmployees();
+            // Add files if they exist
+            if (photoFile) {
+                formData.append('photo', photoFile);
+            }
+            if (idFrontFile) {
+                formData.append('idFrontImage', idFrontFile);
+            }
+            if (idBackFile) {
+                formData.append('idBackImage', idBackFile);
+            }
 
-            // Close modal
-            setShowEditModal(false);
-            setSelectedEmployee(null);
-
-            // Show success message
+            // Call the service with employee ID
+            await hrEmployeeService.employee.update(selectedEmployee.id, formData);
             showSuccess('Employee updated successfully!');
 
+            // Refresh the list and close modal
+            await fetchEmployees();
+            setShowEditModal(false);
+            setSelectedEmployee(null);
+            // Show success message
         } catch (error) {
             console.error('Error updating employee:', error);
-            console.error('Error response:', error.response);
-            console.error('Error request:', error.request);
 
-            // Extract detailed error message
-            let errorMessage = 'Failed to update employee';
-
-            if (error.response) {
-                // API error response
-                console.error('Response data:', error.response.data);
-                console.error('Response status:', error.response.status);
-
-                const errorData = error.response.data;
-                if (typeof errorData === 'string') {
-                    errorMessage = errorData;
-                } else if (errorData.message) {
-                    errorMessage = errorData.message;
-                } else if (errorData.error) {
-                    errorMessage = errorData.error;
-                } else {
-                    errorMessage = `Failed to update employee (Status: ${error.response.status})`;
-                }
-            } else if (error.request) {
-                // Network error
-                console.error('Network error:', error.request);
-                errorMessage = 'Network error. Please check your connection.';
-            } else {
-                // Other error
-                console.error('Error:', error.message);
-                errorMessage = error.message || 'An unexpected error occurred';
-            }
-
-            setError(`Failed to update employee: ${errorMessage}`);
-            showError(errorMessage);
+            showError(
+                error.response?.data?.message || 'Failed to update employee. Please try again.'
+            );
+            // Show error message
         } finally {
-            setLoading(false);
+            setIsSubmitting(false);
         }
     };
 
-    // Handle deleting an employee
     const handleDeleteEmployee = async (employeeId) => {
-        if (!window.confirm('Are you sure you want to delete this employee?')) {
-            return;
-        }
-
         try {
-            setLoading(true);
+            const confirmed = window.confirm('Are you sure you want to delete this employee? This action cannot be undone.');
 
-            // Use HR employee service for delete
+            if (!confirmed) return;
+
+            setIsSubmitting(true);
+
             await hrEmployeeService.employee.delete(employeeId);
+
+            showSuccess('Employee deleted successfully!');
 
             // Refresh the employee list
             await fetchEmployees();
-
-            // Show success message
-            showSuccess('Employee deleted successfully!');
 
         } catch (error) {
             console.error('Error deleting employee:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to delete employee';
-            setError(`Failed to delete employee: ${errorMessage}`);
-            showError('Failed to delete employee. Please try again.');
+            showError(
+                error.response?.data?.message || 'Failed to delete employee. Please try again.'
+            );
         } finally {
-            setLoading(false);
+            setIsSubmitting(false);
         }
     };
-
     // Navigate to employee details
     const handleRowClick = (employee) => {
         // Navigate to employee details page
