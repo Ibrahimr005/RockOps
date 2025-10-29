@@ -46,6 +46,7 @@ export const EQUIPMENT_ENDPOINTS = {
     ITEMS: (equipmentId) => `/api/equipment/${equipmentId}/items`,
     CHECK_BATCH_EXISTS: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`,
     DRIVERS: (equipmentId) => `/api/equipment/${equipmentId}/drivers`,
+    ASSIGN_DRIVER: (equipmentId, driverId) => `/api/equipment/${equipmentId}/driver/${driverId}`,
     UNASSIGN_DRIVER: (equipmentId, driverId) => `/api/equipment/${equipmentId}/driver/${driverId}`,
 
 };

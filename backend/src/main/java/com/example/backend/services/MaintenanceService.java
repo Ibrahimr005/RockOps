@@ -176,6 +176,40 @@ public class MaintenanceService {
         MaintenanceRecord record = maintenanceRecordRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
         
+        // Handle equipment change
+        if (dto.getEquipmentId() != null && !dto.getEquipmentId().equals(record.getEquipmentId())) {
+            // Get old equipment to potentially update its status
+            Equipment oldEquipment = equipmentRepository.findById(record.getEquipmentId())
+                    .orElseThrow(() -> new MaintenanceException("Old equipment not found"));
+            
+            // Verify new equipment exists
+            Equipment newEquipment = equipmentRepository.findById(dto.getEquipmentId())
+                    .orElseThrow(() -> new MaintenanceException("New equipment not found with id: " + dto.getEquipmentId()));
+            
+            // Update equipment ID
+            record.setEquipmentId(dto.getEquipmentId());
+            
+            // Check if old equipment has any other active maintenance records
+            List<MaintenanceRecord> oldEquipmentActiveRecords = maintenanceRecordRepository
+                    .findByEquipmentIdOrderByCreationDateDesc(oldEquipment.getId())
+                    .stream()
+                    .filter(r -> r.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE 
+                            && !r.getId().equals(record.getId()))
+                    .collect(Collectors.toList());
+            
+            // If no other active records, set old equipment to AVAILABLE
+            if (oldEquipmentActiveRecords.isEmpty() && oldEquipment.getStatus() == EquipmentStatus.IN_MAINTENANCE) {
+                oldEquipment.setStatus(EquipmentStatus.AVAILABLE);
+                equipmentRepository.save(oldEquipment);
+            }
+            
+            // If current record is active, set new equipment to IN_MAINTENANCE
+            if (record.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE) {
+                newEquipment.setStatus(EquipmentStatus.IN_MAINTENANCE);
+                equipmentRepository.save(newEquipment);
+            }
+        }
+        
         if (dto.getInitialIssueDescription() != null) {
             record.setInitialIssueDescription(dto.getInitialIssueDescription());
         }

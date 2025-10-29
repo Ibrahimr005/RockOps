@@ -55,6 +55,9 @@ public class StepTypeService {
      */
     @Transactional
     public StepTypeDto createStepType(StepTypeDto stepTypeDto) {
+        // Validate input
+        validateStepTypeInput(stepTypeDto);
+        
         // Check if step type with same name already exists
         if (stepTypeRepository.existsByName(stepTypeDto.getName())) {
             throw new ResourceConflictException("Step type with name '" + stepTypeDto.getName() + "' already exists");
@@ -63,10 +66,11 @@ public class StepTypeService {
         StepType stepType = new StepType();
         stepType.setName(stepTypeDto.getName());
         stepType.setDescription(stepTypeDto.getDescription());
-        stepType.setActive(true);
+        // Use the active status from DTO instead of hardcoding to true
+        stepType.setActive(stepTypeDto.isActive());
 
         StepType savedStepType = stepTypeRepository.save(stepType);
-        log.info("Created new step type: {}", savedStepType.getName());
+        log.info("Created new step type: {} with active status: {}", savedStepType.getName(), savedStepType.isActive());
 
         return convertToDto(savedStepType);
     }
@@ -76,6 +80,9 @@ public class StepTypeService {
      */
     @Transactional
     public StepTypeDto updateStepType(UUID id, StepTypeDto stepTypeDto) {
+        // Validate input
+        validateStepTypeInput(stepTypeDto);
+        
         StepType stepType = stepTypeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Step type not found with id: " + id));
 
@@ -92,7 +99,7 @@ public class StepTypeService {
         stepType.setActive(stepTypeDto.isActive());
 
         StepType updatedStepType = stepTypeRepository.save(stepType);
-        log.info("Updated step type: {}", updatedStepType.getName());
+        log.info("Updated step type: {} with active status: {}", updatedStepType.getName(), updatedStepType.isActive());
 
         return convertToDto(updatedStepType);
     }
@@ -121,7 +128,32 @@ public class StepTypeService {
         dto.setActive(stepType.isActive());
         return dto;
     }
+    
+    /**
+     * Validate step type input for reserved/invalid values
+     */
+    private void validateStepTypeInput(StepTypeDto stepTypeDto) {
+        if (stepTypeDto.getName() == null || stepTypeDto.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Step type name cannot be empty");
+        }
+        
+        String normalizedName = stepTypeDto.getName().trim().toUpperCase();
+        
+        // Check for reserved/invalid values
+        if ("NA".equals(normalizedName) || "N/A".equals(normalizedName)) {
+            throw new IllegalArgumentException("Step type name cannot be 'NA' or 'N/A'. Please provide a meaningful name for the maintenance step type.");
+        }
+        
+        // Check description if provided
+        if (stepTypeDto.getDescription() != null && !stepTypeDto.getDescription().trim().isEmpty()) {
+            String normalizedDesc = stepTypeDto.getDescription().trim().toUpperCase();
+            if ("NA".equals(normalizedDesc) || "N/A".equals(normalizedDesc)) {
+                throw new IllegalArgumentException("Step type description cannot be 'NA' or 'N/A'. Please provide a meaningful description or leave it empty.");
+            }
+        }
+    }
 }
+
 
 
 

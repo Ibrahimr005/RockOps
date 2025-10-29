@@ -211,6 +211,12 @@ const DataTable = ({
 
                 // Find the column definition to check for custom filter logic
                 const column = filterableColumns.find(col => col.accessor === key);
+                
+                // Check if column has a custom filter function
+                if (column && column.customFilterFunction) {
+                    return column.customFilterFunction(item, filterValue);
+                }
+                
                 let itemValue;
                 
                 if (column && column.customFilterAccessor) {
@@ -264,7 +270,7 @@ const DataTable = ({
                 }
             });
         });
-    }, [searchFiltered, filters, emptyValueText, emptyValuesByColumn]);
+    }, [searchFiltered, filters, emptyValueText, emptyValuesByColumn, filterableColumns]);
 
     // Apply sorting
     const sortedData = useMemo(() => {

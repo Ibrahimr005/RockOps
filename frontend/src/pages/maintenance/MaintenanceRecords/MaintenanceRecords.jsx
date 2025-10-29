@@ -6,6 +6,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import MaintenanceRecordModal from './MaintenanceRecordModal';
 import MaintenanceRecordViewModal from './MaintenanceRecordViewModal/MaintenanceRecordViewModal';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import '../../../styles/status-badges.scss';
 import './MaintenanceRecords.scss';
 import maintenanceService from "../../../services/maintenanceService.js";
@@ -26,6 +27,15 @@ const MaintenanceRecords = () => {
         type: 'all',
         dateRange: 'all'
     });
+    
+    // Confirmation dialog state
+    const [confirmDialog, setConfirmDialog] = useState({
+        isVisible: false,
+        title: '',
+        message: '',
+        onConfirm: null,
+        recordToDelete: null
+    });
 
     const { showSuccess, showError, showInfo, showWarning } = useSnackbar();
     const { currentUser } = useAuth();
@@ -33,13 +43,29 @@ const MaintenanceRecords = () => {
 
     // Helper function to check if user has maintenance team access
     const hasMaintenanceAccess = (user) => {
+        if (!user) return false;
+        
+        // Handle both 'role' (singular) and 'roles' (plural) properties
+        const userRoles = user.roles || (user.role ? [user.role] : []);
+        
         const maintenanceRoles = [
             ROLES.ADMIN, 
             ROLES.MAINTENANCE_MANAGER, 
             ROLES.MAINTENANCE_EMPLOYEE, 
             ROLES.EQUIPMENT_MANAGER
         ];
-        return user?.roles?.some(role => maintenanceRoles.includes(role));
+        return userRoles.some(role => maintenanceRoles.includes(role));
+    };
+
+    // Helper function to check if user is admin or maintenance manager (full permissions)
+    const isAdminOrManager = (user) => {
+        if (!user) return false;
+        
+        // Handle both 'role' (singular) and 'roles' (plural) properties
+        const userRoles = user.roles || (user.role ? [user.role] : []);
+        
+        const managerRoles = [ROLES.ADMIN, ROLES.MAINTENANCE_MANAGER];
+        return userRoles.some(role => managerRoles.includes(role));
     };
 
     useEffect(() => {
@@ -109,7 +135,20 @@ const MaintenanceRecords = () => {
         navigate(`/maintenance/records/${record.id}`);
     };
 
+    const showDeleteConfirmation = (row) => {
+        setConfirmDialog({
+            isVisible: true,
+            title: 'Delete Maintenance Record',
+            message: `Are you sure you want to delete the maintenance record for "${row.equipmentName}"? This action cannot be undone.`,
+            onConfirm: () => handleDeleteRecord(row.id),
+            recordToDelete: row
+        });
+    };
+
     const handleDeleteRecord = async (id) => {
+        // Close the dialog first
+        setConfirmDialog({ ...confirmDialog, isVisible: false });
+        
         try {
             setLoading(true);
             await maintenanceService.deleteRecord(id);
@@ -297,18 +336,21 @@ const MaintenanceRecords = () => {
             icon: <FaEdit />,
             onClick: (row) => handleOpenModal(row),
             className: 'primary',
-            show: (row) => row.status !== 'COMPLETED' && hasMaintenanceAccess(currentUser)
+            show: (row) => {
+                // Admin and Maintenance Manager can edit any record (including completed)
+                if (isAdminOrManager(currentUser)) {
+                    return true;
+                }
+                // Other maintenance team members can only edit non-completed records
+                return row.status !== 'COMPLETED' && hasMaintenanceAccess(currentUser);
+            }
         },
         {
             label: 'Delete',
             icon: <FaTrash />,
-            onClick: (row) => {
-                if (window.confirm(`Are you sure you want to delete the maintenance record for ${row.equipmentName}?`)) {
-                    handleDeleteRecord(row.id);
-                }
-            },
+            onClick: (row) => showDeleteConfirmation(row),
             className: 'danger',
-            show: (row) => hasMaintenanceAccess(currentUser)
+            show: (row) => isAdminOrManager(currentUser) // Only Admin and Maintenance Manager can delete
         }
     ];
 
@@ -379,6 +421,18 @@ const MaintenanceRecords = () => {
                     recordId={viewingRecordId}
                 />
             )}
+            
+            <ConfirmationDialog
+                isVisible={confirmDialog.isVisible}
+                type="danger"
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={() => setConfirmDialog({ ...confirmDialog, isVisible: false })}
+                isLoading={loading}
+            />
         </div>
     );
 };
