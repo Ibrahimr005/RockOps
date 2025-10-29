@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { RiDeleteBin6Line } from "react-icons/ri";
-import { FaInfoCircle, FaWrench, FaTools, FaBoxOpen, FaTachometerAlt, FaCalendarAlt } from "react-icons/fa";
+import { FaInfoCircle, FaWrench, FaTools, FaBoxOpen, FaTachometerAlt, FaCalendarAlt, FaCog, FaClipboardList, FaMapMarkerAlt, FaUserTimes } from "react-icons/fa";
 import "./EquipmentDetails.scss";
 import InSiteMaintenanceLog from "../InSiteMaintenanceLog/InSiteMaintenanceLog";
 import EquipmentConsumablesInventory from "../EquipmentConsumablesInventory/EquipmentConsumablesInventory ";
@@ -16,10 +16,12 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { useEquipmentPermissions } from "../../../utils/rbac";
 import TransactionHub from "../../../components/equipment/TransactionHub/TransactionHub";
 import EquipmentSarkyMatrix from '../EquipmentSarkyMatrix/EquipmentSarkyMatrix';
+import DriverManagementModal from './DriverManagementModal';
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
+import IntroCard from "../../../components/common/IntroCard/IntroCard";
 
 // Set the app element for accessibility
-Modal.setAppElement('#root'); // Adjust this to match your root element ID
+Modal.setAppElement('#root');
 
 const EquipmentDetails = () => {
     const params = useParams();
@@ -47,6 +49,7 @@ const EquipmentDetails = () => {
     const [showCreateNotification, setShowCreateNotification] = useState(false);
     const [isAddMaintenanceModalOpen, setIsAddMaintenanceModalOpen] = useState(false);
     const [isMaintenanceTransactionModalOpen, setIsMaintenanceTransactionModalOpen] = useState(false);
+    const [isUnassignDriverModalOpen, setIsUnassignDriverModalOpen] = useState(false);
 
     // Refs for child components
     const dashboardRef = useRef(null);
@@ -77,12 +80,10 @@ const EquipmentDetails = () => {
         };
         const fetchEquipmentPhoto = async () => {
             try {
-                // You can use the custom equipmentService method for fetching photos
                 const response = await equipmentService.getEquipmentMainPhoto(params.EquipmentID);
                 setPreviewImage(response.data);
             } catch (error) {
                 console.error("Error fetching equipment photo:", error);
-                // If direct fetch fails, try refresh to get new presigned URL
                 try {
                     console.log("Retrying with refresh...");
                     const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(params.EquipmentID);
@@ -96,6 +97,17 @@ const EquipmentDetails = () => {
         fetchEquipmentData();
         fetchEquipmentPhoto();
     }, [params.EquipmentID]);
+
+    const handleDriverUnassigned = async () => {
+        try {
+            const response = await equipmentService.getEquipmentById(params.EquipmentID);
+            setEquipmentData(response.data);
+            showSuccess('Driver successfully unassigned from equipment and site');
+        } catch (error) {
+            console.error('Error refreshing equipment data:', error);
+            showError('Driver unassigned but failed to refresh data');
+        }
+    };
 
     const handleAddTransactionToMaintenance = (maintenanceId) => {
         setSelectedMaintenanceId(maintenanceId);
@@ -143,27 +155,6 @@ const EquipmentDetails = () => {
         setIsAddMaintenanceModalOpen(true);
     };
 
-    // Add handlers for transaction accept/reject
-    const handleAcceptTransaction = (transaction) => {
-        // You can implement accept logic here
-        // For now, just show an alert - you can expand this later
-        alert(`Accept transaction ${transaction.id} - Feature to be implemented`);
-        console.log('Accepting transaction:', transaction);
-    };
-
-    const handleRejectTransaction = (transaction) => {
-        // You can implement reject logic here
-        // For now, just show an alert - you can expand this later
-        alert(`Reject transaction ${transaction.id} - Feature to be implemented`);
-        console.log('Rejecting transaction:', transaction);
-    };
-
-    const handleUpdateTransaction = (transaction) => {
-        // Implement update transaction logic
-        console.log('Updating transaction:', transaction);
-        alert(`Update transaction ${transaction.id} - Feature to be implemented`);
-    };
-
     const handleViewFullDetails = () => {
         navigate(`../info/${params.EquipmentID}`);
     };
@@ -171,87 +162,119 @@ const EquipmentDetails = () => {
     if (loading) return <LoadingPage />;
     if (error) return <div className="error-message">Error: {error}</div>;
 
+    const breadcrumbs = [
+        {
+            label: 'Equipment',
+            icon: <FaCog />,
+            onClick: () => navigate('/equipment')
+        },
+        {
+            label: 'Details',
+            icon: <FaClipboardList />,
+            onClick: () => navigate('/equipment')
+        },
+        {
+            label: equipmentData?.name || 'Equipment',
+            icon: <FaTools />
+        }
+    ];
+
+    // Helper function to format status text
+    const formatStatus = (status) => {
+        if (!status) return 'N/A';
+        // Convert underscore to space and capitalize each word
+        return status.split('_').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        ).join(' ');
+    };
+
+    const stats = [
+        {
+            label: 'Type',
+            value: equipmentData?.typeName || 'N/A'
+        },
+        {
+            label: 'Model',
+            value: equipmentData?.model || 'N/A'
+        },
+        {
+            label: 'Site',
+            value: equipmentData?.siteName || 'N/A'
+        },
+        {
+            label: 'Status',
+            value: formatStatus(equipmentData?.status),
+            badge: true,
+            badgeType: equipmentData?.status?.toLowerCase().replace('_', '-')
+        }
+    ];
+
+    // Add driver info to stats if applicable
+    if (equipmentData?.drivable) {
+        stats.push({
+            label: 'Main Driver',
+            value: equipmentData?.mainDriverName || 'Not Assigned'
+        });
+        if (equipmentData?.subDriverName) {
+            stats.push({
+                label: 'Sub Driver',
+                value: equipmentData.subDriverName
+            });
+        }
+    }
+
+    // Build action buttons array
+    const actionButtons = [
+        {
+            icon: <FaInfoCircle />,
+            text: 'Full Details',
+            onClick: handleViewFullDetails,
+            className: 'secondary'
+        }
+    ];
+
+    // Add Active Maintenance Record button if equipment is in maintenance
+    if (equipmentData?.status === 'IN_MAINTENANCE' && equipmentData?.activeMaintenanceRecordId) {
+        actionButtons.push({
+            icon: <FaWrench />,
+            text: 'Active Maintenance Record',
+            onClick: () => {
+                // Navigate to the active maintenance record with overview tab
+                navigate(`/maintenance/records/${equipmentData.activeMaintenanceRecordId}?tab=overview`);
+            },
+            className: 'warning'
+        });
+    }
+    
+    // Debug: Log equipment status and activeMaintenanceRecordId
+    console.log('Equipment Status:', equipmentData?.status);
+    console.log('Active Maintenance Record ID:', equipmentData?.activeMaintenanceRecordId);
+    console.log('Button should show:', equipmentData?.status === 'IN_MAINTENANCE' && equipmentData?.activeMaintenanceRecordId);
+
+    // Add Manage Drivers button for all drivable equipment (regardless of assignment status)
+    if (equipmentData?.drivable && permissions.canEdit) {
+        actionButtons.push({
+            icon: <FaUserTimes />,
+            text: 'Manage Drivers',
+            onClick: () => setIsUnassignDriverModalOpen(true),
+            className: 'secondary'
+        });
+    }
+
     return (
         <div className="equipment-details-container">
+            <IntroCard
+                title={equipmentData?.name || "Equipment"}
+                label="EQUIPMENT MANAGEMENT"
+                breadcrumbs={breadcrumbs}
+                lightModeImage={previewImage || equipmentData?.imageUrl}
+                darkModeImage={previewImage || equipmentData?.imageUrl}
+                stats={stats}
+                actionButtons={actionButtons}
+            />
 
-            {/* Equipment Summary Section */}
-            {/* Equipment Summary Section */}
-
-            {/*<h1 className="SectionHeaderLabel">Equipment Details</h1>*/}
-
-            {/* Equipment Card - styled like warehouse card */}
-
-            <div className="equipment-card-header">
-                <div className="left-side">
-                    <img
-                        src={previewImage || equipmentData?.imageUrl}
-                        alt="Equipment"
-                        className="equipment-image"
-                        onError={async (e) => { 
-                            // If image fails to load, try to refresh the URL
-                            if (!e.target.hasAttribute('data-refresh-attempted')) {
-                                e.target.setAttribute('data-refresh-attempted', 'true');
-                                try {
-                                    const refreshResponse = await equipmentService.refreshEquipmentMainPhoto(params.EquipmentID);
-                                    if (refreshResponse.data) {
-                                        e.target.src = refreshResponse.data;
-                                        setPreviewImage(refreshResponse.data);
-                                    }
-                                } catch (refreshError) {
-                                    console.error("Failed to refresh image on error:", refreshError);
-                                    // Fallback to a placeholder or default image
-                                    e.target.src = '/assets/imgs/equipment-placeholder.png';
-                                }
-                            } else {
-                                // Already attempted refresh, use placeholder
-                                e.target.src = '/assets/imgs/equipment-placeholder.png';
-                            }
-                        }}
-                    />
-                </div>
-                <div className="center-content">
-                    <div className="label">EQUIPMENT NAME</div>
-                    <div className="value">{equipmentData?.name || "Equipment"}</div>
-                    
-                    {/* Driver Information Section */}
-                    <div className="driver-info-section">
-                        <div className="driver-config">
-                            <span className={`driver-status ${equipmentData?.drivable ? 'drivable' : 'non-drivable'}`}>
-                                {equipmentData?.drivable ? '🚗 Driver Assignable' : '🔧 No Driver Required'}
-                            </span>
-                        </div>
-                        
-                        {equipmentData?.drivable && (
-                            <div className="driver-assignments">
-                                <div className="driver-item">
-                                    <span className="driver-label">Main Driver:</span>
-                                    <span className="driver-name">
-                                        {equipmentData?.mainDriverName || 'Not Assigned'}
-                                    </span>
-                                </div>
-                                {equipmentData?.subDriverName && (
-                                    <div className="driver-item">
-                                        <span className="driver-label">Sub Driver:</span>
-                                        <span className="driver-name">
-                                            {equipmentData.subDriverName}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                <div className="right-side">
-                    <button className="info-button-eq" onClick={handleViewFullDetails}>
-                        <FaInfoCircle />
-                    </button>
-
-                </div>
-            </div>
             {/* Tab Navigation */}
-
             <div className="new-tabs-container">
-
                 <div className="new-tabs-header">
                     <button
                         className={`new-tab-button ${activeTab === "dashboard" ? "active" : ""}`}
@@ -311,10 +334,8 @@ const EquipmentDetails = () => {
                         </div>
                     )}
 
-
                     {activeTab === "sarky" && (
                         <div className="tab-panel">
-                            {/* Remove the tab-content-container wrapper for sarky matrix to allow sticky header */}
                             <EquipmentSarkyMatrix
                                 ref={sarkyAttendanceRef}
                                 equipmentId={params.EquipmentID}
@@ -331,7 +352,7 @@ const EquipmentDetails = () => {
                                     equipmentId={params.EquipmentID}
                                     onAddMaintenanceClick={handleAddInSiteMaintenance}
                                     onAddTransactionClick={handleAddTransactionToMaintenance}
-                                    showAddButton={true} // Use DataTable's add button for consistency
+                                    showAddButton={true}
                                 />
                             </div>
                         </div>
@@ -349,7 +370,6 @@ const EquipmentDetails = () => {
                         </div>
                     )}
                 </div>
-
             </div>
 
             {/* Add Consumable Modal */}
@@ -380,6 +400,16 @@ const EquipmentDetails = () => {
                     equipmentId={params.EquipmentID}
                     maintenanceId={selectedMaintenanceId}
                     onTransactionAdded={refreshAllTabs}
+                />
+            )}
+
+            {isUnassignDriverModalOpen && permissions.canEdit && (
+                <DriverManagementModal
+                    isOpen={isUnassignDriverModalOpen}
+                    onClose={() => setIsUnassignDriverModalOpen(false)}
+                    equipmentId={params.EquipmentID}
+                    equipmentData={equipmentData}
+                    onDriverChanged={handleDriverUnassigned}
                 />
             )}
         </div>

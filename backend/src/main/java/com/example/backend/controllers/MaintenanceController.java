@@ -206,14 +206,17 @@ public class MaintenanceController {
         }
     }
     
-    @PostMapping("/steps/{id}/complete")
-    public ResponseEntity<Void> completeMaintenanceStep(@PathVariable UUID id) {
+    @PutMapping("/steps/{id}/complete")
+    public ResponseEntity<?> completeMaintenanceStep(@PathVariable UUID id, @RequestBody MaintenanceStepDto completionData) {
         try {
-            maintenanceService.completeMaintenanceStep(id);
+            maintenanceService.completeMaintenanceStep(id, completionData);
             return ResponseEntity.ok().build();
+        } catch (MaintenanceException e) {
+            log.error("Error completing maintenance step: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             log.error("Error completing maintenance step: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.internalServerError().body(Map.of("message", "Failed to complete step"));
         }
     }
     

@@ -4,7 +4,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import DataTable from '../../../components/common/DataTable/DataTable';
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import MaintenanceStepModal from './MaintenanceStepModal';
+import CompleteStepModal from './CompleteStepModal';
 import '../../../styles/status-badges.scss';
 import './MaintenanceSteps.scss';
 import maintenanceService from "../../../services/maintenanceService.js";
@@ -24,6 +26,8 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
     const [selectedStep, setSelectedStep] = useState(null);
     const [maintenanceRecord, setMaintenanceRecord] = useState(null);
     const [restoredDataForModal, setRestoredDataForModal] = useState(null);
+    const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+    const [stepToComplete, setStepToComplete] = useState(null);
 
     const { showSuccess, showError, showInfo, showWarning } = useSnackbar();
     const { currentUser } = useAuth();
@@ -67,11 +71,14 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             // Transform data for display
             const transformedSteps = steps.map(step => ({
                 id: step.id,
-                stepType: step.stepType,
+                stepType: step.stepTypeName || step.stepType, // Use stepTypeName from new structure
+                stepTypeId: step.stepTypeId,
                 description: step.description,
-                responsiblePerson: step.responsiblePerson || step.responsibleContact?.firstName + ' ' + step.responsibleContact?.lastName || 'Not assigned',
-                responsiblePhone: step.personPhoneNumber || step.responsibleContact?.phoneNumber || '',
-                responsibleEmail: step.responsibleContact?.email || '',
+                responsiblePerson: step.responsiblePerson || 'Not assigned',
+                responsiblePhone: step.personPhoneNumber || '',
+                responsibleEmail: step.contactEmail || '',
+                responsibleContactId: step.responsibleContactId,
+                responsibleEmployeeId: step.responsibleEmployeeId,
                 lastContactDate: step.lastContactDate,
                 startDate: step.startDate,
                 expectedEndDate: step.expectedEndDate,
@@ -79,6 +86,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                 fromLocation: step.fromLocation,
                 toLocation: step.toLocation,
                 stepCost: step.stepCost || 0,
+                actualCost: step.actualCost || step.stepCost || 0, // Use actual cost if available, fallback to estimated
                 notes: step.notes,
                 isCompleted: step.isCompleted,
                 isOverdue: step.isOverdue,
@@ -143,16 +151,25 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
         }
     };
 
-    const handleCompleteStep = async (id) => {
+    const handleCompleteStep = (step) => {
+        // Open the complete modal instead of completing directly
+        setStepToComplete(step);
+        setIsCompleteModalOpen(true);
+    };
+
+    const handleConfirmComplete = async (completionData) => {
         try {
             setLoading(true);
-            await maintenanceService.completeStep(id);
-            showSuccess('Maintenance step completed successfully');
+            await maintenanceService.completeStep(stepToComplete.id, completionData);
+            showSuccess('Step completed successfully');
+            setIsCompleteModalOpen(false);
+            setStepToComplete(null);
             loadMaintenanceSteps();
             if (onStepUpdate) onStepUpdate();
         } catch (error) {
-            console.error('Error completing maintenance step:', error);
-            showError('Failed to complete maintenance step. Please try again.');
+            console.error('Error completing step:', error);
+            const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to complete step. Please try again.';
+            showError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -191,7 +208,11 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             if (onStepUpdate) onStepUpdate();
         } catch (error) {
             console.error('Error saving maintenance step:', error);
-            showError('Failed to save maintenance step. Please try again.');
+            // Extract error message from backend response
+            const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to save maintenance step. Please try again.';
+            showError(errorMessage);
+            // Re-throw error so modal can handle it
+            throw error;
         } finally {
             setLoading(false);
         }
@@ -299,16 +320,38 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             header: 'Location',
             accessor: 'fromLocation',
             sortable: true,
-            render: (row) => (
-                <div className="location-info">
-                    <div className="from-location">
-                        <FaMapMarkerAlt /> From: {row.fromLocation}
+            render: (row) => {
+                // Determine what location to show based on step type and completion status
+                const isTransport = row.stepType?.toUpperCase() === 'TRANSPORT';
+                const isCompleted = row.isCompleted;
+                
+                let displayLocation = '';
+                let locationLabel = '';
+                
+                if (isTransport) {
+                    if (isCompleted) {
+                        // Transport step that is completed - show destination
+                        displayLocation = row.toLocation;
+                        locationLabel = 'Destination';
+                    } else {
+                        // Transport step that is not completed - show origin
+                        displayLocation = row.fromLocation;
+                        locationLabel = 'From';
+                    }
+                } else {
+                    // Non-transport step - show current location (fromLocation)
+                    displayLocation = row.fromLocation;
+                    locationLabel = 'Current Location';
+                }
+                
+                return (
+                    <div className="location-info">
+                        <div className="current-location">
+                            <FaMapMarkerAlt /> {locationLabel}: {displayLocation}
+                        </div>
                     </div>
-                    <div className="to-location">
-                        To: {row.toLocation}
-                    </div>
-                </div>
-            )
+                );
+            }
         },
         {
             header: 'Cost',
@@ -316,7 +359,14 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             sortable: true,
             render: (row) => (
                 <div className="cost-info">
-                    {row.stepCost?.toFixed(2) || '0.00'}
+                    <div className="estimated-cost">
+                        Est: {row.stepCost?.toFixed(2) || '0.00'}
+                    </div>
+                    {row.isCompleted && row.actualCost && (
+                        <div className="actual-cost">
+                            Act: {row.actualCost.toFixed(2)}
+                        </div>
+                    )}
                 </div>
             )
         },
@@ -359,14 +409,53 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             icon: <FaStar />,
             onClick: (row) => handleMarkAsFinal(row.id),
             className: 'warning',
-            show: (row) => !row.isCompleted && !row.isFinalStep
+            show: (row) => {
+                // CRITICAL: A step is only completed if it has BOTH flags
+                const isStepCompleted = row.isCompleted === true && row.actualEndDate != null;
+                
+                // Don't show if already marked as final or not completed
+                if (row.isFinalStep || !isStepCompleted) {
+                    return false;
+                }
+                
+                // Check if ALL steps are completed (have actualEndDate)
+                const allStepsCompleted = maintenanceSteps.every(s => {
+                    return s.isCompleted === true && s.actualEndDate != null;
+                });
+                
+                // If not all steps are completed, don't show "Mark as Final" for any step
+                if (!allStepsCompleted) {
+                    return false;
+                }
+                
+                // All steps are completed - only show for the latest completed step
+                // Filter to only truly completed steps (those with actualEndDate)
+                const completedSteps = maintenanceSteps.filter(s => {
+                    return s.isCompleted === true && s.actualEndDate != null;
+                });
+                
+                if (completedSteps.length === 0) return false;
+                
+                // Sort by actual end date (most recent first)
+                const sortedCompletedSteps = [...completedSteps].sort((a, b) => {
+                    const dateA = new Date(a.actualEndDate);
+                    const dateB = new Date(b.actualEndDate);
+                    return dateB - dateA;
+                });
+                
+                // Only show for the latest completed step (the one with the most recent completion date)
+                return sortedCompletedSteps[0].id === row.id;
+            }
         },
         {
             label: 'Complete',
             icon: <FaCheck />,
-            onClick: (row) => handleCompleteStep(row.id),
+            onClick: (row) => handleCompleteStep(row),
             className: 'success',
-            show: (row) => !row.isCompleted
+            show: (row) => {
+                // Only show for incomplete steps
+                return !row.isCompleted;
+            }
         },
         {
             label: 'Delete',
@@ -404,14 +493,10 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
 
     return (
         <div className="maintenance-steps">
-            <div className="maintenance-steps-header">
-                <div className="header-left">
-                    <h2>Maintenance Steps</h2>
-                    {maintenanceRecord && (
-                        <p>Equipment: {maintenanceRecord.equipmentInfo} - {maintenanceRecord.initialIssueDescription}</p>
-                    )}
-                </div>
-            </div>
+            <PageHeader
+                title="Maintenance Steps"
+                subtitle={maintenanceRecord ? `Equipment: ${maintenanceRecord.equipmentInfo} - ${maintenanceRecord.initialIssueDescription}` : ''}
+            />
 
             <DataTable
                 data={maintenanceSteps}
@@ -434,7 +519,11 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             <div className="maintenance-steps-footer">
                 <div className="total-cost">
                     <h3>Total Record Cost:</h3>
-                    <span>{maintenanceRecord?.totalCost?.toFixed(2) || '0.00'}</span>
+                    <span>{maintenanceSteps.reduce((total, step) => {
+                        // Use actual cost if step is completed and has actual cost, otherwise use estimated cost
+                        const cost = step.isCompleted && step.actualCost ? step.actualCost : step.stepCost;
+                        return total + (cost || 0);
+                    }, 0).toFixed(2)}</span>
                 </div>
             </div>
 
@@ -450,6 +539,18 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                     editingStep={editingStep}
                     maintenanceRecord={maintenanceRecord}
                     restoredFormData={restoredDataForModal}
+                />
+            )}
+
+            {isCompleteModalOpen && (
+                <CompleteStepModal
+                    isOpen={isCompleteModalOpen}
+                    onClose={() => {
+                        setIsCompleteModalOpen(false);
+                        setStepToComplete(null);
+                    }}
+                    onConfirm={handleConfirmComplete}
+                    step={stepToComplete}
                 />
             )}
         </div>

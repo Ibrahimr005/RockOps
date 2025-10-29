@@ -1,45 +1,7 @@
 .maintenance-steps {
-    padding: 20px;
-    background: var(--color-background);
-    min-height: 100vh;
-
-    .maintenance-steps-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 24px;
-        padding: 20px;
-        background: var(--color-white);
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
-        .header-left {
-            h2 {
-                margin: 0 0 8px 0;
-                color: var(--color-text-primary);
-                font-size: 24px;
-                font-weight: 600;
-            }
-
-            p {
-                margin: 0;
-                color: var(--color-text-secondary);
-                font-size: 14px;
-                line-height: 1.4;
-            }
-        }
-
-        .header-right {
-            .btn {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 12px 20px;
-                font-size: 14px;
-                font-weight: 500;
-            }
-        }
-    }
+    padding: 0;
+    background: transparent;
+    min-height: auto;
 
     .step-type-badge {
         display: inline-flex;
@@ -121,34 +83,39 @@
     }
 
     .location-info {
-        .from-location {
+        .current-location {
             display: flex;
             align-items: center;
             gap: 6px;
             color: var(--color-text-primary);
             font-size: 12px;
-            margin-bottom: 2px;
+            font-weight: 500;
 
             svg {
                 color: var(--color-info);
                 font-size: 10px;
             }
         }
-
-        .to-location {
-            color: var(--color-text-secondary);
-            font-size: 11px;
-            margin-left: 16px;
-        }
     }
 
     .cost-info {
         display: flex;
-        align-items: center;
-        gap: 4px;
+        flex-direction: column;
+        gap: 2px;
         color: var(--color-text-primary);
         font-weight: 500;
         font-size: 13px;
+
+        .estimated-cost {
+            color: var(--color-text-secondary);
+            font-size: 12px;
+        }
+
+        .actual-cost {
+            color: var(--color-success);
+            font-weight: 600;
+            font-size: 13px;
+        }
 
         svg {
             color: var(--color-success);
@@ -256,17 +223,6 @@
     .maintenance-steps {
         padding: 16px;
 
-        .maintenance-steps-header {
-            flex-direction: column;
-            gap: 16px;
-            align-items: stretch;
-
-            .header-right {
-                .btn {
-                    justify-content: center;
-                }
-            }
-        }
 
         .step-description {
             max-width: 150px;
@@ -284,15 +240,6 @@
     .maintenance-steps {
         padding: 12px;
 
-        .maintenance-steps-header {
-            padding: 16px;
-
-            .header-left {
-                h2 {
-                    font-size: 20px;
-                }
-            }
-        }
 
         .step-description {
             max-width: 120px;

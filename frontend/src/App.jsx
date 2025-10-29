@@ -63,6 +63,8 @@ import FixedAssets from "./pages/finance/FixedAssets/FixedAssets.jsx";
 import MaintenanceLayout from "./pages/maintenance/MaintenanceLayout.jsx";
 import MaintenanceDashboard from "./pages/maintenance/MaintenanceDashboard/MaintenanceDashboard.jsx";
 import MaintenanceRecords from "./pages/maintenance/MaintenanceRecords/MaintenanceRecords.jsx";
+import StepTypeManagement from "./pages/maintenance/StepTypeManagement/StepTypeManagement.jsx";
+import ContactTypeManagement from "./pages/maintenance/ContactTypeManagement/ContactTypeManagement.jsx";
 
 import {
     ADMIN,
@@ -264,6 +266,8 @@ function App() {
                                         <Route path="records" element={<MaintenanceRecords/>}/>
                                         <Route path="records/:recordId" element={<MaintenanceRecordDetail/>}/>
                                         <Route path="contacts" element={<Contacts/>}/>
+                                        <Route path="step-types" element={<RoleRoute allowedRoles={[ADMIN, MAINTENANCE_MANAGER]}><StepTypeManagement/></RoleRoute>}/>
+                                        <Route path="contact-types" element={<RoleRoute allowedRoles={[ADMIN, MAINTENANCE_MANAGER]}><ContactTypeManagement/></RoleRoute>}/>
                                     </Route>
 
                                     {/* Finance Routes */}

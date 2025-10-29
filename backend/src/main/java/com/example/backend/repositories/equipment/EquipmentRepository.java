@@ -15,4 +15,6 @@ public interface EquipmentRepository extends JpaRepository<Equipment, UUID> {
 
     List<Equipment> findBySiteIsNull();
 
+    List<Equipment> findBySiteId(UUID siteId);
+
 }

@@ -181,10 +181,15 @@ public class S3Service {
         }
     }
 
-    // Equipment-specific methods
+    // Equipment-specific methods (DEPRECATED - use FileStorageService implementations instead)
     public void createEquipmentBucket(Long equipmentId) {
-        String equipmentBucket = "equipment-" + equipmentId;
-        createBucketIfNotExists(equipmentBucket);
+        if (!s3Enabled) {
+            System.out.println("⚠️ S3 is disabled, skipping bucket check");
+            return;
+        }
+        // Ensure the main bucket exists (using single bucket with folder structure)
+        createBucketIfNotExists(bucketName);
+        System.out.println("✅ Using single bucket '" + bucketName + "' with folder structure: equipment/" + equipmentId + "/");
     }
 
     public String uploadEquipmentFile(Long equipmentId, MultipartFile file, String customFileName) throws Exception {
@@ -193,12 +198,13 @@ public class S3Service {
             return "disabled";
         }
 
-        String equipmentBucket = "equipment-" + equipmentId;
         String fileName = customFileName.isEmpty() ?
                 UUID.randomUUID().toString() + "_" + file.getOriginalFilename() :
                 customFileName + "_" + file.getOriginalFilename();
 
-        return uploadFile(equipmentBucket, file, fileName);
+        // Use folder structure: equipment/{equipmentId}/{fileName}
+        String fileKey = "equipment/" + equipmentId + "/" + fileName;
+        return uploadFile(bucketName, file, fileKey);
     }
 
     public String getEquipmentMainPhoto(Long equipmentId) {
@@ -206,18 +212,19 @@ public class S3Service {
             return null;
         }
 
-        String equipmentBucket = "equipment-" + equipmentId;
+        // Search for main image in equipment/{equipmentId}/ folder
+        String folderPrefix = "equipment/" + equipmentId + "/";
         try {
             ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
-                    .bucket(equipmentBucket)
-                    .prefix("Main_Image")
+                    .bucket(bucketName)
+                    .prefix(folderPrefix + "Main_Image")
                     .build();
 
             ListObjectsV2Response response = s3Client.listObjectsV2(listRequest);
 
             if (!response.contents().isEmpty()) {
                 String objectKey = response.contents().get(0).key();
-                return getFileUrl(equipmentBucket, objectKey);
+                return getFileUrl(bucketName, objectKey);
             }
         } catch (Exception e) {
             System.err.println("Error getting equipment main photo: " + e.getMessage());
@@ -231,13 +238,14 @@ public class S3Service {
             return;
         }
 
-        String equipmentBucket = "equipment-" + equipmentId;
+        // Delete from equipment/{equipmentId}/ folder
+        String fileKey = "equipment/" + equipmentId + "/" + fileName;
 
         try {
             // List all objects with the filename prefix
             ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
-                    .bucket(equipmentBucket)
-                    .prefix(fileName)
+                    .bucket(bucketName)
+                    .prefix(fileKey)
                     .build();
 
             ListObjectsV2Response response = s3Client.listObjectsV2(listRequest);
@@ -246,7 +254,7 @@ public class S3Service {
             for (S3Object s3Object : response.contents()) {
                 if (s3Object.key().contains(fileName)) {
                     DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
-                            .bucket(equipmentBucket)
+                            .bucket(bucketName)
                             .key(s3Object.key())
                             .build();
                     s3Client.deleteObject(deleteRequest);
@@ -263,8 +271,9 @@ public class S3Service {
             return null;
         }
 
-        String equipmentBucket = "equipment-" + equipmentId;
-        return getFileUrl(equipmentBucket, documentPath);
+        // Get file URL from equipment/{equipmentId}/ folder
+        String fileKey = "equipment/" + equipmentId + "/" + documentPath;
+        return getFileUrl(bucketName, fileKey);
     }
 
     // Entity file methods (for generic file storage)

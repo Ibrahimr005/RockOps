@@ -20,6 +20,9 @@ public interface MaintenanceRecordRepository extends JpaRepository<MaintenanceRe
     // Find records by equipment
     List<MaintenanceRecord> findByEquipmentIdOrderByCreationDateDesc(UUID equipmentId);
     
+    // Find active maintenance record for equipment
+    Optional<MaintenanceRecord> findFirstByEquipmentIdAndStatusOrderByCreationDateDesc(UUID equipmentId, MaintenanceRecord.MaintenanceStatus status);
+    
     // Find records by status
     List<MaintenanceRecord> findByStatusOrderByCreationDateDesc(MaintenanceRecord.MaintenanceStatus status);
     

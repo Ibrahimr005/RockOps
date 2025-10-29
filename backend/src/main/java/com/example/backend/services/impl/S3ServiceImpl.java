@@ -157,26 +157,71 @@ public class S3ServiceImpl implements FileStorageService {
     // Equipment-specific methods
     @Override
     public void createEquipmentBucket(UUID equipmentId) {
-        String equipmentBucket = "equipment-" + equipmentId.toString();
-        createBucketIfNotExists(equipmentBucket);
+        // No longer creating per-equipment buckets - using single bucket with folder structure
+        createBucketIfNotExists(bucketName);
+        System.out.println("✅ Using single bucket '" + bucketName + "' with folder structure: equipment/" + equipmentId + "/");
     }
 
     @Override
     public String uploadEquipmentFile(UUID equipmentId, MultipartFile file, String customFileName) throws Exception {
-        String equipmentBucket = "equipment-" + equipmentId.toString();
         String fileName = customFileName.isEmpty() ?
                 UUID.randomUUID().toString() + "_" + file.getOriginalFilename() :
                 customFileName + "_" + file.getOriginalFilename();
 
-        return uploadFile(equipmentBucket, file, fileName);
+        // Use folder structure: equipment/{equipmentId}/{fileName}
+        String fileKey = "equipment/" + equipmentId.toString() + "/" + fileName;
+        uploadFile(bucketName, file, fileKey);
+        
+        // Return just the filename, not the full path
+        // getEquipmentFileUrl will add the equipment/{id}/ prefix
+        return fileName;
     }
 
     @Override
     public String getEquipmentMainPhoto(UUID equipmentId) {
-        String equipmentBucket = "equipment-" + equipmentId.toString();
+        // Try new folder structure first: equipment/{equipmentId}/
+        String folderPrefix = "equipment/" + equipmentId.toString() + "/";
         try {
             ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
-                    .bucket(equipmentBucket)
+                    .bucket(bucketName)
+                    .prefix(folderPrefix + "Main_Image")
+                    .build();
+
+            ListObjectsV2Response response = s3Client.listObjectsV2(listRequest);
+
+            if (!response.contents().isEmpty()) {
+                String objectKey = response.contents().get(0).key();
+                System.out.println("✅ Found equipment photo in new structure: " + objectKey + " in bucket: " + bucketName);
+                
+                // For local MinIO with public URL configured, use direct URL
+                if (!s3PublicUrl.isEmpty()) {
+                    String directUrl = s3PublicUrl + "/" + bucketName + "/" + objectKey;
+                    System.out.println("✅ Using direct public URL: " + directUrl);
+                    return directUrl;
+                }
+                
+                // For production AWS S3, use presigned URL for secure access with 7-day expiration
+                try {
+                    String presignedUrl = getPresignedDownloadUrl(bucketName, objectKey, 10080); // 7 days expiration
+                    System.out.println("✅ Generated presigned URL for: " + objectKey);
+                    return presignedUrl;
+                } catch (Exception e) {
+                    System.err.println("❌ Error generating presigned URL: " + e.getMessage());
+                    e.printStackTrace();
+                    return getFileUrl(bucketName, objectKey);
+                }
+            } else {
+                System.out.println("⚠️ No Main_Image found in new structure, checking old bucket structure...");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error searching new structure: " + e.getMessage());
+        }
+
+        // Fallback: Try old bucket structure for backward compatibility
+        String oldBucketName = "equipment-" + equipmentId.toString();
+        try {
+            ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                    .bucket(oldBucketName)
                     .prefix("Main_Image")
                     .build();
 
@@ -184,29 +229,65 @@ public class S3ServiceImpl implements FileStorageService {
 
             if (!response.contents().isEmpty()) {
                 String objectKey = response.contents().get(0).key();
-                // Use presigned URL instead of direct URL for secure access
-                return getPresignedDownloadUrl(equipmentBucket, objectKey, 1440); // 24 hours expiration
+                System.out.println("✅ Found equipment photo in OLD bucket structure: " + objectKey + " in bucket: " + oldBucketName);
+                System.out.println("⚠️ MIGRATION RECOMMENDED: This equipment still uses old bucket structure");
+                
+                // For MinIO with public buckets, use direct URL
+                if (!s3PublicUrl.isEmpty()) {
+                    String directUrl = s3PublicUrl + "/" + oldBucketName + "/" + objectKey;
+                    System.out.println("✅ Using direct public URL (old structure): " + directUrl);
+                    return directUrl;
+                }
+                
+                // For production AWS S3, use presigned URL
+                try {
+                    String presignedUrl = getPresignedDownloadUrl(oldBucketName, objectKey, 10080);
+                    System.out.println("✅ Generated presigned URL (old structure) for: " + objectKey);
+                    return presignedUrl;
+                } catch (Exception e) {
+                    System.err.println("❌ Error generating presigned URL from old bucket: " + e.getMessage());
+                    e.printStackTrace();
+                    return getFileUrl(oldBucketName, objectKey);
+                }
+            } else {
+                System.out.println("⚠️ No Main_Image found in old bucket structure either");
             }
+        } catch (NoSuchBucketException e) {
+            System.out.println("⚠️ Old bucket doesn't exist (expected for new equipment): " + oldBucketName);
         } catch (Exception e) {
-            System.err.println("Error getting equipment main photo: " + e.getMessage());
+            System.err.println("❌ Error searching old bucket structure: " + e.getMessage());
         }
+        
         return null;
     }
 
     @Override
     public void deleteEquipmentFile(UUID equipmentId, String fileName) throws Exception {
-        String equipmentBucket = "equipment-" + equipmentId.toString();
-        deleteFile(equipmentBucket, fileName);
+        // Delete from equipment/{equipmentId}/ folder
+        String fileKey = "equipment/" + equipmentId.toString() + "/" + fileName;
+        deleteFile(bucketName, fileKey);
     }
 
     @Override
     public String getEquipmentFileUrl(UUID equipmentId, String documentPath) {
-        String equipmentBucket = "equipment-" + equipmentId.toString();
+        // Get file URL from equipment/{equipmentId}/ folder
+        String fileKey = "equipment/" + equipmentId.toString() + "/" + documentPath;
+        
+        // For local MinIO with public URL configured, use direct URL
+        if (!s3PublicUrl.isEmpty()) {
+            String directUrl = s3PublicUrl + "/" + bucketName + "/" + fileKey;
+            System.out.println("✅ Using direct public URL for file: " + directUrl);
+            return directUrl;
+        }
+        
+        // For production AWS S3, use presigned URL for secure access
         try {
-            // Use presigned URL instead of direct URL for secure access
-            return getPresignedDownloadUrl(equipmentBucket, documentPath, 1440); // 24 hours expiration
+            String presignedUrl = getPresignedDownloadUrl(bucketName, fileKey, 10080); // 7 days expiration
+            System.out.println("✅ Generated presigned URL for file: " + fileKey);
+            return presignedUrl;
         } catch (Exception e) {
-            System.err.println("Error getting equipment file URL: " + e.getMessage());
+            System.err.println("❌ Error getting equipment file URL: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }

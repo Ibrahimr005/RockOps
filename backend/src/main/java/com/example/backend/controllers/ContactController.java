@@ -82,9 +82,9 @@ public class ContactController {
     }
     
     // Get contacts by type
-    @GetMapping("/type/{contactType}")
-    public ResponseEntity<List<ContactDto>> getContactsByType(@PathVariable Contact.ContactType contactType) {
-        List<ContactDto> contacts = contactService.getContactsByType(contactType);
+    @GetMapping("/type/{contactTypeId}")
+    public ResponseEntity<List<ContactDto>> getContactsByType(@PathVariable UUID contactTypeId) {
+        List<ContactDto> contacts = contactService.getContactsByType(contactTypeId);
         return ResponseEntity.ok(contacts);
     }
     
@@ -103,9 +103,9 @@ public class ContactController {
     }
     
     // Get available contacts by type
-    @GetMapping("/available/type/{contactType}")
-    public ResponseEntity<List<ContactDto>> getAvailableContactsByType(@PathVariable Contact.ContactType contactType) {
-        List<ContactDto> contacts = contactService.getAvailableContactsByType(contactType);
+    @GetMapping("/available/type/{contactTypeId}")
+    public ResponseEntity<List<ContactDto>> getAvailableContactsByType(@PathVariable UUID contactTypeId) {
+        List<ContactDto> contacts = contactService.getAvailableContactsByType(contactTypeId);
         return ResponseEntity.ok(contacts);
     }
     
@@ -113,6 +113,27 @@ public class ContactController {
     @GetMapping("/emergency")
     public ResponseEntity<List<ContactDto>> getEmergencyContacts() {
         List<ContactDto> contacts = contactService.getEmergencyContacts();
+        return ResponseEntity.ok(contacts);
+    }
+    
+    // Get contacts by merchant
+    @GetMapping("/merchant/{merchantId}")
+    public ResponseEntity<List<ContactDto>> getContactsByMerchant(@PathVariable UUID merchantId) {
+        List<ContactDto> contacts = contactService.getContactsByMerchant(merchantId);
+        return ResponseEntity.ok(contacts);
+    }
+    
+    // Get contacts without merchant
+    @GetMapping("/without-merchant")
+    public ResponseEntity<List<ContactDto>> getContactsWithoutMerchant() {
+        List<ContactDto> contacts = contactService.getContactsWithoutMerchant();
+        return ResponseEntity.ok(contacts);
+    }
+    
+    // Get contacts with merchant
+    @GetMapping("/with-merchant")
+    public ResponseEntity<List<ContactDto>> getContactsWithMerchant() {
+        List<ContactDto> contacts = contactService.getContactsWithMerchant();
         return ResponseEntity.ok(contacts);
     }
     

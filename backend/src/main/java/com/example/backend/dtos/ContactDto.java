@@ -37,7 +37,9 @@ public class ContactDto {
     private String alternatePhone;
     
     @NotNull(message = "Contact type is required")
-    private Contact.ContactType contactType;
+    private UUID contactTypeId;
+    
+    private String contactTypeName;
     
     private String company;
     
@@ -56,6 +58,11 @@ public class ContactDto {
     private String notes;
     
     private Boolean isActive;
+    
+    // Merchant relationship
+    private UUID merchantId;
+    
+    private String merchantName;
     
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
