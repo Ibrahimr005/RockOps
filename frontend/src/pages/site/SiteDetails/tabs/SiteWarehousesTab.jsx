@@ -1203,7 +1203,7 @@ const SiteWarehousesTab = ({siteId}) => {
 
 
 
-    if (loading) return <div className="loading-container">Loading warehouse information...</div>;
+    // if (loading) return <div className="loading-container">Loading warehouse information...</div>;
     if (loading) return <ContentLoader
         context="employee-details"
         message="Loading Warehouses"

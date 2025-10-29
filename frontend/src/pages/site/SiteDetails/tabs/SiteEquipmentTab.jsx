@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { FaPlus } from 'react-icons/fa';
 import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import { siteService } from "../../../../services/siteService";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const SiteEquipmentTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -222,7 +223,7 @@ const SiteEquipmentTab = ({siteId}) => {
         }
     };
 
-    if (loading) return <div className="loading-container">{t('site.loadingEquipment')}</div>;
+    if (loading) return <ContentLoader message={"Loading Equipment.."}/> ;
 
     return (
         <div className="site-equipment-tab">

@@ -1,5 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import './EmployeeModals.scss';
+import {useSnackbar} from "../../../../contexts/SnackbarContext.jsx";
+
+// Country data with codes and flags
+const COUNTRIES = [
+    { code: '+1', name: 'United States', flag: '🇺🇸', iso: 'US' },
+    { code: '+1', name: 'Canada', flag: '🇨🇦', iso: 'CA' },
+    { code: '+20', name: 'Egypt', flag: '🇪🇬', iso: 'EG' },
+    { code: '+44', name: 'United Kingdom', flag: '🇬🇧', iso: 'GB' },
+    { code: '+49', name: 'Germany', flag: '🇩🇪', iso: 'DE' },
+    { code: '+33', name: 'France', flag: '🇫🇷', iso: 'FR' },
+    { code: '+971', name: 'United Arab Emirates', flag: '🇦🇪', iso: 'AE' },
+    { code: '+966', name: 'Saudi Arabia', flag: '🇸🇦', iso: 'SA' },
+    { code: '+91', name: 'India', flag: '🇮🇳', iso: 'IN' },
+    { code: '+86', name: 'China', flag: '🇨🇳', iso: 'CN' },
+    { code: '+81', name: 'Japan', flag: '🇯🇵', iso: 'JP' },
+    { code: '+82', name: 'South Korea', flag: '🇰🇷', iso: 'KR' },
+    { code: '+61', name: 'Australia', flag: '🇦🇺', iso: 'AU' },
+    { code: '+55', name: 'Brazil', flag: '🇧🇷', iso: 'BR' },
+    { code: '+52', name: 'Mexico', flag: '🇲🇽', iso: 'MX' },
+    { code: '+7', name: 'Russia', flag: '🇷🇺', iso: 'RU' },
+    { code: '+27', name: 'South Africa', flag: '🇿🇦', iso: 'ZA' },
+    { code: '+234', name: 'Nigeria', flag: '🇳🇬', iso: 'NG' },
+    { code: '+90', name: 'Turkey', flag: '🇹🇷', iso: 'TR' },
+    { code: '+34', name: 'Spain', flag: '🇪🇸', iso: 'ES' },
+];
 
 const calculateMonthlySalary = (jobPosition, baseSalaryOverride, salaryMultiplier) => {
     if (!jobPosition) return 0;
@@ -24,12 +49,15 @@ const calculateMonthlySalary = (jobPosition, baseSalaryOverride, salaryMultiplie
 };
 
 const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) => {
+    const { showSuccess, showError } = useSnackbar();
+
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
         middleName: '',
         email: '',
         phoneNumber: '',
+        countryCode: '+20',
         address: '',
         city: '',
         country: '',
@@ -41,11 +69,10 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
         gender: '',
         status: 'ACTIVE',
         education: '',
-        // Financial details
         baseSalaryOverride: '',
         salaryMultiplier: 1.0,
-        // Relationships
         jobPositionId: '',
+        departmentId: '',
         siteId: ''
     });
 
@@ -54,30 +81,51 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
     const [idBackFile, setIdBackFile] = useState(null);
     const [photoPreview, setPhotoPreview] = useState(null);
     const [errors, setErrors] = useState({});
+    const [departments, setDepartments] = useState([]);
+    const [filteredPositions, setFilteredPositions] = useState([]);
+
+    // Extract phone number and country code
+    const extractPhoneData = (fullPhone) => {
+        if (!fullPhone) return { code: '+20', number: '' };
+
+        // Try to extract country code (assumes format: "+XX XXXXXXXXXX")
+        const match = fullPhone.match(/^(\+\d+)\s*(.+)$/);
+        if (match) {
+            return { code: match[1], number: match[2] };
+        }
+
+        // If no country code found, assume it's just the number
+        return { code: '+20', number: fullPhone };
+    };
 
     // Initialize form data with employee information
     useEffect(() => {
         if (employee) {
-            // Format date for input field (YYYY-MM-DD format)
             const formatDateForInput = (dateString) => {
                 if (!dateString) return '';
                 const date = new Date(dateString);
                 return date.toISOString().split('T')[0];
             };
 
-            // Debug: Log employee data to see what's available
+            // Extract phone number and country code
+            const phoneData = extractPhoneData(employee.phoneNumber);
+
+            // Find the department from the job position
+            const employeePosition = jobPositions.find(pos => pos.id === employee.jobPositionId);
+            const employeeDepartment = employeePosition ? employeePosition.department : '';
+
             console.log('Employee data received in EditEmployeeModal:', employee);
-            console.log('Country field:', employee.country);
 
             setFormData({
                 firstName: employee.firstName || '',
                 lastName: employee.lastName || '',
                 middleName: employee.middleName || '',
                 email: employee.email || '',
-                phoneNumber: employee.phoneNumber || '',
+                phoneNumber: phoneData.number,
+                countryCode: phoneData.code,
                 address: employee.address || '',
                 city: employee.city || '',
-                country: employee.country || '', // This should now be populated if available
+                country: employee.country || '',
                 birthDate: formatDateForInput(employee.birthDate),
                 hireDate: formatDateForInput(employee.hireDate),
                 maritalStatus: employee.maritalStatus || '',
@@ -89,6 +137,7 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                 baseSalaryOverride: employee.baseSalaryOverride || '',
                 salaryMultiplier: employee.salaryMultiplier || 1.0,
                 jobPositionId: employee.jobPositionId || '',
+                departmentId: employeeDepartment,
                 siteId: employee.siteId || ''
             });
 
@@ -97,10 +146,50 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                 setPhotoPreview(employee.photoUrl);
             }
         }
-    }, [employee]);
+    }, [employee, jobPositions]);
+
+    // Extract unique departments from job positions
+    useEffect(() => {
+        if (jobPositions && jobPositions.length > 0) {
+            const uniqueDepartments = [...new Set(jobPositions.map(pos => pos.department))].filter(Boolean);
+            setDepartments(uniqueDepartments.sort());
+        }
+    }, [jobPositions]);
+
+    // Filter positions based on selected department
+    useEffect(() => {
+        if (formData.departmentId) {
+            const filtered = jobPositions.filter(pos => pos.department === formData.departmentId);
+            setFilteredPositions(filtered);
+
+            // Reset job position if the current selection doesn't match the new department
+            if (formData.jobPositionId) {
+                const currentPosition = jobPositions.find(pos => pos.id === formData.jobPositionId);
+                if (currentPosition && currentPosition.department !== formData.departmentId) {
+                    setFormData(prev => ({ ...prev, jobPositionId: '' }));
+                }
+            }
+        } else {
+            setFilteredPositions([]);
+        }
+    }, [formData.departmentId, jobPositions]);
 
     const selectedJobPosition = formData.jobPositionId ?
         jobPositions.find(pos => String(pos.id).trim() === String(formData.jobPositionId).trim()) : null;
+
+    // Calculate minimum birth date (16 years ago)
+    const getMinimumBirthDate = () => {
+        const today = new Date();
+        today.setFullYear(today.getFullYear() - 16);
+        return today.toISOString().split('T')[0];
+    };
+
+    // Calculate maximum birth date (100 years ago, reasonable upper limit)
+    const getMaximumBirthDate = () => {
+        const today = new Date();
+        today.setFullYear(today.getFullYear() - 100);
+        return today.toISOString().split('T')[0];
+    };
 
     // Handle form input changes
     const handleChange = (e) => {
@@ -115,6 +204,44 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
             setErrors({
                 ...errors,
                 [name]: null
+            });
+        }
+    };
+
+    // Handle country code change and auto-fill country name
+    const handleCountryCodeChange = (e) => {
+        const selectedCode = e.target.value;
+        const selectedCountry = COUNTRIES.find(c => c.code === selectedCode);
+
+        setFormData({
+            ...formData,
+            countryCode: selectedCode,
+            country: selectedCountry ? selectedCountry.name : formData.country
+        });
+
+        if (errors.countryCode || errors.country) {
+            setErrors({
+                ...errors,
+                countryCode: null,
+                country: null
+            });
+        }
+    };
+
+    // Handle phone number input - only allow numbers, spaces, hyphens, and parentheses
+    const handlePhoneNumberChange = (e) => {
+        const value = e.target.value;
+        const sanitized = value.replace(/[^\d\s\-()]/g, '');
+
+        setFormData({
+            ...formData,
+            phoneNumber: sanitized
+        });
+
+        if (errors.phoneNumber) {
+            setErrors({
+                ...errors,
+                phoneNumber: null
             });
         }
     };
@@ -136,7 +263,6 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
     // Handle number input changes (for financial fields)
     const handleNumberChange = (e) => {
         const { name, value } = e.target;
-        // Allow empty value or valid number
         if (value === '' || !isNaN(parseFloat(value))) {
             setFormData({
                 ...formData,
@@ -152,7 +278,7 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
         // Required fields
         if (!formData.firstName) newErrors.firstName = 'First name is required';
         if (!formData.lastName) newErrors.lastName = 'Last name is required';
-        // if (!formData.email) newErrors.email = 'Email is required';
+        if (!formData.departmentId) newErrors.departmentId = 'Department is required';
         if (!formData.jobPositionId) newErrors.jobPositionId = 'Job position is required';
         if (!formData.birthDate) newErrors.birthDate = 'Date of Birth is required';
         if (!formData.nationalIDNumber) newErrors.nationalIDNumber = 'National ID is required';
@@ -166,8 +292,43 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
         }
 
         // Phone validation
-        if (formData.phoneNumber && !/^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]*$/.test(formData.phoneNumber)) {
-            newErrors.phoneNumber = 'Phone number is invalid';
+        if (formData.phoneNumber) {
+            const digitsOnly = formData.phoneNumber.replace(/\D/g, '');
+            if (digitsOnly.length < 7) {
+                newErrors.phoneNumber = 'Phone number must contain at least 7 digits';
+            } else if (digitsOnly.length > 15) {
+                newErrors.phoneNumber = 'Phone number is too long';
+            }
+        }
+
+        // Birth date validation - must be at least 16 years old
+        if (formData.birthDate) {
+            const birthDateObj = new Date(formData.birthDate);
+            const today = new Date();
+            const minDate = new Date();
+            minDate.setFullYear(today.getFullYear() - 16);
+
+            today.setHours(0, 0, 0, 0);
+            birthDateObj.setHours(0, 0, 0, 0);
+            minDate.setHours(0, 0, 0, 0);
+
+            if (birthDateObj > today) {
+                newErrors.birthDate = 'Birth date cannot be in the future';
+            } else if (birthDateObj > minDate) {
+                newErrors.birthDate = 'Employee must be at least 16 years old';
+            }
+        }
+
+        // Hire date validation
+        if (formData.hireDate) {
+            const hireDateObj = new Date(formData.hireDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            hireDateObj.setHours(0, 0, 0, 0);
+
+            if (hireDateObj > today) {
+                newErrors.hireDate = 'Hire date cannot be in the future';
+            }
         }
 
         setErrors(newErrors);
@@ -182,31 +343,34 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
             // Prepare final data according to DTO structure
             const finalData = {
                 ...formData,
-                id: employee.id, // Include employee ID for update
+                id: employee.id,
+                // Combine country code with phone number
+                phoneNumber: formData.phoneNumber ? `${formData.countryCode} ${formData.phoneNumber}` : '',
                 jobPositionId: formData.jobPositionId ? formData.jobPositionId : null,
-                // Convert number strings to appropriate types for API
                 bonus: formData.bonus ? parseFloat(formData.bonus) : null,
                 commission: formData.commission ? parseFloat(formData.commission) : null,
                 baseSalaryOverride: formData.baseSalaryOverride ? parseFloat(formData.baseSalaryOverride) : null,
                 salaryMultiplier: formData.salaryMultiplier ? parseFloat(formData.salaryMultiplier) : 1.0,
-                // Convert empty date strings to null to prevent backend parsing errors
                 birthDate: formData.birthDate && formData.birthDate.trim() !== '' ? formData.birthDate : null,
                 hireDate: formData.hireDate && formData.hireDate.trim() !== '' ? formData.hireDate : null,
                 // Preserve existing image URLs if no new files are provided
-                photoUrl: photoFile ? null : employee.photoUrl, // Will be overridden by new upload if photoFile exists
-                idFrontImage: idFrontFile ? null : employee.idFrontImage, // Will be overridden by new upload if idFrontFile exists
-                idBackImage: idBackFile ? null : employee.idBackImage // Will be overridden by new upload if idBackFile exists
+                photoUrl: photoFile ? null : employee.photoUrl,
+                idFrontImage: idFrontFile ? null : employee.idFrontImage,
+                idBackImage: idBackFile ? null : employee.idBackImage
             };
 
-            // Remove siteId as it's not in the DTO
-            const { siteId, ...dtoData } = finalData;
+            // Remove siteId, departmentId, and countryCode as they're not in the DTO
+            const { siteId, departmentId, countryCode, ...dtoData } = finalData;
 
             onSave(dtoData, photoFile, idFrontFile, idBackFile);
+        }
+        else {
+            showError('Please fix the form errors before submitting.');
+
         }
     };
 
     const handleOverlayClick = (e) => {
-        // Only close if clicking on the overlay itself, not on the modal content
         if (e.target === e.currentTarget) {
             onClose();
         }
@@ -272,7 +436,7 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>First Name *</label>
+                                    <label className="r4m-required-field">First Name</label>
                                     <input
                                         type="text"
                                         name="firstName"
@@ -294,7 +458,7 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Last Name *</label>
+                                    <label className="r4m-required-field">Last Name</label>
                                     <input
                                         type="text"
                                         name="lastName"
@@ -306,7 +470,7 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Gender *</label>
+                                    <label className="r4m-required-field">Gender</label>
                                     <select
                                         name="gender"
                                         value={formData.gender}
@@ -322,19 +486,21 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Date of Birth *</label>
+                                    <label className="r4m-required-field">Date of Birth (Must be 16+)</label>
                                     <input
                                         type="date"
                                         name="birthDate"
                                         value={formData.birthDate}
                                         onChange={handleChange}
+                                        max={getMinimumBirthDate()}
+                                        min={getMaximumBirthDate()}
                                         className={errors.birthDate ? 'error' : ''}
                                     />
                                     {errors.birthDate && <span className="r4m-error-message">{errors.birthDate}</span>}
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>National ID Number *</label>
+                                    <label className="r4m-required-field">National ID Number</label>
                                     <input
                                         type="text"
                                         name="nationalIDNumber"
@@ -387,7 +553,7 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                                 <h3>Contact Information</h3>
 
                                 <div className="r4m-form-group">
-                                    <label>Email </label>
+                                    <label>Email</label>
                                     <input
                                         type="email"
                                         name="email"
@@ -399,15 +565,37 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                                 </div>
 
                                 <div className="r4m-form-group">
+                                    <label className="r4m-required-field">Country Code</label>
+                                    <select
+                                        name="countryCode"
+                                        value={formData.countryCode}
+                                        onChange={handleCountryCodeChange}
+                                        className={errors.countryCode ? 'error' : ''}
+                                    >
+                                        {COUNTRIES.map((country) => (
+                                            <option key={`${country.iso}-${country.code}`} value={country.code}>
+                                                {country.flag} {country.name} ({country.code})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.countryCode && <span className="r4m-error-message">{errors.countryCode}</span>}
+                                </div>
+
+                                <div className="r4m-form-group">
                                     <label>Phone Number</label>
-                                    <input
-                                        type="tel"
-                                        name="phoneNumber"
-                                        value={formData.phoneNumber}
-                                        onChange={handleChange}
-                                        className={errors.phoneNumber ? 'error' : ''}
-                                    />
+                                    <div className="r4m-phone-input">
+                                        <span className="r4m-country-code">{formData.countryCode}</span>
+                                        <input
+                                            type="tel"
+                                            name="phoneNumber"
+                                            value={formData.phoneNumber}
+                                            onChange={handlePhoneNumberChange}
+                                            placeholder="123 456 7890"
+                                            className={errors.phoneNumber ? 'error' : ''}
+                                        />
+                                    </div>
                                     {errors.phoneNumber && <span className="r4m-error-message">{errors.phoneNumber}</span>}
+                                    <small className="r4m-field-hint">Enter numbers only (7-15 digits)</small>
                                 </div>
 
                                 <div className="r4m-form-group">
@@ -431,15 +619,17 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Country *</label>
+                                    <label className="r4m-required-field">Country</label>
                                     <input
                                         type="text"
                                         name="country"
                                         value={formData.country}
                                         onChange={handleChange}
                                         className={errors.country ? 'error' : ''}
+                                        readOnly
                                     />
                                     {errors.country && <span className="r4m-error-message">{errors.country}</span>}
+                                    <small className="r4m-field-hint">Auto-filled from country code selection</small>
                                 </div>
                             </div>
 
@@ -463,17 +653,38 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                                 </div>
 
                                 <div className="r4m-form-group">
-                                    <label>Job Position *</label>
+                                    <label className="r4m-required-field">Department</label>
+                                    <select
+                                        name="departmentId"
+                                        value={formData.departmentId}
+                                        onChange={handleChange}
+                                        className={errors.departmentId ? 'error' : ''}
+                                    >
+                                        <option value="">Select Department First</option>
+                                        {departments.map(dept => (
+                                            <option key={dept} value={dept}>
+                                                {dept}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.departmentId && <span className="r4m-error-message">{errors.departmentId}</span>}
+                                </div>
+
+                                <div className="r4m-form-group">
+                                    <label className="r4m-required-field">Job Position</label>
                                     <select
                                         name="jobPositionId"
                                         value={formData.jobPositionId}
                                         onChange={handleChange}
                                         className={errors.jobPositionId ? 'error' : ''}
+                                        disabled={!formData.departmentId}
                                     >
-                                        <option value="">Select Job Position</option>
-                                        {jobPositions.map(pos => (
+                                        <option value="">
+                                            {formData.departmentId ? 'Select Job Position' : 'Select Department First'}
+                                        </option>
+                                        {filteredPositions.map(pos => (
                                             <option key={pos.id} value={pos.id}>
-                                                {pos.positionName} - {pos.department}
+                                                {pos.positionName}
                                             </option>
                                         ))}
                                     </select>
@@ -509,12 +720,13 @@ const EditEmployeeModal = ({ employee, onClose, onSave, jobPositions, sites }) =
                                 )}
 
                                 <div className="r4m-form-group">
-                                    <label>Hire Date *</label>
+                                    <label className="r4m-required-field">Hire Date</label>
                                     <input
                                         type="date"
                                         name="hireDate"
                                         value={formData.hireDate}
                                         onChange={handleChange}
+                                        max={new Date().toISOString().split('T')[0]}
                                         className={errors.hireDate ? 'error' : ''}
                                     />
                                     {errors.hireDate && <span className="r4m-error-message">{errors.hireDate}</span>}
