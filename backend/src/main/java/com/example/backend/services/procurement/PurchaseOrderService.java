@@ -18,6 +18,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.backend.models.procurement.PurchaseOrderIssue;
+import com.example.backend.models.procurement.IssueStatus;
+import com.example.backend.models.procurement.PurchaseOrderResolutionType;
+import com.example.backend.repositories.procurement.PurchaseOrderIssueRepository;
+import com.example.backend.dto.procurement.ReportIssueRequestDTO;
+
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,6 +38,7 @@ public class PurchaseOrderService {
     private final OfferTimelineService offerTimelineService; // ADDED
     private final ItemRepository itemRepository; // ADD
     private final WarehouseRepository warehouseRepository; // ADD
+    private final PurchaseOrderIssueRepository issueRepository;
 
     @Autowired
     public PurchaseOrderService(
@@ -39,15 +46,18 @@ public class PurchaseOrderService {
             OfferItemRepository offerItemRepository,
             PurchaseOrderRepository purchaseOrderRepository,
             PurchaseOrderItemRepository purchaseOrderItemRepository,
-            OfferTimelineService offerTimelineService, ItemRepository itemRepository, // ADD
-            WarehouseRepository warehouseRepository) { // ADD { // ADDED PARAMETER
+            OfferTimelineService offerTimelineService,
+            ItemRepository itemRepository,
+            WarehouseRepository warehouseRepository,
+            PurchaseOrderIssueRepository issueRepository) {  // ← ADD THIS LINE
         this.offerRepository = offerRepository;
         this.offerItemRepository = offerItemRepository;
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.purchaseOrderItemRepository = purchaseOrderItemRepository;
-        this.offerTimelineService = offerTimelineService; // ADDED
-        this.itemRepository = itemRepository; // ADD
-        this.warehouseRepository = warehouseRepository; // ADD
+        this.offerTimelineService = offerTimelineService;
+        this.itemRepository = itemRepository;
+        this.warehouseRepository = warehouseRepository;
+        this.issueRepository = issueRepository;  // ← ADD THIS LINE
     }
 
     /**
@@ -426,4 +436,201 @@ public class PurchaseOrderService {
             System.out.println("Result: PENDING (no items received yet)");
         }
     }
+    /**
+     * Report issues with purchase order items
+     * Changes PO status to DISPUTED
+     */
+    @Transactional
+    public PurchaseOrder reportIssues(UUID purchaseOrderId, List<ReportIssueRequestDTO.IssueItemDTO> issueItems, String comments, String username) {
+        System.out.println("=== Starting reportIssues ===");
+        System.out.println("Purchase Order ID: " + purchaseOrderId);
+        System.out.println("Issue Items Count: " + issueItems.size());
+
+        // 1. Get the purchase order
+        PurchaseOrder purchaseOrder = purchaseOrderRepository.findById(purchaseOrderId)
+                .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
+
+        System.out.println("Found Purchase Order: " + purchaseOrder.getPoNumber());
+
+        // 2. Validate that PO is in correct status for reporting issues
+        if (!"PENDING".equals(purchaseOrder.getStatus()) && !"PARTIAL".equals(purchaseOrder.getStatus())) {
+            throw new IllegalStateException("Cannot report issues for purchase order in status: " + purchaseOrder.getStatus());
+        }
+
+        // 3. Create issue records for each reported item
+        List<PurchaseOrderIssue> createdIssues = new ArrayList<>();
+
+        for (ReportIssueRequestDTO.IssueItemDTO issueItem : issueItems) {
+            // Find the purchase order item
+            PurchaseOrderItem poItem = purchaseOrder.getPurchaseOrderItems().stream()
+                    .filter(item -> item.getId().equals(issueItem.getPurchaseOrderItemId()))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Purchase Order Item not found: " + issueItem.getPurchaseOrderItemId()));
+
+            System.out.println("Creating issue for item: " + poItem.getId() + " - Type: " + issueItem.getIssueType());
+
+            // Create the issue record
+            PurchaseOrderIssue issue = PurchaseOrderIssue.builder()
+                    .purchaseOrder(purchaseOrder)
+                    .purchaseOrderItem(poItem)
+                    .issueType(issueItem.getIssueType())
+                    .issueStatus(IssueStatus.REPORTED)
+                    .reportedBy(username)
+                    .reportedAt(LocalDateTime.now())
+                    .issueDescription(comments)
+                    .build();
+
+            PurchaseOrderIssue savedIssue = issueRepository.save(issue);
+            createdIssues.add(savedIssue);
+
+            // Update the item status to DISPUTED
+            poItem.setStatus("DISPUTED");
+            purchaseOrderItemRepository.save(poItem);
+        }
+
+        // 4. Update purchase order status to DISPUTED
+        purchaseOrder.setStatus("DISPUTED");
+        purchaseOrder.setUpdatedAt(LocalDateTime.now());
+        PurchaseOrder savedPO = purchaseOrderRepository.save(purchaseOrder);
+
+        System.out.println("=== reportIssues completed successfully ===");
+        System.out.println("Created " + createdIssues.size() + " issue records");
+        System.out.println("PO Status: " + savedPO.getStatus());
+
+        return savedPO;
+    }
+
+    /**
+     * Resolve issues for purchase order items
+     * Updates issue status and may change PO status based on resolution
+     */
+    @Transactional
+    public PurchaseOrder resolveIssues(UUID purchaseOrderId, PurchaseOrderResolutionType resolutionType, List<UUID> itemIds, String resolutionNotes, String username) {
+        System.out.println("=== Starting resolveIssues ===");
+        System.out.println("Purchase Order ID: " + purchaseOrderId);
+        System.out.println("Resolution Type: " + resolutionType);
+        System.out.println("Items to resolve: " + itemIds.size());
+
+        // 1. Get the purchase order
+        PurchaseOrder purchaseOrder = purchaseOrderRepository.findById(purchaseOrderId)
+                .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
+
+        System.out.println("Found Purchase Order: " + purchaseOrder.getPoNumber());
+
+        // 2. Validate that PO is DISPUTED
+        if (!"DISPUTED".equals(purchaseOrder.getStatus())) {
+            throw new IllegalStateException("Cannot resolve issues for purchase order not in DISPUTED status. Current status: " + purchaseOrder.getStatus());
+        }
+
+        // 3. Resolve issues for each item
+        for (UUID itemId : itemIds) {
+            // Find active issues for this item
+            List<PurchaseOrderIssue> activeIssues = issueRepository.findByPurchaseOrderItemId(itemId)
+                    .stream()
+                    .filter(issue -> issue.getIssueStatus() == IssueStatus.REPORTED)
+                    .collect(Collectors.toList());
+
+            System.out.println("Found " + activeIssues.size() + " active issues for item: " + itemId);
+
+            // Resolve each issue
+            for (PurchaseOrderIssue issue : activeIssues) {
+                issue.setIssueStatus(IssueStatus.RESOLVED);
+                issue.setResolutionType(resolutionType);
+                issue.setResolvedBy(username);
+                issue.setResolvedAt(LocalDateTime.now());
+                issue.setResolutionNotes(resolutionNotes);
+                issueRepository.save(issue);
+            }
+
+            // Update purchase order item status based on resolution type
+            PurchaseOrderItem poItem = purchaseOrder.getPurchaseOrderItems().stream()
+                    .filter(item -> item.getId().equals(itemId))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Purchase Order Item not found: " + itemId));
+
+            switch (resolutionType) {
+                case REDELIVERY:
+                    poItem.setStatus("PENDING"); // Waiting for redelivery
+                    break;
+                case REFUND:
+                case ACCEPT_SHORTAGE:
+                    poItem.setStatus("COMPLETED"); // Mark as complete (with issue accepted)
+                    break;
+                case REPLACEMENT_PO:
+                    poItem.setStatus("CANCELLED"); // Will be replaced by new PO
+                    break;
+            }
+            purchaseOrderItemRepository.save(poItem);
+        }
+
+        // 4. Check if all issues are resolved
+        long remainingIssues = issueRepository.countByPurchaseOrderIdAndIssueStatus(
+                purchaseOrderId, IssueStatus.REPORTED);
+
+        System.out.println("Remaining unresolved issues: " + remainingIssues);
+
+        // 5. Update PO status based on remaining issues and items
+        if (remainingIssues == 0) {
+            // No more active issues - check item statuses
+            updatePurchaseOrderStatusAfterResolution(purchaseOrder);
+        }
+
+        purchaseOrder.setUpdatedAt(LocalDateTime.now());
+        PurchaseOrder savedPO = purchaseOrderRepository.save(purchaseOrder);
+
+        System.out.println("=== resolveIssues completed successfully ===");
+        System.out.println("Final PO Status: " + savedPO.getStatus());
+
+        return savedPO;
+    }
+
+    /**
+     * Update purchase order status after issue resolution
+     */
+    private void updatePurchaseOrderStatusAfterResolution(PurchaseOrder purchaseOrder) {
+        List<PurchaseOrderItem> items = purchaseOrder.getPurchaseOrderItems();
+
+        long totalItems = items.size();
+        long completedItems = items.stream()
+                .filter(item -> "COMPLETED".equals(item.getStatus()))
+                .count();
+        long pendingItems = items.stream()
+                .filter(item -> "PENDING".equals(item.getStatus()))
+                .count();
+        long partialItems = items.stream()
+                .filter(item -> "PARTIAL".equals(item.getStatus()))
+                .count();
+
+        System.out.println("\n>>> Calculating PO Status After Resolution <<<");
+        System.out.println("Total items: " + totalItems);
+        System.out.println("Completed items: " + completedItems);
+        System.out.println("Pending items: " + pendingItems);
+        System.out.println("Partial items: " + partialItems);
+
+        if (completedItems == totalItems) {
+            purchaseOrder.setStatus("COMPLETED");
+            System.out.println("Result: COMPLETED");
+        } else if (pendingItems > 0 || partialItems > 0) {
+            purchaseOrder.setStatus("PENDING");
+            System.out.println("Result: PENDING (awaiting redelivery or additional items)");
+        } else {
+            purchaseOrder.setStatus("PARTIAL");
+            System.out.println("Result: PARTIAL");
+        }
+    }
+
+    /**
+     * Get all issues for a purchase order
+     */
+    public List<PurchaseOrderIssue> getIssuesForPurchaseOrder(UUID purchaseOrderId) {
+        return issueRepository.findByPurchaseOrderId(purchaseOrderId);
+    }
+
+    /**
+     * Get active (unresolved) issues for a purchase order
+     */
+    public List<PurchaseOrderIssue> getActiveIssuesForPurchaseOrder(UUID purchaseOrderId) {
+        return issueRepository.findByPurchaseOrderIdAndIssueStatus(purchaseOrderId, IssueStatus.REPORTED);
+    }
+
 }

@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.*;
 import com.example.backend.dto.procurement.ReceivedItemDTO; // ADD
 import com.example.backend.dto.procurement.ReceiveItemsRequestDTO; // ADD
 
+import com.example.backend.dto.procurement.ReportIssueRequestDTO;
+import com.example.backend.dto.procurement.ResolveIssueRequestDTO;
+import com.example.backend.models.procurement.PurchaseOrderIssue;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -213,6 +217,157 @@ public class PurchaseOrderController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                     "success", false,
                     "message", "Error receiving items: " + e.getMessage()
+            ));
+        }
+    }
+
+    // ============================================
+// ADD TO YOUR PurchaseOrderController.java
+// ============================================
+
+    /**
+     * Report issues with purchase order items
+     * POST /api/v1/purchaseOrders/{purchaseOrderId}/report-issue
+     */
+    @PostMapping("/{purchaseOrderId}/report-issue")
+    public ResponseEntity<?> reportIssue(
+            @PathVariable UUID purchaseOrderId,
+            @RequestBody ReportIssueRequestDTO request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            System.out.println("=== Report Issue Endpoint Called ===");
+            System.out.println("PO ID: " + purchaseOrderId);
+            System.out.println("Issues to report: " + request.getItems().size());
+
+            String username = userDetails.getUsername();
+
+            PurchaseOrder updatedPO = purchaseOrderService.reportIssues(
+                    purchaseOrderId,
+                    request.getItems(),
+                    request.getComments(),
+                    username
+            );
+
+            // Get the created issues
+            List<PurchaseOrderIssue> issues = purchaseOrderService.getActiveIssuesForPurchaseOrder(purchaseOrderId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Issues reported successfully. Purchase order status changed to DISPUTED.");
+            response.put("purchaseOrder", updatedPO);
+            response.put("issuesCount", issues.size());
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalStateException e) {
+            System.err.println("Validation error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            System.err.println("Error reporting issue: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Error reporting issue: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Resolve issues for purchase order items
+     * POST /api/v1/purchaseOrders/{purchaseOrderId}/resolve-issue
+     */
+    @PostMapping("/{purchaseOrderId}/resolve-issue")
+    public ResponseEntity<?> resolveIssue(
+            @PathVariable UUID purchaseOrderId,
+            @RequestBody ResolveIssueRequestDTO request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            System.out.println("=== Resolve Issue Endpoint Called ===");
+            System.out.println("PO ID: " + purchaseOrderId);
+            System.out.println("Resolution Type: " + request.getResolutionType());
+            System.out.println("Items to resolve: " + request.getItems().size());
+
+            String username = userDetails.getUsername();
+
+            PurchaseOrder updatedPO = purchaseOrderService.resolveIssues(
+                    purchaseOrderId,
+                    request.getResolutionType(),
+                    request.getItems(),
+                    request.getNotes(),
+                    username
+            );
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Issues resolved successfully.");
+            response.put("purchaseOrder", updatedPO);
+            response.put("resolutionType", request.getResolutionType());
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalStateException e) {
+            System.err.println("Validation error: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        } catch (Exception e) {
+            System.err.println("Error resolving issue: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Error resolving issue: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Get all issues for a purchase order
+     * GET /api/v1/purchaseOrders/{purchaseOrderId}/issues
+     */
+    @GetMapping("/{purchaseOrderId}/issues")
+    public ResponseEntity<?> getIssues(@PathVariable UUID purchaseOrderId) {
+        try {
+            List<PurchaseOrderIssue> issues = purchaseOrderService.getIssuesForPurchaseOrder(purchaseOrderId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("issues", issues);
+            response.put("count", issues.size());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Error fetching issues: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * Get active (unresolved) issues for a purchase order
+     * GET /api/v1/purchaseOrders/{purchaseOrderId}/issues/active
+     */
+    @GetMapping("/{purchaseOrderId}/issues/active")
+    public ResponseEntity<?> getActiveIssues(@PathVariable UUID purchaseOrderId) {
+        try {
+            List<PurchaseOrderIssue> activeIssues = purchaseOrderService.getActiveIssuesForPurchaseOrder(purchaseOrderId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("issues", activeIssues);
+            response.put("count", activeIssues.size());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Error fetching active issues: " + e.getMessage()
             ));
         }
     }
