@@ -8,6 +8,7 @@ import { FaPlus } from 'react-icons/fa';
 import Snackbar from "../../../../components/common/Snackbar/Snackbar";
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import "../SiteDetails.scss";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 
 const SiteEmployeesTab = ({ siteId }) => {
@@ -293,7 +294,7 @@ const SiteEmployeesTab = ({ siteId }) => {
     };
 
     if (loading) {
-        return <div className="loading-container">{t('site.loadingEmployees')}</div>;
+        return <ContentLoader message={"Loading Employees"} /> ;
     }
 
     return (

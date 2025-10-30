@@ -419,74 +419,18 @@ const EmployeesList = () => {
     // Define filterable columns - removed Department from here
     const filterableColumns = [
         { header: 'Name', accessor: 'fullName' },
-        { header: 'Email', accessor: 'email' }
+        { header: 'Email', accessor: 'email' },
+        {header: 'Department', accessor: 'jobPositionDepartment', filterType: 'select' },
+        {header: 'Position', accessor: 'jobPositionName', filterType: 'select' },
+        {header: 'Status', accessor: 'status', filterType: 'select' },
+        {header: 'Contract Type', accessor: 'jobPositionType', filterType: 'select' },
+
+
+
     ];
 
     // Define custom filters - Position, Department, Status, and Contract Type as dropdowns
     const customFilters = [
-        {
-            label: 'Department',
-            component: (
-                <select
-                    value={departmentFilter}
-                    onChange={(e) => setDepartmentFilter(e.target.value)}
-                    className="filter-select"
-                >
-                    <option value="">All Departments</option>
-                    {departments.map(dept => (
-                        <option key={dept} value={dept}>{dept}</option>
-                    ))}
-                </select>
-            )
-        },
-        {
-            label: 'Position',
-            component: (
-                <select
-                    value={positionFilter}
-                    onChange={(e) => setPositionFilter(e.target.value)}
-                    className="filter-select"
-                >
-                    <option value="">All Positions</option>
-                    {positions.map(position => (
-                        <option key={position} value={position}>{position}</option>
-                    ))}
-                </select>
-            )
-        },
-        {
-            label: 'Status',
-            component: (
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="filter-select"
-                >
-                    <option value="">All Statuses</option>
-                    <option value="ACTIVE">Active</option>
-                    <option value="INACTIVE">Inactive</option>
-                    <option value="INVITED">Invited</option>
-                    <option value="ON_LEAVE">On Leave</option>
-                    <option value="SUSPENDED">Suspended</option>
-                    <option value="TERMINATED">Terminated</option>
-                </select>
-            )
-        },
-        {
-            label: 'Contract Type',
-            component: (
-                <select
-                    value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value)}
-                    className="filter-select"
-                >
-                    <option value="">All Types</option>
-                    <option value="HOURLY">Hourly</option>
-                    <option value="DAILY">Daily</option>
-                    <option value="MONTHLY">Monthly</option>
-                </select>
-            )
-        }
     ];
 
     // Define actions for each row
