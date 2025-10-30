@@ -252,4 +252,68 @@ export const purchaseOrderService = {
             throw error;
         }
     },
+
+
+    reportIssue: async (purchaseOrderId, issueData) => {
+        try {
+            console.log('Reporting issue for PO:', purchaseOrderId);
+            console.log('Issue data:', issueData);
+
+            const response = await apiClient.post(
+                PURCHASE_ORDER_ENDPOINTS.REPORT_ISSUE(purchaseOrderId),
+                issueData
+            );
+
+            console.log('Report issue response:', response);
+            return response.data || response;
+        } catch (error) {
+            console.error('Error reporting issue:', error);
+            throw error;
+        }
+    },
+
+    // Resolve issues for purchase order items
+    resolveIssue: async (purchaseOrderId, resolutionData) => {
+        try {
+            console.log('Resolving issue for PO:', purchaseOrderId);
+            console.log('Resolution data:', resolutionData);
+
+            const response = await apiClient.post(
+                PURCHASE_ORDER_ENDPOINTS.RESOLVE_ISSUE(purchaseOrderId),
+                resolutionData
+            );
+
+            console.log('Resolve issue response:', response);
+            return response.data || response;
+        } catch (error) {
+            console.error('Error resolving issue:', error);
+            throw error;
+        }
+    },
+
+    // Get all issues for a purchase order
+    getIssues: async (purchaseOrderId) => {
+        try {
+            const response = await apiClient.get(
+                PURCHASE_ORDER_ENDPOINTS.GET_ISSUES(purchaseOrderId)
+            );
+            return response.data || response;
+        } catch (error) {
+            console.error('Error fetching issues:', error);
+            throw error;
+        }
+    },
+
+    // Get active (unresolved) issues for a purchase order
+    getActiveIssues: async (purchaseOrderId) => {
+        try {
+            const response = await apiClient.get(
+                PURCHASE_ORDER_ENDPOINTS.GET_ACTIVE_ISSUES(purchaseOrderId)
+            );
+            return response.data || response;
+        } catch (error) {
+            console.error('Error fetching active issues:', error);
+            throw error;
+        }
+    },
 };

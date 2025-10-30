@@ -724,8 +724,15 @@ export const PURCHASE_ORDER_ENDPOINTS = {
     BY_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/purchase-order`,
     UPDATE_STATUS: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}/status`,
     FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`,
-    RECEIVE_ITEMS: (id) => `/api/v1/purchaseOrders/${id}/receive` // ADD THIS
+    RECEIVE_ITEMS: (id) => `/api/v1/purchaseOrders/${id}/receive`,
+    // ADD THESE 4 NEW ENDPOINTS:
+    REPORT_ISSUE: (id) => `/api/v1/purchaseOrders/${id}/report-issue`,
+    RESOLVE_ISSUE: (id) => `/api/v1/purchaseOrders/${id}/resolve-issue`,
+    GET_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues`,
+    GET_ACTIVE_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues/active`
 };
+
+
 export const MAINTENANCE_ENDPOINTS = {
     // Dashboard
     DASHBOARD: '/api/maintenance/dashboard',

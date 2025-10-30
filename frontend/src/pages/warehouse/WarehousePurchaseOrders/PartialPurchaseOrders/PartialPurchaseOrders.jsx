@@ -3,6 +3,7 @@ import { purchaseOrderService } from '../../../../services/procurement/purchaseO
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import PurchaseOrderViewModal from '../../../../components/procurement/PurchaseOrderViewModal/PurchaseOrderViewModal';
 import PurchaseOrderApprovalModal from '../PurchaseOrderApproveModal/PurchaseOrderApprovalModal';
+import ReportIssueModal from '../ReportIssueModal/ReportIssueModal';
 
 const PartialPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
     const [partialOrders, setPartialOrders] = useState([]);
@@ -11,6 +12,10 @@ const PartialPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
     const [showModal, setShowModal] = useState(false);
     const [showApprovalModal, setShowApprovalModal] = useState(false);
     const [purchaseOrderToApprove, setPurchaseOrderToApprove] = useState(null);
+
+    // Report Issue states
+    const [showReportIssueModal, setShowReportIssueModal] = useState(false);
+    const [purchaseOrderToReport, setPurchaseOrderToReport] = useState(null);
 
     // Fetch initial data
     useEffect(() => {
@@ -48,6 +53,12 @@ const PartialPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         setShowApprovalModal(true);
     };
 
+    // Handle report issue
+    const handleReportIssue = (purchaseOrder) => {
+        setPurchaseOrderToReport(purchaseOrder);
+        setShowReportIssueModal(true);
+    };
+
     // Handle approval from modal
     const handleApprovalConfirm = async (updatedPurchaseOrder) => {
         try {
@@ -78,10 +89,57 @@ const PartialPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         }
     };
 
+    // Handle issue report submission - WITH API INTEGRATION
+    const handleIssueReportSubmit = async (issueData) => {
+        try {
+            console.log('Submitting issue report:', issueData);
+
+            // Call the API to report the issue
+            const response = await purchaseOrderService.reportIssue(
+                issueData.purchaseOrderId,
+                {
+                    items: issueData.items,
+                    comments: issueData.comments
+                }
+            );
+
+            console.log('Issue report response:', response);
+
+            if (onShowSnackbar) {
+                onShowSnackbar(
+                    `Issue reported successfully for purchase order ${purchaseOrderToReport.poNumber}. Status changed to DISPUTED.`,
+                    'success'
+                );
+            }
+
+            // Close modal
+            setShowReportIssueModal(false);
+            setPurchaseOrderToReport(null);
+
+            // Refresh the data
+            await fetchPartialPurchaseOrders();
+
+        } catch (error) {
+            console.error('Error reporting issue:', error);
+            if (onShowSnackbar) {
+                onShowSnackbar(
+                    `Failed to report issue: ${error.response?.data?.message || error.message}`,
+                    'error'
+                );
+            }
+        }
+    };
+
     // Handle closing approval modal
     const handleApprovalModalClose = () => {
         setShowApprovalModal(false);
         setPurchaseOrderToApprove(null);
+    };
+
+    // Handle closing report issue modal
+    const handleReportIssueModalClose = () => {
+        setShowReportIssueModal(false);
+        setPurchaseOrderToReport(null);
     };
 
     // Handle row click to show purchase order details
@@ -158,6 +216,18 @@ const PartialPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
             ),
             onClick: (row) => handleContinueReceiving(row),
             className: 'approve'
+        },
+        {
+            label: 'Report Issue',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+            ),
+            onClick: (row) => handleReportIssue(row),
+            className: 'danger'
         }
     ];
 
@@ -177,7 +247,7 @@ const PartialPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
                 showFilters={true}
                 filterableColumns={filterableColumns}
                 actions={actions}
-                actionsColumnWidth="100px"
+                actionsColumnWidth="150px"
                 onRowClick={handleRowClick}
             />
 
@@ -194,6 +264,14 @@ const PartialPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
                 isOpen={showApprovalModal}
                 onClose={handleApprovalModalClose}
                 onApprove={handleApprovalConfirm}
+            />
+
+            {/* Report Issue Modal */}
+            <ReportIssueModal
+                purchaseOrder={purchaseOrderToReport}
+                isOpen={showReportIssueModal}
+                onClose={handleReportIssueModalClose}
+                onSubmit={handleIssueReportSubmit}
             />
         </div>
     );
