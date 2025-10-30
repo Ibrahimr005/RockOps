@@ -35,7 +35,7 @@ public interface MaintenanceStepRepository extends JpaRepository<MaintenanceStep
     List<MaintenanceStep> findByResponsibleContactId(UUID contactId);
     
     // Find steps by type
-    List<MaintenanceStep> findByStepType(MaintenanceStep.StepType stepType);
+    List<MaintenanceStep> findByStepType(MaintenanceStep stepType);
     
     // Find steps that need follow-up (no contact in last 3 days)
     @Query("SELECT s FROM MaintenanceStep s WHERE s.actualEndDate IS NULL AND " +
@@ -74,7 +74,7 @@ public interface MaintenanceStepRepository extends JpaRepository<MaintenanceStep
     
     // Find steps by maintenance record and type
     List<MaintenanceStep> findByMaintenanceRecordIdAndStepTypeOrderByStartDateAsc(UUID maintenanceRecordId, 
-                                                                                 MaintenanceStep.StepType stepType);
+                                                                                 MaintenanceStep stepType);
     
     // Get steps with longest duration
     @Query(value = "SELECT * FROM maintenance_steps WHERE actual_end_date IS NOT NULL " +

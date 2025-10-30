@@ -6,6 +6,7 @@ import { siteService } from "../../../../services/siteService";
 import { useNavigate } from "react-router-dom";
 import { FaPlus } from 'react-icons/fa';
 import Snackbar from "../../../../components/common/Snackbar/Snackbar";
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import "../SiteDetails.scss";
 
 
@@ -23,6 +24,10 @@ const SiteEmployeesTab = ({ siteId }) => {
         show: false,
         message: '',
         type: 'success'
+    });
+    const [unassignConfirmation, setUnassignConfirmation] = useState({
+        isVisible: false,
+        employeeId: null
     });
 
     const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || currentUser?.role === "ADMIN";
@@ -96,6 +101,19 @@ const SiteEmployeesTab = ({ siteId }) => {
             fetchEmployees();
         }
     }, [siteId]);
+
+    useEffect(() => {
+        if (showModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        // Cleanup function to ensure scroll is restored if component unmounts
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showModal]);
 
     const fetchEmployees = async () => {
         try {
@@ -222,7 +240,31 @@ const SiteEmployeesTab = ({ siteId }) => {
     };
 
     const handleUnassignEmployee = async (employeeId) => {
+            setUnassignConfirmation({
+                isVisible: true,
+                employeeId: employeeId  // Note: This seems to be a copy-paste error, should be employeeId
+            });
+        // try {
+        //     await siteService.removeEmployee(siteId, employeeId);
+        //     await fetchEmployees();
+        //     setSnackbar({
+        //         show: true,
+        //         message: 'Employee successfully unassigned from site',
+        //         type: 'success'
+        //     });
+        // } catch (err) {
+        //     console.error("Error unassigning employee:", err);
+        //     setSnackbar({
+        //         show: true,
+        //         message: 'Failed to unassign employee',
+        //         type: 'error'
+        //     });
+        // }
+    };
+
+    const confirmUnassignEmployee = async () => {
         try {
+            const employeeId = unassignConfirmation.employeeId;
             await siteService.removeEmployee(siteId, employeeId);
             await fetchEmployees();
             setSnackbar({
@@ -237,6 +279,9 @@ const SiteEmployeesTab = ({ siteId }) => {
                 message: 'Failed to unassign employee',
                 type: 'error'
             });
+        } finally {
+            // Close the confirmation dialog
+            setUnassignConfirmation({ isVisible: false, employeeId: null });
         }
     };
 
@@ -363,7 +408,18 @@ const SiteEmployeesTab = ({ siteId }) => {
                     </div>
                 </div>
             )}
+            <ConfirmationDialog
+                isVisible={unassignConfirmation.isVisible}
+                type="warning"
+                title="Unassign Employee"
+                message="Are you sure you want to unassign this employee from the site?"
+                confirmText="Unassign"
+                cancelText="Cancel"
+                onConfirm={confirmUnassignEmployee}
+                onCancel={() => setUnassignConfirmation({ isVisible: false, employeeId: null })}
+            />
         </div>
+
     );
 };
 

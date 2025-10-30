@@ -102,25 +102,49 @@ public class DocumentService {
         // Save document first to get the ID
         Document savedDocument = documentRepository.save(document);
 
-        // Upload file to MinIO
+        // Upload file to MinIO using new folder structure
         try {
-            // Create bucket for the entity if it doesn't exist
-            String bucketName = entityType.name().toLowerCase() + "-" + entityId.toString();
-            minioService.createBucketIfNotExists(bucketName);
+            // For equipment, use equipment-specific method with folder structure
+            if (entityType == EntityType.EQUIPMENT) {
+                // Use equipment folder structure: equipment/{equipmentId}/{fileName}
+                // Custom filename prefix (without original filename extension)
+                String customFilePrefix = name + "_" + savedDocument.getId().toString();
+                
+                // Upload file - this will add "_originalFilename" to the prefix
+                String uploadedFileName = minioService.uploadEquipmentFile(entityId, file, customFilePrefix);
+                
+                // Get the file URL (will use direct URL for MinIO or presigned URL for S3)
+                String fileUrl = minioService.getEquipmentFileUrl(entityId, uploadedFileName);
+                savedDocument.setFileUrl(fileUrl);
+                
+                System.out.println("✅ Uploaded equipment document to: equipment/" + entityId + "/" + uploadedFileName);
+                System.out.println("✅ Document URL: " + fileUrl);
+            } else {
+                // For non-equipment entities, use folder structure in main bucket
+                // Format: {entityType}/{entityId}/{fileName}
+                String folderPath = entityType.name().toLowerCase() + "/" + entityId.toString();
+                String fileName = name + "_" + savedDocument.getId().toString() + "_" + file.getOriginalFilename();
+                String fileKey = folderPath + "/" + fileName;
+                
+                // Ensure main bucket exists
+                minioService.createBucketIfNotExists("rockops");
+                
+                // Upload file to folder structure
+                minioService.uploadFile("rockops", file, fileKey);
+                
+                // Get the file URL
+                String fileUrl = minioService.getFileUrl("rockops", fileKey);
+                savedDocument.setFileUrl(fileUrl);
+                
+                System.out.println("✅ Uploaded document to: " + fileKey);
+            }
 
-            // Upload the file with the document prefix and the document ID
-            String fileName = name + savedDocument.getId().toString();
-            minioService.uploadFile(bucketName, file, fileName);
-
-            // Set the file URL in the document
-            String fileUrl = minioService.getFileUrl(bucketName, fileName);
-            savedDocument.setFileUrl(fileUrl);
-
-            // Update the document
+            // Update the document with file URL
             savedDocument = documentRepository.save(savedDocument);
         } catch (Exception e) {
-            // Log error but continue
-            System.err.println("Error uploading file to MinIO: " + e.getMessage());
+            // Log error and throw
+            System.err.println("❌ Error uploading file to storage: " + e.getMessage());
+            e.printStackTrace();
             throw e;
         }
 
@@ -162,19 +186,61 @@ public class DocumentService {
         Document document = documentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Document not found with id: " + id));
 
-        // Delete the file from MinIO if exists
+        // Delete the file from storage if exists
         if (document.getFileUrl() != null && !document.getFileUrl().isEmpty()) {
             try {
-                String bucketName = document.getEntityType().name().toLowerCase() + "-" + document.getEntityId().toString();
-                String fileName = "document-" + id;
-                minioService.deleteFile(bucketName, fileName);
+                if (document.getEntityType() == EntityType.EQUIPMENT) {
+                    // For equipment, extract filename from URL and delete from equipment folder
+                    // URL format: http://localhost:9000/rockops/equipment/{id}/{fileName}
+                    String fileName = extractFileNameFromUrl(document.getFileUrl());
+                    if (fileName != null) {
+                        minioService.deleteEquipmentFile(document.getEntityId(), fileName);
+                        System.out.println("✅ Deleted equipment document: equipment/" + document.getEntityId() + "/" + fileName);
+                    }
+                } else {
+                    // For non-equipment entities, try old bucket structure first, then new
+                    String oldBucketName = document.getEntityType().name().toLowerCase() + "-" + document.getEntityId().toString();
+                    String fileName = "document-" + id;
+                    try {
+                        minioService.deleteFile(oldBucketName, fileName);
+                        System.out.println("✅ Deleted from old bucket structure: " + oldBucketName + "/" + fileName);
+                    } catch (Exception oldE) {
+                        // Try new folder structure
+                        String fileKey = extractFileNameFromUrl(document.getFileUrl());
+                        if (fileKey != null) {
+                            minioService.deleteFile("rockops", fileKey);
+                            System.out.println("✅ Deleted from new folder structure: rockops/" + fileKey);
+                        }
+                    }
+                }
             } catch (Exception e) {
                 // Log error but continue with deletion
-                System.err.println("Error deleting file from MinIO: " + e.getMessage());
+                System.err.println("⚠️ Error deleting file from storage (continuing with database deletion): " + e.getMessage());
             }
         }
 
         documentRepository.delete(document);
+    }
+    
+    /**
+     * Extract filename from full URL
+     * URL format: http://localhost:9000/rockops/equipment/{id}/{fileName}
+     */
+    private String extractFileNameFromUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return null;
+        }
+        try {
+            // Split by / and get the last part
+            String[] parts = url.split("/");
+            if (parts.length > 0) {
+                // For equipment: return just the filename (last part)
+                return parts[parts.length - 1].split("\\?")[0]; // Remove query params if any
+            }
+        } catch (Exception e) {
+            System.err.println("Error extracting filename from URL: " + url);
+        }
+        return null;
     }
 
     /**
@@ -231,21 +297,42 @@ public class DocumentService {
         // Save document first to get the ID
         Document savedDocument = documentRepository.save(document);
 
-        // Upload file to MinIO with sarky subfolder structure
+        // Upload file to MinIO with sarky subfolder structure (using new folder structure)
         try {
-            String bucketName = entityType.name().toLowerCase() + "-" + entityId.toString();
-            minioService.createBucketIfNotExists(bucketName);
-
-            // Create sarky-specific file path: sarky/year/month/filename
-            String fileName = String.format("sarky/%d/%d/%s-%s", year, month, name, savedDocument.getId().toString());
-            minioService.uploadFile(bucketName, file, fileName);
-
-            String fileUrl = minioService.getFileUrl(bucketName, fileName);
-            savedDocument.setFileUrl(fileUrl);
+            if (entityType == EntityType.EQUIPMENT) {
+                // Use equipment folder structure with sarky subfolder: equipment/{equipmentId}/sarky/{year}/{month}/{fileName}
+                String sarkySubFolder = String.format("sarky/%d/%d", year, month);
+                String customFilePrefix = sarkySubFolder + "/" + name + "_" + savedDocument.getId().toString();
+                
+                // Upload using equipment file method (which uses folder structure)
+                // This will append "_originalFilename" to the prefix
+                String uploadedFileName = minioService.uploadEquipmentFile(entityId, file, customFilePrefix);
+                
+                // Get the file URL
+                String fileUrl = minioService.getEquipmentFileUrl(entityId, uploadedFileName);
+                savedDocument.setFileUrl(fileUrl);
+                
+                System.out.println("✅ Uploaded sarky document to: equipment/" + entityId + "/" + uploadedFileName);
+                System.out.println("✅ Sarky document URL: " + fileUrl);
+            } else {
+                // For non-equipment entities, use folder structure in main bucket
+                String folderPath = entityType.name().toLowerCase() + "/" + entityId.toString() + "/sarky/" + year + "/" + month;
+                String fileName = name + "_" + savedDocument.getId().toString() + "_" + file.getOriginalFilename();
+                String fileKey = folderPath + "/" + fileName;
+                
+                minioService.createBucketIfNotExists("rockops");
+                minioService.uploadFile("rockops", file, fileKey);
+                
+                String fileUrl = minioService.getFileUrl("rockops", fileKey);
+                savedDocument.setFileUrl(fileUrl);
+                
+                System.out.println("✅ Uploaded sarky document to: " + fileKey);
+            }
 
             savedDocument = documentRepository.save(savedDocument);
         } catch (Exception e) {
-            System.err.println("Error uploading sarky file to MinIO: " + e.getMessage());
+            System.err.println("❌ Error uploading sarky file to storage: " + e.getMessage());
+            e.printStackTrace();
             throw e;
         }
 

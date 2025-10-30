@@ -68,6 +68,9 @@ public class MaintenanceTypeService {
      */
     @Transactional
     public MaintenanceTypeDTO createMaintenanceType(MaintenanceTypeDTO maintenanceTypeDTO) {
+        // Validate input
+        validateMaintenanceTypeInput(maintenanceTypeDTO);
+        
         // Check if maintenance type with same name already exists
         Optional<MaintenanceType> existingMaintenanceType = maintenanceTypeRepository.findByNameIgnoreCase(maintenanceTypeDTO.getName());
         if (existingMaintenanceType.isPresent()) {
@@ -82,7 +85,8 @@ public class MaintenanceTypeService {
         MaintenanceType maintenanceType = new MaintenanceType();
         maintenanceType.setName(maintenanceTypeDTO.getName());
         maintenanceType.setDescription(maintenanceTypeDTO.getDescription());
-        maintenanceType.setActive(true);
+        // Use the active status from DTO instead of hardcoding to true
+        maintenanceType.setActive(maintenanceTypeDTO.isActive());
 
         MaintenanceType savedMaintenanceType = maintenanceTypeRepository.save(maintenanceType);
 
@@ -117,6 +121,9 @@ public class MaintenanceTypeService {
      */
     @Transactional
     public MaintenanceTypeDTO updateMaintenanceType(UUID id, MaintenanceTypeDTO maintenanceTypeDTO) {
+        // Validate input
+        validateMaintenanceTypeInput(maintenanceTypeDTO);
+        
         MaintenanceType maintenanceType = maintenanceTypeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Maintenance type not found with id: " + id));
 
@@ -167,20 +174,24 @@ public class MaintenanceTypeService {
     }
 
     /**
-     * Delete a maintenance type (soft delete)
+     * Delete a maintenance type (permanent deletion)
+     * Note: Users should mark types as inactive if they want to hide them from regular users.
+     * This delete operation permanently removes the type from the system.
      */
     @Transactional
     public void deleteMaintenanceType(UUID id) {
         MaintenanceType maintenanceType = maintenanceTypeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Maintenance type not found with id: " + id));
 
-        maintenanceType.setActive(false);
+        String maintenanceTypeName = maintenanceType.getName();
+        
+        // Permanently delete from database
+        maintenanceTypeRepository.delete(maintenanceType);
 
         // Send notifications
         try {
-            String notificationTitle = "Maintenance Type Deleted";
-            String notificationMessage = "Maintenance type '" + maintenanceType.getName() + "' has been deleted. " +
-                    (maintenanceType.getDescription() != null ? maintenanceType.getDescription() : "");
+            String notificationTitle = "Maintenance Type Permanently Deleted";
+            String notificationMessage = "Maintenance type '" + maintenanceTypeName + "' has been permanently deleted from the system.";
             String actionUrl = "/equipment/maintenance-type-management";
             String relatedEntity = id.toString();
 
@@ -199,8 +210,6 @@ public class MaintenanceTypeService {
         } catch (Exception e) {
             System.err.println("Failed to send maintenance type deletion notification: " + e.getMessage());
         }
-
-        maintenanceTypeRepository.save(maintenanceType);
     }
 
     // Get all active maintenance types
@@ -292,5 +301,29 @@ public class MaintenanceTypeService {
         dto.setDescription(maintenanceType.getDescription());
         dto.setActive(maintenanceType.isActive());
         return dto;
+    }
+    
+    /**
+     * Validate maintenance type input for reserved/invalid values
+     */
+    private void validateMaintenanceTypeInput(MaintenanceTypeDTO maintenanceTypeDTO) {
+        if (maintenanceTypeDTO.getName() == null || maintenanceTypeDTO.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Maintenance type name cannot be empty");
+        }
+        
+        String normalizedName = maintenanceTypeDTO.getName().trim().toUpperCase();
+        
+        // Check for reserved/invalid values
+        if ("NA".equals(normalizedName) || "N/A".equals(normalizedName)) {
+            throw new IllegalArgumentException("Maintenance type name cannot be 'NA' or 'N/A'. Please provide a meaningful name for the maintenance type (e.g., 'Oil Change', 'Inspection', 'Repair').");
+        }
+        
+        // Check description if provided
+        if (maintenanceTypeDTO.getDescription() != null && !maintenanceTypeDTO.getDescription().trim().isEmpty()) {
+            String normalizedDesc = maintenanceTypeDTO.getDescription().trim().toUpperCase();
+            if ("NA".equals(normalizedDesc) || "N/A".equals(normalizedDesc)) {
+                throw new IllegalArgumentException("Maintenance type description cannot be 'NA' or 'N/A'. Please provide a meaningful description or leave it empty.");
+            }
+        }
     }
 }

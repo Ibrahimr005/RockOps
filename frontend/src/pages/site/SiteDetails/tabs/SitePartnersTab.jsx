@@ -4,7 +4,9 @@ import {useTranslation} from 'react-i18next';
 import {useAuth} from "../../../../contexts/AuthContext.jsx";
 import {FaTrash, FaEdit, FaSave, FaTimes, FaPlus} from 'react-icons/fa';
 import { useSnackbar } from "../../../../contexts/SnackbarContext.jsx";
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import { siteService } from "../../../../services/siteService.js";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const SitePartnersTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -18,6 +20,10 @@ const SitePartnersTab = ({siteId}) => {
     const [editingPartner, setEditingPartner] = useState(null);
     const [editPercentage, setEditPercentage] = useState("");
     const { showSuccess, showError, showWarning } = useSnackbar();
+    const [deleteConfirmation, setDeleteConfirmation] = useState({
+        isVisible: false,
+        partnerId: null
+    });
 
     const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || "ADMIN";
 
@@ -108,6 +114,19 @@ const SitePartnersTab = ({siteId}) => {
     useEffect(() => {
         fetchPartners();
     }, [siteId]);
+
+    useEffect(() => {
+        if (showModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        // Cleanup function
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showModal]);
 
     const fetchPartners = async () => {
         try {
@@ -246,8 +265,16 @@ const SitePartnersTab = ({siteId}) => {
         }
     };
 
-    const handleRemovePartner = async (partnerId) => {
+    const handleRemovePartner = (partnerId) => {
+        setDeleteConfirmation({
+            isVisible: true,
+            partnerId: partnerId
+        });
+    };
+
+    const confirmRemovePartner = async () => {
         try {
+            const partnerId = deleteConfirmation.partnerId;
             await siteService.removePartner(siteId, partnerId);
             await fetchPartners();
             showSuccess("Partner successfully removed from the site");
@@ -260,8 +287,28 @@ const SitePartnersTab = ({siteId}) => {
             } else {
                 showError(err.message || "Unable to remove partner from the site");
             }
+        } finally {
+            // Close the confirmation dialog
+            setDeleteConfirmation({ isVisible: false, partnerId: null });
         }
     };
+
+    // const handleRemovePartner = async (partnerId) => {
+    //     try {
+    //         await siteService.removePartner(siteId, partnerId);
+    //         await fetchPartners();
+    //         showSuccess("Partner successfully removed from the site");
+    //     } catch (err) {
+    //         console.error("Error removing partner:", err);
+    //         if (err.message && err.message.includes("Rock4Mining")) {
+    //             showError("This partner cannot be removed as they are the default partner for the site");
+    //         } else if (err.message && err.message.includes("Server Error")) {
+    //             showError("Unable to remove partner. The partner might be the default partner or have active assignments.");
+    //         } else {
+    //             showError(err.message || "Unable to remove partner from the site");
+    //         }
+    //     }
+    // };
 
     const handleOverlayClick = (e) => {
         // Only close if clicking on the overlay itself, not on the modal content
@@ -270,7 +317,7 @@ const SitePartnersTab = ({siteId}) => {
         }
     };
 
-    if (loading) return <div className="loading-container">Loading Partners...</div>;
+    if (loading) return <ContentLoader message={"Loading Partnets..."}/>;
 
     return (
         <div className="site-partners-tab">
@@ -391,6 +438,16 @@ const SitePartnersTab = ({siteId}) => {
                     />
                 </div>
             )}
+            <ConfirmationDialog
+                isVisible={deleteConfirmation.isVisible}
+                type="warning"
+                title="Remove Partner"
+                message="Are you sure you want to remove this partner from the site?"
+                confirmText="Remove"
+                cancelText="Cancel"
+                onConfirm={confirmRemovePartner}
+                onCancel={() => setDeleteConfirmation({ isVisible: false, partnerId: null })}
+            />
         </div>
     );
 };

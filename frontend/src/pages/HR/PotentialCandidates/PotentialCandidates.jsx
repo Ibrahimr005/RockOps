@@ -4,6 +4,7 @@ import './PotentialCandidates.scss';
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import AddToVacancyModal from './components/AddToVacancyModal';
+import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards.jsx';
 import { candidateService } from '../../../services/hr/candidateService.js';
 import { vacancyService } from '../../../services/hr/vacancyService.js';
 import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
@@ -62,7 +63,7 @@ const PotentialCandidates = () => {
             } else {
                 response = await vacancyService.getPotentialCandidates();
             }
-console.log(response.data);
+            console.log(response.data);
             setPotentialCandidates(response.data || []);
         } catch (error) {
             console.error('Error loading potential candidates:', error);
@@ -268,6 +269,45 @@ console.log(response.data);
         }
     ];
 
+    // Define statistics cards configuration
+    const statisticsCards = [
+        {
+            icon: <FaUsers />,
+            label: 'Total Potential',
+            getValue: (data) => data.length,
+            color: 'blue',
+            tooltip: 'Total number of potential candidates'
+        },
+        {
+            icon: <FaStar />,
+            label: 'With Rating',
+            getValue: (data) => data.filter(c => c.rating).length,
+            color: 'yellow',
+            tooltip: 'Candidates that have been rated'
+        },
+        {
+            icon: <FaChartBar />,
+            label: 'Avg Rating',
+            getValue: (data) => {
+                const ratedCandidates = data.filter(c => c.rating);
+                if (ratedCandidates.length === 0) return 0;
+                const sum = ratedCandidates.reduce((sum, c) => sum + c.rating, 0);
+                return Math.round((sum / ratedCandidates.length) * 10) / 10;
+            },
+            color: 'green',
+            tooltip: 'Average rating across all rated candidates'
+        },
+        {
+            icon: <FaBriefcase />,
+            label: 'From Closed Vacancies',
+            getValue: (data) => data.filter(c =>
+                c.rejectionReason && c.rejectionReason.includes('closed')
+            ).length,
+            color: 'purple',
+            tooltip: 'Candidates moved from closed vacancies'
+        }
+    ];
+
     if (loading) return <div className="loading">Loading potential candidates...</div>;
     if (error) return <div className="error">{error}</div>;
 
@@ -275,69 +315,19 @@ console.log(response.data);
         <div className="potential-candidates">
             {/* Header */}
             <div className="departments-header">
-
-                    <h1>
-                        Potential Candidates
-                        <p className="employees-header__subtitle">
-                            Manage candidates who have been moved to the potential list from closed vacancies or rejected applications
-                        </p>
-                    </h1>
-
-
+                <h1>
+                    Potential Candidates
+                    <p className="employees-header__subtitle">
+                        Manage candidates who have been moved to the potential list from closed vacancies or rejected applications
+                    </p>
+                </h1>
             </div>
 
-            {/* Statistics Cards */}
-            <div className="statistics-section">
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-icon">
-                            <FaUsers />
-                        </div>
-                        <div className="stat-content">
-                            <span className="stat-number">{potentialCandidates.length}</span>
-                            <span className="stat-label">Total Potential</span>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">
-                            <FaStar />
-                        </div>
-                        <div className="stat-content">
-                            <span className="stat-number">
-                                {potentialCandidates.filter(c => c.rating).length}
-                            </span>
-                            <span className="stat-label">With Rating</span>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">
-                            <FaChartBar />
-                        </div>
-                        <div className="stat-content">
-                            <span className="stat-number">
-                                {potentialCandidates.length > 0 ?
-                                    Math.round(potentialCandidates
-                                            .filter(c => c.rating)
-                                            .reduce((sum, c) => sum + c.rating, 0) /
-                                        potentialCandidates.filter(c => c.rating).length * 10) / 10 : 0}
-                            </span>
-                            <span className="stat-label">Avg Rating</span>
-                        </div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-icon">
-                            <FaBriefcase />
-                        </div>
-                        <div className="stat-content">
-                            <span className="stat-number">
-                                {potentialCandidates.filter(c =>
-                                    c.rejectionReason && c.rejectionReason.includes('closed')).length}
-                            </span>
-                            <span className="stat-label">From Closed Vacancies</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {/* Statistics Cards - Using the new component */}
+            <StatisticsCards
+                data={potentialCandidates}
+                cards={statisticsCards}
+            />
 
             {/* Search and Filters */}
             <div className="filters-section">

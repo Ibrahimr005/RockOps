@@ -9,6 +9,7 @@ import {useSnackbar} from '../../../../contexts/SnackbarContext';
 import {jobPositionService} from '../../../../services/hr/jobPositionService.js';
 import './JobPositionDetails.scss';
 import IntroCard from "../../../../components/common/IntroCard/IntroCard.jsx";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const JobPositionDetails = () => {
     const {id} = useParams();
@@ -35,12 +36,12 @@ const JobPositionDetails = () => {
             icon: <FiUsers/>,
             component: PositionEmployees
         },
-        {
-            id: 'promotions',
-            label: 'Promotions',
-            icon: <FiTrendingUp/>,
-            component: PositionPromotions
-        }
+        // {
+        //     id: 'promotions',
+        //     label: 'Promotions',
+        //     icon: <FiTrendingUp/>,
+        //     component: PositionPromotions
+        // }
     ];
 
     useEffect(() => {
@@ -53,7 +54,8 @@ const JobPositionDetails = () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await jobPositionService.getById(id);
+            const response = await jobPositionService.getDetails(id);
+            console.log(response.data)
             setPosition(response.data);
         } catch (err) {
             console.error('Error fetching position details:', err);
@@ -87,12 +89,7 @@ const JobPositionDetails = () => {
 
     if (loading) {
         return (
-            <div className="position-details-container">
-                <div className="loading-container">
-                    <div className="loading-spinner"></div>
-                    <p>Loading position details...</p>
-                </div>
-            </div>
+           <ContentLoader message={"Loading Position Details.."} />
         );
     }
 
@@ -140,7 +137,7 @@ const JobPositionDetails = () => {
     const getPositionStats = () => {
         return [
             {
-                value: position.totalEmployees || '0',
+                value: position.activeEmployeeCount || '0',
                 label: 'Total Employees'
             },
             {
@@ -181,42 +178,42 @@ const JobPositionDetails = () => {
             />
 
             {/* Position Summary Card */}
-            <div className="position-summary-card">
-                <div className="summary-grid">
-                    <div className="summary-item">
-                        <div className="summary-icon">
-                            <FiUser/>
-                        </div>
-                        <div className="summary-content">
-                            <span className="summary-label">Experience Level</span>
-                            <span className="summary-value">
-                                {position.experienceLevel?.replace('_', ' ').toLowerCase()
-                                    .replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}
-                            </span>
-                        </div>
-                    </div>
-                    <div className="summary-item">
-                        <div className="summary-icon">
-                            <FiUsers/>
-                        </div>
-                        <div className="summary-content">
-                            <span className="summary-label">Reporting To</span>
-                            <span className="summary-value">{position.head || 'Direct Report'}</span>
-                        </div>
-                    </div>
-                    <div className="summary-item">
-                        <div className="summary-icon">
-                            <FiTrendingUp/>
-                        </div>
-                        <div className="summary-content">
-                            <span className="summary-label">Status</span>
-                            <span className={`status-badge ${position.active ? 'active' : 'inactive'}`}>
-                                {position.active ? 'Active' : 'Inactive'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            {/*<div className="position-summary-card">*/}
+            {/*    <div className="summary-grid">*/}
+            {/*        <div className="summary-item">*/}
+            {/*            <div className="summary-icon">*/}
+            {/*                <FiUser/>*/}
+            {/*            </div>*/}
+            {/*            <div className="summary-content">*/}
+            {/*                <span className="summary-label">Experience Level</span>*/}
+            {/*                <span className="summary-value">*/}
+            {/*                    {position.experienceLevel?.replace('_', ' ').toLowerCase()*/}
+            {/*                        .replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}*/}
+            {/*                </span>*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
+            {/*        <div className="summary-item">*/}
+            {/*            <div className="summary-icon">*/}
+            {/*                <FiUsers/>*/}
+            {/*            </div>*/}
+            {/*            <div className="summary-content">*/}
+            {/*                <span className="summary-label">Reporting To</span>*/}
+            {/*                <span className="summary-value">{position.head || 'Direct Report'}</span>*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
+            {/*        <div className="summary-item">*/}
+            {/*            <div className="summary-icon">*/}
+            {/*                <FiTrendingUp/>*/}
+            {/*            </div>*/}
+            {/*            <div className="summary-content">*/}
+            {/*                <span className="summary-label">Status</span>*/}
+            {/*                <span className={`status-badge ${position.active ? 'active' : 'inactive'}`}>*/}
+            {/*                    {position.active ? 'Active' : 'Inactive'}*/}
+            {/*                </span>*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             {/* Tabs Navigation */}
             <div className="tabs-container">

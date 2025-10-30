@@ -17,6 +17,9 @@ public interface DepartmentRepository extends JpaRepository<Department, UUID> {
 
     boolean existsByName(String name);
 
+    @Query("SELECT CASE WHEN COUNT(d) > 0 THEN true ELSE false END FROM Department d WHERE LOWER(d.name) = LOWER(:name)")
+    boolean existsByNameIgnoreCase(@Param("name") String name);
+
     @Query("SELECT d FROM Department d WHERE LOWER(d.name) LIKE LOWER(CONCAT('%', :name, '%'))")
     List<Department> findByNameContainingIgnoreCase(@Param("name") String name);
 

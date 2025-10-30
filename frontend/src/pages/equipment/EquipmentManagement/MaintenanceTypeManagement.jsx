@@ -4,11 +4,13 @@ import { maintenanceTypeService } from '../../../services/maintenanceTypeService
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { createErrorHandlers } from '../../../utils/errorHandler';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useEquipmentPermissions } from '../../../utils/rbac';
+import { useEquipmentPermissions, hasEquipmentManagerPermissions } from '../../../utils/rbac';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './EquipmentTypeManagement.scss';
 import '../../../styles/form-validation.scss';
+import '../../../styles/status-badges.scss';
 
 const MaintenanceTypeManagement = () => {
     const [maintenanceTypes, setMaintenanceTypes] = useState([]);
@@ -16,6 +18,7 @@ const MaintenanceTypeManagement = () => {
     const [error, setError] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [editingMaintenanceType, setEditingMaintenanceType] = useState(null);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deletingMaintenanceType, setDeletingMaintenanceType] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
@@ -29,6 +32,9 @@ const MaintenanceTypeManagement = () => {
     // Get authentication context and permissions
     const auth = useAuth();
     const permissions = useEquipmentPermissions(auth);
+    
+    // Check if user is admin or equipment manager
+    const isAdminOrEquipmentManager = hasEquipmentManagerPermissions(auth.currentUser);
 
     // Create error handlers for this component
     const errorHandlers = createErrorHandlers(showError, 'maintenance type');
@@ -39,12 +45,24 @@ const MaintenanceTypeManagement = () => {
             setLoading(true);
             const response = await maintenanceTypeService.getAllForManagement();
             if (response.data) {
-                // Filter to only show active maintenance types
-                const activeMaintenanceTypes = response.data.filter(maintenanceType => maintenanceType.active);
-                setMaintenanceTypes(activeMaintenanceTypes);
+                // Filter based on user role
+                let filteredMaintenanceTypes = response.data;
                 
-                if (activeMaintenanceTypes.length === 0) {
-                    showInfo('No active maintenance types found. Add your first maintenance type!');
+                // If user is NOT admin or equipment manager, show only active maintenance types
+                if (!isAdminOrEquipmentManager) {
+                    filteredMaintenanceTypes = response.data.filter(mt => mt.active);
+                }
+                
+                // Transform data to include status text for filtering
+                const transformedData = filteredMaintenanceTypes.map(mt => ({
+                    ...mt,
+                    statusText: mt.active ? 'Active' : 'Inactive'
+                }));
+                
+                setMaintenanceTypes(transformedData);
+                
+                if (transformedData.length === 0) {
+                    showInfo('No maintenance types found. Add your first maintenance type!');
                 }
             } else {
                 // Initialize with empty array if no data
@@ -133,13 +151,9 @@ const MaintenanceTypeManagement = () => {
                     }
                 }
             } else if (err.response?.status === 400) {
-                // Validation errors
-                const message = err.response.data?.message || 'Please check your input and try again';
-                if (message.includes('name') || message.includes('Name')) {
-                    showError(`Maintenance type name is invalid: ${message}`);
-                } else {
-                    showError(`Please check your input: ${message}`);
-                }
+                // Validation errors - check if it's a validation error from backend
+                const message = err.response.data?.message || err.response.data || 'Please check your input and try again';
+                showError(message);
             } else if (err.response?.status === 403) {
                 showError('You don\'t have permission to save maintenance types. Please contact your administrator.');
             } else if (err.response?.status === 500) {
@@ -179,33 +193,45 @@ const MaintenanceTypeManagement = () => {
         }
     };
 
-    const confirmDelete = (maintenanceTypeId, maintenanceTypeName) => {
-        showConfirmation(
-            `Are you sure you want to delete "${maintenanceTypeName}"?`,
-            () => performDelete(maintenanceTypeId, maintenanceTypeName),
-            () => setDeletingMaintenanceType(null)
-        );
+    const confirmDelete = (maintenanceType) => {
+        setDeletingMaintenanceType(maintenanceType);
+        setShowDeleteDialog(true);
     };
 
-    const performDelete = async (maintenanceTypeId, maintenanceTypeName) => {
+    const performDelete = async () => {
+        if (!deletingMaintenanceType) return;
+        
         try {
-            await maintenanceTypeService.delete(maintenanceTypeId);
-            showSuccess(`Maintenance type "${maintenanceTypeName}" has been deleted successfully`);
+            await maintenanceTypeService.delete(deletingMaintenanceType.id);
+            showSuccess(`Maintenance type "${deletingMaintenanceType.name}" has been permanently deleted from the system`);
+            setShowDeleteDialog(false);
+            setDeletingMaintenanceType(null);
             fetchMaintenanceTypes(); // Refresh the list
         } catch (err) {
             console.error('Error deleting maintenance type:', err);
             showError(`Failed to delete maintenance type: ${err.response?.data?.message || err.message}`);
-        } finally {
-            setDeletingMaintenanceType(null);
         }
     };
+    
+    const cancelDelete = () => {
+        setShowDeleteDialog(false);
+        setDeletingMaintenanceType(null);
+    };
+
+    // Get unique names for the Name filter dropdown
+    const uniqueNames = [...new Set(maintenanceTypes.map(mt => mt.name))].sort();
+    const nameFilterOptions = [
+        { value: 'all', label: 'All' },
+        ...uniqueNames.map(name => ({ value: name, label: name }))
+    ];
 
     const columns = [
         {
             header: 'Name',
             accessor: 'name',
             sortable: true,
-            filterType: 'text',
+            filterType: 'select',
+            filterOptions: nameFilterOptions,
             exportFormatter: (value) => {
                 // Sanitize name for export to prevent encoding issues
                 if (!value) return '';
@@ -222,7 +248,7 @@ const MaintenanceTypeManagement = () => {
             header: 'Description',
             accessor: 'description',
             sortable: true,
-            filterType: 'text',
+            // No filter for description - search bar is used for text search
             width: '250px',
             maxWidth: '250px',
             render: (row) => {
@@ -263,22 +289,41 @@ const MaintenanceTypeManagement = () => {
                 
                 return cleanValue;
             }
-        }
+        },
+        // Only show Status column to admins and equipment managers
+        ...(isAdminOrEquipmentManager ? [{
+            header: 'Status',
+            accessor: 'statusText', // Use statusText for filtering
+            sortable: true,
+            filterType: 'select',
+            width: '120px',
+            // Custom filter function for exact match instead of substring
+            customFilterFunction: (row, filterValue) => {
+                if (!filterValue) return true;
+                return row.statusText === filterValue;
+            },
+            render: (row) => (
+                <span className={`status-badge ${row.active ? 'active' : 'inactive'}`}>
+                    {row.active ? 'Active' : 'Inactive'}
+                </span>
+            )
+        }] : [])
     ];
 
-    const actions = permissions.canEdit || permissions.canDelete ? [
-        ...(permissions.canEdit ? [{
+    // Only admins and equipment managers see the actions column
+    const actions = isAdminOrEquipmentManager ? [
+        {
             label: 'Edit',
             icon: <FaEdit />,
             onClick: (row) => handleOpenModal(row),
             className: 'primary'
-        }] : []),
-        ...(permissions.canDelete ? [{
+        },
+        {
             label: 'Delete',
             icon: <FaTrash />,
-            onClick: (row) => confirmDelete(row.id, row.name),
+            onClick: (row) => confirmDelete(row),
             className: 'danger'
-        }] : [])
+        }
     ] : [];
 
     // Remove separate filterableColumns definition since we now use columns.filter(col => col.filterType)
@@ -386,7 +431,7 @@ const MaintenanceTypeManagement = () => {
                                     <span className="checkbox-text">Active</span>
                                 </label>
                                 <small className="form-help-text">
-                                    Inactive maintenance types will not be available for selection
+                                    Inactive maintenance types will not be visible to regular users. Only admins and equipment managers can view and reactivate them.
                                 </small>
                             </div>
 
@@ -405,6 +450,18 @@ const MaintenanceTypeManagement = () => {
                     </div>
                 </div>
             )}
+            
+            {/* Confirmation Dialog for Deletion */}
+            <ConfirmationDialog
+                isVisible={showDeleteDialog}
+                type="danger"
+                title="Permanently Delete Maintenance Type"
+                message={`Are you sure you want to permanently delete "${deletingMaintenanceType?.name}"? This action cannot be undone and will completely remove it from the system. If you want to make it unavailable to users, consider marking it as inactive instead by editing it.`}
+                confirmText="Delete Permanently"
+                cancelText="Cancel"
+                onConfirm={performDelete}
+                onCancel={cancelDelete}
+            />
         </div>
     );
 };

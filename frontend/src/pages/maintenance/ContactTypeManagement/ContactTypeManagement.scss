@@ -1,0 +1,174 @@
+/* ContactTypeManagement - Domain-Specific Styles */
+/* Global styles imported from modal-styles.scss and form-validation.scss */
+
+.contact-type-management {
+    .contact-type-content {
+        margin-top: 24px;
+    }
+
+    .access-denied {
+        text-align: center;
+        padding: 40px 20px;
+        background-color: var(--section-background-color);
+        border-radius: var(--radius-lg);
+        margin-top: 24px;
+
+        p {
+            color: var(--color-text-secondary);
+            margin: 8px 0;
+            
+            &:first-child {
+                font-weight: 600;
+                color: var(--color-text-primary);
+            }
+        }
+    }
+
+    // Contact type specific styling
+    .contact-type-name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .contact-type-icon {
+            color: var(--color-primary);
+            font-size: 14px;
+        }
+
+        span {
+            font-weight: 500;
+        }
+    }
+
+    .contact-type-description {
+        color: var(--color-text-secondary);
+        font-size: 14px;
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    // Modal form styling
+    .contact-type-form {
+        .form-group {
+            margin-bottom: 20px;
+
+            label {
+                display: block;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--color-text-primary);
+                margin-bottom: 8px;
+
+                &[data-required="true"]::after {
+                    content: " *";
+                    color: var(--color-danger, #ef4444);
+                    font-weight: bold;
+                }
+
+                &.checkbox-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    cursor: pointer;
+                    position: relative;
+                    padding-left: 28px;
+                    margin-bottom: 0;
+
+                    input[type="checkbox"] {
+                        position: absolute;
+                        opacity: 0;
+                        cursor: pointer;
+                        height: 0;
+                        width: 0;
+
+                        &:checked ~ .checkmark {
+                            background-color: var(--color-primary);
+                            border-color: var(--color-primary);
+
+                            &:after {
+                                display: block;
+                            }
+                        }
+                    }
+
+                    .checkmark {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        height: 18px;
+                        width: 18px;
+                        background-color: var(--section-background-color);
+                        border: 2px solid var(--border-color);
+                        border-radius: 4px;
+                        transition: all 0.2s ease;
+
+                        &:after {
+                            content: "";
+                            position: absolute;
+                            display: none;
+                            left: 5px;
+                            top: 2px;
+                            width: 4px;
+                            height: 8px;
+                            border: solid white;
+                            border-width: 0 2px 2px 0;
+                            transform: rotate(45deg);
+                        }
+                    }
+                }
+            }
+
+            input:not([type="checkbox"]),
+            textarea {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius-md);
+                background-color: var(--section-background-color);
+                color: var(--text-color);
+                font-size: 14px;
+                transition: all var(--transition-fast);
+                font-family: var(--font-family);
+
+                &:focus {
+                    outline: none;
+                    border-color: var(--color-primary);
+                    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 66, 135, 245), 0.1);
+                }
+
+                &::placeholder {
+                    color: var(--color-text-muted);
+                }
+            }
+
+            textarea {
+                resize: vertical;
+                min-height: 80px;
+            }
+        }
+    }
+
+    // Action buttons use default RockOps table action button classes
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        align-items: center;
+    }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+    .contact-type-management {
+        .contact-type-description {
+            max-width: 200px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+            gap: 4px;
+        }
+    }
+}

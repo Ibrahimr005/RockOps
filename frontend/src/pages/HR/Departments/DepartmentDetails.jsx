@@ -7,6 +7,7 @@ import { jobPositionService } from '../../../services/hr/jobPositionService.js';
 import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import DepartmentModal from './DepartmentModal';
+import StatisticsCards from '../../../components/common/StatisticsCards/StatisticsCards.jsx';
 import './DepartmentDetails.scss';
 import {FaBuilding} from "react-icons/fa";
 import IntroCard from "../../../components/common/IntroCard/IntroCard.jsx";
@@ -256,6 +257,37 @@ const DepartmentDetails = () => {
         ];
     };
 
+    // Statistics cards configuration
+    const statisticsCards = [
+        {
+            icon: <FiBriefcase />,
+            label: 'Total Positions',
+            getValue: () => stats.totalPositions,
+            color: 'blue',
+            tooltip: 'Total number of positions in this department'
+        },
+        {
+            icon: <FiUsers />,
+            label: 'Total Employees',
+            getValue: () => stats.totalEmployees,
+            color: 'green',
+            tooltip: 'Total number of employees in this department'
+        },
+        {
+            icon: <FiTrendingUp />,
+            label: 'Active Positions',
+            getValue: () => stats.activePositions,
+            color: 'yellow',
+            tooltip: 'Number of currently active positions'
+        },
+        {
+            icon: <FiCalendar />,
+            label: 'Vacant Positions',
+            getValue: () => stats.vacantPositions,
+            color: 'purple',
+            tooltip: 'Number of vacant/inactive positions'
+        }
+    ];
 
     return (
         <div className="department-details-container">
@@ -269,45 +301,12 @@ const DepartmentDetails = () => {
                 actionButtons={getActionButtons()}
                 className="department-intro-card"
             />
-            {/* Statistics Cards */}
-            <div className="department-stats-grid">
-                <div className="stat-card">
-                    <div className="stat-icon">
-                        <FiBriefcase />
-                    </div>
-                    <div className="stat-content">
-                        <h3>{stats.totalPositions}</h3>
-                        <p>Total Positions</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon">
-                        <FiUsers />
-                    </div>
-                    <div className="stat-content">
-                        <h3>{stats.totalEmployees}</h3>
-                        <p>Total Employees</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon">
-                        <FiTrendingUp />
-                    </div>
-                    <div className="stat-content">
-                        <h3>{stats.activePositions}</h3>
-                        <p>Active Positions</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon">
-                        <FiCalendar />
-                    </div>
-                    <div className="stat-content">
-                        <h3>{stats.vacantPositions}</h3>
-                        <p>Vacant Positions</p>
-                    </div>
-                </div>
-            </div>
+
+            {/* Statistics Cards - Using the new component */}
+            <StatisticsCards
+                data={[stats]}
+                cards={statisticsCards}
+            />
 
             {/* Positions Table */}
             <div className="department-section">
