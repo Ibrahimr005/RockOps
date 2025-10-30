@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, {useCallback, useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import './VacancyList.scss';
 import AddVacancyModal from './modals/AddVacancyModal.jsx';
 import EditVacancyModal from './modals/EditVacancyModal.jsx';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
-import { FaEdit, FaTrashAlt, FaEye, FaUserPlus } from "react-icons/fa";
-import { useSnackbar } from '../../../contexts/SnackbarContext';
-import { vacancyService } from '../../../services/hr/vacancyService.js';
-import { jobPositionService } from '../../../services/hr/jobPositionService.js';
+import {FaEdit, FaTrashAlt, FaUserPlus} from "react-icons/fa";
+import {useSnackbar} from '../../../contexts/SnackbarContext';
+import {vacancyService} from '../../../services/hr/vacancyService.js';
+import {jobPositionService} from '../../../services/hr/jobPositionService.js';
 
 const VacancyList = () => {
     const navigate = useNavigate();
-    const { showSuccess, showError } = useSnackbar();
+    const {showSuccess, showError} = useSnackbar();
 
     // State management - ensure arrays are properly initialized
     const [vacancies, setVacancies] = useState([]);
@@ -320,22 +320,37 @@ const VacancyList = () => {
     const actions = React.useMemo(() => [
         {
             label: 'Edit',
-            icon: <FaEdit />,
+            icon: <FaEdit/>,
             onClick: (row) => handleEditClick(row),
             className: 'primary'
         },
         {
             label: 'Delete',
-            icon: <FaTrashAlt />,
+            icon: <FaTrashAlt/>,
             onClick: (row) => handleDeleteVacancy(row.id),
             className: 'danger'
         }
     ], [handleEditClick]);
 
     const filterableColumns = React.useMemo(() => [
-        { header: 'Title', accessor: 'title' },
-        { header: 'Position', accessor: 'positionName' }, // Changed to use flattened property
-        { header: 'Department', accessor: 'departmentName' } // Changed to use flattened property
+        {header: 'Title', accessor: 'title'},
+        {header: 'Position', accessor: 'positionName'}, // Changed to use flattened property
+        {
+            header: 'Department',
+            accessor: 'departmentName',
+            filterType: 'select'
+        },
+        {
+            header: 'Status',
+            accessor: 'status',
+            filterType: 'select'
+        },
+        {
+            header: 'Priority',
+            accessor: 'priority',
+            filterType: 'select'
+        }
+
     ], []);
 
     // Get unique departments for the filter dropdown
@@ -350,53 +365,6 @@ const VacancyList = () => {
     }, [vacancies]);
 
     // Custom filters with proper event handling and reset capability
-    const customFilters = React.useMemo(() => [
-        {
-            label: 'Department',
-            component: (
-                <select
-                    value={departmentFilter}
-                    onChange={(e) => setDepartmentFilter(e.target.value)}
-                    aria-label="Filter by department"
-                >
-                    <option value="">All Departments</option>
-                    {uniqueDepartments.map(dept => (
-                        <option key={dept} value={dept}>{dept}</option>
-                    ))}
-                </select>
-            )
-        },
-        {
-            label: 'Status',
-            component: (
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    aria-label="Filter by status"
-                >
-                    <option value="">All Statuses</option>
-                    <option value="OPEN">Open</option>
-                    <option value="CLOSED">Closed</option>
-                    <option value="FILLED">Filled</option>
-                </select>
-            )
-        },
-        {
-            label: 'Priority',
-            component: (
-                <select
-                    value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value)}
-                    aria-label="Filter by priority"
-                >
-                    <option value="">All Priorities</option>
-                    <option value="HIGH">High</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="LOW">Low</option>
-                </select>
-            )
-        }
-    ], [statusFilter, priorityFilter, departmentFilter, uniqueDepartments]);
 
     // Memoized filtered data with department filtering
     const filteredVacancies = React.useMemo(() => {
@@ -404,7 +372,7 @@ const VacancyList = () => {
             return [];
         }
 
-        const priorityMap = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
+        const priorityMap = {'HIGH': 3, 'MEDIUM': 2, 'LOW': 1};
 
         return vacancies
             .map(vacancy => ({
@@ -469,14 +437,13 @@ const VacancyList = () => {
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}
-                customFilters={customFilters}
                 onRowClick={handleRowClick}
                 defaultItemsPerPage={10}
                 itemsPerPageOptions={[10, 25, 50]}
                 className="vacancy-data-table"
                 showAddButton={true}
                 addButtonText="Post New Vacancy"
-                addButtonIcon={<FaUserPlus />}
+                addButtonIcon={<FaUserPlus/>}
                 onAddClick={() => setShowAddModal(true)}
                 showExportButton={true}
                 exportFileName="vacancies"
