@@ -5,7 +5,9 @@ import {useAuth} from "../../../../contexts/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
 import { FaPlus } from 'react-icons/fa';
 import Snackbar from "../../../../components/common/Snackbar/Snackbar";
+import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import { siteService } from "../../../../services/siteService";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const SiteEquipmentTab = ({siteId}) => {
     const {t} = useTranslation();
@@ -20,6 +22,10 @@ const SiteEquipmentTab = ({siteId}) => {
         show: false,
         message: '',
         type: 'success'
+    });
+    const [unassignConfirmation, setUnassignConfirmation] = useState({
+        isVisible: false,
+        equipmentId: null
     });
 
     const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || currentUser?.role === "ADMIN";
@@ -79,6 +85,19 @@ const SiteEquipmentTab = ({siteId}) => {
     useEffect(() => {
         fetchEquipment();
     }, [siteId]);
+
+    useEffect(() => {
+        if (showModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        // Cleanup function to ensure scroll is restored if component unmounts
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showModal]);
 
     const fetchEquipment = async () => {
         try {
@@ -177,14 +196,39 @@ const SiteEquipmentTab = ({siteId}) => {
     };
 
     const handleUnassignEquipment = async (equipmentId) => {
+        setUnassignConfirmation({
+            isVisible: true,
+            equipmentId: equipmentId
+        });
+        // try {
+        //     await siteService.removeEquipment(siteId, equipmentId);
+        //     await fetchEquipment();
+        //     setSnackbar({
+        //         show: true,
+        //         message: 'Equipment successfully unassigned from site',
+        //         type: 'success'
+        //     });
+        // } catch (err) {
+        //     console.error("Error unassigning equipment:", err);
+        //     setSnackbar({
+        //         show: true,
+        //         message: 'Failed to unassign equipment',
+        //         type: 'error'
+        //     });
+        // }
+    };
+
+    const confirmUnassignEquipment = async () => {
         try {
-            await siteService.removeEquipment(siteId, equipmentId);
+            await siteService.removeEquipment(siteId, unassignConfirmation.equipmentId);
             await fetchEquipment();
             setSnackbar({
                 show: true,
                 message: 'Equipment successfully unassigned from site',
                 type: 'success'
             });
+            // Close the confirmation dialog
+            setUnassignConfirmation({ isVisible: false, equipmentId: null });
         } catch (err) {
             console.error("Error unassigning equipment:", err);
             setSnackbar({
@@ -192,6 +236,8 @@ const SiteEquipmentTab = ({siteId}) => {
                 message: 'Failed to unassign equipment',
                 type: 'error'
             });
+            // Close the confirmation dialog
+            setUnassignConfirmation({ isVisible: false, equipmentId: null });
         }
     };
 
@@ -222,7 +268,7 @@ const SiteEquipmentTab = ({siteId}) => {
         }
     };
 
-    if (loading) return <div className="loading-container">{t('site.loadingEquipment')}</div>;
+    if (loading) return <ContentLoader message={"Loading Equipment.."}/> ;
 
     return (
         <div className="site-equipment-tab">
@@ -312,6 +358,16 @@ const SiteEquipmentTab = ({siteId}) => {
                     </div>
                 </div>
             )}
+            <ConfirmationDialog
+                isVisible={unassignConfirmation.isVisible}
+                type="warning"
+                title="Unassign Equipment"
+                message="Are you sure you want to unassign this equipment from the site?"
+                confirmText="Unassign"
+                cancelText="Cancel"
+                onConfirm={confirmUnassignEquipment}
+                onCancel={() => setUnassignConfirmation({ isVisible: false, equipmentId: null })}
+            />
 
             {error ? (
                 <div className="error-container">{error}</div>

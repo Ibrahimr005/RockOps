@@ -1,0 +1,100 @@
+/* CompleteStepModal - Specific Styles */
+
+.complete-step-info {
+    background: var(--color-surface-secondary, #f8f9fa);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 24px;
+
+    p {
+        margin: 8px 0;
+        color: var(--color-text-primary);
+        font-size: 14px;
+
+        strong {
+            color: var(--color-text-secondary);
+            font-weight: 600;
+        }
+    }
+}
+
+.complete-step-form {
+    .form-group {
+        margin-bottom: 24px;
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: var(--color-text-primary);
+            font-weight: 500;
+            font-size: 14px;
+
+            svg {
+                color: var(--color-primary);
+            }
+
+            .required {
+                color: var(--color-danger);
+                margin-left: 2px;
+            }
+        }
+
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background-color: var(--section-background-color);
+            color: var(--text-color);
+            font-size: 14px;
+            transition: all var(--transition-fast);
+            font-family: var(--font-family);
+
+            &:focus {
+                outline: none;
+                border-color: var(--color-primary);
+                box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 66, 135, 245), 0.1);
+            }
+
+            &.error {
+                border-color: var(--color-danger);
+            }
+        }
+
+        .error-message {
+            color: var(--color-danger);
+            font-size: 12px;
+            margin-top: 4px;
+            display: block;
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: 6px;
+            display: block;
+            font-style: italic;
+        }
+    }
+}
+
+.btn-success {
+    background-color: var(--color-success);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &:hover {
+        background-color: var(--color-success-dark, #28a745);
+    }
+}
+
+
+
+
+
+

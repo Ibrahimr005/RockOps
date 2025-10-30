@@ -44,7 +44,11 @@ export const EQUIPMENT_ENDPOINTS = {
     MAINTENANCE_FOR_LINKING: (equipmentId) => `/api/equipment/${equipmentId}/maintenance/for-linking`,
     ACCEPT_TRANSACTION_WITH_MAINTENANCE: (equipmentId, transactionId) => `/api/equipment/${equipmentId}/transactions/${transactionId}/accept-with-maintenance`,
     ITEMS: (equipmentId) => `/api/equipment/${equipmentId}/items`,
-    CHECK_BATCH_EXISTS: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`
+    CHECK_BATCH_EXISTS: (equipmentId, batchNumber) => `/api/equipment/${equipmentId}/maintenance/check-transaction/${batchNumber}`,
+    DRIVERS: (equipmentId) => `/api/equipment/${equipmentId}/drivers`,
+    ASSIGN_DRIVER: (equipmentId, driverId) => `/api/equipment/${equipmentId}/driver/${driverId}`,
+    UNASSIGN_DRIVER: (equipmentId, driverId) => `/api/equipment/${equipmentId}/driver/${driverId}`,
+
 };
 
 // Batch Validation endpoints
@@ -368,6 +372,14 @@ export const WORK_TYPE_ENDPOINTS = {
     CREATE: '/api/v1/worktypes',
     UPDATE: (id) => `/api/v1/worktypes/${id}`,
     DELETE: (id) => `/api/v1/worktypes/${id}`
+};
+
+// Contact Type module endpoints
+export const CONTACT_TYPE_ENDPOINTS = {
+    BASE: '/api/v1/contacttypes',
+    MANAGEMENT: '/api/v1/contacttypes/management',
+    ACTIVE: '/api/v1/contacttypes/active',
+    BY_ID: (id) => `/api/v1/contacttypes/${id}`,
 };
 
 // Job Position module endpoints
@@ -791,7 +803,10 @@ export const CONTACT_ENDPOINTS = {
     ACTIVATE: (id) => `/api/contacts/${id}/activate`,
     OVERDUE_ASSIGNMENTS: '/api/contacts/overdue-assignments',
     NEEDING_FOLLOWUP: '/api/contacts/needing-followup',
-    STATISTICS: '/api/contacts/statistics'
+    STATISTICS: '/api/contacts/statistics',
+    BY_MERCHANT: (merchantId) => `/api/contacts/merchant/${merchantId}`,
+    WITHOUT_MERCHANT: '/api/contacts/without-merchant',
+    WITH_MERCHANT: '/api/contacts/with-merchant'
 };
 
 

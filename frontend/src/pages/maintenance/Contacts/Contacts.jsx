@@ -70,12 +70,17 @@ const Contacts = () => {
     };
 
     const handleOpenModal = (contact = null) => {
-        if (contact) {
-            setEditingContact(contact);
-        } else {
-            setEditingContact(null);
+        try {
+            if (contact) {
+                setEditingContact(contact);
+            } else {
+                setEditingContact(null);
+            }
+            setShowModal(true);
+        } catch (error) {
+            console.error('Error opening contact modal:', error);
+            showError('Failed to open contact form');
         }
-        setShowModal(true);
     };
 
     const handleViewContact = (contact) => {
@@ -162,21 +167,23 @@ const Contacts = () => {
         }
     };
 
-    const getContactTypeColor = (contactType) => {
-        switch (contactType) {
+    const getContactTypeColor = (contactTypeName) => {
+        const upperCaseName = contactTypeName?.toUpperCase();
+        switch (upperCaseName) {
             case 'TECHNICIAN': return 'var(--color-primary)';
             case 'SUPERVISOR': return 'var(--color-success)';
             case 'MANAGER': return 'var(--color-warning)';
             case 'SUPPLIER': return 'var(--color-info)';
             case 'CONTRACTOR': return 'var(--color-secondary)';
             case 'CUSTOMER': return 'var(--color-danger)';
-            case 'INTERNAL_STAFF': return 'var(--color-text-secondary)';
+            case 'INTERNAL_STAFF': 
+            case 'INTERNAL STAFF': return 'var(--color-text-secondary)';
             default: return 'var(--color-text-secondary)';
         }
     };
 
-    const getContactTypeBadge = (contactType) => {
-        const color = getContactTypeColor(contactType);
+    const getContactTypeBadge = (contactTypeName) => {
+        const color = getContactTypeColor(contactTypeName);
         return (
             <span
                 className="contact-type-badge"
@@ -186,7 +193,7 @@ const Contacts = () => {
                     border: `1px solid ${color}`
                 }}
             >
-                {contactType?.replace('_', ' ')}
+                {contactTypeName}
             </span>
         );
     };
@@ -222,9 +229,19 @@ const Contacts = () => {
         },
         {
             header: 'Contact Type',
-            accessor: 'contactType',
+            accessor: 'contactTypeName',
             sortable: true,
-            render: (row) => getContactTypeBadge(row.contactType)
+            render: (row) => getContactTypeBadge(row.contactTypeName)
+        },
+        {
+            header: 'Merchant',
+            accessor: 'merchantName',
+            sortable: true,
+            render: (row) => (
+                <div className="merchant-info">
+                    <div className="merchant-name">{row.merchantName || 'No Merchant'}</div>
+                </div>
+            )
         },
         {
             header: 'Company',
@@ -318,6 +335,7 @@ const Contacts = () => {
     const filterableColumns = [
         { header: 'Name', accessor: 'firstName' },
         { header: 'Contact Type', accessor: 'contactType' },
+        { header: 'Merchant', accessor: 'merchantName' },
         { header: 'Company', accessor: 'company' },
         { header: 'Status', accessor: 'isActive' }
     ];

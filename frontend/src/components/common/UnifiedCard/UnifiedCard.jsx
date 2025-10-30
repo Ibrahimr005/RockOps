@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './UnifiedCard.scss';
 
 /**
  * UnifiedCard Component - Beautiful Modern Design
+ * Supports presigned URL refresh for MinIO/S3 images
  */
 const UnifiedCard = ({
                          id,
@@ -19,10 +20,31 @@ const UnifiedCard = ({
                          isEmpty = false,
                          emptyIcon: EmptyIcon,
                          emptyMessage = 'No data available',
-                         emptyIconSize = 54
+                         emptyIconSize = 54,
+                         // New prop for presigned URL refresh
+                         onImageRefresh = null
                      }) => {
 
-    const handleImageError = (e) => {
+    const [imageRefreshAttempted, setImageRefreshAttempted] = useState(false);
+    const [refreshedImageUrl, setRefreshedImageUrl] = useState(null);
+
+    const handleImageError = async (e) => {
+        // If we have a refresh callback and haven't attempted refresh yet
+        if (onImageRefresh && !imageRefreshAttempted) {
+            setImageRefreshAttempted(true);
+            try {
+                const newUrl = await onImageRefresh(id);
+                if (newUrl && newUrl !== e.target.src) {
+                    setRefreshedImageUrl(newUrl);
+                    e.target.src = newUrl;
+                    return;
+                }
+            } catch (error) {
+                console.error(`Failed to refresh image for ${title}:`, error);
+            }
+        }
+        
+        // Fallback to placeholder
         if (imageFallback && e.target.src !== imageFallback) {
             e.target.src = imageFallback;
         }
@@ -66,7 +88,7 @@ const UnifiedCard = ({
             {/* Image Section */}
             <div className="unified-card-image">
                 <img
-                    src={imageUrl || imageFallback}
+                    src={refreshedImageUrl || imageUrl || imageFallback}
                     alt={title}
                     onError={handleImageError}
                 />

@@ -1,51 +1,96 @@
 import React from 'react';
+import { FaUsers, FaStar, FaChartBar, FaBriefcase } from 'react-icons/fa';
 import './StatisticsCards.scss';
 
-const StatisticsCards = ({ cards }) => {
-    if (!cards || cards.length === 0) return null;
+/**
+ * StatisticsCards Component
+ *
+ * A reusable statistics card grid component that displays key metrics.
+ *
+ * @param {Object} props - Component props
+ * @param {Array} props.data - Array of data items to calculate statistics from
+ * @param {Array} props.cards - Optional custom card configurations
+ * @param {string} props.className - Optional additional CSS class
+ *
+ * @example
+ * // Basic usage with default cards
+ * <StatisticsCards data={potentialCandidates} />
+ *
+ * @example
+ * // Custom cards configuration
+ * <StatisticsCards
+ *   data={candidates}
+ *   cards={[
+ *     {
+ *       icon: <FaUsers />,
+ *       label: "Total Users",
+ *       getValue: (data) => data.length,
+ *       color: "blue"
+ *     }
+ *   ]}
+ * />
+ */
+const StatisticsCards = ({
+                             data = [],
+                             cards = null,
+                             className = ''
+                         }) => {
 
-    const getColorClass = (color) => {
-        const colorMap = {
-            blue: 'stat-card-blue',
-            green: 'stat-card-green',
-            orange: 'stat-card-orange',
-            purple: 'stat-card-purple',
-            teal: 'stat-card-teal',
-            red: 'stat-card-red',
-            yellow: 'stat-card-yellow'
-        };
-        return colorMap[color] || 'stat-card-blue';
-    };
+    // Default cards configuration for potential candidates
+    const defaultCards = [
+        {
+            icon: <FaUsers />,
+            label: 'Total Potential',
+            getValue: (data) => data.length,
+            color: 'blue'
+        },
+        {
+            icon: <FaStar />,
+            label: 'With Rating',
+            getValue: (data) => data.filter(c => c.rating).length,
+            color: 'yellow'
+        },
+        {
+            icon: <FaChartBar />,
+            label: 'Avg Rating',
+            getValue: (data) => {
+                const ratedItems = data.filter(c => c.rating);
+                if (ratedItems.length === 0) return 0;
+                const sum = ratedItems.reduce((sum, c) => sum + c.rating, 0);
+                return Math.round((sum / ratedItems.length) * 10) / 10;
+            },
+            color: 'green'
+        },
+        {
+            icon: <FaBriefcase />,
+            label: 'From Closed Vacancies',
+            getValue: (data) => data.filter(c =>
+                c.rejectionReason && c.rejectionReason.includes('closed')
+            ).length,
+            color: 'purple'
+        }
+    ];
+
+    // Use custom cards if provided, otherwise use default
+    const displayCards = cards || defaultCards;
 
     return (
-        <div className="statistics-cards-container">
-            {cards.map((card, index) => (
-                <div
-                    key={index}
-                    className={`stat-card ${getColorClass(card.color)} ${card.onClick ? 'clickable' : ''}`}
-                    onClick={card.onClick}
-                >
-                    <div className="stat-card-content">
-                        <div className="stat-card-icon">
+        <div className={`statistics-section ${className}`}>
+            <div className="stats-grid">
+                {displayCards.map((card, index) => (
+                    <div key={index} className={`stat-card stat-card--${card.color || 'default'}`}>
+                        <div className="stat-icon">
                             {card.icon}
                         </div>
-                        <div className="stat-card-info">
-                            <h3 className="stat-card-title">{card.title}</h3>
-                            <div className="stat-card-value">{card.value}</div>
-                            {card.trend !== undefined && (
-                                <div className={`stat-card-trend ${card.trend >= 0 ? 'positive' : 'negative'}`}>
-                                    {card.trend >= 0 ? '+' : ''}{card.trend}% {card.trendLabel}
-                                </div>
-                            )}
+                        <div className="stat-content">
+              <span className="stat-number">
+                {card.getValue(data)}
+              </span>
+                            <span className="stat-label">{card.label}</span>
                         </div>
                     </div>
-                    {card.urgent && (
-                        <div className="stat-card-urgent-indicator">
-                            <span>!</span>
-                        </div>
-                    )}
-                </div>
-            ))}
+                ))}
+            </div>
         </div>
     );
 };

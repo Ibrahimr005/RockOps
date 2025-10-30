@@ -169,6 +169,21 @@ const AllSites = () => {
         setFilteredSites(result);
     }, [sites, selectedEmployeeRange, selectedEquipmentRange, selectedWarehouseRange, selectedMerchantRange]);
 
+
+    useEffect(() => {
+        if (showAddModal || showEditModal) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        // Cleanup function
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddModal, showEditModal]);
+
+
     const fetchSites = async () => {
         try {
             setLoading(true);

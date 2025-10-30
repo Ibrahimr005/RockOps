@@ -881,7 +881,7 @@ i18n
             }
         },
         fallbackLng: 'en', // Use English as fallback
-        debug: process.env.NODE_ENV === 'development', // Enable debug in development
+        debug: false, // Enable debug in development
         interpolation: {
             escapeValue: false // React already escapes values
         },

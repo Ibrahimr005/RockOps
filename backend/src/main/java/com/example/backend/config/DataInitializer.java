@@ -6,10 +6,12 @@ import com.example.backend.models.user.Role;
 import com.example.backend.models.hr.Department;
 import com.example.backend.models.hr.JobPosition;
 import com.example.backend.models.equipment.EquipmentType;
+import com.example.backend.models.StepType;
 import com.example.backend.repositories.hr.DepartmentRepository;
 import com.example.backend.repositories.hr.JobPositionRepository;
 import com.example.backend.repositories.equipment.EquipmentTypeRepository;
 import com.example.backend.repositories.user.UserRepository;
+import com.example.backend.repositories.StepTypeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -33,6 +35,7 @@ public class DataInitializer implements ApplicationRunner, CommandLineRunner {
     private final EquipmentTypeRepository equipmentTypeRepository;
     private final UserRepository userRepository;
     private final AuthenticationService authenticationService;
+    private final StepTypeRepository stepTypeRepository;
 
     @Override
     @Transactional
@@ -42,6 +45,7 @@ public class DataInitializer implements ApplicationRunner, CommandLineRunner {
         createBasicDepartments();
         createBasicDriverPosition();
         createJobPositionsForExistingEquipmentTypes(); // Re-enable this for existing equipment types
+        createDefaultStepTypes(); // Initialize default step types
 
         log.info("Application data initialization completed successfully.");
     }
@@ -256,6 +260,25 @@ public class DataInitializer implements ApplicationRunner, CommandLineRunner {
             return "Mid Level"; // Heavy equipment requires some experience
         } else {
             return "Entry Level"; // General equipment
+        }
+    }
+
+    /**
+     * Create default step types if they don't exist
+     */
+    private void createDefaultStepTypes() {
+        log.info("Initializing default step types...");
+
+        // Ensure TRANSPORT step type exists
+        if (!stepTypeRepository.existsByName("TRANSPORT") && !stepTypeRepository.existsByName("Transport") ) {
+            StepType transportStepType = new StepType();
+            transportStepType.setName("Transport");
+            transportStepType.setDescription("Transportation of equipment between locations");
+            transportStepType.setActive(true);
+            stepTypeRepository.save(transportStepType);
+            log.info("Created default TRANSPORT step type");
+        } else {
+            log.debug("TRANSPORT step type already exists");
         }
     }
 }

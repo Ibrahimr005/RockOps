@@ -463,3 +463,34 @@
     color: var(--color-danger);
     font-weight: bold;
 }
+
+// Phone number input styling
+.r4m-phone-input {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+
+    .r4m-country-code {
+        padding: 8px 12px;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-weight: 500;
+        min-width: 60px;
+        text-align: center;
+    }
+
+    input {
+        flex: 1;
+    }
+}
+
+// Field hint styling
+.r4m-field-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+

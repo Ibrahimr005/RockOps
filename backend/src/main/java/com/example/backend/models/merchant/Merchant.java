@@ -2,6 +2,7 @@ package com.example.backend.models.merchant;
 
 import com.example.backend.models.site.Site;
 import com.example.backend.models.warehouse.ItemCategory;
+import com.example.backend.models.Contact;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -69,4 +70,9 @@ public class Merchant {
     @JoinColumn(name = "site_id")
     @JsonManagedReference
     private Site site;
+    
+    @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, orphanRemoval = false, fetch = FetchType.LAZY)
+    @JsonManagedReference("merchant-contacts")
+    @Builder.Default
+    private List<Contact> contacts = new ArrayList<>();
 }

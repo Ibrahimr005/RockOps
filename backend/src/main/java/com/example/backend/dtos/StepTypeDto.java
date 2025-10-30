@@ -1,0 +1,24 @@
+package com.example.backend.dtos;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class StepTypeDto {
+    private UUID id;
+    private String name;
+    private String description;
+    private boolean active;
+}
+
+
+
+
+
+
+
