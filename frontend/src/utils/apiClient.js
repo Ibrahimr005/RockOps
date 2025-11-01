@@ -15,20 +15,20 @@ apiClient.interceptors.request.use(
         }
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
 // Response interceptor for handling errors
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Handle common errors like 401, 403, etc.
         if (error.response) {
-            if (error.response.status === 401) {
-                // Redirect to login page or refresh token
+            const { status, config: reqConfig } = error.response;
+
+            // ✅ Skip login endpoint from global 401 handling
+            if (status === 401 && !reqConfig.url.includes('/auth/authenticate')) {
                 console.error('Authentication error: Please log in again');
+                // Uncomment if you want to auto-logout on other 401s
                 // localStorage.removeItem('token');
                 // window.location = '/login';
             }

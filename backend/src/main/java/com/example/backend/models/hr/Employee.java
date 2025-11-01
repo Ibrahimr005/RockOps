@@ -135,6 +135,11 @@ public class Employee
         return BigDecimal.ZERO;
     }
 
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference("employee-vacation-balance")
+    private List<VacationBalance> vacationBalances = new ArrayList<>();
+
+
     /**
      * Calculate the monthly salary based on contract type
      * @return Monthly salary amount
