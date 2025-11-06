@@ -1,6 +1,7 @@
 package com.example.backend.services.hr;
 
 import com.example.backend.dto.hr.leave.*;
+import com.example.backend.exceptions.InsufficientVacationBalanceException;
 import com.example.backend.models.hr.*;
 import com.example.backend.repositories.hr.*;
 import com.example.backend.models.hr.LeaveRequest.LeaveStatus;
@@ -53,7 +54,7 @@ public class LeaveRequestService {
         // Check for overlapping requests
         checkOverlappingRequests(employeeId, createDTO.getStartDate(), createDTO.getEndDate());
 
-        // Check vacation balance if required
+        // FIX #104: Check vacation balance BEFORE creating the request
         if (createDTO.getLeaveType().requiresVacationBalance()) {
             int requestedDays = calculateWorkingDays(createDTO.getStartDate(), createDTO.getEndDate());
             checkVacationBalance(employeeId, requestedDays);
@@ -86,6 +87,20 @@ public class LeaveRequestService {
         return savedRequest;
     }
 
+    // FIX #104: Updated checkVacationBalance method to throw specific exception
+    private void checkVacationBalance(UUID employeeId, int requestedDays) {
+        VacationBalanceResponseDTO balance = vacationBalanceService.getVacationBalance(employeeId);
+
+        if (balance == null) {
+            throw new RuntimeException("Vacation balance not found for employee");
+        }
+
+        int availableDays = balance.getRemainingDays();
+
+        if (requestedDays > availableDays) {
+            throw new InsufficientVacationBalanceException(availableDays, requestedDays);
+        }
+    }
     /**
      * Approve a leave request
      */
@@ -244,15 +259,15 @@ public class LeaveRequestService {
         }
     }
 
-    private void checkVacationBalance(UUID employeeId, int requestedDays) {
-        VacationBalance balance = vacationBalanceService.getOrCreateBalance(employeeId, LocalDate.now().getYear());
-
-        if (!balance.hasSufficientBalance(requestedDays)) {
-            throw new RuntimeException(
-                    String.format("Insufficient vacation balance. Requested: %d, Available: %d",
-                            requestedDays, balance.getRemainingDays()));
-        }
-    }
+//    private void checkVacationBalance(UUID employeeId, int requestedDays) {
+//        VacationBalance balance = vacationBalanceService.getOrCreateBalance(employeeId, LocalDate.now().getYear());
+//
+//        if (!balance.hasSufficientBalance(requestedDays)) {
+//            throw new RuntimeException(
+//                    String.format("Insufficient vacation balance. Requested: %d, Available: %d",
+//                            requestedDays, balance.getRemainingDays()));
+//        }
+//    }
 
     private void updateAttendanceForApprovedLeave(LeaveRequest leaveRequest) {
         log.info("Starting attendance update for approved leave request: {}", leaveRequest.getId());

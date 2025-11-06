@@ -6,6 +6,7 @@ import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { leaveRequestService } from '../../../services/hr/leaveRequestService';
 import { vacationBalanceService } from '../../../services/hr/vacationBalanceService';
 import {employeeService} from "../../../services/hr/employeeService.js";
+import './LeaveRequestModal.scss';
 
 const LeaveRequestModal = ({
                                isOpen,
@@ -40,55 +41,35 @@ const LeaveRequestModal = ({
     const leaveTypes = [
         { value: 'VACATION', label: 'Vacation Leave', requiresBalance: true },
         { value: 'SICK', label: 'Sick Leave', requiresBalance: false },
-        { value: 'PERSONAL', label: 'Personal Leave', requiresBalance: true },
-        { value: 'MATERNITY', label: 'Maternity Leave', requiresBalance: false },
-        { value: 'PATERNITY', label: 'Paternity Leave', requiresBalance: false },
-        { value: 'UNPAID', label: 'Unpaid Leave', requiresBalance: false },
+        { value: 'PERSONAL', label: 'Personal Leave', requiresBalance: false },
         { value: 'EMERGENCY', label: 'Emergency Leave', requiresBalance: false },
-        { value: 'BEREAVEMENT', label: 'Bereavement Leave', requiresBalance: false },
-        { value: 'ANNUAL', label: 'Annual Leave', requiresBalance: true },
-        { value: 'COMPENSATORY', label: 'Compensatory Leave', requiresBalance: false }
+        { value: 'UNPAID', label: 'Unpaid Leave', requiresBalance: false }
     ];
+
+    const selectedLeaveType = leaveTypes.find(type => type.value === formData.leaveType);
+
+    // Current date for date picker min value
+    const today = new Date().toISOString().split('T')[0];
+
+    // Fetch employees when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            fetchEmployees();
+        }
+    }, [isOpen]);
+
     const fetchEmployees = async () => {
         try {
             const response = await employeeService.getMinimal();
-
-            if (response.data) {
-                setEmployees(response.data);
-            }
+            const employeesArray = response.data?.data || response.data || [];
+            setEmployees(Array.isArray(employeesArray) ? employeesArray : []);
         } catch (error) {
             console.error('Error fetching employees:', error);
             showSnackbar('Failed to load employees', 'error');
         }
     };
-    // Reset form when modal opens/closes
-    useEffect(() => {
 
-
-
-        if (isOpen) {
-            fetchEmployees();
-            setFormData({
-                employeeId: initialEmployeeId || '',
-                leaveType: 'VACATION',
-                startDate: '',
-                endDate: '',
-                reason: '',
-                emergencyContact: '',
-                emergencyPhone: '',
-                workDelegatedTo: '',
-                delegationNotes: ''
-            });
-            setValidationErrors({});
-            setVacationBalance(null);
-            setCalculatedDays(0);
-            if (!initialEmployeeId) {
-                setSelectedEmployee(null);
-            }
-        }
-    }, [isOpen, initialEmployeeId]);
-
-    // Calculate working days between dates (excluding weekends)
+    // Calculate working days (excluding weekends)
     const calculateWorkingDays = (startDate, endDate) => {
         if (!startDate || !endDate) return 0;
 
@@ -112,7 +93,32 @@ const LeaveRequestModal = ({
     useEffect(() => {
         const days = calculateWorkingDays(formData.startDate, formData.endDate);
         setCalculatedDays(days);
-    }, [formData.startDate, formData.endDate]);
+
+        // FIX #104: Immediately validate balance when days are calculated
+        if (days > 0 && vacationBalance && formData.leaveType) {
+            const isVacationLeave = formData.leaveType === 'VACATION';
+            if (isVacationLeave && days > vacationBalance.remainingDays) {
+                setValidationErrors(prev => ({
+                    ...prev,
+                    balance: `You cannot request more leave days than your available annual balance. Available: ${vacationBalance.remainingDays} days, Requested: ${days} days.`
+                }));
+            } else {
+                // Clear balance error if days are within limit
+                setValidationErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.balance;
+                    return newErrors;
+                });
+            }
+        } else if (calculatedDays === 0) {
+            // Clear error when no days selected
+            setValidationErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors.balance;
+                return newErrors;
+            });
+        }
+    }, [formData.startDate, formData.endDate, vacationBalance, formData.leaveType, calculatedDays]);
 
     // Fetch vacation balance when employee is selected
     useEffect(() => {
@@ -135,6 +141,13 @@ const LeaveRequestModal = ({
 
     // Handle form input changes
     const handleInputChange = (field, value) => {
+        // FIX #105: Phone number validation - only allow numbers, spaces, dashes, parentheses, and + sign
+        if (field === 'emergencyPhone') {
+            // Remove any characters that are not digits, spaces, dashes, parentheses, or +
+            const sanitized = value.replace(/[^\d\s\-\(\)\+]/g, '');
+            value = sanitized;
+        }
+
         setFormData(prev => ({
             ...prev,
             [field]: value
@@ -195,11 +208,22 @@ const LeaveRequestModal = ({
             errors.reason = 'Please provide a reason for the leave request';
         }
 
-        // Check vacation balance for leave types that require it
+        // FIX #105: Validate phone number format if provided
+        if (formData.emergencyPhone) {
+            const digitsOnly = formData.emergencyPhone.replace(/\D/g, '');
+            if (digitsOnly.length < 7) {
+                errors.emergencyPhone = 'Phone number must contain at least 7 digits';
+            } else if (digitsOnly.length > 15) {
+                errors.emergencyPhone = 'Phone number is too long (maximum 15 digits)';
+            }
+        }
+
+        // FIX #104: Improved error message for insufficient vacation balance
+        // This validation should run FIRST before other date validations
         const selectedLeaveType = leaveTypes.find(type => type.value === formData.leaveType);
-        if (selectedLeaveType?.requiresBalance && vacationBalance) {
+        if (selectedLeaveType?.requiresBalance && vacationBalance && calculatedDays > 0) {
             if (calculatedDays > vacationBalance.remainingDays) {
-                errors.balance = `Insufficient vacation balance. You have ${vacationBalance.remainingDays} days remaining, but requested ${calculatedDays} days.`;
+                errors.balance = `You cannot request more leave days than your available annual balance. Available: ${vacationBalance.remainingDays} days, Requested: ${calculatedDays} days.`;
             }
         }
 
@@ -211,10 +235,7 @@ const LeaveRequestModal = ({
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!validateForm()) {
-            showSnackbar('Please fix the form errors before submitting', 'error');
-            return;
-        }
+
 
         try {
             setLoading(true);
@@ -222,14 +243,31 @@ const LeaveRequestModal = ({
 
             if (response.data?.success !== false) {
                 showSnackbar('Leave request submitted successfully!', 'success');
-                onSuccess?.(); // Refresh parent component
-                onClose(); // Close modal
+                onSuccess?.();
+                handleClose();
             } else {
-                showSnackbar(response.data?.error || 'Failed to submit leave request', 'error');
+                const errorMsg = response.data?.message || 'Failed to submit leave request';
+                showSnackbar(errorMsg, 'error');
             }
         } catch (error) {
             console.error('Error submitting leave request:', error);
-            showSnackbar(error.response?.data?.error || 'Failed to submit leave request', 'error');
+
+            // FIX #104: Display backend error message in the modal
+            const backendError = error.response?.data?.error || error.response?.data?.message || error.message;
+
+            // Check if it's a balance error from backend
+            if (error.response?.data?.errorType === 'INSUFFICIENT_BALANCE' ||
+                backendError?.includes('available annual balance')) {
+                // Set the balance error to display in the modal
+                setValidationErrors(prev => ({
+                    ...prev,
+                    balance: backendError
+                }));
+                showSnackbar('Insufficient vacation balance', 'error');
+            } else {
+                // For other errors, just show in snackbar
+                showSnackbar(backendError || 'Failed to submit leave request', 'error');
+            }
         } finally {
             setLoading(false);
         }
@@ -237,39 +275,38 @@ const LeaveRequestModal = ({
 
     // Handle modal close
     const handleClose = () => {
-        if (loading) return; // Prevent closing while submitting
+        setFormData({
+            employeeId: initialEmployeeId || '',
+            leaveType: 'VACATION',
+            startDate: '',
+            endDate: '',
+            reason: '',
+            emergencyContact: '',
+            emergencyPhone: '',
+            workDelegatedTo: '',
+            delegationNotes: ''
+        });
+        setValidationErrors({});
+        setSelectedEmployee(null);
+        setVacationBalance(null);
+        setCalculatedDays(0);
         onClose();
     };
-
-    // Handle backdrop click
-    const handleBackdropClick = (e) => {
-        if (e.target === e.currentTarget) {
-            handleClose();
-        }
-    };
-
-    // Get minimum date (today)
-    const today = new Date().toISOString().split('T')[0];
-
-    const selectedLeaveType = leaveTypes.find(type => type.value === formData.leaveType);
 
     if (!isOpen) return null;
 
     return (
-        <div className="modal-backdrop" onClick={handleBackdropClick}>
-            <div className="modal-container modal-lg">
+        <div className="modal-overlay" onClick={handleClose}>
+            <div className="leave-request-modal" onClick={(e) => e.stopPropagation()}>
                 {/* Modal Header */}
                 <div className="modal-header">
-                    <h2 className="modal-title modal-title-primary">
-                        <FaCalendarAlt />
+                    <h2>
+                        <FaCalendarAlt className="header-icon" />
                         Submit Leave Request
                     </h2>
-                    <button
-                        className="btn-close-svg"
-                        onClick={handleClose}
-                        disabled={loading}
-                        aria-label="Close modal"
-                    />
+                    <button className="close-btn" onClick={handleClose}>
+                        <FaTimes />
+                    </button>
                 </div>
 
                 {/* Modal Body */}
@@ -283,13 +320,14 @@ const LeaveRequestModal = ({
                             </h3>
 
                             <div className="form-group">
+                                {/* FIX #99: Red asterisk for required field */}
                                 <label className="form-label">
-                                    Select Employee <span className="required">*</span>
+                                    Select Employee <span className="required-asterisk">*</span>
                                 </label>
                                 <EmployeeSelector
-                                    employees={employees}                    // Added: Required prop
-                                    selectedEmployee={selectedEmployee}      // Kept: Current selection
-                                    onSelect={handleEmployeeSelect}         // Fixed: Correct prop name
+                                    employees={employees}
+                                    selectedEmployee={selectedEmployee}
+                                    onSelect={handleEmployeeSelect}
                                     placeholder="Search and select an employee..."
                                     error={validationErrors.employeeId}
                                 />
@@ -333,8 +371,9 @@ const LeaveRequestModal = ({
 
                             <div className="form-row">
                                 <div className="form-group">
+                                    {/* FIX #99: Red asterisk for required field */}
                                     <label className="form-label">
-                                        Leave Type <span className="required">*</span>
+                                        Leave Type <span className="required-asterisk">*</span>
                                     </label>
                                     <select
                                         value={formData.leaveType}
@@ -355,8 +394,9 @@ const LeaveRequestModal = ({
 
                             <div className="form-row">
                                 <div className="form-group">
+                                    {/* FIX #99: Red asterisk for required field */}
                                     <label className="form-label">
-                                        Start Date <span className="required">*</span>
+                                        Start Date <span className="required-asterisk">*</span>
                                     </label>
                                     <input
                                         type="date"
@@ -371,8 +411,9 @@ const LeaveRequestModal = ({
                                 </div>
 
                                 <div className="form-group">
+                                    {/* FIX #99: Red asterisk for required field */}
                                     <label className="form-label">
-                                        End Date <span className="required">*</span>
+                                        End Date <span className="required-asterisk">*</span>
                                     </label>
                                     <input
                                         type="date"
@@ -394,14 +435,15 @@ const LeaveRequestModal = ({
                                 </div>
                             )}
 
-                            {/* Balance validation error */}
+                            {/* FIX #104: Balance validation error with clearer message */}
                             {validationErrors.balance && (
                                 <div className="error-message balance-error">{validationErrors.balance}</div>
                             )}
 
                             <div className="form-group">
+                                {/* FIX #99: Red asterisk for required field */}
                                 <label className="form-label">
-                                    Reason for Leave <span className="required">*</span>
+                                    Reason for Leave <span className="required-asterisk">*</span>
                                 </label>
                                 <textarea
                                     value={formData.reason}
@@ -432,13 +474,19 @@ const LeaveRequestModal = ({
                                 </div>
 
                                 <div className="form-group">
+                                    {/* FIX #105: Phone validation with proper input handling */}
                                     <label className="form-label">Emergency Phone</label>
                                     <input
                                         type="tel"
                                         value={formData.emergencyPhone}
                                         onChange={(e) => handleInputChange('emergencyPhone', e.target.value)}
                                         placeholder="Emergency contact phone number"
+                                        className={validationErrors.emergencyPhone ? 'error' : ''}
                                     />
+                                    {validationErrors.emergencyPhone && (
+                                        <div className="error-message">{validationErrors.emergencyPhone}</div>
+                                    )}
+                                    <small className="field-hint">Enter numbers only (7-15 digits, + allowed for country code)</small>
                                 </div>
                             </div>
 
@@ -495,9 +543,6 @@ const LeaveRequestModal = ({
                     </button>
                 </div>
             </div>
-
-            {/* Custom styles for this modal */}
-
         </div>
     );
 };

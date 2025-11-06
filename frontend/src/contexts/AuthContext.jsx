@@ -13,6 +13,7 @@ export const AuthProvider = ({ children }) => {
     const { t } = useTranslation();
 
     // Function to handle login
+// Function to handle login
     const login = async (username, password) => {
         try {
             const response = await authService.authenticate({ username, password });
@@ -32,11 +33,21 @@ export const AuthProvider = ({ children }) => {
             setIsAuthenticated(true);
             setLoading(false);
 
-            // Return the user data for further use
             return userData;
         } catch (error) {
             console.error('Login error:', error);
-            throw error;
+
+            // ✅ Extract proper message from backend
+            let message = 'An unexpected error occurred. Please try again.';
+
+            if (error.response) {
+                message = error.response.data?.message || 'Invalid username or password';
+            } else if (error.message) {
+                message = error.message;
+            }
+
+            // Throw a clean error object instead of AxiosError
+            throw new Error(message);
         }
     };
 
