@@ -135,7 +135,8 @@ const LeaveRequestList = () => {
         setIsProcessing(true);
         try {
             console.log('Rejecting request with id:', rejectConfirmId);
-            await leaveRequestService.rejectLeaveRequest(rejectConfirmId, { reason: rejectionReason });
+            // FIX: Backend expects 'comments' not 'reason'
+            await leaveRequestService.rejectLeaveRequest(rejectConfirmId, { comments: rejectionReason });
             await fetchLeaveRequests();
             setRejectConfirmId(null);
             setRejectionReason('');
@@ -149,13 +150,13 @@ const LeaveRequestList = () => {
             setIsProcessing(false);
         }
     };
-
     const handleCancelReject = () => {
         setRejectConfirmId(null);
         setRejectionReason('');
     };
 
     // DataTable configuration
+// DataTable configuration
     const columns = [
         {
             header: 'Employee',
@@ -196,6 +197,17 @@ const LeaveRequestList = () => {
             header: 'Duration',
             accessor: 'startDate',
             sortable: true,
+            // FIX: Add exportFormatter for proper Excel export
+            exportFormatter: (value, row) => {
+                const start = formatDate(row.startDate);
+                const end = formatDate(row.endDate);
+                const days = row.workingDaysRequested || row.daysRequested || 0;
+                return `${start} to ${end} (${days} working days)`;
+            },
+            // FIX: Add filterValue for proper filtering
+            filterValue: (row) => {
+                return `${formatDate(row.startDate)} to ${formatDate(row.endDate)}`;
+            },
             render: (row) => (
                 <div className="duration-cell">
                     <div className="date-range">
@@ -215,12 +227,13 @@ const LeaveRequestList = () => {
                     </div>
                 </div>
             )
-
         },
         {
             header: 'Status',
             accessor: 'status',
             sortable: true,
+            // FIX: Add filterValue for proper filtering
+            filterValue: (row) => row.statusDisplay || row.status,
             render: (row, value) => (
                 <div className="status-cell">
                     {getStatusBadge(value)}
@@ -237,6 +250,12 @@ const LeaveRequestList = () => {
             header: 'Submitted',
             accessor: 'createdAt',
             sortable: true,
+            // FIX: Add exportFormatter for proper Excel export
+            exportFormatter: (value, row) => {
+                return `${formatDate(value)} by ${row.createdBy || 'Unknown'}`;
+            },
+            // FIX: Add filterValue for proper filtering
+            filterValue: (row) => formatDate(row.createdAt),
             render: (row, value) => (
                 <div className="submitted-cell">
                     <div className="submitted-date">{formatDate(value)}</div>
@@ -248,6 +267,23 @@ const LeaveRequestList = () => {
             header: 'Review Info',
             accessor: 'reviewedAt',
             sortable: true,
+            // FIX: Add exportFormatter for proper Excel export
+            exportFormatter: (value, row) => {
+                if (!value || row.status === 'PENDING') {
+                    return 'Pending review';
+                }
+                const reviewDate = formatDate(value);
+                const reviewer = row.reviewedBy || 'Unknown';
+                const comments = row.reviewComments || '';
+                return comments ? `${reviewDate} by ${reviewer} - ${comments}` : `${reviewDate} by ${reviewer}`;
+            },
+            // FIX: Add filterValue for proper filtering
+            filterValue: (row) => {
+                if (!row.reviewedAt || row.status === 'PENDING') {
+                    return 'Pending review';
+                }
+                return formatDate(row.reviewedAt);
+            },
             render: (row, value) => {
                 if (!value || row.status === 'PENDING') {
                     return <span className="no-review">Pending review</span>;
@@ -277,6 +313,12 @@ const LeaveRequestList = () => {
         {
             header: 'Work Delegation',
             accessor: 'workDelegatedTo',
+            // FIX: Add exportFormatter for proper Excel export
+            exportFormatter: (value, row) => {
+                if (!value) return 'Not specified';
+                const notes = row.delegationNotes ? ` - ${row.delegationNotes}` : '';
+                return `${value}${notes}`;
+            },
             render: (row, value) => (
                 <div className="delegation-cell">
                     {value ? (
@@ -297,6 +339,12 @@ const LeaveRequestList = () => {
         {
             header: 'Emergency Contact',
             accessor: 'emergencyContact',
+            // FIX: Add exportFormatter for proper Excel export
+            exportFormatter: (value, row) => {
+                if (!value) return 'Not provided';
+                const phone = row.emergencyPhone ? ` (${row.emergencyPhone})` : '';
+                return `${value}${phone}`;
+            },
             render: (row, value) => (
                 <div className="emergency-cell">
                     {value ? (
@@ -313,7 +361,6 @@ const LeaveRequestList = () => {
             )
         }
     ];
-
     const actions = [
         {
             label: 'Approve',

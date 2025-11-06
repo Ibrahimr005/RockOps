@@ -1,6 +1,7 @@
 package com.example.backend.controllers.hr;
 
 import com.example.backend.dto.hr.leave.*;
+import com.example.backend.exceptions.InsufficientVacationBalanceException;
 import com.example.backend.models.hr.LeaveRequest;
 import com.example.backend.services.hr.LeaveRequestService;
 import com.example.backend.services.hr.LeaveRequestMapperService;
@@ -44,15 +45,30 @@ public class LeaveRequestController {
             LeaveRequestResponseDTO responseDTO = mapperService.mapToResponseDTO(leaveRequest);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(Map.of(
-                "success", true,
-                "message", "Leave request submitted successfully",
-                "data", responseDTO
+                    "success", true,
+                    "message", "Leave request submitted successfully",
+                    "data", responseDTO
+            ));
+        } catch (InsufficientVacationBalanceException e) {
+            // FIX #104: Return specific error for insufficient balance
+            log.error("Insufficient vacation balance", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "success", false,
+                    "error", e.getMessage(),
+                    "errorType", "INSUFFICIENT_BALANCE"
+            ));
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid leave request data", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                    "success", false,
+                    "error", e.getMessage(),
+                    "errorType", "VALIDATION_ERROR"
             ));
         } catch (Exception e) {
             log.error("Error submitting leave request", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
-                "success", false,
-                "error", e.getMessage()
+                    "success", false,
+                    "error", e.getMessage()
             ));
         }
     }

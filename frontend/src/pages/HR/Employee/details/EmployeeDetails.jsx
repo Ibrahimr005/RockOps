@@ -1,4 +1,4 @@
-// EmployeeDetails.jsx
+// EmployeeDetails.jsx - Updated version with refresh callback
 import React, {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import './EmployeeDetails.scss';
@@ -36,97 +36,62 @@ const EmployeeDetails = () => {
         try {
             setLoading(true);
             const response = await hrEmployeeService.employee.getById(id);
-
-            console.log('Employee details response:', response);
-            console.log('Employee details data:', response.data);
-
-            setEmployee(response.data);
-        } catch (error) {
-            console.error('Error fetching employee details:', error);
-            setError(error.message || 'Failed to fetch employee details');
+            setEmployee(response.data || response);
+            setError(null);
+        } catch (err) {
+            console.error('Error fetching employee details:', err);
+            setError(err.message || 'Failed to load employee details');
         } finally {
             setLoading(false);
         }
     };
 
-    // Format date for display - moved to a utility function to be used by all tabs
+    // Format date helper
     const formatDate = (dateString) => {
-        if (!dateString) return 'Not specified';
-        try {
-            // Handle both ISO string and LocalDate format from backend
-            let date;
-            if (typeof dateString === 'string') {
-                // Handle ISO string format (YYYY-MM-DD)
-                date = new Date(dateString);
-            } else if (dateString instanceof Date) {
-                date = dateString;
-            } else {
-                // Handle LocalDate object format
-                date = new Date(dateString + 'T00:00:00');
-            }
-
-            if (isNaN(date.getTime())) {
-                console.warn('Invalid date:', dateString);
-                return 'Not specified';
-            }
-
-            return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        } catch (error) {
-            console.error('Error formatting date:', error, 'Date string:', dateString);
-            return 'Not specified';
-        }
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
     };
 
     // Calculate days since hire
     const calculateDaysSinceHire = (hireDate) => {
-        if (!hireDate) return 'N/A';
-        try {
-            const today = new Date();
-            let hire;
+        if (!hireDate) return '';
+        const hire = new Date(hireDate);
+        const today = new Date();
+        const diffTime = Math.abs(today - hire);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            if (typeof hireDate === 'string') {
-                hire = new Date(hireDate);
-            } else if (hireDate instanceof Date) {
-                hire = hireDate;
-            } else {
-                hire = new Date(hireDate + 'T00:00:00');
-            }
-
-            if (isNaN(hire.getTime())) {
-                console.warn('Invalid hire date:', hireDate);
-                return 'N/A';
-            }
-
-            const diffTime = today - hire;
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays < 30) {
             return `${diffDays} days`;
-        } catch (error) {
-            console.error('Error calculating days since hire:', error);
-            return 'N/A';
+        } else if (diffDays < 365) {
+            const months = Math.floor(diffDays / 30);
+            return `${months} month${months > 1 ? 's' : ''}`;
+        } else {
+            const years = Math.floor(diffDays / 365);
+            return `${years} year${years > 1 ? 's' : ''}`;
         }
     };
 
-    // Format currency for display - moved to a utility function to be used by all tabs
+    // Format currency
     const formatCurrency = (amount) => {
-        if (!amount && amount !== 0) return '-';
+        if (amount === null || amount === undefined) return 'N/A';
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'USD'
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
         }).format(amount);
     };
 
     if (loading) {
         return (
-            <ContentLoader
-                context="employee-details"
-                message="Loading employee information..."
-                fadeIn={true}
-                size="large"
-            />
+            <div className="employee-details-container">
+                <ContentLoader text="Loading employee details..." />
+            </div>
         );
     }
 
@@ -134,12 +99,9 @@ const EmployeeDetails = () => {
         return (
             <div className="employee-details-container">
                 <div className="error-message">
-                    <h2>Error Loading Data</h2>
+                    <h2>Error Loading Employee</h2>
                     <p>{error}</p>
-                    <div className="error-actions">
-                        <button onClick={() => fetchEmployeeDetails()}>Try Again</button>
-                        <button onClick={() => navigate('/hr/employees')}>Back to List</button>
-                    </div>
+                    <button onClick={() => navigate('/hr/employees')}>Back to Employees List</button>
                 </div>
             </div>
         );
@@ -157,7 +119,7 @@ const EmployeeDetails = () => {
         );
     }
 
-    // Helper functions to get employee data - moved here for reuse across tabs
+    // Helper functions to get employee data
     const getPosition = () => {
         if (employee.jobPosition && employee.jobPosition.positionName) {
             return employee.jobPosition.positionName;
@@ -167,11 +129,9 @@ const EmployeeDetails = () => {
 
     const getDepartment = () => {
         if (employee.jobPosition?.department) {
-            // If department is an object with a name property
             if (typeof employee.jobPosition.department === 'object' && employee.jobPosition.department.name) {
                 return employee.jobPosition.department.name;
             }
-            // If department is already a string
             if (typeof employee.jobPosition.department === 'string') {
                 return employee.jobPosition.department;
             }
@@ -186,7 +146,6 @@ const EmployeeDetails = () => {
         return employee.siteName || 'No site assigned';
     };
 
-    // Get full name
     const getFullName = () => {
         return employee.fullName || `${employee.firstName} ${employee.middleName ? employee.middleName + ' ' : ''}${employee.lastName}`;
     };
@@ -244,13 +203,13 @@ const EmployeeDetails = () => {
             {
                 text: 'Edit Employee',
                 icon: <FaEdit/>,
-                onClick: () => console.log('Edit employee'), // Implement edit functionality
+                onClick: () => navigate(`/hr/employees/edit/${id}`),
                 className: 'primary'
             },
             {
                 text: 'Export Report',
                 icon: <FaFileDownload/>,
-                onClick: () => console.log('Export report'), // Implement export functionality
+                onClick: () => console.log('Export report'),
                 className: 'secondary'
             }
         ];
@@ -259,21 +218,18 @@ const EmployeeDetails = () => {
     return (
         <div className="employee-details-container">
             <div className="employee-details-content">
-                {/* IntroCard replacing the employee-info-bar */}
                 <IntroCard
                     title={getFullName()}
                     label="EMPLOYEE DETAILS"
                     subtitle={`Employee ID: #${employee.id} • Hired ${formatDate(employee.hireDate)} (${calculateDaysSinceHire(employee.hireDate)})`}
                     breadcrumbs={getBreadcrumbs()}
                     lightModeImage={employee.photoUrl || null}
-                    darkModeImage={employee.photoUrl||null}// Pass URL or null
-                    icon={employee.photoUrl ? null : <FaUser/>}  // Show icon only when no photo
+                    darkModeImage={employee.photoUrl || null}
+                    icon={employee.photoUrl ? null : <FaUser/>}
                     stats={getEmployeeStats()}
-                    actionButtons={getActionButtons()}
-                    className="employee-intro-card"
+                    actions={getActionButtons()}
                 />
 
-                {/* Tabs Section */}
                 <div className="employee-details-tabs">
                     <div className="tabs-header">
                         <button
@@ -338,22 +294,17 @@ const EmployeeDetails = () => {
                         </button>
                     </div>
 
-                    <div className="tab-content" data-active-tab={
-                        activeTab === 'personal' ? 'Personal Information' :
-                            activeTab === 'employment' ? 'Employment Information' :
-                                activeTab === 'documents' ? 'Documents' :
-                                    activeTab === 'compensation' ? 'Compensation' :
-                                        activeTab === 'attendance' ? 'Attendance' :
-                                            activeTab === 'deductions' ? 'Deductions' :
-                                                activeTab === 'commissions' ? 'Commissions' :
-                                                    activeTab === 'loans' ? 'Loans' :
-                                                        activeTab === 'payslips' ? 'Payslips' : 'Vacation'
-                    }>
+                    <div className="tab-content">
                         {activeTab === 'personal' && <PersonalInfoTab employee={employee} formatDate={formatDate}/>}
                         {activeTab === 'employment' &&
                             <EmploymentTab employee={employee} formatDate={formatDate} getPosition={getPosition}
                                            getDepartment={getDepartment} getSiteName={getSiteName}/>}
-                        {activeTab === 'documents' && <DocumentsTab employee={employee}/>}
+                        {activeTab === 'documents' && (
+                            <DocumentsTab
+                                employee={employee}
+                                onRefresh={fetchEmployeeDetails}
+                            />
+                        )}
                         {activeTab === 'compensation' &&
                             <CompensationTab employee={employee} formatCurrency={formatCurrency}/>}
                         {activeTab === 'attendance' && <AttendanceTab employee={employee} formatDate={formatDate}/>}

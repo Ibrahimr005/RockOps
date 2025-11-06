@@ -1,18 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, {useCallback, useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import './VacancyList.scss';
 import AddVacancyModal from './modals/AddVacancyModal.jsx';
 import EditVacancyModal from './modals/EditVacancyModal.jsx';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
-import { FaEdit, FaTrashAlt, FaEye, FaUserPlus } from "react-icons/fa";
-import { useSnackbar } from '../../../contexts/SnackbarContext';
-import { vacancyService } from '../../../services/hr/vacancyService.js';
-import { jobPositionService } from '../../../services/hr/jobPositionService.js';
+import {FaEdit, FaTrashAlt, FaUserPlus} from "react-icons/fa";
+import {useSnackbar} from '../../../contexts/SnackbarContext';
+import {vacancyService} from '../../../services/hr/vacancyService.js';
+import {jobPositionService} from '../../../services/hr/jobPositionService.js';
 
 const VacancyList = () => {
     const navigate = useNavigate();
-    const { showSuccess, showError } = useSnackbar();
+    const {showSuccess, showError} = useSnackbar();
 
     // State management - ensure arrays are properly initialized
     const [vacancies, setVacancies] = useState([]);
@@ -21,21 +21,28 @@ const VacancyList = () => {
     const [error, setError] = useState(null);
     const [statusFilter, setStatusFilter] = useState('');
     const [priorityFilter, setPriorityFilter] = useState('');
+    const [departmentFilter, setDepartmentFilter] = useState(''); // Add department filter state
 
     // Modal states
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedVacancy, setSelectedVacancy] = useState(null);
 
+    // Reset all custom filters
+    const handleResetFilters = useCallback(() => {
+        setStatusFilter('');
+        setPriorityFilter('');
+        setDepartmentFilter('');
+    }, []);
+
     // Memoized fetch functions to prevent unnecessary re-renders
     const fetchVacancies = useCallback(async () => {
         try {
             setLoading(true);
-            setError(null); // Clear previous errors
+            setError(null);
             const response = await vacancyService.getAll();
 
             if (response && response.data) {
-                // Ensure we always set an array
                 console.log(response.data)
                 const vacancyData = Array.isArray(response.data) ? response.data : [];
                 setVacancies(vacancyData);
@@ -50,7 +57,7 @@ const VacancyList = () => {
                 'Failed to load vacancies';
             setError(errorMessage);
             showError(errorMessage);
-            setVacancies([]); // Ensure we set empty array on error
+            setVacancies([]);
         } finally {
             setLoading(false);
         }
@@ -60,7 +67,6 @@ const VacancyList = () => {
         try {
             const response = await jobPositionService.getAll();
             if (response && response.data) {
-                // Ensure we always set an array
                 const jobPositionData = Array.isArray(response.data) ? response.data : [];
                 setJobPositions(jobPositionData);
             } else {
@@ -73,13 +79,11 @@ const VacancyList = () => {
         }
     }, [showError]);
 
-    // Load all necessary data when component mounts
     useEffect(() => {
         fetchVacancies();
         fetchJobPositions();
     }, [fetchVacancies, fetchJobPositions]);
 
-    // Handle adding a new vacancy
     const handleAddVacancy = async (newVacancy) => {
         if (!newVacancy) {
             showError('Invalid vacancy data');
@@ -117,7 +121,6 @@ const VacancyList = () => {
         }
     };
 
-    // Handle editing a vacancy
     const handleEditVacancy = async (updatedVacancy) => {
         if (!updatedVacancy || !selectedVacancy?.id) {
             showError('Invalid vacancy data');
@@ -129,7 +132,6 @@ const VacancyList = () => {
             const response = await vacancyService.update(selectedVacancy.id, updatedVacancy);
 
             if (response) {
-                // Refresh the vacancy list
                 await fetchVacancies();
                 setShowEditModal(false);
                 setSelectedVacancy(null);
@@ -148,7 +150,6 @@ const VacancyList = () => {
         }
     };
 
-    // Delete a vacancy with better confirmation
     const handleDeleteVacancy = async (vacancyId) => {
         if (!vacancyId) {
             showError('Invalid vacancy ID');
@@ -164,8 +165,6 @@ const VacancyList = () => {
         try {
             setLoading(true);
             await vacancyService.delete(vacancyId);
-
-            // Refresh the vacancy list
             await fetchVacancies();
             showSuccess('Vacancy deleted successfully!');
         } catch (error) {
@@ -179,7 +178,6 @@ const VacancyList = () => {
         }
     };
 
-    // Open edit modal with vacancy data
     const handleEditClick = useCallback((vacancy) => {
         if (!vacancy) {
             showError('Invalid vacancy selected');
@@ -189,7 +187,6 @@ const VacancyList = () => {
         setShowEditModal(true);
     }, [showError]);
 
-    // Navigate to vacancy details page
     const handleRowClick = useCallback((vacancy) => {
         if (!vacancy?.id) {
             showError('Invalid vacancy selected');
@@ -198,7 +195,6 @@ const VacancyList = () => {
         navigate(`/hr/vacancies/${vacancy.id}`);
     }, [navigate, showError]);
 
-    // Utility functions
     const formatDate = useCallback((dateString) => {
         if (!dateString) return 'N/A';
         try {
@@ -232,7 +228,6 @@ const VacancyList = () => {
         }
     }, []);
 
-    // Badge utility functions
     const getStatusBadgeClass = useCallback((status) => {
         const statusClasses = {
             'OPEN': 'success',
@@ -251,7 +246,6 @@ const VacancyList = () => {
         return priorityClasses[priority] || 'status-badge medium';
     }, []);
 
-    // Memoized columns to prevent unnecessary re-renders
     const columns = React.useMemo(() => [
         {
             header: 'Title',
@@ -269,8 +263,8 @@ const VacancyList = () => {
         },
         {
             header: 'Department',
-            accessor: 'jobPosition.department.name',
-            render: (row) => row.jobPosition?.departmentName || 'N/A'
+            accessor: 'departmentName', // Changed to use flattened property
+            render: (row) => row.departmentName || 'N/A'
         },
         {
             header: 'Status',
@@ -283,7 +277,7 @@ const VacancyList = () => {
         },
         {
             header: 'Priority',
-            accessor: 'priorityNumeric', // Sort by numeric value
+            accessor: 'priorityNumeric',
             render: (row) => (
                 <span className={`priority-badge ${getPriorityBadgeClass(row.priority)}`}>
                     {row.priority || 'MEDIUM'}
@@ -323,89 +317,82 @@ const VacancyList = () => {
         }
     ], [formatDate, calculateRemainingDays, getStatusBadgeClass, getPriorityBadgeClass]);
 
-    // Memoized actions to prevent unnecessary re-renders
     const actions = React.useMemo(() => [
         {
             label: 'Edit',
-            icon: <FaEdit />,
+            icon: <FaEdit/>,
             onClick: (row) => handleEditClick(row),
             className: 'primary'
         },
         {
             label: 'Delete',
-            icon: <FaTrashAlt />,
+            icon: <FaTrashAlt/>,
             onClick: (row) => handleDeleteVacancy(row.id),
             className: 'danger'
         }
     ], [handleEditClick]);
 
-    // Memoized filterable columns
     const filterableColumns = React.useMemo(() => [
-        { header: 'Title', accessor: 'title' },
-        { header: 'Position', accessor: 'jobPosition.positionName' },
-        { header: 'Department', accessor: 'jobPosition.department.name' }
-    ], []);
-
-    // Custom filters with proper event handling
-    const customFilters = React.useMemo(() => [
+        {header: 'Title', accessor: 'title'},
+        {header: 'Position', accessor: 'positionName'}, // Changed to use flattened property
         {
-            label: 'Status',
-            component: (
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    aria-label="Filter by status"
-                >
-                    <option value="">All Statuses</option>
-                    <option value="OPEN">Open</option>
-                    <option value="CLOSED">Closed</option>
-                    <option value="FILLED">Filled</option>
-                </select>
-            )
+            header: 'Department',
+            accessor: 'departmentName',
+            filterType: 'select'
         },
         {
-            label: 'Priority',
-            component: (
-                <select
-                    value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value)}
-                    aria-label="Filter by priority"
-                >
-                    <option value="">All Priorities</option>
-                    <option value="HIGH">High</option>
-                    <option value="MEDIUM">Medium</option>
-                    <option value="LOW">Low</option>
-                </select>
-            )
+            header: 'Status',
+            accessor: 'status',
+            filterType: 'select'
+        },
+        {
+            header: 'Priority',
+            accessor: 'priority',
+            filterType: 'select'
         }
-    ], [statusFilter, priorityFilter]);
 
-    // Memoized filtered data
+    ], []);
+
+    // Get unique departments for the filter dropdown
+    const uniqueDepartments = React.useMemo(() => {
+        if (!Array.isArray(vacancies)) return [];
+
+        const departments = vacancies
+            .map(v => v.jobPosition?.departmentName)
+            .filter(Boolean);
+
+        return [...new Set(departments)].sort();
+    }, [vacancies]);
+
+    // Custom filters with proper event handling and reset capability
+
+    // Memoized filtered data with department filtering
     const filteredVacancies = React.useMemo(() => {
-        // Ensure vacancies is always an array before filtering
         if (!Array.isArray(vacancies)) {
             return [];
         }
 
-        // Map priority to numeric values for proper sorting
-        const priorityMap = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
+        const priorityMap = {'HIGH': 3, 'MEDIUM': 2, 'LOW': 1};
 
         return vacancies
             .map(vacancy => ({
                 ...vacancy,
+                // Flatten nested properties for easier filtering and searching
+                positionName: vacancy.jobPosition?.positionName || 'N/A',
+                departmentName: vacancy.jobPosition?.departmentName || 'N/A',
                 priorityNumeric: priorityMap[vacancy.priority] || 0
             }))
             .filter(vacancy => {
-                // Additional safety check for vacancy object
                 if (!vacancy) return false;
 
                 const statusMatch = !statusFilter || vacancy.status === statusFilter;
                 const priorityMatch = !priorityFilter || vacancy.priority === priorityFilter;
-                return statusMatch && priorityMatch;
-            });
-    }, [vacancies, statusFilter, priorityFilter]);
+                const departmentMatch = !departmentFilter || vacancy.departmentName === departmentFilter;
 
-    // Modal close handlers
+                return statusMatch && priorityMatch && departmentMatch;
+            });
+    }, [vacancies, statusFilter, priorityFilter, departmentFilter]);
+
     const handleCloseAddModal = useCallback(() => {
         setShowAddModal(false);
     }, []);
@@ -415,7 +402,6 @@ const VacancyList = () => {
         setSelectedVacancy(null);
     }, []);
 
-    // Error state rendering
     if (error && !loading) {
         return (
             <div className="vacancy-container">
@@ -451,21 +437,20 @@ const VacancyList = () => {
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}
-                customFilters={customFilters}
                 onRowClick={handleRowClick}
                 defaultItemsPerPage={10}
                 itemsPerPageOptions={[10, 25, 50]}
                 className="vacancy-data-table"
                 showAddButton={true}
                 addButtonText="Post New Vacancy"
-                addButtonIcon={<FaUserPlus />}
+                addButtonIcon={<FaUserPlus/>}
                 onAddClick={() => setShowAddModal(true)}
                 showExportButton={true}
                 exportFileName="vacancies"
                 exportButtonText="Export Vacancies"
+                onClearFilters={handleResetFilters} // Add reset handler
             />
 
-            {/* Add Vacancy Modal */}
             {showAddModal && (
                 <AddVacancyModal
                     onClose={handleCloseAddModal}
@@ -474,7 +459,6 @@ const VacancyList = () => {
                 />
             )}
 
-            {/* Edit Vacancy Modal */}
             {showEditModal && selectedVacancy && (
                 <EditVacancyModal
                     vacancy={selectedVacancy}
