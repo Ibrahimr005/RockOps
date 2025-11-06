@@ -1,118 +1,22 @@
 /* EquipmentModal.scss */
+// Import global modal styles - changes to modal-styles.scss will automatically apply
+@import '../../../../../styles/modal-styles.scss';
+@import '../../../../../styles/primary-button.scss';
+@import '../../../../../styles/cancel-modal-button.scss';
 
-// Variables
-$primary-color: #4f85e5;
-$secondary-color: #1a2b42;
-$accent-color: #e74c3c;
-$background-color: #f5f7fa;
-$card-background: #ffffff;
-$text-primary: #1a2b42;
-$text-secondary: #64748b;
-$border-color: #e5e7eb;
-$success-color: #2ecc71;
-$warning-color: #f39c12;
-$danger-color: #e74c3c;
-$maintenance-color: #f39c12;
-$available-color: #2ecc71;
-$rented-color: #3498db;
-$sold-color: #95a5a6;
-$scrapped-color: #e74c3c;
-
-// Mixins
-@mixin flex-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-@mixin flex-between {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-// Modal overlay
+// Use global modal class names directly for automatic updates
+// Additional equipment-specific styles only
 .equipment-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+  // Additional styles specific to equipment modal
   padding: 20px;
   overflow-y: auto;
-  // Prevent scrolling propagation to background
   overscroll-behavior: contain;
 }
 
-// Modal container
 .equipment-modal {
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  width: 100%;
-  max-width: 900px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--shadow-md);
-  position: relative;
-  animation: modalFadeIn 0.3s ease-in-out;
-
-  @keyframes modalFadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-}
-
-// Modal header
-.equipment-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border-color);
-
-  h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: var(--bold-font-weight);
-    color: var(--color-text-primary);
-  }
-
-  .equipment-modal-close {
-    background: transparent;
-    border: none;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border-radius: 50%;
-    transition: all var(--transition-fast) ease;
-
-    &:hover {
-      background-color: rgba(72, 128, 255, 0.1);
-      color: var(--color-primary);
-    }
-
-    svg {
-      width: 18px;
-      height: 18px;
-    }
-  }
+  // Override max-width for equipment modal (matches original size before global styles)
+  max-width: 900px !important;
+  width: 100% !important;
 }
 
 // Form guidance banner
@@ -560,15 +464,10 @@ $scrapped-color: #e74c3c;
   }
 }
 
-// Footer with action buttons
+// Footer with action buttons - equipment-specific overrides only
 .equipment-modal-footer {
-  display: flex;
+  // Override layout to show completion status
   justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-top: 1px solid var(--border-color);
-  background-color: var(--color-surface-hover);
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
 
   .form-completion-status {
     display: flex;
@@ -598,76 +497,18 @@ $scrapped-color: #e74c3c;
   .form-actions {
     display: flex;
     gap: 12px;
+  }
 
-    button {
-      padding: 10px 20px;
-      border-radius: var(--radius-sm);
-      font-weight: 500;
-      font-size: 0.875rem;
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      min-width: 100px;
-
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-
-      // NEW: Disabled styling for submit button
-      &.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        background-color: var(--color-surface-hover) !important;
-        color: var(--color-text-secondary) !important;
-        border-color: var(--border-color) !important;
-
-        &:hover {
-          background-color: var(--color-surface-hover) !important;
-          color: var(--color-text-secondary) !important;
-          transform: none !important;
-        }
-      }
+  // Additional styling for clear button
+  .equipment-modal-clear {
+    &:hover:not(:disabled) {
+      background-color: rgba(244, 67, 54, 0.1);
+      color: var(--color-danger);
+      border-color: rgba(244, 67, 54, 0.3);
     }
 
-    .equipment-modal-clear {
-      background-color: var(--color-surface);
-      border: 1px solid var(--border-color);
-      color: var(--color-text-secondary);
-
-      &:hover:not(:disabled) {
-        background-color: rgba(244, 67, 54, 0.1);
-        color: var(--color-danger);
-        border-color: rgba(244, 67, 54, 0.3);
-      }
-
-      svg {
-        font-size: 14px;
-      }
-    }
-
-    .equipment-modal-cancel {
-      background-color: var(--color-surface);
-      border: 1px solid var(--border-color);
-      color: var(--color-text-secondary);
-
-      &:hover:not(:disabled) {
-        background-color: var(--color-surface-hover);
-        color: var(--color-text-primary);
-      }
-    }
-
-    .equipment-modal-submit {
-      background-color: var(--color-primary);
-      border: 1px solid var(--color-primary);
-      color: white;
-
-      &:hover:not(:disabled):not(.disabled) {
-        background-color: var(--color-primary-dark);
-      }
+    svg {
+      font-size: 14px;
     }
   }
 }
@@ -1000,19 +841,9 @@ input[type="number"] {
   }
 }
 
-// Brand Modal Styles
+// Brand Modal - equipment-specific overrides only
 .brand-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 2000;
-  padding: 20px;
   backdrop-filter: blur(4px);
   animation: brandModalFadeIn 0.2s ease;
 
@@ -1027,12 +858,6 @@ input[type="number"] {
 }
 
 .brand-modal-content {
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  width: 100%;
-  max-width: 500px;
-  box-shadow: var(--shadow-lg);
-  position: relative;
   animation: brandModalSlideIn 0.3s ease;
 
   @keyframes brandModalSlideIn {
@@ -1047,54 +872,8 @@ input[type="number"] {
   }
 }
 
-.brand-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border-color);
-
-  h3 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: var(--bold-font-weight);
-    color: var(--color-text-primary);
-  }
-
-  .brand-modal-close {
-    background: transparent;
-    border: none;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border-radius: 50%;
-    transition: all var(--transition-fast) ease;
-
-    &:hover {
-      background-color: rgba(72, 128, 255, 0.1);
-      color: var(--color-primary);
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    svg {
-      width: 16px;
-      height: 16px;
-    }
-  }
-}
-
+// Equipment-specific form styling for brand modal
 .brand-modal-body {
-  padding: 24px;
-
   .form-group {
     margin-bottom: 20px;
 
@@ -1136,57 +915,6 @@ input[type="number"] {
     textarea {
       resize: vertical;
       min-height: 80px;
-    }
-  }
-}
-
-.brand-modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 20px 24px;
-  border-top: 1px solid var(--border-color);
-  background-color: var(--color-surface-hover);
-
-  button {
-    padding: 10px 20px;
-    border-radius: var(--radius-sm);
-    font-weight: 500;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all var(--transition-fast) ease;
-    border: none;
-
-    &.brand-modal-cancel {
-      background-color: transparent;
-      color: var(--color-text-secondary);
-      border: 1px solid var(--border-color);
-
-      &:hover {
-        background-color: var(--color-surface-hover);
-        color: var(--color-text-primary);
-      }
-
-      &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-    }
-
-    &.brand-modal-submit {
-      background-color: var(--color-primary);
-      color: white;
-
-      &:hover {
-        background-color: var(--color-primary-dark);
-        transform: translateY(-1px);
-      }
-
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none;
-      }
     }
   }
 }

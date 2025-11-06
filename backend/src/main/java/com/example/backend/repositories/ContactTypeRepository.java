@@ -25,3 +25,4 @@ public interface ContactTypeRepository extends JpaRepository<ContactType, UUID> 
 
 
 
+

@@ -234,7 +234,7 @@ const DriverManagementModal = ({ isOpen, onClose, equipmentId, equipmentData, on
                             {viewMode === 'assign' && `Assign ${selectedDriverType === 'main' ? 'Main' : 'Sub'} Driver`}
                             {viewMode === 'replace' && `Replace ${selectedDriverType === 'main' ? 'Main' : 'Sub'} Driver`}
                         </h2>
-                        <button className="modal-close" onClick={onClose}>
+                        <button className="btn-close" onClick={onClose}>
                             <FaTimes />
                         </button>
                     </div>

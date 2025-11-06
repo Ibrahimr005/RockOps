@@ -1,8 +1,17 @@
-import React from "react";
+import React, { useEffect } from "react";
 import "./EquipmentConsumablesHistoryModal.scss";
 
 const EquipmentConsumablesHistoryModal = ({ isOpen, onClose, consumableHistory, consumableResolutions, itemDetails }) => {
     if (!isOpen || !consumableHistory) return null;
+
+    // Prevent background scroll while modal is open
+    useEffect(() => {
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = prev || '';
+        };
+    }, []);
 
     // Format date helper function
     const formatDate = (dateString) => {
@@ -293,12 +302,12 @@ const EquipmentConsumablesHistoryModal = ({ isOpen, onClose, consumableHistory, 
     };
 
     return (
-        <div className="consumables-history-modal-backdrop">
-            <div className="consumables-history-modal">
-                <div className="consumables-history-modal-header">
+        <div className="modal-backdrop consumables-history-modal-backdrop">
+            <div className="modal-container modal-lg consumables-history-modal">
+                <div className="modal-header consumables-history-modal-header">
                     <div className="header-content">
                         <div className="item-info">
-                            <h2 className="item-name">{itemDetails?.itemTypeName}</h2>
+                            <h2 className="item-name modal-title">{itemDetails?.itemTypeName}</h2>
                             <span className="item-category">{itemDetails?.itemTypeCategory}</span>
                         </div>
                         <div className="summary-stats">
@@ -316,7 +325,7 @@ const EquipmentConsumablesHistoryModal = ({ isOpen, onClose, consumableHistory, 
                                     <button className="btn-close" onClick={onClose} aria-label="Close"></button>
                 </div>
 
-                <div className="consumables-history-modal-body">
+                <div className="modal-body consumables-history-modal-body">
                     {(consumableHistory.length > 0 || (consumableResolutions && consumableResolutions.length > 0)) ? (
                         <div className="history-timeline">
                             {/* Combine transactions and resolutions into a single timeline */}
