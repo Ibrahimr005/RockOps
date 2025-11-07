@@ -65,6 +65,15 @@ body {
   transition: all var(--transition-normal);
 }
 
+/* Scale down slightly on medium screens */
+@media (max-width: 1024px) {
+  .main-content {
+    transform: scaleX(0.9);
+  }
+}
+
+
+
 /* Responsive layout adjustments */
 @media (max-width: 1024px) {
   .main-content {

@@ -483,24 +483,26 @@ const DocumentUploadModal = ({ onClose, onUpload, uploading }) => {
                         )}
                     </div>
 
-                    <div className="modal-footer">
-                        <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={onClose}
-                            disabled={uploading}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="btn btn-primary"
-                            disabled={selectedFiles.length === 0 || uploading}
-                        >
-                            {uploading ? 'Uploading...' : 'Upload'}
-                        </button>
-                    </div>
+
                 </form>
+                <div className="modal-footer">
+                    <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={onClose}
+                        disabled={uploading}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        className="btn btn-primary"
+                        onClick={handleSubmit}
+                        disabled={selectedFiles.length === 0 || uploading}
+                    >
+                        {uploading ? 'Uploading...' : 'Upload'}
+                    </button>
+                </div>
             </div>
         </div>
     );
