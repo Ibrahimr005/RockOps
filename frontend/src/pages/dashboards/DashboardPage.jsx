@@ -2,6 +2,7 @@ import React, {useState, useEffect } from 'react';
 import {useAuth} from '../../contexts/AuthContext';
 import Navbar from '../../components/common/Navbar/Navbar';
 import Sidebar from '../../components/common/Sidebar/Sidebar';
+import AdminDashboard from './AdminDashboard.jsx';
 import UserDashboard from './UserDashboard.jsx';
 import SiteAdminDashboard from './SiteAdminDashboard.jsx';
 import ProcurementDashboard from './ProcurementDashboard';
@@ -36,11 +37,14 @@ const DashboardPage = () => {
     // Get the role-specific dashboard title
     const getDashboardTitle = () => {
         switch (currentUser?.role) {
+            case 'ADMIN':
+                return 'System Administration';
             case 'SITE_ADMIN':
                 return 'Site Administration';
             case 'PROCUREMENT':
                 return 'Procurement Management';
             case 'WAREHOUSE_MANAGER':
+            case 'WAREHOUSE_EMPLOYEE':
                 return 'Warehouse Management';
             case 'SECRETARY':
                 return 'Secretary Dashboard';
@@ -50,9 +54,8 @@ const DashboardPage = () => {
                 return 'HR Management';
             case 'HR_EMPLOYEE':
                 return 'HR Employee Portal';
-            case 'FINANCE_EMPLOYEE': // Add Finance role
-                return 'Finance Dashboard';
-            case 'FINANCE_MANAGER': // Add Finance role
+            case 'FINANCE_EMPLOYEE':
+            case 'FINANCE_MANAGER':
                 return 'Finance Dashboard';
             case 'MAINTENANCE_EMPLOYEE':
                 return 'Maintenance Employee Portal';
@@ -67,11 +70,14 @@ const DashboardPage = () => {
     // Render the appropriate dashboard based on user role
     const renderDashboard = () => {
         switch (currentUser?.role) {
+            case 'ADMIN':
+                return <AdminDashboard/>;
             case 'SITE_ADMIN':
                 return <SiteAdminDashboard/>;
             case 'PROCUREMENT':
                 return <ProcurementDashboard/>;
             case 'WAREHOUSE_MANAGER':
+            case 'WAREHOUSE_EMPLOYEE':
                 return <WarehouseDashboard/>;
             case 'SECRETARY':
                 return <SecretaryDashboard/>;
@@ -82,11 +88,11 @@ const DashboardPage = () => {
             case 'HR_EMPLOYEE':
                 return <HREmployeeDashboard/>;
             case 'MAINTENANCE_EMPLOYEE':
-                return <MaintenanceDashboard/>; // For now, use UserDashboard as fallback
             case 'MAINTENANCE_MANAGER':
-                return <MaintenanceDashboard/>; // Use EquipmentManagerDashboard as it's most relevant
-            // case 'FINANCE': // Add Finance case
-            //     return <FinanceDashboard/>;
+                return <MaintenanceDashboard/>;
+            case 'FINANCE_MANAGER':
+            case 'FINANCE_EMPLOYEE':
+                return <AdminDashboard/>; // TODO: Create dedicated Finance dashboard
             case 'USER':
             default:
                 return <UserDashboard/>;
