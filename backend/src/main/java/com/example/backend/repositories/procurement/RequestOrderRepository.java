@@ -30,4 +30,8 @@ public interface RequestOrderRepository extends JpaRepository<RequestOrder, UUID
             @Param("statuses") List<String> statuses,
             @Param("createdAfter") LocalDateTime createdAfter
     );
+
+    // Dashboard metrics methods
+    long countByStatus(String status);
+    List<RequestOrder> findByStatus(String status);
 }

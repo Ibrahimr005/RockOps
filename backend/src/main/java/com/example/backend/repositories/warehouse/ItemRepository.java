@@ -85,4 +85,7 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
     @Query("SELECT i FROM Item i WHERE i.transactionItem.transaction.id = :transactionId " +
             "AND i.itemStatus IN ('MISSING', 'OVERRECEIVED')")
     List<Item> findDiscrepancyItemsByTransaction(@Param("transactionId") UUID transactionId);
+
+    // Dashboard metrics methods
+    long countByItemStatus(ItemStatus itemStatus);
 }

@@ -17,4 +17,6 @@ public interface EquipmentRepository extends JpaRepository<Equipment, UUID> {
 
     List<Equipment> findBySiteId(UUID siteId);
 
+    // Dashboard metrics methods
+    long countByStatus(String status);
 }
