@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Users, Server, Briefcase, Package, AlertCircle, TrendingUp, Database, Settings } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
+import { Users, Server, Briefcase, Package, AlertCircle, TrendingUp, Database, Settings, ShoppingCart, Truck, Activity, Percent } from 'lucide-react';
 import DashboardService from '../../services/dashboardService';
-import { SnackbarContext } from '../../contexts/SnackbarContext';
+import { useSnackbar } from '../../contexts/SnackbarContext';
 import ContentLoader from '../../components/common/ContentLoader/ContentLoader';
-import './Dashboard.css';
+import '../../styles/dashboard-styles.scss';
 
 /**
  * Admin Dashboard Component
@@ -13,7 +13,7 @@ import './Dashboard.css';
  */
 const AdminDashboard = () => {
     const { t } = useTranslation();
-    const { showError } = useContext(SnackbarContext);
+    const { showError } = useSnackbar();
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -47,7 +47,17 @@ const AdminDashboard = () => {
         value,
     }));
 
-    const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+    const maintenanceStatusData = Object.entries(dashboardData.maintenanceByStatus || {}).map(([name, value]) => ({
+        name,
+        value,
+    }));
+
+    const warehouseItemsData = Object.entries(dashboardData.warehouseItemsByStatus || {}).map(([name, value]) => ({
+        name,
+        value,
+    }));
+
+    const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 
     return (
         <div className="admin-dashboard">
@@ -123,6 +133,39 @@ const AdminDashboard = () => {
                         <div className="admin-kpi-sub">Pending</div>
                     </div>
                 </div>
+
+                <div className="admin-kpi-card">
+                    <div className="admin-kpi-icon">
+                        <ShoppingCart />
+                    </div>
+                    <div className="admin-kpi-content">
+                        <div className="admin-kpi-value">{dashboardData.totalPurchaseOrders || 0}</div>
+                        <div className="admin-kpi-label">Purchase Orders</div>
+                        <div className="admin-kpi-sub">{dashboardData.totalMerchants || 0} Merchants</div>
+                    </div>
+                </div>
+
+                <div className="admin-kpi-card">
+                    <div className="admin-kpi-icon">
+                        <Truck />
+                    </div>
+                    <div className="admin-kpi-content">
+                        <div className="admin-kpi-value">{dashboardData.totalTransactions || 0}</div>
+                        <div className="admin-kpi-label">Transactions</div>
+                        <div className="admin-kpi-sub">{dashboardData.pendingTransactions || 0} Pending</div>
+                    </div>
+                </div>
+
+                <div className="admin-kpi-card">
+                    <div className="admin-kpi-icon">
+                        <Percent />
+                    </div>
+                    <div className="admin-kpi-content">
+                        <div className="admin-kpi-value">{dashboardData.equipmentUtilizationRate || 0}%</div>
+                        <div className="admin-kpi-label">Equipment Utilization</div>
+                        <div className="admin-kpi-sub">System-wide</div>
+                    </div>
+                </div>
             </div>
 
             {/* Charts Section */}
@@ -177,7 +220,50 @@ const AdminDashboard = () => {
                             <span>Request Orders:</span>
                             <span className="admin-status-value">{dashboardData.totalRequestOrders || 0}</span>
                         </div>
+                        <div className="admin-status-item">
+                            <span>Warehouse Capacity:</span>
+                            <span className="admin-status-value">{dashboardData.warehouseCapacityUsed || 0} items/warehouse</span>
+                        </div>
                     </div>
+                </div>
+            </div>
+
+            {/* Additional Charts Row */}
+            <div className="admin-dashboard-charts">
+                <div className="admin-chart-card">
+                    <h3>Maintenance Status Distribution</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={maintenanceStatusData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="value" fill="#3b82f6" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+
+                <div className="admin-chart-card">
+                    <h3>Warehouse Items Status</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                            <Pie
+                                data={warehouseItemsData}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ name, value }) => `${name}: ${value}`}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="value"
+                            >
+                                {warehouseItemsData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <Tooltip />
+                        </PieChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
         </div>

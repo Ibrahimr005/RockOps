@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ShoppingCart, FileText, Users, TrendingUp, AlertCircle, DollarSign } from 'lucide-react';
 import DashboardService from '../../services/dashboardService';
-import { SnackbarContext } from '../../contexts/SnackbarContext';
+import { useSnackbar } from '../../contexts/SnackbarContext';
 import ContentLoader from '../../components/common/ContentLoader/ContentLoader';
-import './Dashboard.css';
+import '../../styles/dashboard-styles.scss';
 
 /**
  * Procurement Dashboard Component
@@ -13,7 +13,7 @@ import './Dashboard.css';
  */
 const ProcurementDashboard = () => {
     const { t } = useTranslation();
-    const { showError } = useContext(SnackbarContext);
+    const { showError } = useSnackbar();
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -169,7 +169,56 @@ const ProcurementDashboard = () => {
                         </div>
                         <div className="procurement-metric-item">
                             <span>Pending Approvals:</span>
-                            <span className="procurement-metric-value">{dashboardData.pendingApprovals}</span>
+                            <span className="procurement-metric-value">{dashboardData.pendingApprovals || 0}</span>
+                        </div>
+                        <div className="procurement-metric-item">
+                            <span>Total Procurement Value:</span>
+                            <span className="procurement-metric-value success">${(dashboardData.totalProcurementValue || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="procurement-metric-item">
+                            <span>Active Merchants:</span>
+                            <span className="procurement-metric-value">{dashboardData.activeMerchants || 0}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Additional Procurement Metrics */}
+            <div className="procurement-additional-metrics">
+                <h3>Vendor & Order Analytics</h3>
+                <div className="procurement-analytics-grid">
+                    <div className="procurement-analytics-card">
+                        <h4>Order Status</h4>
+                        <div className="analytics-content">
+                            <div className="analytics-item">
+                                <span>Approved Orders:</span>
+                                <span className="analytics-value success">{dashboardData.approvedRequestOrders || 0}</span>
+                            </div>
+                            <div className="analytics-item">
+                                <span>Completed Orders:</span>
+                                <span className="analytics-value">{dashboardData.completedRequestOrders || 0}</span>
+                            </div>
+                            <div className="analytics-item">
+                                <span>Rejected Orders:</span>
+                                <span className="analytics-value alert">{dashboardData.rejectedRequestOrders || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="procurement-analytics-card">
+                        <h4>Performance Indicators</h4>
+                        <div className="analytics-content">
+                            <div className="analytics-item">
+                                <span>Overdue Orders:</span>
+                                <span className="analytics-value alert">{dashboardData.overdueOrders || 0}</span>
+                            </div>
+                            <div className="analytics-item">
+                                <span>Urgent Requests:</span>
+                                <span className="analytics-value warning">{dashboardData.urgentRequests || 0}</span>
+                            </div>
+                            <div className="analytics-item">
+                                <span>In Progress POs:</span>
+                                <span className="analytics-value">{dashboardData.inProgressPurchaseOrders || 0}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
