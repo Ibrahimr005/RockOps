@@ -56,6 +56,7 @@ public class AdminDashboardDTO {
     private Long totalRequestOrders;
     private Long pendingRequestOrders;
     private Long totalPurchaseOrders;
+    private Long totalMerchants;
     
     // Recent Activity
     private java.util.List<String> recentActivities;
@@ -63,5 +64,14 @@ public class AdminDashboardDTO {
     // System Health
     private String systemStatus;
     private Map<String, Object> systemMetrics;
+    
+    // Additional Comprehensive Metrics
+    private Map<String, Long> equipmentByType;
+    private Map<String, Long> maintenanceByStatus;
+    private Map<String, Long> employeesByDepartment;
+    private Long totalTransactions;
+    private Long pendingTransactions;
+    private Double equipmentUtilizationRate;
+    private Double warehouseCapacityUsed;
 }
 

@@ -1,6 +1,7 @@
 package com.example.backend.repositories.equipment;
 
 import com.example.backend.models.equipment.Equipment;
+import com.example.backend.models.equipment.EquipmentStatus;
 import com.example.backend.models.equipment.EquipmentType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -18,5 +19,5 @@ public interface EquipmentRepository extends JpaRepository<Equipment, UUID> {
     List<Equipment> findBySiteId(UUID siteId);
 
     // Dashboard metrics methods
-    long countByStatus(String status);
+    long countByStatus(EquipmentStatus status);
 }

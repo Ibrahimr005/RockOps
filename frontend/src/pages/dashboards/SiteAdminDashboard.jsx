@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Users, Package, Database, AlertCircle, TrendingUp, MapPin } from 'lucide-react';
 import DashboardService from '../../services/dashboardService';
-import { SnackbarContext } from '../../contexts/SnackbarContext';
+import { useSnackbar } from '../../contexts/SnackbarContext';
 import ContentLoader from '../../components/common/ContentLoader/ContentLoader';
-import './Dashboard.css';
+import '../../styles/dashboard-styles.scss';
 
 /**
  * Site Admin Dashboard Component
@@ -13,7 +13,7 @@ import './Dashboard.css';
  */
 const SiteAdminDashboard = () => {
     const { t } = useTranslation();
-    const { showError } = useContext(SnackbarContext);
+    const { showError } = useSnackbar();
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
 

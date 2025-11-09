@@ -41,12 +41,14 @@ public class DashboardController {
      */
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<AdminDashboardDTO> getAdminDashboard() {
+    public ResponseEntity<?> getAdminDashboard() {
         try {
             AdminDashboardDTO dashboard = dashboardService.getAdminDashboard();
             return ResponseEntity.ok(dashboard);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            e.printStackTrace(); // Log the error
+            return ResponseEntity.internalServerError()
+                    .body("Error loading admin dashboard: " + e.getMessage());
         }
     }
 

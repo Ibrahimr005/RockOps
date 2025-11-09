@@ -6,13 +6,14 @@ import AdminDashboard from './AdminDashboard.jsx';
 import UserDashboard from './UserDashboard.jsx';
 import SiteAdminDashboard from './SiteAdminDashboard.jsx';
 import ProcurementDashboard from './ProcurementDashboard';
-import WarehouseDashboard from '../../pages/warehouse/WarehouseDashboard/WarehouseDashboard.jsx';
+import WarehouseManagerDashboard from './WarehouseManagerDashboard.jsx';
 import SecretaryDashboard from './SecretaryDashboard.jsx';
-import EquipmentManagerDashboard from '../equipment/EquipmentManagerDashboard/EquipmentManagerDashboard.jsx';
+import EquipmentManagerDashboard from './EquipmentManagerDashboard.jsx';
 import HRManagerDashboard from './HRManagerDashboard.jsx';
 import HREmployeeDashboard from './HR/HREmployeeDashboard.jsx';
+import FinanceManagerDashboard from './FinanceManagerDashboard.jsx';
+import MaintenanceManagerDashboard from './MaintenanceManagerDashboard.jsx';
 import './Dashboard.css';
-import MaintenanceDashboard from "../maintenance/MaintenanceDashboard/MaintenanceDashboard.jsx";
 
 const DashboardPage = () => {
     const {currentUser} = useAuth();
@@ -78,7 +79,7 @@ const DashboardPage = () => {
                 return <ProcurementDashboard/>;
             case 'WAREHOUSE_MANAGER':
             case 'WAREHOUSE_EMPLOYEE':
-                return <WarehouseDashboard/>;
+                return <WarehouseManagerDashboard/>;
             case 'SECRETARY':
                 return <SecretaryDashboard/>;
             case 'EQUIPMENT_MANAGER':
@@ -89,10 +90,10 @@ const DashboardPage = () => {
                 return <HREmployeeDashboard/>;
             case 'MAINTENANCE_EMPLOYEE':
             case 'MAINTENANCE_MANAGER':
-                return <MaintenanceDashboard/>;
+                return <MaintenanceManagerDashboard/>;
             case 'FINANCE_MANAGER':
             case 'FINANCE_EMPLOYEE':
-                return <AdminDashboard/>; // TODO: Create dedicated Finance dashboard
+                return <FinanceManagerDashboard/>;
             case 'USER':
             default:
                 return <UserDashboard/>;

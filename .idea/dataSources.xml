@@ -11,7 +11,7 @@
         <property name="database.postgres.introspect.system.schemas" value="true" />
       </jdbc-additional-properties>
       <working-dir>$ProjectFileDir$</working-dir>
-    </data-source>\]
+    </data-source>
     <data-source source="LOCAL" name="RockopsDev" uuid="f6a49694-5a42-4179-8ff0-30c726d7a99a">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>

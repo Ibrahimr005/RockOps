@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaMoneyBillWave, FaUsers, FaPiggyBank, FaExclamationTriangle, FaPlus, FaFileAlt, FaEye } from 'react-icons/fa';
 import { payslipService } from '../../../services/payroll/payslipService.js';
 import { payrollService } from '../../../services/payroll/payrollService.js';
+import { loanService } from '../../../services/payroll/loanService.js';
 import { useSnackbar } from '../../../contexts/SnackbarContext.jsx';
 import './PayrollDashboard.scss';
 
@@ -31,7 +32,7 @@ const PayrollDashboard = () => {
 
             // Fetch dashboard data in parallel
             const [payrollStats, loanStats, recentPayslips, pendingPayslips] = await Promise.all([
-                payrollService.getPayrollStatistics(currentYear, currentMonth).catch(() => ({ data: null })),
+                payrollService.getMonthlyPayrollStats(currentYear).catch(() => ({ data: null })),
                 loanService.getLoanStatistics().catch(() => ({ data: null })),
                 payslipService.getPayslips(0, 5, 'payDate,desc').catch(() => ({ data: { content: [] } })),
                 payslipService.getPendingPayslips().catch(() => ({ data: [] }))
