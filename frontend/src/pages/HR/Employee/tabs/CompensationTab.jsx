@@ -30,7 +30,7 @@ const CompensationTab = ({ employee, formatCurrency }) => {
 
     return (
         <div className="compensation-info tab-panel">
-            <h3>Compensation Details</h3>
+            {/*<h3>Compensation Details</h3>*/}
 
             <div className="salary-overview">
                 <div className="salary-card">

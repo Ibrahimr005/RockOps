@@ -3,7 +3,7 @@ import React from 'react';
 const PersonalInfoTab = ({ employee, formatDate }) => {
     return (
         <div className="personal-info tab-panel">
-            <h3>Personal Information</h3>
+            {/*<h3>Personal Information</h3>*/}
 
             <div className="info-grid">
                 <div className="info-group">

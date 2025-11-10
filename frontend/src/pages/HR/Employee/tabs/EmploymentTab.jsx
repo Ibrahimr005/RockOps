@@ -23,7 +23,7 @@ const EmploymentTab = ({ employee, formatDate, getPosition, getDepartment, getSi
 
     return (
         <div className="employment-info tab-panel">
-            <h3>Employment Information</h3>
+            {/*<h3>Employment Information</h3>*/}
 
             <div className="info-grid">
                 <div className="info-group">

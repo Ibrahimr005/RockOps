@@ -3,7 +3,7 @@ import React from 'react';
 const DeductionsTab = ({ employee, formatCurrency }) => {
     return (
         <div className="deductions-info tab-panel">
-            <h3>Salary Deductions</h3>
+            {/*<h3>Salary Deductions</h3>*/}
 
             <div className="deductions-summary">
                 <div className="summary-card">
