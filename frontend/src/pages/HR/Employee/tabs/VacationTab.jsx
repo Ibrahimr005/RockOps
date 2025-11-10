@@ -125,7 +125,7 @@ const VacationTab = ({ employee, formatDate }) => {
 
     return (
         <div className="vacation-info tab-panel">
-            <h3>Vacation & Leave</h3>
+            {/*<h3>Vacation & Leave</h3>*/}
 
             {/* Vacation Balance Overview */}
             <div className="leave-balance">

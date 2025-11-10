@@ -3,7 +3,7 @@ import React from 'react';
 const CommissionsTab = ({ employee, formatCurrency }) => {
     return (
         <div className="commissions-info tab-panel">
-            <h3>Commissions & Bonuses</h3>
+            {/*<h3>Commissions & Bonuses</h3>*/}
 
             <div className="commissions-summary">
                 <div className="summary-card">
