@@ -1017,7 +1017,7 @@
 }
 
 /* High contrast mode */
-@media (prefers-contrast: high) {
+@media (prefers-contrast:less) {
   .modal-header .modal-title {
     font-weight: 900;
   }

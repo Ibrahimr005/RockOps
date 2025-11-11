@@ -83,4 +83,7 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, UUID
            "lr.status = 'APPROVED' AND YEAR(lr.startDate) = :year " +
            "GROUP BY MONTH(lr.startDate) ORDER BY MONTH(lr.startDate)")
     List<Object[]> getMonthlyLeaveStatistics(@Param("year") int year);
+
+    // Dashboard metrics methods
+    long countByStatus(LeaveStatus status);
 }

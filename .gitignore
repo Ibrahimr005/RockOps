@@ -3,3 +3,11 @@ deployment/
 
 # Cursor AI context file
 .cursor-context.md
+
+# Auto-generated documentation
+DASHBOARD_IMPLEMENTATION_FIXES.md
+DASHBOARD_REAL_DATA_IMPLEMENTATION.md
+DASHBOARD_COMPLETE_GUIDE.md
+ENUM_REFERENCE.md
+RUNTIME_ERRORS_FIXED.md
+FRONTEND_DEBUGGING_GUIDE.md

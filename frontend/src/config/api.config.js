@@ -1,6 +1,24 @@
 // src/config/api.config.js
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||  'http://localhost:8080';
 
+// Dashboard endpoints
+export const DASHBOARD_ENDPOINTS = {
+    BASE: '/api/dashboard',
+    ADMIN: '/api/dashboard/admin',
+    SITE_ADMIN: '/api/dashboard/site-admin',
+    EQUIPMENT_MANAGER: '/api/dashboard/equipment-manager',
+    WAREHOUSE_MANAGER: '/api/dashboard/warehouse-manager',
+    HR_MANAGER: '/api/dashboard/hr-manager',
+    HR_EMPLOYEE: '/api/dashboard/hr-employee',
+    FINANCE_MANAGER: '/api/dashboard/finance-manager',
+    FINANCE_EMPLOYEE: '/api/dashboard/finance-employee',
+    MAINTENANCE_MANAGER: '/api/dashboard/maintenance-manager',
+    MAINTENANCE_EMPLOYEE: '/api/dashboard/maintenance-employee',
+    PROCUREMENT: '/api/dashboard/procurement',
+    SECRETARY: '/api/dashboard/secretary',
+    USER: '/api/dashboard/user',
+};
+
 // Equipment module endpoints
 export const EQUIPMENT_ENDPOINTS = {
     BASE: '/api/equipment',
