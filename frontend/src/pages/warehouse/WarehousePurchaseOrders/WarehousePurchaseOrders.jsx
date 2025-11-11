@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // You will need to create these components
 import PendingPurchaseOrders from './PendingPurchaseOrders/PendingPurchaseOrders';
 import PartialPurchaseOrders from './PartialPurchaseOrders/PartialPurchaseOrders';
+import DisputedPurchaseOrders from './DisputedPurchaseOrders/DisputedPurchaseOrders';
 import CompletedPurchaseOrders from './CompletedPurchaseOrders/CompletedPurchaseOrders';
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import './WarehousePurchaseOrders.scss';
@@ -17,10 +18,11 @@ const WarehousePurchaseOrders = ({ warehouseId, onAddButtonClick }) => {
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
 
-    // Tab configuration with the new "partial" tab
+    // Tab configuration with the NEW "disputed" tab
     const tabs = [
         { id: "pending", label: "Pending Orders", component: PendingPurchaseOrders },
         { id: "partial", label: "Partial Orders", component: PartialPurchaseOrders },
+        { id: "disputed", label: "Disputed Orders", component: DisputedPurchaseOrders }, // NEW TAB
         { id: "completed", label: "Completed Orders", component: CompletedPurchaseOrders }
     ];
 
@@ -84,6 +86,17 @@ const WarehousePurchaseOrders = ({ warehouseId, onAddButtonClick }) => {
         if (activeTab === 'partial') {
             return (
                 <PartialPurchaseOrders
+                    warehouseId={warehouseId}
+                    refreshTrigger={refreshTrigger}
+                    onShowSnackbar={showSnackbar}
+                    userRole={userRole}
+                />
+            );
+        }
+
+        if (activeTab === 'disputed') {
+            return (
+                <DisputedPurchaseOrders
                     warehouseId={warehouseId}
                     refreshTrigger={refreshTrigger}
                     onShowSnackbar={showSnackbar}

@@ -73,6 +73,84 @@ export const purchaseOrderService = {
         }
     },
 
+    // Process delivery with received items and issues
+    processDelivery: async (purchaseOrderId, deliveryData) => {
+        try {
+            console.log('Processing delivery for PO:', purchaseOrderId);
+            console.log('Delivery data:', deliveryData);
+
+            const response = await apiClient.post(
+                `${PURCHASE_ORDER_ENDPOINTS.BASE}/${purchaseOrderId}/process-delivery`,
+                deliveryData
+            );
+
+            console.log('Process delivery response:', response);
+            return response.data || response;
+        } catch (error) {
+            console.error('Error processing delivery:', error);
+            throw error;
+        }
+    },
+
+    // Resolve issues for purchase order - NEW VERSION (supports multiple resolutions)
+    resolveIssues: async (purchaseOrderId, resolutions) => {
+        try {
+            console.log('Resolving issues for PO:', purchaseOrderId);
+            console.log('Resolutions:', resolutions);
+
+            const response = await apiClient.post(
+                `${PURCHASE_ORDER_ENDPOINTS.BASE}/${purchaseOrderId}/resolve-issues`,
+                { resolutions }
+            );
+
+            console.log('Resolve issues response:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Error resolving issues:', error);
+            throw error.response?.data || error;
+        }
+    },
+
+    // Get all issues for a purchase order
+    getIssues: async (purchaseOrderId) => {
+        try {
+            const response = await apiClient.get(
+                PURCHASE_ORDER_ENDPOINTS.GET_ISSUES(purchaseOrderId)
+            );
+            return response.data || response;
+        } catch (error) {
+            console.error('Error fetching issues:', error);
+            throw error;
+        }
+    },
+
+    // Get active (unresolved) issues for a purchase order
+    getActiveIssues: async (purchaseOrderId) => {
+        try {
+            const response = await apiClient.get(
+                PURCHASE_ORDER_ENDPOINTS.GET_ACTIVE_ISSUES(purchaseOrderId)
+            );
+            return response.data || response;
+        } catch (error) {
+            console.error('Error fetching active issues:', error);
+            throw error;
+        }
+    },
+
+    // ← ADD THIS NEW METHOD HERE
+    // Get delivery history for a purchase order item
+    getDeliveryHistory: async (purchaseOrderItemId) => {
+        try {
+            const response = await apiClient.get(
+                PURCHASE_ORDER_ENDPOINTS.GET_DELIVERY_HISTORY(purchaseOrderItemId)
+            );
+            return response.data || response;
+        } catch (error) {
+            console.error('Error fetching delivery history:', error);
+            throw error;
+        }
+    },
+
     // Get pending purchase orders (client-side filtering)
     getPending: async () => {
         try {
@@ -116,7 +194,8 @@ export const purchaseOrderService = {
                 'VALIDATED': 'Validated',
                 'PARTIALLY_RECEIVED': 'Partially Received',
                 'COMPLETED': 'Completed',
-                'CANCELLED': 'Cancelled'
+                'CANCELLED': 'Cancelled',
+                'DISPUTED': 'Disputed' // ← ADD THIS
             };
             return statusMap[status] || status;
         },
@@ -127,9 +206,11 @@ export const purchaseOrderService = {
                 'CREATED': '#6b7280',      // Gray
                 'PENDING': '#f59e0b',      // Amber
                 'VALIDATED': '#3b82f6',    // Blue
+                'PARTIAL': '#f97316',      // Orange
                 'PARTIALLY_RECEIVED': '#f97316', // Orange
                 'COMPLETED': '#10b981',    // Green
-                'CANCELLED': '#ef4444'     // Red
+                'CANCELLED': '#ef4444',    // Red
+                'DISPUTED': '#ef4444'      // Red ← ADD THIS
             };
             return colorMap[status] || '#6b7280';
         },
@@ -235,84 +316,31 @@ export const purchaseOrderService = {
             return stats;
         }
     },
-    receiveItems: async (purchaseOrderId, receivedItems) => {
+    // Get items pending redelivery
+    getItemsPendingRedelivery: async (purchaseOrderId) => {
         try {
-            console.log('Receiving items for PO:', purchaseOrderId);
-            console.log('Items:', receivedItems);
-
-            const response = await apiClient.post(
-                PURCHASE_ORDER_ENDPOINTS.RECEIVE_ITEMS(purchaseOrderId),
-                { receivedItems }
-            );
-
-            console.log('Receive items response:', response);
-            return response.data || response;
+            const response = await api.get(PURCHASE_ORDER_ENDPOINTS.GET_PENDING_REDELIVERY(purchaseOrderId));
+            return response.data;
         } catch (error) {
-            console.error('Error receiving items:', error);
+            console.error('Error fetching pending redeliveries:', error);
             throw error;
         }
     },
 
-
-    reportIssue: async (purchaseOrderId, issueData) => {
+// Process a redelivery
+    processRedelivery: async (purchaseOrderId, issueIds, deliveryData) => {
         try {
-            console.log('Reporting issue for PO:', purchaseOrderId);
-            console.log('Issue data:', issueData);
-
-            const response = await apiClient.post(
-                PURCHASE_ORDER_ENDPOINTS.REPORT_ISSUE(purchaseOrderId),
-                issueData
+            const response = await api.post(
+                PURCHASE_ORDER_ENDPOINTS.PROCESS_REDELIVERY(purchaseOrderId),
+                {
+                    issueIds: issueIds,
+                    items: deliveryData.items,
+                    generalNotes: deliveryData.generalNotes
+                }
             );
-
-            console.log('Report issue response:', response);
-            return response.data || response;
+            return response.data;
         } catch (error) {
-            console.error('Error reporting issue:', error);
-            throw error;
-        }
-    },
-
-    // Resolve issues for purchase order items
-    resolveIssue: async (purchaseOrderId, resolutionData) => {
-        try {
-            console.log('Resolving issue for PO:', purchaseOrderId);
-            console.log('Resolution data:', resolutionData);
-
-            const response = await apiClient.post(
-                PURCHASE_ORDER_ENDPOINTS.RESOLVE_ISSUE(purchaseOrderId),
-                resolutionData
-            );
-
-            console.log('Resolve issue response:', response);
-            return response.data || response;
-        } catch (error) {
-            console.error('Error resolving issue:', error);
-            throw error;
-        }
-    },
-
-    // Get all issues for a purchase order
-    getIssues: async (purchaseOrderId) => {
-        try {
-            const response = await apiClient.get(
-                PURCHASE_ORDER_ENDPOINTS.GET_ISSUES(purchaseOrderId)
-            );
-            return response.data || response;
-        } catch (error) {
-            console.error('Error fetching issues:', error);
-            throw error;
-        }
-    },
-
-    // Get active (unresolved) issues for a purchase order
-    getActiveIssues: async (purchaseOrderId) => {
-        try {
-            const response = await apiClient.get(
-                PURCHASE_ORDER_ENDPOINTS.GET_ACTIVE_ISSUES(purchaseOrderId)
-            );
-            return response.data || response;
-        } catch (error) {
-            console.error('Error fetching active issues:', error);
+            console.error('Error processing redelivery:', error);
             throw error;
         }
     },

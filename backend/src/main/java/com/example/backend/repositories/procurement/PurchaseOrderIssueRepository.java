@@ -3,6 +3,8 @@ package com.example.backend.repositories.procurement;
 import com.example.backend.models.procurement.IssueStatus;
 import com.example.backend.models.procurement.PurchaseOrderIssue;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -28,4 +30,10 @@ public interface PurchaseOrderIssueRepository extends JpaRepository<PurchaseOrde
 
     // Count active issues for a purchase order
     long countByPurchaseOrderIdAndIssueStatus(UUID purchaseOrderId, IssueStatus issueStatus);
+
+    @Query("SELECT i FROM PurchaseOrderIssue i " +
+            "LEFT JOIN FETCH i.purchaseOrderItem poi " +
+            "LEFT JOIN FETCH poi.itemType it " +
+            "WHERE i.purchaseOrder.id = :purchaseOrderId")
+    List<PurchaseOrderIssue> findByPurchaseOrderIdWithDetails(@Param("purchaseOrderId") UUID purchaseOrderId);
 }

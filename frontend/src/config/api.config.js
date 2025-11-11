@@ -737,11 +737,13 @@ export const PURCHASE_ORDER_ENDPOINTS = {
     UPDATE_STATUS: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}/status`,
     FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`,
     RECEIVE_ITEMS: (id) => `/api/v1/purchaseOrders/${id}/receive`,
-    // ADD THESE 4 NEW ENDPOINTS:
     REPORT_ISSUE: (id) => `/api/v1/purchaseOrders/${id}/report-issue`,
     RESOLVE_ISSUE: (id) => `/api/v1/purchaseOrders/${id}/resolve-issue`,
     GET_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues`,
-    GET_ACTIVE_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues/active`
+    GET_ACTIVE_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues/active`,
+    GET_DELIVERY_HISTORY: (itemId) => `/api/v1/purchaseOrders/items/${itemId}/deliveries`,
+    GET_PENDING_REDELIVERY: (id) => `/api/v1/purchaseOrders/${id}/pending-redelivery`,
+    PROCESS_REDELIVERY: (id) => `/api/v1/purchaseOrders/${id}/process-redelivery`// ← ADD THIS
 };
 
 

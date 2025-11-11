@@ -5,13 +5,10 @@
   background-color: var(--main-background-color);
 }
 
+/* ProcurementRequestOrder.scss */
+
 .pro-ro-table-container {
-  transition: all var(--transition-normal) ease;
-
-
-
-  /* Ensure the container adapts to content */
-  overflow: hidden;
+  margin-bottom: 45px;
 }
 
 /* Intro card */

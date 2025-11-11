@@ -50,6 +50,10 @@ public class PurchaseOrderIssue {
     @Column(columnDefinition = "TEXT")
     private String issueDescription;
 
+    // NEW: Track quantity affected by this issue
+    @Column(name = "affected_quantity")
+    private Double affectedQuantity;
+
     // Resolution details
     @Enumerated(EnumType.STRING)
     private PurchaseOrderResolutionType resolutionType;
@@ -59,6 +63,12 @@ public class PurchaseOrderIssue {
 
     @Column(columnDefinition = "TEXT")
     private String resolutionNotes;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "delivery_id", nullable = false)
+    @JsonBackReference
+    private PurchaseOrderDelivery delivery;
 
     @PrePersist
     protected void onCreate() {
