@@ -238,7 +238,22 @@ const Sidebar = () => {
             title: 'Sites',
             icon: <FaMapMarkerAlt/>,
             path: '/sites',
-            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
+            roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE],
+            hasSubmenu: true,
+            submenuItems: [
+                {
+                    title: 'Dashboard',
+                    icon: <FaChartLine/>,
+                    path: '/dashboards/site-admin',
+                    roles: [ADMIN]
+                },
+                {
+                    title: 'All Sites',
+                    icon: <FaMapMarkerAlt/>,
+                    path: '/sites',
+                    roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
+                }
+            ]
         },
         {
             title: 'Partners',
@@ -253,6 +268,12 @@ const Sidebar = () => {
             roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT, WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, SECRETARY, EQUIPMENT_MANAGER, HR_MANAGER, HR_EMPLOYEE, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE],
             hasSubmenu: true,
             submenuItems: [
+                {
+                    title: 'Dashboard',
+                    icon: <FaChartLine/>,
+                    path: '/dashboards/equipment-manager',
+                    roles: [ADMIN]
+                },
                 {
                     title: 'Equipment List',
                     icon: <FaTruck/>,
@@ -293,6 +314,12 @@ const Sidebar = () => {
             hasSubmenu: true,
             submenuItems: [
                 {
+                    title: 'Dashboard',
+                    icon: <FaChartLine/>,
+                    path: '/dashboards/warehouse-manager',
+                    roles: [ADMIN]
+                },
+                {
                     title: 'Warehouses',
                     icon: <FaWarehouse/>,
                     path: '/warehouses',
@@ -325,6 +352,12 @@ const Sidebar = () => {
             roles: [ADMIN, USER, HR_MANAGER, HR_EMPLOYEE],
             hasSubmenu: true,
             submenuItems: [
+                {
+                    title: 'Dashboard',
+                    icon: <FaChartLine/>,
+                    path: '/dashboards/hr-manager',
+                    roles: [ADMIN]
+                },
                 {
                     title: 'Departments',
                     icon: <FaBuilding/>,
@@ -430,6 +463,12 @@ const Sidebar = () => {
             hasSubmenu: true,
             submenuItems: [
                 {
+                    title: 'Dashboard',
+                    icon: <FaChartLine/>,
+                    path: '/dashboards/finance-manager',
+                    roles: [ADMIN]
+                },
+                {
                     title: 'General Ledger',
                     icon: <FaBook/>,
                     path: '/finance/general-ledger',
@@ -462,6 +501,12 @@ const Sidebar = () => {
             roles: [ADMIN, USER, SITE_ADMIN, PROCUREMENT],
             hasSubmenu: true,
             submenuItems: [
+                {
+                    title: 'Dashboard',
+                    icon: <FaChartLine/>,
+                    path: '/dashboards/procurement',
+                    roles: [ADMIN]
+                },
                 {
                     title: 'Request Orders',
                     icon: <FaFileContract/>,

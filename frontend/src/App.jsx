@@ -9,6 +9,14 @@ import Sidebar, {SidebarProvider} from "./components/common/Sidebar/Sidebar.jsx"
 import AdminPage from "./pages/admin/AdminPage.jsx";
 import Navbar from "./components/common/Navbar/Navbar.jsx";
 import DashboardPage from "./pages/dashboards/DashboardPage.jsx";
+import AdminDashboard from "./pages/dashboards/AdminDashboard.jsx";
+import SiteAdminDashboard from "./pages/dashboards/SiteAdminDashboard.jsx";
+import EquipmentManagerDashboard from "./pages/dashboards/EquipmentManagerDashboard.jsx";
+import WarehouseManagerDashboard from "./pages/dashboards/WarehouseManagerDashboard.jsx";
+import HRManagerDashboard from "./pages/dashboards/HRManagerDashboard.jsx";
+import FinanceManagerDashboard from "./pages/dashboards/FinanceManagerDashboard.jsx";
+import ProcurementDashboard from "./pages/dashboards/ProcurementDashboard.jsx";
+import MaintenanceManagerDashboard from "./pages/dashboards/MaintenanceManagerDashboard.jsx";
 import VacancyList from "./pages/HR/Vacancy/VacancyList.jsx";
 import PositionsList from "./pages/HR/JobPosition/PositionsList.jsx";
 import EmployeesList from "./pages/HR/Employee/EmployeesList.jsx";
@@ -63,7 +71,6 @@ import FixedAssets from "./pages/finance/FixedAssets/FixedAssets.jsx";
 
 // ===================== Maintenance Team Imports =====================
 import MaintenanceLayout from "./pages/maintenance/MaintenanceLayout.jsx";
-import MaintenanceDashboard from "./pages/maintenance/MaintenanceDashboard/MaintenanceDashboard.jsx";
 import MaintenanceRecords from "./pages/maintenance/MaintenanceRecords/MaintenanceRecords.jsx";
 import StepTypeManagement from "./pages/maintenance/StepTypeManagement/StepTypeManagement.jsx";
 import ContactTypeManagement from "./pages/maintenance/ContactTypeManagement/ContactTypeManagement.jsx";
@@ -157,6 +164,15 @@ function App() {
                                     <Route path="/admin" element={<RoleRoute allowedRoles={[ADMIN]}><AdminPage/></RoleRoute>}/>
 
                                     <Route path="/dashboard" element={<RoleRoute allowedRoles={allRoles}><DashboardPage/></RoleRoute>}/>
+                                    
+                                    {/* Individual Dashboard Routes for Admin */}
+                                    <Route path="/dashboards/admin" element={<RoleRoute allowedRoles={[ADMIN]}><AdminDashboard/></RoleRoute>}/>
+                                    <Route path="/dashboards/site-admin" element={<RoleRoute allowedRoles={[ADMIN]}><SiteAdminDashboard/></RoleRoute>}/>
+                                    <Route path="/dashboards/equipment-manager" element={<RoleRoute allowedRoles={[ADMIN]}><EquipmentManagerDashboard/></RoleRoute>}/>
+                                    <Route path="/dashboards/warehouse-manager" element={<RoleRoute allowedRoles={[ADMIN]}><WarehouseManagerDashboard/></RoleRoute>}/>
+                                    <Route path="/dashboards/hr-manager" element={<RoleRoute allowedRoles={[ADMIN]}><HRManagerDashboard/></RoleRoute>}/>
+                                    <Route path="/dashboards/finance-manager" element={<RoleRoute allowedRoles={[ADMIN]}><FinanceManagerDashboard/></RoleRoute>}/>
+                                    <Route path="/dashboards/procurement" element={<RoleRoute allowedRoles={[ADMIN]}><ProcurementDashboard/></RoleRoute>}/>
 
                                     <Route path="/partners" element={<RoleRoute allowedRoles={[ADMIN, SITE_ADMIN]}><Partners/></RoleRoute>}/>
 
@@ -268,7 +284,7 @@ function App() {
 
                                     {/* ===================== Maintenance Team Routes ===================== */}
                                     <Route path="/maintenance" element={<RoleRoute allowedRoles={[ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]}><MaintenanceLayout/></RoleRoute>}>
-                                        <Route index element={<MaintenanceDashboard/>}/>
+                                        <Route index element={<MaintenanceManagerDashboard/>}/>
                                         <Route path="records" element={<MaintenanceRecords/>}/>
                                         <Route path="records/:recordId" element={<MaintenanceRecordDetail/>}/>
                                         <Route path="contacts" element={<Contacts/>}/>
