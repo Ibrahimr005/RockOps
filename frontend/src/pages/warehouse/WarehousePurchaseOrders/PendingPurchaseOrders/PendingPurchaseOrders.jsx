@@ -3,20 +3,17 @@ import { FaCheck } from 'react-icons/fa';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import PurchaseOrderViewModal from '../../../../components/procurement/PurchaseOrderViewModal/PurchaseOrderViewModal';
-import PurchaseOrderApprovalModal from '../PurchaseOrderApproveModal/PurchaseOrderApprovalModal';
-import ReportIssueModal from '../ReportIssueModal/ReportIssueModal';
+import ProcessDeliveryModal from '../ProcessDeliveryModal/ProcessDeliveryModal';
 
 const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
     const [pendingOrders, setPendingOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
     const [showModal, setShowModal] = useState(false);
-    const [showApprovalModal, setShowApprovalModal] = useState(false);
-    const [purchaseOrderToApprove, setPurchaseOrderToApprove] = useState(null);
 
-    // Report Issue states
-    const [showReportIssueModal, setShowReportIssueModal] = useState(false);
-    const [purchaseOrderToReport, setPurchaseOrderToReport] = useState(null);
+    // Process Delivery Modal states
+    const [showProcessDeliveryModal, setShowProcessDeliveryModal] = useState(false);
+    const [purchaseOrderToProcess, setPurchaseOrderToProcess] = useState(null);
 
     // Fetch initial data
     useEffect(() => {
@@ -31,14 +28,13 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         try {
             const allOrders = await purchaseOrderService.getAll();
 
-            console.log("all orders:", JSON.stringify(allOrders, null, 2));
-
             // Filter orders to show only PENDING orders for the specific warehouse
+            // NOTE: Assuming requestOrder.requesterId is the correct field for the warehouse ID
             const filteredOrders = allOrders.filter(order =>
-                order.status === 'PENDING' && order.requestOrder.requesterId === warehouseId
+                order.status === 'PENDING' && order.requestOrder?.requesterId === warehouseId
             );
 
-            console.log("filtered orders:", JSON.stringify(filteredOrders, null, 2));
+            console.log("filtered pending orders for warehouse:", filteredOrders);
 
             setPendingOrders(filteredOrders);
         } catch (error) {
@@ -52,99 +48,53 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         }
     };
 
-    // Handle approve purchase order - now opens approval modal
-    const handleApprovePurchaseOrder = (purchaseOrder) => {
-        setPurchaseOrderToApprove(purchaseOrder);
-        setShowApprovalModal(true);
+    /**
+     * Handled by the DataTable action button.
+     * Sets the PO to process and opens the delivery modal.
+     */
+    const handleOpenProcessDeliveryModal = (purchaseOrder) => {
+        setPurchaseOrderToProcess(purchaseOrder);
+        setShowProcessDeliveryModal(true);
     };
 
-    // Handle report issue
-    const handleReportIssue = (purchaseOrder) => {
-        setPurchaseOrderToReport(purchaseOrder);
-        setShowReportIssueModal(true);
-    };
+    /**
+     * Handled by the ProcessDeliveryModal's onSubmit prop.
+     * Executes the API call to finalize the delivery process.
+     */
+    const handleDeliverySubmit = async (deliveryData) => {
+        const purchaseOrder = purchaseOrderToProcess;
 
-    // Handle approval from modal
-    const handleApprovalConfirm = async (updatedPurchaseOrder) => {
-        try {
-            // Show success message
+        // Immediately close the modal for a better user experience
+        handleProcessDeliveryModalClose();
+
+        if (!purchaseOrder) {
             if (onShowSnackbar) {
-                const status = updatedPurchaseOrder.status;
-                let message = '';
-
-                if (status === 'COMPLETED') {
-                    message = `All items received! Purchase order ${updatedPurchaseOrder.poNumber} is now complete.`;
-                } else if (status === 'PARTIAL') {
-                    message = `Items received! Purchase order ${updatedPurchaseOrder.poNumber} is now partially fulfilled.`;
-                } else {
-                    message = `Purchase order ${updatedPurchaseOrder.poNumber} updated successfully!`;
-                }
-
-                onShowSnackbar(message, 'success');
+                onShowSnackbar('Error: No purchase order selected for delivery.', 'error');
             }
+            return;
+        }
 
-            // Refresh the data to update the list
-            await fetchPendingPurchaseOrders();
+        try {
+            await purchaseOrderService.processDelivery(purchaseOrder.id, deliveryData);
 
-        } catch (error) {
-            console.error('Error after receiving items:', error);
+            // Refresh the list to remove the processed order
+            fetchPendingPurchaseOrders();
+
             if (onShowSnackbar) {
-                onShowSnackbar('An error occurred after receiving items.', 'error');
+                onShowSnackbar(`Delivery for PO ${purchaseOrder.poNumber} processed successfully!`, 'success');
+            }
+        } catch (error) {
+            console.error('Error processing delivery:', error);
+            if (onShowSnackbar) {
+                onShowSnackbar('Failed to process delivery. Please try again.', 'error');
             }
         }
     };
 
-    // Handle issue report submission - WITH API INTEGRATION
-    const handleIssueReportSubmit = async (issueData) => {
-        try {
-            console.log('Submitting issue report:', issueData);
-
-            // Call the API to report the issue
-            const response = await purchaseOrderService.reportIssue(
-                issueData.purchaseOrderId,
-                {
-                    items: issueData.items,
-                    comments: issueData.comments
-                }
-            );
-
-            console.log('Issue report response:', response);
-
-            if (onShowSnackbar) {
-                onShowSnackbar(
-                    `Issue reported successfully for purchase order ${purchaseOrderToReport.poNumber}. Status changed to DISPUTED.`,
-                    'success'
-                );
-            }
-
-            // Close modal
-            setShowReportIssueModal(false);
-            setPurchaseOrderToReport(null);
-
-            // Refresh the data to remove this PO from pending list (now disputed)
-            await fetchPendingPurchaseOrders();
-
-        } catch (error) {
-            console.error('Error reporting issue:', error);
-            if (onShowSnackbar) {
-                onShowSnackbar(
-                    `Failed to report issue: ${error.response?.data?.message || error.message}`,
-                    'error'
-                );
-            }
-        }
-    };
-
-    // Handle closing approval modal
-    const handleApprovalModalClose = () => {
-        setShowApprovalModal(false);
-        setPurchaseOrderToApprove(null);
-    };
-
-    // Handle closing report issue modal
-    const handleReportIssueModalClose = () => {
-        setShowReportIssueModal(false);
-        setPurchaseOrderToReport(null);
+    // Handle closing process delivery modal
+    const handleProcessDeliveryModalClose = () => {
+        setShowProcessDeliveryModal(false);
+        setPurchaseOrderToProcess(null);
     };
 
     // Handle row click to show purchase order details
@@ -171,6 +121,7 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         {
             id: 'title',
             header: 'TITLE',
+            // Use optional chaining for safe access
             accessor: 'requestOrder.title',
             sortable: true,
             render: (row, value) => value || 'N/A'
@@ -210,29 +161,22 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         }
     ];
 
-    // Actions configuration
+    // Actions configuration - now just one action to process delivery
     const actions = [
         {
-            label: 'Receive',
+            label: 'Process Delivery',
             icon: (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 6L9 17l-5-5" />
+                    <path d="M16 3h5v5"/>
+                    <path d="M8 3H3v5"/>
+                    <path d="M12 22v-8"/>
+                    <path d="M16 18l-4 4-4-4"/>
+                    <path d="M3 8l9-5 9 5"/>
                 </svg>
             ),
-            onClick: (row) => handleApprovePurchaseOrder(row),
+            // THIS IS THE FIX: Call the function that opens the modal
+            onClick: (row) => handleOpenProcessDeliveryModal(row),
             className: 'approve'
-        },
-        {
-            label: 'Report Issue',
-            icon: (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="12"/>
-                    <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-            ),
-            onClick: (row) => handleReportIssue(row),
-            className: 'danger'
         }
     ];
 
@@ -263,20 +207,13 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
                 onClose={handleCloseModal}
             />
 
-            {/* Purchase Order Approval Modal */}
-            <PurchaseOrderApprovalModal
-                purchaseOrder={purchaseOrderToApprove}
-                isOpen={showApprovalModal}
-                onClose={handleApprovalModalClose}
-                onApprove={handleApprovalConfirm}
-            />
-
-            {/* Report Issue Modal */}
-            <ReportIssueModal
-                purchaseOrder={purchaseOrderToReport}
-                isOpen={showReportIssueModal}
-                onClose={handleReportIssueModalClose}
-                onSubmit={handleIssueReportSubmit}
+            {/* Process Delivery Modal - Unified modal for receiving and reporting issues */}
+            <ProcessDeliveryModal
+                purchaseOrder={purchaseOrderToProcess}
+                isOpen={showProcessDeliveryModal}
+                onClose={handleProcessDeliveryModalClose}
+                // THIS IS THE FIX: Pass the dedicated submission handler
+                onSubmit={handleDeliverySubmit}
             />
         </div>
     );

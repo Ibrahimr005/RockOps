@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime; // ADD THIS IMPORT
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -41,4 +42,15 @@ public class PurchaseOrderItemDTO {
 
     private UUID merchantId;
     private MerchantDTO merchant;
+
+    // Add these at the end of the class:
+
+    // History of all deliveries for this item
+    private List<PurchaseOrderDeliveryDTO> deliveries;
+
+    // All issues for this item (aggregated from all deliveries)
+    private List<PurchaseOrderIssueDTO> issues;
+
+    // Calculated field - how much is left to receive/account for
+    private Double remainingQuantity;
 }

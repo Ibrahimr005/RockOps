@@ -1,0 +1,192 @@
+// ============================================================================
+// PURCHASE ORDER DETAILS PAGE - MAIN STYLES
+// ============================================================================
+.po-details-page {
+  min-height: 100vh;
+  background: var(--main-background-color);
+
+  // ============================================================================
+  // LOADING & ERROR STATES
+  // ============================================================================
+  .loading-container,
+  .error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    padding: 40px 20px;
+
+    svg {
+      margin-bottom: 16px;
+      color: var(--color-primary);
+    }
+
+    h3 {
+      margin: 0 0 8px 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    p {
+      margin: 0 0 20px 0;
+      font-size: 14px;
+      color: var(--color-text-secondary);
+      max-width: 400px;
+      line-height: 1.5;
+    }
+
+    .btn-primary {
+      padding: 10px 24px;
+      border: none;
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+
+      &:hover {
+        background: var(--color-primary-hover);
+      }
+    }
+  }
+
+  .spinner-large {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color-light);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  // ============================================================================
+  // ISSUES ALERT BANNER
+  // ============================================================================
+  .po-issues-alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    margin: 20px 28px;
+    background: var(--color-delete-bg);
+    border: 1px solid var(--color-danger);
+    border-radius: var(--radius-sm);
+    color: var(--color-danger);
+    font-size: 13px;
+    font-weight: 500;
+
+    svg {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  // ============================================================================
+  // TABS - EXACT SAME AS INVENTORY TABS
+  // ============================================================================
+  .po-tabs {
+    display: flex;
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .po-tab {
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-fast);
+
+    &.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+
+    &:hover:not(.active) {
+      color: var(--color-text-primary);
+    }
+
+    .tab-badge {
+      background-color: var(--color-danger);
+      color: var(--color-text-inverse);
+      border-radius: 9999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+  }
+
+  // ============================================================================
+  // TAB CONTENT
+  // ============================================================================
+  .po-tab-content {
+    margin: 0 28px 28px;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  // ============================================================================
+  // RESPONSIVE DESIGN
+  // ============================================================================
+  @media (max-width: 768px) {
+    .po-issues-alert {
+      margin: 16px 20px;
+      padding: 12px 14px;
+      font-size: 12px;
+    }
+
+    .po-tabs {
+      margin-bottom: 20px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+
+      .po-tab {
+        padding: 10px 16px;
+        font-size: 14px;
+
+        .tab-badge {
+          padding: 2px 6px;
+          font-size: 11px;
+        }
+      }
+    }
+
+    .po-tab-content {
+      margin: 0 20px 24px;
+    }
+  }
+}

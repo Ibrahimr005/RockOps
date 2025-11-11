@@ -5,7 +5,6 @@ import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
 import ConfirmationDialog from '../../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx';
 import PurchaseOrderViewModal from '../../../../components/procurement/PurchaseOrderViewModal/PurchaseOrderViewModal.jsx';
-import ResolveIssueModal from '../ResolveIssueModal/ResolveIssueModal.jsx';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
 import "./DisputedPurchaseOrders.scss";
 
@@ -20,10 +19,6 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
     // Modal states
     const [showViewModal, setShowViewModal] = useState(false);
     const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
-
-    // Resolve issue modal states
-    const [showResolveModal, setShowResolveModal] = useState(false);
-    const [orderToResolve, setOrderToResolve] = useState(null);
 
     // Cancel order dialog states
     const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -56,17 +51,16 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
     };
 
     const handleRowClick = (row) => {
-        setSelectedPurchaseOrder(row);
-        setShowViewModal(true);
+        navigate(`/procurement/purchase-orders/details/${row.id}`);
     };
+
 
     const handleCloseModal = () => {
         setShowViewModal(false);
         setSelectedPurchaseOrder(null);
     };
 
-// Handle resolve issue
-// Handle resolve issue
+    // Handle resolve issue - Navigate to new page
     const handleResolveClick = (row, e) => {
         console.log('🔍 Resolve button clicked!');
         console.log('🔍 Row data:', row);
@@ -76,39 +70,11 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
             e.stopPropagation();
         }
 
-        console.log('🔍 Setting orderToResolve...');
-        setOrderToResolve(row);
-
-        console.log('🔍 Setting showResolveModal to true...');
-        setShowResolveModal(true);
+        // Navigate to the resolve issues page
+        navigate(`/procurement/purchase-orders/${row.id}/resolve-issues`);
     };
 
-    const handleResolveModalClose = () => {
-        setShowResolveModal(false);
-        setOrderToResolve(null);
-    };
-
-    const handleResolveSubmit = async (resolutionData) => {
-        try {
-            // TODO: Call API to resolve issue
-            console.log('Resolving issue:', resolutionData);
-
-            setNotificationMessage(`Issue resolved for purchase order ${orderToResolve.poNumber}`);
-            setNotificationType('success');
-            setShowNotification(true);
-
-            // Refresh the list
-            await fetchDisputedPurchaseOrders();
-            if (onDataChange) onDataChange();
-        } catch (err) {
-            console.error('Error resolving issue:', err);
-            setNotificationMessage('Failed to resolve issue. Please try again.');
-            setNotificationType('error');
-            setShowNotification(true);
-        }
-    };
-
-// Handle cancel order
+    // Handle cancel order
     const handleCancelClick = (row, e) => {
         // Event might be undefined from DataTable
         if (e && e.stopPropagation) {
@@ -232,7 +198,6 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
     ];
 
     // Define actions for DataTable
-// Define actions for DataTable
     const actions = [
         {
             label: 'Resolve',
@@ -241,7 +206,7 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
                     <path d="M20 6L9 17l-5-5"/>
                 </svg>
             ),
-            onClick: (row) => handleResolveClick(row), // Removed the 'e' parameter
+            onClick: (row) => handleResolveClick(row),
             className: 'resolve'
         },
         {
@@ -252,7 +217,7 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
                     <line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
             ),
-            onClick: (row) => handleCancelClick(row), // Removed the 'e' parameter
+            onClick: (row) => handleCancelClick(row),
             className: 'cancel'
         }
     ];
@@ -283,8 +248,6 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
 
     return (
         <div className="disputed-purchase-orders-container">
-
-
             {/* Disputed Purchase Orders Table */}
             <div className="purchase-orders-section">
                 <DataTable
@@ -311,14 +274,6 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
                 purchaseOrder={selectedPurchaseOrder}
                 isOpen={showViewModal}
                 onClose={handleCloseModal}
-            />
-
-            {/* Resolve Issue Modal */}
-            <ResolveIssueModal
-                purchaseOrder={orderToResolve}
-                isOpen={showResolveModal}
-                onClose={handleResolveModalClose}
-                onSubmit={handleResolveSubmit}
             />
 
             {/* Cancel Confirmation Dialog */}

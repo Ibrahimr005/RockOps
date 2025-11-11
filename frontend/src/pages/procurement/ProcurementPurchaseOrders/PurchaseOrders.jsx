@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { FiChevronRight } from 'react-icons/fi';
 import { purchaseOrderService } from '../../../services/procurement/purchaseOrderService.js';
 import PendingPurchaseOrders from './PendingPurchaseOrders/PendingPurchaseOrders.jsx';
-import ValidatedPurchaseOrders from './CompletedPurchaseOrders/ValidatedPurchaseOrders.jsx';
-import DisputedPurchaseOrders from './DisputedPurchaseOrders/DisputedPurchaseOrders.jsx'; // NEW
+import CompletedPurchaseOrders from './CompletedPurchaseOrders/CompletedPurchaseOrders.jsx';
+import DisputedPurchaseOrders from './DisputedPurchaseOrders/DisputedPurchaseOrders.jsx';
 import PageHeader from '../../../components/common/PageHeader/PageHeader.jsx';
 import "./PurchaseOrders.scss";
 
@@ -36,38 +36,47 @@ const PurchaseOrders = () => {
         fetchPurchaseOrders();
     };
 
+    // Filter orders by tab
+    const getPendingOrders = () => {
+        return allPurchaseOrders.filter(order =>
+            order.status === 'PENDING' ||
+            order.status === 'CREATED' ||
+            order.status === 'PARTIALLY_RECEIVED'
+        );
+    };
+
+    const getDisputedOrders = () => {
+        return allPurchaseOrders.filter(order =>
+            order.status === 'DISPUTED'
+        );
+    };
+
+    const getCompletedOrders = () => {
+        return allPurchaseOrders.filter(order =>
+            order.status === 'COMPLETED' ||
+            order.status === 'CANCELLED'
+        );
+    };
+
     const getTabStats = () => {
         if (activeTab === 'pending') {
-            const pendingOrders = allPurchaseOrders.filter(order =>
-                order.status === 'PENDING' ||
-                order.status === 'CREATED' ||
-                order.status === 'DRAFT'
-            );
-
+            const pendingOrders = getPendingOrders();
             return [
                 {
                     value: pendingOrders.length,
                     label: 'Pending Orders'
                 }
             ];
-        } else if (activeTab === 'validated') {
-            const validatedOrders = allPurchaseOrders.filter(order =>
-                order.status === 'VALIDATED' ||
-                order.status === 'APPROVED' ||
-                order.status === 'DELIVERED'
-            );
-
+        } else if (activeTab === 'completed') {
+            const completedOrders = getCompletedOrders();
             return [
                 {
-                    value: validatedOrders.length,
-                    label: 'Validated Orders'
+                    value: completedOrders.length,
+                    label: 'Completed Orders'
                 }
             ];
-        } else if (activeTab === 'disputed') { // NEW
-            const disputedOrders = allPurchaseOrders.filter(order =>
-                order.status === 'DISPUTED'
-            );
-
+        } else if (activeTab === 'disputed') {
+            const disputedOrders = getDisputedOrders();
             return [
                 {
                     value: disputedOrders.length,
@@ -84,6 +93,10 @@ const PurchaseOrders = () => {
         ];
     };
 
+    const pendingCount = getPendingOrders().length;
+    const disputedCount = getDisputedOrders().length;
+    const completedCount = getCompletedOrders().length;
+
     return (
         <div className="purchase-orders-container">
             <PageHeader
@@ -91,34 +104,38 @@ const PurchaseOrders = () => {
                 subtitle="Manage and track all purchase orders across your procurement workflow"
             />
 
-            {/* Tabs - UPDATED with Disputed tab */}
+            {/* Tabs */}
             <div className="tabs">
                 <button
                     className={`tab ${activeTab === 'pending' ? 'active' : ''}`}
                     onClick={() => setActiveTab('pending')}
                 >
                     Pending Orders
-                </button>
-                <button
-                    className={`tab ${activeTab === 'validated' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('validated')}
-                >
-                    Completed Orders
+                    {pendingCount > 0 && (
+                        <span className="tab-badge">{pendingCount}</span>
+                    )}
                 </button>
                 <button
                     className={`tab ${activeTab === 'disputed' ? 'active' : ''}`}
                     onClick={() => setActiveTab('disputed')}
                 >
                     Disputed Orders
-                    {allPurchaseOrders.filter(order => order.status === 'DISPUTED').length > 0 && (
-                        <span className="tab-badge">
-                            {allPurchaseOrders.filter(order => order.status === 'DISPUTED').length}
-                        </span>
+                    {disputedCount > 0 && (
+                        <span className="tab-badge disputed">{disputedCount}</span>
+                    )}
+                </button>
+                <button
+                    className={`tab ${activeTab === 'completed' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('completed')}
+                >
+                    Completed Orders
+                    {completedCount > 0 && (
+                        <span className="tab-badge completed">{completedCount}</span>
                     )}
                 </button>
             </div>
 
-            {/* Tab Content - UPDATED */}
+            {/* Tab Content */}
             <div className="tab-content-po">
                 {activeTab === 'pending' && (
                     <PendingPurchaseOrders
@@ -126,14 +143,14 @@ const PurchaseOrders = () => {
                         loading={loading}
                     />
                 )}
-                {activeTab === 'validated' && (
-                    <ValidatedPurchaseOrders
+                {activeTab === 'disputed' && (
+                    <DisputedPurchaseOrders
                         onDataChange={handleDataChange}
                         loading={loading}
                     />
                 )}
-                {activeTab === 'disputed' && (
-                    <DisputedPurchaseOrders
+                {activeTab === 'completed' && (
+                    <CompletedPurchaseOrders
                         onDataChange={handleDataChange}
                         loading={loading}
                     />

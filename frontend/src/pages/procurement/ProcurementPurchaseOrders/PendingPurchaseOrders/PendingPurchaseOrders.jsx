@@ -44,9 +44,9 @@ const PendingPurchaseOrders = () => {
     };
 
     const handleRowClick = (row) => {
-        setSelectedPurchaseOrder(row);
-        setShowViewModal(true);
+        navigate(`/procurement/purchase-orders/details/${row.id}`);
     };
+
 
     const handleCloseModal = () => {
         setShowViewModal(false);

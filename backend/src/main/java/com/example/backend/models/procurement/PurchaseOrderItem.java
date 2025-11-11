@@ -11,6 +11,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -37,6 +39,11 @@ public class PurchaseOrderItem {
     private LocalDateTime receivedAt; // When items were received
     private String receivedBy; // Who marked them as received
 
+    // Add after the existing fields, before purchaseOrder relationship:
+    @OneToMany(mappedBy = "purchaseOrderItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<PurchaseOrderDelivery> deliveries = new ArrayList<>();
+
     // ADD THESE DIRECT RELATIONSHIPS:
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "item_type_id")
@@ -58,4 +65,9 @@ public class PurchaseOrderItem {
     @JoinColumn(name = "offer_item_id")
     @JsonManagedReference  // ORIGINAL VALUE
     private OfferItem offerItem;
+
+    @Column(name = "redelivery_count")
+    private Integer redeliveryCount = 0;
+
+
 }

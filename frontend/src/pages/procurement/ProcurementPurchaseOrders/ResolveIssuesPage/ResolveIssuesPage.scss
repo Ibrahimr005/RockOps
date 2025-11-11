@@ -1,0 +1,986 @@
+// ============================================================================
+// RESOLVE ISSUES PAGE - CLEAN & PROFESSIONAL DESIGN
+// ============================================================================
+.resolve-issues-page {
+  min-height: 100vh;
+  background: var(--main-background-color);
+
+  // ============================================================================
+  // LOADING & ERROR STATES
+  // ============================================================================
+  .loading-container,
+  .error-container,
+  .no-issues-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    padding: 40px 20px;
+
+    svg {
+      margin-bottom: 16px;
+      color: var(--color-primary);
+    }
+
+    h3 {
+      margin: 0 0 8px 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    p {
+      margin: 0 0 20px 0;
+      font-size: 14px;
+      color: var(--color-text-secondary);
+      max-width: 400px;
+      line-height: 1.5;
+    }
+
+    .btn-primary {
+      padding: 10px 24px;
+      border: none;
+      background: var(--color-primary);
+      color: var(--color-text-inverse);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+
+      &:hover {
+        background: var(--color-primary-hover);
+      }
+    }
+  }
+
+  .spinner-large {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color-light);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  // ============================================================================
+  // INSTRUCTION BANNER
+  // ============================================================================
+  .instruction-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    margin: 20px 28px;
+    background: var(--color-edit-bg);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+
+    svg {
+      flex-shrink: 0;
+      color: var(--color-primary);
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--color-text-primary);
+      line-height: 1.5;
+    }
+  }
+
+  // ============================================================================
+  // ISSUES CONTAINER
+  // ============================================================================
+  .issues-container {
+    padding: 0 28px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  // ============================================================================
+  // ISSUE CARD
+  // ============================================================================
+  .issue-card {
+    background: var(--color-surface);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+
+    &.resolved {
+      border-color: var(--color-success);
+
+      .issue-card-header {
+        background: rgba(34, 197, 94, 0.05);
+      }
+
+      .issue-header-left {
+        .issue-number {
+          background: var(--color-success);
+        }
+
+        .resolved-icon {
+          color: var(--color-success);
+        }
+      }
+    }
+
+    .issue-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: var(--color-surface-secondary);
+      border-bottom: 1px solid var(--border-color-light);
+
+      .issue-header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .issue-number {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 32px;
+          height: 32px;
+          padding: 0 8px;
+          background: var(--color-primary);
+          color: var(--color-text-inverse);
+          border-radius: var(--radius-sm);
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .resolved-icon {
+          font-size: 20px;
+        }
+      }
+
+      .issue-type-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid;
+        font-size: 12px;
+        font-weight: 600;
+
+        .badge-icon {
+          font-size: 16px;
+        }
+      }
+    }
+
+    .issue-card-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+
+      @media (max-width: 1200px) {
+        grid-template-columns: 1fr;
+      }
+
+      .left-column {
+        padding: 18px;
+        border-right: 1px solid var(--border-color-light);
+
+        @media (max-width: 1200px) {
+          border-right: none;
+          border-bottom: 1px solid var(--border-color-light);
+        }
+      }
+
+      .right-column {
+        padding: 18px;
+        background: var(--color-surface-secondary);
+      }
+    }
+  }
+
+  // ============================================================================
+  // INFO SECTIONS
+  // ============================================================================
+  .info-section {
+    margin-bottom: 18px;
+    padding: 14px;
+    background: var(--color-surface);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast); // ADD THIS
+
+    &:hover {
+      border-color: var(--color-primary); // ADD THIS
+
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      margin: 0 0 12px 0;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color-light);
+    }
+  }
+
+  // ============================================================================
+  // MERCHANT SECTION
+  // ============================================================================
+  .merchant-section {
+    background: var(--color-surface);
+
+    .merchant-name {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      background: var(--color-surface-secondary);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+
+      .btn-link {
+        padding: 5px 12px;
+        border: 1px solid var(--color-primary);
+        background: var(--color-primary);
+        color: var(--color-text-inverse);
+        border-radius: var(--radius-sm);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background var(--transition-fast);
+        white-space: nowrap;
+
+        &:hover {
+          background: var(--color-primary-hover);
+        }
+      }
+    }
+
+    .contact-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .contact-row {
+        display: grid;
+        grid-template-columns: 80px 1fr auto;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        background: var(--color-surface-secondary);
+        border: 1px solid var(--border-color-light);
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+
+        &.full {
+          grid-template-columns: 80px 1fr;
+        }
+
+        .contact-label {
+          font-weight: 600;
+          color: var(--color-text-secondary);
+          font-size: 11px;
+          text-transform: uppercase;
+        }
+
+        .contact-value {
+          color: var(--color-text-primary);
+          font-weight: 500;
+          word-break: break-word;
+
+          &[href] {
+            color: var(--color-primary);
+            text-decoration: none;
+
+            &:hover {
+              text-decoration: underline;
+            }
+          }
+        }
+
+        .btn-action {
+          padding: 6px 12px;
+          border: none;
+          background: var(--color-primary);
+          color: var(--color-text-inverse);
+          border-radius: var(--radius-sm);
+          font-size: 11px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background var(--transition-fast);
+          white-space: nowrap;
+
+          &:hover {
+            background: var(--color-primary-hover);
+          }
+        }
+      }
+    }
+  }
+
+  // ============================================================================
+  // DETAIL LIST
+  // ============================================================================
+  .detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .detail-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 10px 12px;
+      background: var(--color-surface-secondary);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+
+      .detail-label {
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        font-size: 11px;
+        text-transform: uppercase;
+      }
+
+      .detail-value {
+        color: var(--color-text-primary);
+        font-weight: 500;
+        line-height: 1.5;
+
+        &.quantity {
+          font-weight: 700;
+          color: var(--color-primary);
+          font-size: 16px;
+        }
+
+        &.description {
+          font-style: italic;
+          background: var(--color-surface);
+          padding: 8px 10px;
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--border-color-light);
+          margin-top: 4px;
+        }
+      }
+    }
+  }
+
+  // ============================================================================
+  // RESOLUTION FORM
+  // ============================================================================
+  .form-group {
+    margin-top:2rem;
+    margin-bottom: 16px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+
+      .required {
+        color: var(--color-danger);
+        margin-left: 2px;
+      }
+    }
+
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color-light);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--color-text-primary);
+      background: var(--color-surface);
+      transition: border-color var(--transition-fast);
+      cursor: pointer;
+      font-weight: 500;
+
+      &:hover:not(:disabled) {
+        border-color: var(--color-primary);
+      }
+
+      &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+      }
+
+      &.empty {
+        color: var(--color-text-muted);
+      }
+
+      &:disabled {
+        background: var(--color-surface-disabled);
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+    }
+
+    .form-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color-light);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--color-text-primary);
+      background: var(--color-surface);
+      resize: vertical;
+      min-height: 145px;
+      font-family: inherit;
+      transition: border-color var(--transition-fast);
+      line-height: 1.6;
+      font-weight: 500;
+
+      &:hover:not(:disabled) {
+        border-color: var(--color-primary);
+      }
+
+      &:focus {
+        outline: none;
+        border-color: var(--color-primary);
+      }
+
+      &::placeholder {
+        color: var(--color-text-muted);
+      }
+
+      &:disabled {
+        background: var(--color-surface-disabled);
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+    }
+  }
+
+  .resolution-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    line-height: 1.5;
+    margin-top: 12px;
+    font-weight: 500;
+    border: 1px solid;
+
+    svg {
+      flex-shrink: 0;
+      width: 14px;
+      height: 14px;
+      margin-top: 1px;
+    }
+
+    &.redelivery {
+      background: rgba(var(--color-warning-rgb), 0.1);
+      color: var(--color-warning);
+      border-color: var(--color-warning);
+    }
+
+    &.refund {
+      background: var(--color-edit-bg);
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    &.replacement_po {
+      background: rgba(99, 102, 241, 0.1);
+      color: #6366f1;
+      border-color: #6366f1;
+    }
+
+    &.accept_shortage {
+      background: var(--color-delete-bg);
+      color: var(--color-danger);
+      border-color: var(--color-danger);
+    }
+  }
+
+  // ============================================================================
+  // BOTTOM ACTION BAR
+  // ============================================================================
+  // ============================================================================
+  // BOTTOM ACTION BAR (NOT FIXED)
+  // ============================================================================
+  .bottom-action-bar {
+    background: var(--color-surface);
+    border-top: 1px solid var(--border-color-light);
+    border-radius: var(--radius-md);
+    margin: 20px 28px 28px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    .action-bar-content {
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+        padding: 16px 20px;
+        gap: 12px;
+      }
+
+      .action-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--color-text-secondary);
+        font-weight: 500;
+
+        svg {
+          color: var(--color-primary);
+          flex-shrink: 0;
+          width: 18px;
+          height: 18px;
+        }
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 12px;
+
+        @media (max-width: 768px) {
+          width: 100%;
+
+          button {
+            flex: 1;
+          }
+        }
+
+        button {
+          padding: 10px 20px;
+          border-radius: var(--radius-sm);
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background var(--transition-fast);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          border: none;
+          white-space: nowrap;
+
+          svg {
+            width: 18px;
+            height: 18px;
+          }
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+        }
+
+        .btn-secondary {
+          background: var(--color-surface);
+          color: var(--color-text-secondary);
+          border: 1px solid var(--border-color-medium);
+
+          &:hover:not(:disabled) {
+            background: var(--color-surface-hover);
+            color: var(--color-text-primary);
+          }
+        }
+
+        .btn-primary {
+          background: var(--color-primary);
+          color: var(--color-text-inverse);
+
+          &:hover:not(:disabled) {
+            background: var(--color-primary-hover);
+          }
+
+          .spinner-small {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: var(--color-text-inverse);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ============================================================================
+// RESPONSIVE DESIGN
+// ============================================================================
+@media (max-width: 768px) {
+  .resolve-issues-page {
+    .instruction-banner {
+      margin: 16px 20px;
+      padding: 12px 14px;
+    }
+
+    .issues-container {
+      padding: 0 20px 24px;
+      gap: 18px;
+    }
+
+    .issue-card {
+      .issue-card-body {
+        .left-column,
+        .right-column {
+          padding: 16px;
+        }
+      }
+    }
+
+    .merchant-section {
+      .contact-list {
+        .contact-row {
+          grid-template-columns: 1fr;
+          gap: 6px;
+
+          .contact-label {
+            grid-column: 1 / -1;
+          }
+
+          .btn-action {
+            justify-self: stretch;
+            width: 100%;
+          }
+
+          &.full {
+            grid-template-columns: 1fr;
+          }
+        }
+      }
+    }
+  }
+}
+// ============================================================================
+// ACCORDION FUNCTIONALITY
+// ============================================================================
+.issue-card {
+  &.accordion {
+    position: relative;
+    padding-top: 34px; // ADD SPACE FOR THE BADGE
+    transition: all var(--transition-normal);
+
+    &.collapsed {
+      .accordion-content {
+        display: none;
+      }
+    }
+
+    &.expanded {
+      border-color: var(--color-primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+      .accordion-header {
+        background: var(--color-surface);
+        border-bottom: 1px solid var(--border-color-light);
+      }
+
+      .accordion-content {
+        display: block;
+        animation: slideDown 0.3s ease-out;
+      }
+    }
+
+    // Accordion Header
+    .accordion-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: var(--color-surface-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      user-select: none;
+
+      &:hover {
+        background: var(--color-surface-hover);
+      }
+
+      .accordion-header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+
+        .issue-number {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 32px;
+          height: 32px;
+          padding: 0 8px;
+          background: var(--color-primary);
+          color: var(--color-text-inverse);
+          border-radius: var(--radius-sm);
+          font-size: 13px;
+          font-weight: 700;
+          flex-shrink: 0;
+        }
+
+        .resolved-icon {
+          color: var(--color-success);
+          width: 20px;
+          height: 20px;
+          flex-shrink: 0;
+        }
+
+        .issue-item-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--color-text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          flex: 1; // ADD THIS - takes remaining space
+        }
+
+        .issue-quantity {
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--color-primary);
+          white-space: nowrap;
+          flex-shrink: 0;
+          padding: 4px 10px;
+          background: var(--color-edit-bg);
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--color-primary);
+          margin-left: auto; // ADD THIS - pushes to far right
+          margin-right:1rem;
+        }
+      }
+
+      .accordion-header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+
+        .resolved-label {
+          padding: 4px 10px;
+          background: var(--color-success);
+          color: white;
+          border-radius: var(--radius-sm);
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .accordion-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border: 1px solid var(--border-color-medium);
+          background: var(--color-surface);
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          padding: 0;
+
+          svg {
+            width: 18px;
+            height: 18px;
+            color: var(--color-text-secondary);
+            transition: transform var(--transition-fast);
+          }
+
+          &:hover {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+
+            svg {
+              color: var(--color-text-inverse);
+            }
+          }
+        }
+      }
+    }
+
+    // Accordion Content - Expandable (NEW FULL-WIDTH LAYOUT)
+    .accordion-content {
+      overflow: hidden;
+
+      .issue-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+
+        // Full-width merchant section at top
+        .merchant-section-wrapper {
+          padding: 18px;
+          background: var(--color-surface);
+          border-bottom: 1px solid var(--border-color-light);
+        }
+
+        // Issue details and resolution side by side
+        // Issue details and resolution side by side
+        .details-resolution-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0;
+          align-items: stretch; // ADD THIS - makes both columns equal height
+
+          @media (max-width: 1200px) {
+            grid-template-columns: 1fr;
+          }
+
+          .issue-details-column,
+          .resolution-column {
+            padding: 18px;
+            background: var(--color-surface);
+            display: flex; // ADD THIS
+            flex-direction: column; // ADD THIS
+          }
+
+          .issue-details-column {
+            border-right: 1px solid var(--border-color-light);
+
+            @media (max-width: 1200px) {
+              border-right: none;
+              border-bottom: 1px solid var(--border-color-light);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Slide down animation
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+  }
+}
+
+// ============================================================================
+// RESPONSIVE - ACCORDION
+// ============================================================================
+@media (max-width: 768px) {
+  .issue-card {
+    &.accordion {
+      .accordion-header {
+        padding: 12px 14px;
+
+        .accordion-header-left {
+          gap: 8px;
+
+          .issue-number {
+            min-width: 28px;
+            height: 28px;
+            font-size: 12px;
+          }
+
+          .issue-type-badge {
+            padding: 5px 10px;
+            font-size: 11px;
+
+            .badge-icon {
+              font-size: 14px;
+            }
+          }
+
+          .issue-item-name {
+            font-size: 13px;
+          }
+        }
+
+        .accordion-header-right {
+          gap: 8px;
+
+          .resolved-label {
+            font-size: 10px;
+            padding: 3px 8px;
+          }
+
+          .accordion-toggle {
+            width: 28px;
+            height: 28px;
+
+            svg {
+              width: 16px;
+              height: 16px;
+            }
+          }
+        }
+      }
+
+      .accordion-content {
+        .issue-card-body {
+          .left-column,
+          .right-column {
+            padding: 16px;
+          }
+        }
+      }
+    }
+  }
+}
+// Issue Type Badge - Top Right Corner
+.issue-type-badge-corner {
+  position: absolute;
+  top: 1px; // SMALL OFFSET FROM TOP BORDER
+  right: 1px; // SMALL OFFSET FROM RIGHT BORDER
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 0 var(--radius-md) 0 12px;
+  border: 1px solid;
+  border-top: none;
+  border-right: none;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  z-index: 2;
+  pointer-events: none;
+
+  .badge-icon {
+    font-size: 14px;
+  }
+}

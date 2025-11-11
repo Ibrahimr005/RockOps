@@ -50,6 +50,8 @@ import ProcurementRequestOrders from "./pages/procurement/ProcurementRequestOrde
 import PurchaseOrders from "./pages/procurement/ProcurementPurchaseOrders/PurchaseOrders.jsx";
 import PurchaseOrderDetails
     from "./pages/procurement/ProcurementPurchaseOrders/PurchaseOrderDetails/PurchaseOrderDetails.jsx";
+import ResolveIssuesPage from "./pages/procurement/ProcurementPurchaseOrders/ResolveIssuesPage/ResolveIssuesPage.jsx";
+import PurchaseOrderDetailsPage from "./components/procurement/PurchaseOrderDetailsPage/PurchaseOrderDetailsPage.jsx";
 
 import AttendancePage from "./pages/HR/Attendance/AttendancePage.jsx";
 import GeneralLedger from "./pages/finance/GeneralLedger/GeneralLedger.jsx";
@@ -190,6 +192,10 @@ function App() {
                                         <Route path="offers" element={<ProcurementOffers/>}/>
                                         <Route path="purchase-orders" element={<PurchaseOrders/>}/>
                                         <Route path="purchase-orders/:id" element={<PurchaseOrderDetails/>}/>
+                                        <Route path="purchase-orders/:id/resolve-issues" element={<ResolveIssuesPage/>}/>
+                                        <Route path="purchase-orders/details/:id/" element={<PurchaseOrderDetailsPage/>}/>
+
+
                                     </Route>
 
                                     {/* HR Management Routes */}
