@@ -3,6 +3,7 @@ import { documentService } from '../../../services/documentService';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useEquipmentPermissions } from '../../../utils/rbac';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import {
     SARKY_DOCUMENT_TYPES,
     generateSarkyDocumentName,
@@ -39,6 +40,15 @@ const SarkyDocumentModal = ({
     const [customName, setCustomName] = useState('');
     const [useAutoNaming, setUseAutoNaming] = useState(true);
     const [dragActive, setDragActive] = useState(false);
+
+    // Confirmation dialog state
+    const [confirmDialog, setConfirmDialog] = useState({
+        isVisible: false,
+        type: 'warning',
+        title: '',
+        message: '',
+        onConfirm: null
+    });
 
     // Document viewer state removed - no longer needed
 
@@ -178,19 +188,25 @@ const SarkyDocumentModal = ({
             return;
         }
 
-        if (!window.confirm('Are you sure you want to delete this document?')) {
-            return;
-        }
-
-        try {
-            await documentService.delete(documentId);
-            showSuccess('Document deleted successfully');
-            await loadMonthlyDocuments();
-            onDocumentsChange?.();
-        } catch (error) {
-            console.error('Error deleting document:', error);
-            showError('Failed to delete document');
-        }
+        setConfirmDialog({
+            isVisible: true,
+            type: 'danger',
+            title: 'Delete Document',
+            message: 'Are you sure you want to delete this document? This action cannot be undone.',
+            onConfirm: async () => {
+                try {
+                    await documentService.delete(documentId);
+                    showSuccess('Document deleted successfully');
+                    await loadMonthlyDocuments();
+                    onDocumentsChange?.();
+                } catch (error) {
+                    console.error('Error deleting document:', error);
+                    showError('Failed to delete document');
+                } finally {
+                    setConfirmDialog({ ...confirmDialog, isVisible: false });
+                }
+            }
+        });
     };
 
     // Handle remove sarky assignment
@@ -201,19 +217,25 @@ const SarkyDocumentModal = ({
             return;
         }
 
-        if (!window.confirm('Are you sure you want to remove this document from the monthly assignment?')) {
-            return;
-        }
-
-        try {
-            await documentService.removeSarkyAssignment(documentId);
-            showSuccess('Document removed from monthly assignment');
-            await loadMonthlyDocuments();
-            onDocumentsChange?.();
-        } catch (error) {
-            console.error('Error removing sarky assignment:', error);
-            showError('Failed to remove monthly assignment');
-        }
+        setConfirmDialog({
+            isVisible: true,
+            type: 'warning',
+            title: 'Remove Monthly Assignment',
+            message: 'Are you sure you want to remove this document from the monthly assignment?',
+            onConfirm: async () => {
+                try {
+                    await documentService.removeSarkyAssignment(documentId);
+                    showSuccess('Document removed from monthly assignment');
+                    await loadMonthlyDocuments();
+                    onDocumentsChange?.();
+                } catch (error) {
+                    console.error('Error removing sarky assignment:', error);
+                    showError('Failed to remove monthly assignment');
+                } finally {
+                    setConfirmDialog({ ...confirmDialog, isVisible: false });
+                }
+            }
+        });
     };
 
 
@@ -510,7 +532,17 @@ const SarkyDocumentModal = ({
                 </div>
             </div>
 
-
+            {/* Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={confirmDialog.isVisible}
+                type={confirmDialog.type}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                confirmText="Confirm"
+                cancelText="Cancel"
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={() => setConfirmDialog({ ...confirmDialog, isVisible: false })}
+            />
         </>
     );
 };

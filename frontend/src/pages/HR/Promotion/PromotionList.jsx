@@ -594,46 +594,16 @@ const PromotionList = () => {
         {header: 'Current Position', accessor: 'currentPositionName'},
         {header: 'Proposed Position', accessor: 'proposedPositionName'},
         {header: 'Current Department', accessor: 'currentDepartment'},
-        {header: 'Proposed Department', accessor: 'proposedDepartment'}
+        {header: 'Proposed Department', accessor: 'proposedDepartment'},
+        {header: 'Status', accessor: 'status', filterType: 'select' },
+        {header: 'Priority', accessor: 'priority', filterType: 'select' },
     ];
 
     // Custom filters for status and priority
     const customFilters = [
-        {
-            label: 'Status',
-            component: (
-                <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="form-control"
-                >
-                    <option value="">All Statuses</option>
-                    <option value="DRAFT">Draft</option>
-                    <option value="PENDING">Pending</option>
-                    <option value="UNDER_REVIEW">Under Review</option>
-                    <option value="APPROVED">Approved</option>
-                    <option value="REJECTED">Rejected</option>
-                    <option value="IMPLEMENTED">Implemented</option>
-                    <option value="CANCELLED">Cancelled</option>
-                </select>
-            )
-        },
-        {
-            label: 'Priority',
-            component: (
-                <select
-                    value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value)}
-                    className="form-control"
-                >
-                    <option value="">All Priorities</option>
-                    <option value="LOW">Low</option>
-                    <option value="NORMAL">Normal</option>
-                    <option value="HIGH">High</option>
-                    <option value="URGENT">Urgent</option>
-                </select>
-            )
-        }
+
+
+        
     ];
 
     // Filter data based on custom filters

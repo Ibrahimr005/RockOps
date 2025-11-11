@@ -47,7 +47,7 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
     const fetchEmployees = async () => {
         try {
             setLoadingEmployees(true);
-            const response = await employeeService.getAll();
+            const response = await employeeService.getMinimal();
             const employeesData = response.data?.data || response.data || response;
 
             const activeEmployees = Array.isArray(employeesData)
@@ -122,6 +122,9 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
         setErrors({});
     };
 
+// src/pages/HR/Promotion/components/AddPromotionForm.jsx
+// Update the handleEmployeeSelect function around line 137
+
     const handleEmployeeSelect = async (employee) => {
         setSelectedEmployee(employee);
 
@@ -141,15 +144,34 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
 
             await fetchPromotionTargets(employee.id);
 
+            // Check eligibility - but handle placeholder response
             try {
                 const eligibilityResponse = await promotionService.checkEmployeePromotionEligibility(employee.id);
-                if (eligibilityResponse.data && !eligibilityResponse.data.eligible) {
-                    showWarning(`Employee may not be eligible: ${eligibilityResponse.data.reason}`);
+
+                // Check if this is the placeholder response (not implemented yet)
+                const isPlaceholder = eligibilityResponse.data?.message?.includes('implementation needed');
+
+                if (!isPlaceholder && eligibilityResponse.data) {
+                    // Only show warning if endpoint is actually implemented and employee is not eligible
+                    if (eligibilityResponse.data.eligible === false) {
+                        const reason = eligibilityResponse.data.reason || 'No reason provided';
+                        showWarning(`Employee may not be eligible: ${reason}`);
+                    } else if (eligibilityResponse.data.eligible === true) {
+                        // Optionally show success message
+                        console.log('Employee is eligible for promotion');
+                    }
                 }
+                // If it's a placeholder, don't show any warning
+
             } catch (error) {
                 console.error('Error checking eligibility:', error);
+                // Don't show error to user if endpoint is not implemented
+                if (!error.message?.includes('implementation needed')) {
+                    console.warn('Could not check promotion eligibility');
+                }
             }
 
+            // Check for pending promotions
             try {
                 const pendingResponse = await promotionService.checkEmployeeHasPendingPromotion(employee.id);
                 if (pendingResponse.data && pendingResponse.data.hasPending) {
@@ -178,7 +200,6 @@ const AddPromotionForm = ({isOpen, onClose, onSubmit}) => {
             }));
         }
     };
-
     const handlePositionChange = (positionId) => {
         const position = availablePromotionTargets.find(pos => pos.id === positionId);
         setSelectedPosition(position);

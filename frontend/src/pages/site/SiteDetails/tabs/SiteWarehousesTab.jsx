@@ -10,6 +10,8 @@ import { siteService } from "../../../../services/siteService";
 import { warehouseService } from "../../../../services/warehouseService";
 import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
+
+
 const SiteWarehousesTab = ({siteId}) => {
     const {t} = useTranslation();
     const navigate = useNavigate();
@@ -72,6 +74,8 @@ const SiteWarehousesTab = ({siteId}) => {
 
     const workersDropdownRef = useRef(null);
     const {currentUser} = useAuth();
+    // inside your component:
+    const formRef = useRef(null);
 
     const isSiteAdmin = currentUser?.role === "SITE_ADMIN" || currentUser?.role === "ADMIN";
 
@@ -985,6 +989,8 @@ const SiteWarehousesTab = ({siteId}) => {
     // Handle form submission
     const handleAddWarehouse = async (event) => {
         event.preventDefault();
+        console.log("event.currentTarget:", event.currentTarget);
+        console.log("form elements:", event.currentTarget?.elements);
 
         const formElements = event.currentTarget.elements;
         const warehouseName = formElements.name.value.trim();
@@ -1150,6 +1156,13 @@ const SiteWarehousesTab = ({siteId}) => {
             });
         }
     };
+
+    const handleAddWarehouseClick = () => {
+        if (formRef.current) {
+            formRef.current.requestSubmit(); // triggers the form's onSubmit
+        }
+    };
+
 
     // DataTable configuration for warehouse employees
     const warehouseEmployeeColumns = [
@@ -1334,7 +1347,7 @@ const SiteWarehousesTab = ({siteId}) => {
                                 </label>
 
                                 {/* Form Fields */}
-                                <form className="modern-form-section" onSubmit={handleAddWarehouse}>
+                                <form ref={formRef} className="modern-form-section" onSubmit={handleAddWarehouse}>
                                     <div className="modern-form-field">
                                         <label className="modern-form-label">
                                             Warehouse Name <span className="required">*</span>
@@ -1434,7 +1447,7 @@ const SiteWarehousesTab = ({siteId}) => {
                             <button
                                 type="submit"
                                 className="modern-btn modern-btn-primary"
-                                onClick={handleAddWarehouse}
+                                onClick={handleAddWarehouseClick}
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? 'Adding...' : 'Add Warehouse'}

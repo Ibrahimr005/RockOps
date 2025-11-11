@@ -26,7 +26,7 @@ const DepartmentsList = () => {
         setError(null);
         try {
             const response = await departmentService.getAll();
-            console.log('Fetched departments:', response.data);
+            // console.log('Fetched departments:', response.data);
 
             setDepartments(response.data);
         } catch (err) {
@@ -164,14 +164,6 @@ const DepartmentsList = () => {
                 subtitle="Manage departments to structure your workforce effectively"
             />
 
-            {error && !isModalOpen && (
-                <div className="departments-error">
-                    {error}
-                    <button onClick={fetchDepartments} className="retry-button">
-                        Try Again
-                    </button>
-                </div>
-            )}
 
             <DataTable
                 data={departments}

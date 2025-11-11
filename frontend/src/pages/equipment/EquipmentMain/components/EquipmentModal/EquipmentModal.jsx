@@ -7,12 +7,13 @@ import { siteService } from "../../../../../services/siteService.js";
 import { merchantService } from "../../../../../services/merchant/merchantService.js";
 import { documentService } from "../../../../../services/documentService.js";
 import { useSnackbar } from "../../../../../contexts/SnackbarContext.jsx";
+import ConfirmationDialog from '../../../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import DocumentUpload from '../../../../../components/equipment/DocumentUpload';
 import "./EquipmentModal.scss";
 import '../../../../../styles/form-validation.scss';
 
 const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => {
-    const { showSuccess, showError, showInfo, showWarning, hideSnackbar, showConfirmation } = useSnackbar();
+    const { showSuccess, showError, showInfo, showWarning } = useSnackbar();
     const contentRef = useRef(null);
 
     // Helper functions for formatting
@@ -128,6 +129,15 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         manufactureYear: { isValid: true, message: '' }
     });
 
+    // Confirmation dialog state
+    const [confirmDialog, setConfirmDialog] = useState({
+        isVisible: false,
+        type: 'warning',
+        title: '',
+        message: '',
+        onConfirm: null
+    });
+
     // Define tabs with required fields based on database schema
     const tabs = [
         {
@@ -173,14 +183,20 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         }
     }, [tabIndex]);
 
-    // Clear form data with snackbar confirmation
+    // Clear form data with confirmation dialog
     const handleClearForm = () => {
         if (formTouched) {
-            showConfirmation(
-                "Are you sure you want to clear all form data?",
-                performClearForm,
-                () => hideSnackbar()
-            );
+            setConfirmDialog({
+                isVisible: true,
+                type: 'warning',
+                title: 'Clear Form Data',
+                message: 'Are you sure you want to clear all form data? This action cannot be undone.',
+                onConfirm: () => {
+                    // Close dialog immediately, then run action
+                    setConfirmDialog(prev => ({ ...prev, isVisible: false }));
+                    performClearForm();
+                }
+            });
         } else {
             performClearForm();
         }
@@ -1266,11 +1282,16 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         // Only close if clicking on the overlay itself, not on the modal content
         if (e.target === e.currentTarget) {
             if (formTouched) {
-                showConfirmation(
-                    "Are you sure you want to close? Any unsaved changes will be lost.",
-                    onClose,
-                    () => hideSnackbar()
-                );
+                setConfirmDialog({
+                    isVisible: true,
+                    type: 'warning',
+                    title: 'Unsaved Changes',
+                    message: 'Are you sure you want to close? Any unsaved changes will be lost.',
+                    onConfirm: () => {
+                        onClose();
+                        setConfirmDialog({ ...confirmDialog, isVisible: false });
+                    }
+                });
             } else {
                 onClose();
             }
@@ -1278,10 +1299,10 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
     };
 
     return (
-        <div className="equipment-modal-overlay" onClick={handleOverlayClick}>
-            <div className="equipment-modal">
-                <div className="equipment-modal-header">
-                    <h2>{equipmentToEdit ? 'Edit Equipment' : 'Add New Equipment'}</h2>
+        <div className="modal-backdrop equipment-modal-overlay" onClick={handleOverlayClick}>
+            <div className="modal-container equipment-modal">
+                <div className="modal-header equipment-modal-header">
+                    <h2 className="modal-title">{equipmentToEdit ? 'Edit Equipment' : 'Add New Equipment'}</h2>
                     <button className="btn-close" onClick={onClose} aria-label="Close">
                         <FaTimes />
                     </button>
@@ -1895,7 +1916,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                         </div>
                     </div>
 
-                    <div className="equipment-modal-footer">
+                    <div className="modal-footer equipment-modal-footer">
                         <div className="form-completion-status">
                             <div className="completion-indicator">
                                 <div
@@ -1912,7 +1933,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                         <div className="form-actions">
                             <button
                                 type="button"
-                                className="equipment-modal-clear"
+                                className="btn-cancel equipment-modal-clear"
                                 onClick={handleClearForm}
                                 disabled={loading}
                             >
@@ -1920,7 +1941,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                             </button>
                             <button
                                 type="button"
-                                className="equipment-modal-cancel"
+                                className="btn-cancel equipment-modal-cancel"
                                 onClick={onClose}
                                 disabled={loading}
                             >
@@ -1928,7 +1949,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                             </button>
                             <button
                                 type="submit"
-                                className="equipment-modal-submit"
+                                className="btn-primary equipment-modal-submit"
                                 disabled={loading || !formValid}
                                 title={!formValid ? "Please complete all required fields before submitting" : ""}
                             >
@@ -1941,12 +1962,12 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
 
             {/* Brand Creation Modal */}
             {showBrandModal && (
-                <div className="brand-modal-overlay" onClick={handleCancelBrandCreation}>
-                    <div className="brand-modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="brand-modal-header">
-                            <h3>Add New Equipment Brand</h3>
+                <div className="modal-backdrop brand-modal-overlay" onClick={handleCancelBrandCreation}>
+                    <div className="modal-container modal-md brand-modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header brand-modal-header">
+                            <h3 className="modal-title">Add New Equipment Brand</h3>
                             <button
-                                className="brand-modal-close"
+                                className="btn-close brand-modal-close"
                                 onClick={handleCancelBrandCreation}
                                 disabled={creatingBrand}
                             >
@@ -1954,7 +1975,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                             </button>
                         </div>
                         <form onSubmit={handleCreateBrand}>
-                            <div className="brand-modal-body">
+                            <div className="modal-body brand-modal-body">
                                 <div className="form-group">
                                     <label htmlFor="brandName">Brand Name <span className="required-field">*</span></label>
                                     <input
@@ -1981,9 +2002,10 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                     />
                                 </div>
                             </div>
-                            <div className="modal-actions">
+                            <div className="modal-footer brand-modal-footer">
                                 <button
                                     type="button"
+                                    className="modal-btn-secondary"
                                     onClick={handleCancelBrandCreation}
                                     disabled={creatingBrand}
                                 >
@@ -1991,7 +2013,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                 </button>
                                 <button
                                     type="submit"
-                                    className="brand-modal-submit"
+                                    className="btn-success brand-modal-submit"
                                     disabled={creatingBrand || !newBrandData.name.trim()}
                                 >
                                     {creatingBrand ? 'Creating...' : 'Create Brand'}
@@ -2001,6 +2023,18 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                     </div>
                 </div>
             )}
+
+            {/* Confirmation Dialog */}
+            <ConfirmationDialog
+                isVisible={confirmDialog.isVisible}
+                type={confirmDialog.type}
+                title={confirmDialog.title}
+                message={confirmDialog.message}
+                confirmText="Confirm"
+                cancelText="Cancel"
+                onConfirm={confirmDialog.onConfirm}
+                onCancel={() => setConfirmDialog(prev => ({ ...prev, isVisible: false }))}
+            />
         </div>
     );
 };
