@@ -1,4 +1,4 @@
-// src/services/hr/promotionService.js - Fixed with better error handling and RBAC
+// src/services/hr/promotionService.js - Fixed with duplicate prevention
 import apiClient from '../../utils/apiClient.js';
 import { extractErrorMessage } from '../../utils/errorHandler.js';
 
@@ -20,35 +20,84 @@ const PROMOTION_ENDPOINTS = {
     HEALTH: '/api/v1/promotions/health'
 };
 
+// ============================================================
+// DUPLICATE PREVENTION: Track pending requests
+// ============================================================
+const pendingRequests = new Map();
+
 /**
- * Enhanced promotion service with better error handling and RBAC awareness
+ * Generate a unique key for a promotion request to prevent duplicates
+ */
+const generateRequestKey = (promotionData) => {
+    return `${promotionData.employeeId}-${promotionData.promotedToJobPositionId}`;
+};
+
+/**
+ * Check if a request is already pending
+ */
+const isPending = (key) => {
+    return pendingRequests.has(key);
+};
+
+/**
+ * Add request to pending map
+ */
+const addPendingRequest = (key, promise) => {
+    pendingRequests.set(key, promise);
+
+    // Auto-cleanup after 3 seconds
+    setTimeout(() => {
+        pendingRequests.delete(key);
+    }, 3000);
+};
+
+/**
+ * Enhanced promotion service with better error handling, RBAC awareness, and duplicate prevention
  */
 const promotionService = {
     /**
-     * Create a new promotion request
+     * Create a new promotion request with duplicate prevention
      * @param {Object} promotionData - Promotion request data
      * @returns {Promise} API response with created promotion request
      */
     createPromotionRequest: async (promotionData) => {
-        try {
-            console.log('Creating promotion request with data:', promotionData);
+        // Generate unique key for this request
+        const requestKey = generateRequestKey(promotionData);
 
-            const response = await apiClient.post(PROMOTION_ENDPOINTS.BASE, promotionData);
-
-            console.log('Promotion creation response:', response);
-            return response;
-        } catch (error) {
-            console.error('Error creating promotion request:', error);
-
-            // Enhanced error handling
-            const errorMessage = extractErrorMessage(error);
-            const enhancedError = new Error(errorMessage);
-            enhancedError.originalError = error;
-            enhancedError.operation = 'create';
-            enhancedError.entity = 'promotion request';
-
-            throw enhancedError;
+        // Check if this exact request is already in progress
+        if (isPending(requestKey)) {
+            console.warn('Duplicate promotion request prevented - request already in progress');
+            // Return the existing pending promise
+            return pendingRequests.get(requestKey);
         }
+
+        // Create the request promise
+        const requestPromise = (async () => {
+            try {
+                console.log('Creating promotion request with data:', promotionData);
+
+                const response = await apiClient.post(PROMOTION_ENDPOINTS.BASE, promotionData);
+
+                console.log('Promotion creation response:', response);
+                return response;
+            } catch (error) {
+                console.error('Error creating promotion request:', error);
+
+                // Enhanced error handling
+                const errorMessage = extractErrorMessage(error);
+                const enhancedError = new Error(errorMessage);
+                enhancedError.originalError = error;
+                enhancedError.operation = 'create';
+                enhancedError.entity = 'promotion request';
+
+                throw enhancedError;
+            }
+        })();
+
+        // Store the promise in pending requests
+        addPendingRequest(requestKey, requestPromise);
+
+        return requestPromise;
     },
 
     /**
@@ -141,135 +190,170 @@ const promotionService = {
     },
 
     /**
-     * Review a promotion request (approve/reject)
+     * Review a promotion request (approve/reject) with duplicate prevention
      * @param {string} id - Promotion request ID
      * @param {Object} reviewData - Review data (action, managerComments, rejectionReason, approvedSalary, actualEffectiveDate)
      * @returns {Promise} API response with reviewed promotion request
      */
     reviewPromotionRequest: async (id, reviewData) => {
-        try {
-            console.log('Reviewing promotion request:', { id, reviewData });
+        const requestKey = `review-${id}`;
 
-            if (!id) {
-                throw new Error('Promotion request ID is required');
-            }
-
-            if (!reviewData || !reviewData.action) {
-                throw new Error('Review action is required');
-            }
-
-            // Validate action
-            const validActions = ['approve', 'reject'];
-            if (!validActions.includes(reviewData.action.toLowerCase())) {
-                throw new Error('Invalid review action. Must be "approve" or "reject"');
-            }
-
-            const response = await apiClient.put(PROMOTION_ENDPOINTS.REVIEW(id), reviewData);
-
-            console.log('Review response:', response);
-            return response;
-        } catch (error) {
-            console.error(`Error reviewing promotion request ${id}:`, error);
-
-            const errorMessage = extractErrorMessage(error);
-            const enhancedError = new Error(errorMessage);
-            enhancedError.originalError = error;
-            enhancedError.operation = 'review';
-            enhancedError.entity = 'promotion request';
-            enhancedError.resourceId = id;
-
-            throw enhancedError;
+        if (isPending(requestKey)) {
+            console.warn('Duplicate review request prevented - review already in progress');
+            return pendingRequests.get(requestKey);
         }
+
+        const requestPromise = (async () => {
+            try {
+                console.log('Reviewing promotion request:', { id, reviewData });
+
+                if (!id) {
+                    throw new Error('Promotion request ID is required');
+                }
+
+                if (!reviewData || !reviewData.action) {
+                    throw new Error('Review action is required');
+                }
+
+                // Validate action
+                const validActions = ['approve', 'reject'];
+                if (!validActions.includes(reviewData.action.toLowerCase())) {
+                    throw new Error('Invalid review action. Must be "approve" or "reject"');
+                }
+
+                const response = await apiClient.put(PROMOTION_ENDPOINTS.REVIEW(id), reviewData);
+
+                console.log('Review response:', response);
+                return response;
+            } catch (error) {
+                console.error(`Error reviewing promotion request ${id}:`, error);
+
+                const errorMessage = extractErrorMessage(error);
+                const enhancedError = new Error(errorMessage);
+                enhancedError.originalError = error;
+                enhancedError.operation = 'review';
+                enhancedError.entity = 'promotion request';
+                enhancedError.resourceId = id;
+
+                throw enhancedError;
+            }
+        })();
+
+        addPendingRequest(requestKey, requestPromise);
+        return requestPromise;
     },
 
     /**
-     * Implement an approved promotion request
+     * Implement an approved promotion request with duplicate prevention
      * @param {string} id - Promotion request ID
      * @returns {Promise} API response with implemented promotion request
      */
     implementPromotionRequest: async (id) => {
-        try {
-            console.log('Implementing promotion request:', id);
+        const requestKey = `implement-${id}`;
 
-            if (!id) {
-                throw new Error('Promotion request ID is required');
-            }
-
-            // Fixed: Use POST with empty body (no data parameter)
-            const response = await apiClient.post(PROMOTION_ENDPOINTS.IMPLEMENT(id));
-
-            console.log('Implementation response:', response);
-            return response;
-        } catch (error) {
-            console.error(`Error implementing promotion request ${id}:`, error);
-
-            // Enhanced error message based on common implementation issues
-            let errorMessage = extractErrorMessage(error);
-
-            if (error.response?.status === 400) {
-                if (errorMessage.includes('not approved')) {
-                    errorMessage = 'This promotion request must be approved before it can be implemented.';
-                } else if (errorMessage.includes('effective date')) {
-                    errorMessage = 'This promotion cannot be implemented yet. Please check the effective date.';
-                } else if (errorMessage.includes('already implemented')) {
-                    errorMessage = 'This promotion has already been implemented.';
-                }
-            }
-
-            const enhancedError = new Error(errorMessage);
-            enhancedError.originalError = error;
-            enhancedError.operation = 'implement';
-            enhancedError.entity = 'promotion request';
-            enhancedError.resourceId = id;
-
-            throw enhancedError;
+        if (isPending(requestKey)) {
+            console.warn('Duplicate implement request prevented - implementation already in progress');
+            return pendingRequests.get(requestKey);
         }
+
+        const requestPromise = (async () => {
+            try {
+                console.log('Implementing promotion request:', id);
+
+                if (!id) {
+                    throw new Error('Promotion request ID is required');
+                }
+
+                const response = await apiClient.post(PROMOTION_ENDPOINTS.IMPLEMENT(id));
+
+                console.log('Implementation response:', response);
+                return response;
+            } catch (error) {
+                console.error(`Error implementing promotion request ${id}:`, error);
+
+                // Enhanced error message based on common implementation issues
+                let errorMessage = extractErrorMessage(error);
+
+                if (error.response?.status === 400) {
+                    if (errorMessage.includes('not approved')) {
+                        errorMessage = 'This promotion request must be approved before it can be implemented.';
+                    } else if (errorMessage.includes('effective date')) {
+                        errorMessage = 'This promotion cannot be implemented yet. Please check the effective date.';
+                    } else if (errorMessage.includes('already implemented')) {
+                        errorMessage = 'This promotion has already been implemented.';
+                    }
+                }
+
+                const enhancedError = new Error(errorMessage);
+                enhancedError.originalError = error;
+                enhancedError.operation = 'implement';
+                enhancedError.entity = 'promotion request';
+                enhancedError.resourceId = id;
+
+                throw enhancedError;
+            }
+        })();
+
+        addPendingRequest(requestKey, requestPromise);
+        return requestPromise;
     },
 
     /**
-     * Cancel a promotion request
+     * Cancel a promotion request with duplicate prevention
      * @param {string} id - Promotion request ID
      * @param {string} reason - Cancellation reason
      * @returns {Promise} API response with cancelled promotion request
      */
     cancelPromotionRequest: async (id, reason) => {
-        try {
-            console.log('Cancelling promotion request:', { id, reason });
+        const requestKey = `cancel-${id}`;
 
-            if (!id) {
-                throw new Error('Promotion request ID is required');
-            }
-
-            if (!reason || reason.trim() === '') {
-                throw new Error('Cancellation reason is required');
-            }
-
-            const response = await apiClient.post(PROMOTION_ENDPOINTS.CANCEL(id), { reason });
-
-            console.log('Cancellation response:', response);
-            return response;
-        } catch (error) {
-            console.error(`Error cancelling promotion request ${id}:`, error);
-
-            let errorMessage = extractErrorMessage(error);
-
-            // Enhanced error messages for cancellation
-            if (error.response?.status === 400) {
-                if (errorMessage.includes('already completed') || errorMessage.includes('implemented')) {
-                    errorMessage = 'Cannot cancel a promotion that has already been implemented.';
-                } else if (errorMessage.includes('reason')) {
-                    errorMessage = 'A cancellation reason is required.';
-                }
-            }
-
-            const enhancedError = new Error(errorMessage);
-            enhancedError.originalError = error;
-            enhancedError.operation = 'cancel';
-            enhancedError.entity = 'promotion request';
-            enhancedError.resourceId = id;
-
-            throw enhancedError;
+        if (isPending(requestKey)) {
+            console.warn('Duplicate cancel request prevented - cancellation already in progress');
+            return pendingRequests.get(requestKey);
         }
+
+        const requestPromise = (async () => {
+            try {
+                console.log('Cancelling promotion request:', { id, reason });
+
+                if (!id) {
+                    throw new Error('Promotion request ID is required');
+                }
+
+                if (!reason || reason.trim() === '') {
+                    throw new Error('Cancellation reason is required');
+                }
+
+                const response = await apiClient.post(PROMOTION_ENDPOINTS.CANCEL(id), { reason });
+
+                console.log('Cancellation response:', response);
+                return response;
+            } catch (error) {
+                console.error(`Error cancelling promotion request ${id}:`, error);
+
+                let errorMessage = extractErrorMessage(error);
+
+                // Enhanced error messages for cancellation
+                if (error.response?.status === 400) {
+                    if (errorMessage.includes('already completed') || errorMessage.includes('implemented')) {
+                        errorMessage = 'Cannot cancel a promotion that has already been implemented.';
+                    } else if (errorMessage.includes('reason')) {
+                        errorMessage = 'A cancellation reason is required.';
+                    }
+                }
+
+                const enhancedError = new Error(errorMessage);
+                enhancedError.originalError = error;
+                enhancedError.operation = 'cancel';
+                enhancedError.entity = 'promotion request';
+                enhancedError.resourceId = id;
+
+                throw enhancedError;
+            }
+        })();
+
+        addPendingRequest(requestKey, requestPromise);
+        return requestPromise;
     },
 
     /**
@@ -362,11 +446,9 @@ const promotionService = {
      */
     checkEmployeePromotionEligibility: async (employeeId) => {
         try {
-
             if (!employeeId) {
                 throw new Error('Employee ID is required');
             }
-
             const response = await apiClient.get(PROMOTION_ENDPOINTS.EMPLOYEE_ELIGIBILITY(employeeId));
 
             console.log('Eligibility check response:', response);
@@ -610,6 +692,14 @@ const promotionService = {
 
             throw enhancedError;
         }
+    },
+
+    /**
+     * Clear all pending requests (useful for testing or cleanup)
+     */
+    clearPendingRequests: () => {
+        pendingRequests.clear();
+        console.log('All pending promotion requests cleared');
     },
 
     /**

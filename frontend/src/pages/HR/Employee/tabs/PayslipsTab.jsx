@@ -222,7 +222,7 @@ const PayslipsTab = ({ employee, formatCurrency }) => {
     if (loading) {
         return (
             <div className="payslips-info tab-panel">
-                <h3>Payslips & Salary History</h3>
+                {/*<h3>Payslips & Salary History</h3>*/}
                 <div className="loading-message">
                     <p>Loading payslips...</p>
                 </div>

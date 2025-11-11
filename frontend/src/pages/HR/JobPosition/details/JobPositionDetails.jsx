@@ -137,7 +137,7 @@ const JobPositionDetails = () => {
     const getPositionStats = () => {
         return [
             {
-                value: position.activeEmployeeCount || '0',
+                value: position.totalEmployeeCount || '0',
                 label: 'Total Employees'
             },
             {
