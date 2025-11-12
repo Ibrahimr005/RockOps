@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import Snackbar from '../components/common/Snackbar/Snackbar.jsx';
 
 // Create the Snackbar context
-const SnackbarContext = createContext();
+export const SnackbarContext = createContext();
 
 /**
  * Provider component for the Snackbar system

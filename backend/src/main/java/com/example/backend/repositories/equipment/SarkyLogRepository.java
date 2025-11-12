@@ -30,4 +30,7 @@ public interface SarkyLogRepository extends JpaRepository<SarkyLog, UUID> {
 
     // Add this method to SarkyLogRepository
     List<SarkyLog> findByEquipmentIdOrderByDateAsc(UUID equipmentId);
+    
+    // Find sarky logs for equipment within date range
+    List<SarkyLog> findByEquipmentIdAndDateBetween(UUID equipmentId, LocalDate startDate, LocalDate endDate);
 }

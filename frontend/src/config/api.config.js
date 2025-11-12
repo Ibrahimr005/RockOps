@@ -66,7 +66,9 @@ export const EQUIPMENT_ENDPOINTS = {
     DRIVERS: (equipmentId) => `/api/equipment/${equipmentId}/drivers`,
     ASSIGN_DRIVER: (equipmentId, driverId) => `/api/equipment/${equipmentId}/driver/${driverId}`,
     UNASSIGN_DRIVER: (equipmentId, driverId) => `/api/equipment/${equipmentId}/driver/${driverId}`,
-
+    // Dashboard endpoint
+    DASHBOARD: (equipmentId) => `/api/equipment/${equipmentId}/dashboard`,
+    STATUSES: '/api/equipment/statuses',
 };
 
 // Batch Validation endpoints

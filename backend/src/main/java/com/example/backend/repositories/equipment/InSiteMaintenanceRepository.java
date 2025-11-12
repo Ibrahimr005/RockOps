@@ -21,6 +21,9 @@ public interface InSiteMaintenanceRepository extends JpaRepository<InSiteMainten
 
     // Original method for backward compatibility
     List<InSiteMaintenance> findByEquipmentIdOrderByMaintenanceDateDesc(UUID equipmentId);
+    
+    // Find maintenance records by equipment ID
+    List<InSiteMaintenance> findByEquipmentId(UUID equipmentId);
 
     // Find top 10 maintenance records by equipment ID ordered by maintenance date desc
     List<InSiteMaintenance> findTop10ByEquipmentIdOrderByMaintenanceDateDesc(UUID equipmentId);

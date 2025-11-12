@@ -476,4 +476,16 @@ export const equipmentService = {
             params: { type }
         });
     },
+
+    /**
+     * Get comprehensive dashboard data for equipment
+     * @param {string} equipmentId - The equipment UUID
+     * @param {string} period - Time period: WEEK, MONTH, 3MONTH, 6MONTH, YEAR (default: MONTH)
+     * @returns {Promise} Response containing dashboard analytics
+     */
+    getEquipmentDashboard: (equipmentId, period = 'MONTH') => {
+        return apiClient.get(EQUIPMENT_ENDPOINTS.DASHBOARD(equipmentId), {
+            params: { period }
+        });
+    },
 };
