@@ -182,17 +182,7 @@
   z-index: 0;
 }
 
-.unified-card-stat-item:hover {
-  padding-left: 20px;
-}
 
-.unified-card-stat-item:hover::before {
-  opacity: 1;
-}
-
-.unified-card-stat-item:hover::after {
-  opacity: 1;
-}
 
 .unified-card-stat-item.full-width {
   grid-column: span 2;
@@ -226,9 +216,6 @@
   justify-content: flex-end;
 }
 
-.unified-card-stat-item:hover .unified-card-stat-label {
-  padding-left: 0;
-}
 
 /* Premium Status Indicators */
 .unified-status-indicator {

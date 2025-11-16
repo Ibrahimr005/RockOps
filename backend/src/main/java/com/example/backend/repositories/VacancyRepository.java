@@ -28,4 +28,7 @@ public interface VacancyRepository extends JpaRepository<Vacancy, UUID> {
 
 
     List<Vacancy> findByClosingDateBefore(LocalDate today);
+
+    // Dashboard metrics methods
+    long countByStatusIn(List<String> statuses);
 }

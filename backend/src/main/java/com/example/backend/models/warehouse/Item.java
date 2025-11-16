@@ -23,13 +23,13 @@ public class Item {
 
     @ManyToOne
     @JoinColumn(name = "item_type_id", nullable = false)
-    private ItemType itemType; // REMOVED @JsonBackReference - keep for serialization
+    private ItemType itemType;
 
     private int quantity;
 
     @ManyToOne
     @JoinColumn(name = "warehouse_id", nullable = false)
-    @JsonIgnore // ADDED @JsonIgnore to break circular reference
+    @JsonIgnore
     private Warehouse warehouse;
 
     @Enumerated(EnumType.STRING)
@@ -41,10 +41,24 @@ public class Item {
     private LocalDateTime createdAt;
     private String createdBy;
 
+    // ADD THESE NEW FIELDS:
+    @Enumerated(EnumType.STRING)
+    @Column(name = "item_source")
+    private ItemSource itemSource; // How this item was added
+
+    @Column(name = "source_reference")
+    private String sourceReference; // Reference to the source (PO number, batch number, etc.)
+
+    @Column(name = "merchant_name")
+    private String merchantName; // Store merchant name for PO items
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transaction_item_id")
     @JsonIgnoreProperties({"items", "hibernateLazyInitializer", "handler"})
     private TransactionItem transactionItem;
+
+    // Keep comment field for additional notes
+    private String comment;
 
     public Item(ItemType itemType, Warehouse warehouse, int quantity, ItemStatus itemStatus) {
         this.itemType = itemType;

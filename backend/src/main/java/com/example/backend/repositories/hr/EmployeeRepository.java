@@ -31,6 +31,9 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
     // Count by status
     long countByStatus(String status);
 
+    // Count active employees - use countByStatus("ACTIVE") instead
+    // Note: Employee has status field, not isActive field
+
     // Count new hires
     long countByHireDateAfter(LocalDate date);
 

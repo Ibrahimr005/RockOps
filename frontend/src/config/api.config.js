@@ -1,6 +1,24 @@
 // src/config/api.config.js
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||  'http://localhost:8080';
 
+// Dashboard endpoints
+export const DASHBOARD_ENDPOINTS = {
+    BASE: '/api/dashboard',
+    ADMIN: '/api/dashboard/admin',
+    SITE_ADMIN: '/api/dashboard/site-admin',
+    EQUIPMENT_MANAGER: '/api/dashboard/equipment-manager',
+    WAREHOUSE_MANAGER: '/api/dashboard/warehouse-manager',
+    HR_MANAGER: '/api/dashboard/hr-manager',
+    HR_EMPLOYEE: '/api/dashboard/hr-employee',
+    FINANCE_MANAGER: '/api/dashboard/finance-manager',
+    FINANCE_EMPLOYEE: '/api/dashboard/finance-employee',
+    MAINTENANCE_MANAGER: '/api/dashboard/maintenance-manager',
+    MAINTENANCE_EMPLOYEE: '/api/dashboard/maintenance-employee',
+    PROCUREMENT: '/api/dashboard/procurement',
+    SECRETARY: '/api/dashboard/secretary',
+    USER: '/api/dashboard/user',
+};
+
 // Equipment module endpoints
 export const EQUIPMENT_ENDPOINTS = {
     BASE: '/api/equipment',
@@ -728,15 +746,25 @@ export const PROCUREMENT_ENDPOINTS = {
 };
 
 // Add this to your existing api.config.js file
-
+// In your api.config.js or wherever PURCHASE_ORDER_ENDPOINTS is defined
 export const PURCHASE_ORDER_ENDPOINTS = {
     BASE: '/api/v1/purchaseOrders',
     BY_ID: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}`,
     PENDING_OFFERS: '/api/v1/purchaseOrders/pending-offers',
     BY_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/purchase-order`,
     UPDATE_STATUS: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}/status`,
-    FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`
+    FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`,
+    RECEIVE_ITEMS: (id) => `/api/v1/purchaseOrders/${id}/receive`,
+    REPORT_ISSUE: (id) => `/api/v1/purchaseOrders/${id}/report-issue`,
+    RESOLVE_ISSUE: (id) => `/api/v1/purchaseOrders/${id}/resolve-issue`,
+    GET_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues`,
+    GET_ACTIVE_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues/active`,
+    GET_DELIVERY_HISTORY: (itemId) => `/api/v1/purchaseOrders/items/${itemId}/deliveries`,
+    GET_PENDING_REDELIVERY: (id) => `/api/v1/purchaseOrders/${id}/pending-redelivery`,
+    PROCESS_REDELIVERY: (id) => `/api/v1/purchaseOrders/${id}/process-redelivery`// ← ADD THIS
 };
+
+
 export const MAINTENANCE_ENDPOINTS = {
     // Dashboard
     DASHBOARD: '/api/maintenance/dashboard',

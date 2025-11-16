@@ -3,15 +3,17 @@ import { FaCheck } from 'react-icons/fa';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import PurchaseOrderViewModal from '../../../../components/procurement/PurchaseOrderViewModal/PurchaseOrderViewModal';
-import PurchaseOrderApprovalModal from '../PurchaseOrderApproveModal/PurchaseOrderApprovalModal';
+import ProcessDeliveryModal from '../ProcessDeliveryModal/ProcessDeliveryModal';
 
 const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
     const [pendingOrders, setPendingOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
     const [showModal, setShowModal] = useState(false);
-    const [showApprovalModal, setShowApprovalModal] = useState(false);
-    const [purchaseOrderToApprove, setPurchaseOrderToApprove] = useState(null);
+
+    // Process Delivery Modal states
+    const [showProcessDeliveryModal, setShowProcessDeliveryModal] = useState(false);
+    const [purchaseOrderToProcess, setPurchaseOrderToProcess] = useState(null);
 
     // Fetch initial data
     useEffect(() => {
@@ -26,14 +28,13 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         try {
             const allOrders = await purchaseOrderService.getAll();
 
-            console.log("all orders:", JSON.stringify(allOrders, null, 2));
-
             // Filter orders to show only PENDING orders for the specific warehouse
+            // NOTE: Assuming requestOrder.requesterId is the correct field for the warehouse ID
             const filteredOrders = allOrders.filter(order =>
-                order.status === 'PENDING' && order.requestOrder.requesterId === warehouseId
+                order.status === 'PENDING' && order.requestOrder?.requesterId === warehouseId
             );
 
-            console.log("filtered orders:", JSON.stringify(filteredOrders, null, 2));
+            console.log("filtered pending orders for warehouse:", filteredOrders);
 
             setPendingOrders(filteredOrders);
         } catch (error) {
@@ -47,42 +48,53 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         }
     };
 
-    // Handle approve purchase order - now opens approval modal
-    const handleApprovePurchaseOrder = (purchaseOrder) => {
-        setPurchaseOrderToApprove(purchaseOrder);
-        setShowApprovalModal(true);
+    /**
+     * Handled by the DataTable action button.
+     * Sets the PO to process and opens the delivery modal.
+     */
+    const handleOpenProcessDeliveryModal = (purchaseOrder) => {
+        setPurchaseOrderToProcess(purchaseOrder);
+        setShowProcessDeliveryModal(true);
     };
 
-    // Handle approval from modal
-    const handleApprovalConfirm = async (approvalData) => {
+    /**
+     * Handled by the ProcessDeliveryModal's onSubmit prop.
+     * Executes the API call to finalize the delivery process.
+     */
+    const handleDeliverySubmit = async (deliveryData) => {
+        const purchaseOrder = purchaseOrderToProcess;
+
+        // Immediately close the modal for a better user experience
+        handleProcessDeliveryModalClose();
+
+        if (!purchaseOrder) {
+            if (onShowSnackbar) {
+                onShowSnackbar('Error: No purchase order selected for delivery.', 'error');
+            }
+            return;
+        }
+
         try {
-            setIsLoading(true);
+            await purchaseOrderService.processDelivery(purchaseOrder.id, deliveryData);
 
-            // Call the service to approve the purchase order with item details
-            await purchaseOrderService.approveWithItems(approvalData);
+            // Refresh the list to remove the processed order
+            fetchPendingPurchaseOrders();
 
-            // Show success message
             if (onShowSnackbar) {
-                onShowSnackbar(`Purchase order ${purchaseOrderToApprove.poNumber} approved successfully!`, 'success');
+                onShowSnackbar(`Delivery for PO ${purchaseOrder.poNumber} processed successfully!`, 'success');
             }
-
-            // Refresh the data to remove the approved order from the pending list
-            await fetchPendingPurchaseOrders();
-
         } catch (error) {
-            console.error('Error approving purchase order:', error);
+            console.error('Error processing delivery:', error);
             if (onShowSnackbar) {
-                onShowSnackbar('Failed to approve purchase order. Please try again.', 'error');
+                onShowSnackbar('Failed to process delivery. Please try again.', 'error');
             }
-        } finally {
-            setIsLoading(false);
         }
     };
 
-    // Handle closing approval modal
-    const handleApprovalModalClose = () => {
-        setShowApprovalModal(false);
-        setPurchaseOrderToApprove(null);
+    // Handle closing process delivery modal
+    const handleProcessDeliveryModalClose = () => {
+        setShowProcessDeliveryModal(false);
+        setPurchaseOrderToProcess(null);
     };
 
     // Handle row click to show purchase order details
@@ -97,7 +109,7 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         setSelectedPurchaseOrder(null);
     };
 
-    // Column configuration for pending purchase orders (removed requester column)
+    // Column configuration for pending purchase orders
     const pendingOrderColumns = [
         {
             id: 'poNumber',
@@ -109,6 +121,7 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         {
             id: 'title',
             header: 'TITLE',
+            // Use optional chaining for safe access
             accessor: 'requestOrder.title',
             sortable: true,
             render: (row, value) => value || 'N/A'
@@ -148,16 +161,21 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         }
     ];
 
-    // Actions configuration
+    // Actions configuration - now just one action to process delivery
     const actions = [
         {
-            label: 'Approve',
+            label: 'Process Delivery',
             icon: (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 6L9 17l-5-5" />
+                    <path d="M16 3h5v5"/>
+                    <path d="M8 3H3v5"/>
+                    <path d="M12 22v-8"/>
+                    <path d="M16 18l-4 4-4-4"/>
+                    <path d="M3 8l9-5 9 5"/>
                 </svg>
             ),
-            onClick: (row) => handleApprovePurchaseOrder(row),
+            // THIS IS THE FIX: Call the function that opens the modal
+            onClick: (row) => handleOpenProcessDeliveryModal(row),
             className: 'approve'
         }
     ];
@@ -178,7 +196,7 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
                 showFilters={true}
                 filterableColumns={filterableColumns}
                 actions={actions}
-                actionsColumnWidth="100px"
+                actionsColumnWidth="150px"
                 onRowClick={handleRowClick}
             />
 
@@ -189,12 +207,13 @@ const PendingPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
                 onClose={handleCloseModal}
             />
 
-            {/* Purchase Order Approval Modal */}
-            <PurchaseOrderApprovalModal
-                purchaseOrder={purchaseOrderToApprove}
-                isOpen={showApprovalModal}
-                onClose={handleApprovalModalClose}
-                onApprove={handleApprovalConfirm}
+            {/* Process Delivery Modal - Unified modal for receiving and reporting issues */}
+            <ProcessDeliveryModal
+                purchaseOrder={purchaseOrderToProcess}
+                isOpen={showProcessDeliveryModal}
+                onClose={handleProcessDeliveryModalClose}
+                // THIS IS THE FIX: Pass the dedicated submission handler
+                onSubmit={handleDeliverySubmit}
             />
         </div>
     );
