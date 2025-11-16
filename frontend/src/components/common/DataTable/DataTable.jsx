@@ -201,6 +201,7 @@ const DataTable = ({
     }, [data, searchTerm, columns, emptyValueText, emptyValuesByColumn]);
 
     // Apply column filters
+// Apply column filters
     const filtered = useMemo(() => {
         if (Object.keys(filters).length === 0) return searchFiltered;
 
@@ -211,14 +212,14 @@ const DataTable = ({
 
                 // Find the column definition to check for custom filter logic
                 const column = filterableColumns.find(col => col.accessor === key);
-                
+
                 // Check if column has a custom filter function
                 if (column && column.customFilterFunction) {
                     return column.customFilterFunction(item, filterValue);
                 }
-                
+
                 let itemValue;
-                
+
                 if (column && column.customFilterAccessor) {
                     // Use custom filter accessor for complex filtering (like arrays)
                     itemValue = getValue(item, column.customFilterAccessor);
@@ -227,7 +228,35 @@ const DataTable = ({
                     itemValue = getValue(item, key);
                 }
 
-                // Handle different filter types
+                // NEW: Handle date filters
+                if (column && column.filterType === 'date') {
+                    if (!itemValue) return false;
+
+                    try {
+                        // Convert both dates to comparable format (YYYY-MM-DD)
+                        const itemDate = new Date(itemValue).toISOString().split('T')[0];
+                        const filterDate = filterValue; // Already in YYYY-MM-DD format from input[type="date"]
+
+                        return itemDate === filterDate;
+                    } catch (error) {
+                        console.error('Error comparing dates:', error);
+                        return false;
+                    }
+                }
+
+                // NEW: Handle number filters
+                if (column && column.filterType === 'number') {
+                    const numItemValue = Number(itemValue);
+                    const numFilterValue = Number(filterValue);
+
+                    // Handle NaN values
+                    if (isNaN(numItemValue) || isNaN(numFilterValue)) return false;
+
+                    // Exact match for numbers
+                    return numItemValue === numFilterValue;
+                }
+
+                // Handle different filter types (existing code)
                 if (Array.isArray(filterValue)) {
                     // Multi-select filter
                     if (filterValue.length === 0) return true;
@@ -260,7 +289,7 @@ const DataTable = ({
                             }
                         }
                     }
-                    
+
                     if (isEmpty(itemValue)) {
                         const emptyText = getEmptyValueText(key);
                         return emptyText.toLowerCase().includes(String(filterValue).toLowerCase());
@@ -271,6 +300,7 @@ const DataTable = ({
             });
         });
     }, [searchFiltered, filters, emptyValueText, emptyValuesByColumn, filterableColumns]);
+
 
     // Apply sorting
     const sortedData = useMemo(() => {
@@ -776,6 +806,7 @@ const DataTable = ({
                                 <label>{column.header}</label>
                                 <div className="filter-input-wrapper">
                                     {column.filterType === 'select' ? (
+                                        // SELECT DROPDOWN
                                         <select
                                             value={filters[column.accessor] || ''}
                                             onChange={(e) => handleFilterChange(column.accessor, e.target.value)}
@@ -787,13 +818,41 @@ const DataTable = ({
                                                 </option>
                                             ))}
                                         </select>
+                                    ) : column.filterType === 'date' ? (
+                                        // DATE PICKER - NEW
+                                        <>
+                                            <input
+                                                type="date"
+                                                placeholder={`Select ${column.header.toLowerCase()}...`}
+                                                value={filters[column.accessor] || ''}
+                                                onChange={(e) => handleFilterChange(column.accessor, e.target.value)}
+                                            />
+                                            {filters[column.accessor] && (
+                                                <button
+                                                    className="clear-filter-btn"
+                                                    onClick={() => clearFilter(column.accessor)}
+                                                    title="Clear filter"
+                                                >
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                    </svg>
+                                                </button>
+                                            )}
+                                        </>
                                     ) : (
+                                        // TEXT OR NUMBER INPUT
                                         <>
                                             <input
                                                 type={column.filterType === 'number' ? 'number' : 'text'}
                                                 placeholder={`Search ${column.header.toLowerCase()}...`}
                                                 value={filters[column.accessor] || ''}
                                                 onChange={(e) => handleFilterChange(column.accessor, e.target.value)}
+                                                // Add step and min for number inputs
+                                                {...(column.filterType === 'number' && {
+                                                    step: '1',
+                                                    min: '0'
+                                                })}
                                             />
                                             {filters[column.accessor] && (
                                                 <button
@@ -822,7 +881,6 @@ const DataTable = ({
                             </div>
                         ))}
                     </div>
-
                     <div className="rockops-table__filter-actions">
                         <div className="filter-stats">
                             {sortedData.length} of {data.length} results
