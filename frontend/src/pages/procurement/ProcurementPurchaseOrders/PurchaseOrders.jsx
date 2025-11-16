@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { FiChevronRight } from 'react-icons/fi';
 import { purchaseOrderService } from '../../../services/procurement/purchaseOrderService.js';
 import PendingPurchaseOrders from './PendingPurchaseOrders/PendingPurchaseOrders.jsx';
-import ValidatedPurchaseOrders from './ValidatedPurchaseOrders/ValidatedPurchaseOrders.jsx';
+import CompletedPurchaseOrders from './CompletedPurchaseOrders/CompletedPurchaseOrders.jsx';
+import DisputedPurchaseOrders from './DisputedPurchaseOrders/DisputedPurchaseOrders.jsx';
 import PageHeader from '../../../components/common/PageHeader/PageHeader.jsx';
 import "./PurchaseOrders.scss";
 
 const PurchaseOrders = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('pending'); // Default to pending tab
+    const [activeTab, setActiveTab] = useState('pending');
     const [allPurchaseOrders, setAllPurchaseOrders] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -29,51 +30,61 @@ const PurchaseOrders = () => {
         }
     };
 
-    // Calculate statistics
     const stats = purchaseOrderService.utils.getStatistics(allPurchaseOrders);
 
-    // Function to refresh data (passed to child components)
     const handleDataChange = () => {
         fetchPurchaseOrders();
     };
 
-    // Calculate tab-specific stats
+    // Filter orders by tab
+    const getPendingOrders = () => {
+        return allPurchaseOrders.filter(order =>
+            order.status === 'PENDING' ||
+            order.status === 'CREATED' ||
+            order.status === 'PARTIALLY_RECEIVED'
+        );
+    };
+
+    const getDisputedOrders = () => {
+        return allPurchaseOrders.filter(order =>
+            order.status === 'DISPUTED'
+        );
+    };
+
+    const getCompletedOrders = () => {
+        return allPurchaseOrders.filter(order =>
+            order.status === 'COMPLETED' ||
+            order.status === 'CANCELLED'
+        );
+    };
+
     const getTabStats = () => {
         if (activeTab === 'pending') {
-            // Filter pending orders (adjust status values based on your data)
-            const pendingOrders = allPurchaseOrders.filter(order =>
-                order.status === 'PENDING' ||
-                order.status === 'CREATED' ||
-                order.status === 'DRAFT'
-            );
-
-            const totalValue = pendingOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
-
+            const pendingOrders = getPendingOrders();
             return [
                 {
                     value: pendingOrders.length,
                     label: 'Pending Orders'
                 }
             ];
-        } else if (activeTab === 'validated') {
-            // Filter validated orders
-            const validatedOrders = allPurchaseOrders.filter(order =>
-                order.status === 'VALIDATED' ||
-                order.status === 'APPROVED' ||
-                order.status === 'DELIVERED'
-            );
-
-            const totalValue = validatedOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
-
+        } else if (activeTab === 'completed') {
+            const completedOrders = getCompletedOrders();
             return [
                 {
-                    value: validatedOrders.length,
-                    label: 'Validated Orders'
+                    value: completedOrders.length,
+                    label: 'Completed Orders'
+                }
+            ];
+        } else if (activeTab === 'disputed') {
+            const disputedOrders = getDisputedOrders();
+            return [
+                {
+                    value: disputedOrders.length,
+                    label: 'Disputed Orders'
                 }
             ];
         }
 
-        // Default fallback
         return [
             {
                 value: stats.total,
@@ -81,6 +92,10 @@ const PurchaseOrders = () => {
             }
         ];
     };
+
+    const pendingCount = getPendingOrders().length;
+    const disputedCount = getDisputedOrders().length;
+    const completedCount = getCompletedOrders().length;
 
     return (
         <div className="purchase-orders-container">
@@ -96,12 +111,27 @@ const PurchaseOrders = () => {
                     onClick={() => setActiveTab('pending')}
                 >
                     Pending Orders
+                    {pendingCount > 0 && (
+                        <span className="tab-badge">{pendingCount}</span>
+                    )}
                 </button>
                 <button
-                    className={`tab ${activeTab === 'validated' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('validated')}
+                    className={`tab ${activeTab === 'disputed' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('disputed')}
+                >
+                    Disputed Orders
+                    {disputedCount > 0 && (
+                        <span className="tab-badge disputed">{disputedCount}</span>
+                    )}
+                </button>
+                <button
+                    className={`tab ${activeTab === 'completed' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('completed')}
                 >
                     Completed Orders
+                    {completedCount > 0 && (
+                        <span className="tab-badge completed">{completedCount}</span>
+                    )}
                 </button>
             </div>
 
@@ -113,8 +143,14 @@ const PurchaseOrders = () => {
                         loading={loading}
                     />
                 )}
-                {activeTab === 'validated' && (
-                    <ValidatedPurchaseOrders
+                {activeTab === 'disputed' && (
+                    <DisputedPurchaseOrders
+                        onDataChange={handleDataChange}
+                        loading={loading}
+                    />
+                )}
+                {activeTab === 'completed' && (
+                    <CompletedPurchaseOrders
                         onDataChange={handleDataChange}
                         loading={loading}
                     />

@@ -13,21 +13,24 @@ The maintenance team frontend provides a comprehensive interface for managing eq
 - **Features**: Provides consistent layout structure and styling
 - **Usage**: Wraps maintenance pages in the routing system
 
-### 2. MaintenanceDashboard (`MaintenanceDashboard/`)
-- **Purpose**: Main dashboard for maintenance team overview
+### 2. MaintenanceManagerDashboard (from `../dashboards/MaintenanceManagerDashboard.jsx`)
+- **Purpose**: Unified dashboard for maintenance team overview (used for all maintenance roles)
 - **Features**:
   - KPI cards showing active maintenance, completed tasks, overdue items
   - Interactive charts (pie charts, bar charts, line charts)
-  - Recent activity feed
+  - Detailed maintenance analytics
   - Team performance metrics
+  - Parts & consumables tracking
   - Alerts and notifications
-  - Responsive design with filtering options
+  - Responsive design with comprehensive data
 - **Key Metrics**:
-  - Active maintenance count
-  - Weekly completion rates
+  - Total maintenance records
+  - Scheduled, ongoing, and completed maintenance
+  - Equipment in maintenance vs available
+  - Technician availability
   - Overdue maintenance alerts
-  - Team efficiency scores
-  - Site performance breakdown
+  - Critical maintenance alerts
+  - Consumables usage and low stock items
 
 ### 3. MaintenanceRecords (`MaintenanceRecords/`)
 - **Purpose**: CRUD interface for maintenance records
@@ -121,11 +124,14 @@ The maintenance frontend supports role-based access:
 
 ### Accessing Maintenance Dashboard
 ```javascript
-// Navigate to maintenance dashboard
+// Navigate to maintenance dashboard (unified for all roles)
 navigate('/maintenance');
 
 // Navigate to maintenance records
 navigate('/maintenance/records');
+
+// Note: The dashboard at /maintenance uses MaintenanceManagerDashboard
+// which serves both MAINTENANCE_MANAGER and MAINTENANCE_EMPLOYEE roles
 ```
 
 ### Creating a Maintenance Record
