@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
-import { FaCalendarCheck, FaUsers, FaUserCheck, FaUserTimes, FaClock, FaSave, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaCalendarCheck, FaUsers, FaUserCheck, FaUserTimes, FaClock, FaSave, FaChevronLeft, FaChevronRight, FaUserSlash } from 'react-icons/fa';
 import AttendanceMonthlyView from './components/AttendanceMonthlyView';
 import AttendanceSummaryCard from './components/AttendanceSummaryCard';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
@@ -121,11 +121,6 @@ const AttendancePage = () => {
             const response = await siteService.getAll();
             const data = response.data || response;
             setSites(data);
-
-            // Auto-select first site
-            if (data.length > 0) {
-                setSelectedSite(data[0].id);
-            }
         } catch (error) {
             console.error('Error fetching sites:', error);
             showSnackbar('Failed to load sites', 'error');
@@ -133,12 +128,10 @@ const AttendancePage = () => {
     };
 
     const fetchMonthlyAttendance = async () => {
-        if (!selectedSite) return;
-
         setLoading(true);
         try {
             const response = await attendanceService.getMonthlyAttendance(
-                selectedSite,
+                selectedSite, // Pass the string directly (can be UUID or "no-site")
                 selectedYear,
                 selectedMonth
             );
@@ -198,7 +191,7 @@ const AttendancePage = () => {
                     return {
                         ...employee,
                         dailyAttendance: employee.dailyAttendance.map(day => {
-                            if (day.date === date || day.date === formattedDate) {
+                            if (day.date === formattedDate) {
                                 return { ...day, ...updates };
                             }
                             return day;
@@ -210,7 +203,7 @@ const AttendancePage = () => {
         );
     }, [showSnackbar]);
 
-    const handleSaveAttendance = async () => {
+    const handleSaveAttendance = useCallback(async () => {
         if (modifiedRecords.size === 0) {
             showSnackbar('No changes to save', 'info');
             return;
@@ -218,173 +211,130 @@ const AttendancePage = () => {
 
         setSaving(true);
         try {
-            const recordsToSave = Array.from(modifiedRecords.values());
+            // Convert Map to array for bulk save
+            const attendanceUpdates = Array.from(modifiedRecords.values()).map(record => ({
+                employeeId: record.employeeId,
+                date: record.date,
+                status: record.status,
+                checkIn: record.checkIn || null,
+                checkOut: record.checkOut || null,
+                hoursWorked: record.hoursWorked || null,
+                notes: record.notes || ''
+            }));
 
-            // Enhanced validation
-            const validationErrors = [];
-            recordsToSave.forEach((record, index) => {
-                if (!record.employeeId) {
-                    validationErrors.push(`Record ${index + 1}: Missing employee ID`);
-                }
-                if (!record.date) {
-                    validationErrors.push(`Record ${index + 1}: Missing date`);
-                }
-                // Validate date format
-                if (record.date && !record.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                    validationErrors.push(`Record ${index + 1}: Invalid date format (${record.date})`);
-                }
-            });
+            console.log('Saving attendance updates:', attendanceUpdates);
 
-            if (validationErrors.length > 0) {
-                throw new Error(`Validation errors:\n${validationErrors.join('\n')}`);
-            }
+            await attendanceService.bulkSaveAttendance(attendanceUpdates);
 
-            // Create bulk attendance DTO
-            const bulkAttendanceData = {
-                date: null,
-                siteId: selectedSite,
-                attendanceRecords: recordsToSave
-            };
-
-            console.log('Sending bulk attendance data:', JSON.stringify(bulkAttendanceData, null, 2));
-
-            const response = await attendanceService.bulkSaveAttendance(bulkAttendanceData);
-            const result = response.data;
-
-            showSnackbar(`Attendance updated for ${result.processed} records`, 'success');
-
-            // Clear modified records and refresh data
+            showSnackbar(`Successfully saved ${modifiedRecords.size} attendance record(s)`, 'success');
             setModifiedRecords(new Map());
-            await fetchMonthlyAttendance();
 
-            return true; // Indicate success
+            // Refresh data after save
+            await fetchMonthlyAttendance();
         } catch (error) {
             console.error('Error saving attendance:', error);
-
-            let message = 'Failed to save attendance';
-
-            if (error?.response?.data?.error) {
-                message = error.response.data.error;
-            } else if (error?.response?.data?.message) {
-                message = error.response.data.message;
-            } else if (error?.message) {
-                message = error.message;
-            }
-
-            if (message.includes('null value in column "date"')) {
-                message = 'Date field is missing for one or more attendance records. Please refresh and try again.';
-            }
-
-            showSnackbar(message, 'error');
-            return false; // Indicate failure
+            showSnackbar('Failed to save attendance changes. Please try again.', 'error');
         } finally {
             setSaving(false);
         }
-    };
+    }, [modifiedRecords, selectedSite, selectedMonth, selectedYear, showSnackbar]);
 
-    const handleMonthChange = (direction) => {
-        if (hasUnsavedChanges) {
-            // Show confirmation dialog
-            setShowConfirmDialog(true);
-            setPendingAction({
-                type: 'monthChange',
-                direction
-            });
-        } else {
-            // Proceed with month change
-            executeMonthChange(direction);
-        }
-    };
-
-    const executeSiteChange = (siteId) => {
-        setSelectedSite(siteId);
-    };
-
-    const handleSiteChange = (e) => {
-        const newSiteId = e.target.value;
+    const handleSiteChange = useCallback((e) => {
+        const newSite = e.target.value;
 
         if (hasUnsavedChanges) {
-            // Show confirmation dialog
             setShowConfirmDialog(true);
             setPendingAction({
-                type: 'siteChange',
-                siteId: newSiteId
+                type: 'site-change',
+                newValue: newSite
             });
         } else {
-            // Proceed with site change
-            executeSiteChange(newSiteId);
+            setSelectedSite(newSite);
         }
-    };
+    }, [hasUnsavedChanges]);
 
-    const executeMonthChange = (direction) => {
-        if (direction === 'prev') {
-            if (selectedMonth === 1) {
-                setSelectedMonth(12);
-                setSelectedYear(selectedYear - 1);
-            } else {
-                setSelectedMonth(selectedMonth - 1);
-            }
+    const handleMonthChange = useCallback((direction) => {
+        if (hasUnsavedChanges) {
+            const newDate = direction === 'next'
+                ? { month: selectedMonth === 12 ? 1 : selectedMonth + 1, year: selectedMonth === 12 ? selectedYear + 1 : selectedYear }
+                : { month: selectedMonth === 1 ? 12 : selectedMonth - 1, year: selectedMonth === 1 ? selectedYear - 1 : selectedYear };
+
+            setShowConfirmDialog(true);
+            setPendingAction({
+                type: 'month-change',
+                newValue: newDate
+            });
         } else {
-            if (selectedMonth === 12) {
-                setSelectedMonth(1);
-                setSelectedYear(selectedYear + 1);
+            if (direction === 'next') {
+                if (selectedMonth === 12) {
+                    setSelectedMonth(1);
+                    setSelectedYear(prev => prev + 1);
+                } else {
+                    setSelectedMonth(prev => prev + 1);
+                }
             } else {
-                setSelectedMonth(selectedMonth + 1);
+                if (selectedMonth === 1) {
+                    setSelectedMonth(12);
+                    setSelectedYear(prev => prev - 1);
+                } else {
+                    setSelectedMonth(prev => prev - 1);
+                }
             }
         }
-    };
+    }, [hasUnsavedChanges, selectedMonth, selectedYear]);
 
-    const handleConfirmDialogAction = async (saveChanges) => {
-        if (saveChanges) {
+    const handleConfirmDialogAction = useCallback(async (shouldSave) => {
+        if (shouldSave) {
             // Save changes first
-            const success = await handleSaveAttendance();
-            if (!success) {
-                // If save failed, don't proceed with the action
-                setShowConfirmDialog(false);
-                setPendingAction(null);
-                pendingNavigationRef.current = null;
-                return;
-            }
+            await handleSaveAttendance();
+        } else {
+            // Discard changes
+            setModifiedRecords(new Map());
         }
 
         // Execute the pending action
         if (pendingAction) {
-            switch (pendingAction.type) {
-                case 'monthChange':
-                    executeMonthChange(pendingAction.direction);
-                    break;
-                case 'siteChange':
-                    executeSiteChange(pendingAction.siteId);
-                    break;
-                case 'navigation':
-                    // Allow navigation by setting flag and clearing changes
-                    allowNavigationRef.current = true;
-                    setModifiedRecords(new Map());
-
-                    // Navigate to the pending path
-                    if (pendingAction.path) {
-                        navigate(pendingAction.path);
-                    }
-
-                    // Reset flag after navigation
-                    setTimeout(() => {
-                        allowNavigationRef.current = false;
-                    }, 100);
-                    break;
+            if (pendingAction.type === 'site-change') {
+                setSelectedSite(pendingAction.newValue);
+            } else if (pendingAction.type === 'month-change') {
+                setSelectedMonth(pendingAction.newValue.month);
+                setSelectedYear(pendingAction.newValue.year);
+            } else if (pendingAction.type === 'navigation') {
+                allowNavigationRef.current = true;
+                navigate(pendingAction.path);
             }
         }
 
-        // Close dialog and reset
         setShowConfirmDialog(false);
         setPendingAction(null);
-        pendingNavigationRef.current = null;
-    };
+    }, [pendingAction, handleSaveAttendance, navigate]);
 
-    const handleCancelDialog = () => {
+    const handleCancelDialog = useCallback(() => {
         setShowConfirmDialog(false);
         setPendingAction(null);
         pendingNavigationRef.current = null;
-    };
+    }, []);
+
+    // Group employees by site for display
+    const groupedEmployees = useMemo(() => {
+        if (!monthlyAttendance || monthlyAttendance.length === 0) {
+            return [];
+        }
+
+        // Determine group label based on selected site
+        let groupLabel = '';
+        if (selectedSite === 'no-site') {
+            groupLabel = 'Unassigned Employees';
+        } else {
+            const site = sites.find(s => s.id === selectedSite);
+            groupLabel = site ? site.name : 'Site Employees';
+        }
+
+        return [{
+            siteName: groupLabel,
+            employees: monthlyAttendance
+        }];
+    }, [monthlyAttendance, selectedSite, sites]);
 
     // Calculate summary statistics
     const summary = useMemo(() => {
@@ -443,18 +393,25 @@ const AttendancePage = () => {
 
             <div className="attendance-controls">
                 <div className="control-group">
-                    <label>Site</label>
+                    <label>Site / Employee Group</label>
                     <select
                         value={selectedSite}
                         onChange={handleSiteChange}
                         className="form-control"
                     >
-                        <option value="">Select Site</option>
-                        {sites.map(site => (
-                            <option key={site.id} value={site.id}>
-                                {site.name}
+                        <option value="">Select Site or Group</option>
+                        <optgroup label="Employee Groups">
+                            <option value="no-site">
+                                🚫 Unassigned Employees
                             </option>
-                        ))}
+                        </optgroup>
+                        <optgroup label="Sites">
+                            {sites.map(site => (
+                                <option key={site.id} value={site.id}>
+                                    {site.name}
+                                </option>
+                            ))}
+                        </optgroup>
                     </select>
                 </div>
 
@@ -507,18 +464,76 @@ const AttendancePage = () => {
                 />
             </div>
 
+            {/* Legend moved to top */}
+            <div className="attendance-legend-top">
+                <div className="legend-item">
+                    <span className="legend-color present"></span>
+                    <span>Present</span>
+                </div>
+                <div className="legend-item">
+                    <span className="legend-color absent"></span>
+                    <span>Absent</span>
+                </div>
+                <div className="legend-item">
+                    <span className="legend-color off"></span>
+                    <span>Off Day</span>
+                </div>
+                <div className="legend-item">
+                    <span className="legend-color leave"></span>
+                    <span>On Leave</span>
+                </div>
+                <div className="legend-item">
+                    <span className="legend-color late"></span>
+                    <span>Late</span>
+                </div>
+                <div className="legend-item">
+                    <span className="legend-color half-day"></span>
+                    <span>Half Day</span>
+                </div>
+            </div>
+
             <div className="attendance-content">
                 {monthlyAttendance.length > 0 ? (
-                    <AttendanceMonthlyView
-                        monthlyData={monthlyAttendance}
-                        onAttendanceUpdate={handleAttendanceUpdate}
-                        loading={loading}
-                        month={selectedMonth}
-                        year={selectedYear}
-                    />
+                    <>
+                        {groupedEmployees.map((group, index) => (
+                            <div key={index} className="site-group">
+                                {group.siteName && (
+                                    <div className={`site-group-header ${selectedSite === 'no-site' ? 'unassigned-header' : ''}`}>
+                                        {selectedSite === 'no-site' && <FaUserSlash className="header-icon" />}
+                                        <h3>{group.siteName}</h3>
+                                        <span className="employee-count">{group.employees.length} employee{group.employees.length !== 1 ? 's' : ''}</span>
+                                    </div>
+                                )}
+                                <AttendanceMonthlyView
+                                    monthlyData={group.employees}
+                                    onAttendanceUpdate={handleAttendanceUpdate}
+                                    loading={loading}
+                                    month={selectedMonth}
+                                    year={selectedYear}
+                                    showLegend={false}
+                                />
+                            </div>
+                        ))}
+                    </>
                 ) : (
-                    <div className="empty-state">
-                        <p>No employees found for the selected site.</p>
+                    <div className="attendance-empty-state">
+                        {selectedSite === '' ? (
+                            <>
+                                <FaUsers className="empty-icon" />
+                                <p>Please select a site or employee group to view attendance records.</p>
+                            </>
+                        ) : selectedSite === 'no-site' ? (
+                            <>
+                                <FaUserSlash className="empty-icon" />
+                                <p>No unassigned employees found.</p>
+                                <p className="empty-subtitle">All active employees are currently assigned to sites.</p>
+                            </>
+                        ) : (
+                            <>
+                                <FaUsers className="empty-icon" />
+                                <p>No employees found for the selected site.</p>
+                            </>
+                        )}
                     </div>
                 )}
             </div>
