@@ -211,33 +211,53 @@ const AttendancePage = () => {
 
         setSaving(true);
         try {
-            // Convert Map to array for bulk save
-            const attendanceUpdates = Array.from(modifiedRecords.values()).map(record => ({
-                employeeId: record.employeeId,
-                date: record.date,
-                status: record.status,
-                checkIn: record.checkIn || null,
-                checkOut: record.checkOut || null,
-                hoursWorked: record.hoursWorked || null,
-                notes: record.notes || ''
-            }));
+            // Group records by date for bulk save
+            const recordsByDate = new Map();
 
-            console.log('Saving attendance updates:', attendanceUpdates);
+            Array.from(modifiedRecords.values()).forEach(record => {
+                if (!recordsByDate.has(record.date)) {
+                    recordsByDate.set(record.date, []);
+                }
+                recordsByDate.get(record.date).push({
+                    employeeId: record.employeeId,
+                    status: record.status,
+                    checkIn: record.checkIn || null,
+                    checkOut: record.checkOut || null,
+                    hoursWorked: record.hoursWorked ? parseFloat(record.hoursWorked) : null,
+                    notes: record.notes || ''
+                });
+            });
 
-            await attendanceService.bulkSaveAttendance(attendanceUpdates);
+            console.log('Saving attendance updates grouped by date:', recordsByDate);
 
-            showSnackbar(`Successfully saved ${modifiedRecords.size} attendance record(s)`, 'success');
+            // Save each date group as a separate bulk request
+            let totalSaved = 0;
+            for (const [date, attendanceRecords] of recordsByDate) {
+                const bulkData = {
+                    date: date,
+                    siteId: selectedSite !== 'no-site' ? selectedSite : null,
+                    attendanceRecords: attendanceRecords
+                };
+
+                console.log('Sending bulk request for date:', date, bulkData);
+
+                await attendanceService.bulkSaveAttendance(bulkData);
+                totalSaved += attendanceRecords.length;
+            }
+
+            showSnackbar(`Successfully saved ${totalSaved} attendance record(s)`, 'success');
             setModifiedRecords(new Map());
 
             // Refresh data after save
             await fetchMonthlyAttendance();
         } catch (error) {
             console.error('Error saving attendance:', error);
-            showSnackbar('Failed to save attendance changes. Please try again.', 'error');
+            const errorMessage = error.response?.data?.error || error.message || 'Failed to save attendance changes';
+            showSnackbar(errorMessage, 'error');
         } finally {
             setSaving(false);
         }
-    }, [modifiedRecords, selectedSite, selectedMonth, selectedYear, showSnackbar]);
+    }, [modifiedRecords, selectedSite, selectedMonth, selectedYear, showSnackbar, fetchMonthlyAttendance]);
 
     const handleSiteChange = useCallback((e) => {
         const newSite = e.target.value;
