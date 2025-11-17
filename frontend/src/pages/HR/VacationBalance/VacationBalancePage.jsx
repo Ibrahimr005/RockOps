@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {BsCalendar2Week, BsClockHistory, BsExclamationTriangle, BsPersonCheck, BsPlusCircle,} from 'react-icons/bs';
+import {BsCalendar2Week, BsClockHistory, BsExclamationTriangle, BsPersonCheck, BsPlusCircle, BsSearch} from 'react-icons/bs';
 import {FaAward} from 'react-icons/fa';
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
 import ContentLoader from '../../../components/common/ContentLoader/ContentLoader.jsx';
@@ -92,7 +92,8 @@ const VacationBalancePage = () => {
         // Apply search filter
         if (searchTerm) {
             filtered = filtered.filter(balance =>
-                balance.employeeName?.toLowerCase().includes(searchTerm.toLowerCase())
+                balance.employeeName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                balance.employeeId?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
@@ -144,18 +145,32 @@ const VacationBalancePage = () => {
 
     const handleCarryForward = async (carryForwardData) => {
         try {
-            await vacationBalanceService.carryForwardBalances(carryForwardData);
+            await vacationBalanceService.carryForwardBalances(
+                carryForwardData.fromYear,
+                carryForwardData.toYear,
+                carryForwardData.maxCarryForward
+            );
             showSuccess(`Vacation days carried forward from ${carryForwardData.fromYear} to ${carryForwardData.toYear}`);
             fetchVacationBalances();
             setShowCarryForwardModal(false);
         } catch (err) {
-            showError(err.response?.data?.error || 'Failed to carry forward balances');
+            // Enhanced error message extraction
+            const errorMessage = err.response?.data?.error ||
+                err.response?.data?.message ||
+                err.message ||
+                'Failed to carry forward balances';
+            showError(errorMessage);
         }
     };
 
     const handleAwardBonus = async (bonusData) => {
         try {
-            await vacationBalanceService.awardBonusDays(selectedEmployee.employeeId, bonusData);
+            await vacationBalanceService.awardBonusDays(
+                selectedEmployee.employeeId,
+                bonusData.year,
+                bonusData.bonusDays,
+                bonusData.reason
+            );
             showSuccess(`Awarded ${bonusData.bonusDays} bonus days to ${selectedEmployee.employeeName}`);
             fetchVacationBalances();
             setShowBonusModal(false);
@@ -306,9 +321,8 @@ const VacationBalancePage = () => {
         <div className="vacation-balance-page">
             {/* Page Header */}
             <div className="departments-header">
-
-                    <h1>Vacation Balance Management<p className="employees-header__subtitle">Manage employee vacation
-                        balances and allocations</p></h1>
+                <h1>Vacation Balance Management<p className="employees-header__subtitle">Manage employee vacation
+                    balances and allocations</p></h1>
 
                 <div className="vacation-balance-header-actions">
                     <select
@@ -384,47 +398,21 @@ const VacationBalancePage = () => {
                 </div>
             </div>
 
-            {/* Controls Section */}
-            {/*<div className="vacation-balance-controls">*/}
-            {/*    <div className="vacation-balance-search-controls">*/}
-            {/*        <div className="vacation-balance-search-box">*/}
-            {/*            <BsSearch className="vacation-balance-search-icon" />*/}
-            {/*            <input*/}
-            {/*                type="text"*/}
-            {/*                placeholder="Search employees..."*/}
-            {/*                value={searchTerm}*/}
-            {/*                onChange={(e) => setSearchTerm(e.target.value)}*/}
-            {/*                className="vacation-balance-search-input"*/}
-            {/*            />*/}
-            {/*        </div>*/}
-            {/*        <button*/}
-            {/*            className={`btn btn-secondary vacation-balance-filter-toggle ${showFilters ? 'active' : ''}`}*/}
-            {/*            onClick={() => setShowFilters(!showFilters)}*/}
-            {/*        >*/}
-            {/*            <BsFilter />*/}
-            {/*            Filters*/}
-            {/*            {showFilters ? <FaCaretUp /> : <FaCaretDown />}*/}
-            {/*        </button>*/}
-            {/*    </div>*/}
-
-            {/*    {showFilters && (*/}
-            {/*        <div className="vacation-balance-filter-options">*/}
-            {/*            <div className="vacation-balance-filter-group">*/}
-            {/*                <label>Filter by:</label>*/}
-            {/*                <select*/}
-            {/*                    value={filterType}*/}
-            {/*                    onChange={(e) => setFilterType(e.target.value)}*/}
-            {/*                    className="vacation-balance-filter-select"*/}
-            {/*                >*/}
-            {/*                    <option value="all">All Employees</option>*/}
-            {/*                    <option value="low">Low Balance</option>*/}
-            {/*                    <option value="unused">Unused Days</option>*/}
-            {/*                    <option value="high_utilization">High Utilization (80%+)</option>*/}
-            {/*                </select>*/}
-            {/*            </div>*/}
-            {/*        </div>*/}
-            {/*    )}*/}
-            {/*</div>*/}
+            {/* Search Bar */}
+            <div className="vacation-balance-controls">
+                <div className="vacation-balance-search-controls">
+                    <div className="vacation-balance-search-box">
+                        <BsSearch className="vacation-balance-search-icon" />
+                        <input
+                            type="text"
+                            placeholder="Search employees..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="vacation-balance-search-input"
+                        />
+                    </div>
+                </div>
+            </div>
 
             {/* Low Balance Alert */}
             {lowBalanceEmployees.length > 0 && (
@@ -440,12 +428,12 @@ const VacationBalancePage = () => {
             {/* Data Table */}
             <div className="vacation-balance-table-container">
                 <DataTable
+                    showSearch={false}
                     data={filteredBalances}
                     columns={columns}
-                    loading={isLoading}
-                    emptyMessage="No vacation balance data found"
                     sortConfig={sortConfig}
                     onSort={handleSort}
+                    emptyMessage="No vacation balances found for the selected year"
                 />
             </div>
 
@@ -453,7 +441,7 @@ const VacationBalancePage = () => {
             {showBonusModal && (
                 <BonusModal
                     employee={selectedEmployee}
-                    year={selectedYear}
+                    currentYear={selectedYear}
                     onSubmit={handleAwardBonus}
                     onClose={() => {
                         setShowBonusModal(false);
@@ -481,9 +469,9 @@ const VacationBalancePage = () => {
     );
 };
 
-// Modal components using existing modal styles
-const BonusModal = ({employee, year, onSubmit, onClose}) => {
-    const [bonusDays, setBonusDays] = useState(1);
+const BonusModal = ({employee, currentYear, onSubmit, onClose}) => {
+    const [year, setYear] = useState(currentYear);
+    const [bonusDays, setBonusDays] = useState(0);
     const [reason, setReason] = useState('');
 
     const handleSubmit = (e) => {
@@ -493,26 +481,36 @@ const BonusModal = ({employee, year, onSubmit, onClose}) => {
 
     return (
         <div className="modal-backdrop" onClick={onClose}>
-            <div className="modal-container" onClick={e => e.stopPropagation()}>
+            <div className="modal-container modal-md" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <h3 className="modal-title">
                         <FaAward/>
                         Award Bonus Days
                     </h3>
                 </div>
-                <form onSubmit={handleSubmit} className="modal-body">
+                <form onSubmit={handleSubmit}>
                     <div className="modal-body">
                         <div className="form-group">
                             <label>Employee</label>
                             <input
                                 type="text"
-                                value={employee?.employeeName}
+                                value={employee?.employeeName || ''}
                                 disabled
                                 className="form-input"
                             />
                         </div>
                         <div className="form-group">
-                            <label>Bonus Days *</label>
+                            <label>Year <span className="required-field">*</span></label>
+                            <input
+                                type="number"
+                                value={year}
+                                onChange={(e) => setYear(parseInt(e.target.value))}
+                                required
+                                className="form-input"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Bonus Days <span className="required-field">*</span></label>
                             <input
                                 type="number"
                                 min="1"
@@ -523,27 +521,26 @@ const BonusModal = ({employee, year, onSubmit, onClose}) => {
                             />
                         </div>
                         <div className="form-group">
-                            <label>Reason *</label>
+                            <label>Reason <span className="required-field">*</span></label>
                             <textarea
                                 value={reason}
                                 onChange={(e) => setReason(e.target.value)}
                                 required
-                                placeholder="Reason for awarding bonus days"
-                                className="form-textarea"
+                                className="form-input"
                                 rows="3"
+                                placeholder="Enter reason for awarding bonus days..."
                             />
                         </div>
                     </div>
-
+                    <div className="modal-footer">
+                        <button type="button" onClick={onClose} className="btn btn-secondary">
+                            Cancel
+                        </button>
+                        <button type="submit" className="btn btn-primary">
+                            Award Bonus
+                        </button>
+                    </div>
                 </form>
-                <div className="modal-footer">
-                    <button type="button" onClick={onClose} className="btn btn-secondary">
-                        Cancel
-                    </button>
-                    <button type="submit" className="btn btn-primary" onClick={handleSubmit}>
-                        Award Bonus
-                    </button>
-                </div>
             </div>
         </div>
     );
@@ -568,10 +565,10 @@ const CarryForwardModal = ({currentYear, onSubmit, onClose}) => {
                         Carry Forward Vacation Days
                     </h3>
                 </div>
-                <form onSubmit={handleSubmit} className="modal-body">
+                <form onSubmit={handleSubmit}>
                     <div className="modal-body">
                         <div className="form-group">
-                            <label>From Year *</label>
+                            <label>From Year <span className="required-field">*</span></label>
                             <input
                                 type="number"
                                 value={fromYear}
@@ -581,7 +578,7 @@ const CarryForwardModal = ({currentYear, onSubmit, onClose}) => {
                             />
                         </div>
                         <div className="form-group">
-                            <label>To Year *</label>
+                            <label>To Year <span className="required-field">*</span></label>
                             <input
                                 type="number"
                                 value={toYear}
@@ -591,7 +588,7 @@ const CarryForwardModal = ({currentYear, onSubmit, onClose}) => {
                             />
                         </div>
                         <div className="form-group">
-                            <label>Max Days to Carry Forward *</label>
+                            <label>Max Days to Carry Forward <span className="required-field">*</span></label>
                             <input
                                 type="number"
                                 min="0"
@@ -602,16 +599,15 @@ const CarryForwardModal = ({currentYear, onSubmit, onClose}) => {
                             />
                         </div>
                     </div>
-
+                    <div className="modal-footer">
+                        <button type="button" onClick={onClose} className="btn btn-secondary">
+                            Cancel
+                        </button>
+                        <button type="submit" className="btn btn-primary">
+                            Carry Forward
+                        </button>
+                    </div>
                 </form>
-                <div className="modal-footer">
-                    <button type="button" onClick={onClose} className="btn btn-secondary">
-                        Cancel
-                    </button>
-                    <button type="submit" className="btn btn-primary" onClick={handleSubmit}>
-                        Carry Forward
-                    </button>
-                </div>
             </div>
         </div>
     );
