@@ -69,13 +69,10 @@ const VacancyList = () => {
             if (response && response.data) {
                 const jobPositionData = Array.isArray(response.data) ? response.data : [];
                 setJobPositions(jobPositionData);
-            } else {
-                setJobPositions([]);
             }
         } catch (error) {
             console.error('Error fetching job positions:', error);
             showError('Failed to load job positions');
-            setJobPositions([]);
         }
     }, [showError]);
 
@@ -84,60 +81,47 @@ const VacancyList = () => {
         fetchJobPositions();
     }, [fetchVacancies, fetchJobPositions]);
 
-    const handleAddVacancy = async (newVacancy) => {
-        if (!newVacancy) {
-            showError('Invalid vacancy data');
-            return;
-        }
-
+    const handleAddVacancy = useCallback(async (vacancyData) => {
+        console.log("Submitting vacancy with data:", vacancyData);
         try {
-            setLoading(true);
-            console.log('Sending vacancy data:', newVacancy);
-            console.log('JobPosition in request:', newVacancy.jobPosition);
-
-            const response = await vacancyService.create(newVacancy);
-
-            console.log('Full API response:', response);
-            console.log('Response data:', response.data);
+            const response = await vacancyService.create(vacancyData);
+            console.log("Created vacancy response:", response);
 
             if (response && response.data) {
-                await fetchVacancies();
-                setShowAddModal(false);
-                showSuccess('Vacancy created successfully!');
+                // Verify the response contains the expected data
+                if (response.data.id) {
+                    showSuccess('Vacancy posted successfully');
+                    setShowAddModal(false);
+                    await fetchVacancies();
+                } else {
+                    throw new Error('Invalid response: missing vacancy ID');
+                }
             } else {
-                throw new Error('No response data received');
+                throw new Error('Invalid response from server');
             }
         } catch (error) {
-            console.error('Error adding vacancy:', error);
-            console.error('Error response:', error.response);
-            console.error('Error response data:', error.response?.data);
-
+            console.error('Error creating vacancy:', error);
             const errorMessage = error.response?.data?.message ||
                 error.message ||
                 'Failed to create vacancy';
             showError(errorMessage);
-        } finally {
-            setLoading(false);
+            throw error;
         }
-    };
+    }, [fetchVacancies, showSuccess, showError]);
 
-    const handleEditVacancy = async (updatedVacancy) => {
-        if (!updatedVacancy || !selectedVacancy?.id) {
-            showError('Invalid vacancy data');
-            return;
-        }
-
+    const handleEditVacancy = useCallback(async (id, updatedData) => {
+        console.log("Updating vacancy with ID:", id, "Data:", updatedData);
         try {
-            setLoading(true);
-            const response = await vacancyService.update(selectedVacancy.id, updatedVacancy);
+            const response = await vacancyService.update(id, updatedData);
+            console.log("Update response:", response);
 
-            if (response) {
-                await fetchVacancies();
+            if (response && response.data) {
+                showSuccess('Vacancy updated successfully');
                 setShowEditModal(false);
                 setSelectedVacancy(null);
-                showSuccess('Vacancy updated successfully!');
+                await fetchVacancies();
             } else {
-                throw new Error('No response received');
+                throw new Error('Invalid response from server');
             }
         } catch (error) {
             console.error('Error updating vacancy:', error);
@@ -145,73 +129,56 @@ const VacancyList = () => {
                 error.message ||
                 'Failed to update vacancy';
             showError(errorMessage);
-        } finally {
-            setLoading(false);
+            throw error;
         }
-    };
+    }, [fetchVacancies, showSuccess, showError]);
 
-    const handleDeleteVacancy = async (vacancyId) => {
-        if (!vacancyId) {
-            showError('Invalid vacancy ID');
+    const handleDeleteVacancy = useCallback(async (id) => {
+        if (!window.confirm('Are you sure you want to delete this vacancy?')) {
             return;
         }
 
-        const confirmed = window.confirm(
-            'Are you sure you want to delete this vacancy? This action cannot be undone.'
-        );
-
-        if (!confirmed) return;
-
         try {
-            setLoading(true);
-            await vacancyService.delete(vacancyId);
+            await vacancyService.delete(id);
+            showSuccess('Vacancy deleted successfully');
             await fetchVacancies();
-            showSuccess('Vacancy deleted successfully!');
         } catch (error) {
             console.error('Error deleting vacancy:', error);
             const errorMessage = error.response?.data?.message ||
                 error.message ||
                 'Failed to delete vacancy';
             showError(errorMessage);
-        } finally {
-            setLoading(false);
         }
-    };
+    }, [fetchVacancies, showSuccess, showError]);
 
     const handleEditClick = useCallback((vacancy) => {
-        if (!vacancy) {
-            showError('Invalid vacancy selected');
-            return;
-        }
+        console.log("Edit vacancy clicked:", vacancy);
         setSelectedVacancy(vacancy);
         setShowEditModal(true);
-    }, [showError]);
+    }, []);
 
-    const handleRowClick = useCallback((vacancy) => {
-        if (!vacancy?.id) {
-            showError('Invalid vacancy selected');
-            return;
-        }
-        navigate(`/hr/vacancies/${vacancy.id}`);
-    }, [navigate, showError]);
+    const handleRowClick = useCallback((row) => {
+        console.log('Navigating to vacancy details:', row.id);
+        navigate(`/hr/vacancies/${row.id}`);
+    }, [navigate]);
 
     const formatDate = useCallback((dateString) => {
         if (!dateString) return 'N/A';
         try {
             const date = new Date(dateString);
-            if (isNaN(date.getTime())) return 'Invalid Date';
+            if (isNaN(date.getTime())) return 'N/A';
             return date.toLocaleDateString();
         } catch (error) {
             console.error('Error formatting date:', error);
-            return 'Invalid Date';
+            return 'N/A';
         }
     }, []);
 
     const calculateRemainingDays = useCallback((closingDate) => {
         if (!closingDate) return 'N/A';
-
         try {
             const today = new Date();
+            today.setHours(0, 0, 0, 0);
             const closing = new Date(closingDate);
 
             if (isNaN(closing.getTime())) return 'Invalid Date';
@@ -277,7 +244,7 @@ const VacancyList = () => {
         },
         {
             header: 'Priority',
-            accessor: 'priorityNumeric',
+            accessor: 'priority',
             render: (row) => (
                 <span className={`priority-badge ${getPriorityBadgeClass(row.priority)}`}>
                     {row.priority || 'MEDIUM'}
@@ -330,7 +297,7 @@ const VacancyList = () => {
             onClick: (row) => handleDeleteVacancy(row.id),
             className: 'danger'
         }
-    ], [handleEditClick]);
+    ], [handleEditClick, handleDeleteVacancy]);
 
     const filterableColumns = React.useMemo(() => [
         {header: 'Title', accessor: 'title'},
@@ -366,13 +333,15 @@ const VacancyList = () => {
 
     // Custom filters with proper event handling and reset capability
 
-    // Memoized filtered data with department filtering
+    // Memoized filtered data with enhanced sorting and filtering
     const filteredVacancies = React.useMemo(() => {
         if (!Array.isArray(vacancies)) {
             return [];
         }
 
-        const priorityMap = {'HIGH': 3, 'MEDIUM': 2, 'LOW': 1};
+        // Define numeric values for sorting
+        const statusOrder = {'OPEN': 1, 'FILLED': 2, 'CLOSED': 3};
+        const priorityOrder = {'HIGH': 1, 'MEDIUM': 2, 'LOW': 3};
 
         return vacancies
             .map(vacancy => ({
@@ -380,7 +349,10 @@ const VacancyList = () => {
                 // Flatten nested properties for easier filtering and searching
                 positionName: vacancy.jobPosition?.positionName || 'N/A',
                 departmentName: vacancy.jobPosition?.departmentName || 'N/A',
-                priorityNumeric: priorityMap[vacancy.priority] || 0
+                // Create a composite sort key: status takes precedence, then priority
+                // Format: status_order * 10 + priority_order
+                // This ensures status groups together, then sorts by priority within each status
+                sortKey: (statusOrder[vacancy.status] || 99) * 10 + (priorityOrder[vacancy.priority] || 99)
             }))
             .filter(vacancy => {
                 if (!vacancy) return false;
@@ -448,7 +420,9 @@ const VacancyList = () => {
                 showExportButton={true}
                 exportFileName="vacancies"
                 exportButtonText="Export Vacancies"
-                onClearFilters={handleResetFilters} // Add reset handler
+                onClearFilters={handleResetFilters}
+                defaultSortField="sortKey"
+                defaultSortDirection="asc"
             />
 
             {showAddModal && (

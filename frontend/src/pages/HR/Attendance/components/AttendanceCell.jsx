@@ -70,22 +70,67 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
         return statusConfig || statusOptions[1]; // Default to ABSENT
     };
 
+    // Determine if the day is in the future
+    const isFutureDay = () => {
+        if (!attendance?.date) return false;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const cellDate = new Date(attendance.date);
+        cellDate.setHours(0, 0, 0, 0);
+
+        return cellDate > today;
+    };
+
+    // Format time to 12-hour format
+    const formatTime12Hour = (time24) => {
+        if (!time24) return '';
+
+        try {
+            const [hours, minutes] = time24.split(':').map(Number);
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const hours12 = hours % 12 || 12;
+            return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+        } catch (error) {
+            return time24;
+        }
+    };
+
+    // Calculate worked hours from check-in/check-out times
+    const calculateWorkedHours = (checkIn, checkOut) => {
+        if (!checkIn || !checkOut) return null;
+
+        try {
+            const [inHour, inMin] = checkIn.split(':').map(Number);
+            const [outHour, outMin] = checkOut.split(':').map(Number);
+
+            const inMinutes = inHour * 60 + inMin;
+            const outMinutes = outHour * 60 + outMin;
+
+            let diffMinutes = outMinutes - inMinutes;
+            if (diffMinutes < 0) diffMinutes += 24 * 60; // Handle overnight shift
+
+            const hours = Math.floor(diffMinutes / 60);
+            const minutes = diffMinutes % 60;
+
+            return { hours, minutes, total: (diffMinutes / 60).toFixed(1) };
+        } catch (error) {
+            return null;
+        }
+    };
+
     const renderCompactView = () => {
         const statusConfig = getStatusDisplay();
         const isWeekend = attendance?.dayType === 'WEEKEND';
         const isEditable = attendance?.isEditable !== false;
-        // Determine if the day is in the future
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Set to midnight for date-only comparison
-        const cellDate = attendance?.date ? new Date(attendance.date) : null;
-        if (cellDate) cellDate.setHours(0, 0, 0, 0);
-        const isFuture = cellDate && cellDate > today;
+        const isFuture = isFutureDay();
 
         return (
             <div
                 className={`attendance-cell ${statusConfig.color} ${isWeekend ? 'weekend' : ''} ${!isEditable || isFuture ? 'disabled' : ''} ${isFuture ? 'future' : ''}`}
                 onClick={() => isEditable && !isEditing && !isFuture && setIsEditing(true)}
-                title={statusConfig.label}
+                title={isFuture ? 'Future date - cannot edit' : statusConfig.label}
             >
                 <span className="attendance-status-indicator">{statusConfig.label[0]}</span>
                 {attendance?.notes && <span className="has-notes">*</span>}
@@ -167,19 +212,42 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
     const renderExpandedInfo = () => {
         if (!isExpanded || !attendance) return null;
 
-        return (
-            <div className="expanded-info">
-                {contractType === 'MONTHLY' && attendance.checkIn && (
-                    <div className="time-info">
-                        <FaClock size={10} />
-                        <span>{attendance.checkIn} - {attendance.checkOut || '?'}</span>
+        const isPresent = attendance.status === 'PRESENT' || attendance.status === 'LATE' || attendance.status === 'HALF_DAY';
+
+        // For MONTHLY contract - show times and calculated hours
+        if (contractType === 'MONTHLY' && isPresent && attendance.checkIn) {
+            const workedHours = attendance.checkOut ? calculateWorkedHours(attendance.checkIn, attendance.checkOut) : null;
+
+            return (
+                <div className="expanded-info-clean">
+                    <div className="time-display">
+                        <span className="time-in">{formatTime12Hour(attendance.checkIn)}</span>
+                        <span className="time-separator">→</span>
+                        <span className="time-out">{attendance.checkOut ? formatTime12Hour(attendance.checkOut) : '–'}</span>
                     </div>
-                )}
-                {contractType === 'HOURLY' && attendance.hoursWorked && (
-                    <div className="hours-info">{attendance.hoursWorked}h</div>
-                )}
-            </div>
-        );
+                    {workedHours && (
+                        <div className="hours-total">
+                            {workedHours.hours}h {workedHours.minutes > 0 && `${workedHours.minutes}m`}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // For HOURLY contract - show hours worked
+        if (contractType === 'HOURLY' && isPresent &&
+            attendance.hoursWorked !== undefined &&
+            attendance.hoursWorked !== null) {
+            return (
+                <div className="expanded-info-clean">
+                    <div className="hours-total hourly">
+                        {attendance.hoursWorked}
+                    </div>
+                </div>
+            );
+        }
+
+        return null;
     };
 
     if (isEditing) {

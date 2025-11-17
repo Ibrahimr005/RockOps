@@ -786,4 +786,154 @@ public class AttendanceService {
             log.error("Error removing leave marking for employee {} on {}: {}", employeeId, date, e.getMessage());
         }
     }
+// AttendanceService.java - Add these new methods
+
+    /**
+     * Get monthly attendance for employees without site assignment
+     */
+    public List<EmployeeMonthlyAttendanceDTO> getMonthlyAttendanceForUnassignedEmployees(int year, int month) {
+        log.info("Fetching monthly attendance for unassigned employees for {}/{}", month, year);
+
+        try {
+            // Get all active employees without site assignment
+            List<Employee> unassignedEmployees = employeeRepository.findBySiteIsNull().stream()
+                    .filter(emp -> "ACTIVE".equalsIgnoreCase(emp.getStatus()))
+                    .collect(Collectors.toList());
+
+            log.info("Found {} active unassigned employees", unassignedEmployees.size());
+
+            YearMonth yearMonth = YearMonth.of(year, month);
+            LocalDate startDate = yearMonth.atDay(1);
+            LocalDate endDate = yearMonth.atEndOfMonth();
+
+            List<EmployeeMonthlyAttendanceDTO> monthlySheets = new ArrayList<>();
+
+            for (Employee employee : unassignedEmployees) {
+                // Get existing attendance records for the month
+                List<Attendance> existingAttendance = attendanceRepository.findByEmployeeIdAndDateRange(
+                        employee.getId(), startDate, endDate
+                );
+
+                // Create attendance map for quick lookup
+                Map<LocalDate, Attendance> attendanceMap = existingAttendance.stream()
+                        .collect(Collectors.toMap(Attendance::getDate, a -> a));
+
+                // Generate or update attendance for each day
+                List<DailyAttendanceDTO> dailyAttendance = new ArrayList<>();
+                LocalDate currentDate = startDate;
+
+                while (!currentDate.isAfter(endDate)) {
+                    Attendance attendance = attendanceMap.get(currentDate);
+
+                    if (attendance == null && employee.getJobPosition() != null) {
+                        // Create new attendance record based on contract type
+                        attendance = createDefaultAttendance(employee, currentDate);
+                        attendance = attendanceRepository.save(attendance);
+                    }
+
+                    if (attendance != null) {
+                        dailyAttendance.add(convertToDailyDTO(attendance));
+                    }
+
+                    currentDate = currentDate.plusDays(1);
+                }
+
+                // Create monthly DTO
+                EmployeeMonthlyAttendanceDTO monthlyDTO = buildMonthlyAttendanceDTO(employee, dailyAttendance, yearMonth);
+                monthlySheets.add(monthlyDTO);
+            }
+
+            log.info("Generated monthly attendance for {} unassigned employees", monthlySheets.size());
+            return monthlySheets;
+
+        } catch (Exception e) {
+            log.error("Error generating monthly attendance sheet for unassigned employees", e);
+
+            // Send error notification to HR users
+            notificationService.sendNotificationToHRUsers(
+                    "Attendance Sheet Generation Failed",
+                    "Failed to generate monthly attendance sheet for unassigned employees for " + month + "/" + year + ": " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/hr/attendance",
+                    "attendance-error-unassigned-" + year + "-" + month
+            );
+
+            throw e;
+        }
+    }
+
+    /**
+     * Get monthly attendance for all employees (regardless of site)
+     * Future enhancement
+     */
+    public List<EmployeeMonthlyAttendanceDTO> getAllEmployeesMonthlyAttendance(int year, int month) {
+        log.info("Fetching monthly attendance for all employees for {}/{}", month, year);
+
+        try {
+            // Get all active employees
+            List<Employee> allEmployees = employeeRepository.findAll().stream()
+                    .filter(emp -> "ACTIVE".equalsIgnoreCase(emp.getStatus()))
+                    .collect(Collectors.toList());
+
+            log.info("Found {} active employees", allEmployees.size());
+
+            YearMonth yearMonth = YearMonth.of(year, month);
+            LocalDate startDate = yearMonth.atDay(1);
+            LocalDate endDate = yearMonth.atEndOfMonth();
+
+            List<EmployeeMonthlyAttendanceDTO> monthlySheets = new ArrayList<>();
+
+            for (Employee employee : allEmployees) {
+                // Get existing attendance records for the month
+                List<Attendance> existingAttendance = attendanceRepository.findByEmployeeIdAndDateRange(
+                        employee.getId(), startDate, endDate
+                );
+
+                // Create attendance map for quick lookup
+                Map<LocalDate, Attendance> attendanceMap = existingAttendance.stream()
+                        .collect(Collectors.toMap(Attendance::getDate, a -> a));
+
+                // Generate or update attendance for each day
+                List<DailyAttendanceDTO> dailyAttendance = new ArrayList<>();
+                LocalDate currentDate = startDate;
+
+                while (!currentDate.isAfter(endDate)) {
+                    Attendance attendance = attendanceMap.get(currentDate);
+
+                    if (attendance == null && employee.getJobPosition() != null) {
+                        // Create new attendance record based on contract type
+                        attendance = createDefaultAttendance(employee, currentDate);
+                        attendance = attendanceRepository.save(attendance);
+                    }
+
+                    if (attendance != null) {
+                        dailyAttendance.add(convertToDailyDTO(attendance));
+                    }
+
+                    currentDate = currentDate.plusDays(1);
+                }
+
+                // Create monthly DTO
+                EmployeeMonthlyAttendanceDTO monthlyDTO = buildMonthlyAttendanceDTO(employee, dailyAttendance, yearMonth);
+                monthlySheets.add(monthlyDTO);
+            }
+
+            log.info("Generated monthly attendance for {} employees", monthlySheets.size());
+            return monthlySheets;
+
+        } catch (Exception e) {
+            log.error("Error generating monthly attendance sheet for all employees", e);
+
+            // Send error notification to HR users
+            notificationService.sendNotificationToHRUsers(
+                    "Attendance Sheet Generation Failed",
+                    "Failed to generate monthly attendance sheet for all employees for " + month + "/" + year + ": " + e.getMessage(),
+                    NotificationType.ERROR,
+                    "/hr/attendance",
+                    "attendance-error-all-" + year + "-" + month
+            );
+
+            throw e;
+        }
+    }
 }
