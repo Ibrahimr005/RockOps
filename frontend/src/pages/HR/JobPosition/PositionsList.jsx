@@ -151,7 +151,7 @@ const PositionsList = () => {
             render: (row) => (
                 <div className="position-name-cell">
                     <div className="position-title">
-                        {row.positionName}
+                        {row.positionName} - {row.experienceLevel.replace("_"," ")}
                     </div>
                     {/* Show hierarchy info if available */}
                     {row.hierarchyPath && (
@@ -210,16 +210,16 @@ const PositionsList = () => {
                 return 'N/A';
             }
         },
-        {
-            header: 'Experience Level',
-            accessor: 'experienceLevel',
-            sortable: true,
-            render: (row) => {
-                if (!row.experienceLevel) return 'N/A';
-                return row.experienceLevel.replace('_', ' ').toLowerCase()
-                    .replace(/\b\w/g, l => l.toUpperCase());
-            }
-        },
+        // {
+        //     header: 'Experience Level',
+        //     accessor: 'experienceLevel',
+        //     sortable: true,
+        //     render: (row) => {
+        //         if (!row.experienceLevel) return 'N/A';
+        //         return row.experienceLevel.replace('_', ' ').toLowerCase()
+        //             .replace(/\b\w/g, l => l.toUpperCase());
+        //     }
+        // },
         {
             header: 'Base Salary',
             accessor: 'baseSalary',
