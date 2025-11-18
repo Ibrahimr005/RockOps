@@ -197,7 +197,7 @@ const VacancyList = () => {
 
     const getStatusBadgeClass = useCallback((status) => {
         const statusClasses = {
-            'OPEN': 'success',
+            'OPEN': 'active',
             'CLOSED': 'danger',
             'FILLED': 'info'
         };

@@ -421,8 +421,8 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
 
         } catch (err) {
             console.error('Error submitting form:', err);
-            showError(err.message || 'Failed to update position');
-            setError(err.message || 'Failed to update position');
+            showError(err?.response?.data?.message || 'Failed to update position');
+            setError(err?.response?.data?.message || 'Failed to update position');
         } finally {
             setLoading(false);
         }

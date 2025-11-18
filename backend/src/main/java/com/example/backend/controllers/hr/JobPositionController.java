@@ -10,7 +10,9 @@ import com.example.backend.models.hr.JobPosition;
 import com.example.backend.models.hr.PromotionRequest;
 import com.example.backend.repositories.hr.JobPositionRepository;
 import com.example.backend.services.hr.JobPositionService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,9 +33,35 @@ public class JobPositionController {
      * Create a new job position using DTO
      */
     @PostMapping
-    public ResponseEntity<JobPositionDTO> createJobPosition(@RequestBody JobPositionDTO jobPositionDTO) {
-        return ResponseEntity.ok(jobPositionService.createJobPosition(jobPositionDTO));
+    public ResponseEntity<?> createJobPosition(@RequestBody JobPositionDTO jobPositionDTO) {
+        try {
+            return ResponseEntity.ok(jobPositionService.createJobPosition(jobPositionDTO));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Validation Error",
+                    "message", e.getMessage(),
+                    "timestamp", java.time.Instant.now().toString()
+            ));
+
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "error", "Entity Not Found",
+                    "message", e.getMessage(),
+                    "timestamp", java.time.Instant.now().toString()
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "error", "Internal Server Error",
+                    "message", "An unexpected error occurred while creating the vacancy",
+                    "details", e.getMessage(),
+                    "type", e.getClass().getSimpleName(),
+                    "timestamp", java.time.Instant.now().toString()
+            ));
+        }
     }
+
 
     /**
      * Get all job positions as DTOs
@@ -55,8 +83,33 @@ public class JobPositionController {
      * Update a job position using DTO
      */
     @PutMapping("/{id}")
-    public ResponseEntity<JobPositionDTO> updateJobPosition(@PathVariable UUID id, @RequestBody JobPositionDTO jobPositionDTO) {
-        return ResponseEntity.ok(jobPositionService.updateJobPosition(id, jobPositionDTO));
+    public ResponseEntity<?> updateJobPosition(@PathVariable UUID id, @RequestBody JobPositionDTO jobPositionDTO) {
+        try {
+            return ResponseEntity.ok(jobPositionService.updateJobPosition(id, jobPositionDTO));
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Validation Error",
+                    "message", e.getMessage(),
+                    "timestamp", java.time.Instant.now().toString()
+            ));
+
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "error", "Entity Not Found",
+                    "message", e.getMessage(),
+                    "timestamp", java.time.Instant.now().toString()
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "error", "Internal Server Error",
+                    "message", "An unexpected error occurred while creating the vacancy",
+                    "details", e.getMessage(),
+                    "type", e.getClass().getSimpleName(),
+                    "timestamp", java.time.Instant.now().toString()
+            ));
+        }
     }
 
     /**
