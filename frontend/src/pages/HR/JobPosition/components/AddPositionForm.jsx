@@ -397,8 +397,8 @@ const AddPositionForm = ({ isOpen, onClose, onSubmit }) => {
 
         } catch (err) {
             console.error('Error submitting form:', err);
-            showError(err.message || 'Failed to add position');
-            setError(err.message || 'Failed to add position');
+            showError(err?.response?.data?.message  || 'Failed to add position');
+            setError(err?.response?.data?.message || 'Failed to add position');
         } finally {
             setLoading(false);
         }

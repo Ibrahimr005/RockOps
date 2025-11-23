@@ -3,6 +3,7 @@ import { vacationBalanceService } from '../../../../services/hr/vacationBalanceS
 import { leaveRequestService } from '../../../../services/hr/leaveRequestService';
 import './VacationTab.scss';
 import LeaveRequestModal from "../../LeaveRequests/LeaveRequestModal.jsx";
+import ContentLoader from "../../../../components/common/ContentLoader/ContentLoader.jsx";
 
 const VacationTab = ({ employee, formatDate }) => {
     const [vacationBalance, setVacationBalance] = useState(null);
@@ -25,8 +26,8 @@ const VacationTab = ({ employee, formatDate }) => {
             // Fetch vacation balance
             const balanceResponse = await vacationBalanceService.getVacationBalance(employee.id);
             console.log('Vacation balance response:', balanceResponse);
-            setVacationBalance(balanceResponse.data);
-
+            setVacationBalance(balanceResponse.data.data);
+            console.log("ASSAAS"+ balanceResponse.data.data);
             // Fetch leave history
             const historyResponse = await leaveRequestService.getEmployeeLeaveRequests(employee.id);
             console.log('Leave history response:', historyResponse);
@@ -102,10 +103,7 @@ const VacationTab = ({ employee, formatDate }) => {
     if (loading) {
         return (
             <div className="vacation-info tab-panel">
-                <div className="loading-container">
-                    <div className="spinner"></div>
-                    <p>Loading vacation information...</p>
-                </div>
+               <ContentLoader />
             </div>
         );
     }

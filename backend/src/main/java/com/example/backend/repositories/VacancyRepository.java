@@ -14,6 +14,9 @@ public interface VacancyRepository extends JpaRepository<Vacancy, UUID> {
     List<Vacancy> findByJobPosition(JobPosition jobPosition);
     List<Vacancy> findByStatus(String status);
 
+
+    boolean existsByTitleIgnoreCase(String title);
+
     /**
      * Find vacancies by status and closing date between two dates
      * Used for finding vacancies closing soon

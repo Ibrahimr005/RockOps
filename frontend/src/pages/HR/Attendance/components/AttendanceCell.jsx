@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaClock, FaEdit } from 'react-icons/fa';
-// import './AttendanceCell.scss';
+import { FaTimes, FaCheck } from 'react-icons/fa';
 
 const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded }) => {
-    const [isEditing, setIsEditing] = useState(false);
+    const [isSelected, setIsSelected] = useState(false);
     const [tempData, setTempData] = useState({
         status: attendance?.status || 'ABSENT',
         checkIn: attendance?.checkIn || '',
@@ -22,19 +21,40 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
         { value: 'HALF_DAY', label: 'Half Day', color: 'half-day' }
     ];
 
+    // Update tempData when attendance changes
+    useEffect(() => {
+        setTempData({
+            status: attendance?.status || 'ABSENT',
+            checkIn: attendance?.checkIn || '',
+            checkOut: attendance?.checkOut || '',
+            hoursWorked: attendance?.hoursWorked || '',
+            notes: attendance?.notes || ''
+        });
+    }, [attendance]);
+
     // Close editor when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (cellRef.current && !cellRef.current.contains(event.target)) {
-                if (isEditing) {
-                    handleSave();
+                if (isSelected) {
+                    setIsSelected(false);
                 }
             }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isEditing, tempData]);
+    }, [isSelected]);
+
+    const handleCellClick = (e) => {
+        e.stopPropagation();
+        const isFuture = isFutureDay();
+        const isEditable = attendance?.isEditable !== false;
+
+        if (isEditable && !isFuture) {
+            setIsSelected(!isSelected);
+        }
+    };
 
     const handleStatusChange = (newStatus) => {
         setTempData(prev => ({ ...prev, status: newStatus }));
@@ -43,7 +63,7 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
         if (contractType === 'DAILY') {
             const updates = { status: newStatus };
             onUpdate(updates);
-            setIsEditing(false);
+            setIsSelected(false);
         }
     };
 
@@ -62,134 +82,219 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
         }
 
         onUpdate(updates);
-        setIsEditing(false);
+        setIsSelected(false);
+    };
+
+    const handleCancel = () => {
+        // Reset to original values
+        setTempData({
+            status: attendance?.status || 'ABSENT',
+            checkIn: attendance?.checkIn || '',
+            checkOut: attendance?.checkOut || '',
+            hoursWorked: attendance?.hoursWorked || '',
+            notes: attendance?.notes || ''
+        });
+        setIsSelected(false);
     };
 
     const getStatusDisplay = () => {
-        const statusConfig = statusOptions.find(opt => opt.value === (attendance?.status || 'ABSENT'));
+        const statusConfig = statusOptions.find(opt => opt.value === (tempData.status || 'ABSENT'));
         return statusConfig || statusOptions[1]; // Default to ABSENT
     };
 
-    const renderCompactView = () => {
-        const statusConfig = getStatusDisplay();
-        const isWeekend = attendance?.dayType === 'WEEKEND';
-        const isEditable = attendance?.isEditable !== false;
-        // Determine if the day is in the future
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Set to midnight for date-only comparison
-        const cellDate = attendance?.date ? new Date(attendance.date) : null;
-        if (cellDate) cellDate.setHours(0, 0, 0, 0);
-        const isFuture = cellDate && cellDate > today;
+    // Determine if the day is in the future
+    const isFutureDay = () => {
+        if (!attendance?.date) return false;
 
-        return (
-            <div
-                className={`attendance-cell ${statusConfig.color} ${isWeekend ? 'weekend' : ''} ${!isEditable || isFuture ? 'disabled' : ''} ${isFuture ? 'future' : ''}`}
-                onClick={() => isEditable && !isEditing && !isFuture && setIsEditing(true)}
-                title={statusConfig.label}
-            >
-                <span className="attendance-status-indicator">{statusConfig.label[0]}</span>
-                {attendance?.notes && <span className="has-notes">*</span>}
-                {renderExpandedInfo()}
-            </div>
-        );
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const cellDate = new Date(attendance.date);
+        cellDate.setHours(0, 0, 0, 0);
+
+        return cellDate > today;
     };
 
-    const renderEditMode = () => {
-        return (
-            <div className="attendance-cell-editor" ref={cellRef}>
-                <div className="editor-header">
-                    <span className="day-label">Day {day}</span>
-                    <button className="save-btn" onClick={handleSave}>Save</button>
-                </div>
+    // Format time to 12-hour format
+    const formatTime12Hour = (time24) => {
+        if (!time24) return '';
 
-                <div className="status-options">
-                    {statusOptions.map(option => (
-                        <button
-                            key={option.value}
-                            className={`status-option ${option.color} ${tempData.status === option.value ? 'selected' : ''}`}
-                            onClick={() => handleStatusChange(option.value)}
-                        >
-                            {option.label}
-                        </button>
-                    ))}
-                </div>
+        try {
+            const [hours, minutes] = time24.split(':').map(Number);
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const hours12 = hours % 12 || 12;
+            return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+        } catch (error) {
+            return time24;
+        }
+    };
 
-                {/* Contract-specific inputs */}
-                {contractType === 'MONTHLY' && (tempData.status === 'PRESENT' || tempData.status === 'LATE' || tempData.status === 'HALF_DAY') && (
-                    <div className="time-inputs">
-                        <div className="input-group">
-                            <label>Check In</label>
-                            <input
-                                type="time"
-                                value={tempData.checkIn}
-                                onChange={(e) => setTempData(prev => ({ ...prev, checkIn: e.target.value }))}
-                            />
-                        </div>
-                        <div className="input-group">
-                            <label>Check Out</label>
-                            <input
-                                type="time"
-                                value={tempData.checkOut}
-                                onChange={(e) => setTempData(prev => ({ ...prev, checkOut: e.target.value }))}
-                            />
-                        </div>
-                    </div>
-                )}
+    // Calculate worked hours from check-in/check-out times
+    const calculateWorkedHours = (checkIn, checkOut) => {
+        if (!checkIn || !checkOut) return null;
 
-                {contractType === 'HOURLY' && tempData.status === 'PRESENT' && (
-                    <div className="hours-input">
-                        <label>Hours Worked</label>
-                        <input
-                            type="number"
-                            min="0"
-                            max="24"
-                            step="0.5"
-                            value={tempData.hoursWorked}
-                            onChange={(e) => setTempData(prev => ({ ...prev, hoursWorked: e.target.value }))}
-                            placeholder="Enter hours"
-                        />
-                    </div>
-                )}
+        try {
+            const [inHour, inMin] = checkIn.split(':').map(Number);
+            const [outHour, outMin] = checkOut.split(':').map(Number);
 
-                <div className="notes-input">
-                    <label>Notes</label>
-                    <input
-                        type="text"
-                        value={tempData.notes}
-                        onChange={(e) => setTempData(prev => ({ ...prev, notes: e.target.value }))}
-                        placeholder="Add notes..."
-                    />
-                </div>
-            </div>
-        );
+            const inMinutes = inHour * 60 + inMin;
+            const outMinutes = outHour * 60 + outMin;
+
+            let diffMinutes = outMinutes - inMinutes;
+            if (diffMinutes < 0) diffMinutes += 24 * 60; // Handle overnight shift
+
+            const hours = Math.floor(diffMinutes / 60);
+            const minutes = diffMinutes % 60;
+
+            return { hours, minutes, total: (diffMinutes / 60).toFixed(1) };
+        } catch (error) {
+            return null;
+        }
     };
 
     const renderExpandedInfo = () => {
         if (!isExpanded || !attendance) return null;
 
-        return (
-            <div className="expanded-info">
-                {contractType === 'MONTHLY' && attendance.checkIn && (
-                    <div className="time-info">
-                        <FaClock size={10} />
-                        <span>{attendance.checkIn} - {attendance.checkOut || '?'}</span>
+        const isPresent = attendance.status === 'PRESENT' || attendance.status === 'LATE' || attendance.status === 'HALF_DAY';
+
+        // For MONTHLY contract - show times and calculated hours
+        if (contractType === 'MONTHLY' && isPresent && attendance.checkIn) {
+            const workedHours = attendance.checkOut ? calculateWorkedHours(attendance.checkIn, attendance.checkOut) : null;
+
+            return (
+                <div className="expanded-info-clean">
+                    <div className="time-display">
+                        <span className="time-in">{formatTime12Hour(attendance.checkIn)}</span>
+                        <span className="time-separator">→</span>
+                        <span className="time-out">{attendance.checkOut ? formatTime12Hour(attendance.checkOut) : '–'}</span>
                     </div>
-                )}
-                {contractType === 'HOURLY' && attendance.hoursWorked && (
-                    <div className="hours-info">{attendance.hoursWorked}h</div>
-                )}
-            </div>
-        );
+                    {workedHours && (
+                        <div className="hours-total">
+                            {workedHours.hours}h {workedHours.minutes > 0 && `${workedHours.minutes}m`}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // For HOURLY contract - show hours worked
+        if (contractType === 'HOURLY' && isPresent &&
+            attendance.hoursWorked !== undefined &&
+            attendance.hoursWorked !== null) {
+            return (
+                <div className="expanded-info-clean">
+                    <div className="hours-total hourly">
+                        {attendance.hoursWorked}h
+                    </div>
+                </div>
+            );
+        }
+
+        return null;
     };
 
-    if (isEditing) {
-        return renderEditMode();
-    }
+    const statusConfig = getStatusDisplay();
+    const isWeekend = attendance?.dayType === 'WEEKEND';
+    const isEditable = attendance?.isEditable !== false;
+    const isFuture = isFutureDay();
 
     return (
-        <>
-            {renderCompactView()}
-        </>
+        <div
+            ref={cellRef}
+            className={`attendance-cell ${statusConfig.color} ${isWeekend ? 'weekend' : ''} ${!isEditable || isFuture ? 'disabled' : ''} ${isFuture ? 'future' : ''} ${isSelected ? 'selected' : ''}`}
+            onClick={handleCellClick}
+            title={isFuture ? 'Future date - cannot edit' : statusConfig.label}
+        >
+            <div className="cell-main-content">
+                <span className="attendance-status-indicator">{statusConfig.label[0]}</span>
+                {attendance?.notes && <span className="has-notes">*</span>}
+                {renderExpandedInfo()}
+            </div>
+
+            {/* Edit Panel - Appears when selected */}
+            {isSelected && (
+                <div className="edit-panel" onClick={(e) => e.stopPropagation()}>
+                    <div className="edit-header">
+                        <span className="day-label">Day {day}</span>
+                        <div className="edit-actions">
+                            <button
+                                className="action-btn save-btn"
+                                onClick={handleSave}
+                                title="Save changes"
+                            >
+                                <FaCheck />
+                            </button>
+                            <button
+                                className="action-btn cancel-btn"
+                                onClick={handleCancel}
+                                title="Cancel"
+                            >
+                                <FaTimes />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="status-options">
+                        {statusOptions.map(option => (
+                            <button
+                                key={option.value}
+                                className={`status-option ${option.color} ${tempData.status === option.value ? 'selected' : ''}`}
+                                onClick={() => handleStatusChange(option.value)}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Contract-specific inputs */}
+                    {contractType === 'MONTHLY' && (tempData.status === 'PRESENT' || tempData.status === 'LATE' || tempData.status === 'HALF_DAY') && (
+                        <div className="time-inputs">
+                            <div className="input-group">
+                                <label>Check In</label>
+                                <input
+                                    type="time"
+                                    value={tempData.checkIn}
+                                    onChange={(e) => setTempData(prev => ({ ...prev, checkIn: e.target.value }))}
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Check Out</label>
+                                <input
+                                    type="time"
+                                    value={tempData.checkOut}
+                                    onChange={(e) => setTempData(prev => ({ ...prev, checkOut: e.target.value }))}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {contractType === 'HOURLY' && tempData.status === 'PRESENT' && (
+                        <div className="hours-input">
+                            <label>Hours Worked</label>
+                            <input
+                                type="number"
+                                min="0"
+                                max="24"
+                                step="0.5"
+                                value={tempData.hoursWorked}
+                                onChange={(e) => setTempData(prev => ({ ...prev, hoursWorked: e.target.value }))}
+                                placeholder="Enter hours"
+                            />
+                        </div>
+                    )}
+
+                    <div className="notes-input">
+                        <label>Notes</label>
+                        <input
+                            type="text"
+                            value={tempData.notes}
+                            onChange={(e) => setTempData(prev => ({ ...prev, notes: e.target.value }))}
+                            placeholder="Add notes..."
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 

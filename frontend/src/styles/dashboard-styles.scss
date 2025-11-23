@@ -624,8 +624,7 @@
 }
 
 .user-action-button,
-[class*="-action-button"] {
-  display: flex;
+{  display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;

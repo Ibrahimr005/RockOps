@@ -385,10 +385,10 @@ const WarehouseDetails = () => {
                 </div>
 
                 <div className="unified-tab-content-container">
-                  <div className="tab-content-header">
-                    <h2 className="tab-title">{getTabHeader()}</h2>
-                    <div className="tab-header-line"></div>
-                  </div>
+                  {/*<div className="tab-content-header">*/}
+                  {/*  <h2 className="tab-title">{getTabHeader()}</h2>*/}
+                  {/*  <div className="tab-header-line"></div>*/}
+                  {/*</div>*/}
 
                   <div className="tab-content-body">
                     {renderTabContent()}
