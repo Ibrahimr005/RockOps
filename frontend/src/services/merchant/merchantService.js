@@ -1,4 +1,3 @@
-// src/services/merchantService.js
 import apiClient from '../../utils/apiClient.js';
 import { MERCHANT_ENDPOINTS } from '../../config/api.config.js';
 
@@ -13,5 +12,10 @@ export const merchantService = {
 
     getById: (id) => {
         return apiClient.get(MERCHANT_ENDPOINTS.BY_ID(id));
+    },
+
+    getTransactions: async (merchantId) => {
+        const response = await apiClient.get(MERCHANT_ENDPOINTS.TRANSACTIONS(merchantId));
+        return response.data || response;
     }
-}; 
+};

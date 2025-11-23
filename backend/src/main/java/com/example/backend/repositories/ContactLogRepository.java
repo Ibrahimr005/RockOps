@@ -1,6 +1,6 @@
 package com.example.backend.repositories;
 
-import com.example.backend.models.ContactLog;
+import com.example.backend.models.contact.ContactLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

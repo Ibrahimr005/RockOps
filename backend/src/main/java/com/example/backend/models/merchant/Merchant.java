@@ -1,8 +1,9 @@
 package com.example.backend.models.merchant;
 
+import com.example.backend.models.equipment.Document;
 import com.example.backend.models.site.Site;
 import com.example.backend.models.warehouse.ItemCategory;
-import com.example.backend.models.Contact;
+import com.example.backend.models.contact.Contact;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -75,4 +76,7 @@ public class Merchant {
     @JsonManagedReference("merchant-contacts")
     @Builder.Default
     private List<Contact> contacts = new ArrayList<>();
+
+    @OneToMany(mappedBy = "entityId", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Document> documents = new ArrayList<>();
 }

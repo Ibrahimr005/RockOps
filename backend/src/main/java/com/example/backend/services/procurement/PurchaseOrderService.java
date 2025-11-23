@@ -28,9 +28,8 @@ public class PurchaseOrderService {
     private final OfferTimelineService offerTimelineService;
     private final ItemRepository itemRepository;
     private final WarehouseRepository warehouseRepository;
-    private final PurchaseOrderIssueRepository issueRepository;
-
-    private final PurchaseOrderDeliveryRepository deliveryRepository;
+    private final DeliverySessionRepository deliverySessionRepository;
+    private final DeliveryItemReceiptRepository deliveryItemReceiptRepository;
 
     @Autowired
     private EntityManager entityManager;
@@ -44,8 +43,8 @@ public class PurchaseOrderService {
             OfferTimelineService offerTimelineService,
             ItemRepository itemRepository,
             WarehouseRepository warehouseRepository,
-            PurchaseOrderIssueRepository issueRepository,
-            PurchaseOrderDeliveryRepository deliveryRepository) { // ← ADD THIS
+            DeliverySessionRepository deliverySessionRepository,
+            DeliveryItemReceiptRepository deliveryItemReceiptRepository) {
         this.offerRepository = offerRepository;
         this.offerItemRepository = offerItemRepository;
         this.purchaseOrderRepository = purchaseOrderRepository;
@@ -53,13 +52,10 @@ public class PurchaseOrderService {
         this.offerTimelineService = offerTimelineService;
         this.itemRepository = itemRepository;
         this.warehouseRepository = warehouseRepository;
-        this.issueRepository = issueRepository;
-        this.deliveryRepository = deliveryRepository; // ← ADD THIS
+        this.deliverySessionRepository = deliverySessionRepository;
+        this.deliveryItemReceiptRepository = deliveryItemReceiptRepository;
     }
 
-    /**
-     * Finalizes an offer and creates a purchase order from the finalized items
-     */
     @Transactional
     public PurchaseOrder finalizeOfferAndCreatePurchaseOrder(UUID offerId, List<UUID> finalizedItemIds, String username) {
         Offer offer = offerRepository.findById(offerId)
@@ -110,6 +106,7 @@ public class PurchaseOrderService {
         purchaseOrder.setPaymentTerms("Net 30");
         purchaseOrder.setExpectedDeliveryDate(LocalDateTime.now().plusDays(30));
         purchaseOrder.setPurchaseOrderItems(new ArrayList<>());
+        purchaseOrder.setDeliverySessions(new ArrayList<>());
 
         String currency = finalizedItems.get(0).getCurrency();
         purchaseOrder.setCurrency(currency);
@@ -128,6 +125,7 @@ public class PurchaseOrderService {
             poItem.setPurchaseOrder(purchaseOrder);
             poItem.setOfferItem(offerItem);
             poItem.setItemType(offerItem.getRequestOrderItem().getItemType());
+            poItem.setItemReceipts(new ArrayList<>());
 
             if (offerItem.getMerchant() != null) {
                 poItem.setMerchant(offerItem.getMerchant());
@@ -149,9 +147,6 @@ public class PurchaseOrderService {
         return savedPurchaseOrder;
     }
 
-    /**
-     * Generates a random PO number
-     */
     private String generatePoNumber() {
         String datePart = LocalDateTime.now().toString().substring(0, 10).replace("-", "");
         int randomNum = new Random().nextInt(10000);
@@ -159,9 +154,6 @@ public class PurchaseOrderService {
         return datePart + "-" + randomPart;
     }
 
-    /**
-     * Get all offers pending finance review
-     */
     public List<Offer> getOffersPendingFinanceReview() {
         return offerRepository.findByStatus("ACCEPTED")
                 .stream()
@@ -173,9 +165,6 @@ public class PurchaseOrderService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get purchase order by offer ID
-     */
     public PurchaseOrder getPurchaseOrderByOffer(UUID offerId) {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
@@ -188,24 +177,15 @@ public class PurchaseOrderService {
         return matchingPO.orElse(null);
     }
 
-    /**
-     * Get all purchase orders
-     */
     public List<PurchaseOrder> getAllPurchaseOrders() {
         return purchaseOrderRepository.findAll();
     }
 
-    /**
-     * Get purchase order by ID
-     */
     public PurchaseOrder getPurchaseOrderById(UUID id) {
         return purchaseOrderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
     }
 
-    /**
-     * Update purchase order status
-     */
     @Transactional
     public PurchaseOrder updatePurchaseOrderStatus(UUID id, String status, String username) {
         PurchaseOrder po = purchaseOrderRepository.findById(id)
@@ -222,493 +202,77 @@ public class PurchaseOrderService {
         return purchaseOrderRepository.save(po);
     }
 
-    // Helper class for consolidating inventory updates
-    private static class WarehouseInventoryUpdate {
-        ItemType itemType;
-        Merchant merchant;
-        double quantity;
-        PurchaseOrder purchaseOrder;
-    }
-
-    @Transactional
-    public ProcessDeliveryResponseDTO processDelivery(ProcessDeliveryRequestDTO request, String username) {
-        System.out.println("=== Starting processDelivery (DTO SOLUTION) ===");
-
-        // Process everything as before, but build a DTO response
-        PurchaseOrder purchaseOrder = purchaseOrderRepository.findById(request.getPurchaseOrderId())
-                .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
-
-        // Store values for response BEFORE any processing
-        ProcessDeliveryResponseDTO response = ProcessDeliveryResponseDTO.builder()
-                .purchaseOrderId(purchaseOrder.getId())
-                .poNumber(purchaseOrder.getPoNumber())
-                .totalAmount(purchaseOrder.getTotalAmount())
-                .currency(purchaseOrder.getCurrency())
-                .build();
-
-        // Get warehouse WITHOUT navigating through Site
-        UUID warehouseId = purchaseOrder.getRequestOrder().getRequesterId();
-        Warehouse warehouse = warehouseRepository.findById(warehouseId)
-                .orElseThrow(() -> new RuntimeException("Warehouse not found"));
-
-        Map<String, WarehouseInventoryUpdate> inventoryUpdates = new HashMap<>();
-
-        // Process items
-        for (ProcessDeliveryRequestDTO.DeliveryItemDTO deliveryItem : request.getItems()) {
-            PurchaseOrderItem poItem = purchaseOrderItemRepository.findById(deliveryItem.getPurchaseOrderItemId())
-                    .orElseThrow(() -> new RuntimeException("Purchase Order Item not found"));
-
-            ItemType itemType = poItem.getItemType();
-
-            // Create delivery
-            PurchaseOrderDelivery delivery = PurchaseOrderDelivery.builder()
-                    .purchaseOrder(purchaseOrder)
-                    .purchaseOrderItem(poItem)
-                    .receivedGoodQuantity(deliveryItem.getReceivedGood() != null ? deliveryItem.getReceivedGood() : 0.0)
-                    .deliveredAt(LocalDateTime.now())
-                    .processedBy(username)
-                    .deliveryNotes(request.getGeneralNotes())
-                    .isRedelivery(false)
-                    .issues(new ArrayList<>())
-                    .build();
-
-            delivery = deliveryRepository.save(delivery);
-
-            // Process issues
-            if (deliveryItem.getIssues() != null) {
-                for (ProcessDeliveryRequestDTO.IssueDTO issueDTO : deliveryItem.getIssues()) {
-                    if (issueDTO.getQuantity() != null && issueDTO.getQuantity() > 0) {
-                        IssueType issueType = mapIssueType(issueDTO.getType());
-
-                        PurchaseOrderIssue issue = PurchaseOrderIssue.builder()
-                                .purchaseOrder(purchaseOrder)
-                                .purchaseOrderItem(poItem)
-                                .delivery(delivery)
-                                .issueType(issueType)
-                                .issueStatus(IssueStatus.REPORTED)
-                                .reportedBy(username)
-                                .reportedAt(LocalDateTime.now())
-                                .issueDescription(issueDTO.getNotes())
-                                .affectedQuantity(issueDTO.getQuantity())
-                                .build();
-
-                        issueRepository.save(issue);
-                    }
-                }
-            }
-
-            // Update received quantity
-            Double currentReceived = poItem.getReceivedQuantity() != null ? poItem.getReceivedQuantity() : 0.0;
-            Double goodQuantityReceived = deliveryItem.getReceivedGood() != null ? deliveryItem.getReceivedGood() : 0.0;
-            poItem.setReceivedQuantity(currentReceived + goodQuantityReceived);
-            poItem.setReceivedAt(LocalDateTime.now());
-            poItem.setReceivedBy(username);
-
-            // Update item status
-            updateItemStatus(poItem);
-            purchaseOrderItemRepository.save(poItem);
-
-            // Track inventory updates
-            if (goodQuantityReceived > 0) {
-                String merchantId = poItem.getMerchant() != null ?
-                        poItem.getMerchant().getId().toString() : "no-merchant";
-                String inventoryKey = itemType.getId().toString() + "-" + merchantId;
-
-                if (inventoryUpdates.containsKey(inventoryKey)) {
-                    inventoryUpdates.get(inventoryKey).quantity += goodQuantityReceived;
-                } else {
-                    WarehouseInventoryUpdate newUpdate = new WarehouseInventoryUpdate();
-                    newUpdate.itemType = itemType;
-                    newUpdate.merchant = poItem.getMerchant();
-                    newUpdate.quantity = goodQuantityReceived;
-                    newUpdate.purchaseOrder = purchaseOrder;
-                    inventoryUpdates.put(inventoryKey, newUpdate);
-                }
-            }
-        }
-
-        // Create inventory WITHOUT navigating through Site
-        for (WarehouseInventoryUpdate update : inventoryUpdates.values()) {
-            Item newItem = Item.builder()
-                    .itemType(update.itemType)
-                    .warehouse(warehouse)
-                    .quantity((int) update.quantity)
-                    .itemStatus(ItemStatus.IN_WAREHOUSE)
-                    .resolved(false)
-                    .createdAt(LocalDateTime.now())
-                    .createdBy(username)
-                    .itemSource(ItemSource.PURCHASE_ORDER)
-                    .sourceReference(purchaseOrder.getPoNumber())
-                    .merchantName(update.merchant != null ? update.merchant.getName() : "Unknown")
-                    .comment("Delivery from PO")
-                    .build();
-
-            itemRepository.save(newItem);
-        }
-
-        // Update PO status WITHOUT navigating relationships
-        String newStatus = calculatePurchaseOrderStatus(purchaseOrder.getId());
-        purchaseOrder.setStatus(newStatus);
-        purchaseOrder.setUpdatedAt(LocalDateTime.now());
-        purchaseOrderRepository.save(purchaseOrder);
-
-        // Complete the response DTO
-        response.setPoStatus(newStatus);
-        response.setSuccess(true);
-        response.setMessage("Delivery processed successfully");
-
-        return response;  // Return ONLY the DTO, not the entity!
-    }
-
-    // Helper method to calculate PO status WITHOUT loading the entity graph
-    private String calculatePurchaseOrderStatus(UUID purchaseOrderId) {
-        // Use a query to get the item statuses without loading entities
-        String query = "SELECT poi.status FROM PurchaseOrderItem poi WHERE poi.purchaseOrder.id = :poId";
-        List<String> itemStatuses = entityManager.createQuery(query, String.class)
-                .setParameter("poId", purchaseOrderId)
-                .getResultList();
-
-        long completedCount = itemStatuses.stream().filter("COMPLETED"::equals).count();
-        long partialCount = itemStatuses.stream().filter("PARTIAL"::equals).count();
-
-        // Check for unresolved issues
-        long unresolvedIssues = issueRepository.countByPurchaseOrderIdAndIssueStatus(
-                purchaseOrderId, IssueStatus.REPORTED);
-
-        if (unresolvedIssues > 0) {
-            return "DISPUTED";
-        } else if (completedCount == itemStatuses.size()) {
-            return "COMPLETED";
-        } else if (completedCount > 0 || partialCount > 0) {
-            return "PARTIAL";
-        } else {
-            return "PENDING";
-        }
-    }
-
-    // Helper to map issue types
-    private IssueType mapIssueType(String type) {
-        String upperType = type.toUpperCase().replace(" ", "_");
-        switch (upperType) {
-            case "NEVER_ARRIVED":
-            case "NOT_ARRIVED":
-                return IssueType.NOT_ARRIVED;
-            case "DAMAGED":
-                return IssueType.DAMAGED;
-            case "WRONG_ITEM":
-                return IssueType.WRONG_ITEM;
-            case "OTHER":
-            default:
-                return IssueType.OTHER;
-        }
-    }
-
-    /**
-     * Calculate and update item status based on received quantities and issues
-     * HANDLES: Normal delivery, shortage acceptance, redelivery pending
-     */
-    private void updateItemStatus(PurchaseOrderItem poItem) {
-        double ordered = poItem.getQuantity();
-        double received = poItem.getReceivedQuantity() != null ? poItem.getReceivedQuantity() : 0.0;
-
-        // Get all issues for this item
-        List<PurchaseOrderIssue> allIssues = issueRepository.findByPurchaseOrderItemId(poItem.getId());
-
-        // Calculate total from issues
-        double totalIssuesQuantity = allIssues.stream()
-                .filter(i -> i.getAffectedQuantity() != null)
-                .mapToDouble(PurchaseOrderIssue::getAffectedQuantity)
-                .sum();
-
-        double totalAccounted = received + totalIssuesQuantity;
-
-        System.out.println("Status Calculation:");
-        System.out.println("  Ordered: " + ordered);
-        System.out.println("  Received Good: " + received);
-        System.out.println("  Issues Quantity: " + totalIssuesQuantity);
-        System.out.println("  Total Accounted: " + totalAccounted);
-
-        // Check if any resolved issues are redelivery (means we're waiting)
-        boolean hasRedeliveryPending = allIssues.stream()
-                .anyMatch(i -> i.getIssueStatus() == IssueStatus.RESOLVED
-                        && i.getResolutionType() == PurchaseOrderResolutionType.REDELIVERY);
-
-        // Check if all issues are resolved (non-redelivery)
-        boolean allIssuesClosed = allIssues.stream()
-                .filter(i -> i.getIssueStatus() == IssueStatus.REPORTED)
-                .count() == 0;
-
-        if (hasRedeliveryPending) {
-            poItem.setStatus("PENDING");  // Waiting for redelivery
-            System.out.println("→ Status: PENDING (redelivery pending)");
-        } else if (totalAccounted >= ordered) {
-            poItem.setStatus("COMPLETED");  // Fully accounted
-            System.out.println("→ Status: COMPLETED (all accounted)");
-        } else if (allIssuesClosed && totalAccounted > 0 && totalAccounted < ordered) {
-            // All issues resolved with accept shortage
-            poItem.setStatus("COMPLETED");
-            System.out.println("→ Status: COMPLETED (shortage accepted)");
-        } else if (totalAccounted > 0) {
-            poItem.setStatus("PARTIAL");
-            System.out.println("→ Status: PARTIAL");
-        } else {
-            poItem.setStatus("PENDING");
-            System.out.println("→ Status: PENDING");
-        }
-    }
-
-    /**
-     * Update warehouse inventory with consolidated quantities
-     * Creates a single Item entry per itemType-merchant combination
-     */
-    private void updateWarehouseInventoryConsolidated(Warehouse warehouse, WarehouseInventoryUpdate update, String username) {
-        System.out.println("\n>>> Updating warehouse inventory (consolidated) <<<");
-        System.out.println("Warehouse: " + warehouse.getName());
-        System.out.println("Item Type: " + update.itemType.getName());
-        System.out.println("Consolidated Quantity: " + update.quantity);
-        System.out.println("From Purchase Order: " + update.purchaseOrder.getPoNumber());
-
-        String merchantName = update.merchant != null ?
-                update.merchant.getName() :
-                "Unknown Merchant";
-
-        Item newItem = Item.builder()
-                .itemType(update.itemType)
-                .warehouse(warehouse)
-                .quantity((int) update.quantity)
-                .itemStatus(ItemStatus.IN_WAREHOUSE)
-                .resolved(false)
-                .createdAt(LocalDateTime.now())
-                .createdBy(username)
-                .itemSource(ItemSource.PURCHASE_ORDER)
-                .sourceReference(update.purchaseOrder.getPoNumber())
-                .merchantName(merchantName)
-                .comment("Consolidated delivery from PO")
-                .build();
-
-        itemRepository.save(newItem);
-
-        System.out.println("✓ Created consolidated warehouse entry");
-        System.out.println("  Source: PURCHASE_ORDER");
-        System.out.println("  PO Number: " + newItem.getSourceReference());
-        System.out.println("  Merchant: " + newItem.getMerchantName());
-        System.out.println("  Quantity: " + newItem.getQuantity());
-    }
-
-    /**
-     * Update purchase order status based on received items
-     * PENDING -> PARTIAL -> COMPLETED
-     */
-    /**
-     * Update purchase order status based on received items
-     * CRITICAL: Check for unresolved issues FIRST - DISPUTED takes priority
-     */
-    private void updatePurchaseOrderStatusAfterReceiving(PurchaseOrder purchaseOrder) {
-        List<PurchaseOrderItem> items = purchaseOrder.getPurchaseOrderItems();
-
-        long totalItems = items.size();
-        long completedItems = items.stream()
-                .filter(item -> "COMPLETED".equals(item.getStatus()))
-                .count();
-        long partialItems = items.stream()
-                .filter(item -> "PARTIAL".equals(item.getStatus()))
-                .count();
-
-        System.out.println("\n>>> Calculating PO Status <<<");
-        System.out.println("Total items: " + totalItems);
-        System.out.println("Completed items: " + completedItems);
-        System.out.println("Partial items: " + partialItems);
-
-        // CHECK FOR UNRESOLVED ISSUES FIRST - DISPUTED takes priority over everything
-        long unresolvedIssues = issueRepository.countByPurchaseOrderIdAndIssueStatus(
-                purchaseOrder.getId(), IssueStatus.REPORTED);
-
-        System.out.println("Unresolved issues: " + unresolvedIssues);
-
-        if (unresolvedIssues > 0) {
-            purchaseOrder.setStatus("DISPUTED");
-            System.out.println("Result: DISPUTED (has " + unresolvedIssues + " unresolved issues)");
-        } else if (completedItems == totalItems) {
-            purchaseOrder.setStatus("COMPLETED");
-            System.out.println("Result: COMPLETED (all items received)");
-        } else if (completedItems > 0 || partialItems > 0) {
-            purchaseOrder.setStatus("PARTIAL");
-            System.out.println("Result: PARTIAL (some items received)");
-        } else {
-            purchaseOrder.setStatus("PENDING");
-            System.out.println("Result: PENDING (no items received yet)");
-        }
-    }
-
-    /**
-     * Resolve issues for purchase order items
-     * Updates issue status and may change PO status based on resolution
-     */
-    /**
-     * Resolve multiple issues with individual resolution types
-     * Each issue can have its own resolution type and notes
-     */
-    @Transactional
-    public PurchaseOrder resolveIssues(UUID purchaseOrderId, List<ResolveIssuesRequestDTO.IssueResolution> resolutions, String username) {
-        System.out.println("=== Starting resolveIssues (Multiple Resolutions) ===");
-        System.out.println("Purchase Order ID: " + purchaseOrderId);
-        System.out.println("Number of resolutions: " + resolutions.size());
-
-        // 1. Get the purchase order
-        PurchaseOrder purchaseOrder = purchaseOrderRepository.findById(purchaseOrderId)
-                .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
-
-        System.out.println("Found Purchase Order: " + purchaseOrder.getPoNumber());
-
-        // 2. Validate PO is in DISPUTED status
-        if (!"DISPUTED".equals(purchaseOrder.getStatus())) {
-            throw new IllegalStateException(
-                    "Cannot resolve issues for purchase order not in DISPUTED status. Current status: " + purchaseOrder.getStatus()
-            );
-        }
-
-        // 3. Process each resolution
-        for (ResolveIssuesRequestDTO.IssueResolution resolution : resolutions) {
-            System.out.println("\n--- Processing resolution for issue: " + resolution.getIssueId() + " ---");
-            System.out.println("Resolution Type: " + resolution.getResolutionType());
-            System.out.println("Resolution Notes: " + resolution.getResolutionNotes());
-
-            // Find the issue
-            PurchaseOrderIssue issue = issueRepository.findById(resolution.getIssueId())
-                    .orElseThrow(() -> new RuntimeException("Issue not found: " + resolution.getIssueId()));
-
-            // Validate issue belongs to this PO
-            if (!issue.getPurchaseOrder().getId().equals(purchaseOrderId)) {
-                throw new IllegalArgumentException(
-                        "Issue " + resolution.getIssueId() + " does not belong to purchase order " + purchaseOrderId
-                );
-            }
-
-            // Validate issue is in REPORTED status
-            if (issue.getIssueStatus() != IssueStatus.REPORTED) {
-                System.out.println("⚠️ WARNING: Issue " + issue.getId() + " is already " + issue.getIssueStatus());
-                continue; // Skip already resolved issues
-            }
-
-            // Update the issue with resolution details
-            issue.setIssueStatus(IssueStatus.RESOLVED);
-            issue.setResolutionType(resolution.getResolutionType());
-            issue.setResolvedBy(username);
-            issue.setResolvedAt(LocalDateTime.now());
-            issue.setResolutionNotes(resolution.getResolutionNotes());
-            issueRepository.save(issue);
-
-            System.out.println("✓ Issue resolved successfully");
-
-
-            // Update the associated purchase order item status
-            PurchaseOrderItem poItem = issue.getPurchaseOrderItem();
-            updateItemStatus(poItem);  // ← Use new method instead
-            purchaseOrderItemRepository.save(poItem);
-        }
-
-        // 4. Check if there are any remaining unresolved issues
-        long remainingIssues = issueRepository.countByPurchaseOrderIdAndIssueStatus(
-                purchaseOrderId, IssueStatus.REPORTED);
-
-        System.out.println("\n>>> Remaining unresolved issues: " + remainingIssues);
-
-        // 5. Update purchase order status
-        updatePurchaseOrderStatusAfterResolution(purchaseOrder);
-
-        purchaseOrder.setUpdatedAt(LocalDateTime.now());
-        PurchaseOrder savedPO = purchaseOrderRepository.save(purchaseOrder);
-
-        System.out.println("=== resolveIssues completed successfully ===");
-        System.out.println("Final PO Status: " + savedPO.getStatus());
-
-        return savedPO;
-    }
-
-
-    /**
-     * Update purchase order status after issue resolution
-     * CRITICAL: Check if there are STILL unresolved issues
-     */
-    private void updatePurchaseOrderStatusAfterResolution(PurchaseOrder purchaseOrder) {
-        List<PurchaseOrderItem> items = purchaseOrder.getPurchaseOrderItems();
-
-        long totalItems = items.size();
-        long completedItems = items.stream()
-                .filter(item -> "COMPLETED".equals(item.getStatus()))
-                .count();
-        long pendingItems = items.stream()
-                .filter(item -> "PENDING".equals(item.getStatus()))
-                .count();
-        long partialItems = items.stream()
-                .filter(item -> "PARTIAL".equals(item.getStatus()))
-                .count();
-
-        System.out.println("\n>>> Calculating PO Status After Resolution <<<");
-        System.out.println("Total items: " + totalItems);
-        System.out.println("Completed items: " + completedItems);
-        System.out.println("Pending items: " + pendingItems);
-        System.out.println("Partial items: " + partialItems);
-
-        // CHECK IF THERE ARE STILL UNRESOLVED ISSUES
-        long remainingIssues = issueRepository.countByPurchaseOrderIdAndIssueStatus(
-                purchaseOrder.getId(), IssueStatus.REPORTED);
-
-        System.out.println("Remaining unresolved issues: " + remainingIssues);
-
-        if (remainingIssues > 0) {
-            // Still has unresolved issues - stay DISPUTED
-            purchaseOrder.setStatus("DISPUTED");
-            System.out.println("Result: DISPUTED (" + remainingIssues + " issues remaining)");
-        } else if (completedItems == totalItems) {
-            purchaseOrder.setStatus("COMPLETED");
-            System.out.println("Result: COMPLETED");
-        } else if (pendingItems > 0 || partialItems > 0) {
-            purchaseOrder.setStatus("PARTIAL");
-            System.out.println("Result: PARTIAL");
-        } else {
-            purchaseOrder.setStatus("PENDING");
-            System.out.println("Result: PENDING");
-        }
-    }
-    /**
-     * Get all issues for a purchase order as DTOs
-     */
-    public List<PurchaseOrderIssueDTO> getIssuesForPurchaseOrder(UUID purchaseOrderId) {
-        System.out.println("\n=== FETCHING ISSUES FOR PO: " + purchaseOrderId + " ===");
-
-        // Get entities with JOIN FETCH
-        List<PurchaseOrderIssue> issues = issueRepository.findByPurchaseOrderIdWithDetails(purchaseOrderId);
-
-        System.out.println("Found " + issues.size() + " issues in database");
-
-        // Convert to DTOs
-        List<PurchaseOrderIssueDTO> dtos = issues.stream()
-                .map(this::convertIssueToDTO)
+    @Transactional(readOnly = true)
+    public PurchaseOrderDTO getPurchaseOrderWithDeliveries(UUID id) {
+        PurchaseOrder po = purchaseOrderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("PO not found"));
+
+        PurchaseOrderDTO dto = convertToDTO(po);
+
+        List<DeliverySessionDTO> sessions = po.getDeliverySessions().stream()
+                .map(this::convertDeliverySessionToDTO)
                 .toList();
+        dto.setDeliverySessions(sessions);
 
-        // Log for debugging
-        dtos.forEach(dto -> {
-            System.out.println("  - Issue: " + dto.getIssueType() +
-                    " | Quantity: " + dto.getAffectedQuantity() +
-                    " | Item: " + dto.getItemTypeName() +
-                    " | Unit: " + dto.getMeasuringUnit());
-        });
+        for (PurchaseOrderItemDTO itemDTO : dto.getPurchaseOrderItems()) {
+            PurchaseOrderItem item = po.getPurchaseOrderItems().stream()
+                    .filter(i -> i.getId().equals(itemDTO.getId()))
+                    .findFirst()
+                    .orElseThrow();
 
-        System.out.println("===========================================\n");
+            List<DeliveryItemReceiptDTO> receipts = item.getItemReceipts().stream()
+                    .map(this::convertReceiptToDTO)
+                    .toList();
+            itemDTO.setItemReceipts(receipts);
 
-        return dtos;
+            double totalGood = item.getItemReceipts().stream()
+                    .mapToDouble(DeliveryItemReceipt::getGoodQuantity)
+                    .sum();
+
+            double totalIssuesNotRedelivering = item.getItemReceipts().stream()
+                    .flatMap(r -> r.getIssues().stream())
+                    .filter(i -> i.getResolutionType() != null && i.getResolutionType() != PurchaseOrderResolutionType.REDELIVERY)
+                    .mapToDouble(PurchaseOrderIssue::getAffectedQuantity)
+                    .sum();
+
+            itemDTO.setRemainingQuantity(item.getQuantity() - totalGood - totalIssuesNotRedelivering);
+        }
+
+        return dto;
     }
 
-    /**
-     * Get active (unresolved) issues for a purchase order
-     */
-    public List<PurchaseOrderIssue> getActiveIssuesForPurchaseOrder(UUID purchaseOrderId) {
-        return issueRepository.findByPurchaseOrderIdAndIssueStatus(purchaseOrderId, IssueStatus.REPORTED);
+    private DeliverySessionDTO convertDeliverySessionToDTO(DeliverySession session) {
+        return DeliverySessionDTO.builder()
+                .id(session.getId())
+                .purchaseOrderId(session.getPurchaseOrder().getId())
+                .merchantId(session.getMerchant().getId())
+                .merchantName(session.getMerchant().getName())
+                .processedBy(session.getProcessedBy())
+                .processedAt(session.getProcessedAt())
+                .deliveryNotes(session.getDeliveryNotes())
+                .itemReceipts(session.getItemReceipts().stream()
+                        .map(this::convertReceiptToDTO)
+                        .toList())
+                .build();
     }
-    /**
-     * Convert PurchaseOrderIssue entity to DTO with item details
-     */
+
+    private DeliveryItemReceiptDTO convertReceiptToDTO(DeliveryItemReceipt receipt) {
+        return DeliveryItemReceiptDTO.builder()
+                .id(receipt.getId())
+                .deliverySessionId(receipt.getDeliverySession().getId())
+                .purchaseOrderItemId(receipt.getPurchaseOrderItem().getId())
+                .itemTypeName(receipt.getPurchaseOrderItem().getItemType().getName())
+                .measuringUnit(receipt.getPurchaseOrderItem().getItemType().getMeasuringUnit())
+                .goodQuantity(receipt.getGoodQuantity())
+                .isRedelivery(receipt.getIsRedelivery())
+                .processedBy(receipt.getDeliverySession().getProcessedBy())    // ADD THIS
+                .processedAt(receipt.getDeliverySession().getProcessedAt())    // ADD THIS
+                .issues(receipt.getIssues().stream()
+                        .map(this::convertIssueToDTO)
+                        .toList())
+                .build();
+    }
+
     private PurchaseOrderIssueDTO convertIssueToDTO(PurchaseOrderIssue issue) {
         PurchaseOrderIssueDTO dto = PurchaseOrderIssueDTO.builder()
                 .id(issue.getId())
@@ -724,15 +288,13 @@ public class PurchaseOrderService {
                 .resolvedBy(issue.getResolvedBy())
                 .resolvedAt(issue.getResolvedAt())
                 .resolutionNotes(issue.getResolutionNotes())
+                .itemTypeName(issue.getPurchaseOrderItem().getItemType().getName())
+                .measuringUnit(issue.getPurchaseOrderItem().getItemType().getMeasuringUnit())
+                .itemTypeCategoryName(issue.getPurchaseOrderItem().getItemType().getItemCategory() != null
+                        ? issue.getPurchaseOrderItem().getItemType().getItemCategory().getName()
+                        : null)
                 .build();
 
-        // Add item details
-        if (issue.getPurchaseOrderItem() != null && issue.getPurchaseOrderItem().getItemType() != null) {
-            dto.setItemTypeName(issue.getPurchaseOrderItem().getItemType().getName());
-            dto.setMeasuringUnit(issue.getPurchaseOrderItem().getItemType().getMeasuringUnit());
-        }
-
-        // Add merchant details ← ADD THIS BLOCK
         if (issue.getPurchaseOrderItem() != null && issue.getPurchaseOrderItem().getMerchant() != null) {
             Merchant merchant = issue.getPurchaseOrderItem().getMerchant();
             dto.setMerchantId(merchant.getId());
@@ -742,293 +304,107 @@ public class PurchaseOrderService {
             dto.setMerchantContactEmail(merchant.getContactEmail());
             dto.setMerchantContactPersonName(merchant.getContactPersonName());
             dto.setMerchantAddress(merchant.getAddress());
+            dto.setMerchantPhotoUrl(merchant.getPhotoUrl());
         }
 
         return dto;
     }
 
-    /**
-     * Get delivery history with issues for a purchase order item
-     * Used by frontend to display "Previously Processed" section
-     */
-    public List<PurchaseOrderDeliveryDTO> getDeliveryHistory(UUID purchaseOrderItemId) {
-        List<PurchaseOrderDelivery> deliveries = deliveryRepository.findByItemIdWithIssues(purchaseOrderItemId);
+    private PurchaseOrderDTO convertToDTO(PurchaseOrder po) {
+        // DEBUG LOGGING - safer version
+        System.out.println("=== Converting PO to DTO ===");
+        System.out.println("PO ID: " + po.getId());
+        System.out.flush();
 
-        return deliveries.stream()
-                .map(this::convertDeliveryToDTO)
+        RequestOrder requestOrder = null;
+        Offer offer = null;
+
+        try {
+            requestOrder = po.getRequestOrder();
+            System.out.println("RequestOrder is null? " + (requestOrder == null));
+            if (requestOrder != null) {
+                System.out.println("RequestOrder ID: " + requestOrder.getId());
+                System.out.println("RequestOrder Title: " + requestOrder.getTitle());
+            }
+        } catch (Exception e) {
+            System.out.println("Error accessing RequestOrder: " + e.getMessage());
+            e.printStackTrace();
+        }
+        System.out.flush();
+
+        try {
+            offer = po.getOffer();
+            System.out.println("Offer is null? " + (offer == null));
+            if (offer != null) {
+                System.out.println("Offer ID: " + offer.getId());
+                System.out.println("Offer Title: " + offer.getTitle());
+            }
+        } catch (Exception e) {
+            System.out.println("Error accessing Offer: " + e.getMessage());
+            e.printStackTrace();
+        }
+        System.out.flush();
+        System.out.println("============================");
+
+        PurchaseOrderDTO dto = new PurchaseOrderDTO();
+        dto.setId(po.getId());
+        dto.setPoNumber(po.getPoNumber());
+        dto.setCreatedAt(po.getCreatedAt());
+        dto.setUpdatedAt(po.getUpdatedAt());
+        dto.setStatus(po.getStatus());
+        dto.setCreatedBy(po.getCreatedBy());
+        dto.setApprovedBy(po.getApprovedBy());
+        dto.setFinanceApprovalDate(po.getFinanceApprovalDate());
+        dto.setPaymentTerms(po.getPaymentTerms());
+        dto.setExpectedDeliveryDate(po.getExpectedDeliveryDate());
+        dto.setTotalAmount(po.getTotalAmount());
+        dto.setCurrency(po.getCurrency());
+        if (requestOrder != null) {
+            dto.setRequestOrderId(requestOrder.getId());
+
+            RequestOrderDTO requestOrderDTO = new RequestOrderDTO();
+            requestOrderDTO.setId(requestOrder.getId());
+            requestOrderDTO.setTitle(requestOrder.getTitle());
+            requestOrderDTO.setDescription(requestOrder.getDescription());
+            requestOrderDTO.setRequesterName(requestOrder.getRequesterName());
+            requestOrderDTO.setDeadline(requestOrder.getDeadline());
+            requestOrderDTO.setStatus(requestOrder.getStatus());
+            requestOrderDTO.setPartyType(requestOrder.getPartyType());
+            requestOrderDTO.setCreatedAt(requestOrder.getCreatedAt());
+            requestOrderDTO.setCreatedBy(requestOrder.getCreatedBy());
+            requestOrderDTO.setApprovedAt(requestOrder.getApprovedAt());
+            requestOrderDTO.setApprovedBy(requestOrder.getApprovedBy());
+            requestOrderDTO.setEmployeeRequestedBy(requestOrder.getEmployeeRequestedBy());
+            requestOrderDTO.setRejectionReason(requestOrder.getRejectionReason());
+            dto.setRequestOrder(requestOrderDTO);
+        }
+
+        if (offer != null) {
+            dto.setOfferId(offer.getId());
+
+            OfferDTO offerDTO = new OfferDTO();
+            offerDTO.setId(offer.getId());
+            offerDTO.setTitle(offer.getTitle());
+            offerDTO.setDescription(offer.getDescription());
+            offerDTO.setCreatedBy(offer.getCreatedBy());
+            offerDTO.setCreatedAt(offer.getCreatedAt());
+            offerDTO.setStatus(offer.getStatus());
+            offerDTO.setFinanceStatus(offer.getFinanceStatus());
+            offerDTO.setValidUntil(offer.getValidUntil());
+            offerDTO.setNotes(offer.getNotes());
+            offerDTO.setCurrentAttemptNumber(offer.getCurrentAttemptNumber());
+            offerDTO.setTotalRetries(offer.getTotalRetries());
+            dto.setOffer(offerDTO);
+        }
+
+        List<PurchaseOrderItemDTO> itemDTOs = po.getPurchaseOrderItems().stream()
+                .map(this::convertItemToDTO)
                 .collect(Collectors.toList());
+        dto.setPurchaseOrderItems(itemDTOs);
+
+        return dto;
     }
 
-    /**
-     * Convert delivery entity to DTO with issues
-     */
-    private PurchaseOrderDeliveryDTO convertDeliveryToDTO(PurchaseOrderDelivery delivery) {
-        List<PurchaseOrderIssueDTO> issueDTOs = delivery.getIssues().stream()
-                .map(this::convertIssueToDTO)
-                .collect(Collectors.toList());
-
-        return PurchaseOrderDeliveryDTO.builder()
-                .id(delivery.getId())
-                .purchaseOrderId(delivery.getPurchaseOrder().getId())
-                .purchaseOrderItemId(delivery.getPurchaseOrderItem().getId())
-                .receivedGoodQuantity(delivery.getReceivedGoodQuantity())
-                .deliveredAt(delivery.getDeliveredAt())
-                .processedBy(delivery.getProcessedBy())
-                .deliveryNotes(delivery.getDeliveryNotes())
-                .isRedelivery(delivery.getIsRedelivery())
-                .redeliveryForIssueId(delivery.getRedeliveryForIssue() != null ?
-                        delivery.getRedeliveryForIssue().getId() : null)
-                .issues(issueDTOs)
-                .build();
-    }
-
-    // Add these methods to your PurchaseOrderService class:
-
-    /**
-     * Get items that are pending redelivery for a purchase order
-     * These are items with resolved issues where resolution type was REDELIVERY
-     */
-    public List<PurchaseOrderItemDTO> getItemsPendingRedelivery(UUID purchaseOrderId) {
-        PurchaseOrder purchaseOrder = purchaseOrderRepository.findById(purchaseOrderId)
-                .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
-
-        List<PurchaseOrderItemDTO> pendingRedeliveryItems = new ArrayList<>();
-
-        for (PurchaseOrderItem item : purchaseOrder.getPurchaseOrderItems()) {
-            // Check if this item has any RESOLVED issues with REDELIVERY resolution
-            List<PurchaseOrderIssue> redeliveryIssues = issueRepository
-                    .findByPurchaseOrderItemId(item.getId())
-                    .stream()
-                    .filter(issue -> issue.getIssueStatus() == IssueStatus.RESOLVED
-                            && issue.getResolutionType() == PurchaseOrderResolutionType.REDELIVERY)
-                    .collect(Collectors.toList());
-
-            if (!redeliveryIssues.isEmpty()) {
-                // Check if redelivery has already been processed
-                boolean redeliveryProcessed = false;
-                for (PurchaseOrderIssue issue : redeliveryIssues) {
-                    // Check if there's a delivery marked as redelivery for this issue
-                    Long redeliveryCount = deliveryRepository.countByRedeliveryForIssueId(issue.getId());
-                    if (redeliveryCount > 0) {
-                        redeliveryProcessed = true;
-                        break;
-                    }
-                }
-
-                // If redelivery not yet processed, add to pending list
-                if (!redeliveryProcessed) {
-                    PurchaseOrderItemDTO dto = convertItemToDTO(item);
-
-                    // Calculate the quantity pending redelivery
-                    double pendingRedeliveryQty = redeliveryIssues.stream()
-                            .mapToDouble(i -> i.getAffectedQuantity() != null ? i.getAffectedQuantity() : 0.0)
-                            .sum();
-
-                    dto.setRemainingQuantity(pendingRedeliveryQty);
-
-                    // Add the issue IDs for reference
-                    dto.setIssues(redeliveryIssues.stream()
-                            .map(this::convertIssueToDTO)
-                            .collect(Collectors.toList()));
-
-                    pendingRedeliveryItems.add(dto);
-                }
-            }
-        }
-
-        return pendingRedeliveryItems;
-    }
-
-    /**
-     * Process a redelivery - this is when items that had issues come back
-     * The delivery is linked to the original issue for tracking
-     */
-    @Transactional
-    public ProcessDeliveryResponseDTO processRedeliveryForIssues(UUID purchaseOrderId,
-                                                                 List<UUID> issueIds,
-                                                                 ProcessDeliveryRequestDTO deliveryData,
-                                                                 String username) {
-        System.out.println("=== Starting processRedeliveryForIssues ===");
-        System.out.println("Issue IDs: " + issueIds);
-
-        PurchaseOrder purchaseOrder = purchaseOrderRepository.findById(purchaseOrderId)
-                .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
-
-        // Validate all issues
-        List<PurchaseOrderIssue> originalIssues = new ArrayList<>();
-        for (UUID issueId : issueIds) {
-            PurchaseOrderIssue issue = issueRepository.findById(issueId)
-                    .orElseThrow(() -> new RuntimeException("Issue not found: " + issueId));
-
-            if (issue.getResolutionType() != PurchaseOrderResolutionType.REDELIVERY) {
-                throw new IllegalArgumentException("Issue " + issueId + " was not resolved with REDELIVERY");
-            }
-
-            // Check if redelivery already processed
-            Long redeliveryCount = deliveryRepository.countByRedeliveryForIssueId(issueId);
-            if (redeliveryCount > 0) {
-                throw new IllegalArgumentException("Redelivery for issue " + issueId + " has already been processed");
-            }
-
-            originalIssues.add(issue);
-        }
-
-        ProcessDeliveryResponseDTO response = ProcessDeliveryResponseDTO.builder()
-                .purchaseOrderId(purchaseOrder.getId())
-                .poNumber(purchaseOrder.getPoNumber())
-                .totalAmount(purchaseOrder.getTotalAmount())
-                .currency(purchaseOrder.getCurrency())
-                .processedItems(new ArrayList<>())
-                .build();
-
-        // Get warehouse
-        UUID warehouseId = purchaseOrder.getRequestOrder().getRequesterId();
-        Warehouse warehouse = warehouseRepository.findById(warehouseId)
-                .orElseThrow(() -> new RuntimeException("Warehouse not found"));
-
-        Map<String, WarehouseInventoryUpdate> inventoryUpdates = new HashMap<>();
-
-        // Process the redelivery items
-        for (ProcessDeliveryRequestDTO.DeliveryItemDTO deliveryItem : deliveryData.getItems()) {
-            PurchaseOrderItem poItem = purchaseOrderItemRepository.findById(deliveryItem.getPurchaseOrderItemId())
-                    .orElseThrow(() -> new RuntimeException("Purchase Order Item not found"));
-
-            // Find the corresponding issue for this item
-            PurchaseOrderIssue correspondingIssue = originalIssues.stream()
-                    .filter(issue -> issue.getPurchaseOrderItem().getId().equals(poItem.getId()))
-                    .findFirst()
-                    .orElse(originalIssues.get(0)); // Fallback to first issue if not found
-
-            // Create redelivery record with link to original issue
-            PurchaseOrderDelivery redelivery = PurchaseOrderDelivery.builder()
-                    .purchaseOrder(purchaseOrder)
-                    .purchaseOrderItem(poItem)
-                    .receivedGoodQuantity(deliveryItem.getReceivedGood() != null ? deliveryItem.getReceivedGood() : 0.0)
-                    .deliveredAt(LocalDateTime.now())
-                    .processedBy(username)
-                    .deliveryNotes("Redelivery for issue #" + correspondingIssue.getId() +
-                            (deliveryData.getGeneralNotes() != null ? ": " + deliveryData.getGeneralNotes() : ""))
-                    .isRedelivery(true)
-                    .redeliveryForIssue(correspondingIssue)  // Link to original issue
-                    .issues(new ArrayList<>())
-                    .build();
-
-            redelivery = deliveryRepository.save(redelivery);
-
-            // Process any NEW issues in the redelivery
-            List<ProcessDeliveryResponseDTO.CreatedIssueDTO> createdIssues = new ArrayList<>();
-            if (deliveryItem.getIssues() != null) {
-                for (ProcessDeliveryRequestDTO.IssueDTO issueDTO : deliveryItem.getIssues()) {
-                    if (issueDTO.getQuantity() != null && issueDTO.getQuantity() > 0) {
-                        IssueType issueType = mapIssueType(issueDTO.getType());
-
-                        PurchaseOrderIssue newIssue = PurchaseOrderIssue.builder()
-                                .purchaseOrder(purchaseOrder)
-                                .purchaseOrderItem(poItem)
-                                .delivery(redelivery)
-                                .issueType(issueType)
-                                .issueStatus(IssueStatus.REPORTED)
-                                .reportedBy(username)
-                                .reportedAt(LocalDateTime.now())
-                                .issueDescription("Issue in redelivery: " + issueDTO.getNotes())
-                                .affectedQuantity(issueDTO.getQuantity())
-                                .build();
-
-                        PurchaseOrderIssue savedIssue = issueRepository.save(newIssue);
-
-                        createdIssues.add(ProcessDeliveryResponseDTO.CreatedIssueDTO.builder()
-                                .issueId(savedIssue.getId())
-                                .issueType(issueType.toString())
-                                .affectedQuantity(issueDTO.getQuantity())
-                                .description(issueDTO.getNotes())
-                                .build());
-                    }
-                }
-            }
-
-            // Update received quantity
-            Double currentReceived = poItem.getReceivedQuantity() != null ? poItem.getReceivedQuantity() : 0.0;
-            Double goodQuantityReceived = deliveryItem.getReceivedGood() != null ? deliveryItem.getReceivedGood() : 0.0;
-            poItem.setReceivedQuantity(currentReceived + goodQuantityReceived);
-            poItem.setReceivedAt(LocalDateTime.now());
-            poItem.setReceivedBy(username);
-
-            // Update item status
-            updateItemStatus(poItem);
-            purchaseOrderItemRepository.save(poItem);
-
-            // Track for inventory
-            if (goodQuantityReceived > 0) {
-                ItemType itemType = poItem.getItemType();
-                String merchantId = poItem.getMerchant() != null ?
-                        poItem.getMerchant().getId().toString() : "no-merchant";
-                String inventoryKey = itemType.getId().toString() + "-" + merchantId;
-
-                if (inventoryUpdates.containsKey(inventoryKey)) {
-                    inventoryUpdates.get(inventoryKey).quantity += goodQuantityReceived;
-                } else {
-                    WarehouseInventoryUpdate newUpdate = new WarehouseInventoryUpdate();
-                    newUpdate.itemType = itemType;
-                    newUpdate.merchant = poItem.getMerchant();
-                    newUpdate.quantity = goodQuantityReceived;
-                    newUpdate.purchaseOrder = purchaseOrder;
-                    inventoryUpdates.put(inventoryKey, newUpdate);
-                }
-            }
-
-            // Add to response
-            ProcessDeliveryResponseDTO.ProcessedItemDTO processedItem = ProcessDeliveryResponseDTO.ProcessedItemDTO.builder()
-                    .itemId(poItem.getId())
-                    .itemTypeName(poItem.getItemType().getName())
-                    .merchantName(poItem.getMerchant() != null ? poItem.getMerchant().getName() : "Unknown")
-                    .orderedQuantity(poItem.getQuantity())
-                    .totalReceivedQuantity(poItem.getReceivedQuantity())
-                    .thisDeliveryGoodQuantity(goodQuantityReceived)
-                    .itemStatus(poItem.getStatus())
-                    .createdIssues(createdIssues)
-                    .build();
-
-            response.getProcessedItems().add(processedItem);
-        }
-
-        // Create inventory entries
-        for (WarehouseInventoryUpdate update : inventoryUpdates.values()) {
-            Item newItem = Item.builder()
-                    .itemType(update.itemType)
-                    .warehouse(warehouse)
-                    .quantity((int) update.quantity)
-                    .itemStatus(ItemStatus.IN_WAREHOUSE)
-                    .resolved(false)
-                    .createdAt(LocalDateTime.now())
-                    .createdBy(username)
-                    .itemSource(ItemSource.PURCHASE_ORDER)
-                    .sourceReference(purchaseOrder.getPoNumber() + "-REDELIVERY")
-                    .merchantName(update.merchant != null ? update.merchant.getName() : "Unknown")
-                    .comment("Redelivery for issues: " + issueIds.stream()
-                            .map(UUID::toString)
-                            .collect(Collectors.joining(", ")))
-                    .build();
-
-            itemRepository.save(newItem);
-        }
-
-        // Update PO status
-        String newStatus = calculatePurchaseOrderStatus(purchaseOrder.getId());
-        purchaseOrder.setStatus(newStatus);
-        purchaseOrder.setUpdatedAt(LocalDateTime.now());
-        purchaseOrderRepository.save(purchaseOrder);
-
-        response.setPoStatus(newStatus);
-        response.setSuccess(true);
-        response.setMessage("Redelivery processed successfully");
-
-        System.out.println("=== Redelivery completed successfully ===");
-        return response;
-    }
-
-    /**
-     * Helper to convert PurchaseOrderItem to DTO
-     */
     private PurchaseOrderItemDTO convertItemToDTO(PurchaseOrderItem item) {
         PurchaseOrderItemDTO dto = PurchaseOrderItemDTO.builder()
                 .id(item.getId())
@@ -1039,29 +415,84 @@ public class PurchaseOrderService {
                 .estimatedDeliveryDays(item.getEstimatedDeliveryDays())
                 .deliveryNotes(item.getDeliveryNotes())
                 .comment(item.getComment())
-                .receivedQuantity(item.getReceivedQuantity())
-                .receivedAt(item.getReceivedAt())
-                .receivedBy(item.getReceivedBy())
                 .purchaseOrderId(item.getPurchaseOrder().getId())
                 .build();
 
         if (item.getItemType() != null) {
             dto.setItemTypeId(item.getItemType().getId());
-            // Convert ItemType to ItemTypeDTO if needed
             ItemTypeDTO itemTypeDTO = new ItemTypeDTO();
             itemTypeDTO.setId(item.getItemType().getId());
             itemTypeDTO.setName(item.getItemType().getName());
             itemTypeDTO.setMeasuringUnit(item.getItemType().getMeasuringUnit());
+
+            // Add category info
+            if (item.getItemType().getItemCategory() != null) {
+                itemTypeDTO.setItemCategoryId(item.getItemType().getItemCategory().getId());
+                itemTypeDTO.setItemCategoryName(item.getItemType().getItemCategory().getName());
+            }
+
             dto.setItemType(itemTypeDTO);
         }
-
         if (item.getMerchant() != null) {
             dto.setMerchantId(item.getMerchant().getId());
-            // Convert Merchant to MerchantDTO if needed
             MerchantDTO merchantDTO = new MerchantDTO();
             merchantDTO.setId(item.getMerchant().getId());
             merchantDTO.setName(item.getMerchant().getName());
+            merchantDTO.setContactEmail(item.getMerchant().getContactEmail());
+            merchantDTO.setContactPhone(item.getMerchant().getContactPhone());
+            merchantDTO.setContactSecondPhone(item.getMerchant().getContactSecondPhone());
+            merchantDTO.setContactPersonName(item.getMerchant().getContactPersonName());
+            merchantDTO.setAddress(item.getMerchant().getAddress());
+            merchantDTO.setPhotoUrl(item.getMerchant().getPhotoUrl());
             dto.setMerchant(merchantDTO);
+        }
+
+        return dto;
+    }
+    public List<PurchaseOrderDTO> getAllPurchaseOrderDTOs() {
+        List<PurchaseOrder> purchaseOrders = getAllPurchaseOrders();
+        return purchaseOrders.stream()
+                .map(this::convertToBasicDTO)  // We'll create this method next
+                .collect(Collectors.toList());
+    }
+
+    private PurchaseOrderDTO convertToBasicDTO(PurchaseOrder po) {
+        PurchaseOrderDTO dto = new PurchaseOrderDTO();
+        dto.setId(po.getId());
+        dto.setPoNumber(po.getPoNumber());
+        dto.setCreatedAt(po.getCreatedAt());
+        dto.setUpdatedAt(po.getUpdatedAt());
+        dto.setStatus(po.getStatus());
+        dto.setTotalAmount(po.getTotalAmount());
+        dto.setCurrency(po.getCurrency());
+        dto.setExpectedDeliveryDate(po.getExpectedDeliveryDate());
+
+        if (po.getRequestOrder() != null) {
+            dto.setRequestOrderId(po.getRequestOrder().getId());
+
+            RequestOrderDTO requestOrderDTO = new RequestOrderDTO();
+            requestOrderDTO.setId(po.getRequestOrder().getId());
+            requestOrderDTO.setTitle(po.getRequestOrder().getTitle());
+            requestOrderDTO.setDescription(po.getRequestOrder().getDescription());
+            requestOrderDTO.setRequesterName(po.getRequestOrder().getRequesterName());
+            requestOrderDTO.setDeadline(po.getRequestOrder().getDeadline());
+            requestOrderDTO.setRequesterId(po.getRequestOrder().getRequesterId()); // ADD THIS LINE
+            requestOrderDTO.setPartyType(po.getRequestOrder().getPartyType());     // ADD THIS LINE TOO
+            // Add any other fields your RequestOrderDTO needs
+            dto.setRequestOrder(requestOrderDTO);
+        }
+
+        if (po.getOffer() != null) {
+            dto.setOfferId(po.getOffer().getId());
+
+            OfferDTO offerDTO = new OfferDTO();
+            offerDTO.setId(po.getOffer().getId());
+            offerDTO.setTitle(po.getOffer().getTitle());
+            offerDTO.setDescription(po.getOffer().getDescription());
+            offerDTO.setCreatedBy(po.getOffer().getCreatedBy());
+            offerDTO.setCreatedAt(po.getOffer().getCreatedAt());
+            // Add any other fields your OfferDTO needs
+            dto.setOffer(offerDTO);
         }
 
         return dto;

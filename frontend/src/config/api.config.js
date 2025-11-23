@@ -379,7 +379,8 @@ export const SITE_ENDPOINTS = {
 // Fix this in your api.config.js
 export const MERCHANT_ENDPOINTS = {
     BASE: '/api/v1/merchants',
-    BY_ID: (id) => `/api/v1/merchants/${id}`  // ✅ Added /v1/
+    BY_ID: (id) => `/api/v1/merchants/${id}`,
+    TRANSACTIONS: (id) => `/api/v1/merchants/${id}/transactions`  // ADD THIS
 };
 
 // Work Type module endpoints
@@ -747,21 +748,19 @@ export const PROCUREMENT_ENDPOINTS = {
 
 // Add this to your existing api.config.js file
 // In your api.config.js or wherever PURCHASE_ORDER_ENDPOINTS is defined
+// API Config
 export const PURCHASE_ORDER_ENDPOINTS = {
     BASE: '/api/v1/purchaseOrders',
-    BY_ID: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}`,
+    BY_ID: (id) => `/api/v1/purchaseOrders/${id}`,
+    WITH_DELIVERIES: (id) => `/api/v1/purchaseOrders/${id}/with-deliveries`,
     PENDING_OFFERS: '/api/v1/purchaseOrders/pending-offers',
     BY_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/purchase-order`,
-    UPDATE_STATUS: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}/status`,
+    UPDATE_STATUS: (id) => `/api/v1/purchaseOrders/${id}/status`,
     FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`,
-    RECEIVE_ITEMS: (id) => `/api/v1/purchaseOrders/${id}/receive`,
-    REPORT_ISSUE: (id) => `/api/v1/purchaseOrders/${id}/report-issue`,
-    RESOLVE_ISSUE: (id) => `/api/v1/purchaseOrders/${id}/resolve-issue`,
+    PROCESS_DELIVERY: (id) => `/api/v1/purchaseOrders/${id}/process-delivery`,
+    RESOLVE_ISSUES: () => `/api/procurement/issues/resolve`,
     GET_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues`,
-    GET_ACTIVE_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues/active`,
-    GET_DELIVERY_HISTORY: (itemId) => `/api/v1/purchaseOrders/items/${itemId}/deliveries`,
-    GET_PENDING_REDELIVERY: (id) => `/api/v1/purchaseOrders/${id}/pending-redelivery`,
-    PROCESS_REDELIVERY: (id) => `/api/v1/purchaseOrders/${id}/process-redelivery`// ← ADD THIS
+    GET_ACTIVE_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues/active`
 };
 
 
