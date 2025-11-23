@@ -105,9 +105,9 @@
   // REQUEST INFO
   // ============================================================================
   .request-info {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
 
     .request-item {
       display: flex;
@@ -117,20 +117,27 @@
       background: var(--color-surface-secondary);
       border: 1px solid var(--border-color-light);
       border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+
+      &:hover {
+        border-color: var(--color-primary);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+      }
 
       .request-icon {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         background: var(--color-edit-bg);
         border-radius: var(--radius-sm);
         flex-shrink: 0;
 
         svg {
-          width: 16px;
-          height: 16px;
+          width: 18px;
+          height: 18px;
           color: var(--color-primary);
         }
       }
@@ -152,10 +159,228 @@
 
         .request-value {
           font-size: 14px;
-          font-weight: 500;
+          font-weight: 600;
           color: var(--color-text-primary);
-          line-height: 1.5;
           word-break: break-word;
+        }
+      }
+    }
+  }
+
+  // ============================================================================
+  // OFFER TIMELINE (Inside Offer Section)
+  // ============================================================================
+  .offer-timeline-po-wrapper {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color-light);
+
+    .offer-timeline-po-header {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color-light);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top:2rem;
+      margin-bottom: 2rem;
+
+      svg {
+        color: var(--color-primary);
+      }
+    }
+
+    .offer-timeline-po-loading {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      font-style: italic;
+      padding: 12px 0;
+    }
+
+    .offer-timeline-po-scroll-hint {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--color-text-muted);
+      font-style: italic;
+      margin-bottom: 20px;
+
+      svg {
+        animation: bounceDown 1.5s infinite;
+      }
+    }
+
+    @keyframes bounceDown {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(4px);
+      }
+      60% {
+        transform: translateY(2px);
+      }
+    }
+  }
+
+  .offer-timeline-po-container {
+    position: relative;
+    padding-left: 24px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 8px;
+
+    // Custom scrollbar
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: var(--color-surface);
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-color-medium);
+      border-radius: 3px;
+
+      &:hover {
+        background: var(--color-text-muted);
+      }
+    }
+
+    .offer-timeline-po-line {
+      position: absolute;
+      left: 7px;
+      top: 8px;
+      width: 2px;
+      background: var(--border-color-medium);
+      pointer-events: none;
+      // height will be set by JavaScript
+    }
+
+    .offer-timeline-po-step {
+      position: relative;
+      padding-bottom: 16px;
+
+      &:last-child {
+        padding-bottom: 0;
+      }
+
+      .offer-timeline-po-marker {
+        position: absolute;
+        left: -24px;
+        top: 4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--color-surface);
+        border: 3px solid var(--border-color-medium);
+        z-index: 2;
+      }
+
+      &.offer-timeline-po-step-completed {
+        .offer-timeline-po-marker {
+          background: var(--color-success);
+          border-color: var(--color-success);
+          box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+        }
+
+        .offer-timeline-po-title {
+          color: var(--color-success);
+        }
+      }
+
+      &.offer-timeline-po-step-rejected {
+        .offer-timeline-po-marker {
+          background: var(--color-danger);
+          border-color: var(--color-danger);
+          box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+        }
+
+        .offer-timeline-po-title {
+          color: var(--color-danger);
+        }
+      }
+
+      .offer-timeline-po-content {
+        background: var(--color-surface-secondary);
+        border: 1px solid var(--border-color-light);
+        border-radius: var(--radius-sm);
+        padding: 12px 14px;
+        transition: all var(--transition-fast);
+        margin-bottom: 1rem;
+
+        &:hover {
+          border-color: var(--color-primary);
+          transform: translateX(4px);
+          box-shadow: var(--shadow-sm);
+        }
+
+        .offer-timeline-po-title {
+          font-size: 14px;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+
+        .offer-timeline-po-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+
+          span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+
+            svg {
+              color: var(--color-text-muted);
+              flex-shrink: 0;
+            }
+          }
+        }
+
+        .offer-timeline-po-rejection {
+          margin-top: 8px;
+          font-size: 12px;
+          color: var(--color-danger);
+          font-style: italic;
+          padding: 8px;
+          background: var(--color-delete-bg);
+          border-radius: var(--radius-sm);
+        }
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .offer-timeline-po-container {
+      padding-left: 20px;
+
+      .offer-timeline-po-step {
+        .offer-timeline-po-marker {
+          left: -20px;
+          width: 12px;
+          height: 12px;
+        }
+
+        .offer-timeline-po-content {
+          padding: 10px 12px;
+
+          .offer-timeline-po-title {
+            font-size: 13px;
+          }
+
+          .offer-timeline-po-info span {
+            font-size: 11px;
+          }
         }
       }
     }

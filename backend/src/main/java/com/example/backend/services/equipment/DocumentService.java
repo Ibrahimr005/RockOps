@@ -3,9 +3,11 @@ package com.example.backend.services.equipment;
 import com.example.backend.dto.equipment.DocumentDTO;
 import com.example.backend.exceptions.ResourceNotFoundException;
 import com.example.backend.models.equipment.Equipment;
+import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.user.User;
 import com.example.backend.models.site.Site;
 import com.example.backend.models.warehouse.Warehouse;
+import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
 import com.example.backend.services.MinioService;
 import com.example.backend.repositories.equipment.DocumentRepository;
@@ -47,6 +49,9 @@ public class DocumentService {
 
     @Autowired
     private MinioService minioService;
+
+    @Autowired
+    private MerchantRepository merchantRepository; // ADD THIS at the top with other repositories
 
     /**
      * Get all documents for a specific entity
@@ -469,6 +474,12 @@ public class DocumentService {
                 Warehouse warehouse = warehouseRepository.findById(entityId)
                         .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id: " + entityId));
                 return warehouse.getName();
+
+            // ADD THIS CASE
+            case MERCHANT:
+                Merchant merchant = merchantRepository.findById(entityId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Merchant not found with id: " + entityId));
+                return merchant.getName();
 
             default:
                 throw new IllegalArgumentException("Unsupported entity type: " + entityType);

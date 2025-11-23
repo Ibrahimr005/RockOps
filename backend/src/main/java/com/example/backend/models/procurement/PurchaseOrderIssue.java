@@ -32,6 +32,11 @@ public class PurchaseOrderIssue {
     @JsonBackReference
     private PurchaseOrderItem purchaseOrderItem;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "delivery_item_receipt_id", nullable = false)
+    @JsonBackReference
+    private DeliveryItemReceipt deliveryItemReceipt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private IssueType issueType;
@@ -40,7 +45,9 @@ public class PurchaseOrderIssue {
     @Column(nullable = false)
     private IssueStatus issueStatus;
 
-    // Who reported the issue
+    @Column(name = "affected_quantity", nullable = false)
+    private Double affectedQuantity;
+
     @Column(nullable = false)
     private String reportedBy;
 
@@ -50,11 +57,6 @@ public class PurchaseOrderIssue {
     @Column(columnDefinition = "TEXT")
     private String issueDescription;
 
-    // NEW: Track quantity affected by this issue
-    @Column(name = "affected_quantity")
-    private Double affectedQuantity;
-
-    // Resolution details
     @Enumerated(EnumType.STRING)
     private PurchaseOrderResolutionType resolutionType;
 
@@ -63,12 +65,6 @@ public class PurchaseOrderIssue {
 
     @Column(columnDefinition = "TEXT")
     private String resolutionNotes;
-
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "delivery_id", nullable = false)
-    @JsonBackReference
-    private PurchaseOrderDelivery delivery;
 
     @PrePersist
     protected void onCreate() {

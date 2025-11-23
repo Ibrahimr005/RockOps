@@ -61,6 +61,11 @@ public class RequestOrderService {
                 throw new RuntimeException("Invalid requesterId format: " + requesterIdStr);
             }
 
+// Check for duplicate title and requesterId in PENDING status
+            if (requestOrderRepository.existsByTitleAndRequesterIdAndStatusPending(title.trim(), requesterId)) {
+                throw new RuntimeException("A request order with the title '" + title + "' already exists for this requester. Please use a different title or change the requester.");
+            }
+
             // Handle employeeRequestedBy (can be null)
             String employeeRequestedByStr = (String) requestData.get("employeeRequestedBy");
             String employeeRequestedBy = null;
@@ -301,13 +306,26 @@ public class RequestOrderService {
             RequestOrder existingOrder = requestOrderRepository.findById(requestOrderId)
                     .orElseThrow(() -> new RuntimeException("Request order not found with ID: " + requestOrderId));
 
-            // Basic info updates
+// Basic info updates
             String title = (String) requestData.get("title");
             String description = (String) requestData.get("description");
             String updatedBy = (String) requestData.get("updatedBy");
             String statusStr = (String) requestData.get("status");
             String partyTypeStr = (String) requestData.get("partyType");
             UUID requesterId = UUID.fromString((String) requestData.get("requesterId"));
+
+// Validate that title is not null
+            if (title == null || title.trim().isEmpty()) {
+                throw new RuntimeException("Title is required");
+            }
+
+// Check for duplicate title and requesterId in PENDING status (excluding current order)
+// Only check if title OR requesterId has changed
+            if ((!title.trim().equalsIgnoreCase(existingOrder.getTitle().trim()) || !requesterId.equals(existingOrder.getRequesterId())) &&
+                    requestOrderRepository.existsByTitleAndRequesterIdAndStatusPendingExcludingId(title.trim(), requesterId, requestOrderId)) {
+                throw new RuntimeException("A request order with the title '" + title + "' already exists for this requester with PENDING status. Please use a different title.");
+            }
+
 
             // Other fields
             String deadlineStr = (String) requestData.get("deadline");

@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FiPackage, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import { purchaseOrderService } from '../../../services/procurement/purchaseOrderService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import Snackbar from '../../../components/common/Snackbar2/Snackbar2';
 import OverviewTab from './tabs/OverviewTab/OverviewTab';
-import ReceivingTab from './tabs/ReceivingTab/ReceivingTab';
+import ReceivingTab from './tabs/ReceivingTab/ReceivingTab2';
 import IssuesTab from './tabs/IssuesTab/IssuesTab';
 import './PurchaseOrderDetailsPage.scss';
 
 const PurchaseOrderDetailsPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [purchaseOrder, setPurchaseOrder] = useState(null);
     const [issues, setIssues] = useState([]);
-    const [activeTab, setActiveTab] = useState('overview');
+
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -23,6 +24,14 @@ const PurchaseOrderDetailsPage = () => {
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
+    const [activeTab, setActiveTab] = useState('overview');
+
+// Add this useEffect to handle the initial tab from navigation state
+    useEffect(() => {
+        if (location.state?.activeTab) {
+            setActiveTab(location.state.activeTab);
+        }
+    }, [location.state]);
 
     useEffect(() => {
         fetchPurchaseOrderData();
@@ -33,16 +42,24 @@ const PurchaseOrderDetailsPage = () => {
         setError(null);
 
         try {
-            // Fetch PO details
-            const poData = await purchaseOrderService.getById(id);
+            // Fetch PO with full delivery history (includes issues)
+            const poData = await purchaseOrderService.getWithDeliveries(id);
             setPurchaseOrder(poData);
 
-            // Fetch issues
-            const issuesData = await purchaseOrderService.getIssues(id);
-            const issuesArray = Array.isArray(issuesData)
-                ? issuesData
-                : issuesData?.issues || [];
-            setIssues(issuesArray);
+            // Extract all issues from all items' receipts
+            const allIssues = [];
+            if (poData.purchaseOrderItems) {
+                poData.purchaseOrderItems.forEach(item => {
+                    if (item.itemReceipts) {
+                        item.itemReceipts.forEach(receipt => {
+                            if (receipt.issues) {
+                                allIssues.push(...receipt.issues);
+                            }
+                        });
+                    }
+                });
+            }
+            setIssues(allIssues);
 
         } catch (err) {
             console.error('Error fetching purchase order:', err);
@@ -179,13 +196,15 @@ const PurchaseOrderDetailsPage = () => {
                 >
                     <FiCheckCircle />
                     <span>Receiving</span>
-                    {(purchaseOrder.status === 'PENDING' || purchaseOrder.status === 'PARTIAL' || purchaseOrder.status === 'DISPUTED') && (
-                        <span className="tab-badge">{
-                            purchaseOrder.purchaseOrderItems?.filter(item =>
-                                item.status === 'PENDING' || item.status === 'PARTIAL'
-                            ).length || 0
-                        }</span>
-                    )}
+                    {(() => {
+                        const pendingCount = purchaseOrder.purchaseOrderItems?.filter(item =>
+                            item.status === 'PENDING' || item.status === 'PARTIAL'
+                        ).length || 0;
+
+                        return pendingCount > 0 && (
+                            <span className="tab-badge">{pendingCount}</span>
+                        );
+                    })()}
                 </button>
 
                 <button

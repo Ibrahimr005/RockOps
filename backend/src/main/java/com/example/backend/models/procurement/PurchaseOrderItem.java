@@ -10,7 +10,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -26,7 +25,6 @@ public class PurchaseOrderItem {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    // Existing fields
     private double quantity;
     private double unitPrice;
     private double totalPrice;
@@ -35,16 +33,6 @@ public class PurchaseOrderItem {
     private int estimatedDeliveryDays;
     private String deliveryNotes;
 
-    private Double receivedQuantity; // Quantity actually received (null if not received yet)
-    private LocalDateTime receivedAt; // When items were received
-    private String receivedBy; // Who marked them as received
-
-    // Add after the existing fields, before purchaseOrder relationship:
-    @OneToMany(mappedBy = "purchaseOrderItem", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    private List<PurchaseOrderDelivery> deliveries = new ArrayList<>();
-
-    // ADD THESE DIRECT RELATIONSHIPS:
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "item_type_id")
     @JsonManagedReference
@@ -55,7 +43,6 @@ public class PurchaseOrderItem {
     @JsonManagedReference
     private Merchant merchant;
 
-    // Keep existing relationships
     @ManyToOne
     @JoinColumn(name = "purchase_order_id")
     @JsonBackReference
@@ -63,11 +50,10 @@ public class PurchaseOrderItem {
 
     @OneToOne
     @JoinColumn(name = "offer_item_id")
-    @JsonManagedReference  // ORIGINAL VALUE
+    @JsonManagedReference
     private OfferItem offerItem;
 
-    @Column(name = "redelivery_count")
-    private Integer redeliveryCount = 0;
-
-
+    @OneToMany(mappedBy = "purchaseOrderItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<DeliveryItemReceipt> itemReceipts = new ArrayList<>();
 }

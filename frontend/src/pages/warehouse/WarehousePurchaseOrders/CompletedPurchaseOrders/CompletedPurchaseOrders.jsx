@@ -1,57 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import DataTable from '../../../../components/common/DataTable/DataTable';
-import PurchaseOrderViewModal from '../../../../components/procurement/PurchaseOrderViewModal/PurchaseOrderViewModal';
 
-const CompletedPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
-    const [completedOrders, setCompletedOrders] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
-    const [showModal, setShowModal] = useState(false);
+const CompletedPurchaseOrders = ({ orders, isLoading, onShowSnackbar }) => {
+    const navigate = useNavigate();
 
-    // Fetch initial data
-    useEffect(() => {
-        if (warehouseId) {
-            fetchCompletedPurchaseOrders();
-        }
-    }, [warehouseId]);
-
-    // Function to fetch completed purchase orders
-    const fetchCompletedPurchaseOrders = async () => {
-        setIsLoading(true);
-        try {
-            const allOrders = await purchaseOrderService.getAll();
-
-            // Filter orders to show only COMPLETED orders for the specific warehouse
-            const filteredOrders = allOrders.filter(order =>
-                order.status === 'COMPLETED' && order.requestOrder.requesterId === warehouseId
-            );
-
-            setCompletedOrders(filteredOrders);
-        } catch (error) {
-            console.error('Error fetching completed purchase orders:', error);
-            setCompletedOrders([]);
-            if (onShowSnackbar) {
-                onShowSnackbar('Failed to fetch completed purchase orders.', 'error');
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // Handle row click to show purchase order details
     const handleRowClick = (purchaseOrder) => {
-        setSelectedPurchaseOrder(purchaseOrder);
-        setShowModal(true);
+        navigate(`/procurement/purchase-orders/details/${purchaseOrder.id}`);
     };
 
-    // Handle closing modal
-    const handleCloseModal = () => {
-        setShowModal(false);
-        setSelectedPurchaseOrder(null);
-    };
-
-    // Column configuration for completed purchase orders
     const completedOrderColumns = [
         {
             id: 'poNumber',
@@ -83,7 +40,6 @@ const CompletedPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
         }
     ];
 
-    // Filterable columns configuration
     const filterableColumns = [
         {
             accessor: 'poNumber',
@@ -105,7 +61,7 @@ const CompletedPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
     return (
         <div className="completed-purchase-orders-container">
             <DataTable
-                data={completedOrders}
+                data={orders}
                 columns={completedOrderColumns}
                 loading={isLoading}
                 emptyMessage="No completed purchase orders found."
@@ -118,13 +74,6 @@ const CompletedPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
                 showFilters={true}
                 filterableColumns={filterableColumns}
                 onRowClick={handleRowClick}
-            />
-
-            {/* Purchase Order Details Modal */}
-            <PurchaseOrderViewModal
-                purchaseOrder={selectedPurchaseOrder}
-                isOpen={showModal}
-                onClose={handleCloseModal}
             />
         </div>
     );
