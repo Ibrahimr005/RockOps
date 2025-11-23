@@ -86,12 +86,17 @@ public class VacancyService {
 
     @Transactional
     public Vacancy createVacancy(CreateVacancyDTO dto) {
-        System.out.println("=== DEBUG: Starting vacancy creation with DTO ===");
-        System.out.println("DTO: " + dto.toString());
 
         // Basic validations
         if (dto.getTitle() == null || dto.getTitle().isBlank()) {
             throw new IllegalArgumentException("Title is required");
+        }
+
+        String trimmedTitle = dto.getTitle().trim();
+
+        // Duplicate title check
+        if (vacancyRepository.existsByTitleIgnoreCase(trimmedTitle)) {
+            throw new IllegalArgumentException("Vacancy title already exists");
         }
 
         if (dto.getDescription() == null || dto.getDescription().isBlank()) {
@@ -115,13 +120,12 @@ public class VacancyService {
             UUID jobPositionId = dto.getJobPositionId();
             jobPosition = jobPositionRepository.findByIdWithDepartment(jobPositionId)
                     .orElseThrow(() -> new EntityNotFoundException("Job position not found with ID: " + jobPositionId));
-            System.out.println("DEBUG: Found job position: " + jobPosition.getPositionName());
         }
 
         String determinedStatus = determineVacancyStatus(dto);
 
         Vacancy vacancy = Vacancy.builder()
-                .title(dto.getTitle().trim())
+                .title(trimmedTitle)
                 .description(dto.getDescription().trim())
                 .requirements(dto.getRequirements() != null ? dto.getRequirements().trim() : null)
                 .responsibilities(dto.getResponsibilities() != null ? dto.getResponsibilities().trim() : null)
@@ -134,21 +138,7 @@ public class VacancyService {
                 .hiredCount(0)
                 .build();
 
-        Vacancy saved;
-        try {
-            saved = vacancyRepository.save(vacancy);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to save vacancy", e);
-        }
-
-        // Optional notification logic
-        try {
-            sendVacancyCreationNotifications(saved, jobPosition);
-        } catch (Exception e) {
-            System.err.println("Notification failed: " + e.getMessage());
-        }
-
-        return saved;
+        return vacancyRepository.save(vacancy);
     }
 
 
@@ -202,9 +192,7 @@ public class VacancyService {
     }
     @Transactional
     public Vacancy updateVacancy(UUID id, UpdateVacancyDTO dto) {
-        System.out.println("=== DEBUG: Starting vacancy update with DTO ===");
-        System.out.println("Vacancy ID: " + id);
-        System.out.println("DTO: " + dto);
+
 
         try {
             Vacancy vacancy = getVacancyEntityById(id); // use entity version
@@ -212,9 +200,17 @@ public class VacancyService {
             String oldPriority = vacancy.getPriority();
             LocalDate oldClosingDate = vacancy.getClosingDate();
 
+
+
             // Basic validations
             if (dto.getTitle() != null && dto.getTitle().isBlank()) {
                 throw new IllegalArgumentException("Title cannot be empty");
+            }
+
+            String trimmedTitle = dto.getTitle().trim();
+
+            if (vacancyRepository.existsByTitleIgnoreCase(trimmedTitle)) {
+                throw new IllegalArgumentException("Vacancy title already exists");
             }
 
             if (dto.getDescription() != null && dto.getDescription().isBlank()) {

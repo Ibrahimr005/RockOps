@@ -17,8 +17,21 @@ import java.util.UUID;
 @Repository
 public interface JobPositionRepository extends JpaRepository<JobPosition, UUID> {
 
-    List<JobPosition> findByPositionNameContainingIgnoreCaseOrDepartmentContainingIgnoreCase(
-            String positionNameSearch, String departmentSearch, Sort sort);
+    boolean existsByPositionNameAndExperienceLevel(String positionName, String experienceLevel);
+
+    boolean existsByPositionNameIgnoreCaseAndExperienceLevelIgnoreCase(
+            String positionName,
+            String experienceLevel
+    );
+
+    /**
+     * Find positions by name and level (case-insensitive)
+     * Used for duplicate validation when updating positions (need to exclude current record)
+     */
+    List<JobPosition> findByPositionNameIgnoreCaseAndExperienceLevelIgnoreCase(
+            String positionName,
+            String experienceLevel
+    );
 
     Page<JobPosition> findByPositionNameContainingIgnoreCase(String search, Pageable pageable);
     List<JobPosition> findByPositionNameContainingIgnoreCase(String search);

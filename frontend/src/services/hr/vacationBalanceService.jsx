@@ -27,9 +27,14 @@ export const vacationBalanceService = {
     },
 
     // Carry forward vacation balances
+    // Backend expects @RequestParam, so we pass as query params
     carryForwardBalances: (fromYear, toYear, maxCarryForward = 5) => {
-        return apiClient.post(VACATION_BALANCE_ENDPOINTS.CARRY_FORWARD, {
-            params: { fromYear, toYear, maxCarryForward }
+        return apiClient.post(VACATION_BALANCE_ENDPOINTS.CARRY_FORWARD, null, {
+            params: {
+                fromYear,
+                toYear,
+                maxCarryForward
+            }
         });
     },
 
