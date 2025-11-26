@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FaEdit, FaTrash, FaEye, FaList, FaCheckCircle, FaPlus } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaList, FaCheckCircle, FaPlus, FaSearch, FaEllipsisV, FaUser, FaMapMarkerAlt, FaDollarSign, FaClock, FaTools, FaExclamationCircle } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
-import DataTable from '../../../components/common/DataTable/DataTable';
 import MaintenanceRecordModal from './MaintenanceRecordModal';
 import MaintenanceRecordViewModal from './MaintenanceRecordViewModal/MaintenanceRecordViewModal';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
@@ -21,6 +20,8 @@ const MaintenanceRecords = () => {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState(null);
     const [viewingRecordId, setViewingRecordId] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeMenuId, setActiveMenuId] = useState(null);
     const [filters, setFilters] = useState({
         status: 'all',
         site: 'all',
@@ -81,28 +82,39 @@ const MaintenanceRecords = () => {
             const records = response.data || [];
 
             // Transform data for display
-            const transformedRecords = records.map(record => ({
-                id: record.id,
-                equipmentId: record.equipmentId,
-                equipmentName: record.equipmentName || record.equipmentInfo || 'Unknown Equipment',
-                equipmentModel: record.equipmentModel || 'N/A',
-                equipmentSerialNumber: record.equipmentSerialNumber || 'N/A',
-                initialIssueDescription: record.initialIssueDescription,
-                status: record.status,
-                currentResponsiblePerson: record.currentResponsiblePerson,
-                currentResponsiblePhone: record.currentResponsiblePhone,
-                currentResponsibleEmail: record.currentResponsibleEmail,
-                site: record.site || 'N/A',
-                totalCost: record.totalCost || 0,
-                creationDate: record.creationDate,
-                expectedCompletionDate: record.expectedCompletionDate,
-                actualCompletionDate: record.actualCompletionDate,
-                isOverdue: record.isOverdue,
-                durationInDays: record.durationInDays,
-                totalSteps: record.totalSteps || 0,
-                completedSteps: record.completedSteps || 0,
-                activeSteps: record.activeSteps || 0
-            }));
+            const transformedRecords = records.map(record => {
+                const isCompleted = record.status === 'COMPLETED' && record.actualCompletionDate;
+                const totalCost = record.totalCost || 0;
+                const expectedTotalCost = record.expectedTotalCost || totalCost;
+                const actualTotalCost = record.actualTotalCost || (isCompleted ? totalCost : 0);
+
+                return {
+                    id: record.id,
+                    equipmentId: record.equipmentId,
+                    equipmentName: record.equipmentName || record.equipmentInfo || 'Unknown Equipment',
+                    equipmentModel: record.equipmentModel || 'N/A',
+                    equipmentSerialNumber: record.equipmentSerialNumber || 'N/A',
+                    initialIssueDescription: record.initialIssueDescription,
+                    status: record.status,
+                    currentResponsiblePerson: record.currentResponsiblePerson,
+                    currentResponsiblePhone: record.currentResponsiblePhone,
+                    currentResponsibleEmail: record.currentResponsibleEmail,
+                    site: record.site || 'N/A',
+                    totalCost: totalCost,
+                    expectedTotalCost: expectedTotalCost,
+                    actualTotalCost: actualTotalCost,
+                    costDifference: actualTotalCost - expectedTotalCost,
+                    isActualCost: isCompleted,
+                    creationDate: record.creationDate,
+                    expectedCompletionDate: record.expectedCompletionDate,
+                    actualCompletionDate: record.actualCompletionDate,
+                    isOverdue: record.isOverdue,
+                    durationInDays: record.durationInDays,
+                    totalSteps: record.totalSteps || 0,
+                    completedSteps: record.completedSteps || 0,
+                    activeSteps: record.activeSteps || 0
+                };
+            });
 
             setMaintenanceRecords(transformedRecords);
         } catch (error) {
@@ -231,6 +243,34 @@ const MaintenanceRecords = () => {
             </span>
         );
     };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(amount || 0);
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Not set';
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
+    const filteredRecords = maintenanceRecords.filter(record => {
+        if (!searchTerm) return true;
+        const search = searchTerm.toLowerCase();
+        return (
+            record.equipmentName?.toLowerCase().includes(search) ||
+            record.initialIssueDescription?.toLowerCase().includes(search) ||
+            record.status?.toLowerCase().includes(search) ||
+            record.site?.toLowerCase().includes(search) ||
+            record.currentResponsiblePerson?.toLowerCase().includes(search)
+        );
+    });
 
     const columns = [
         {
@@ -385,20 +425,224 @@ const MaintenanceRecords = () => {
                 </h1>
             </div>
 
-            <DataTable
-                data={maintenanceRecords}
-                columns={columns}
-                loading={loading}
-                actions={actions}
-                onRowClick={handleViewSteps}
-                showSearch={true}
-                showFilters={true}
-                filterableColumns={filterableColumns}
-                emptyStateMessage="No maintenance records found. Create your first maintenance record to get started."
-                showAddButton={true}
-                addButtonText="New Maintenance Record"
-                onAddClick={() => handleOpenModal()}
-            />
+            {/* Header with Search and Add Button */}
+            <div className="records-header">
+                <div className="search-container">
+                    <FaSearch className="search-icon" />
+                    <input
+                        type="text"
+                        placeholder="Search records..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="search-input"
+                    />
+                </div>
+                <button
+                    className="add-record-btn"
+                    onClick={() => handleOpenModal()}
+                >
+                    <FaPlus /> New Maintenance Record
+                </button>
+            </div>
+
+            {/* Records Container */}
+            <div className="records-container">
+                {loading ? (
+                    <div className="loading-container">
+                        <div className="loading-spinner">Loading maintenance records...</div>
+                    </div>
+                ) : filteredRecords.length === 0 ? (
+                    <div className="empty-state">
+                        <FaTools className="empty-icon" />
+                        <p>No maintenance records found. Create your first maintenance record to get started.</p>
+
+                    </div>
+                ) : (
+                    filteredRecords.map((record) => (
+                        <div
+                            key={record.id}
+                            className={`record-card ${record.status.toLowerCase()}`}
+                            onClick={() => handleViewSteps(record)}
+                        >
+                            {/* Card Header */}
+                            <div className="record-card-header">
+                                <div className="header-left">
+                                    <h3 className="equipment-name">{record.equipmentName}</h3>
+                                    {getStatusBadge(record.status)}
+                                </div>
+                                <div className="header-right">
+                                    <div className="menu-container">
+                                        <button
+                                            className="menu-trigger"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setActiveMenuId(activeMenuId === record.id ? null : record.id);
+                                            }}
+                                        >
+                                            <FaEllipsisV />
+                                        </button>
+                                        {activeMenuId === record.id && (
+                                            <>
+                                                <div
+                                                    className="menu-backdrop"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActiveMenuId(null);
+                                                    }}
+                                                />
+                                                <div className="menu-dropdown">
+                                                    <button
+                                                        className="menu-item"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleViewRecord(record);
+                                                        }}
+                                                    >
+                                                        <FaEye /> Quick View
+                                                    </button>
+                                                    <button
+                                                        className="menu-item"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleViewSteps(record);
+                                                        }}
+                                                    >
+                                                        <FaList /> View Steps
+                                                    </button>
+                                                    {record.status !== 'COMPLETED' && (
+                                                        <button
+                                                            className="menu-item"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate(`/maintenance/records/${record.id}?tab=steps`, {
+                                                                    state: { openStepModal: true }
+                                                                });
+                                                            }}
+                                                        >
+                                                            <FaPlus /> Add Step
+                                                        </button>
+                                                    )}
+                                                    {(isAdminOrManager(currentUser) || (record.status !== 'COMPLETED' && hasMaintenanceAccess(currentUser))) && (
+                                                        <button
+                                                            className="menu-item"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleOpenModal(record);
+                                                            }}
+                                                        >
+                                                            <FaEdit /> Edit
+                                                        </button>
+                                                    )}
+                                                    {isAdminOrManager(currentUser) && (
+                                                        <button
+                                                            className="menu-item danger"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                showDeleteConfirmation(record);
+                                                            }}
+                                                        >
+                                                            <FaTrash /> Delete
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Card Body */}
+                            <div className="record-card-body">
+                                {/* Issue Description */}
+                                <div className="info-row description-row">
+                                    <FaExclamationCircle className="info-icon" />
+                                    <div className="info-content">
+                                        <div className="info-label">Issue</div>
+                                        <div className="info-value">{record.initialIssueDescription}</div>
+                                    </div>
+                                </div>
+
+                                {/* Responsible Person */}
+                                <div className="info-row">
+                                    <FaUser className="info-icon" />
+                                    <div className="info-content">
+                                        <div className="info-label">Responsible</div>
+                                        <div className="info-value">
+                                            {record.currentResponsiblePerson || 'Not assigned'}
+                                            {record.currentResponsiblePhone && (
+                                                <span className="phone-number"> • {record.currentResponsiblePhone}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Site */}
+                                {record.site && record.site !== 'N/A' && (
+                                    <div className="info-row">
+                                        <FaMapMarkerAlt className="info-icon" />
+                                        <div className="info-content">
+                                            <div className="info-label">Site</div>
+                                            <div className="info-value">{record.site}</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Cost Information */}
+                                <div className="info-row cost-row">
+                                    <FaDollarSign className="info-icon" />
+                                    <div className="info-content">
+                                        <div className="info-label">Cost</div>
+                                        <div className="cost-details">
+                                            <div className="cost-item primary">
+                                                <span className="cost-type">
+                                                    {record.isActualCost ? 'Actual Cost' : 'Expected Cost'}
+                                                </span>
+                                                <span className="cost-amount">
+                                                    {formatCurrency(record.isActualCost ? record.actualTotalCost : record.expectedTotalCost)}
+                                                </span>
+                                            </div>
+                                            {record.isActualCost && Math.abs(record.costDifference) > 0.01 && (
+                                                <div className={`cost-item difference ${record.costDifference > 0 ? 'over-budget' : 'under-budget'}`}>
+                                                    <span className="cost-type">
+                                                        {record.costDifference > 0 ? 'Over Budget' : 'Under Budget'}
+                                                    </span>
+                                                    <span className="cost-amount">
+                                                        {record.costDifference > 0 ? '+' : ''}{formatCurrency(record.costDifference)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Progress & Dates */}
+                                <div className="info-row">
+                                    <FaClock className="info-icon" />
+                                    <div className="info-content">
+                                        <div className="info-label">Timeline</div>
+                                        <div className="timeline-info">
+                                            <div className="date-item">
+                                                Created: {formatDate(record.creationDate)}
+                                            </div>
+                                            <div className="date-item">
+                                                {record.actualCompletionDate
+                                                    ? `Completed: ${formatDate(record.actualCompletionDate)}`
+                                                    : `Expected: ${formatDate(record.expectedCompletionDate)}`
+                                                }
+                                            </div>
+                                            {record.totalSteps > 0 && (
+                                                <div className="progress-indicator">
+                                                    Steps: {record.completedSteps}/{record.totalSteps} completed
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
 
             {isModalOpen && (
                 <MaintenanceRecordModal
