@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 
 import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,9 +32,17 @@ public class MaintenanceRecordDto {
     
     @NotBlank(message = "Initial issue description is required")
     private String initialIssueDescription;
-    
+
     private String finalDescription;
-    
+
+    @NotNull(message = "Issue date is required")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime issueDate;
+
+    @NotBlank(message = "Spare part name / item to maintain is required")
+    @Size(max = 255, message = "Spare part name must not exceed 255 characters")
+    private String sparePartName;
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime creationDate;
     

@@ -2,6 +2,7 @@ package com.example.backend.models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -40,10 +41,19 @@ public class MaintenanceRecord {
     @NotBlank(message = "Initial issue description is required")
     @Column(name = "initial_issue_description", nullable = false, columnDefinition = "TEXT")
     private String initialIssueDescription;
-    
+
     @Column(name = "final_description", columnDefinition = "TEXT")
     private String finalDescription;
-    
+
+    @NotNull(message = "Issue date is required")
+    @Column(name = "issue_date", nullable = false)
+    private LocalDateTime issueDate;
+
+    @NotBlank(message = "Spare part name / item to maintain is required")
+    @Size(max = 255, message = "Spare part name must not exceed 255 characters")
+    @Column(name = "spare_part_name", nullable = false, length = 255)
+    private String sparePartName;
+
     @CreationTimestamp
     @Column(name = "creation_date", nullable = false, updatable = false)
     private LocalDateTime creationDate;
@@ -101,7 +111,8 @@ public class MaintenanceRecord {
     }
     
     public boolean isOverdue() {
-        return status == MaintenanceStatus.ACTIVE && 
+        return status == MaintenanceStatus.ACTIVE &&
+               expectedCompletionDate != null &&
                LocalDateTime.now().isAfter(expectedCompletionDate);
     }
     

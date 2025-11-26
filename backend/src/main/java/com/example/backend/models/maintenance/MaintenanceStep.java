@@ -2,6 +2,7 @@ package com.example.backend.models;
 
 import com.example.backend.models.StepType;
 import com.example.backend.models.hr.Employee;
+import com.example.backend.models.merchant.Merchant;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -14,6 +15,7 @@ import org.hibernate.annotations.GenericGenerator;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -41,7 +43,14 @@ public class MaintenanceStep {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "responsible_employee_id")
     private Employee responsibleEmployee;
-    
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "selected_merchant_id")
+    private Merchant selectedMerchant;
+
+    @OneToMany(mappedBy = "maintenanceStep", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MaintenanceStepMerchantItem> merchantItems;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "step_type_id", nullable = false)
     private StepType stepType;
@@ -57,8 +66,7 @@ public class MaintenanceStep {
     @Column(name = "start_date", nullable = false)
     private LocalDateTime startDate;
     
-    @NotNull(message = "Expected end date is required")
-    @Column(name = "expected_end_date", nullable = false)
+    @Column(name = "expected_end_date")
     private LocalDateTime expectedEndDate;
     
     @Column(name = "actual_end_date")
@@ -73,7 +81,26 @@ public class MaintenanceStep {
     @DecimalMin(value = "0.0", inclusive = true, message = "Step cost must be non-negative")
     @Column(name = "step_cost", precision = 10, scale = 2)
     private BigDecimal stepCost = BigDecimal.ZERO;
-    
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "Down payment must be non-negative")
+    @Column(name = "down_payment", precision = 10, scale = 2)
+    private BigDecimal downPayment = BigDecimal.ZERO;
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "Expected cost must be non-negative")
+    @Column(name = "expected_cost", precision = 10, scale = 2)
+    private BigDecimal expectedCost = BigDecimal.ZERO;
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "Actual cost must be non-negative")
+    @Column(name = "actual_cost", precision = 10, scale = 2)
+    private BigDecimal actualCost;
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "Remaining must be non-negative")
+    @Column(name = "remaining", precision = 10, scale = 2)
+    private BigDecimal remaining = BigDecimal.ZERO;
+
+    @Column(name = "remaining_manually_set", nullable = false)
+    private boolean remainingManuallySet = false;
+
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
     
@@ -98,7 +125,7 @@ public class MaintenanceStep {
     }
     
     public boolean isOverdue() {
-        return !isCompleted() && LocalDateTime.now().isAfter(expectedEndDate);
+        return !isCompleted() && expectedEndDate != null && LocalDateTime.now().isAfter(expectedEndDate);
     }
     
     public long getDurationInHours() {

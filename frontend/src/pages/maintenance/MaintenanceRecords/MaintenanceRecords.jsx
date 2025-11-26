@@ -390,6 +390,7 @@ const MaintenanceRecords = () => {
                 columns={columns}
                 loading={loading}
                 actions={actions}
+                onRowClick={handleViewSteps}
                 showSearch={true}
                 showFilters={true}
                 filterableColumns={filterableColumns}

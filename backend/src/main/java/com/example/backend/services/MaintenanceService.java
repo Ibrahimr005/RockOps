@@ -3,10 +3,12 @@ package com.example.backend.services;
 import com.example.backend.dtos.*;
 import com.example.backend.models.*;
 import com.example.backend.models.hr.Employee;
+import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.models.user.Role;
 import com.example.backend.repositories.*;
 import com.example.backend.repositories.hr.EmployeeRepository;
+import com.example.backend.repositories.merchant.MerchantRepository;
 import com.example.backend.exceptions.MaintenanceException;
 import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.equipment.EquipmentStatus;
@@ -44,17 +46,35 @@ public class MaintenanceService {
     private final EmployeeRepository employeeRepository;
     private final ContactRepository contactRepository;
     private final ContactTypeRepository contactTypeRepository;
+    private final MerchantRepository merchantRepository;
     private final NotificationService notificationService;
     
     // Maintenance Record Operations
     
     public MaintenanceRecordDto createMaintenanceRecord(MaintenanceRecordDto dto) {
         log.info("Creating new maintenance record for equipment: {}", dto.getEquipmentId());
-        
+
         // Validate equipment exists
         Equipment equipment = equipmentRepository.findById(dto.getEquipmentId())
                 .orElseThrow(() -> new MaintenanceException("Equipment not found with id: " + dto.getEquipmentId()));
-        
+
+        // Validate issue date is provided
+        if (dto.getIssueDate() == null) {
+            throw new MaintenanceException("Issue date is required");
+        }
+
+        // Validate spare part name is provided
+        if (dto.getSparePartName() == null || dto.getSparePartName().trim().isEmpty()) {
+            throw new MaintenanceException("Spare part name / item to maintain is required");
+        }
+
+        // Validate expected completion date >= issue date
+        if (dto.getExpectedCompletionDate() != null && dto.getIssueDate() != null) {
+            if (dto.getExpectedCompletionDate().isBefore(dto.getIssueDate())) {
+                throw new MaintenanceException("Expected completion date must be on or after the issue date");
+            }
+        }
+
         // Allow creating maintenance records even if equipment is already in maintenance
 
         MaintenanceRecord record = MaintenanceRecord.builder()
@@ -62,6 +82,8 @@ public class MaintenanceService {
                 .equipmentInfo(dto.getEquipmentInfo() != null ? dto.getEquipmentInfo() :
                         equipment.getType().getName() + " - " + equipment.getFullModelName())
                 .initialIssueDescription(dto.getInitialIssueDescription())
+                .issueDate(dto.getIssueDate())
+                .sparePartName(dto.getSparePartName().trim())
                 .expectedCompletionDate(dto.getExpectedCompletionDate())
                 .status(MaintenanceRecord.MaintenanceStatus.ACTIVE)
                 // ADD THIS LINE - Set initial cost from DTO
@@ -92,12 +114,14 @@ public class MaintenanceService {
         }
         
         MaintenanceRecord savedRecord = maintenanceRecordRepository.save(record);
-        
+
         // Update equipment status to IN_MAINTENANCE if not already in maintenance
         if (equipment.getStatus() != EquipmentStatus.IN_MAINTENANCE) {
             equipment.setStatus(EquipmentStatus.IN_MAINTENANCE);
             equipmentRepository.save(equipment);
         }
+
+        // Note: Steps are NOT auto-created - user adds them manually
         
         // Send notifications to MAINTENANCE_MANAGER, EQUIPMENT_MANAGER, and ADMIN
         try {
@@ -216,7 +240,18 @@ public class MaintenanceService {
         if (dto.getFinalDescription() != null) {
             record.setFinalDescription(dto.getFinalDescription());
         }
+        if (dto.getIssueDate() != null) {
+            record.setIssueDate(dto.getIssueDate());
+        }
+        if (dto.getSparePartName() != null) {
+            record.setSparePartName(dto.getSparePartName().trim());
+        }
         if (dto.getExpectedCompletionDate() != null) {
+            // Validate expected completion date >= issue date
+            LocalDateTime issueDate = dto.getIssueDate() != null ? dto.getIssueDate() : record.getIssueDate();
+            if (issueDate != null && dto.getExpectedCompletionDate().isBefore(issueDate)) {
+                throw new MaintenanceException("Expected completion date must be on or after the issue date");
+            }
             record.setExpectedCompletionDate(dto.getExpectedCompletionDate());
         }
 
@@ -329,10 +364,11 @@ public class MaintenanceService {
         StepType stepType = stepTypeRepository.findById(dto.getStepTypeId())
                 .orElseThrow(() -> new MaintenanceException("Step type not found with id: " + dto.getStepTypeId()));
         
-        // Get the responsible person (can be either employee or contact, not both)
+        // Get the responsible person (can be employee, contact, or merchant)
         Contact responsibleContact = null;
         Employee responsibleEmployee = null;
-        
+        Merchant selectedMerchant = null;
+
         // Priority 1: Check if employee ID is provided (site employee assignment)
         if (dto.getResponsibleEmployeeId() != null) {
             responsibleEmployee = employeeRepository.findById(dto.getResponsibleEmployeeId())
@@ -348,6 +384,12 @@ public class MaintenanceService {
             } catch (Exception e) {
                 log.warn("Could not assign contact with ID {} to step: {}", dto.getResponsibleContactId(), e.getMessage());
             }
+        }
+        // Priority 3: Check if merchant ID is provided (merchant assignment)
+        else if (dto.getSelectedMerchantId() != null) {
+            selectedMerchant = merchantRepository.findById(dto.getSelectedMerchantId())
+                    .orElseThrow(() -> new MaintenanceException("Merchant not found with id: " + dto.getSelectedMerchantId()));
+            log.info("Assigned merchant {} as responsible for step", selectedMerchant.getName());
         }
         
         // LOCATION TRACKING LOGIC
@@ -380,21 +422,56 @@ public class MaintenanceService {
             : currentLocation;
         String toLocation = dto.getToLocation() != null ? dto.getToLocation() : "";
         
+        // Calculate remaining amount
+        BigDecimal expectedCost = dto.getExpectedCost() != null ? dto.getExpectedCost() : BigDecimal.ZERO;
+        BigDecimal downPayment = dto.getDownPayment() != null ? dto.getDownPayment() : BigDecimal.ZERO;
+        BigDecimal remaining;
+        boolean remainingManuallySet = false;
+
+        if (dto.getRemainingManuallySet() != null && dto.getRemainingManuallySet() && dto.getRemaining() != null) {
+            // User manually set the remaining value
+            remaining = dto.getRemaining();
+            remainingManuallySet = true;
+        } else {
+            // Auto-calculate remaining = expectedCost - downPayment
+            remaining = expectedCost.subtract(downPayment);
+        }
+
         MaintenanceStep step = MaintenanceStep.builder()
                 .maintenanceRecord(record)
                 .stepType(stepType)
                 .description(dto.getDescription())
                 .responsibleContact(responsibleContact)
                 .responsibleEmployee(responsibleEmployee)
+                .selectedMerchant(selectedMerchant)
                 .startDate(dto.getStartDate() != null ? dto.getStartDate() : LocalDateTime.now())
                 .expectedEndDate(dto.getExpectedEndDate())
                 .fromLocation(fromLocation)
                 .toLocation(toLocation)
                 .stepCost(dto.getStepCost() != null ? dto.getStepCost() : BigDecimal.ZERO)
+                .downPayment(downPayment)
+                .expectedCost(expectedCost)
+                .remaining(remaining)
+                .remainingManuallySet(remainingManuallySet)
+                .actualCost(dto.getActualCost())
                 .notes(dto.getNotes())
                 .build();
-        
+
         MaintenanceStep savedStep = maintenanceStepRepository.save(step);
+
+        // Handle merchant items if merchant is selected
+        if (selectedMerchant != null && dto.getMerchantItems() != null && !dto.getMerchantItems().isEmpty()) {
+            final MaintenanceStep finalStep = savedStep;
+            List<MaintenanceStepMerchantItem> merchantItems = dto.getMerchantItems().stream()
+                    .map(itemDto -> MaintenanceStepMerchantItem.builder()
+                            .maintenanceStep(finalStep)
+                            .description(itemDto.getDescription())
+                            .cost(itemDto.getCost())
+                            .build())
+                    .collect(Collectors.toList());
+            savedStep.setMerchantItems(merchantItems);
+            savedStep = maintenanceStepRepository.save(savedStep);
+        }
         
         // Update main record's current responsible contact (prefer employee over contact for display)
         if (responsibleEmployee != null) {
@@ -457,25 +534,90 @@ public class MaintenanceService {
     public MaintenanceStepDto updateMaintenanceStep(UUID id, MaintenanceStepDto dto) {
         MaintenanceStep step = maintenanceStepRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + id));
-        
+
+        // Update step type if provided
+        if (dto.getStepTypeId() != null) {
+            StepType stepType = stepTypeRepository.findById(dto.getStepTypeId())
+                    .orElseThrow(() -> new MaintenanceException("Step type not found with id: " + dto.getStepTypeId()));
+            step.setStepType(stepType);
+        }
+
         if (dto.getDescription() != null) {
             step.setDescription(dto.getDescription());
+        }
+
+        // Update responsible person based on what's provided
+        if (dto.getResponsibleEmployeeId() != null) {
+            Employee employee = employeeRepository.findById(dto.getResponsibleEmployeeId())
+                    .orElseThrow(() -> new MaintenanceException("Employee not found with id: " + dto.getResponsibleEmployeeId()));
+            step.setResponsibleEmployee(employee);
+            step.setResponsibleContact(null);
+            step.setSelectedMerchant(null);
+        } else if (dto.getResponsibleContactId() != null) {
+            Contact contact = contactRepository.findById(dto.getResponsibleContactId())
+                    .orElseThrow(() -> new MaintenanceException("Contact not found with id: " + dto.getResponsibleContactId()));
+            step.setResponsibleContact(contact);
+            step.setResponsibleEmployee(null);
+            step.setSelectedMerchant(null);
+        } else if (dto.getSelectedMerchantId() != null) {
+            Merchant merchant = merchantRepository.findById(dto.getSelectedMerchantId())
+                    .orElseThrow(() -> new MaintenanceException("Merchant not found with id: " + dto.getSelectedMerchantId()));
+            step.setSelectedMerchant(merchant);
+            step.setResponsibleEmployee(null);
+            step.setResponsibleContact(null);
+        }
+
+        if (dto.getStartDate() != null) {
+            step.setStartDate(dto.getStartDate());
         }
         if (dto.getExpectedEndDate() != null) {
             step.setExpectedEndDate(dto.getExpectedEndDate());
         }
+        if (dto.getFromLocation() != null) {
+            step.setFromLocation(dto.getFromLocation());
+        }
+        if (dto.getToLocation() != null) {
+            step.setToLocation(dto.getToLocation());
+        }
+
+        // Update cost fields
         if (dto.getStepCost() != null) {
             step.setStepCost(dto.getStepCost());
         }
+        if (dto.getDownPayment() != null) {
+            step.setDownPayment(dto.getDownPayment());
+        }
+        if (dto.getExpectedCost() != null) {
+            step.setExpectedCost(dto.getExpectedCost());
+        }
+        if (dto.getActualCost() != null) {
+            step.setActualCost(dto.getActualCost());
+        }
+
+        // Handle remaining field with auto-calculation logic
+        if (dto.getRemainingManuallySet() != null && dto.getRemainingManuallySet() && dto.getRemaining() != null) {
+            // User manually set the remaining value
+            step.setRemaining(dto.getRemaining());
+            step.setRemainingManuallySet(true);
+        } else if (dto.getDownPayment() != null || dto.getExpectedCost() != null) {
+            // Auto-calculate remaining = expectedCost - downPayment
+            BigDecimal expectedCost = dto.getExpectedCost() != null ? dto.getExpectedCost() : step.getExpectedCost();
+            BigDecimal downPayment = dto.getDownPayment() != null ? dto.getDownPayment() : step.getDownPayment();
+            if (expectedCost != null && downPayment != null) {
+                step.setRemaining(expectedCost.subtract(downPayment));
+                step.setRemainingManuallySet(false);
+            }
+        }
+
         if (dto.getNotes() != null) {
             step.setNotes(dto.getNotes());
         }
-        
+
         MaintenanceStep savedStep = maintenanceStepRepository.save(step);
-        
+
         // Recalculate total cost of parent record
         updateRecordTotalCost(step.getMaintenanceRecord().getId());
-        
+
         return convertToDto(savedStep);
     }
     
@@ -547,19 +689,38 @@ public class MaintenanceService {
     public void completeMaintenanceStep(UUID stepId, MaintenanceStepDto completionData) {
         MaintenanceStep step = maintenanceStepRepository.findById(stepId)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + stepId));
-        
+
+        // Update expected values if provided (these can be filled during completion)
+        if (completionData.getExpectedEndDate() != null) {
+            step.setExpectedEndDate(completionData.getExpectedEndDate());
+        }
+        if (completionData.getExpectedCost() != null) {
+            step.setExpectedCost(completionData.getExpectedCost());
+        }
+        if (completionData.getDownPayment() != null) {
+            step.setDownPayment(completionData.getDownPayment());
+        }
+
         // Set actual end date from request, or use current time if not provided
         if (completionData.getActualEndDate() != null) {
             step.setActualEndDate(completionData.getActualEndDate());
         } else {
             step.setActualEndDate(LocalDateTime.now());
         }
-        
+
         // Update actual cost if provided
-        if (completionData.getStepCost() != null) {
+        if (completionData.getActualCost() != null) {
+            step.setActualCost(completionData.getActualCost());
+            step.setStepCost(completionData.getActualCost()); // Also update stepCost for backward compatibility
+        } else if (completionData.getStepCost() != null) {
             step.setStepCost(completionData.getStepCost());
         }
-        
+
+        // Recalculate remaining if expected values were updated
+        if (step.getExpectedCost() != null && step.getDownPayment() != null) {
+            step.setRemaining(step.getExpectedCost().subtract(step.getDownPayment()));
+        }
+
         maintenanceStepRepository.save(step);
         
         // Recalculate total cost of parent record
@@ -823,12 +984,18 @@ public class MaintenanceService {
         
         // Get equipment information
         Equipment equipment = equipmentRepository.findById(record.getEquipmentId()).orElse(null);
-        
-        // Recalculate cost to ensure it is up-to-date
-        BigDecimal totalCost = steps.stream()
-                .map(step -> step.getStepCost() != null ? step.getStepCost() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        record.setTotalCost(totalCost);
+
+        // Only recalculate cost from steps if there are steps, otherwise preserve the record's totalCost
+        BigDecimal totalCost;
+        if (!steps.isEmpty()) {
+            totalCost = steps.stream()
+                    .map(step -> step.getStepCost() != null ? step.getStepCost() : BigDecimal.ZERO)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            record.setTotalCost(totalCost);
+        } else {
+            // No steps yet, use the record's stored totalCost
+            totalCost = record.getTotalCost() != null ? record.getTotalCost() : BigDecimal.ZERO;
+        }
         
         return MaintenanceRecordDto.builder()
                 .id(record.getId())
@@ -836,6 +1003,8 @@ public class MaintenanceService {
                 .equipmentInfo(record.getEquipmentInfo())
                 .initialIssueDescription(record.getInitialIssueDescription())
                 .finalDescription(record.getFinalDescription())
+                .issueDate(record.getIssueDate())
+                .sparePartName(record.getSparePartName())
                 .creationDate(record.getCreationDate())
                 .expectedCompletionDate(record.getExpectedCompletionDate())
                 .actualCompletionDate(record.getActualCompletionDate())
@@ -874,6 +1043,18 @@ public class MaintenanceService {
             stepTypeName = name.substring(0, 1).toUpperCase() + name.substring(1).toLowerCase();
         }
         
+        // Convert merchant items to DTOs
+        List<MaintenanceStepMerchantItemDto> merchantItemDtos = null;
+        if (step.getMerchantItems() != null && !step.getMerchantItems().isEmpty()) {
+            merchantItemDtos = step.getMerchantItems().stream()
+                    .map(item -> MaintenanceStepMerchantItemDto.builder()
+                            .id(item.getId())
+                            .description(item.getDescription())
+                            .cost(item.getCost())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
         return MaintenanceStepDto.builder()
                 .id(step.getId())
                 .maintenanceRecordId(step.getMaintenanceRecord().getId())
@@ -882,10 +1063,12 @@ public class MaintenanceService {
                 .description(step.getDescription())
                 .responsibleContactId(step.getResponsibleContact() != null ? step.getResponsibleContact().getId() : null)
                 .responsibleEmployeeId(step.getResponsibleEmployee() != null ? step.getResponsibleEmployee().getId() : null)
-                .contactEmail(step.getResponsibleContact() != null ? step.getResponsibleContact().getEmail() : 
+                .selectedMerchantId(step.getSelectedMerchant() != null ? step.getSelectedMerchant().getId() : null)
+                .merchantItems(merchantItemDtos)
+                .contactEmail(step.getResponsibleContact() != null ? step.getResponsibleContact().getEmail() :
                              (step.getResponsibleEmployee() != null ? step.getResponsibleEmployee().getEmail() : null))
-                .contactSpecialization(step.getResponsibleContact() != null ? step.getResponsibleContact().getSpecialization() : 
-                                      (step.getResponsibleEmployee() != null && step.getResponsibleEmployee().getJobPosition() != null ? 
+                .contactSpecialization(step.getResponsibleContact() != null ? step.getResponsibleContact().getSpecialization() :
+                                      (step.getResponsibleEmployee() != null && step.getResponsibleEmployee().getJobPosition() != null ?
                                        step.getResponsibleEmployee().getJobPosition().getPositionName() : null))
                 .lastContactDate(step.getLastContactDate())
                 .startDate(step.getStartDate())
@@ -894,6 +1077,11 @@ public class MaintenanceService {
                 .fromLocation(step.getFromLocation())
                 .toLocation(step.getToLocation())
                 .stepCost(step.getStepCost())
+                .downPayment(step.getDownPayment())
+                .expectedCost(step.getExpectedCost())
+                .actualCost(step.getActualCost())
+                .remaining(step.getRemaining())
+                .remainingManuallySet(step.isRemainingManuallySet())
                 .notes(step.getNotes())
                 .isFinalStep(step.isFinalStep())
                 .createdAt(step.getCreatedAt())
@@ -944,10 +1132,115 @@ public class MaintenanceService {
     }
     
     /**
+     * Create default maintenance steps for a new maintenance record.
+     * Creates 4 steps: Transport, Purchasing Spare Parts, Maintenance, Transport Back to Site
+     */
+    private void createDefaultMaintenanceSteps(MaintenanceRecord record, Equipment equipment) {
+        try {
+            // Get equipment site name for Transport Back step
+            String equipmentSite = equipment.getSite() != null ? equipment.getSite().getName() : "";
+
+            // Find step types by name
+            StepType transportType = stepTypeRepository.findAll().stream()
+                    .filter(st -> "TRANSPORT".equalsIgnoreCase(st.getName()))
+                    .findFirst()
+                    .orElse(null);
+
+            StepType purchasingType = stepTypeRepository.findAll().stream()
+                    .filter(st -> "PURCHASING_SPARE_PARTS".equalsIgnoreCase(st.getName()) ||
+                                  "PURCHASING".equalsIgnoreCase(st.getName()))
+                    .findFirst()
+                    .orElse(null);
+
+            StepType maintenanceType = stepTypeRepository.findAll().stream()
+                    .filter(st -> "MAINTENANCE".equalsIgnoreCase(st.getName()))
+                    .findFirst()
+                    .orElse(null);
+
+            StepType transportBackType = stepTypeRepository.findAll().stream()
+                    .filter(st -> "TRANSPORT_BACK_TO_SITE".equalsIgnoreCase(st.getName()) ||
+                                  "TRANSPORT_BACK".equalsIgnoreCase(st.getName()))
+                    .findFirst()
+                    .orElse(transportType); // Fall back to transport type
+
+            LocalDateTime now = LocalDateTime.now();
+
+            // Step 1: Transport (to workshop/service center)
+            if (transportType != null) {
+                MaintenanceStep step1 = MaintenanceStep.builder()
+                        .maintenanceRecord(record)
+                        .stepType(transportType)
+                        .description("Transport to workshop/service center")
+                        .startDate(now)
+                        .fromLocation(equipmentSite)
+                        .toLocation("")
+                        .stepCost(BigDecimal.ZERO)
+                        .downPayment(BigDecimal.ZERO)
+                        .expectedCost(BigDecimal.ZERO)
+                        .remaining(BigDecimal.ZERO)
+                        .build();
+                maintenanceStepRepository.save(step1);
+            }
+
+            // Step 2: Purchasing Spare Parts
+            if (purchasingType != null) {
+                MaintenanceStep step2 = MaintenanceStep.builder()
+                        .maintenanceRecord(record)
+                        .stepType(purchasingType)
+                        .description("Purchasing spare parts")
+                        .startDate(now)
+                        .stepCost(BigDecimal.ZERO)
+                        .downPayment(BigDecimal.ZERO)
+                        .expectedCost(BigDecimal.ZERO)
+                        .remaining(BigDecimal.ZERO)
+                        .build();
+                maintenanceStepRepository.save(step2);
+            }
+
+            // Step 3: Maintenance (the actual repair work)
+            if (maintenanceType != null) {
+                MaintenanceStep step3 = MaintenanceStep.builder()
+                        .maintenanceRecord(record)
+                        .stepType(maintenanceType)
+                        .description("Maintenance/repair work")
+                        .startDate(now)
+                        .stepCost(BigDecimal.ZERO)
+                        .downPayment(BigDecimal.ZERO)
+                        .expectedCost(BigDecimal.ZERO)
+                        .remaining(BigDecimal.ZERO)
+                        .build();
+                maintenanceStepRepository.save(step3);
+            }
+
+            // Step 4: Transport Back to Site
+            if (transportBackType != null) {
+                MaintenanceStep step4 = MaintenanceStep.builder()
+                        .maintenanceRecord(record)
+                        .stepType(transportBackType)
+                        .description("Transport back to site")
+                        .startDate(now)
+                        .fromLocation("")
+                        .toLocation(equipmentSite) // Pre-fill with equipment's site
+                        .stepCost(BigDecimal.ZERO)
+                        .downPayment(BigDecimal.ZERO)
+                        .expectedCost(BigDecimal.ZERO)
+                        .remaining(BigDecimal.ZERO)
+                        .build();
+                maintenanceStepRepository.save(step4);
+            }
+
+            log.info("Created 4 default maintenance steps for record: {}", record.getId());
+        } catch (Exception e) {
+            log.error("Failed to create default maintenance steps: {}", e.getMessage());
+            // Don't throw exception, just log error - the record was created successfully
+        }
+    }
+
+    /**
      * Find or create a Contact entity for an Employee.
      * This is used to automatically assign equipment's main driver as responsible person
      * when creating a maintenance record.
-     * 
+     *
      * @param employee The employee to find or create a contact for
      * @return The Contact entity for the employee
      */

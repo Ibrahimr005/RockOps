@@ -11,6 +11,8 @@ import './MaintenanceRecordModal.scss';
 const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) => {
     const [formData, setFormData] = useState({
         equipmentId: '',
+        issueDate: '',
+        sparePartName: '',
         initialIssueDescription: '',
         expectedCompletionDate: '',
         estimatedCost: ''
@@ -42,14 +44,19 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
         if (editingRecord) {
             setFormData({
                 equipmentId: editingRecord.equipmentId || '',
+                issueDate: editingRecord.issueDate ?
+                    editingRecord.issueDate.split('T')[0] : '',
+                sparePartName: editingRecord.sparePartName || '',
                 initialIssueDescription: editingRecord.initialIssueDescription || '',
                 expectedCompletionDate: editingRecord.expectedCompletionDate ?
                     editingRecord.expectedCompletionDate.split('T')[0] : '',
-                estimatedCost: editingRecord.totalCost || editingRecord.estimatedCost || '' // Fix this line
+                estimatedCost: editingRecord.totalCost || editingRecord.estimatedCost || ''
             });
         } else {
             setFormData({
                 equipmentId: '',
+                issueDate: new Date().toISOString().split('T')[0],
+                sparePartName: '',
                 initialIssueDescription: '',
                 expectedCompletionDate: '',
                 estimatedCost: ''
@@ -81,12 +88,29 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
             newErrors.equipmentId = 'Equipment is required';
         }
 
+        if (!formData.issueDate) {
+            newErrors.issueDate = 'Issue date is required';
+        }
+
+        if (!formData.sparePartName || !formData.sparePartName.trim()) {
+            newErrors.sparePartName = 'Spare part name / item to maintain is required';
+        }
+
         if (!formData.initialIssueDescription.trim()) {
             newErrors.initialIssueDescription = 'Issue description is required';
         }
 
         if (!formData.expectedCompletionDate) {
             newErrors.expectedCompletionDate = 'Expected completion date is required';
+        }
+
+        // Validate expected completion date >= issue date
+        if (formData.issueDate && formData.expectedCompletionDate) {
+            const issueDate = new Date(formData.issueDate);
+            const expectedDate = new Date(formData.expectedCompletionDate);
+            if (expectedDate < issueDate) {
+                newErrors.expectedCompletionDate = 'Expected completion date must be on or after the issue date';
+            }
         }
 
         if (formData.estimatedCost && isNaN(formData.estimatedCost)) {
@@ -99,14 +123,16 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         if (validateForm()) {
             const submitData = {
                 ...formData,
+                issueDate: formData.issueDate + 'T00:00:00',
                 expectedCompletionDate: formData.expectedCompletionDate + 'T17:00:00',
-                totalCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : 0, // Map to totalCost
-                estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : 0 // Keep both for compatibility
+                totalCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : 0,
+                estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : 0
             };
+            console.log('Submitting maintenance record:', submitData);
             onSubmit(submitData);
         }
     };
@@ -177,6 +203,48 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
 
                     <div className="form-section">
                         <h3>Issue Details</h3>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="issueDate">Issue Date <span className="required">*</span></label>
+                                <input
+                                    type="date"
+                                    id="issueDate"
+                                    name="issueDate"
+                                    value={formData.issueDate}
+                                    onChange={handleInputChange}
+                                    className={errors.issueDate ? 'error' : ''}
+                                />
+                                {errors.issueDate && <span className="error-message">{errors.issueDate}</span>}
+                            </div>
+
+                            {editingRecord && editingRecord.creationDate && (
+                                <div className="form-group">
+                                    <label>Created On</label>
+                                    <input
+                                        type="text"
+                                        value={new Date(editingRecord.creationDate).toLocaleString()}
+                                        readOnly
+                                        className="readonly-field"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="sparePartName">Spare Part Name / Item to Maintain <span className="required">*</span></label>
+                            <input
+                                type="text"
+                                id="sparePartName"
+                                name="sparePartName"
+                                value={formData.sparePartName}
+                                onChange={handleInputChange}
+                                placeholder="Enter the spare part or item that needs maintenance..."
+                                maxLength={255}
+                                className={errors.sparePartName ? 'error' : ''}
+                            />
+                            {errors.sparePartName && <span className="error-message">{errors.sparePartName}</span>}
+                        </div>
+
                         <div className="form-group">
                             <label htmlFor="initialIssueDescription">Issue Description <span className="required">*</span></label>
                             <textarea

@@ -16,7 +16,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border: 1px solid #e5e7eb;
   max-width: 100%;
-  overflow-x: auto; // Always enable horizontal scrolling
+  overflow-x: auto; // Allow horizontal scroll only when needed
   overflow-y: hidden;
   scrollbar-width: thin;
   -webkit-overflow-scrolling: touch; // Smooth scrolling on iOS
@@ -2040,6 +2040,42 @@
 
 .rockops-table__action-button {
   z-index: 1 !important;
+  position: relative;
+
+  // Fix tooltip positioning and visibility
+  &[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background-color: rgba(0, 0, 0, 0.9);
+    color: white;
+    font-size: 12px;
+    white-space: nowrap;
+    border-radius: 4px;
+    z-index: 1000000;
+    margin-bottom: 5px;
+    pointer-events: none;
+
+    [data-theme="dark"] & {
+      background-color: var(--color-surface);
+      border: 1px solid var(--border-color);
+    }
+  }
+
+  // Fix tooltip positioning for buttons at the right edge
+  &:last-child[title]:hover::after {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+
+  // Remove default browser tooltip
+  &[title] {
+    overflow: visible !important;
+  }
 }
 
 // Simple count display - Responsive

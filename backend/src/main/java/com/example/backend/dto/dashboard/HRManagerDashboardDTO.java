@@ -71,3 +71,4 @@ public class HRManagerDashboardDTO {
     private List<Map<String, Object>> recentLeaveRequests;
 }
 
+

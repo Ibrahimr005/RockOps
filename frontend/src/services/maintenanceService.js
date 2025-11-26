@@ -209,6 +209,28 @@ export const maintenanceService = {
             console.error('Error deleting maintenance step:', error);
             throw error;
         }
+    },
+
+    // Get available merchants
+    getAvailableMerchants: async () => {
+        try {
+            const response = await apiClient.get(`${MAINTENANCE_ENDPOINTS.BASE}/merchants`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching available merchants:', error);
+            throw error;
+        }
+    },
+
+    // Get contacts by merchant (for cascading dropdown)
+    getContactsByMerchant: async (merchantId) => {
+        try {
+            const response = await apiClient.get(`/api/v1/merchants/${merchantId}/contacts`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching contacts by merchant:', error);
+            throw error;
+        }
     }
 };
 

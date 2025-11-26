@@ -20,6 +20,26 @@
 }
 
 .complete-step-form {
+    .section-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+        margin: 16px 0 12px 0;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+
+        @media (max-width: 576px) {
+            grid-template-columns: 1fr;
+        }
+    }
+
     .form-group {
         margin-bottom: 24px;
 

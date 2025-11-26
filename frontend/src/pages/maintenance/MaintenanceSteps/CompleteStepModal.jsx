@@ -5,10 +5,26 @@ import './CompleteStepModal.scss';
 
 const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
     const [formData, setFormData] = useState({
+        expectedEndDate: step?.expectedEndDate ? step.expectedEndDate.split('T')[0] : '',
+        expectedCost: step?.expectedCost || step?.stepCost || '',
+        downPayment: step?.downPayment || '',
         actualEndDate: new Date().toISOString().split('T')[0],
-        actualCost: step?.stepCost || 0
+        actualCost: step?.actualCost || ''
     });
     const [errors, setErrors] = useState({});
+
+    // Update form data when step changes
+    React.useEffect(() => {
+        if (step) {
+            setFormData({
+                expectedEndDate: step.expectedEndDate ? step.expectedEndDate.split('T')[0] : '',
+                expectedCost: step.expectedCost || step.stepCost || '',
+                downPayment: step.downPayment || '',
+                actualEndDate: new Date().toISOString().split('T')[0],
+                actualCost: step.actualCost || ''
+            });
+        }
+    }, [step]);
 
     if (!isOpen) return null;
 
@@ -70,9 +86,12 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         if (validateForm()) {
             onConfirm({
+                expectedEndDate: formData.expectedEndDate ? formData.expectedEndDate + 'T17:00:00' : null,
+                expectedCost: formData.expectedCost ? parseFloat(formData.expectedCost) : null,
+                downPayment: formData.downPayment ? parseFloat(formData.downPayment) : null,
                 actualEndDate: formData.actualEndDate + 'T' + new Date().toTimeString().split(' ')[0],
                 actualCost: parseFloat(formData.actualCost)
             });
@@ -99,6 +118,57 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                     </div>
 
                     <form onSubmit={handleSubmit} className="complete-step-form">
+                        <h4 className="section-title">Expected Values (Optional)</h4>
+
+                        <div className="form-group">
+                            <label htmlFor="expectedEndDate">
+                                <FaCalendarAlt /> Expected End Date
+                            </label>
+                            <input
+                                type="date"
+                                id="expectedEndDate"
+                                name="expectedEndDate"
+                                value={formData.expectedEndDate}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="expectedCost">
+                                    <FaDollarSign /> Expected Cost
+                                </label>
+                                <input
+                                    type="number"
+                                    id="expectedCost"
+                                    name="expectedCost"
+                                    value={formData.expectedCost}
+                                    onChange={handleInputChange}
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="0.00"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="downPayment">
+                                    <FaDollarSign /> Down Payment
+                                </label>
+                                <input
+                                    type="number"
+                                    id="downPayment"
+                                    name="downPayment"
+                                    value={formData.downPayment}
+                                    onChange={handleInputChange}
+                                    step="0.01"
+                                    min="0"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                        </div>
+
+                        <h4 className="section-title">Actual Values (Required)</h4>
+
                         <div className="form-group">
                             <label htmlFor="actualEndDate">
                                 <FaCalendarAlt /> Actual Completion Date <span className="required">*</span>
@@ -138,7 +208,7 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                                 <span className="error-message">{errors.actualCost}</span>
                             )}
                             <span className="info-text">
-                                Estimated: ${step?.stepCost || 0}
+                                Estimated: ${step?.stepCost || step?.expectedCost || 0}
                             </span>
                         </div>
                     </form>

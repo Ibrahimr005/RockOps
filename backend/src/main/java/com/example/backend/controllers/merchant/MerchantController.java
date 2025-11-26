@@ -1,8 +1,8 @@
 package com.example.backend.controllers.merchant;
 
-
-
+import com.example.backend.models.Contact;
 import com.example.backend.models.merchant.Merchant;
+import com.example.backend.repositories.ContactRepository;
 import com.example.backend.services.merchant.MerchantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +20,7 @@ import java.util.UUID;
 public class MerchantController {
 
     private final MerchantService merchantService;
+    private final ContactRepository contactRepository;
 
 
 
@@ -41,6 +42,17 @@ public class MerchantController {
             return ResponseEntity.ok(merchant);
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body(null); // Not found
+        }
+    }
+
+    @GetMapping("/{id}/contacts")
+    public ResponseEntity<?> getContactsByMerchant(@PathVariable UUID id) {
+        try {
+            List<Contact> contacts = contactRepository.findByMerchantId(id);
+            return ResponseEntity.ok(contacts);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
         }
     }
 
