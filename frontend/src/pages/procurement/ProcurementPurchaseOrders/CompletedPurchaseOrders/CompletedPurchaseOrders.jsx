@@ -6,9 +6,9 @@ import Snackbar from "../../../../components/common/Snackbar2/Snackbar2.jsx";
 import PurchaseOrderViewModal from '../../../../components/procurement/PurchaseOrderViewModal/PurchaseOrderViewModal.jsx';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
 
-const CompletedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
+const CompletedPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataChange, loading: parentLoading }) => {
     const navigate = useNavigate();
-    const [purchaseOrders, setPurchaseOrders] = useState([]);
+    const purchaseOrders = propsPurchaseOrders || [];
     const [loading, setLoading] = useState(true);
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
@@ -18,30 +18,6 @@ const CompletedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
     const [showViewModal, setShowViewModal] = useState(false);
     const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
 
-    useEffect(() => {
-        fetchCompletedPurchaseOrders();
-    }, []);
-
-    const fetchCompletedPurchaseOrders = async () => {
-        try {
-            setLoading(true);
-            const allOrders = await purchaseOrderService.getAll();
-
-            // Filter completed and cancelled orders
-            const completedOrders = allOrders.filter(order =>
-                order.status === 'COMPLETED' || order.status === 'CANCELLED'
-            );
-
-            setPurchaseOrders(completedOrders);
-        } catch (err) {
-            console.error('Error fetching completed purchase orders:', err);
-            setNotificationMessage('Failed to load completed purchase orders. Please try again later.');
-            setNotificationType('error');
-            setShowNotification(true);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleRowClick = (row) => {
         setSelectedPurchaseOrder(row);
@@ -79,11 +55,7 @@ const CompletedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
             minWidth: '150px',
             render: (row) => (
                 <span className="po-number-cell">
-                    {row.status === 'COMPLETED' ? (
-                        <FiCheckCircle className="complete-icon" />
-                    ) : (
-                        <FiX className="cancelled-icon" />
-                    )}
+
                     {row.poNumber || '-'}
                 </span>
             )
@@ -106,19 +78,7 @@ const CompletedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
             minWidth: '200px',
             render: (row) => row.requestOrder?.requesterName || '-'
         },
-        {
-            id: 'status',
-            header: 'STATUS',
-            accessor: 'status',
-            sortable: true,
-            filterable: true,
-            minWidth: '130px',
-            render: (row) => (
-                <span className={`purchase-order-status-badge ${getStatusClass(row.status)}`}>
-                    {purchaseOrderService.utils.getStatusDisplay(row.status)}
-                </span>
-            )
-        },
+
         {
             id: 'totalAmount',
             header: 'TOTAL AMOUNT',
@@ -174,27 +134,7 @@ const CompletedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
 
     return (
         <div className="completed-purchase-orders-container">
-            {/* Summary Stats */}
-            {purchaseOrders.length > 0 && (
-                <div className="completed-summary-stats">
-                    <div className="stat-card completed">
-                        <FiCheckCircle className="stat-icon" />
-                        <div className="stat-content">
-                            <div className="stat-value">{completedCount}</div>
-                            <div className="stat-label">Completed</div>
-                        </div>
-                    </div>
-                    {cancelledCount > 0 && (
-                        <div className="stat-card cancelled">
-                            <FiX className="stat-icon" />
-                            <div className="stat-content">
-                                <div className="stat-value">{cancelledCount}</div>
-                                <div className="stat-label">Cancelled</div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
+
 
             {/* Completed Purchase Orders Table */}
             <div className="purchase-orders-section">
@@ -203,7 +143,7 @@ const CompletedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
                     columns={columns}
                     actions={actions}
                     onRowClick={handleRowClick}
-                    loading={loading || parentLoading}
+                    loading={parentLoading}
                     emptyMessage="No completed purchase orders found"
                     className="completed-purchase-orders-table"
                     showSearch={true}

@@ -1,7 +1,6 @@
 package com.example.backend.controllers;
 
 import com.example.backend.dtos.ContactDto;
-import com.example.backend.models.Contact;
 import com.example.backend.services.ContactService;
 import com.example.backend.exceptions.ContactException;
 import lombok.RequiredArgsConstructor;

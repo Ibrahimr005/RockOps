@@ -39,6 +39,7 @@ public class PurchaseOrderIssueDTO {
     // Item details (for display)
     private String itemTypeName;
     private String measuringUnit;
+    private String itemTypeCategoryName;
 
     // Merchant details ← ADD THESE (matching actual Merchant entity fields)
     private UUID merchantId;
@@ -48,4 +49,5 @@ public class PurchaseOrderIssueDTO {
     private String merchantContactEmail;
     private String merchantContactPersonName;
     private String merchantAddress;
+    private String merchantPhotoUrl;
 }

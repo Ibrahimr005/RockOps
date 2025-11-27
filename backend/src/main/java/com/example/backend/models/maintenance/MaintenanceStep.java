@@ -1,6 +1,6 @@
 package com.example.backend.models;
 
-import com.example.backend.models.StepType;
+import com.example.backend.models.contact.Contact;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.merchant.Merchant;
 import jakarta.persistence.*;

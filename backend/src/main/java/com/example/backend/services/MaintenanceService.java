@@ -2,6 +2,9 @@ package com.example.backend.services;
 
 import com.example.backend.dtos.*;
 import com.example.backend.models.*;
+import com.example.backend.models.contact.Contact;
+import com.example.backend.models.contact.ContactLog;
+import com.example.backend.models.contact.ContactType;
 import com.example.backend.models.hr.Employee;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.notification.NotificationType;
@@ -20,8 +23,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

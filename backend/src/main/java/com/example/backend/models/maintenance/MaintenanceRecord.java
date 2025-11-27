@@ -1,5 +1,6 @@
 package com.example.backend.models;
 
+import com.example.backend.models.contact.Contact;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import jakarta.validation.constraints.Size;

@@ -155,8 +155,7 @@ const LeaveRequestList = () => {
         setRejectionReason('');
     };
 
-    // DataTable configuration
-// DataTable configuration
+    // DataTable configuration with FIXES
     const columns = [
         {
             header: 'Employee',
@@ -194,19 +193,17 @@ const LeaveRequestList = () => {
             )
         },
         {
-            header: 'Duration',
-            accessor: 'startDate',
+            header: 'Duration (Working Days)',
+            accessor: 'workingDaysRequested',
             sortable: true,
-            // FIX: Add exportFormatter for proper Excel export
+            // Make this filterable with numeric input only
+            filterable: true,
+            filterType: 'number',
             exportFormatter: (value, row) => {
                 const start = formatDate(row.startDate);
                 const end = formatDate(row.endDate);
                 const days = row.workingDaysRequested || row.daysRequested || 0;
                 return `${start} to ${end} (${days} working days)`;
-            },
-            // FIX: Add filterValue for proper filtering
-            filterValue: (row) => {
-                return `${formatDate(row.startDate)} to ${formatDate(row.endDate)}`;
             },
             render: (row) => (
                 <div className="duration-cell">
@@ -232,8 +229,10 @@ const LeaveRequestList = () => {
             header: 'Status',
             accessor: 'status',
             sortable: true,
-            // FIX: Add filterValue for proper filtering
-            filterValue: (row) => row.statusDisplay || row.status,
+            // Make this a dropdown filter
+            filterable: true,
+            filterType: 'select',
+            filterAllText: 'All Statuses',
             render: (row, value) => (
                 <div className="status-cell">
                     {getStatusBadge(value)}
@@ -247,15 +246,15 @@ const LeaveRequestList = () => {
             )
         },
         {
-            header: 'Submitted',
+            header: 'Submitted Date',
             accessor: 'createdAt',
             sortable: true,
-            // FIX: Add exportFormatter for proper Excel export
+            // Make this filterable with date picker
+            filterable: true,
+            filterType: 'date',
             exportFormatter: (value, row) => {
                 return `${formatDate(value)} by ${row.createdBy || 'Unknown'}`;
             },
-            // FIX: Add filterValue for proper filtering
-            filterValue: (row) => formatDate(row.createdAt),
             render: (row, value) => (
                 <div className="submitted-cell">
                     <div className="submitted-date">{formatDate(value)}</div>
@@ -267,7 +266,6 @@ const LeaveRequestList = () => {
             header: 'Review Info',
             accessor: 'reviewedAt',
             sortable: true,
-            // FIX: Add exportFormatter for proper Excel export
             exportFormatter: (value, row) => {
                 if (!value || row.status === 'PENDING') {
                     return 'Pending review';
@@ -276,13 +274,6 @@ const LeaveRequestList = () => {
                 const reviewer = row.reviewedBy || 'Unknown';
                 const comments = row.reviewComments || '';
                 return comments ? `${reviewDate} by ${reviewer} - ${comments}` : `${reviewDate} by ${reviewer}`;
-            },
-            // FIX: Add filterValue for proper filtering
-            filterValue: (row) => {
-                if (!row.reviewedAt || row.status === 'PENDING') {
-                    return 'Pending review';
-                }
-                return formatDate(row.reviewedAt);
             },
             render: (row, value) => {
                 if (!value || row.status === 'PENDING') {
@@ -313,7 +304,6 @@ const LeaveRequestList = () => {
         {
             header: 'Work Delegation',
             accessor: 'workDelegatedTo',
-            // FIX: Add exportFormatter for proper Excel export
             exportFormatter: (value, row) => {
                 if (!value) return 'Not specified';
                 const notes = row.delegationNotes ? ` - ${row.delegationNotes}` : '';
@@ -339,7 +329,6 @@ const LeaveRequestList = () => {
         {
             header: 'Emergency Contact',
             accessor: 'emergencyContact',
-            // FIX: Add exportFormatter for proper Excel export
             exportFormatter: (value, row) => {
                 if (!value) return 'Not provided';
                 const phone = row.emergencyPhone ? ` (${row.emergencyPhone})` : '';
@@ -361,22 +350,35 @@ const LeaveRequestList = () => {
             )
         }
     ];
+
+    // FIX: Actions should only show for PENDING requests
     const actions = [
         {
             label: 'Approve',
             icon: <FaCheck />,
             onClick: (row) => setApproveConfirmId(row.id),
             className: 'primary',
-            condition: (row) => row.status === 'PENDING'
+            // Only show for pending requests
+            show: (row) => row.status === 'PENDING'
         },
         {
             label: 'Reject',
             icon: <FaTimes />,
             onClick: (row) => setRejectConfirmId(row.id),
             className: 'danger',
-            condition: (row) => row.status === 'PENDING'
+            // Only show for pending requests
+            show: (row) => row.status === 'PENDING'
         }
     ];
+
+    // Define filterable columns - only the ones we want to filter
+    const filterableColumns = [
+        columns.find(col => col.accessor === 'employeeName'),
+        columns.find(col => col.accessor === 'leaveType'),
+        columns.find(col => col.accessor === 'workingDaysRequested'),
+        columns.find(col => col.accessor === 'status'),
+        columns.find(col => col.accessor === 'createdAt')
+    ].filter(Boolean);
 
     return (
         <div className="leave-request-list-container">
@@ -402,7 +404,7 @@ const LeaveRequestList = () => {
                 tableTitle=""
                 showSearch={true}
                 showFilters={true}
-                filterableColumns={columns}
+                filterableColumns={filterableColumns}
                 defaultItemsPerPage={10}
                 itemsPerPageOptions={[10, 25, 50, 100]}
                 onRowClick={(leaveRequest) => navigate(`/hr/leave-requests/${leaveRequest.id}`)}

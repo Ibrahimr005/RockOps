@@ -137,16 +137,42 @@
 .department-table-description {
   color: var(--paragraph-color);
   font-family: var(--font-family);
-  line-height: 1.4;
-  max-width: 300px;
-  overflow: clip;
+  line-height: 1.5;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; /* show up to 2 lines */
   text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-word;
+  max-width: 100%;
+  transition: all 0.2s ease-in-out;
 
+  /* Tablet screens */
+  @media (max-width: 1024px) {
+      -webkit-line-clamp: 3;
+      font-size: 0.95rem;
+    }
+  /* Mobile screens */
   @media (max-width: 768px) {
-    max-width: 200px;
+      -webkit-line-clamp: 4;
+      font-size: 0.9rem;
+
   }
+
+  /* Very small screens */
+  @media (max-width: 480px) {
+      -webkit-line-clamp: 5;
+      font-size: 0.85rem;
+
+  }
+
 }
+
+
+
+
+
+
 
 .count-cell {
   display: flex;

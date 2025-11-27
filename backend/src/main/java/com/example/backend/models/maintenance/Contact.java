@@ -1,5 +1,6 @@
-package com.example.backend.models;
+package com.example.backend.models.maintenance;
 
+import com.example.backend.models.MaintenanceStep;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;

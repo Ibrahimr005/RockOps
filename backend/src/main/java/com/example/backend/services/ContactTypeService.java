@@ -1,7 +1,7 @@
 package com.example.backend.services;
 
 import com.example.backend.dtos.ContactTypeDto;
-import com.example.backend.models.ContactType;
+import com.example.backend.models.maintenance.ContactType;
 import com.example.backend.repositories.ContactTypeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -13,19 +13,15 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PurchaseOrderDeliveryDTO {
+public class DeliveryItemReceiptDTO {
     private UUID id;
-    private UUID purchaseOrderId;
+    private UUID deliverySessionId;
     private UUID purchaseOrderItemId;
-
-    private Double receivedGoodQuantity;
-    private LocalDateTime deliveredAt;
-    private String processedBy;
-    private String deliveryNotes;
-
+    private String itemTypeName;
+    private String measuringUnit;
+    private Double goodQuantity;
     private Boolean isRedelivery;
-    private UUID redeliveryForIssueId;
-
-    // Issues reported in this delivery
+    private String processedBy;           // ADD THIS
+    private LocalDateTime processedAt;    // ADD THIS
     private List<PurchaseOrderIssueDTO> issues;
 }

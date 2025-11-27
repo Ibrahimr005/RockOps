@@ -25,6 +25,17 @@ export const purchaseOrderService = {
         }
     },
 
+    // Get purchase order with full delivery history
+    getWithDeliveries: async (id) => {
+        try {
+            const response = await apiClient.get(PURCHASE_ORDER_ENDPOINTS.WITH_DELIVERIES(id));
+            return response.data || response;
+        } catch (error) {
+            console.error('Error fetching purchase order with deliveries:', error);
+            throw error;
+        }
+    },
+
     // Get all offers pending finance review
     getPendingOffers: async () => {
         try {
@@ -73,14 +84,14 @@ export const purchaseOrderService = {
         }
     },
 
-    // Process delivery with received items and issues
+    // Process delivery session (warehouse receives items from one merchant)
     processDelivery: async (purchaseOrderId, deliveryData) => {
         try {
             console.log('Processing delivery for PO:', purchaseOrderId);
             console.log('Delivery data:', deliveryData);
 
             const response = await apiClient.post(
-                `${PURCHASE_ORDER_ENDPOINTS.BASE}/${purchaseOrderId}/process-delivery`,
+                PURCHASE_ORDER_ENDPOINTS.PROCESS_DELIVERY(purchaseOrderId),
                 deliveryData
             );
 
@@ -92,15 +103,16 @@ export const purchaseOrderService = {
         }
     },
 
-    // Resolve issues for purchase order - NEW VERSION (supports multiple resolutions)
+    // Resolve multiple issues with individual resolution types
+    // Resolve multiple issues with individual resolution types
     resolveIssues: async (purchaseOrderId, resolutions) => {
         try {
             console.log('Resolving issues for PO:', purchaseOrderId);
             console.log('Resolutions:', resolutions);
 
             const response = await apiClient.post(
-                `${PURCHASE_ORDER_ENDPOINTS.BASE}/${purchaseOrderId}/resolve-issues`,
-                { resolutions }
+                PURCHASE_ORDER_ENDPOINTS.RESOLVE_ISSUES(),
+                resolutions
             );
 
             console.log('Resolve issues response:', response.data);
@@ -133,20 +145,6 @@ export const purchaseOrderService = {
             return response.data || response;
         } catch (error) {
             console.error('Error fetching active issues:', error);
-            throw error;
-        }
-    },
-
-    // ← ADD THIS NEW METHOD HERE
-    // Get delivery history for a purchase order item
-    getDeliveryHistory: async (purchaseOrderItemId) => {
-        try {
-            const response = await apiClient.get(
-                PURCHASE_ORDER_ENDPOINTS.GET_DELIVERY_HISTORY(purchaseOrderItemId)
-            );
-            return response.data || response;
-        } catch (error) {
-            console.error('Error fetching delivery history:', error);
             throw error;
         }
     },
@@ -192,10 +190,11 @@ export const purchaseOrderService = {
                 'CREATED': 'Created',
                 'PENDING': 'Pending',
                 'VALIDATED': 'Validated',
+                'PARTIAL': 'Partial',
                 'PARTIALLY_RECEIVED': 'Partially Received',
                 'COMPLETED': 'Completed',
                 'CANCELLED': 'Cancelled',
-                'DISPUTED': 'Disputed' // ← ADD THIS
+                'DISPUTED': 'Disputed'
             };
             return statusMap[status] || status;
         },
@@ -203,14 +202,14 @@ export const purchaseOrderService = {
         // Get status color for UI
         getStatusColor: (status) => {
             const colorMap = {
-                'CREATED': '#6b7280',      // Gray
-                'PENDING': '#f59e0b',      // Amber
-                'VALIDATED': '#3b82f6',    // Blue
-                'PARTIAL': '#f97316',      // Orange
-                'PARTIALLY_RECEIVED': '#f97316', // Orange
-                'COMPLETED': '#10b981',    // Green
-                'CANCELLED': '#ef4444',    // Red
-                'DISPUTED': '#ef4444'      // Red ← ADD THIS
+                'CREATED': '#6b7280',
+                'PENDING': '#f59e0b',
+                'VALIDATED': '#3b82f6',
+                'PARTIAL': '#f97316',
+                'PARTIALLY_RECEIVED': '#f97316',
+                'COMPLETED': '#10b981',
+                'CANCELLED': '#ef4444',
+                'DISPUTED': '#ef4444'
             };
             return colorMap[status] || '#6b7280';
         },
@@ -258,29 +257,24 @@ export const purchaseOrderService = {
                 let aValue = a[sortBy];
                 let bValue = b[sortBy];
 
-                // Handle nested properties
                 if (sortBy.includes('.')) {
                     const keys = sortBy.split('.');
                     aValue = keys.reduce((obj, key) => obj?.[key], a);
                     bValue = keys.reduce((obj, key) => obj?.[key], b);
                 }
 
-                // Handle null/undefined values
                 if (aValue == null) aValue = '';
                 if (bValue == null) bValue = '';
 
-                // Handle dates
                 if (sortBy.includes('At') || sortBy.includes('Date')) {
                     aValue = new Date(aValue).getTime() || 0;
                     bValue = new Date(bValue).getTime() || 0;
                 }
 
-                // Handle numbers
                 if (typeof aValue === 'number' && typeof bValue === 'number') {
                     return direction === 'desc' ? bValue - aValue : aValue - bValue;
                 }
 
-                // Handle strings
                 if (typeof aValue === 'string') aValue = aValue.toLowerCase();
                 if (typeof bValue === 'string') bValue = bValue.toLowerCase();
 
@@ -302,46 +296,14 @@ export const purchaseOrderService = {
             };
 
             purchaseOrders.forEach(po => {
-                // Calculate total value
                 stats.totalValue += purchaseOrderService.utils.getTotalPrice(po);
-
-                // Count by status
                 const status = po.status || 'UNKNOWN';
                 stats.byStatus[status] = (stats.byStatus[status] || 0) + 1;
             });
 
-            // Calculate average
             stats.averageValue = stats.total > 0 ? stats.totalValue / stats.total : 0;
 
             return stats;
         }
-    },
-    // Get items pending redelivery
-    getItemsPendingRedelivery: async (purchaseOrderId) => {
-        try {
-            const response = await api.get(PURCHASE_ORDER_ENDPOINTS.GET_PENDING_REDELIVERY(purchaseOrderId));
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching pending redeliveries:', error);
-            throw error;
-        }
-    },
-
-// Process a redelivery
-    processRedelivery: async (purchaseOrderId, issueIds, deliveryData) => {
-        try {
-            const response = await api.post(
-                PURCHASE_ORDER_ENDPOINTS.PROCESS_REDELIVERY(purchaseOrderId),
-                {
-                    issueIds: issueIds,
-                    items: deliveryData.items,
-                    generalNotes: deliveryData.generalNotes
-                }
-            );
-            return response.data;
-        } catch (error) {
-            console.error('Error processing redelivery:', error);
-            throw error;
-        }
-    },
+    }
 };

@@ -253,7 +253,7 @@ const IncomingRequestOrders = ({
             }
         } catch (err) {
             console.error('Error approving request order:', err);
-            showErrorNotification(`Error: ${err.message || 'Failed to accept request order'}`);
+            showErrorNotification(` ${err.message || 'Failed to accept request order'}`);
         } finally {
             setIsApproving(false);
             setShowConfirmDialog(false);
@@ -572,7 +572,7 @@ const IncomingRequestOrders = ({
                 errorMessage = err.message || 'Unknown error occurred';
             }
 
-            showErrorNotification(`Error: ${errorMessage}`);
+            showErrorNotification(`${errorMessage}`);
         }
     };
 
