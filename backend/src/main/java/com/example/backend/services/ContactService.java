@@ -1,8 +1,8 @@
 package com.example.backend.services;
 
 import com.example.backend.dtos.ContactDto;
-import com.example.backend.models.maintenance.Contact;
-import com.example.backend.models.maintenance.ContactType;
+import com.example.backend.models.contact.Contact;
+import com.example.backend.models.contact.ContactType;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.repositories.ContactRepository;
 import com.example.backend.repositories.ContactTypeRepository;

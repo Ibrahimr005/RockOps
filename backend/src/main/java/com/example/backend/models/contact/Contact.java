@@ -1,4 +1,4 @@
-package com.example.backend.models.maintenance;
+package com.example.backend.models.contact;
 
 import com.example.backend.models.MaintenanceStep;
 import jakarta.persistence.*;

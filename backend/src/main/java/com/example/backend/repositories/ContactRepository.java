@@ -1,7 +1,7 @@
 package com.example.backend.repositories;
 
-import com.example.backend.models.maintenance.Contact;
-import com.example.backend.models.maintenance.ContactType;
+import com.example.backend.models.contact.Contact;
+import com.example.backend.models.contact.ContactType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

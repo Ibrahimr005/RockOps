@@ -3,7 +3,7 @@ package com.example.backend.controllers.merchant;
 
 
 import com.example.backend.dto.merchant.MerchantTransactionDTO;
-import com.example.backend.models.Contact;
+import com.example.backend.models.contact.Contact;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.repositories.ContactRepository;
 import com.example.backend.services.merchant.MerchantService;

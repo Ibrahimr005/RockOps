@@ -5,7 +5,9 @@
       "Bash(./mvnw clean:*)",
       "Bash(mvnw clean compile:*)",
       "Bash(powershell -Command \"cd D:\\RockOps\\backend; .\\mvnw.cmd clean compile -DskipTests\")",
-      "Bash(powershell -Command \".\\mvnw.cmd clean compile -DskipTests\")"
+      "Bash(powershell -Command \".\\mvnw.cmd clean compile -DskipTests\")",
+      "Bash(git rm:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
