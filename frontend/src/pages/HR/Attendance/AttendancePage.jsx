@@ -400,17 +400,15 @@ const AttendancePage = () => {
                     Attendance Sheet
                     <p className="employees-header__subtitle">Track and manage employee attendance records</p>
                 </h1>
+                {/* MOVED: The Save Button was here.
+                   It has been removed and placed inside the site-group map below.
+                */}
                 <div className="header-actions">
-                    <button
-                        className="btn btn-primary"
-                        onClick={handleSaveAttendance}
-                        disabled={saving || modifiedRecords.size === 0}
-                    >
-                        <FaSave /> Save Changes ({modifiedRecords.size})
-                    </button>
+                    {/* Empty or add other top-level actions if needed */}
                 </div>
             </div>
 
+            {/* ... Keep Control Inputs (Site Select, Month Selector) unchanged ... */}
             <div className="attendance-controls">
                 <div className="control-group">
                     <label>Site / Employee Group</label>
@@ -419,97 +417,52 @@ const AttendancePage = () => {
                         onChange={handleSiteChange}
                         className="form-control"
                     >
+                        {/* ... options ... */}
                         <option value="">Select Site or Group</option>
                         <optgroup label="Employee Groups">
-                            <option value="no-site">
-                                🚫 Unassigned Employees
-                            </option>
+                            <option value="no-site">🚫 Unassigned Employees</option>
                         </optgroup>
                         <optgroup label="Sites">
                             {sites.map(site => (
-                                <option key={site.id} value={site.id}>
-                                    {site.name}
-                                </option>
+                                <option key={site.id} value={site.id}>{site.name}</option>
                             ))}
                         </optgroup>
                     </select>
                 </div>
 
                 <div className="month-selector">
-                    <button
-                        className="month-nav-btn"
-                        onClick={() => handleMonthChange('prev')}
-                    >
+                    <button className="month-nav-btn" onClick={() => handleMonthChange('prev')}>
                         <FaChevronLeft />
                     </button>
                     <div className="month-display">
                         <span className="month-name">{monthNames[selectedMonth - 1]}</span>
                         <span className="year">{selectedYear}</span>
                     </div>
-                    <button
-                        className="month-nav-btn"
-                        onClick={() => handleMonthChange('next')}
-                        disabled={selectedYear === new Date().getFullYear() && selectedMonth >= new Date().getMonth() + 1}
-                    >
+                    <button className="month-nav-btn" onClick={() => handleMonthChange('next')}
+                            disabled={selectedYear === new Date().getFullYear() && selectedMonth >= new Date().getMonth() + 1}>
                         <FaChevronRight />
                     </button>
                 </div>
             </div>
 
+            {/* ... Keep Summary Cards unchanged ... */}
             <div className="attendance-summary">
-                <AttendanceSummaryCard
-                    icon={<FaUsers />}
-                    title="Total Employees"
-                    value={summary.totalEmployees}
-                    color="primary"
-                />
-                <AttendanceSummaryCard
-                    icon={<FaUserCheck />}
-                    title="Average Attendance"
-                    value={`${summary.avgAttendance.toFixed(1)}%`}
-                    color="success"
-                />
-                <AttendanceSummaryCard
-                    icon={<FaUserTimes />}
-                    title="Total Absent Days"
-                    value={summary.totalAbsent}
-                    color="danger"
-                />
-                <AttendanceSummaryCard
-                    icon={<FaClock />}
-                    title="Total Hours"
-                    value={summary.totalHours.toFixed(1)}
-                    subValue="hours"
-                    color="info"
-                />
+                {/* ... cards ... */}
+                <AttendanceSummaryCard icon={<FaUsers />} title="Total Employees" value={summary.totalEmployees} color="primary" />
+                <AttendanceSummaryCard icon={<FaUserCheck />} title="Average Attendance" value={`${summary.avgAttendance.toFixed(1)}%`} color="success" />
+                <AttendanceSummaryCard icon={<FaUserTimes />} title="Total Absent Days" value={summary.totalAbsent} color="danger" />
+                <AttendanceSummaryCard icon={<FaClock />} title="Total Hours" value={summary.totalHours.toFixed(1)} subValue="hours" color="info" />
             </div>
 
-            {/* Legend moved to top */}
+            {/* ... Keep Legend unchanged ... */}
             <div className="attendance-legend-top">
-                <div className="legend-item">
-                    <span className="legend-color present"></span>
-                    <span>Present</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color absent"></span>
-                    <span>Absent</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color off"></span>
-                    <span>Off Day</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color leave"></span>
-                    <span>On Leave</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color late"></span>
-                    <span>Late</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color half-day"></span>
-                    <span>Half Day</span>
-                </div>
+                {/* ... legend items ... */}
+                <div className="legend-item"><span className="legend-color present"></span><span>Present</span></div>
+                <div className="legend-item"><span className="legend-color absent"></span><span>Absent</span></div>
+                <div className="legend-item"><span className="legend-color off"></span><span>Off Day</span></div>
+                <div className="legend-item"><span className="legend-color leave"></span><span>On Leave</span></div>
+                <div className="legend-item"><span className="legend-color late"></span><span>Late</span></div>
+                <div className="legend-item"><span className="legend-color half-day"></span><span>Half Day</span></div>
             </div>
 
             <div className="attendance-content">
@@ -519,9 +472,28 @@ const AttendancePage = () => {
                             <div key={index} className="site-group">
                                 {group.siteName && (
                                     <div className={`site-group-header ${selectedSite === 'no-site' ? 'unassigned-header' : ''}`}>
-                                        {selectedSite === 'no-site' && <FaUserSlash className="header-icon" />}
-                                        <h3>{group.siteName}</h3>
-                                        <span className="employee-count">{group.employees.length} employee{group.employees.length !== 1 ? 's' : ''}</span>
+
+                                        {/* LEFT SIDE: Icon and Title */}
+                                        <div className="header-left">
+                                            {selectedSite === 'no-site' && <FaUserSlash className="header-icon" />}
+                                            <h3>{group.siteName}</h3>
+                                        </div>
+
+                                        {/* RIGHT SIDE: Save Button and Count (Moved here) */}
+                                        <div className="header-right">
+                                            {/* Only show save button if changes exist */}
+                                            <button
+                                                className="save-btn-small"
+                                                onClick={handleSaveAttendance}
+                                                disabled={saving || modifiedRecords.size === 0}
+                                            >
+                                                <FaSave /> Save Changes {modifiedRecords.size > 0 && `(${modifiedRecords.size})`}
+                                            </button>
+
+                                            <span className="employee-count">
+                                                {group.employees.length} employee{group.employees.length !== 1 ? 's' : ''}
+                                            </span>
+                                        </div>
                                     </div>
                                 )}
                                 <AttendanceMonthlyView
@@ -536,6 +508,7 @@ const AttendancePage = () => {
                         ))}
                     </>
                 ) : (
+                    // ... Empty State logic unchanged ...
                     <div className="attendance-empty-state">
                         {selectedSite === '' ? (
                             <>
@@ -558,7 +531,7 @@ const AttendancePage = () => {
                 )}
             </div>
 
-            {/* Confirmation Dialog for Unsaved Changes */}
+            {/* ... Keep Confirmation Dialog unchanged ... */}
             <ConfirmationDialog
                 isVisible={showConfirmDialog}
                 type="danger"
@@ -574,7 +547,7 @@ const AttendancePage = () => {
                 size="medium"
             />
         </div>
-    );
+        );
 };
 
 export default AttendancePage;
