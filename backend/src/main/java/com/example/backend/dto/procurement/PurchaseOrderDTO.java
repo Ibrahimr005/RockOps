@@ -37,4 +37,6 @@ public class PurchaseOrderDTO {
 
     // Purchase Order Items (full DTOs)
     private List<PurchaseOrderItemDTO> purchaseOrderItems;
+
+    private List<DeliverySessionDTO> deliverySessions;
 }

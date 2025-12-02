@@ -1,5 +1,9 @@
 .pro-roa-approved-requests-container {
   margin-bottom: 24px;
+  width: 100%; /* ADD THIS */
+  max-width: 100%; /* ADD THIS */
+  overflow-x: auto; /* ADD THIS */
+  box-sizing: border-box; /* ADD THIS */
 }
 
 .pro-roa-approved-requests-header {

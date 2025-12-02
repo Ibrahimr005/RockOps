@@ -2,9 +2,11 @@ package com.example.backend.controllers.merchant;
 
 
 
+import com.example.backend.dto.merchant.MerchantTransactionDTO;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.services.merchant.MerchantService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +43,16 @@ public class MerchantController {
             return ResponseEntity.ok(merchant);
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body(null); // Not found
+        }
+    }
+
+    @GetMapping("/{id}/transactions")
+    public ResponseEntity<List<MerchantTransactionDTO>> getMerchantTransactions(@PathVariable UUID id) {
+        try {
+            List<MerchantTransactionDTO> transactions = merchantService.getMerchantTransactionDTOs(id);
+            return ResponseEntity.ok(transactions);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

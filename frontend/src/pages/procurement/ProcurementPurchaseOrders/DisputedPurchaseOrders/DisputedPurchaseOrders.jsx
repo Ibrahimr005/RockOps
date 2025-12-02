@@ -8,13 +8,14 @@ import PurchaseOrderViewModal from '../../../../components/procurement/PurchaseO
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
 import "./DisputedPurchaseOrders.scss";
 
-const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
+const DisputedPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataChange, loading: parentLoading }) => {
     const navigate = useNavigate();
-    const [purchaseOrders, setPurchaseOrders] = useState([]);
+    const purchaseOrders = propsPurchaseOrders || [];
     const [loading, setLoading] = useState(true);
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
+
 
     // Modal states
     const [showViewModal, setShowViewModal] = useState(false);
@@ -25,30 +26,7 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
     const [orderToCancel, setOrderToCancel] = useState(null);
     const [isCancelling, setIsCancelling] = useState(false);
 
-    useEffect(() => {
-        fetchDisputedPurchaseOrders();
-    }, []);
 
-    const fetchDisputedPurchaseOrders = async () => {
-        try {
-            setLoading(true);
-            const allOrders = await purchaseOrderService.getAll();
-
-            // Filter only disputed orders
-            const disputedOrders = allOrders.filter(order =>
-                order.status === 'DISPUTED'
-            );
-
-            setPurchaseOrders(disputedOrders);
-        } catch (err) {
-            console.error('Error fetching disputed purchase orders:', err);
-            setNotificationMessage('Failed to load disputed purchase orders. Please try again later.');
-            setNotificationType('error');
-            setShowNotification(true);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleRowClick = (row) => {
         navigate(`/procurement/purchase-orders/details/${row.id}`);
@@ -60,30 +38,19 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
         setSelectedPurchaseOrder(null);
     };
 
-    // Handle resolve issue - Navigate to new page
     const handleResolveClick = (row, e) => {
-        console.log('🔍 Resolve button clicked!');
-        console.log('🔍 Row data:', row);
-
         // Event might be undefined from DataTable
         if (e && e.stopPropagation) {
             e.stopPropagation();
         }
 
-        // Navigate to the resolve issues page
-        navigate(`/procurement/purchase-orders/${row.id}/resolve-issues`);
+        // Navigate to purchase order details page with issues tab
+        navigate(`/procurement/purchase-orders/details/${row.id}`, {
+            state: { activeTab: 'issues' }
+        });
     };
 
-    // Handle cancel order
-    const handleCancelClick = (row, e) => {
-        // Event might be undefined from DataTable
-        if (e && e.stopPropagation) {
-            e.stopPropagation();
-        }
 
-        setOrderToCancel(row);
-        setShowCancelDialog(true);
-    };
 
     const handleConfirmCancel = async () => {
         if (!orderToCancel) return;
@@ -97,8 +64,7 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
             setNotificationType('success');
             setShowNotification(true);
 
-            // Refresh the list
-            await fetchDisputedPurchaseOrders();
+            // Just trigger refresh from parent - REMOVE fetchDisputedPurchaseOrders()
             if (onDataChange) onDataChange();
         } catch (err) {
             console.error('Error cancelling purchase order:', err);
@@ -142,7 +108,7 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
             minWidth: '150px',
             render: (row) => (
                 <span className="po-number-cell">
-                    <FiAlertCircle className="dispute-icon" />
+
                     {row.poNumber || '-'}
                 </span>
             )
@@ -208,17 +174,6 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
             ),
             onClick: (row) => handleResolveClick(row),
             className: 'resolve'
-        },
-        {
-            label: 'Cancel Order',
-            icon: (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-            ),
-            onClick: (row) => handleCancelClick(row),
-            className: 'cancel'
         }
     ];
 
@@ -247,7 +202,7 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
     ];
 
     return (
-        <div className="disputed-purchase-orders-container">
+        <div className="disputed-purchase-orders-containers">
             {/* Disputed Purchase Orders Table */}
             <div className="purchase-orders-section">
                 <DataTable
@@ -255,7 +210,7 @@ const DisputedPurchaseOrders = ({ onDataChange, loading: parentLoading }) => {
                     columns={columns}
                     actions={actions}
                     onRowClick={handleRowClick}
-                    loading={loading || parentLoading}
+                    loading={parentLoading}
                     emptyMessage="No disputed purchase orders found"
                     className="disputed-purchase-orders-table"
                     showSearch={true}

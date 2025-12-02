@@ -1,6 +1,6 @@
 package com.example.backend.dtos;
 
-import com.example.backend.models.ContactLog;
+import com.example.backend.models.contact.ContactLog;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
