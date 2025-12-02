@@ -25,7 +25,17 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
     useEffect(() => {
         if (isOpen) {
             loadEquipment();
+            // Prevent background scroll when modal is open
+            document.body.style.overflow = 'hidden';
+        } else {
+            // Restore scroll when modal is closed
+            document.body.style.overflow = 'unset';
         }
+
+        // Cleanup function
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
     }, [isOpen]);
 
     const loadEquipment = async () => {

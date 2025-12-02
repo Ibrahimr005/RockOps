@@ -86,6 +86,9 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
     // Load merchants and contact types when modal opens
     useEffect(() => {
         if (isOpen) {
+            // Prevent background scroll when modal is open
+            document.body.style.overflow = 'hidden';
+
             // Load merchants and contact types asynchronously without blocking modal
             setTimeout(() => {
                 loadMerchants().catch(error => {
@@ -95,7 +98,15 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                     console.error('Failed to load contact types, but modal will still work:', error);
                 });
             }, 100); // Delay to ensure modal renders first
+        } else {
+            // Restore scroll when modal is closed
+            document.body.style.overflow = 'unset';
         }
+
+        // Cleanup function
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
     }, [isOpen]);
 
     const loadMerchants = async () => {

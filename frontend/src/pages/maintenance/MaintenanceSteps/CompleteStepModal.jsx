@@ -13,18 +13,30 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
     });
     const [errors, setErrors] = useState({});
 
-    // Update form data when step changes
+    // Update form data when step changes and prevent background scroll
     React.useEffect(() => {
-        if (step) {
-            setFormData({
-                expectedEndDate: step.expectedEndDate ? step.expectedEndDate.split('T')[0] : '',
-                expectedCost: step.expectedCost || step.stepCost || '',
-                downPayment: step.downPayment || '',
-                actualEndDate: new Date().toISOString().split('T')[0],
-                actualCost: step.actualCost || ''
-            });
+        if (isOpen) {
+            // Prevent background scroll when modal is open
+            document.body.style.overflow = 'hidden';
+            if (step) {
+                setFormData({
+                    expectedEndDate: step.expectedEndDate ? step.expectedEndDate.split('T')[0] : '',
+                    expectedCost: step.expectedCost || step.stepCost || '',
+                    downPayment: step.downPayment || '',
+                    actualEndDate: new Date().toISOString().split('T')[0],
+                    actualCost: step.actualCost || ''
+                });
+            }
+        } else {
+            // Restore scroll when modal is closed
+            document.body.style.overflow = 'unset';
         }
-    }, [step]);
+
+        // Cleanup function
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen, step]);
 
     if (!isOpen) return null;
 

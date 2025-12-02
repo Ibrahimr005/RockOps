@@ -7,7 +7,12 @@
       "Bash(powershell -Command \"cd D:\\RockOps\\backend; .\\mvnw.cmd clean compile -DskipTests\")",
       "Bash(powershell -Command \".\\mvnw.cmd clean compile -DskipTests\")",
       "Bash(git rm:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(mkdir:*)",
+      "Bash(.mvnw.cmd clean compile:*)",
+      "Bash(timeout 30 bash:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
