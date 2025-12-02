@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService';
 import DataTable from '../../../../components/common/DataTable/DataTable';
 import PurchaseOrderViewModal from '../../../../components/procurement/PurchaseOrderViewModal/PurchaseOrderViewModal';
-import ProcessDeliveryModal from '../ProcessDeliveryModal/ProcessDeliveryModal';
+// import ProcessDeliveryModal from '../ProcessDeliveryModal/ProcessDeliveryModal';
 
 const PartialPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
     const [partialOrders, setPartialOrders] = useState([]);
@@ -212,12 +212,12 @@ const PartialPurchaseOrders = ({ warehouseId, onShowSnackbar }) => {
             />
 
             {/* Process Delivery Modal - for continuing to receive remaining items */}
-            <ProcessDeliveryModal
-                purchaseOrder={purchaseOrderToProcess}
-                isOpen={showProcessDeliveryModal}
-                onClose={handleProcessDeliveryModalClose}
-                onSubmit={handleDeliverySubmit}
-            />
+            {/*<ProcessDeliveryModal*/}
+            {/*    purchaseOrder={purchaseOrderToProcess}*/}
+            {/*    isOpen={showProcessDeliveryModal}*/}
+            {/*    onClose={handleProcessDeliveryModalClose}*/}
+            {/*    onSubmit={handleDeliverySubmit}*/}
+            {/*/>*/}
         </div>
     );
 };

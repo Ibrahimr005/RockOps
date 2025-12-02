@@ -45,8 +45,7 @@ public class PurchaseOrderItemDTO {
 
     // Add these at the end of the class:
 
-    // History of all deliveries for this item
-    private List<PurchaseOrderDeliveryDTO> deliveries;
+    private List<DeliveryItemReceiptDTO> itemReceipts;
 
     // All issues for this item (aggregated from all deliveries)
     private List<PurchaseOrderIssueDTO> issues;
