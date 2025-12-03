@@ -22,4 +22,7 @@ public class UserDTO {
     private Role role;
     private boolean enabled;
     private List<WarehouseDTO> assignedWarehouses;
+
+
+
 }

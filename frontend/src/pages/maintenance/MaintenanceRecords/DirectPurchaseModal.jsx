@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { FaTimes, FaSave, FaShoppingCart } from 'react-icons/fa';
 import { equipmentService } from '../../../services/equipmentService.js';
+import { siteService } from '../../../services/siteService.js';
 import { merchantService } from '../../../services/merchant/merchantService';
 import maintenanceService from '../../../services/maintenanceService';
+import { authService } from '../../../services/authService.js';
 import '../../../styles/primary-button.scss';
 import '../../../styles/close-modal-button.scss';
 import '../../../styles/cancel-modal-button.scss';
@@ -11,9 +13,10 @@ import './DirectPurchaseModal.scss';
 
 const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
     const [formData, setFormData] = useState({
+        siteId: '',
         equipmentId: '',
         merchantId: '',
-        responsiblePersonId: '',
+        responsibleUserId: '',
         sparePart: '',
         expectedPartsCost: '',
         expectedTransportationCost: '',
@@ -21,16 +24,20 @@ const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
     });
 
     const [equipmentList, setEquipmentList] = useState([]);
+    const [siteList, setSiteList] = useState([]);
     const [merchantList, setMerchantList] = useState([]);
-    const [contactList, setContactList] = useState([]);
-    const [filteredContacts, setFilteredContacts] = useState([]);
+    const [maintenanceUsers, setMaintenanceUsers] = useState([]);
+    const [currentUser, setCurrentUser] = useState(null);
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             loadEquipment();
+            loadSites();
             loadMerchants();
+            loadMaintenanceUsers();
+            loadCurrentUser();
             // Prevent background scroll when modal is open
             document.body.style.overflow = 'hidden';
         } else {
@@ -46,11 +53,12 @@ const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
 
     useEffect(() => {
         // Reset form when modal is opened
-        if (isOpen) {
+        if (isOpen && currentUser) {
             setFormData({
+                siteId: '',
                 equipmentId: '',
                 merchantId: '',
-                responsiblePersonId: '',
+                responsibleUserId: currentUser.id || '',
                 sparePart: '',
                 expectedPartsCost: '',
                 expectedTransportationCost: '',
@@ -58,18 +66,7 @@ const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
             });
             setErrors({});
         }
-    }, [isOpen]);
-
-    // Filter contacts when merchant changes
-    useEffect(() => {
-        if (formData.merchantId) {
-            loadContactsByMerchant(formData.merchantId);
-            // Reset responsible person when merchant changes
-            setFormData(prev => ({ ...prev, responsiblePersonId: '' }));
-        } else {
-            setFilteredContacts([]);
-        }
-    }, [formData.merchantId]);
+    }, [isOpen, currentUser]);
 
     const loadEquipment = async () => {
         try {
@@ -83,6 +80,15 @@ const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
         }
     };
 
+    const loadSites = async () => {
+        try {
+            const response = await siteService.getAllSites();
+            setSiteList(response.data || []);
+        } catch (error) {
+            console.error('Error loading sites:', error);
+        }
+    };
+
     const loadMerchants = async () => {
         try {
             const response = await merchantService.getAllMerchants();
@@ -92,22 +98,40 @@ const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
         }
     };
 
-    const loadContactsByMerchant = async (merchantId) => {
+    const loadMaintenanceUsers = async () => {
         try {
-            const response = await maintenanceService.getContactsByMerchant(merchantId);
-            setFilteredContacts(response.data || []);
+            const response = await maintenanceService.getMaintenanceTeamUsers();
+            setMaintenanceUsers(response.data || []);
         } catch (error) {
-            console.error('Error loading contacts for merchant:', error);
-            setFilteredContacts([]);
+            console.error('Error loading maintenance users:', error);
+        }
+    };
+
+    const loadCurrentUser = async () => {
+        try {
+            const response = await authService.getCurrentUser();
+            setCurrentUser(response.data);
+        } catch (error) {
+            console.error('Error loading current user:', error);
         }
     };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+
+        // If site changes, clear equipment selection
+        if (name === 'siteId') {
+            setFormData(prev => ({
+                ...prev,
+                siteId: value,
+                equipmentId: ''
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
 
         // Clear error when user starts typing
         if (errors[name]) {
@@ -116,6 +140,23 @@ const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
                 [name]: ''
             }));
         }
+    };
+
+    // Filter equipment based on selected site
+    const getFilteredEquipment = () => {
+        if (!formData.siteId) {
+            return [];
+        }
+
+        if (formData.siteId === 'NONE') {
+            // Show equipment with no site assigned
+            return equipmentList.filter(eq =>
+                !eq.siteId || eq.siteId === null || eq.siteId === ''
+            );
+        }
+
+        // Show equipment from selected site
+        return equipmentList.filter(eq => eq.siteId === formData.siteId);
     };
 
     const validateForm = () => {
@@ -129,9 +170,7 @@ const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
             newErrors.merchantId = 'Merchant is required';
         }
 
-        if (!formData.responsiblePersonId) {
-            newErrors.responsiblePersonId = 'Responsible person is required';
-        }
+        // responsibleUserId is optional - defaults to current user on backend
 
         if (!formData.sparePart || !formData.sparePart.trim()) {
             newErrors.sparePart = 'Spare part name is required';
@@ -160,7 +199,7 @@ const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
             const submitData = {
                 equipmentId: formData.equipmentId,
                 merchantId: formData.merchantId,
-                responsiblePersonId: formData.responsiblePersonId,
+                responsibleUserId: formData.responsibleUserId,
                 sparePart: formData.sparePart.trim(),
                 expectedPartsCost: parseFloat(formData.expectedPartsCost),
                 expectedTransportationCost: parseFloat(formData.expectedTransportationCost),
@@ -200,6 +239,27 @@ const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
                             <h3>Equipment Information</h3>
                             <div className="form-row">
                                 <div className="form-group">
+                                    <label htmlFor="siteId">Site (for filtering)</label>
+                                    <select
+                                        id="siteId"
+                                        name="siteId"
+                                        value={formData.siteId}
+                                        onChange={handleInputChange}
+                                    >
+                                        <option value="">Select Site First</option>
+                                        {siteList.map(site => (
+                                            <option key={site.id} value={site.id}>
+                                                {site.name}
+                                            </option>
+                                        ))}
+                                        <option value="NONE">None (Equipment without site)</option>
+                                    </select>
+                                    <span className="field-hint">
+                                        Select a site to filter equipment, or "None" for equipment without a site
+                                    </span>
+                                </div>
+
+                                <div className="form-group">
                                     <label htmlFor="equipmentId">Equipment <span className="required">*</span></label>
                                     <select
                                         id="equipmentId"
@@ -207,31 +267,33 @@ const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
                                         value={formData.equipmentId}
                                         onChange={handleInputChange}
                                         className={errors.equipmentId ? 'error' : ''}
-                                        disabled={loading}
+                                        disabled={!formData.siteId || loading}
                                     >
-                                        <option value="">Select Equipment</option>
-                                        {equipmentList.map(equipment => (
+                                        <option value="">
+                                            {!formData.siteId ? 'Select Site First' : 'Select Equipment'}
+                                        </option>
+                                        {getFilteredEquipment().map(equipment => (
                                             <option key={equipment.id} value={equipment.id}>
                                                 {equipment.name} - {equipment.model}
                                             </option>
                                         ))}
                                     </select>
                                     {errors.equipmentId && <span className="error-message">{errors.equipmentId}</span>}
-                                    {loading && <span className="loading-message">Loading equipment...</span>}
+                                    {!formData.siteId && <span className="field-hint">Please select a site first</span>}
                                 </div>
+                            </div>
 
-                                {formData.equipmentId && (
-                                    <div className="equipment-details">
-                                        <div className="equipment-info">
-                                            <strong>Selected Equipment:</strong>
-                                            <div>{getSelectedEquipment()?.name}</div>
-                                            <div className="equipment-subtitle">
-                                                {getSelectedEquipment()?.model} • {getSelectedEquipment()?.type?.name}
-                                            </div>
+                            {formData.equipmentId && (
+                                <div className="equipment-details">
+                                    <div className="equipment-info">
+                                        <strong>Selected Equipment:</strong>
+                                        <div>{getSelectedEquipment()?.name}</div>
+                                        <div className="equipment-subtitle">
+                                            {getSelectedEquipment()?.model} • {getSelectedEquipment()?.type?.name}
                                         </div>
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="form-section">
@@ -253,7 +315,7 @@ const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
                         </div>
 
                         <div className="form-section">
-                            <h3>Merchant & Contact</h3>
+                            <h3>Merchant & Assignment</h3>
                             <div className="form-row">
                                 <div className="form-group">
                                     <label htmlFor="merchantId">Merchant <span className="required">*</span></label>
@@ -275,25 +337,22 @@ const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
                                 </div>
 
                                 <div className="form-group">
-                                    <label htmlFor="responsiblePersonId">Responsible Person <span className="required">*</span></label>
+                                    <label htmlFor="responsibleUserId">Assign To <span className="required">*</span></label>
                                     <select
-                                        id="responsiblePersonId"
-                                        name="responsiblePersonId"
-                                        value={formData.responsiblePersonId}
+                                        id="responsibleUserId"
+                                        name="responsibleUserId"
+                                        value={formData.responsibleUserId}
                                         onChange={handleInputChange}
-                                        className={errors.responsiblePersonId ? 'error' : ''}
-                                        disabled={!formData.merchantId}
+                                        className={errors.responsibleUserId ? 'error' : ''}
                                     >
-                                        <option value="">
-                                            {!formData.merchantId ? 'Select a merchant first' : 'Select Contact'}
-                                        </option>
-                                        {filteredContacts.map(contact => (
-                                            <option key={contact.id} value={contact.id}>
-                                                {contact.fullName} - {contact.phoneNumber || 'No phone'}
+                                        <option value="">Select User</option>
+                                        {maintenanceUsers.map(user => (
+                                            <option key={user.id} value={user.id}>
+                                                {user.firstName} {user.lastName} - {user.role}
                                             </option>
                                         ))}
                                     </select>
-                                    {errors.responsiblePersonId && <span className="error-message">{errors.responsiblePersonId}</span>}
+                                    {errors.responsibleUserId && <span className="error-message">{errors.responsibleUserId}</span>}
                                 </div>
                             </div>
                         </div>

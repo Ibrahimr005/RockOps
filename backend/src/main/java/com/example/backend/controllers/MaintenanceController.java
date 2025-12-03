@@ -2,6 +2,7 @@ package com.example.backend.controllers;
 
 import com.example.backend.dtos.*;
 import com.example.backend.dto.merchant.MerchantDTO;
+import com.example.backend.dtos.UserDto;
 import com.example.backend.exceptions.MaintenanceException;
 import com.example.backend.models.MaintenanceRecord;
 import com.example.backend.models.merchant.Merchant;
@@ -338,6 +339,27 @@ public class MaintenanceController {
             return ResponseEntity.ok(merchantDTOs);
         } catch (Exception e) {
             log.error("Error retrieving merchants: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Get maintenance users (Admin, Maintenance Manager, Maintenance Employee)
+    @GetMapping("/users/maintenance-team")
+    public ResponseEntity<List<UserDto>> getMaintenanceTeamUsers() {
+        try {
+            List<com.example.backend.models.user.User> users = maintenanceService.getMaintenanceTeamUsers();
+            List<UserDto> userDtos = users.stream()
+                    .map(user -> UserDto.builder()
+                            .id(user.getId())
+                            .username(user.getUsername())
+                            .firstName(user.getFirstName())
+                            .lastName(user.getLastName())
+                            .role(user.getRole().name())
+                            .build())
+                    .collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.ok(userDtos);
+        } catch (Exception e) {
+            log.error("Error retrieving maintenance team users: {}", e.getMessage());
             return ResponseEntity.internalServerError().build();
         }
     }

@@ -22,8 +22,8 @@ public interface DirectPurchaseTicketRepository extends JpaRepository<DirectPurc
     // Find by status
     List<DirectPurchaseTicket> findByStatusOrderByCreatedAtDesc(DirectPurchaseStatus status);
 
-    // Find by responsible person
-    List<DirectPurchaseTicket> findByResponsiblePersonIdOrderByCreatedAtDesc(UUID responsiblePersonId);
+    // Find by responsible user
+    List<DirectPurchaseTicket> findByResponsibleUserIdOrderByCreatedAtDesc(UUID responsibleUserId);
 
     // Count by status
     long countByStatus(DirectPurchaseStatus status);

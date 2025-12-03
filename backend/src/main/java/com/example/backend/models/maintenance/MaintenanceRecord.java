@@ -1,6 +1,7 @@
 package com.example.backend.models;
 
 import com.example.backend.models.contact.Contact;
+import com.example.backend.models.user.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import jakarta.validation.constraints.Size;
@@ -77,11 +78,15 @@ public class MaintenanceRecord {
     @OneToMany(mappedBy = "maintenanceRecord", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @OrderBy("startDate ASC")
     private List<MaintenanceStep> steps = new ArrayList<>();
-    
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "responsible_user_id")
+    private User responsibleUser;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "current_responsible_contact_id")
     private Contact currentResponsibleContact;
-    
+
     @UpdateTimestamp
     @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
@@ -124,16 +129,23 @@ public class MaintenanceRecord {
         return java.time.Duration.between(creationDate, LocalDateTime.now()).toDays();
     }
     
-    // Get current responsible person from contact if available
+    // Get current responsible person from user (primary) or contact (fallback for compatibility)
     public String getCurrentResponsiblePersonName() {
+        if (responsibleUser != null) {
+            return responsibleUser.getFirstName() + " " + responsibleUser.getLastName();
+        }
         return currentResponsibleContact != null ? currentResponsibleContact.getFullName() : null;
     }
-    
+
     public String getCurrentResponsiblePersonPhone() {
+        // User doesn't have phone in the model, so fallback to contact
         return currentResponsibleContact != null ? currentResponsibleContact.getPhoneNumber() : null;
     }
-    
+
     public String getCurrentResponsiblePersonEmail() {
+        if (responsibleUser != null) {
+            return responsibleUser.getUsername(); // Username is typically email
+        }
         return currentResponsibleContact != null ? currentResponsibleContact.getEmail() : null;
     }
     

@@ -104,6 +104,60 @@
                 }
             }
 
+            // Fix date input display format
+            input[type="date"] {
+                position: relative;
+
+                &::-webkit-datetime-edit-fields-wrapper {
+                    padding: 0;
+                }
+
+                &::-webkit-datetime-edit-text {
+                    color: var(--color-text-secondary);
+                    padding: 0 0.25rem;
+                }
+
+                &::-webkit-datetime-edit-day-field,
+                &::-webkit-datetime-edit-month-field,
+                &::-webkit-datetime-edit-year-field {
+                    background-color: transparent;
+                    color: var(--color-text-primary);
+                    font-weight: var(--semi-bold-font-weight);
+                }
+
+                // When date is empty/invalid, show placeholder-like text
+                &:not(:valid):not(:focus)::-webkit-datetime-edit {
+                    color: transparent;
+                }
+
+                &:not(:valid):not(:focus)::before {
+                    content: attr(placeholder);
+                    color: var(--color-text-muted);
+                    position: absolute;
+                    left: 0.75rem;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    pointer-events: none;
+                }
+
+                &::-webkit-calendar-picker-indicator {
+                    cursor: pointer;
+                    opacity: 0.7;
+                    transition: opacity var(--transition-fast);
+
+                    &:hover {
+                        opacity: 1;
+                    }
+                }
+
+                &:focus::-webkit-datetime-edit-day-field,
+                &:focus::-webkit-datetime-edit-month-field,
+                &:focus::-webkit-datetime-edit-year-field {
+                    background-color: rgba(72, 128, 255, 0.1);
+                    border-radius: 2px;
+                }
+            }
+
             .error-message {
                 color: var(--color-danger);
                 font-size: 0.85rem;

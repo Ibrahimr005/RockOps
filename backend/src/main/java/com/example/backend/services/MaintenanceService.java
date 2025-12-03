@@ -2,6 +2,9 @@ package com.example.backend.services;
 
 import com.example.backend.dtos.*;
 import com.example.backend.models.*;
+import com.example.backend.models.MaintenanceRecord;
+import com.example.backend.models.MaintenanceStep;
+import com.example.backend.models.MaintenanceStepMerchantItem;
 import com.example.backend.models.contact.Contact;
 import com.example.backend.models.contact.ContactLog;
 import com.example.backend.models.contact.ContactType;
@@ -9,9 +12,11 @@ import com.example.backend.models.hr.Employee;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.models.user.Role;
+import com.example.backend.models.user.User;
 import com.example.backend.repositories.*;
 import com.example.backend.repositories.hr.EmployeeRepository;
 import com.example.backend.repositories.merchant.MerchantRepository;
+import com.example.backend.repositories.user.UserRepository;
 import com.example.backend.exceptions.MaintenanceException;
 import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.equipment.EquipmentStatus;
@@ -21,6 +26,8 @@ import com.example.backend.repositories.StepTypeRepository;
 import com.example.backend.services.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +55,7 @@ public class MaintenanceService {
     private final ContactRepository contactRepository;
     private final ContactTypeRepository contactTypeRepository;
     private final MerchantRepository merchantRepository;
+    private final UserRepository userRepository;
     private final NotificationService notificationService;
     
     // Maintenance Record Operations
@@ -91,7 +99,38 @@ public class MaintenanceService {
                 .totalCost(dto.getTotalCost() != null ? dto.getTotalCost() :
                         (dto.getEstimatedCost() != null ? dto.getEstimatedCost() : BigDecimal.ZERO))
                 .build();
-        
+
+        // Set responsible user (defaults to current authenticated user if not provided)
+        final UUID responsibleUserId;
+        if (dto.getResponsibleUserId() == null) {
+            // Default to current authenticated user
+            User currentUser = getCurrentAuthenticatedUser();
+            if (currentUser != null) {
+                responsibleUserId = currentUser.getId();
+                log.info("Defaulting responsible user to current authenticated user: {} {}",
+                        currentUser.getFirstName(), currentUser.getLastName());
+            } else {
+                responsibleUserId = null;
+            }
+        } else {
+            responsibleUserId = dto.getResponsibleUserId();
+        }
+
+        if (responsibleUserId != null) {
+            User responsibleUser = userRepository.findById(responsibleUserId)
+                    .orElseThrow(() -> new MaintenanceException("User not found with ID: " + responsibleUserId));
+
+            // Validate user has appropriate role
+            List<Role> allowedRoles = Arrays.asList(Role.ADMIN, Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE);
+            if (!allowedRoles.contains(responsibleUser.getRole())) {
+                throw new MaintenanceException("User must have Admin, Maintenance Manager, or Maintenance Employee role");
+            }
+
+            record.setResponsibleUser(responsibleUser);
+            log.info("Assigned responsible user: {} {} ({})",
+                    responsibleUser.getFirstName(), responsibleUser.getLastName(), responsibleUser.getRole());
+        }
+
         // Set current responsible contact if provided, otherwise use equipment's main driver
         if (dto.getCurrentResponsibleContactId() != null) {
             try {
@@ -286,7 +325,23 @@ public class MaintenanceService {
                 record.setActualCompletionDate(LocalDateTime.now());
             }
         }
-        
+
+        // Update responsible user if provided
+        if (dto.getResponsibleUserId() != null) {
+            User responsibleUser = userRepository.findById(dto.getResponsibleUserId())
+                    .orElseThrow(() -> new MaintenanceException("User not found with ID: " + dto.getResponsibleUserId()));
+
+            // Validate user has appropriate role
+            List<Role> allowedRoles = Arrays.asList(Role.ADMIN, Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE);
+            if (!allowedRoles.contains(responsibleUser.getRole())) {
+                throw new MaintenanceException("User must have Admin, Maintenance Manager, or Maintenance Employee role");
+            }
+
+            record.setResponsibleUser(responsibleUser);
+            log.info("Updated responsible user to: {} {} ({})",
+                    responsibleUser.getFirstName(), responsibleUser.getLastName(), responsibleUser.getRole());
+        }
+
         // Update current responsible contact if provided
         if (dto.getCurrentResponsibleContactId() != null) {
             try {
@@ -297,7 +352,7 @@ public class MaintenanceService {
                 log.warn("Could not assign contact with ID {} to record: {}", dto.getCurrentResponsibleContactId(), e.getMessage());
             }
         }
-        
+
         MaintenanceRecord savedRecord = maintenanceRecordRepository.save(record);
         return convertToDto(savedRecord);
     }
@@ -326,7 +381,16 @@ public class MaintenanceService {
         }
         // If there are still active records, keep equipment status as IN_MAINTENANCE
     }
-    
+
+    public List<User> getMaintenanceTeamUsers() {
+        List<Role> maintenanceRoles = Arrays.asList(
+                Role.ADMIN,
+                Role.MAINTENANCE_MANAGER,
+                Role.MAINTENANCE_EMPLOYEE
+        );
+        return userRepository.findByRoleIn(maintenanceRoles);
+    }
+
     // Maintenance Step Operations
     
     public MaintenanceStepDto createMaintenanceStep(UUID maintenanceRecordId, MaintenanceStepDto dto) {
@@ -1011,6 +1075,7 @@ public class MaintenanceService {
                 .actualCompletionDate(record.getActualCompletionDate())
                 .totalCost(record.getTotalCost())
                 .status(record.getStatus())
+                .responsibleUserId(record.getResponsibleUser() != null ? record.getResponsibleUser().getId() : null)
                 .currentResponsibleContactId(record.getCurrentResponsibleContact() != null ? record.getCurrentResponsibleContact().getId() : null)
                 .lastUpdated(record.getLastUpdated())
                 .version(record.getVersion())
@@ -1021,7 +1086,7 @@ public class MaintenanceService {
                 .activeSteps((int) steps.stream().filter(step -> !step.isCompleted()).count())
                 .steps(steps.stream().map(this::convertToDto).collect(Collectors.toList()))
                 .currentStepDescription(currentStep.map(MaintenanceStep::getDescription).orElse(null))
-                .currentStepResponsiblePerson(currentStep.map(step -> 
+                .currentStepResponsiblePerson(currentStep.map(step ->
                     step.getResponsibleContact() != null ? step.getResponsibleContact().getFullName() : null).orElse(null))
                 .currentStepExpectedEndDate(currentStep.map(MaintenanceStep::getExpectedEndDate).orElse(null))
                 .currentStepIsOverdue(currentStep.map(MaintenanceStep::isOverdue).orElse(false))
@@ -1030,9 +1095,9 @@ public class MaintenanceService {
                 .equipmentType(equipment != null && equipment.getType() != null ? equipment.getType().getName() : null)
                 .equipmentSerialNumber(equipment != null ? equipment.getSerialNumber() : null)
                 .site(equipment != null && equipment.getSite() != null ? equipment.getSite().getName() : "N/A")
-                .currentResponsiblePerson(record.getCurrentResponsibleContact() != null ? record.getCurrentResponsibleContact().getFullName() : null)
-                .currentResponsiblePhone(record.getCurrentResponsibleContact() != null ? record.getCurrentResponsibleContact().getPhoneNumber() : null)
-                .currentResponsibleEmail(record.getCurrentResponsibleContact() != null ? record.getCurrentResponsibleContact().getEmail() : null)
+                .currentResponsiblePerson(record.getCurrentResponsiblePersonName())
+                .currentResponsiblePhone(record.getCurrentResponsiblePersonPhone())
+                .currentResponsibleEmail(record.getCurrentResponsiblePersonEmail())
                 .build();
     }
     
@@ -1282,9 +1347,28 @@ public class MaintenanceService {
                 .build();
         
         Contact savedContact = contactRepository.save(newContact);
-        log.info("Created new contact for employee {} {} with ID {}", 
+        log.info("Created new contact for employee {} {} with ID {}",
                 employee.getFirstName(), employee.getLastName(), savedContact.getId());
-        
+
         return savedContact;
+    }
+
+    /**
+     * Get the currently authenticated user
+     * @return The current authenticated user, or null if not authenticated
+     */
+    private User getCurrentAuthenticatedUser() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return null;
+            }
+
+            String username = authentication.getName();
+            return userRepository.findByUsername(username).orElse(null);
+        } catch (Exception e) {
+            log.warn("Could not get current authenticated user: {}", e.getMessage());
+            return null;
+        }
     }
 } 

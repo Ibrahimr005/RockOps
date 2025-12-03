@@ -1,6 +1,7 @@
 package com.example.backend.dtos;
 
 import com.example.backend.models.maintenance.DirectPurchaseTicket.DirectPurchaseStatus;
+import com.example.backend.models.maintenance.DirectPurchaseWorkflowStep;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
@@ -25,7 +26,7 @@ public class DirectPurchaseTicketDetailsDto {
     private UUID id;
     private UUID equipmentId;
     private UUID merchantId;
-    private UUID responsiblePersonId;
+    private UUID responsibleUserId;
     private String sparePart;
     private BigDecimal expectedPartsCost;
     private BigDecimal expectedTransportationCost;
@@ -57,7 +58,74 @@ public class DirectPurchaseTicketDetailsDto {
     private String responsiblePersonPhone;
     private String responsiblePersonEmail;
 
-    // Steps
+    // ========== NEW 4-STEP WORKFLOW FIELDS ==========
+
+    private String title;
+    private Boolean isLegacyTicket;
+    private DirectPurchaseWorkflowStep currentStep;
+    private String currentStepDisplay;
+    private Integer progressPercentage;
+
+    // Step 1 - Creation timestamps
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime step1StartedAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime step1CompletedAt;
+
+    private Boolean step1Completed;
+
+    // Step 2 - Purchasing
+    private BigDecimal downPayment;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime step2StartedAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime step2CompletedAt;
+
+    private Boolean step2Completed;
+
+    // Step 3 - Finalize Purchasing
+    private BigDecimal actualTotalPurchasingCost;
+    private BigDecimal remainingPayment;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime step3StartedAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime step3CompletedAt;
+
+    private Boolean step3Completed;
+
+    // Step 4 - Transporting
+    private String transportFromLocation;
+    private UUID transportToSiteId;
+    private String transportToSiteName;
+    private BigDecimal actualTransportationCost;
+
+    private UUID transportResponsibleContactId;
+    private UUID transportResponsibleEmployeeId;
+    private String transportResponsiblePersonName;
+    private String transportResponsiblePersonPhone;
+    private String transportResponsiblePersonEmail;
+    private String transportResponsiblePersonType;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime step4StartedAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime step4CompletedAt;
+
+    private Boolean step4Completed;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime completedAt;
+
+    // Items list (for new workflow)
+    private List<DirectPurchaseItemDto> items;
+
+    // Legacy steps (for legacy tickets)
     private List<DirectPurchaseStepDto> steps;
 
     // Progress information

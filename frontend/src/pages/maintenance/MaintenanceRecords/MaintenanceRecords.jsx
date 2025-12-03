@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { FaEdit, FaTrash, FaEye, FaList, FaCheckCircle, FaPlus, FaSearch, FaEllipsisV, FaUser, FaMapMarkerAlt, FaDollarSign, FaClock, FaTools, FaExclamationCircle, FaShoppingCart } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaTools, FaFilter, FaTimes, FaEye,FaList,FaEdit,FaTrash  } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import PageHeader from '../../../components/common/PageHeader/PageHeader';
+import MaintenanceCard from '../../../components/maintenance/MaintenanceCard/MaintenanceCard';
 import MaintenanceRecordModal from './MaintenanceRecordModal';
 import MaintenanceRecordViewModal from './MaintenanceRecordViewModal/MaintenanceRecordViewModal';
 import TicketTypeSelectionModal from './TicketTypeSelectionModal';
 import DirectPurchaseModal from './DirectPurchaseModal';
+import DelegateModal from './DelegateModal';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import LoadingSpinner from '../../../components/common/LoadingSpinner/LoadingSpinner';
 import '../../../styles/status-badges.scss';
 import './MaintenanceRecords.scss';
 import maintenanceService from "../../../services/maintenanceService.js";
 import directPurchaseService from "../../../services/directPurchaseService.js";
-import {FiPlus} from "react-icons/fi";
 import { ROLES } from '../../../utils/roles';
 
 const MaintenanceRecords = () => {
@@ -25,18 +27,22 @@ const MaintenanceRecords = () => {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isTicketTypeSelectionOpen, setIsTicketTypeSelectionOpen] = useState(false);
     const [isDirectPurchaseModalOpen, setIsDirectPurchaseModalOpen] = useState(false);
+    const [isDelegateModalOpen, setIsDelegateModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState(null);
     const [viewingRecordId, setViewingRecordId] = useState(null);
+    const [delegatingRecord, setDelegatingRecord] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeMenuId, setActiveMenuId] = useState(null);
     const [filters, setFilters] = useState({
         status: 'all',
-        site: 'all',
-        type: 'all',
         ticketType: 'all', // Filter by ticket type: 'all', 'MAINTENANCE', 'DIRECT_PURCHASE'
-        dateRange: 'all'
+        dateFilterType: 'all', // 'all', 'before', 'after', 'on', 'between'
+        dateValue: '',
+        dateStart: '',
+        dateEnd: ''
     });
-    
+    const [showFilters, setShowFilters] = useState(false);
+
     // Confirmation dialog state
     const [confirmDialog, setConfirmDialog] = useState({
         isVisible: false,
@@ -54,14 +60,14 @@ const MaintenanceRecords = () => {
     // Helper function to check if user has maintenance team access
     const hasMaintenanceAccess = (user) => {
         if (!user) return false;
-        
+
         // Handle both 'role' (singular) and 'roles' (plural) properties
         const userRoles = user.roles || (user.role ? [user.role] : []);
-        
+
         const maintenanceRoles = [
-            ROLES.ADMIN, 
-            ROLES.MAINTENANCE_MANAGER, 
-            ROLES.MAINTENANCE_EMPLOYEE, 
+            ROLES.ADMIN,
+            ROLES.MAINTENANCE_MANAGER,
+            ROLES.MAINTENANCE_EMPLOYEE,
             ROLES.EQUIPMENT_MANAGER
         ];
         return userRoles.some(role => maintenanceRoles.includes(role));
@@ -70,10 +76,10 @@ const MaintenanceRecords = () => {
     // Helper function to check if user is admin or maintenance manager (full permissions)
     const isAdminOrManager = (user) => {
         if (!user) return false;
-        
+
         // Handle both 'role' (singular) and 'roles' (plural) properties
         const userRoles = user.roles || (user.role ? [user.role] : []);
-        
+
         const managerRoles = [ROLES.ADMIN, ROLES.MAINTENANCE_MANAGER];
         return userRoles.some(role => managerRoles.includes(role));
     };
@@ -99,9 +105,26 @@ const MaintenanceRecords = () => {
             // Transform maintenance records
             const transformedMaintenanceRecords = maintenanceRecords.map(record => {
                 const isCompleted = record.status === 'COMPLETED' && record.actualCompletionDate;
-                const totalCost = record.totalCost || 0;
-                const expectedTotalCost = record.expectedTotalCost || totalCost;
-                const actualTotalCost = record.actualTotalCost || (isCompleted ? totalCost : 0);
+
+                // Calculate expected total cost and actual cost so far based on steps
+                const expectedTotalCost = record.steps && record.steps.length > 0
+                    ? record.steps.reduce((sum, step) => sum + (step.expectedCost || 0), 0)
+                    : (record.totalCost || 0);
+
+                const actualTotalCost = record.steps && record.steps.length > 0
+                    ? record.steps.reduce((sum, step) => {
+                        // Only sum actualCost for completed steps
+                        if (step.isCompleted && step.actualCost != null) {
+                            return sum + step.actualCost;
+                        }
+                        return sum;
+                    }, 0)
+                    : (isCompleted ? (record.totalCost || 0) : 0);
+
+                // Get current step info
+                const currentStep = record.steps && record.steps.length > 0
+                    ? record.steps.find(step => !step.isCompleted)
+                    : null;
 
                 return {
                     id: record.id,
@@ -116,21 +139,23 @@ const MaintenanceRecords = () => {
                     currentResponsiblePhone: record.currentResponsiblePhone,
                     currentResponsibleEmail: record.currentResponsibleEmail,
                     site: record.site || 'N/A',
-                    totalCost: totalCost,
+                    totalCost: isCompleted ? actualTotalCost : expectedTotalCost,
                     expectedTotalCost: expectedTotalCost,
                     actualTotalCost: actualTotalCost,
                     costDifference: actualTotalCost - expectedTotalCost,
                     isActualCost: isCompleted,
                     creationDate: record.creationDate,
-                    issueDate: record.issueDate, // Add issueDate for modal pre-population
-                    sparePartName: record.sparePartName, // Add sparePartName for modal pre-population
+                    issueDate: record.issueDate,
+                    sparePartName: record.sparePartName,
                     expectedCompletionDate: record.expectedCompletionDate,
                     actualCompletionDate: record.actualCompletionDate,
                     isOverdue: record.isOverdue,
                     durationInDays: record.durationInDays,
                     totalSteps: record.totalSteps || 0,
                     completedSteps: record.completedSteps || 0,
-                    activeSteps: record.activeSteps || 0
+                    activeSteps: record.activeSteps || 0,
+                    currentStep: currentStep,
+                    steps: record.steps || []
                 };
             });
 
@@ -159,6 +184,7 @@ const MaintenanceRecords = () => {
                     costDifference: actualTotalCost - expectedTotalCost,
                     isActualCost: isCompleted,
                     creationDate: ticket.creationDate,
+                    issueDate: ticket.creationDate,
                     expectedCompletionDate: ticket.expectedCompletionDate,
                     actualCompletionDate: ticket.actualCompletionDate,
                     isOverdue: ticket.isOverdue || false,
@@ -166,7 +192,8 @@ const MaintenanceRecords = () => {
                     totalSteps: ticket.totalSteps || 2,
                     completedSteps: ticket.completedSteps || 0,
                     activeSteps: ticket.activeSteps || 0,
-                    merchantName: ticket.merchantName
+                    merchantName: ticket.merchantName,
+                    steps: []
                 };
             });
 
@@ -248,7 +275,7 @@ const MaintenanceRecords = () => {
     const handleDeleteRecord = async (id, isDirectPurchase = false) => {
         // Close the dialog first
         setConfirmDialog({ ...confirmDialog, isVisible: false });
-        
+
         try {
             setLoading(true);
             if (isDirectPurchase) {
@@ -348,6 +375,40 @@ const MaintenanceRecords = () => {
         }
     };
 
+    const handleOpenDelegateModal = (record) => {
+        setDelegatingRecord(record);
+        setIsDelegateModalOpen(true);
+        setActiveMenuId(null); // Close the action menu
+    };
+
+    const handleDelegateSubmit = async (recordId, newResponsibleUserId) => {
+        try {
+            // Fetch the full record first
+            const recordResponse = await maintenanceService.getRecordById(recordId);
+            const fullRecord = recordResponse.data;
+
+            // Update only the responsibleUserId while keeping all other fields
+            const updateData = {
+                equipmentId: fullRecord.equipmentId,
+                issueDate: fullRecord.issueDate,
+                sparePartName: fullRecord.sparePartName,
+                initialIssueDescription: fullRecord.initialIssueDescription,
+                expectedCompletionDate: fullRecord.expectedCompletionDate,
+                estimatedCost: fullRecord.estimatedCost || fullRecord.totalCost,
+                responsibleUserId: newResponsibleUserId
+            };
+
+            await maintenanceService.updateRecord(recordId, updateData);
+
+            showSuccess('Maintenance record delegated successfully');
+            await loadMaintenanceRecords();
+        } catch (error) {
+            console.error('Error delegating maintenance record:', error);
+            showError('Failed to delegate maintenance record');
+            throw error; // Re-throw to let modal handle it
+        }
+    };
+
     const getStatusColor = (status) => {
         switch (status) {
             case 'COMPLETED': return 'var(--color-success)';
@@ -390,6 +451,62 @@ const MaintenanceRecords = () => {
             return false;
         }
 
+        // Filter by status
+        if (filters.status !== 'all') {
+            // Handle OVERDUE and SCHEDULED as special cases
+            if (filters.status === 'OVERDUE') {
+                if (!record.isOverdue) return false;
+            } else if (filters.status === 'SCHEDULED') {
+                // SCHEDULED means ACTIVE but not yet started (future expected date)
+                const expectedDate = new Date(record.expectedCompletionDate);
+                const now = new Date();
+                if (record.status !== 'ACTIVE' || expectedDate < now) return false;
+            } else {
+                if (record.status !== filters.status) return false;
+            }
+        }
+
+        // Filter by date
+        if (filters.dateFilterType !== 'all') {
+            const recordDate = new Date(record.creationDate);
+            recordDate.setHours(0, 0, 0, 0); // Normalize to start of day
+
+            switch (filters.dateFilterType) {
+                case 'before':
+                    if (filters.dateValue) {
+                        const beforeDate = new Date(filters.dateValue);
+                        beforeDate.setHours(0, 0, 0, 0);
+                        if (recordDate >= beforeDate) return false;
+                    }
+                    break;
+                case 'after':
+                    if (filters.dateValue) {
+                        const afterDate = new Date(filters.dateValue);
+                        afterDate.setHours(0, 0, 0, 0);
+                        if (recordDate <= afterDate) return false;
+                    }
+                    break;
+                case 'on':
+                    if (filters.dateValue) {
+                        const onDate = new Date(filters.dateValue);
+                        onDate.setHours(0, 0, 0, 0);
+                        if (recordDate.getTime() !== onDate.getTime()) return false;
+                    }
+                    break;
+                case 'between':
+                    if (filters.dateStart && filters.dateEnd) {
+                        const startDate = new Date(filters.dateStart);
+                        const endDate = new Date(filters.dateEnd);
+                        startDate.setHours(0, 0, 0, 0);
+                        endDate.setHours(23, 59, 59, 999);
+                        if (recordDate < startDate || recordDate > endDate) return false;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
         // Filter by search term
         if (searchTerm) {
             const search = searchTerm.toLowerCase();
@@ -404,6 +521,27 @@ const MaintenanceRecords = () => {
 
         return true;
     });
+
+    const clearAllFilters = () => {
+        setFilters({
+            status: 'all',
+            ticketType: 'all',
+            dateFilterType: 'all',
+            dateValue: '',
+            dateStart: '',
+            dateEnd: ''
+        });
+        setSearchTerm('');
+    };
+
+    const getActiveFilterCount = () => {
+        let count = 0;
+        if (filters.status !== 'all') count++;
+        if (filters.ticketType !== 'all') count++;
+        if (filters.dateFilterType !== 'all') count++;
+        if (searchTerm) count++;
+        return count;
+    };
 
     const columns = [
         {
@@ -550,54 +688,188 @@ const MaintenanceRecords = () => {
 
     return (
         <div className="maintenance-records">
-            <div className="maintenance-records-header">
-                <h1>Maintenance Records
-                    <p className="maintenance-records-header__subtitle">
-                        Track and manage all equipment maintenance activities
-                    </p>
-                </h1>
-            </div>
+            <PageHeader
+                title="Maintenance Records"
+                subtitle="Track and manage all equipment maintenance activities"
+                actionButton={{
+                    text: 'New Ticket',
+                    icon: <FaPlus />,
+                    onClick: handleOpenNewTicket
+                }}
+                filterButton={{
+                    onClick: () => setShowFilters(!showFilters),
+                    isActive: showFilters,
+                    activeCount: getActiveFilterCount()
+                }}
+            />
 
-            {/* Header with Search, Filter and Add Button */}
-            <div className="records-header">
-                <div className="search-container">
-                    <FaSearch className="search-icon" />
-                    <input
-                        type="text"
-                        placeholder="Search records..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="search-input"
-                    />
-                </div>
-                <div className="filters-container">
-                    <select
-                        className="filter-select"
-                        value={filters.ticketType}
-                        onChange={(e) => setFilters(prev => ({ ...prev, ticketType: e.target.value }))}
-                    >
-                        <option value="all">All Ticket Types</option>
-                        <option value="MAINTENANCE">Maintenance Only</option>
-                        <option value="DIRECT_PURCHASE">Direct Purchase Only</option>
-                    </select>
-                </div>
-                <button
-                    className="btn-primary"
-                    onClick={handleOpenNewTicket}
-                >
-                    <FaPlus /> New Ticket
-                </button>
-            </div>
+            {/* Enhanced Filters Panel */}
+            {showFilters && (
+                <div className="filters-panel">
+                    <div className="filters-panel-header">
+                        <h3>Filters</h3>
+                        {getActiveFilterCount() > 0 && (
+                            <button className="clear-filters-btn" onClick={clearAllFilters}>
+                                <FaTimes /> Clear All
+                            </button>
+                        )}
+                    </div>
+                    <div className="filters-grid">
+                        {/* Search Filter */}
+                        <div className="filter-group filter-group-full">
+                            <label className="filter-label">Search</label>
+                            <div className="search-input-wrapper">
+                                <FaSearch className="search-icon-filter" />
+                                <input
+                                    type="text"
+                                    placeholder="Search records..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="filter-input"
+                                />
+                            </div>
+                        </div>
 
-            {/* Records Container */}
+                        {/* Status Filter */}
+                        <div className="filter-group">
+                            <label className="filter-label">Status</label>
+                            <select
+                                className="filter-select"
+                                value={filters.status}
+                                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                            >
+                                <option value="all">All Statuses</option>
+                                <option value="ACTIVE">Active</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="OVERDUE">Overdue</option>
+                                <option value="SCHEDULED">Scheduled</option>
+                                <option value="ON_HOLD">On Hold</option>
+                            </select>
+                        </div>
+
+                        {/* Ticket Type Filter */}
+                        <div className="filter-group">
+                            <label className="filter-label">Ticket Type</label>
+                            <select
+                                className="filter-select"
+                                value={filters.ticketType}
+                                onChange={(e) => setFilters(prev => ({ ...prev, ticketType: e.target.value }))}
+                            >
+                                <option value="all">All Types</option>
+                                <option value="MAINTENANCE">Maintenance</option>
+                                <option value="DIRECT_PURCHASE">Direct Purchase</option>
+                            </select>
+                        </div>
+
+                        {/* Date Filter Type */}
+                        <div className="filter-group">
+                            <label className="filter-label">Date Filter</label>
+                            <select
+                                className="filter-select"
+                                value={filters.dateFilterType}
+                                onChange={(e) => {
+                                    setFilters(prev => ({
+                                        ...prev,
+                                        dateFilterType: e.target.value,
+                                        dateValue: '',
+                                        dateStart: '',
+                                        dateEnd: ''
+                                    }));
+                                }}
+                            >
+                                <option value="all">All Dates</option>
+                                <option value="before">Before Date</option>
+                                <option value="after">After Date</option>
+                                <option value="on">On Date</option>
+                                <option value="between">Between Dates</option>
+                            </select>
+                        </div>
+
+                        {/* Date Inputs based on filter type */}
+                        {filters.dateFilterType === 'before' && (
+                            <div className="filter-group">
+                                <label className="filter-label">Before Date</label>
+                                <input
+                                    type="date"
+                                    className="filter-input"
+                                    value={filters.dateValue}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, dateValue: e.target.value }))}
+                                />
+                            </div>
+                        )}
+
+                        {filters.dateFilterType === 'after' && (
+                            <div className="filter-group">
+                                <label className="filter-label">After Date</label>
+                                <input
+                                    type="date"
+                                    className="filter-input"
+                                    value={filters.dateValue}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, dateValue: e.target.value }))}
+                                />
+                            </div>
+                        )}
+
+                        {filters.dateFilterType === 'on' && (
+                            <div className="filter-group">
+                                <label className="filter-label">On Date</label>
+                                <input
+                                    type="date"
+                                    className="filter-input"
+                                    value={filters.dateValue}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, dateValue: e.target.value }))}
+                                />
+                            </div>
+                        )}
+
+                        {filters.dateFilterType === 'between' && (
+                            <>
+                                <div className="filter-group">
+                                    <label className="filter-label">Start Date</label>
+                                    <input
+                                        type="date"
+                                        className="filter-input"
+                                        value={filters.dateStart}
+                                        onChange={(e) => setFilters(prev => ({ ...prev, dateStart: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="filter-group">
+                                    <label className="filter-label">End Date</label>
+                                    <input
+                                        type="date"
+                                        className="filter-input"
+                                        value={filters.dateEnd}
+                                        onChange={(e) => setFilters(prev => ({ ...prev, dateEnd: e.target.value }))}
+                                    />
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Records Container - Grid Layout */}
             <div className="records-container">
                 {loading ? (
                     <LoadingSpinner message="Loading maintenance records..." fullPage />
+                ) : error ? (
+                    <div className="error-state">
+                        <div className="error-icon">⚠</div>
+                        <h3>Unable to Load Maintenance Records</h3>
+                        <p>{error}</p>
+                        <button className="btn-primary" onClick={() => loadMaintenanceRecords()}>
+                            Try Again
+                        </button>
+                    </div>
                 ) : filteredRecords.length === 0 ? (
                     <div className="empty-state">
                         <FaTools className="empty-icon" />
                         <h3>No Maintenance Records Found</h3>
-                        <p>Get started by creating your first maintenance ticket</p>
+                        <p>
+                            {getActiveFilterCount() > 0
+                                ? 'No records match your current filters. Try adjusting or clearing filters.'
+                                : 'Get started by creating your first maintenance ticket'}
+                        </p>
                         {hasMaintenanceAccess(currentUser) && (
                             <button className="btn-primary" onClick={() => setIsTicketTypeSelectionOpen(true)}>
                                 <FaPlus /> Create New Ticket
@@ -605,200 +877,42 @@ const MaintenanceRecords = () => {
                         )}
                     </div>
                 ) : (
-                    filteredRecords.map((record) => (
-                        <div
-                            key={record.id}
-                            className={`record-card ${record.status.toLowerCase()}`}
-                            onClick={() => handleViewSteps(record)}
-                        >
-                            {/* Card Header */}
-                            <div className="record-card-header">
-                                <div className="header-left">
-                                    <h3 className="equipment-name">{record.equipmentName}</h3>
-                                    <div className="badges-container">
-                                        {record.ticketType === 'DIRECT_PURCHASE' ? (
-                                            <span className="ticket-type-badge direct-purchase-badge">
-                                                <FaShoppingCart /> Direct Purchase
-                                            </span>
-                                        ) : (
-                                            <span className="ticket-type-badge maintenance-badge">
-                                                <FaTools /> Maintenance
-                                            </span>
-                                        )}
-                                        {getStatusBadge(record.status)}
-                                    </div>
-                                </div>
-                                <div className="header-right">
-                                    <div className="menu-container">
-                                        <button
-                                            className="menu-trigger"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setActiveMenuId(activeMenuId === record.id ? null : record.id);
-                                            }}
-                                        >
-                                            <FaEllipsisV />
-                                        </button>
-                                        {activeMenuId === record.id && (
-                                            <>
-                                                <div
-                                                    className="menu-backdrop"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setActiveMenuId(null);
-                                                    }}
-                                                />
-                                                <div className="menu-dropdown">
-                                                    <button
-                                                        className="menu-item"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleViewRecord(record);
-                                                        }}
-                                                    >
-                                                        <FaEye /> Quick View
-                                                    </button>
-                                                    <button
-                                                        className="menu-item"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleViewSteps(record);
-                                                        }}
-                                                    >
-                                                        <FaList /> View Steps
-                                                    </button>
-                                                    {record.status !== 'COMPLETED' && (
-                                                        <button
-                                                            className="menu-item"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                navigate(`/maintenance/records/${record.id}?tab=steps`, {
-                                                                    state: { openStepModal: true }
-                                                                });
-                                                            }}
-                                                        >
-                                                            <FaPlus /> Add Step
-                                                        </button>
-                                                    )}
-                                                    {(isAdminOrManager(currentUser) || (record.status !== 'COMPLETED' && hasMaintenanceAccess(currentUser))) && (
-                                                        <button
-                                                            className="menu-item"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleOpenModal(record);
-                                                            }}
-                                                        >
-                                                            <FaEdit /> Edit
-                                                        </button>
-                                                    )}
-                                                    {isAdminOrManager(currentUser) && (
-                                                        <button
-                                                            className="menu-item danger"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                showDeleteConfirmation(record);
-                                                            }}
-                                                        >
-                                                            <FaTrash /> Delete
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Card Body */}
-                            <div className="record-card-body">
-                                {/* Issue Description */}
-                                <div className="info-row description-row">
-                                    <FaExclamationCircle className="info-icon" />
-                                    <div className="info-content">
-                                        <div className="info-label">Issue</div>
-                                        <div className="info-value">{record.initialIssueDescription}</div>
-                                    </div>
-                                </div>
-
-                                {/* Responsible Person */}
-                                <div className="info-row">
-                                    <FaUser className="info-icon" />
-                                    <div className="info-content">
-                                        <div className="info-label">Responsible</div>
-                                        <div className="info-value">
-                                            {record.currentResponsiblePerson || 'Not assigned'}
-                                            {record.currentResponsiblePhone && (
-                                                <span className="phone-number"> • {record.currentResponsiblePhone}</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Site */}
-                                {record.site && record.site !== 'N/A' && (
-                                    <div className="info-row">
-                                        <FaMapMarkerAlt className="info-icon" />
-                                        <div className="info-content">
-                                            <div className="info-label">Site</div>
-                                            <div className="info-value">{record.site}</div>
-                                        </div>
-                                    </div>
+                    <>
+                        <div className="results-header">
+                            <div className="results-count">
+                                Showing <span className="count-number">{filteredRecords.length}</span> {filteredRecords.length === 1 ? 'record' : 'records'}
+                                {getActiveFilterCount() > 0 && (
+                                    <span style={{ marginLeft: '0.5rem', color: 'var(--color-text-tertiary)' }}>
+                                        (filtered from {maintenanceRecords.length} total)
+                                    </span>
                                 )}
-
-                                {/* Cost Information */}
-                                <div className="info-row cost-row">
-                                    <FaDollarSign className="info-icon" />
-                                    <div className="info-content">
-                                        <div className="info-label">Cost</div>
-                                        <div className="cost-details">
-                                            <div className="cost-item primary">
-                                                <span className="cost-type">
-                                                    {record.isActualCost ? 'Actual Cost' : 'Expected Cost'}
-                                                </span>
-                                                <span className="cost-amount">
-                                                    {formatCurrency(record.isActualCost ? record.actualTotalCost : record.expectedTotalCost)}
-                                                </span>
-                                            </div>
-                                            {record.isActualCost && Math.abs(record.costDifference) > 0.01 && (
-                                                <div className={`cost-item difference ${record.costDifference > 0 ? 'over-budget' : 'under-budget'}`}>
-                                                    <span className="cost-type">
-                                                        {record.costDifference > 0 ? 'Over Budget' : 'Under Budget'}
-                                                    </span>
-                                                    <span className="cost-amount">
-                                                        {record.costDifference > 0 ? '+' : ''}{formatCurrency(record.costDifference)}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Progress & Dates */}
-                                <div className="info-row">
-                                    <FaClock className="info-icon" />
-                                    <div className="info-content">
-                                        <div className="info-label">Timeline</div>
-                                        <div className="timeline-info">
-                                            <div className="date-item">
-                                                Created: {formatDate(record.creationDate)}
-                                            </div>
-                                            <div className="date-item">
-                                                {record.actualCompletionDate
-                                                    ? `Completed: ${formatDate(record.actualCompletionDate)}`
-                                                    : `Expected: ${formatDate(record.expectedCompletionDate)}`
-                                                }
-                                            </div>
-                                            {record.totalSteps > 0 && (
-                                                <div className="progress-indicator">
-                                                    Steps: {record.completedSteps}/{record.totalSteps} completed
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
-                    ))
+                        <div className="records-grid">
+                            {filteredRecords.map((record) => (
+                                <MaintenanceCard
+                                    key={record.id}
+                                    record={record}
+                                    onViewRecord={handleViewRecord}
+                                    onViewSteps={handleViewSteps}
+                                    onAddStep={(record) => navigate(`/maintenance/records/${record.id}?tab=steps`, {
+                                        state: { openStepModal: true }
+                                    })}
+                                    onEdit={handleOpenModal}
+                                    onDelete={showDeleteConfirmation}
+                                    onDelegate={handleOpenDelegateModal}
+                                    activeMenuId={activeMenuId}
+                                    setActiveMenuId={setActiveMenuId}
+                                    canEdit={isAdminOrManager(currentUser) || (record.status !== 'COMPLETED' && hasMaintenanceAccess(currentUser))}
+                                    canDelete={isAdminOrManager(currentUser)}
+                                    canDelegate={isAdminOrManager(currentUser)}
+                                    formatCurrency={formatCurrency}
+                                    formatDate={formatDate}
+                                    getStatusBadge={getStatusBadge}
+                                />
+                            ))}
+                        </div>
+                    </>
                 )}
             </div>
 
@@ -836,6 +950,16 @@ const MaintenanceRecords = () => {
                 isOpen={isDirectPurchaseModalOpen}
                 onClose={() => setIsDirectPurchaseModalOpen(false)}
                 onSubmit={handleDirectPurchaseSubmit}
+            />
+
+            <DelegateModal
+                isOpen={isDelegateModalOpen}
+                onClose={() => {
+                    setIsDelegateModalOpen(false);
+                    setDelegatingRecord(null);
+                }}
+                onSubmit={handleDelegateSubmit}
+                record={delegatingRecord}
             />
 
             <ConfirmationDialog

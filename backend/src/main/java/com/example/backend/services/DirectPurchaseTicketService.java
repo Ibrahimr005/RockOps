@@ -9,15 +9,22 @@ import com.example.backend.models.maintenance.DirectPurchaseStepStatus;
 import com.example.backend.models.maintenance.DirectPurchaseTicket;
 import com.example.backend.models.maintenance.DirectPurchaseTicket.DirectPurchaseStatus;
 import com.example.backend.models.merchant.Merchant;
+import com.example.backend.models.user.Role;
+import com.example.backend.models.user.User;
 import com.example.backend.repositories.ContactRepository;
 import com.example.backend.repositories.DirectPurchaseStepRepository;
 import com.example.backend.repositories.DirectPurchaseTicketRepository;
 import com.example.backend.repositories.equipment.EquipmentRepository;
 import com.example.backend.repositories.merchant.MerchantRepository;
+import com.example.backend.repositories.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Arrays;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -36,6 +43,7 @@ public class DirectPurchaseTicketService {
     private final EquipmentRepository equipmentRepository;
     private final MerchantRepository merchantRepository;
     private final ContactRepository contactRepository;
+    private final UserRepository userRepository;
     private final com.example.backend.services.notification.NotificationService notificationService;
 
     // Create ticket with auto-generated steps
@@ -50,15 +58,37 @@ public class DirectPurchaseTicketService {
         Merchant merchant = merchantRepository.findById(dto.getMerchantId())
                 .orElseThrow(() -> new MaintenanceException("Merchant not found with id: " + dto.getMerchantId()));
 
-        // Validate responsible person exists
-        Contact responsiblePerson = contactRepository.findById(dto.getResponsiblePersonId())
-                .orElseThrow(() -> new MaintenanceException("Contact not found with id: " + dto.getResponsiblePersonId()));
+        // Set responsible user (defaults to current authenticated user if not provided)
+        final UUID responsibleUserId;
+        if (dto.getResponsibleUserId() == null) {
+            // Default to current authenticated user
+            User currentUser = getCurrentAuthenticatedUser();
+            if (currentUser != null) {
+                responsibleUserId = currentUser.getId();
+                log.info("Defaulting responsible user to current authenticated user: {} {}",
+                        currentUser.getFirstName(), currentUser.getLastName());
+            } else {
+                throw new MaintenanceException("Responsible user is required");
+            }
+        } else {
+            responsibleUserId = dto.getResponsibleUserId();
+        }
+
+        // Validate responsible user exists
+        User responsibleUser = userRepository.findById(responsibleUserId)
+                .orElseThrow(() -> new MaintenanceException("User not found with id: " + responsibleUserId));
+
+        // Validate user has appropriate role
+        List<Role> allowedRoles = Arrays.asList(Role.ADMIN, Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE);
+        if (!allowedRoles.contains(responsibleUser.getRole())) {
+            throw new MaintenanceException("User must have Admin, Maintenance Manager, or Maintenance Employee role");
+        }
 
         // Create ticket
         DirectPurchaseTicket ticket = DirectPurchaseTicket.builder()
                 .equipment(equipment)
                 .merchant(merchant)
-                .responsiblePerson(responsiblePerson)
+                .responsibleUser(responsibleUser)
                 .sparePart(dto.getSparePart())
                 .expectedPartsCost(dto.getExpectedPartsCost())
                 .expectedTransportationCost(dto.getExpectedTransportationCost())
@@ -69,7 +99,7 @@ public class DirectPurchaseTicketService {
         DirectPurchaseTicket savedTicket = ticketRepository.save(ticket);
 
         // Auto-create 2 steps
-        createAutoSteps(savedTicket, responsiblePerson);
+        createAutoSteps(savedTicket, responsibleUser);
 
         log.info("Created direct purchase ticket: {} with 2 auto-generated steps", savedTicket.getId());
 
@@ -150,10 +180,17 @@ public class DirectPurchaseTicketService {
             ticket.setMerchant(merchant);
         }
 
-        if (dto.getResponsiblePersonId() != null) {
-            Contact responsiblePerson = contactRepository.findById(dto.getResponsiblePersonId())
-                    .orElseThrow(() -> new MaintenanceException("Contact not found with id: " + dto.getResponsiblePersonId()));
-            ticket.setResponsiblePerson(responsiblePerson);
+        if (dto.getResponsibleUserId() != null) {
+            User responsibleUser = userRepository.findById(dto.getResponsibleUserId())
+                    .orElseThrow(() -> new MaintenanceException("User not found with id: " + dto.getResponsibleUserId()));
+
+            // Validate user has appropriate role
+            List<Role> allowedRoles = Arrays.asList(Role.ADMIN, Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE);
+            if (!allowedRoles.contains(responsibleUser.getRole())) {
+                throw new MaintenanceException("User must have Admin, Maintenance Manager, or Maintenance Employee role");
+            }
+
+            ticket.setResponsibleUser(responsibleUser);
         }
 
         if (dto.getSparePart() != null) {
@@ -215,17 +252,30 @@ public class DirectPurchaseTicketService {
         DirectPurchaseTicket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new MaintenanceException("Direct purchase ticket not found with id: " + ticketId));
 
+        // Load steps separately to avoid lazy loading issues
+        List<DirectPurchaseStep> steps = stepRepository.findByDirectPurchaseTicketIdOrderByStepNumberAsc(ticketId);
+
         // Check if all steps are completed
-        if (ticket.isFullyCompleted() && ticket.getStatus() != DirectPurchaseStatus.COMPLETED) {
+        boolean isFullyCompleted = !steps.isEmpty() &&
+                steps.stream().allMatch(step -> step.getStatus() == DirectPurchaseStepStatus.COMPLETED);
+
+        if (isFullyCompleted && ticket.getStatus() != DirectPurchaseStatus.COMPLETED) {
             ticket.setStatus(DirectPurchaseStatus.COMPLETED);
             ticketRepository.save(ticket);
             log.info("Auto-completed direct purchase ticket: {}", ticketId);
+
+            // Calculate total actual cost from loaded steps
+            BigDecimal totalActualCost = steps.stream()
+                    .filter(step -> step.getStatus() == DirectPurchaseStepStatus.COMPLETED)
+                    .map(DirectPurchaseStep::getActualCost)
+                    .filter(cost -> cost != null)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             // Send completion notification
             try {
                 String notificationTitle = "Direct Purchase Ticket Completed";
                 String notificationMessage = String.format("Direct purchase ticket for %s has been completed. Total cost: $%.2f",
-                        ticket.getEquipment().getName(), ticket.getTotalActualCost());
+                        ticket.getEquipment().getName(), totalActualCost);
                 String actionUrl = "/maintenance/direct-purchase/" + ticketId;
                 String relatedEntity = "DirectPurchaseTicket:" + ticketId;
 
@@ -244,15 +294,17 @@ public class DirectPurchaseTicketService {
 
     // Private helper methods
 
-    private void createAutoSteps(DirectPurchaseTicket ticket, Contact responsiblePerson) {
+    private void createAutoSteps(DirectPurchaseTicket ticket, User responsibleUser) {
+        String responsiblePersonName = responsibleUser.getFirstName() + " " + responsibleUser.getLastName();
+
         // Step 1: Purchasing
         DirectPurchaseStep purchasingStep = DirectPurchaseStep.builder()
                 .directPurchaseTicket(ticket)
                 .stepNumber(1)
                 .stepName("Purchasing")
                 .status(DirectPurchaseStepStatus.IN_PROGRESS)
-                .responsiblePerson(responsiblePerson.getFullName())
-                .phoneNumber(responsiblePerson.getPhoneNumber())
+                .responsiblePerson(responsiblePersonName)
+                .phoneNumber(null) // User doesn't have phone
                 .startDate(LocalDate.now())
                 .expectedCost(ticket.getExpectedPartsCost())
                 .advancedPayment(BigDecimal.ZERO)
@@ -266,8 +318,8 @@ public class DirectPurchaseTicketService {
                 .stepNumber(2)
                 .stepName("Transporting")
                 .status(DirectPurchaseStepStatus.IN_PROGRESS)
-                .responsiblePerson(responsiblePerson.getFullName())
-                .phoneNumber(responsiblePerson.getPhoneNumber())
+                .responsiblePerson(responsiblePersonName)
+                .phoneNumber(null) // User doesn't have phone
                 .startDate(LocalDate.now())
                 .expectedCost(ticket.getExpectedTransportationCost())
                 .advancedPayment(BigDecimal.ZERO)
@@ -279,11 +331,19 @@ public class DirectPurchaseTicketService {
     }
 
     private DirectPurchaseTicketDto convertToDto(DirectPurchaseTicket ticket) {
+        // Calculate total actual cost by loading steps separately to avoid lazy loading issues
+        List<DirectPurchaseStep> steps = stepRepository.findByDirectPurchaseTicketIdOrderByStepNumberAsc(ticket.getId());
+        BigDecimal totalActualCost = steps.stream()
+                .filter(step -> step.getStatus() == DirectPurchaseStepStatus.COMPLETED)
+                .map(DirectPurchaseStep::getActualCost)
+                .filter(cost -> cost != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         return DirectPurchaseTicketDto.builder()
                 .id(ticket.getId())
                 .equipmentId(ticket.getEquipment().getId())
                 .merchantId(ticket.getMerchant().getId())
-                .responsiblePersonId(ticket.getResponsiblePerson().getId())
+                .responsibleUserId(ticket.getResponsibleUser() != null ? ticket.getResponsibleUser().getId() : null)
                 .sparePart(ticket.getSparePart())
                 .expectedPartsCost(ticket.getExpectedPartsCost())
                 .expectedTransportationCost(ticket.getExpectedTransportationCost())
@@ -294,13 +354,13 @@ public class DirectPurchaseTicketService {
                 .updatedAt(ticket.getUpdatedAt())
                 .version(ticket.getVersion())
                 .totalExpectedCost(ticket.getTotalExpectedCost())
-                .totalActualCost(ticket.getTotalActualCost())
+                .totalActualCost(totalActualCost)
                 .equipmentName(ticket.getEquipment().getName())
                 .equipmentModel(ticket.getEquipment().getModel())
                 .equipmentSerialNumber(ticket.getEquipment().getSerialNumber())
                 .merchantName(ticket.getMerchant().getName())
-                .responsiblePersonName(ticket.getResponsiblePerson().getFullName())
-                .responsiblePersonPhone(ticket.getResponsiblePerson().getPhoneNumber())
+                .responsiblePersonName(ticket.getResponsiblePersonName())
+                .responsiblePersonPhone(ticket.getResponsiblePersonPhone())
                 .build();
     }
 
@@ -315,11 +375,18 @@ public class DirectPurchaseTicketService {
                 .filter(DirectPurchaseStep::isCompleted)
                 .count();
 
+        // Calculate total actual cost from loaded steps to avoid lazy loading issues
+        BigDecimal totalActualCost = steps.stream()
+                .filter(step -> step.getStatus() == DirectPurchaseStepStatus.COMPLETED)
+                .map(DirectPurchaseStep::getActualCost)
+                .filter(cost -> cost != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         return DirectPurchaseTicketDetailsDto.builder()
                 .id(ticket.getId())
                 .equipmentId(ticket.getEquipment().getId())
                 .merchantId(ticket.getMerchant().getId())
-                .responsiblePersonId(ticket.getResponsiblePerson().getId())
+                .responsibleUserId(ticket.getResponsibleUser() != null ? ticket.getResponsibleUser().getId() : null)
                 .sparePart(ticket.getSparePart())
                 .expectedPartsCost(ticket.getExpectedPartsCost())
                 .expectedTransportationCost(ticket.getExpectedTransportationCost())
@@ -330,16 +397,16 @@ public class DirectPurchaseTicketService {
                 .updatedAt(ticket.getUpdatedAt())
                 .version(ticket.getVersion())
                 .totalExpectedCost(ticket.getTotalExpectedCost())
-                .totalActualCost(ticket.getTotalActualCost())
+                .totalActualCost(totalActualCost)
                 .equipmentName(ticket.getEquipment().getName())
                 .equipmentModel(ticket.getEquipment().getModel())
                 .equipmentSerialNumber(ticket.getEquipment().getSerialNumber())
                 .equipmentType(ticket.getEquipment().getType() != null ? ticket.getEquipment().getType().getName() : null)
                 .site(ticket.getEquipment().getSite() != null ? ticket.getEquipment().getSite().getName() : "N/A")
                 .merchantName(ticket.getMerchant().getName())
-                .responsiblePersonName(ticket.getResponsiblePerson().getFullName())
-                .responsiblePersonPhone(ticket.getResponsiblePerson().getPhoneNumber())
-                .responsiblePersonEmail(ticket.getResponsiblePerson().getEmail())
+                .responsiblePersonName(ticket.getResponsiblePersonName())
+                .responsiblePersonPhone(ticket.getResponsiblePersonPhone())
+                .responsiblePersonEmail(ticket.getResponsiblePersonEmail())
                 .steps(stepDtos)
                 .totalSteps(steps.size())
                 .completedSteps((int) completedSteps)
@@ -370,5 +437,24 @@ public class DirectPurchaseTicketService {
                 .isCompleted(step.isCompleted())
                 .isOverdue(step.isOverdue())
                 .build();
+    }
+
+    /**
+     * Get the currently authenticated user
+     * @return The current authenticated user, or null if not authenticated
+     */
+    private User getCurrentAuthenticatedUser() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return null;
+            }
+
+            String username = authentication.getName();
+            return userRepository.findByUsername(username).orElse(null);
+        } catch (Exception e) {
+            log.warn("Could not get current authenticated user: {}", e.getMessage());
+            return null;
+        }
     }
 }

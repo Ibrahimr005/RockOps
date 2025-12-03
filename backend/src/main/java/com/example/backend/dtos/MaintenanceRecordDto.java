@@ -59,9 +59,11 @@ public class MaintenanceRecordDto {
 
     
     private MaintenanceRecord.MaintenanceStatus status;
-    
+
+    private UUID responsibleUserId;
+
     private UUID currentResponsibleContactId;
-    
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime lastUpdated;
     

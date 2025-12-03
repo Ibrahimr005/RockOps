@@ -515,7 +515,8 @@ export const AUTH_ENDPOINTS = {
     BASE: '/api/v1/auth',
     REGISTER: '/api/v1/auth/register',
     LOGIN: '/api/v1/auth/login',
-    AUTHENTICATE: '/api/v1/auth/authenticate'
+    AUTHENTICATE: '/api/v1/auth/authenticate',
+    PROFILE: '/api/v1/auth/profile'
 };
 
 // Admin module endpoints
@@ -823,7 +824,15 @@ export const MAINTENANCE_ENDPOINTS = {
     },
 
     // Available Contacts
-    AVAILABLE_CONTACTS: '/api/maintenance/available-contacts'
+    AVAILABLE_CONTACTS: '/api/maintenance/available-contacts',
+
+    // Merchants
+    MERCHANTS: '/api/maintenance/merchants',
+
+    // Users
+    USERS: {
+        MAINTENANCE_TEAM: '/api/maintenance/users/maintenance-team'
+    }
 };
 
 // Contact Management module endpoints

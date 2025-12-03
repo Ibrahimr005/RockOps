@@ -21,8 +21,7 @@ public class CreateDirectPurchaseTicketDto {
     @NotNull(message = "Merchant ID is required")
     private UUID merchantId;
 
-    @NotNull(message = "Responsible person ID is required")
-    private UUID responsiblePersonId;
+    private UUID responsibleUserId;
 
     @NotBlank(message = "Spare part name is required")
     @Size(max = 255, message = "Spare part name must not exceed 255 characters")

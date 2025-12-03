@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes, FaSave, FaTools, FaUser } from 'react-icons/fa';
 import contactService from '../../../services/contactService.js';
 import { equipmentService } from '../../../services/equipmentService.js';
+import { siteService } from '../../../services/siteService.js';
+import maintenanceService from '../../../services/maintenanceService.js';
+import { authService } from '../../../services/authService.js';
 import '../../../styles/primary-button.scss';
 import '../../../styles/close-modal-button.scss';
 import '../../../styles/cancel-modal-button.scss';
@@ -10,21 +13,29 @@ import './MaintenanceRecordModal.scss';
 
 const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) => {
     const [formData, setFormData] = useState({
+        siteId: '',
         equipmentId: '',
         issueDate: '',
         sparePartName: '',
         initialIssueDescription: '',
         expectedCompletionDate: '',
-        estimatedCost: ''
+        estimatedCost: '',
+        responsibleUserId: ''
     });
 
     const [equipmentList, setEquipmentList] = useState([]);
+    const [siteList, setSiteList] = useState([]);
+    const [maintenanceUsers, setMaintenanceUsers] = useState([]);
+    const [currentUser, setCurrentUser] = useState(null);
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             loadEquipment();
+            loadSites();
+            loadMaintenanceUsers();
+            loadCurrentUser();
             // Prevent background scroll when modal is open
             document.body.style.overflow = 'hidden';
         } else {
@@ -50,9 +61,41 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
         }
     };
 
+    const loadSites = async () => {
+        try {
+            const response = await siteService.getAllSites();
+            setSiteList(response.data || []);
+        } catch (error) {
+            console.error('Error loading sites:', error);
+        }
+    };
+
+    const loadMaintenanceUsers = async () => {
+        try {
+            const response = await maintenanceService.getMaintenanceTeamUsers();
+            setMaintenanceUsers(response.data || []);
+        } catch (error) {
+            console.error('Error loading maintenance users:', error);
+        }
+    };
+
+    const loadCurrentUser = async () => {
+        try {
+            const response = await authService.getCurrentUser();
+            setCurrentUser(response.data);
+        } catch (error) {
+            console.error('Error loading current user:', error);
+        }
+    };
+
     useEffect(() => {
         if (editingRecord) {
+            // Get siteId from equipment if editing
+            const equipment = equipmentList.find(eq => eq.id === editingRecord.equipmentId);
+            const siteId = equipment?.siteId ? equipment.siteId : (equipment ? 'NONE' : '');
+
             setFormData({
+                siteId: siteId,
                 equipmentId: editingRecord.equipmentId || '',
                 issueDate: editingRecord.issueDate ?
                     editingRecord.issueDate.split('T')[0] : '',
@@ -60,27 +103,40 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                 initialIssueDescription: editingRecord.initialIssueDescription || '',
                 expectedCompletionDate: editingRecord.expectedCompletionDate ?
                     editingRecord.expectedCompletionDate.split('T')[0] : '',
-                estimatedCost: editingRecord.totalCost || editingRecord.estimatedCost || ''
+                estimatedCost: editingRecord.totalCost || editingRecord.estimatedCost || '',
+                responsibleUserId: editingRecord.responsibleUserId || ''
             });
-        } else {
+        } else if (currentUser) {
             setFormData({
+                siteId: '',
                 equipmentId: '',
                 issueDate: new Date().toISOString().split('T')[0],
                 sparePartName: '',
                 initialIssueDescription: '',
                 expectedCompletionDate: '',
-                estimatedCost: ''
+                estimatedCost: '',
+                responsibleUserId: currentUser.id || ''
             });
         }
         setErrors({});
-    }, [editingRecord, isOpen]);
+    }, [editingRecord, isOpen, currentUser, equipmentList]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+
+        // If site changes, clear equipment selection
+        if (name === 'siteId') {
+            setFormData(prev => ({
+                ...prev,
+                siteId: value,
+                equipmentId: ''
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
 
         // Clear error when user starts typing
         if (errors[name]) {
@@ -89,6 +145,23 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                 [name]: ''
             }));
         }
+    };
+
+    // Filter equipment based on selected site
+    const getFilteredEquipment = () => {
+        if (!formData.siteId) {
+            return [];
+        }
+
+        if (formData.siteId === 'NONE') {
+            // Show equipment with no site assigned
+            return equipmentList.filter(eq =>
+                !eq.siteId || eq.siteId === null || eq.siteId === ''
+            );
+        }
+
+        // Show equipment from selected site
+        return equipmentList.filter(eq => eq.siteId === formData.siteId);
     };
 
     const validateForm = () => {
@@ -177,6 +250,27 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                         <h3>Equipment Information</h3>
                         <div className="form-row">
                             <div className="form-group">
+                                <label htmlFor="siteId">Site (for filtering)</label>
+                                <select
+                                    id="siteId"
+                                    name="siteId"
+                                    value={formData.siteId}
+                                    onChange={handleInputChange}
+                                >
+                                    <option value="">Select Site First</option>
+                                    {siteList.map(site => (
+                                        <option key={site.id} value={site.id}>
+                                            {site.name}
+                                        </option>
+                                    ))}
+                                    <option value="NONE">None (Equipment without site)</option>
+                                </select>
+                                <span className="field-hint">
+                                    Select a site to filter equipment, or "None" for equipment without a site
+                                </span>
+                            </div>
+
+                            <div className="form-group">
                                 <label htmlFor="equipmentId">Equipment <span className="required">*</span></label>
                                 <select
                                     id="equipmentId"
@@ -184,31 +278,33 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                                     value={formData.equipmentId}
                                     onChange={handleInputChange}
                                     className={errors.equipmentId ? 'error' : ''}
-                                    disabled={loading}
+                                    disabled={!formData.siteId || loading}
                                 >
-                                    <option value="">Select Equipment</option>
-                                    {equipmentList.map(equipment => (
+                                    <option value="">
+                                        {!formData.siteId ? 'Select Site First' : 'Select Equipment'}
+                                    </option>
+                                    {getFilteredEquipment().map(equipment => (
                                         <option key={equipment.id} value={equipment.id}>
                                             {equipment.name} - {equipment.model}
                                         </option>
                                     ))}
                                 </select>
                                 {errors.equipmentId && <span className="error-message">{errors.equipmentId}</span>}
-                                {loading && <span className="loading-message">Loading equipment...</span>}
+                                {!formData.siteId && <span className="field-hint">Please select a site first</span>}
                             </div>
+                        </div>
 
-                            {formData.equipmentId && (
-                                <div className="equipment-details">
-                                    <div className="equipment-info">
-                                        <strong>Selected Equipment:</strong>
-                                        <div>{getSelectedEquipment()?.name}</div>
-                                        <div className="equipment-subtitle">
-                                            {getSelectedEquipment()?.model} • {getSelectedEquipment()?.type?.name}
-                                        </div>
+                        {formData.equipmentId && (
+                            <div className="equipment-details">
+                                <div className="equipment-info">
+                                    <strong>Selected Equipment:</strong>
+                                    <div>{getSelectedEquipment()?.name}</div>
+                                    <div className="equipment-subtitle">
+                                        {getSelectedEquipment()?.model} • {getSelectedEquipment()?.type?.name}
                                     </div>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="form-section">
@@ -222,6 +318,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                                     name="issueDate"
                                     value={formData.issueDate}
                                     onChange={handleInputChange}
+                                    placeholder="dd-mm-yyyy"
                                     className={errors.issueDate ? 'error' : ''}
                                 />
                                 {errors.issueDate && <span className="error-message">{errors.issueDate}</span>}
@@ -281,6 +378,7 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                                     name="expectedCompletionDate"
                                     value={formData.expectedCompletionDate}
                                     onChange={handleInputChange}
+                                    placeholder="dd-mm-yyyy"
                                     className={errors.expectedCompletionDate ? 'error' : ''}
                                 />
                                 {errors.expectedCompletionDate && <span className="error-message">{errors.expectedCompletionDate}</span>}
@@ -294,12 +392,39 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                                     name="estimatedCost"
                                     value={formData.estimatedCost}
                                     onChange={handleInputChange}
-                                    placeholder="0.00"  // Remove $ from here
+                                    placeholder="0.00"
                                     step="0.01"
                                     min="0"
                                     className={errors.estimatedCost ? 'error' : ''}
                                 />
                                 {errors.estimatedCost && <span className="error-message">{errors.estimatedCost}</span>}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="form-section">
+                        <h3>Responsible Person</h3>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="responsibleUserId">Assign To</label>
+                                <select
+                                    id="responsibleUserId"
+                                    name="responsibleUserId"
+                                    value={formData.responsibleUserId}
+                                    onChange={handleInputChange}
+                                    className={errors.responsibleUserId ? 'error' : ''}
+                                >
+                                    <option value="">Select User (Optional)</option>
+                                    {maintenanceUsers.map(user => (
+                                        <option key={user.id} value={user.id}>
+                                            {user.firstName} {user.lastName} - {user.role}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.responsibleUserId && <span className="error-message">{errors.responsibleUserId}</span>}
+                                <span className="field-hint">
+                                    Assign this maintenance record to a user (Admin, Maintenance Manager, or Maintenance Employee)
+                                </span>
                             </div>
                         </div>
                     </div>

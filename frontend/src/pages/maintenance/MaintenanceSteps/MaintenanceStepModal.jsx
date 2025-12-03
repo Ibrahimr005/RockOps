@@ -482,14 +482,14 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                 stepTypeId: formData.stepTypeId,
                 description: formData.description,
                 startDate: formData.startDate + 'T09:00:00',
-                expectedEndDate: formData.expectedEndDate + 'T17:00:00',
+                expectedEndDate: formData.expectedEndDate ? formData.expectedEndDate + 'T17:00:00' : null,
                 downPayment: formData.downPayment ? parseFloat(formData.downPayment) : 0,
                 expectedCost: formData.expectedCost ? parseFloat(formData.expectedCost) : 0,
                 remaining: formData.remaining ? parseFloat(formData.remaining) : 0,
                 remainingManuallySet: formData.remainingManuallySet || false,
                 actualCost: formData.actualCost ? parseFloat(formData.actualCost) : null,
                 stepCost: formData.expectedCost ? parseFloat(formData.expectedCost) : 0, // For backward compatibility
-                notes: formData.notes
+                notes: formData.notes || ''
             };
 
             // Add responsible person based on type

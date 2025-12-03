@@ -12,7 +12,11 @@
       "Bash(.mvnw.cmd clean compile:*)",
       "Bash(timeout 30 bash:*)",
       "Bash(tree:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(psql:*)",
+      "Bash(powershell -Command \"$env:PGPASSWORD=''1234''; &amp; ''C:\\Program Files\\PostgreSQL\\17\\bin\\psql.exe'' -h localhost -U postgres -d rockOpsDB -c ''SELECT version, description, type, installed_on, success FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 5;''\")",
+      "Bash(powershell -Command \"cd D:\\RockOps\\backend; .\\mvnw.cmd flyway:repair\")",
+      "Bash(powershell -Command \"Get-ChildItem ''D:\\RockOps\\backend\\src\\main\\resources\\db\\migration\\'' | Sort-Object Name -Descending | Select-Object -First 5 | Format-Table Name\")"
     ],
     "deny": [],
     "ask": []

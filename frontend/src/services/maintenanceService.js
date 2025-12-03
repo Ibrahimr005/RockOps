@@ -214,7 +214,7 @@ export const maintenanceService = {
     // Get available merchants
     getAvailableMerchants: async () => {
         try {
-            const response = await apiClient.get(`${MAINTENANCE_ENDPOINTS.BASE}/merchants`);
+            const response = await apiClient.get(MAINTENANCE_ENDPOINTS.MERCHANTS);
             return response;
         } catch (error) {
             console.error('Error fetching available merchants:', error);
@@ -229,6 +229,17 @@ export const maintenanceService = {
             return response;
         } catch (error) {
             console.error('Error fetching contacts by merchant:', error);
+            throw error;
+        }
+    },
+
+    // Get maintenance team users (Admin, Maintenance Manager, Maintenance Employee)
+    getMaintenanceTeamUsers: async () => {
+        try {
+            const response = await apiClient.get(MAINTENANCE_ENDPOINTS.USERS.MAINTENANCE_TEAM);
+            return response;
+        } catch (error) {
+            console.error('Error fetching maintenance team users:', error);
             throw error;
         }
     }
