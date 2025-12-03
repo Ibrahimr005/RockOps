@@ -66,8 +66,8 @@ export const procurementService = {
             errors.push('Merchant name is required');
         }
 
-        if (!merchantData.merchantType || merchantData.merchantType.trim() === '') {
-            errors.push('Merchant type is required');
+        if (!merchantData.merchantTypes || merchantData.merchantTypes.length === 0) {
+            errors.push('At least one merchant type is required');
         }
 
         if (merchantData.contactEmail && !isValidEmail(merchantData.contactEmail)) {

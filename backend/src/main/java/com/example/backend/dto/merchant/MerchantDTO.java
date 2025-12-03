@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -26,7 +27,7 @@ public class MerchantDTO {
     private String taxIdentificationNumber;
     private Date lastOrderDate;
     private String photoUrl;
-    private String merchantType;  // Will be converted from enum to string
+    private List<String> merchantTypes; // Will be converted from enum to string
     private String notes;
     private UUID siteId;  // Just the site ID to avoid circular references
 }
