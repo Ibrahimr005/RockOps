@@ -131,14 +131,14 @@ const AttendancePage = () => {
         setLoading(true);
         try {
             const response = await attendanceService.getMonthlyAttendance(
-                selectedSite, // Pass the string directly (can be UUID or "no-site")
+                selectedSite,
                 selectedYear,
                 selectedMonth
             );
 
             const data = response.data || response;
             setMonthlyAttendance(data);
-            setModifiedRecords(new Map()); // Reset modified records
+            setModifiedRecords(new Map());
         } catch (error) {
             console.error('Error fetching attendance:', error);
             showSnackbar('Failed to load attendance data', 'error');
@@ -153,11 +153,9 @@ const AttendancePage = () => {
         // Ensure date is in correct format (YYYY-MM-DD)
         let formattedDate = date;
         if (date && typeof date === 'string') {
-            // If date is already in ISO format, use it
             if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
                 formattedDate = date;
             } else {
-                // Try to parse and format the date
                 const parsedDate = new Date(date);
                 if (!isNaN(parsedDate.getTime())) {
                     formattedDate = parsedDate.toISOString().split('T')[0];
@@ -211,7 +209,6 @@ const AttendancePage = () => {
 
         setSaving(true);
         try {
-            // Group records by date for bulk save
             const recordsByDate = new Map();
 
             Array.from(modifiedRecords.values()).forEach(record => {
@@ -230,7 +227,6 @@ const AttendancePage = () => {
 
             console.log('Saving attendance updates grouped by date:', recordsByDate);
 
-            // Save each date group as a separate bulk request
             let totalSaved = 0;
             for (const [date, attendanceRecords] of recordsByDate) {
                 const bulkData = {
@@ -248,7 +244,6 @@ const AttendancePage = () => {
             showSnackbar(`Successfully saved ${totalSaved} attendance record(s)`, 'success');
             setModifiedRecords(new Map());
 
-            // Refresh data after save
             await fetchMonthlyAttendance();
         } catch (error) {
             console.error('Error saving attendance:', error);
@@ -305,14 +300,11 @@ const AttendancePage = () => {
 
     const handleConfirmDialogAction = useCallback(async (shouldSave) => {
         if (shouldSave) {
-            // Save changes first
             await handleSaveAttendance();
         } else {
-            // Discard changes
             setModifiedRecords(new Map());
         }
 
-        // Execute the pending action
         if (pendingAction) {
             if (pendingAction.type === 'site-change') {
                 setSelectedSite(pendingAction.newValue);
@@ -341,7 +333,6 @@ const AttendancePage = () => {
             return [];
         }
 
-        // Determine group label based on selected site
         let groupLabel = '';
         if (selectedSite === 'no-site') {
             groupLabel = 'Unassigned Employees';
@@ -401,129 +392,90 @@ const AttendancePage = () => {
                     <p className="employees-header__subtitle">Track and manage employee attendance records</p>
                 </h1>
                 <div className="header-actions">
-                    <button
-                        className="btn btn-primary"
-                        onClick={handleSaveAttendance}
-                        disabled={saving || modifiedRecords.size === 0}
-                    >
-                        <FaSave /> Save Changes ({modifiedRecords.size})
-                    </button>
+                    {/* Empty or add other top-level actions if needed */}
                 </div>
             </div>
 
-            <div className="attendance-controls">
-                <div className="control-group">
-                    <label>Site / Employee Group</label>
-                    <select
-                        value={selectedSite}
-                        onChange={handleSiteChange}
-                        className="form-control"
-                    >
-                        <option value="">Select Site or Group</option>
-                        <optgroup label="Employee Groups">
-                            <option value="no-site">
-                                🚫 Unassigned Employees
-                            </option>
-                        </optgroup>
-                        <optgroup label="Sites">
-                            {sites.map(site => (
-                                <option key={site.id} value={site.id}>
-                                    {site.name}
-                                </option>
-                            ))}
-                        </optgroup>
-                    </select>
-                </div>
-
-                <div className="month-selector">
-                    <button
-                        className="month-nav-btn"
-                        onClick={() => handleMonthChange('prev')}
-                    >
-                        <FaChevronLeft />
-                    </button>
-                    <div className="month-display">
-                        <span className="month-name">{monthNames[selectedMonth - 1]}</span>
-                        <span className="year">{selectedYear}</span>
-                    </div>
-                    <button
-                        className="month-nav-btn"
-                        onClick={() => handleMonthChange('next')}
-                        disabled={selectedYear === new Date().getFullYear() && selectedMonth >= new Date().getMonth() + 1}
-                    >
-                        <FaChevronRight />
-                    </button>
-                </div>
-            </div>
-
+            {/* Summary Cards */}
             <div className="attendance-summary">
-                <AttendanceSummaryCard
-                    icon={<FaUsers />}
-                    title="Total Employees"
-                    value={summary.totalEmployees}
-                    color="primary"
-                />
-                <AttendanceSummaryCard
-                    icon={<FaUserCheck />}
-                    title="Average Attendance"
-                    value={`${summary.avgAttendance.toFixed(1)}%`}
-                    color="success"
-                />
-                <AttendanceSummaryCard
-                    icon={<FaUserTimes />}
-                    title="Total Absent Days"
-                    value={summary.totalAbsent}
-                    color="danger"
-                />
-                <AttendanceSummaryCard
-                    icon={<FaClock />}
-                    title="Total Hours"
-                    value={summary.totalHours.toFixed(1)}
-                    subValue="hours"
-                    color="info"
-                />
+                <AttendanceSummaryCard icon={<FaUsers />} title="Total Employees" value={summary.totalEmployees} color="primary" />
+                <AttendanceSummaryCard icon={<FaUserCheck />} title="Average Attendance" value={`${summary.avgAttendance.toFixed(1)}%`} color="success" />
+                <AttendanceSummaryCard icon={<FaUserTimes />} title="Total Absent Days" value={summary.totalAbsent} color="danger" />
+                <AttendanceSummaryCard icon={<FaClock />} title="Total Hours" value={summary.totalHours.toFixed(1)} subValue="hours" color="info" />
             </div>
 
-            {/* Legend moved to top */}
+            {/* Legend */}
             <div className="attendance-legend-top">
-                <div className="legend-item">
-                    <span className="legend-color present"></span>
-                    <span>Present</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color absent"></span>
-                    <span>Absent</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color off"></span>
-                    <span>Off Day</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color leave"></span>
-                    <span>On Leave</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color late"></span>
-                    <span>Late</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color half-day"></span>
-                    <span>Half Day</span>
-                </div>
+                <div className="legend-item"><span className="legend-color present"></span><span>Present</span></div>
+                <div className="legend-item"><span className="legend-color absent"></span><span>Absent</span></div>
+                <div className="legend-item"><span className="legend-color off"></span><span>Off Day</span></div>
+                <div className="legend-item"><span className="legend-color leave"></span><span>On Leave</span></div>
+                <div className="legend-item"><span className="legend-color late"></span><span>Late</span></div>
+                <div className="legend-item"><span className="legend-color half-day"></span><span>Half Day</span></div>
             </div>
 
             <div className="attendance-content">
+                {/* Site Group Header with Controls */}
+                <div className={`site-group-header ${selectedSite === 'no-site' ? 'unassigned-header' : ''}`}>
+                    {/* LEFT SIDE: Site Selector */}
+                    <div className="header-left">
+                        <div className="attendance-site-selector">
+                            <select
+                                value={selectedSite}
+                                onChange={handleSiteChange}
+                                className="form-control"
+                            >
+                                <option value="">Select Site or Group</option>
+                                <optgroup label="Employee Groups">
+                                    <option value="no-site">🚫 Unassigned Employees</option>
+                                </optgroup>
+                                <optgroup label="Sites">
+                                    {sites.map(site => (
+                                        <option key={site.id} value={site.id}>{site.name}</option>
+                                    ))}
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        {selectedSite === 'no-site' && <FaUserSlash className="header-icon" />}
+                    </div>
+
+                    {/* CENTER: Month Selector */}
+                    <div className="header-center">
+                        <div className="month-selector">
+                            <button className="month-nav-btn" onClick={() => handleMonthChange('prev')}>
+                                <FaChevronLeft />
+                            </button>
+                            <div className="month-display">
+                                <span className="month-name">{monthNames[selectedMonth - 1]}</span>
+                                <span className="year">{selectedYear}</span>
+                            </div>
+                            <button
+                                className="month-nav-btn"
+                                onClick={() => handleMonthChange('next')}
+                                disabled={selectedYear === new Date().getFullYear() && selectedMonth >= new Date().getMonth() + 1}
+                            >
+                                <FaChevronRight />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* RIGHT SIDE: Save Button */}
+                    <div className="header-right">
+                        <button
+                            className="save-btn-small"
+                            onClick={handleSaveAttendance}
+                            disabled={saving || modifiedRecords.size === 0}
+                        >
+                            <FaSave /> Save Changes {modifiedRecords.size > 0 && `(${modifiedRecords.size})`}
+                        </button>
+                    </div>
+                </div>
+
                 {monthlyAttendance.length > 0 ? (
                     <>
                         {groupedEmployees.map((group, index) => (
                             <div key={index} className="site-group">
-                                {group.siteName && (
-                                    <div className={`site-group-header ${selectedSite === 'no-site' ? 'unassigned-header' : ''}`}>
-                                        {selectedSite === 'no-site' && <FaUserSlash className="header-icon" />}
-                                        <h3>{group.siteName}</h3>
-                                        <span className="employee-count">{group.employees.length} employee{group.employees.length !== 1 ? 's' : ''}</span>
-                                    </div>
-                                )}
                                 <AttendanceMonthlyView
                                     monthlyData={group.employees}
                                     onAttendanceUpdate={handleAttendanceUpdate}
@@ -531,6 +483,7 @@ const AttendancePage = () => {
                                     month={selectedMonth}
                                     year={selectedYear}
                                     showLegend={false}
+                                    employeeCount={group.employees.length}
                                 />
                             </div>
                         ))}
@@ -558,7 +511,7 @@ const AttendancePage = () => {
                 )}
             </div>
 
-            {/* Confirmation Dialog for Unsaved Changes */}
+            {/* Confirmation Dialog */}
             <ConfirmationDialog
                 isVisible={showConfirmDialog}
                 type="danger"
