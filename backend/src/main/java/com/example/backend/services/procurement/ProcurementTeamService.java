@@ -32,8 +32,15 @@ public class ProcurementTeamService {
             String name = (String) merchantData.get("name");
             System.out.println("Name: " + name);
 
-            MerchantType merchantType = MerchantType.valueOf(((String) merchantData.get("merchantType")).toUpperCase());
-            System.out.println("Merchant Type: " + merchantType);
+            // Handle multiple merchant types
+            List<MerchantType> merchantTypes = new ArrayList<>();
+            if (merchantData.containsKey("merchantTypes")) {
+                List<String> typeStrings = (List<String>) merchantData.get("merchantTypes");
+                for (String typeStr : typeStrings) {
+                    merchantTypes.add(MerchantType.valueOf(typeStr.toUpperCase()));
+                }
+            }
+            System.out.println("Merchant Types: " + merchantTypes);
 
             // Optional fields
             String contactEmail = (String) merchantData.get("contactEmail");
@@ -79,7 +86,7 @@ public class ProcurementTeamService {
 
             Merchant merchant = Merchant.builder()
                     .name(name)
-                    .merchantType(merchantType)
+                    .merchantTypes(merchantTypes)
                     .contactEmail(contactEmail)
                     .contactPhone(contactPhone)
                     .contactSecondPhone(contactSecondPhone)
@@ -132,16 +139,20 @@ public class ProcurementTeamService {
                 }
             }
 
-            if (merchantData.containsKey("merchantType")) {
-                String typeStr = (String) merchantData.get("merchantType");
-                if (typeStr != null && !typeStr.trim().isEmpty()) {
-                    try {
-                        MerchantType merchantType = MerchantType.valueOf(typeStr.toUpperCase());
-                        merchant.setMerchantType(merchantType);
-                        System.out.println("Updated merchant type: " + merchantType);
-                    } catch (IllegalArgumentException e) {
-                        throw new RuntimeException("Invalid merchant type: " + typeStr);
+            // Replace the merchantType handling section with:
+            if (merchantData.containsKey("merchantTypes")) {
+                List<String> typeStrings = (List<String>) merchantData.get("merchantTypes");
+                if (typeStrings != null && !typeStrings.isEmpty()) {
+                    List<MerchantType> merchantTypes = new ArrayList<>();
+                    for (String typeStr : typeStrings) {
+                        try {
+                            merchantTypes.add(MerchantType.valueOf(typeStr.toUpperCase()));
+                        } catch (IllegalArgumentException e) {
+                            throw new RuntimeException("Invalid merchant type: " + typeStr);
+                        }
                     }
+                    merchant.setMerchantTypes(merchantTypes);
+                    System.out.println("Updated merchant types: " + merchantTypes);
                 }
             }
 

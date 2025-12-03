@@ -380,7 +380,8 @@ export const SITE_ENDPOINTS = {
 export const MERCHANT_ENDPOINTS = {
     BASE: '/api/v1/merchants',
     BY_ID: (id) => `/api/v1/merchants/${id}`,
-    TRANSACTIONS: (id) => `/api/v1/merchants/${id}/transactions`  // ADD THIS
+    TRANSACTIONS: (id) => `/api/v1/merchants/${id}/transactions`,
+    PERFORMANCE: (id) => `/api/v1/merchants/${id}/performance`// ADD THIS
 };
 
 // Work Type module endpoints

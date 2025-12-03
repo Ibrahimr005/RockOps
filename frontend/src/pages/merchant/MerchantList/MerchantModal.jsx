@@ -54,12 +54,17 @@ const MerchantModal = ({
     };
 
     // Validate form
+    // Validate form
     const validateForm = () => {
+        console.log('Validating formData:', formData);
+        console.log('merchantTypes:', formData.merchantTypes);
         const newErrors = {};
 
         // Required fields
         if (!formData.name) newErrors.name = 'Merchant name is required';
-        if (!formData.merchantType) newErrors.merchantType = 'Merchant type is required';
+        if (!formData.merchantTypes || formData.merchantTypes.length === 0) {
+            newErrors.merchantType = 'At least one merchant type is required';
+        }
         if (!formData.contactPersonName) newErrors.contactPersonName = 'Contact person name is required';
         if (!formData.contactEmail) newErrors.contactEmail = 'Contact email is required';
         if (!formData.contactPhone) newErrors.contactPhone = 'Contact phone is required';
@@ -80,8 +85,14 @@ const MerchantModal = ({
     };
 
     // Handle form submission
+// Handle form submission
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        // Validate form before submitting
+        if (!validateForm()) {
+            return; // Stop submission if validation fails
+        }
 
         if (modalMode === 'add') {
             handleAddMerchant(e);
@@ -168,17 +179,45 @@ const MerchantModal = ({
                                 </div>
 
                                 <div className="proc-merchant-form-group">
-                                    <label className="required">Merchant Type</label>
+                                    <label className="required">Merchant Types</label>
                                     <select
                                         name="merchantType"
-                                        value={formData.merchantType}
-                                        onChange={handleChange}
+                                        value=""
+                                        onChange={(e) => {
+                                            if (e.target.value) {
+                                                const currentTypes = formData.merchantTypes || [];
+                                                if (!currentTypes.includes(e.target.value)) {
+                                                    const newTypes = [...currentTypes, e.target.value];
+                                                    handleInputChange({ target: { name: 'merchantTypes', value: newTypes } });
+                                                }
+                                            }
+                                        }}
                                         className={errors.merchantType ? 'error' : ''}
-                                        required
                                     >
                                         <option value="">Select Merchant Type</option>
                                         <option value="SUPPLIER">Supplier</option>
+                                        <option value="SERVICE">Service</option>
                                     </select>
+
+                                    {formData.merchantTypes && formData.merchantTypes.length > 0 && (
+                                        <div className="proc-merchant-type-tags">
+                                            {formData.merchantTypes.map(type => (
+                                                <span key={type} className="proc-merchant-type-tag">
+                    {type}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newTypes = formData.merchantTypes.filter(t => t !== type);
+                                                            handleInputChange({ target: { name: 'merchantTypes', value: newTypes } });
+                                                        }}
+                                                    >
+                        ×
+                    </button>
+                </span>
+                                            ))}
+                                        </div>
+                                    )}
+
                                     {errors.merchantType && (
                                         <div className="proc-merchant-error-message">{errors.merchantType}</div>
                                     )}

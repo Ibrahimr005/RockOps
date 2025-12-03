@@ -7,8 +7,8 @@ import { merchantService } from '../../../services/merchant/merchantService.js';
 
 // Import reorganized tab components
 import OverviewTab from './tabs/OverviewTab/OverviewTab.jsx'
-import ContactDetailsTab from './tabs/ContactDetailsTab.jsx';
-import PerformanceTab from './tabs/PerformanceTab.jsx';
+
+import PerformanceTab from './tabs/PerformanceTab/PerformanceTab.jsx';
 import DocumentsTab from './tabs/DocuementsTab/DocumentsTab.jsx';
 import TransactionsTab from './tabs/TransactionsTab/TransactionsTab.jsx';
 import ContactsTab from './tabs/ContactsTab/ContactsTab.jsx';
@@ -173,12 +173,7 @@ const MerchantDetails = () => {
                         >
                             Basic Info
                         </button>
-                        <button
-                            className={`tab-button ${activeTab === 'contact' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('contact')}
-                        >
-                            Contact Details
-                        </button>
+
                         <button
                             className={`tab-button ${activeTab === 'performance' ? 'active' : ''}`}
                             onClick={() => setActiveTab('performance')}
@@ -207,7 +202,6 @@ const MerchantDetails = () => {
 
                     <div className="tab-content">
                         {activeTab === 'basic' && <OverviewTab merchant={merchant} formatDate={formatDate} getSiteName={getSiteName} />}
-                        {activeTab === 'contact' && <ContactDetailsTab merchant={merchant} />}
                         {activeTab === 'performance' && <PerformanceTab merchant={merchant} formatDate={formatDate} />}
                         {activeTab === 'documents' && <DocumentsTab merchant={merchant} />}
                         {activeTab === 'transactions' && <TransactionsTab merchant={merchant} />}
