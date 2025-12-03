@@ -45,7 +45,7 @@ const EmployeesList = () => {
 
             // DEBUG: Log the first employee to see what status values we're getting
             if (data && data.length > 0) {
-                // console.log('First employee data:', data[0]);
+                console.log('First employee data:', data[0]);
 
             }
 
@@ -76,7 +76,6 @@ const EmployeesList = () => {
         }
     };
 
-    // ... (keep all other functions the same until getStatusBadge)
 
     // Get status badge styling - IMPROVED
     const getStatusBadge = (status) => {
@@ -154,8 +153,16 @@ const EmployeesList = () => {
             render: (employee) => (
                 <div className="employee-position">
                     <div className="employee-position__title">
-                        {employee.position || employee.jobPositionName || 'N/A'}
+                        {employee.position ||
+                            employee.jobPositionName ||
+                            'N/A'}{" "}
+                        -{" "}
+                        {employee.jobPositionExperienceLevel
+                            ?.toLowerCase()
+                            .replace(/_/g, ' ')
+                            .replace(/\b\w/g, c => c.toUpperCase())}
                     </div>
+
                     <div className="employee-position__department">
                         {getDepartmentName(employee)}
                     </div>

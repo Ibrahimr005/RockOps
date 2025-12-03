@@ -55,6 +55,7 @@ public class EmployeeResponseDTO {
     private UUID jobPositionId;
     private String jobPositionName;
     private String jobPositionDepartment;
+    private String jobPositionExperienceLevel;
 
     // Financial details
     private Double baseSalary;

@@ -780,27 +780,6 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                             </div>
 
                             <div className="jp-form-row">
-                                <div className="jp-form-group">
-                                    <label htmlFor="head">Reporting To</label>
-                                    <div className="jp-select-wrapper">
-                                        <select
-                                            id="head"
-                                            name="head"
-                                            value={formData.head}
-                                            onChange={handleChange}
-                                        >
-                                            <option value="">Select Manager (Optional)</option>
-                                            {employees.map(employee => (
-                                                <option
-                                                    key={employee.id}
-                                                    value={employee.fullName || `${employee.firstName} ${employee.lastName}`}
-                                                >
-                                                    {employee.fullName || `${employee.firstName} ${employee.lastName}`}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
 
                                 <div className="jp-form-group">
                                     <label htmlFor="experienceLevel">Experience Level</label>
@@ -819,9 +798,6 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                                         </select>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div className="jp-form-row">
                                 <div className="jp-form-group">
                                     <label htmlFor="probationPeriod">Probation Period (days)</label>
                                     <input
@@ -835,6 +811,10 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                                         placeholder="90"
                                     />
                                 </div>
+
+                            </div>
+
+                            <div className="jp-form-row">
                                 <div className="jp-checkbox-group">
                                     <label>
                                         <input

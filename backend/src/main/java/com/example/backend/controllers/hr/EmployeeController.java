@@ -217,6 +217,7 @@ public class EmployeeController {
                 employeeData.put("jobPositionName", emp.getJobPosition().getPositionName());
                 employeeData.put("jobPositionDepartment", emp.getJobPosition().getDepartment().getName());
                 employeeData.put("jobPositionType", emp.getJobPosition().getType());
+                employeeData.put("jobPositionExperienceLevel", emp.getJobPosition().getExperienceLevel());
             }
 
             return employeeData;
