@@ -116,7 +116,7 @@ const PositionOverview = ({ position }) => {
                         </div>
                         <div className="info-item">
                             <label>Department</label>
-                            <span>{position.department || 'N/A'}</span>
+                            <span>{position.departmentName || 'N/A'}</span>
                         </div>
                         <div className="info-item">
                             <label>Parent Position</label>

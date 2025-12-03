@@ -80,7 +80,7 @@ const PositionOverviewTab = ({
                     </div>
                     <div className="detail-item">
                         <span className="label">Department:</span>
-                        <span className="value">{position.department?.name || 'N/A'}</span>
+                        <span className="value">{position.departmentName }</span>
                     </div>
                     <div className="detail-item">
                         <span className="label">Reports To:</span>
