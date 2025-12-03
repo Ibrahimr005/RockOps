@@ -79,7 +79,9 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
             } else if (employee.department.name) {
                 return employee.department.name;
             }
+
         }
+
         return position?.department || 'N/A';
     };
 
@@ -249,7 +251,7 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
                 </div>
                 <div className="summary-item">
                     <label>Department</label>
-                    <span>{position?.department || 'N/A'}</span>
+                    <span>{position?.departmentName || 'N/A'}</span>
                 </div>
                 <div className="summary-item">
                     <label>Contract Type</label>

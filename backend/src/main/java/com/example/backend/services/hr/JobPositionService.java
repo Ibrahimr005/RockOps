@@ -1181,7 +1181,7 @@ public class JobPositionService {
             try {
                 builder.id(jobPosition.getId())
                         .positionName(jobPosition.getPositionName())
-//                    .department(jobPosition.getDepartment())
+//                      .department(jobPosition.getDepartment())
                         .departmentName(jobPosition.getDepartment() != null ? jobPosition.getDepartment().getName() : null)
                         .head(jobPosition.getHead())
                         .baseSalary(jobPosition.getBaseSalary())
