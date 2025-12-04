@@ -1,0 +1,75 @@
+{
+    "pipeline": {
+        "name": "rockops-backend-pipeline",
+        "roleArn": "arn:aws:iam::490224159443:role/CodePipelineServiceRole",
+        "artifactStore": {
+            "type": "S3",
+            "location": "rockops-pipeline-artifacts-490224159443"
+        },
+        "stages": [
+            {
+                "name": "Source",
+                "actions": [
+                    {
+                        "name": "SourceAction",
+                        "actionTypeId": {
+                            "category": "Source",
+                            "owner": "ThirdParty",
+                            "provider": "GitHub",
+                            "version": "1"
+                        },
+                        "runOrder": 1,
+                        "configuration": {
+                            "Branch": "production",
+                            "OAuthToken": "****",
+                            "Owner": "Ibrahimr005",
+                            "Repo": "RockOps"
+                        },
+                        "outputArtifacts": [
+                            {
+                                "name": "SourceOutput"
+                            }
+                        ],
+                        "inputArtifacts": []
+                    }
+                ]
+            },
+            {
+                "name": "Build",
+                "actions": [
+                    {
+                        "name": "BuildAction",
+                        "actionTypeId": {
+                            "category": "Build",
+                            "owner": "AWS",
+                            "provider": "CodeBuild",
+                            "version": "1"
+                        },
+                        "runOrder": 1,
+                        "configuration": {
+                            "ProjectName": "rockops-backend-build"
+                        },
+                        "outputArtifacts": [
+                            {
+                                "name": "BuildOutput"
+                            }
+                        ],
+                        "inputArtifacts": [
+                            {
+                                "name": "SourceOutput"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "version": 1,
+        "executionMode": "SUPERSEDED",
+        "pipelineType": "V2"
+    },
+    "metadata": {
+        "pipelineArn": "arn:aws:codepipeline:us-east-1:490224159443:rockops-backend-pipeline",
+        "created": "2025-12-03T19:56:58.876000+02:00",
+        "updated": "2025-12-03T19:56:58.876000+02:00"
+    }
+}
