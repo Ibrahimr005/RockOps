@@ -25,4 +25,5 @@ phases:
 
 artifacts:
   files:
-    - backend/imagedefinitions.json
+    - imagedefinitions.json
+  base-directory: backend
