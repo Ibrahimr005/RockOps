@@ -475,7 +475,7 @@ const ProcurementMerchants = () => {
                     className="procurement-merchants-datatable"
                     // DataTable's built-in add button
                     showAddButton={userRole === 'PROCUREMENT' || userRole === 'ADMIN'}
-                    addButtonText="Add Merchant"
+                    addButtonText="Add Merchants"
                     addButtonIcon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M12 5v14M5 12h14" />
                     </svg>}
