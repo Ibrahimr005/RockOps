@@ -16,7 +16,7 @@ WORKDIR /app
 # Copy the built JAR from build stage
 COPY --from=build /app/target/*.jar app.jar
 
-ENV SPRING_PROFILES_ACTIVE=prod
+ENV SPRING_PROFILES_ACTIVE=aws
 
 EXPOSE 8080
 

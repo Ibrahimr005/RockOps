@@ -34,7 +34,10 @@ public class SecurityConfiguration {
                             "http://localhost:5174",
                             "http://localhost:3000",
 
-                            // Development deployment - ADD THIS!
+                            // AWS S3 deployment
+                            "http://rockops.s3-website-us-east-1.amazonaws.com",
+
+                            // Development deployment
                             "https://dev-rock-ops.vercel.app",
 
                             // Production deployment
@@ -42,13 +45,14 @@ public class SecurityConfiguration {
                             "https://rock-ops.vercel.app"
                     ));
                     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
+                    configuration.setAllowedHeaders(Arrays.asList("*"));
                     configuration.setAllowCredentials(true);
                     configuration.setMaxAge(3600L);
                     return configuration;
                 }))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/").permitAll()  // ADD THIS - Allow health check
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAuthority(Role.ADMIN.name())
