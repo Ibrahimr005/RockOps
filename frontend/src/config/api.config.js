@@ -1,6 +1,5 @@
 // src/config/api.config.js
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||  'http://localhost:8080';
-
+export const API_BASE_URL = import.meta.env.VITE_AWS_API_BASE_URL || 'http://localhost:8080';
 // Dashboard endpoints
 export const DASHBOARD_ENDPOINTS = {
     BASE: '/api/dashboard',
