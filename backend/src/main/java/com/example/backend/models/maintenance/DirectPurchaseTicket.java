@@ -41,7 +41,7 @@ public class DirectPurchaseTicket {
     private Equipment equipment;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "merchant_id", nullable = false)
+    @JoinColumn(name = "merchant_id")  // Nullable for new workflow - set in Step 2
     private Merchant merchant;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -63,7 +63,7 @@ public class DirectPurchaseTicket {
     @Builder.Default
     private DirectPurchaseWorkflowStep currentStep = DirectPurchaseWorkflowStep.CREATION;
 
-    // Step 1 - Creation timestamps
+    // Step 1 - Creation timestamps and optional fields
     @Column(name = "step1_started_at")
     private LocalDateTime step1StartedAt;
 
@@ -73,6 +73,13 @@ public class DirectPurchaseTicket {
     @Column(name = "step1_completed", nullable = false)
     @Builder.Default
     private Boolean step1Completed = false;
+
+    @Column(name = "expected_cost", precision = 10, scale = 2)
+    @DecimalMin(value = "0.0", inclusive = true, message = "Expected cost must be non-negative")
+    private BigDecimal expectedCost;
+
+    @Column(name = "expected_end_date")
+    private java.time.LocalDate expectedEndDate;
 
     // Step 2 - Purchasing fields and timestamps
     @Column(name = "down_payment", precision = 10, scale = 2)
@@ -146,14 +153,14 @@ public class DirectPurchaseTicket {
     @Size(max = 255, message = "Spare part name must not exceed 255 characters")
     private String sparePart;
 
-    @NotNull(message = "Expected parts cost is required")
+    // For legacy tickets only - new workflow calculates from items
     @DecimalMin(value = "0.0", inclusive = true, message = "Expected parts cost must be non-negative")
-    @Column(name = "expected_parts_cost", precision = 10, scale = 2, nullable = false)
+    @Column(name = "expected_parts_cost", precision = 10, scale = 2)
     private BigDecimal expectedPartsCost;
 
-    @NotNull(message = "Expected transportation cost is required")
+    // For legacy tickets only - new workflow handles in Step 4
     @DecimalMin(value = "0.0", inclusive = true, message = "Expected transportation cost must be non-negative")
-    @Column(name = "expected_transportation_cost", precision = 10, scale = 2, nullable = false)
+    @Column(name = "expected_transportation_cost", precision = 10, scale = 2)
     private BigDecimal expectedTransportationCost;
 
     @Column(name = "description", columnDefinition = "TEXT")
@@ -181,13 +188,11 @@ public class DirectPurchaseTicket {
 
     // ========== RELATIONSHIPS ==========
 
-    @OneToMany(mappedBy = "directPurchaseTicket", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "directPurchaseTicket", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("stepNumber ASC")
-    @Builder.Default
     private List<DirectPurchaseStep> steps = new ArrayList<>();
 
-    @OneToMany(mappedBy = "directPurchaseTicket", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
+    @OneToMany(mappedBy = "directPurchaseTicket", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<DirectPurchaseItem> items = new ArrayList<>();
 
     // ========== CALCULATED FIELDS & HELPER METHODS ==========

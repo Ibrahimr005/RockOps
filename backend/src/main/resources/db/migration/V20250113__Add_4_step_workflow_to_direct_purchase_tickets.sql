@@ -53,7 +53,7 @@ ALTER TABLE direct_purchase_tickets ADD COLUMN IF NOT EXISTS step4_completed_at 
 ALTER TABLE direct_purchase_tickets ADD COLUMN IF NOT EXISTS step4_completed BOOLEAN NOT NULL DEFAULT false;
 
 -- Completion timestamp
-ALTER TABLE direct_purchase_tickets ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP WITHOUT TIME ZONE;
+ALTER TABLE  direct_purchase_tickets ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP WITHOUT TIME ZONE;
 
 -- ========== 3. Mark all existing tickets as legacy ==========
 UPDATE direct_purchase_tickets SET is_legacy_ticket = true WHERE is_legacy_ticket = false;

@@ -114,6 +114,115 @@ export const directPurchaseService = {
             console.error('Error deleting direct purchase step:', error);
             throw error;
         }
+    },
+
+    // ========================================
+    // NEW 4-STEP WORKFLOW OPERATIONS
+    // ========================================
+
+    // Step 1: Creation
+    createTicketStep1: async (data) => {
+        try {
+            const response = await apiClient.post('/api/direct-purchase-tickets/workflow/step-1', data);
+            return response;
+        } catch (error) {
+            console.error('Error creating direct purchase ticket Step 1:', error);
+            throw error;
+        }
+    },
+
+    completeStep1: async (ticketId) => {
+        try {
+            const response = await apiClient.put(`/api/direct-purchase-tickets/${ticketId}/workflow/complete-step-1`);
+            return response;
+        } catch (error) {
+            console.error('Error completing Step 1:', error);
+            throw error;
+        }
+    },
+
+    // Step 2: Purchasing
+    updateStep2: async (ticketId, data) => {
+        try {
+            const response = await apiClient.put(`/api/direct-purchase-tickets/${ticketId}/workflow/step-2`, data);
+            return response;
+        } catch (error) {
+            console.error('Error updating Step 2:', error);
+            throw error;
+        }
+    },
+
+    completeStep2: async (ticketId) => {
+        try {
+            const response = await apiClient.put(`/api/direct-purchase-tickets/${ticketId}/workflow/complete-step-2`);
+            return response;
+        } catch (error) {
+            console.error('Error completing Step 2:', error);
+            throw error;
+        }
+    },
+
+    // Step 3: Finalize Purchasing
+    updateStep3: async (ticketId, data) => {
+        try {
+            const response = await apiClient.put(`/api/direct-purchase-tickets/${ticketId}/workflow/step-3`, data);
+            return response;
+        } catch (error) {
+            console.error('Error updating Step 3:', error);
+            throw error;
+        }
+    },
+
+    completeStep3: async (ticketId) => {
+        try {
+            const response = await apiClient.put(`/api/direct-purchase-tickets/${ticketId}/workflow/complete-step-3`);
+            return response;
+        } catch (error) {
+            console.error('Error completing Step 3:', error);
+            throw error;
+        }
+    },
+
+    // Step 4: Transporting
+    updateStep4: async (ticketId, data) => {
+        try {
+            const response = await apiClient.put(`/api/direct-purchase-tickets/${ticketId}/workflow/step-4`, data);
+            return response;
+        } catch (error) {
+            console.error('Error updating Step 4:', error);
+            throw error;
+        }
+    },
+
+    completeStep4: async (ticketId) => {
+        try {
+            const response = await apiClient.put(`/api/direct-purchase-tickets/${ticketId}/workflow/complete-step-4`);
+            return response;
+        } catch (error) {
+            console.error('Error completing Step 4:', error);
+            throw error;
+        }
+    },
+
+    // Helper endpoints
+    getMerchantContacts: async (merchantId) => {
+        try {
+            const response = await apiClient.get(`/api/merchants/${merchantId}/contacts`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching merchant contacts:', error);
+            throw error;
+        }
+    },
+
+    getSiteEmployees: async (siteId) => {
+        try {
+            const response = await apiClient.get(`/api/v1/employees/site/${siteId}`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching site employees:', error);
+            throw error;
+        }
     }
 };
 

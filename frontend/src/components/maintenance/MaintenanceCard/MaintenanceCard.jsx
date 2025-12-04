@@ -212,13 +212,15 @@ const MaintenanceCard = ({
 
             {/* Card Body */}
             <div className="maintenance-card-body">
-                {/* Issue Description */}
+                {/* Issue/Description - Different terminology for Direct Purchase tickets */}
                 <div className="info-item">
                     <div className="info-icon-wrapper">
                         <FaExclamationCircle className="info-icon" />
                     </div>
                     <div className="info-details">
-                        <div className="info-label">Issue</div>
+                        <div className="info-label">
+                            {record.ticketType === 'DIRECT_PURCHASE' ? 'Description' : 'Issue'}
+                        </div>
                         <div className="info-value">{record.initialIssueDescription}</div>
                     </div>
                 </div>

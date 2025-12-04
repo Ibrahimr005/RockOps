@@ -113,6 +113,164 @@ public class DirectPurchaseTicketController {
         }
     }
 
+    // ========================================
+    // NEW 4-STEP WORKFLOW ENDPOINTS
+    // ========================================
+
+    /**
+     * STEP 1: Create new ticket with basic information
+     * POST /api/direct-purchase-tickets/workflow/step-1
+     */
+    @PostMapping("/workflow/step-1")
+    public ResponseEntity<DirectPurchaseTicketDetailsDto> createTicketStep1(@Valid @RequestBody CreateDirectPurchaseStep1Dto dto) {
+        try {
+            DirectPurchaseTicketDetailsDto created = ticketService.createTicketStep1(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (MaintenanceException e) {
+            log.error("Error creating direct purchase ticket Step 1: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error creating direct purchase ticket Step 1: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * STEP 1: Complete Step 1 and progress to Step 2
+     * PUT /api/direct-purchase-tickets/{id}/workflow/complete-step-1
+     */
+    @PutMapping("/{id}/workflow/complete-step-1")
+    public ResponseEntity<DirectPurchaseTicketDetailsDto> completeStep1(@PathVariable UUID id) {
+        try {
+            DirectPurchaseTicketDetailsDto updated = ticketService.completeStep1(id);
+            return ResponseEntity.ok(updated);
+        } catch (MaintenanceException e) {
+            log.error("Error completing Step 1 for ticket {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error completing Step 1 for ticket {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * STEP 2: Update purchasing information
+     * PUT /api/direct-purchase-tickets/{id}/workflow/step-2
+     */
+    @PutMapping("/{id}/workflow/step-2")
+    public ResponseEntity<DirectPurchaseTicketDetailsDto> updateStep2(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateDirectPurchaseStep2Dto dto) {
+        try {
+            DirectPurchaseTicketDetailsDto updated = ticketService.updateStep2(id, dto);
+            return ResponseEntity.ok(updated);
+        } catch (MaintenanceException e) {
+            log.error("Error updating Step 2 for ticket {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error updating Step 2 for ticket {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * STEP 2: Complete Step 2 and progress to Step 3
+     * PUT /api/direct-purchase-tickets/{id}/workflow/complete-step-2
+     */
+    @PutMapping("/{id}/workflow/complete-step-2")
+    public ResponseEntity<DirectPurchaseTicketDetailsDto> completeStep2(@PathVariable UUID id) {
+        try {
+            DirectPurchaseTicketDetailsDto updated = ticketService.completeStep2(id);
+            return ResponseEntity.ok(updated);
+        } catch (MaintenanceException e) {
+            log.error("Error completing Step 2 for ticket {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error completing Step 2 for ticket {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * STEP 3: Update finalize purchasing information
+     * PUT /api/direct-purchase-tickets/{id}/workflow/step-3
+     */
+    @PutMapping("/{id}/workflow/step-3")
+    public ResponseEntity<DirectPurchaseTicketDetailsDto> updateStep3(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateDirectPurchaseStep3Dto dto) {
+        try {
+            DirectPurchaseTicketDetailsDto updated = ticketService.updateStep3(id, dto);
+            return ResponseEntity.ok(updated);
+        } catch (MaintenanceException e) {
+            log.error("Error updating Step 3 for ticket {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error updating Step 3 for ticket {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * STEP 3: Complete Step 3 and progress to Step 4
+     * PUT /api/direct-purchase-tickets/{id}/workflow/complete-step-3
+     */
+    @PutMapping("/{id}/workflow/complete-step-3")
+    public ResponseEntity<DirectPurchaseTicketDetailsDto> completeStep3(@PathVariable UUID id) {
+        try {
+            DirectPurchaseTicketDetailsDto updated = ticketService.completeStep3(id);
+            return ResponseEntity.ok(updated);
+        } catch (MaintenanceException e) {
+            log.error("Error completing Step 3 for ticket {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error completing Step 3 for ticket {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * STEP 4: Update transporting information
+     * PUT /api/direct-purchase-tickets/{id}/workflow/step-4
+     */
+    @PutMapping("/{id}/workflow/step-4")
+    public ResponseEntity<DirectPurchaseTicketDetailsDto> updateStep4(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateDirectPurchaseStep4Dto dto) {
+        try {
+            DirectPurchaseTicketDetailsDto updated = ticketService.updateStep4(id, dto);
+            return ResponseEntity.ok(updated);
+        } catch (MaintenanceException e) {
+            log.error("Error updating Step 4 for ticket {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error updating Step 4 for ticket {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * STEP 4: Complete Step 4 and mark ticket as COMPLETED
+     * PUT /api/direct-purchase-tickets/{id}/workflow/complete-step-4
+     */
+    @PutMapping("/{id}/workflow/complete-step-4")
+    public ResponseEntity<DirectPurchaseTicketDetailsDto> completeStep4(@PathVariable UUID id) {
+        try {
+            DirectPurchaseTicketDetailsDto updated = ticketService.completeStep4(id);
+            return ResponseEntity.ok(updated);
+        } catch (MaintenanceException e) {
+            log.error("Error completing Step 4 for ticket {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error completing Step 4 for ticket {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // ========================================
+    // LEGACY STEP ENDPOINTS (for legacy tickets)
+    // ========================================
+
     // Step endpoints
 
     @GetMapping("/{ticketId}/steps")

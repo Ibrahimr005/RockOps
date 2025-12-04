@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaArrowLeft, FaShoppingCart, FaUser, FaCalendarAlt, FaDollarSign, FaInfoCircle, FaEllipsisV, FaEdit, FaCheckCircle, FaTrash, FaClock, FaExclamationCircle, FaTools, FaClipboardList } from 'react-icons/fa';
+import { FaArrowLeft, FaShoppingCart, FaUser, FaCalendarAlt, FaDollarSign, FaInfoCircle, FaEllipsisV, FaEdit, FaCheckCircle, FaTrash, FaClock, FaExclamationCircle, FaTools, FaClipboardList, FaHistory } from 'react-icons/fa';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -7,6 +7,9 @@ import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import EditDirectPurchaseStepModal from './EditDirectPurchaseStepModal';
 import CompleteDirectPurchaseStepModal from './CompleteDirectPurchaseStepModal';
+import DirectPurchaseWizardModal from './DirectPurchaseWizardModal';
+import DirectPurchaseTimeline from './DirectPurchaseTimeline';
+import DirectPurchaseSteps from './DirectPurchaseSteps';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import directPurchaseService from '../../../services/directPurchaseService';
 import '../../../styles/status-badges.scss';
@@ -23,6 +26,8 @@ const DirectPurchaseDetailView = () => {
     const [completingStep, setCompletingStep] = useState(null);
     const [isEditStepModalOpen, setIsEditStepModalOpen] = useState(false);
     const [isCompleteStepModalOpen, setIsCompleteStepModalOpen] = useState(false);
+    const [isWizardModalOpen, setIsWizardModalOpen] = useState(false);
+    const [wizardInitialStep, setWizardInitialStep] = useState(1);
     const [confirmDialog, setConfirmDialog] = useState({
         isVisible: false,
         title: '',
@@ -39,6 +44,17 @@ const DirectPurchaseDetailView = () => {
         }
     }, [ticketId]);
 
+    const handleOpenWizard = (stepNumber = null) => {
+        if (stepNumber) {
+            setWizardInitialStep(stepNumber);
+        } else {
+            // Determine which step to open based on current state
+            const currentStepNumber = getCurrentStepNumber();
+            setWizardInitialStep(currentStepNumber);
+        }
+        setIsWizardModalOpen(true);
+    };
+
     const loadTicket = async () => {
         try {
             setLoading(true);
@@ -52,6 +68,21 @@ const DirectPurchaseDetailView = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const getCurrentStepNumber = () => {
+        if (!ticket) return 1;
+        if (ticket.step4Completed) return 4;
+        if (ticket.step3Completed) return 4;
+        if (ticket.step2Completed) return 3;
+        if (ticket.step1Completed) return 2;
+        return 1;
+    };
+
+    const handleWizardComplete = () => {
+        setIsWizardModalOpen(false);
+        setWizardInitialStep(1);
+        loadTicket(); // Reload to show completed state
     };
 
     const handleEditStep = (step) => {
@@ -196,7 +227,7 @@ const DirectPurchaseDetailView = () => {
             onClick: () => navigate('/maintenance/records')
         },
         {
-            label: ticket.sparePart || 'Direct Purchase Details',
+            label: ticket.title || ticket.sparePart || 'Direct Purchase Details',
             icon: <FaShoppingCart />
         }
     ];
@@ -229,6 +260,12 @@ const DirectPurchaseDetailView = () => {
                 icon={<FaShoppingCart />}
                 stats={stats}
                 actionButtons={[
+                    ...(!ticket.isLegacyTicket && ticket.status !== 'COMPLETED' ? [{
+                        text: 'Continue Workflow',
+                        icon: <FaEdit />,
+                        onClick: () => handleOpenWizard(),
+                        className: 'primary'
+                    }] : []),
                     {
                         text: getStatusBadge(ticket.status),
                         className: 'secondary',
@@ -239,40 +276,67 @@ const DirectPurchaseDetailView = () => {
 
             {/* Main Content */}
             <div className="detail-content">
+                {/* Timeline for New Workflow */}
+                {ticket && !ticket.isLegacyTicket && (
+                    <div className="info-card timeline-card">
+                        <h2><FaHistory /> Workflow Progress</h2>
+                        <DirectPurchaseTimeline ticket={ticket} />
+                    </div>
+                )}
+
                 {/* Ticket Information Card */}
                 <div className="info-card">
-                    <h2>Spare Part Details</h2>
+                    <h2>{!ticket.isLegacyTicket ? 'Ticket Details' : 'Spare Part Details'}</h2>
                     <div className="info-grid">
                         <div className="info-item">
                             <label>Equipment</label>
                             <div className="info-value">
-                                <strong>{ticket.equipmentName}</strong>
-                                <span className="subtitle">{ticket.equipmentModel} • {ticket.equipmentType}</span>
+                                <strong>{ticket.equipmentName || 'Not assigned'}</strong>
+                                {ticket.equipmentModel && ticket.equipmentModel !== 'N/A' && (
+                                    <span className="subtitle">{ticket.equipmentModel} • {ticket.equipmentType || 'N/A'}</span>
+                                )}
                             </div>
                         </div>
 
                         <div className="info-item">
                             <label>Site</label>
-                            <div className="info-value">{ticket.site || 'N/A'}</div>
+                            <div className="info-value">{ticket.site || 'Not assigned'}</div>
                         </div>
 
-                        <div className="info-item">
-                            <label>Spare Part Name</label>
-                            <div className="info-value"><strong>{ticket.sparePart}</strong></div>
-                        </div>
-
-                        <div className="info-item">
-                            <label>Merchant</label>
-                            <div className="info-value">{ticket.merchantName}</div>
-                        </div>
-
-                        <div className="info-item">
-                            <label>Responsible Person</label>
-                            <div className="info-value">
-                                <FaUser className="icon" /> {ticket.responsiblePersonName}
-                                <span className="subtitle">{ticket.responsiblePersonPhone}</span>
+                        {/* Legacy: Show Spare Part */}
+                        {ticket.isLegacyTicket && ticket.sparePart && (
+                            <div className="info-item">
+                                <label>Spare Part Name</label>
+                                <div className="info-value"><strong>{ticket.sparePart}</strong></div>
                             </div>
-                        </div>
+                        )}
+
+                        {/* New Workflow: Show Title */}
+                        {!ticket.isLegacyTicket && ticket.title && (
+                            <div className="info-item">
+                                <label>Title</label>
+                                <div className="info-value"><strong>{ticket.title}</strong></div>
+                            </div>
+                        )}
+
+                        {ticket.merchantName && (
+                            <div className="info-item">
+                                <label>Merchant</label>
+                                <div className="info-value">{ticket.merchantName}</div>
+                            </div>
+                        )}
+
+                        {ticket.responsiblePersonName && (
+                            <div className="info-item">
+                                <label>Responsible Person</label>
+                                <div className="info-value">
+                                    <FaUser className="icon" /> {ticket.responsiblePersonName}
+                                    {ticket.responsiblePersonPhone && (
+                                        <span className="subtitle">{ticket.responsiblePersonPhone}</span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="info-item">
                             <label>Created</label>
@@ -290,32 +354,55 @@ const DirectPurchaseDetailView = () => {
                     </div>
                 </div>
 
-                {/* Cost Summary Card */}
-                <div className="info-card cost-summary-card">
-                    <h2>Cost Summary</h2>
-                    <div className="cost-grid">
-                        <div className="cost-item">
-                            <label>Expected Parts Cost</label>
-                            <div className="cost-value">{formatCurrency(ticket.expectedPartsCost)}</div>
-                        </div>
-                        <div className="cost-item">
-                            <label>Expected Transportation Cost</label>
-                            <div className="cost-value">{formatCurrency(ticket.expectedTransportationCost)}</div>
-                        </div>
-                        <div className="cost-item total">
-                            <label>Total Expected Cost</label>
-                            <div className="cost-value expected">{formatCurrency(ticket.totalExpectedCost)}</div>
-                        </div>
-                        <div className="cost-item total">
-                            <label>Total Actual Cost</label>
-                            <div className="cost-value actual">{formatCurrency(ticket.totalActualCost)}</div>
+                {/* Cost Summary Card - Only show for legacy or if has cost data */}
+                {(ticket.isLegacyTicket || ticket.totalExpectedCost > 0 || ticket.totalActualCost > 0) && (
+                    <div className="info-card cost-summary-card">
+                        <h2>Cost Summary</h2>
+                        <div className="cost-grid">
+                            {ticket.isLegacyTicket && (
+                                <>
+                                    <div className="cost-item">
+                                        <label>Expected Parts Cost</label>
+                                        <div className="cost-value">{formatCurrency(ticket.expectedPartsCost)}</div>
+                                    </div>
+                                    <div className="cost-item">
+                                        <label>Expected Transportation Cost</label>
+                                        <div className="cost-value">{formatCurrency(ticket.expectedTransportationCost)}</div>
+                                    </div>
+                                </>
+                            )}
+                            <div className="cost-item total">
+                                <label>Total Expected Cost</label>
+                                <div className="cost-value expected">{formatCurrency(ticket.totalExpectedCost)}</div>
+                            </div>
+                            <div className="cost-item total">
+                                <label>Total Actual Cost</label>
+                                <div className="cost-value actual">{formatCurrency(ticket.totalActualCost)}</div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
 
-                {/* Workflow Steps */}
-                <div className="info-card steps-card">
-                    <h2>Workflow Steps ({ticket.completedSteps}/{ticket.totalSteps} Completed)</h2>
+                {/* New Workflow Steps - Only show if user has created data */}
+                {!ticket.isLegacyTicket && ticket.step1Completed && (
+                    <div className="info-card steps-card">
+                        <div className="steps-header">
+                            <h2>Workflow Steps</h2>
+                            <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => handleOpenWizard()}
+                            >
+                                <FaEdit /> Edit Steps
+                            </button>
+                        </div>
+                        <DirectPurchaseSteps ticket={ticket} onEditStep={handleOpenWizard} />
+                    </div>
+                )}
+
+                {/* Legacy Workflow Steps - Only show for legacy tickets */}
+                {ticket.isLegacyTicket && ticket.steps && ticket.steps.length > 0 && (
+                    <div className="info-card steps-card">
+                        <h2>Workflow Steps ({ticket.completedSteps}/{ticket.totalSteps} Completed)</h2>
                     <div className="steps-container">
                         {ticket.steps && ticket.steps.map((step, index) => (
                             <div key={step.id} className={`step-item ${step.status.toLowerCase()}`}>
@@ -437,10 +524,26 @@ const DirectPurchaseDetailView = () => {
                             </div>
                         ))}
                     </div>
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* Modals */}
+            {/* New Workflow Wizard Modal */}
+            {isWizardModalOpen && !ticket?.isLegacyTicket && (
+                <DirectPurchaseWizardModal
+                    isOpen={isWizardModalOpen}
+                    ticketId={ticketId}
+                    initialStep={wizardInitialStep}
+                    onClose={() => {
+                        setIsWizardModalOpen(false);
+                        setWizardInitialStep(1);
+                    }}
+                    onComplete={handleWizardComplete}
+                />
+            )}
+
+            {/* Legacy Modals */}
             {isEditStepModalOpen && (
                 <EditDirectPurchaseStepModal
                     isOpen={isEditStepModalOpen}

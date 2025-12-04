@@ -9,9 +9,9 @@ import '../../../styles/primary-button.scss';
 import '../../../styles/close-modal-button.scss';
 import '../../../styles/cancel-modal-button.scss';
 import '../../../styles/modal-styles.scss';
-import './DirectPurchaseModal.scss';
+import './DirectPurchaseModalOLD.scss';
 
-const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
+const DirectPurchaseModalOLD = ({ isOpen, onClose, onSubmit }) => {
     const [formData, setFormData] = useState({
         siteId: '',
         equipmentId: '',
@@ -433,4 +433,4 @@ const DirectPurchaseModal = ({ isOpen, onClose, onSubmit }) => {
     );
 };
 
-export default DirectPurchaseModal;
+export default DirectPurchaseModalOLD;

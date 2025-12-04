@@ -9,7 +9,7 @@ import MaintenanceCard from '../../../components/maintenance/MaintenanceCard/Mai
 import MaintenanceRecordModal from './MaintenanceRecordModal';
 import MaintenanceRecordViewModal from './MaintenanceRecordViewModal/MaintenanceRecordViewModal';
 import TicketTypeSelectionModal from './TicketTypeSelectionModal';
-import DirectPurchaseModal from './DirectPurchaseModal';
+import DirectPurchaseWizardModal from '../DirectPurchaseDetail/DirectPurchaseWizardModal';
 import DelegateModal from './DelegateModal';
 import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import LoadingSpinner from '../../../components/common/LoadingSpinner/LoadingSpinner';
@@ -94,13 +94,43 @@ const MaintenanceRecords = () => {
             setError(null);
 
             // Load both maintenance records and direct purchase tickets
-            const [maintenanceResponse, directPurchaseResponse] = await Promise.all([
-                maintenanceService.getAllRecords(),
-                directPurchaseService.getAllTickets()
-            ]);
+            // Handle errors individually so that if one fails, we still show the other
+            let maintenanceRecords = [];
+            let directPurchaseTickets = [];
+            let hasError = false;
+            let errorMessages = [];
 
-            const maintenanceRecords = maintenanceResponse.data || [];
-            const directPurchaseTickets = directPurchaseResponse.data || [];
+            // Try to load maintenance records
+            try {
+                const maintenanceResponse = await maintenanceService.getAllRecords();
+                maintenanceRecords = maintenanceResponse.data || [];
+            } catch (maintenanceError) {
+                console.error('Error loading maintenance records:', maintenanceError);
+                hasError = true;
+                errorMessages.push('Failed to load maintenance records');
+            }
+
+            // Try to load direct purchase tickets
+            try {
+                const directPurchaseResponse = await directPurchaseService.getAllTickets();
+                directPurchaseTickets = directPurchaseResponse.data || [];
+            } catch (directPurchaseError) {
+                console.error('Error loading direct purchase tickets:', directPurchaseError);
+                hasError = true;
+                errorMessages.push('Failed to load direct purchase tickets');
+            }
+
+            // If both failed, show error
+            if (hasError && maintenanceRecords.length === 0 && directPurchaseTickets.length === 0) {
+                setError(errorMessages.join('. ') + '. Please try again.');
+                setMaintenanceRecords([]);
+                return;
+            }
+
+            // Show warning if partial load
+            if (hasError) {
+                showWarning(errorMessages.join('. ') + '. Showing available data.');
+            }
 
             // Transform maintenance records
             const transformedMaintenanceRecords = maintenanceRecords.map(record => {
@@ -161,38 +191,46 @@ const MaintenanceRecords = () => {
 
             // Transform direct purchase tickets
             const transformedDirectPurchaseTickets = directPurchaseTickets.map(ticket => {
-                const isCompleted = ticket.status === 'COMPLETED' && ticket.actualCompletionDate;
+                const isCompleted = ticket.status === 'COMPLETED';
                 const expectedTotalCost = ticket.totalExpectedCost || 0;
                 const actualTotalCost = ticket.totalActualCost || 0;
+
+                // Count completed steps for new workflow
+                let completedSteps = 0;
+                if (ticket.step1Completed) completedSteps++;
+                if (ticket.step2Completed) completedSteps++;
+                if (ticket.step3Completed) completedSteps++;
+                if (ticket.step4Completed) completedSteps++;
 
                 return {
                     id: ticket.id,
                     ticketType: 'DIRECT_PURCHASE',
                     equipmentId: ticket.equipmentId,
                     equipmentName: ticket.equipmentName || 'Unknown Equipment',
-                    equipmentModel: 'N/A',
-                    equipmentSerialNumber: 'N/A',
-                    initialIssueDescription: ticket.description || 'Direct purchase from merchant',
+                    equipmentModel: ticket.equipmentModel || 'N/A',
+                    equipmentSerialNumber: ticket.equipmentSerialNumber || 'N/A',
+                    initialIssueDescription: ticket.title || ticket.description || ticket.sparePart || 'Direct purchase',
                     status: ticket.status,
-                    currentResponsiblePerson: ticket.responsiblePerson || 'Not assigned',
-                    currentResponsiblePhone: ticket.phoneNumber || '',
-                    currentResponsibleEmail: '',
+                    currentResponsiblePerson: ticket.responsiblePersonName || 'Not assigned',
+                    currentResponsiblePhone: ticket.responsiblePersonPhone || '',
+                    currentResponsibleEmail: ticket.responsiblePersonEmail || '',
                     site: ticket.site || 'N/A',
                     totalCost: isCompleted ? actualTotalCost : expectedTotalCost,
                     expectedTotalCost: expectedTotalCost,
                     actualTotalCost: actualTotalCost,
                     costDifference: actualTotalCost - expectedTotalCost,
                     isActualCost: isCompleted,
-                    creationDate: ticket.creationDate,
-                    issueDate: ticket.creationDate,
-                    expectedCompletionDate: ticket.expectedCompletionDate,
-                    actualCompletionDate: ticket.actualCompletionDate,
-                    isOverdue: ticket.isOverdue || false,
-                    durationInDays: ticket.durationInDays || 0,
-                    totalSteps: ticket.totalSteps || 2,
-                    completedSteps: ticket.completedSteps || 0,
-                    activeSteps: ticket.activeSteps || 0,
+                    creationDate: ticket.createdAt,
+                    issueDate: ticket.createdAt,
+                    expectedCompletionDate: ticket.expectedCompletionDate || null,
+                    actualCompletionDate: ticket.completedAt || null,
+                    isOverdue: false,
+                    durationInDays: 0,
+                    totalSteps: ticket.isLegacyTicket ? (ticket.totalSteps || 2) : 4,
+                    completedSteps: ticket.isLegacyTicket ? (ticket.completedSteps || 0) : completedSteps,
+                    activeSteps: 0,
                     merchantName: ticket.merchantName,
+                    isLegacyTicket: ticket.isLegacyTicket,
                     steps: []
                 };
             });
@@ -202,8 +240,9 @@ const MaintenanceRecords = () => {
 
             setMaintenanceRecords(transformedRecords);
         } catch (error) {
-            console.error('Error loading maintenance records:', error);
-            setError('Failed to load maintenance records. Please try again.');
+            // This catch block handles unexpected errors during transformation/processing
+            console.error('Unexpected error processing maintenance records:', error);
+            setError('An unexpected error occurred while processing records. Please refresh the page.');
         } finally {
             setLoading(false);
         }
@@ -223,6 +262,10 @@ const MaintenanceRecords = () => {
     const handleSelectDirectPurchaseTicket = () => {
         setIsTicketTypeSelectionOpen(false);
         setIsDirectPurchaseModalOpen(true);
+    };
+
+    const handleWizardComplete = () => {
+        loadMaintenanceRecords(); // Reload the list after wizard completes
     };
 
     const handleOpenModal = (record = null) => {
@@ -344,36 +387,6 @@ const MaintenanceRecords = () => {
         }
     };
 
-    const handleDirectPurchaseSubmit = async (formData) => {
-        try {
-            setLoading(true);
-            const response = await directPurchaseService.createTicket(formData);
-
-            // Show toast notification with action to view the ticket
-            showToastSuccess(
-                'Direct Purchase Created!',
-                'Ticket created successfully with 2 auto-generated steps',
-                {
-                    action: {
-                        label: 'View Ticket',
-                        onClick: () => navigate(`/maintenance/direct-purchase/${response.data.id}`)
-                    },
-                    duration: 6000
-                }
-            );
-
-            // Also show old snackbar for backward compatibility
-            showSuccess('Direct purchase ticket created successfully with 2 auto-generated steps');
-            setIsDirectPurchaseModalOpen(false);
-            loadMaintenanceRecords(); // Reload to show the new ticket
-        } catch (error) {
-            console.error('Error creating direct purchase ticket:', error);
-            showToastError('Creation Failed', 'Failed to create direct purchase ticket. Please try again.');
-            showError('Failed to create direct purchase ticket. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleOpenDelegateModal = (record) => {
         setDelegatingRecord(record);
@@ -946,10 +959,12 @@ const MaintenanceRecords = () => {
                 onSelectDirectPurchaseTicket={handleSelectDirectPurchaseTicket}
             />
 
-            <DirectPurchaseModal
+            <DirectPurchaseWizardModal
                 isOpen={isDirectPurchaseModalOpen}
+                ticketId={null}
+                initialStep={1}
                 onClose={() => setIsDirectPurchaseModalOpen(false)}
-                onSubmit={handleDirectPurchaseSubmit}
+                onComplete={handleWizardComplete}
             />
 
             <DelegateModal

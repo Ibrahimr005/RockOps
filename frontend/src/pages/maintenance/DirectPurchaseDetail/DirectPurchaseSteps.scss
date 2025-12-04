@@ -1,0 +1,304 @@
+/* Direct Purchase Steps - Card Layout */
+
+.direct-purchase-steps {
+    margin-top: 1.5rem;
+
+    .steps-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .step-card {
+        background: var(--section-background-color);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        transition: all var(--transition-normal);
+
+        &:hover {
+            box-shadow: var(--shadow-sm);
+        }
+
+        &.completed {
+            border-color: var(--color-success);
+            background: linear-gradient(to right, var(--color-success)10, var(--section-background-color) 10px);
+
+            .step-card-header {
+                background: var(--color-success)08;
+            }
+        }
+
+        &.in-progress {
+            border-color: var(--color-primary);
+            background: linear-gradient(to right, var(--color-primary)10, var(--section-background-color) 10px);
+
+            .step-card-header {
+                background: var(--color-primary)08;
+            }
+        }
+
+        &.pending {
+            opacity: 0.8;
+        }
+    }
+
+    .step-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        background: var(--color-surface-hover);
+        border-bottom: 1px solid var(--border-color);
+
+        .step-header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+
+            .step-icon-wrapper {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.25rem;
+                background: var(--color-primary)20;
+                color: var(--color-primary);
+
+                .completed & {
+                    background: var(--color-success)20;
+                    color: var(--color-success);
+                }
+
+                .in-progress & {
+                    background: var(--color-primary)20;
+                    color: var(--color-primary);
+                }
+
+                .pending & {
+                    background: var(--color-text-secondary)20;
+                    color: var(--color-text-secondary);
+                }
+            }
+
+            .step-title-wrapper {
+                .step-number {
+                    font-size: 0.75rem;
+                    color: var(--color-text-secondary);
+                    text-transform: uppercase;
+                    font-weight: 600;
+                    letter-spacing: 0.5px;
+                }
+
+                .step-title {
+                    font-size: 1rem;
+                    font-weight: var(--bold-font-weight);
+                    color: var(--head-title-color);
+                    margin-top: 0.125rem;
+                }
+            }
+        }
+
+        .step-header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+
+            .status-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.375rem;
+                padding: 0.375rem 0.75rem;
+                border-radius: var(--radius-sm);
+                font-size: 0.8125rem;
+                font-weight: 600;
+                white-space: nowrap;
+
+                &.completed {
+                    background: var(--color-success)15;
+                    color: var(--color-success);
+                    border: 1px solid var(--color-success)30;
+                }
+
+                &.in-progress {
+                    background: var(--color-primary)15;
+                    color: var(--color-primary);
+                    border: 1px solid var(--color-primary)30;
+                }
+
+                &.pending {
+                    background: var(--color-text-secondary)10;
+                    color: var(--color-text-secondary);
+                    border: 1px solid var(--color-text-secondary)20;
+                }
+            }
+
+            .btn-icon-sm {
+                background: none;
+                border: none;
+                padding: 0.5rem;
+                cursor: pointer;
+                color: var(--color-text-secondary);
+                transition: all var(--transition-fast);
+                border-radius: var(--radius-sm);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.875rem;
+
+                &:hover {
+                    background: var(--color-primary)15;
+                    color: var(--color-primary);
+                }
+            }
+        }
+    }
+
+    .step-card-body {
+        padding: 1.25rem;
+
+        .step-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .step-info-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.375rem;
+
+            &.highlight {
+                padding: 0.75rem;
+                background: var(--color-surface-hover);
+                border-radius: var(--radius-sm);
+                border-left: 3px solid var(--color-primary);
+            }
+
+            &.description-row {
+                margin-top: 0.5rem;
+            }
+
+            .info-label {
+                font-size: 0.8125rem;
+                color: var(--color-text-secondary);
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+            }
+
+            .info-value {
+                font-size: 0.9375rem;
+                color: var(--head-title-color);
+                font-weight: 500;
+
+                &.description {
+                    color: var(--color-text-secondary);
+                    line-height: 1.6;
+                }
+
+                &.cost {
+                    font-size: 1.125rem;
+                    font-weight: var(--bold-font-weight);
+                    color: var(--color-primary);
+                }
+            }
+
+            .info-icon {
+                font-size: 0.875rem;
+                color: var(--color-text-secondary);
+                margin-right: 0.5rem;
+            }
+
+            .info-content {
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+        }
+
+        .items-list-compact {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.375rem;
+
+            .item-compact {
+                padding: 0.375rem 0.75rem;
+                background: var(--color-surface-hover);
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius-sm);
+                font-size: 0.8125rem;
+                color: var(--color-text-secondary);
+            }
+        }
+
+        .items-cost-list {
+            margin-top: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+
+            .item-cost-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.625rem 0.875rem;
+                background: var(--color-surface-hover);
+                border-radius: var(--radius-sm);
+                font-size: 0.875rem;
+
+                .cost-value {
+                    font-weight: var(--bold-font-weight);
+                    color: var(--color-primary);
+                }
+            }
+        }
+    }
+
+    .step-card-footer {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.875rem 1.25rem;
+        background: var(--color-success)08;
+        border-top: 1px solid var(--color-success)20;
+
+        .check-icon {
+            color: var(--color-success);
+            font-size: 0.875rem;
+        }
+
+        .completed-text {
+            font-size: 0.8125rem;
+            color: var(--color-text-secondary);
+            font-style: italic;
+        }
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .direct-purchase-steps {
+        .step-card-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+
+            .step-header-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+
+        .items-cost-list {
+            .item-cost-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
+            }
+        }
+    }
+}

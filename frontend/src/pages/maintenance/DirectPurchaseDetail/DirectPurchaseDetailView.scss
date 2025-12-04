@@ -24,6 +24,32 @@
                 border-bottom: 2px solid var(--border-color);
                 color: var(--head-title-color);
                 font-weight: var(--bold-font-weight);
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .steps-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+                padding-bottom: 0.75rem;
+                border-bottom: 2px solid var(--border-color);
+
+                h2 {
+                    margin: 0;
+                    padding: 0;
+                    border: none;
+                }
+
+                .btn-sm {
+                    padding: 0.5rem 1rem;
+                    font-size: 0.875rem;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                }
             }
 
             .info-grid {
