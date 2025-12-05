@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiCheckCircle, FiAlertCircle, FiChevronDown, FiChevronUp, FiPackage, FiTruck, FiPhone, FiMail, FiMapPin, FiBox, FiClock, FiFilter } from 'react-icons/fi';
 import { purchaseOrderService } from '../../../../../services/procurement/purchaseOrderService';
 import './IssuesTab.scss';
@@ -11,6 +12,7 @@ const IssuesTab = ({ purchaseOrder, issues, onRefresh, onResolveSuccess, onError
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
     const [showResolvedFilters, setShowResolvedFilters] = useState(false);
+    const navigate = useNavigate();
     const [filters, setFilters] = useState({
         itemName: '',
         category: '',
@@ -359,7 +361,15 @@ const IssuesTab = ({ purchaseOrder, issues, onRefresh, onResolveSuccess, onError
                                 </div>
                             )}
                             <div className="merchant-details">
-                                <h4>{currentMerchant?.merchantName || currentResolvedMerchant?.merchantName}</h4>
+                                <h4
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/merchants/${currentMerchant?.merchantId || currentResolvedMerchant?.merchantId}`);
+                                    }}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    {currentMerchant?.merchantName || currentResolvedMerchant?.merchantName}
+                                </h4>
                                 <div className="merchant-contact">
                                     {(currentMerchant?.merchantPhone || currentResolvedMerchant?.merchantPhone) && (
                                         <a href={`tel:${currentMerchant?.merchantPhone || currentResolvedMerchant?.merchantPhone}`} className="contact-item">

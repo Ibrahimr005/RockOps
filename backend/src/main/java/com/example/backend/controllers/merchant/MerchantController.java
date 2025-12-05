@@ -2,6 +2,7 @@ package com.example.backend.controllers.merchant;
 
 
 
+import com.example.backend.dto.merchant.MerchantPerformanceDTO;
 import com.example.backend.dto.merchant.MerchantTransactionDTO;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.services.merchant.MerchantService;
@@ -51,6 +52,16 @@ public class MerchantController {
         try {
             List<MerchantTransactionDTO> transactions = merchantService.getMerchantTransactionDTOs(id);
             return ResponseEntity.ok(transactions);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/{id}/performance")
+    public ResponseEntity<MerchantPerformanceDTO> getMerchantPerformance(@PathVariable UUID id) {
+        try {
+            MerchantPerformanceDTO performance = merchantService.getMerchantPerformance(id);
+            return ResponseEntity.ok(performance);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }

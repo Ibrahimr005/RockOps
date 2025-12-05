@@ -5,7 +5,11 @@ import { changeLanguage } from '../i18n'; // Import from your i18n setup
 const LanguageContext = createContext(null);
 
 export const LanguageProvider = ({ children }) => {
-    const [language, setLanguage] = useState(localStorage.getItem('i18nextLng') || 'en');
+    const [language, setLanguage] = useState(() => {
+        const savedLang = localStorage.getItem('i18nextLng');
+        // Only use saved language if it's explicitly 'en' or 'ar', otherwise default to 'en'
+        return (savedLang === 'en' || savedLang === 'ar') ? savedLang : 'en';
+    });
 
     // Function to handle language change
     const switchLanguage = (lang) => {
