@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.Optional;
 
 /**
@@ -30,13 +32,13 @@ public class JobPositionAutomationService {
     @Transactional
     public JobPosition createDriverPositionForEquipmentType(EquipmentType equipmentType) {
         String requiredPositionName = equipmentType.getRequiredDriverPosition();
-        
-        log.info("Creating job position: {} for equipment type: {}", 
-            requiredPositionName, equipmentType.getName());
+
+        log.info("Creating job position: {} for equipment type: {}",
+                requiredPositionName, equipmentType.getName());
 
         // Check if the position already exists to avoid duplicates
         Optional<JobPosition> existingPosition = findExistingPosition(requiredPositionName);
-        
+
         if (existingPosition.isPresent()) {
             log.info("Job position already exists: {}", requiredPositionName);
             return existingPosition.get();
@@ -44,33 +46,48 @@ public class JobPositionAutomationService {
 
         // Find the Logistics department (default for driver positions)
         Department logisticsDept = departmentRepository.findByName("Logistics")
-            .orElseThrow(() -> new RuntimeException(
-                "Logistics department not found. Please ensure basic departments are created."));
+                .orElseThrow(() -> new RuntimeException(
+                        "Logistics department not found. Please ensure basic departments are created."));
 
         // Calculate base salary
         Double baseSalary = calculateBaseSalary(equipmentType);
 
+        // Default working hours and time
+        LocalTime defaultStartTime = LocalTime.of(9, 0); // 09:00:00
+        LocalTime defaultEndTime = LocalTime.of(17, 0);  // 17:00:00
+
         // Create the new job position
         JobPosition driverPosition = JobPosition.builder()
-            .positionName(requiredPositionName)
-            .department(logisticsDept)
-            .head("Operations Manager")
-            .baseSalary(baseSalary)
-            .probationPeriod(90) // 90 days probation
-            .contractType(JobPosition.ContractType.MONTHLY)
-            .experienceLevel(determineExperienceLevel(equipmentType))
-            .monthlyBaseSalary(baseSalary)
-            .shifts("Day Shift")
-            .workingHours(8)
-            .vacations("21 days annual leave")
-            .active(true)
-            .build();
+                .positionName(requiredPositionName)
+                .department(logisticsDept)
+                .head("Operations Manager")
+                .baseSalary(baseSalary)
+                .probationPeriod(90) // 90 days probation
+                .contractType(JobPosition.ContractType.MONTHLY)
+                .experienceLevel(determineExperienceLevel(equipmentType))
+                // MONTHLY Fields
+                .monthlyBaseSalary(baseSalary)
+                .shifts("Day Shift")
+                .workingHours(8) // Added workingHours based on 09:00-17:00 (8 hours)
+                .vacations("21 days annual leave") // Changed from "21" to full string
+                .startTime(defaultStartTime) // Added startTime
+                .endTime(defaultEndTime)     // Added endTime
+
+                // Deduction Fields (Set to 0/null as defaults)
+                .absentDeduction(BigDecimal.ZERO)
+                .lateDeduction(BigDecimal.ZERO)
+                .lateForgivenessMinutes(0)
+                .lateForgivenessCountPerQuarter(0)
+                .leaveDeduction(BigDecimal.ZERO)
+
+                .active(true)
+                .build();
 
         JobPosition savedPosition = jobPositionRepository.save(driverPosition);
-        
-        log.info("Successfully created job position: {} with ID: {}", 
-            requiredPositionName, savedPosition.getId());
-        
+
+        log.info("Successfully created job position: {} with ID: {}",
+                requiredPositionName, savedPosition.getId());
+
         return savedPosition;
     }
 

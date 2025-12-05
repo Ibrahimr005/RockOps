@@ -163,17 +163,20 @@ public class LeaveRequest {
     }
 
     public int calculateWorkingDays() {
-        // Simple calculation - exclude weekends
+        // Calculation changed to exclude Friday (5) and Saturday (6)
         int workingDays = 0;
         LocalDate current = startDate;
-        
+
         while (!current.isAfter(endDate)) {
-            if (current.getDayOfWeek().getValue() < 6) { // Monday to Friday
+            int dayValue = current.getDayOfWeek().getValue();
+
+            // Exclude Friday (5) and Saturday (6). This includes 1, 2, 3, 4 (Mon-Thu) and 7 (Sun).
+            if (dayValue != 5 && dayValue != 6) {
                 workingDays++;
             }
             current = current.plusDays(1);
         }
-        
+
         return workingDays;
     }
 }
