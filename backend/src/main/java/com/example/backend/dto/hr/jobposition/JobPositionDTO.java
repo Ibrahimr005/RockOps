@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
@@ -148,5 +149,38 @@ public class JobPositionDTO {
     private Boolean isRootPosition;
     private Integer hierarchyLevel;
     private String hierarchyPath;
+
+    // =====================================================
+    // NEW: Monthly Contract Deduction Fields
+    // =====================================================
+
+    /**
+     * Amount deducted when attendance status is Absent (unexcused leave/leave without notice)
+     */
+    private BigDecimal absentDeduction;
+
+    /**
+     * Amount deducted when attendance status is Late (after grace period expires)
+     */
+    private BigDecimal lateDeduction;
+
+    /**
+     * Grace period in minutes before late deduction is applied
+     */
+    private Integer lateForgivenessMinutes;
+
+    /**
+     * Number of late occurrences forgiven per quarter before deductions apply
+     */
+    private Integer lateForgivenessCountPerQuarter;
+
+    /**
+     * Amount deducted per day when employee exceeds their allocated annual leave
+     */
+    private BigDecimal leaveDeduction;
+
+    // =====================================================
+    // END: Monthly Contract Deduction Fields
+    // =====================================================
 
 }

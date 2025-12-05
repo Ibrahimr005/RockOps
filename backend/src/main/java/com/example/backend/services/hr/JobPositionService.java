@@ -17,6 +17,7 @@ import com.example.backend.repositories.hr.JobPositionRepository;
 import com.example.backend.repositories.hr.PromotionRequestRepository;
 import com.example.backend.repositories.site.SiteRepository;
 import com.example.backend.services.notification.NotificationService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,36 +140,41 @@ public class JobPositionService {
     /**
      * Create a new job position from DTO
      */
+    /**
+     * Create a new job position from DTO
+     */
     @Transactional
     public JobPositionDTO createJobPosition(JobPositionDTO jobPositionDTO) {
         try {
             logger.info("Creating job position from DTO: {}", jobPositionDTO.getPositionName());
 
+            // Validate required fields
+            validateJobPositionDTO(jobPositionDTO, null);
+
             // Validate for duplicates based on position name + level combination
-            // ✅ IMPROVED: Better error message
-            if (jobPositionRepository.existsByPositionNameAndExperienceLevel(
-                    jobPositionDTO.getPositionName(),
+            if (jobPositionRepository.existsByPositionNameAndExperienceLevelIgnoreCase(
+                    jobPositionDTO.getPositionName().trim(),
                     jobPositionDTO.getExperienceLevel())) {
-                String fullPositionName = jobPositionDTO.getPositionName() + " " + jobPositionDTO.getExperienceLevel();
+                String fullPositionName = buildFullPositionName(jobPositionDTO.getPositionName(), jobPositionDTO.getExperienceLevel());
                 throw new IllegalArgumentException(
                         "A position with the name '" + fullPositionName + "' already exists. " +
-                                "Position names combined with their level must be unique."
+                                "Position names combined with their experience level must be unique."
                 );
             }
 
             // Find department
             Department department = null;
-            if (jobPositionDTO.getDepartment() != null) {
-                department = departmentRepository.findByName(jobPositionDTO.getDepartment())
-                        .orElseThrow(() -> new RuntimeException("Department not found: " + jobPositionDTO.getDepartment()));
+            if (jobPositionDTO.getDepartment() != null && !jobPositionDTO.getDepartment().trim().isEmpty()) {
+                department = departmentRepository.findByName(jobPositionDTO.getDepartment().trim())
+                        .orElseThrow(() -> new EntityNotFoundException("Department not found: " + jobPositionDTO.getDepartment()));
             }
 
             // Build the job position entity
             JobPosition jobPosition = JobPosition.builder()
-                    .positionName(jobPositionDTO.getPositionName())
+                    .positionName(jobPositionDTO.getPositionName().trim())
                     .head(jobPositionDTO.getHead())
                     .department(department)
-                    .probationPeriod(jobPositionDTO.getProbationPeriod())
+                    .probationPeriod(jobPositionDTO.getProbationPeriod() != null ? jobPositionDTO.getProbationPeriod() : 90)
                     .contractType(jobPositionDTO.getContractType())
                     .experienceLevel(jobPositionDTO.getExperienceLevel())
                     .baseSalary(jobPositionDTO.getBaseSalary())
@@ -178,9 +184,12 @@ public class JobPositionService {
             // Handle parent job position if provided
             if (jobPositionDTO.getParentJobPositionId() != null) {
                 JobPosition parentPosition = jobPositionRepository.findById(jobPositionDTO.getParentJobPositionId())
-                        .orElseThrow(() -> new RuntimeException("Parent job position not found"));
+                        .orElseThrow(() -> new EntityNotFoundException("Parent job position not found with id: " + jobPositionDTO.getParentJobPositionId()));
                 jobPosition.setParentJobPosition(parentPosition);
             }
+
+            // Set contract type specific fields
+            setContractTypeFields(jobPosition, jobPositionDTO);
 
             // Save the job position
             JobPosition savedJobPosition = jobPositionRepository.save(jobPosition);
@@ -219,9 +228,14 @@ public class JobPositionService {
                 );
             }
 
+            logger.info("Successfully created job position: {} with ID: {}", fullPositionName, savedJobPosition.getId());
+
             // Convert back to DTO and return
             return convertToDTO(savedJobPosition);
 
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            logger.warn("Validation error creating job position: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
             logger.error("Error creating job position", e);
 
@@ -233,9 +247,63 @@ public class JobPositionService {
                     "job-position-error-" + System.currentTimeMillis()
             );
 
-            throw e;
+            throw new RuntimeException("Failed to create job position: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Set contract type specific fields for CREATE operation
+     */
+    private void setContractTypeFields(JobPosition jobPosition, JobPositionDTO dto) {
+        if (dto.getContractType() == null) return;
+
+        switch (dto.getContractType()) {
+            case HOURLY:
+                jobPosition.setWorkingDaysPerWeek(dto.getWorkingDaysPerWeek() != null ? dto.getWorkingDaysPerWeek() : 5);
+                jobPosition.setHoursPerShift(dto.getHoursPerShift() != null ? dto.getHoursPerShift() : 8);
+                jobPosition.setHourlyRate(dto.getHourlyRate());
+                jobPosition.setOvertimeMultiplier(dto.getOvertimeMultiplier() != null ? dto.getOvertimeMultiplier() : 1.5);
+                jobPosition.setTrackBreaks(dto.getTrackBreaks() != null ? dto.getTrackBreaks() : false);
+                jobPosition.setBreakDurationMinutes(dto.getBreakDurationMinutes() != null ? dto.getBreakDurationMinutes() : 30);
+                break;
+
+            case DAILY:
+                jobPosition.setDailyRate(dto.getDailyRate());
+                jobPosition.setWorkingDaysPerMonth(dto.getWorkingDaysPerMonth() != null ? dto.getWorkingDaysPerMonth() : 22);
+                jobPosition.setIncludesWeekends(dto.getIncludesWeekends() != null ? dto.getIncludesWeekends() : false);
+                break;
+
+            case MONTHLY:
+                jobPosition.setMonthlyBaseSalary(dto.getMonthlyBaseSalary());
+                jobPosition.setShifts(dto.getShifts() != null ? dto.getShifts() : "Day Shift");
+                jobPosition.setWorkingHours(dto.getWorkingHours() != null ? dto.getWorkingHours() : 8);
+                jobPosition.setVacations(dto.getVacations() != null ? dto.getVacations() : "21 days annual leave");
+                jobPosition.setStartTime(dto.getStartTime());
+                jobPosition.setEndTime(dto.getEndTime());
+
+                // NEW: Set monthly deduction fields
+                jobPosition.setAbsentDeduction(dto.getAbsentDeduction());
+                jobPosition.setLateDeduction(dto.getLateDeduction());
+                jobPosition.setLateForgivenessMinutes(dto.getLateForgivenessMinutes() != null ? dto.getLateForgivenessMinutes() : 0);
+                jobPosition.setLateForgivenessCountPerQuarter(dto.getLateForgivenessCountPerQuarter() != null ? dto.getLateForgivenessCountPerQuarter() : 0);
+                jobPosition.setLeaveDeduction(dto.getLeaveDeduction());
+                break;
+        }
+    }
+
+
+    /**
+     * Build full position name from name and experience level
+     */
+    private String buildFullPositionName(String positionName, String experienceLevel) {
+        if (experienceLevel == null || experienceLevel.trim().isEmpty()) {
+            return positionName;
+        }
+        String formattedLevel = experienceLevel.replace("_", " ");
+        return positionName + " (" + formattedLevel + ")";
+    }
+
+
 
     private String getFullPositionName(JobPosition position) {
         if (position.getExperienceLevel() != null && !position.getExperienceLevel().trim().isEmpty()) {
@@ -271,20 +339,29 @@ public class JobPositionService {
     @Transactional
     public JobPositionDTO updateJobPosition(UUID id, JobPositionDTO jobPositionDTO) {
         try {
+            logger.info("Updating job position with ID: {}", id);
+
             // Find the existing job position
             JobPosition existingJobPosition = jobPositionRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Job position not found with id: " + id));
+                    .orElseThrow(() -> new EntityNotFoundException("Job position not found with id: " + id));
 
-            if (jobPositionRepository.existsByPositionNameAndExperienceLevel(
-                    jobPositionDTO.getPositionName(),
-                    jobPositionDTO.getExperienceLevel())) {
-                String fullPositionName = jobPositionDTO.getPositionName() + " " + jobPositionDTO.getExperienceLevel();
-                throw new IllegalArgumentException(
-                        "A position with the name '" + fullPositionName + "' already exists. " +
-                                "Position names combined with their level must be unique."
-                );
+            // Validate the DTO
+            validateJobPositionDTO(jobPositionDTO, id);
+
+            // Check for duplicates - EXCLUDING the current position ID
+            if (jobPositionDTO.getPositionName() != null && jobPositionDTO.getExperienceLevel() != null) {
+                if (jobPositionRepository.existsByPositionNameAndExperienceLevelIgnoreCase(
+                        jobPositionDTO.getPositionName().trim(),
+                        jobPositionDTO.getExperienceLevel())) {
+                    String fullPositionName = buildFullPositionName(jobPositionDTO.getPositionName(), jobPositionDTO.getExperienceLevel());
+                    throw new IllegalArgumentException(
+                            "A position with the name '" + fullPositionName + "' already exists. " +
+                                    "Position names combined with their experience level must be unique."
+                    );
+                }
             }
 
+            // Store old values for notification purposes
             String oldPositionName = existingJobPosition.getPositionName();
             String oldDepartmentName = existingJobPosition.getDepartment() != null ?
                     existingJobPosition.getDepartment().getName() : null;
@@ -292,14 +369,14 @@ public class JobPositionService {
 
             // Update department if provided
             if (jobPositionDTO.getDepartment() != null) {
-                Department department = departmentRepository.findByName(jobPositionDTO.getDepartment())
-                        .orElseThrow(() -> new RuntimeException("Department not found: " + jobPositionDTO.getDepartment()));
+                Department department = departmentRepository.findByName(jobPositionDTO.getDepartment().trim())
+                        .orElseThrow(() -> new EntityNotFoundException("Department not found: " + jobPositionDTO.getDepartment()));
                 existingJobPosition.setDepartment(department);
             }
 
             // Update basic fields if provided
-            if (jobPositionDTO.getPositionName() != null) {
-                existingJobPosition.setPositionName(jobPositionDTO.getPositionName());
+            if (jobPositionDTO.getPositionName() != null && !jobPositionDTO.getPositionName().trim().isEmpty()) {
+                existingJobPosition.setPositionName(jobPositionDTO.getPositionName().trim());
             }
             if (jobPositionDTO.getHead() != null) {
                 existingJobPosition.setHead(jobPositionDTO.getHead());
@@ -321,77 +398,29 @@ public class JobPositionService {
                 existingJobPosition.setBaseSalary(jobPositionDTO.getBaseSalary());
             }
 
-            // Update parent job position if provided
+            // Update parent job position
             if (jobPositionDTO.getParentJobPositionId() != null) {
+                // Validate parent is not the same as current position
+                if (jobPositionDTO.getParentJobPositionId().equals(id)) {
+                    throw new IllegalArgumentException("A position cannot be its own parent");
+                }
+
                 JobPosition parentPosition = jobPositionRepository.findById(jobPositionDTO.getParentJobPositionId())
-                        .orElseThrow(() -> new RuntimeException("Parent job position not found: " + jobPositionDTO.getParentJobPositionId()));
+                        .orElseThrow(() -> new EntityNotFoundException("Parent job position not found: " + jobPositionDTO.getParentJobPositionId()));
+
+                // Check for circular reference
+                if (wouldCreateCircularReference(existingJobPosition, parentPosition)) {
+                    throw new IllegalArgumentException("Cannot set this parent - it would create a circular reference in the hierarchy");
+                }
+
                 existingJobPosition.setParentJobPosition(parentPosition);
-            } else if (jobPositionDTO.getParentJobPositionId() == null) {
-                // If parentJobPositionId is explicitly null, remove parent relationship
+            } else {
+                // If parentJobPositionId is explicitly null in the request, remove parent relationship
                 existingJobPosition.setParentJobPosition(null);
             }
 
             // Update contract type specific fields
-            if (jobPositionDTO.getContractType() != null) {
-                switch (jobPositionDTO.getContractType()) {
-                    case HOURLY:
-                        if (jobPositionDTO.getWorkingDaysPerWeek() != null) {
-                            existingJobPosition.setWorkingDaysPerWeek(jobPositionDTO.getWorkingDaysPerWeek());
-                        }
-                        if (jobPositionDTO.getHoursPerShift() != null) {
-                            existingJobPosition.setHoursPerShift(jobPositionDTO.getHoursPerShift());
-                        }
-                        if (jobPositionDTO.getHourlyRate() != null) {
-                            existingJobPosition.setHourlyRate(jobPositionDTO.getHourlyRate());
-                        }
-                        if (jobPositionDTO.getOvertimeMultiplier() != null) {
-                            existingJobPosition.setOvertimeMultiplier(jobPositionDTO.getOvertimeMultiplier());
-                        }
-                        if (jobPositionDTO.getTrackBreaks() != null) {
-                            existingJobPosition.setTrackBreaks(jobPositionDTO.getTrackBreaks());
-                        }
-                        if (jobPositionDTO.getBreakDurationMinutes() != null) {
-                            existingJobPosition.setBreakDurationMinutes(jobPositionDTO.getBreakDurationMinutes());
-                        }
-                        break;
-                    case DAILY:
-                        if (jobPositionDTO.getDailyRate() != null) {
-                            existingJobPosition.setDailyRate(jobPositionDTO.getDailyRate());
-                        }
-                        if (jobPositionDTO.getWorkingDaysPerMonth() != null) {
-                            existingJobPosition.setWorkingDaysPerMonth(jobPositionDTO.getWorkingDaysPerMonth());
-                        }
-                        if (jobPositionDTO.getIncludesWeekends() != null) {
-                            existingJobPosition.setIncludesWeekends(jobPositionDTO.getIncludesWeekends());
-                        }
-                        break;
-                    case MONTHLY:
-                        if (jobPositionDTO.getMonthlyBaseSalary() != null) {
-                            existingJobPosition.setMonthlyBaseSalary(jobPositionDTO.getMonthlyBaseSalary());
-                        }
-                        if (jobPositionDTO.getWorkingDaysPerMonth() != null) {
-                            existingJobPosition.setWorkingDaysPerMonth(jobPositionDTO.getWorkingDaysPerMonth());
-                        }
-                        if (jobPositionDTO.getShifts() != null) {
-                            existingJobPosition.setShifts(jobPositionDTO.getShifts());
-                        }
-                        if (jobPositionDTO.getWorkingHours() != null) {
-                            existingJobPosition.setWorkingHours(jobPositionDTO.getWorkingHours());
-                        }
-                        if (jobPositionDTO.getVacations() != null) {
-                            existingJobPosition.setVacations(jobPositionDTO.getVacations());
-                        }
-
-                        // Update time fields for MONTHLY contracts
-                        if (jobPositionDTO.getStartTime() != null) {
-                            existingJobPosition.setStartTime(jobPositionDTO.getStartTime());
-                        }
-                        if (jobPositionDTO.getEndTime() != null) {
-                            existingJobPosition.setEndTime(jobPositionDTO.getEndTime());
-                        }
-                        break;
-                }
-            }
+            setContractTypeFieldsForUpdate(existingJobPosition, jobPositionDTO);
 
             // Save the updated entity
             JobPosition updatedJobPosition = jobPositionRepository.save(existingJobPosition);
@@ -399,11 +428,16 @@ public class JobPositionService {
             // Send notifications about significant changes
             sendJobPositionUpdateNotifications(updatedJobPosition, oldPositionName, oldDepartmentName, oldActiveStatus);
 
+            logger.info("Successfully updated job position: {} with ID: {}", updatedJobPosition.getPositionName(), id);
+
             // Convert back to DTO and return
             return convertToDTO(updatedJobPosition);
 
+        } catch (IllegalArgumentException | EntityNotFoundException e) {
+            logger.warn("Validation error updating job position {}: {}", id, e.getMessage());
+            throw e;
         } catch (Exception e) {
-            logger.error("Error updating job position", e);
+            logger.error("Error updating job position with ID: {}", id, e);
 
             notificationService.sendNotificationToHRUsers(
                     "Job Position Update Failed",
@@ -413,8 +447,239 @@ public class JobPositionService {
                     "job-position-update-error-" + id
             );
 
-            throw e;
+            throw new RuntimeException("Failed to update job position: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Set contract type specific fields for UPDATE operation
+     * Only updates fields that are provided (not null)
+     */
+    private void setContractTypeFieldsForUpdate(JobPosition existingJobPosition, JobPositionDTO dto) {
+        if (dto.getContractType() == null) return;
+
+        switch (dto.getContractType()) {
+            case HOURLY:
+                if (dto.getWorkingDaysPerWeek() != null) {
+                    existingJobPosition.setWorkingDaysPerWeek(dto.getWorkingDaysPerWeek());
+                }
+                if (dto.getHoursPerShift() != null) {
+                    existingJobPosition.setHoursPerShift(dto.getHoursPerShift());
+                }
+                if (dto.getHourlyRate() != null) {
+                    existingJobPosition.setHourlyRate(dto.getHourlyRate());
+                }
+                if (dto.getOvertimeMultiplier() != null) {
+                    existingJobPosition.setOvertimeMultiplier(dto.getOvertimeMultiplier());
+                }
+                if (dto.getTrackBreaks() != null) {
+                    existingJobPosition.setTrackBreaks(dto.getTrackBreaks());
+                }
+                if (dto.getBreakDurationMinutes() != null) {
+                    existingJobPosition.setBreakDurationMinutes(dto.getBreakDurationMinutes());
+                }
+                // Clear monthly deduction fields when changing to hourly
+                clearMonthlyDeductionFields(existingJobPosition);
+                break;
+
+            case DAILY:
+                if (dto.getDailyRate() != null) {
+                    existingJobPosition.setDailyRate(dto.getDailyRate());
+                }
+                if (dto.getWorkingDaysPerMonth() != null) {
+                    existingJobPosition.setWorkingDaysPerMonth(dto.getWorkingDaysPerMonth());
+                }
+                if (dto.getIncludesWeekends() != null) {
+                    existingJobPosition.setIncludesWeekends(dto.getIncludesWeekends());
+                }
+                // Clear monthly deduction fields when changing to daily
+                clearMonthlyDeductionFields(existingJobPosition);
+                break;
+
+            case MONTHLY:
+                if (dto.getMonthlyBaseSalary() != null) {
+                    existingJobPosition.setMonthlyBaseSalary(dto.getMonthlyBaseSalary());
+                }
+                if (dto.getShifts() != null) {
+                    existingJobPosition.setShifts(dto.getShifts());
+                }
+                if (dto.getWorkingHours() != null) {
+                    existingJobPosition.setWorkingHours(dto.getWorkingHours());
+                }
+                if (dto.getVacations() != null) {
+                    existingJobPosition.setVacations(dto.getVacations());
+                }
+                if (dto.getStartTime() != null) {
+                    existingJobPosition.setStartTime(dto.getStartTime());
+                }
+                if (dto.getEndTime() != null) {
+                    existingJobPosition.setEndTime(dto.getEndTime());
+                }
+
+                // NEW: Update monthly deduction fields
+                // These can be set to null to clear them, or updated with new values
+                updateMonthlyDeductionFields(existingJobPosition, dto);
+                break;
+        }
+    }
+
+    /**
+     * Clear monthly deduction fields when contract type changes away from MONTHLY
+     */
+    private void clearMonthlyDeductionFields(JobPosition jobPosition) {
+        jobPosition.setAbsentDeduction(null);
+        jobPosition.setLateDeduction(null);
+        jobPosition.setLateForgivenessMinutes(null);
+        jobPosition.setLateForgivenessCountPerQuarter(null);
+        jobPosition.setLeaveDeduction(null);
+    }
+
+    /**
+     * Update monthly deduction fields
+     * Handles both setting new values and clearing existing ones
+     */
+    private void updateMonthlyDeductionFields(JobPosition jobPosition, JobPositionDTO dto) {
+        // Absent deduction - update if provided in request
+        if (dto.getAbsentDeduction() != null) {
+            jobPosition.setAbsentDeduction(dto.getAbsentDeduction());
+        }
+
+        // Late deduction - update if provided in request
+        if (dto.getLateDeduction() != null) {
+            jobPosition.setLateDeduction(dto.getLateDeduction());
+        }
+
+        // Late forgiveness minutes - update if provided (can be 0)
+        if (dto.getLateForgivenessMinutes() != null) {
+            jobPosition.setLateForgivenessMinutes(dto.getLateForgivenessMinutes());
+        }
+
+        // Late forgiveness count per quarter - update if provided (can be 0)
+        if (dto.getLateForgivenessCountPerQuarter() != null) {
+            jobPosition.setLateForgivenessCountPerQuarter(dto.getLateForgivenessCountPerQuarter());
+        }
+
+        // Leave deduction - update if provided in request
+        if (dto.getLeaveDeduction() != null) {
+            jobPosition.setLeaveDeduction(dto.getLeaveDeduction());
+        }
+    }
+
+    /**
+     * Validate JobPositionDTO fields
+     */
+    private void validateJobPositionDTO(JobPositionDTO dto, UUID excludeId) {
+        List<String> errors = new ArrayList<>();
+
+        // Required field validation
+        if (dto.getPositionName() == null || dto.getPositionName().trim().isEmpty()) {
+            errors.add("Position name is required");
+        } else if (dto.getPositionName().trim().length() < 2) {
+            errors.add("Position name must be at least 2 characters");
+        } else if (dto.getPositionName().trim().length() > 100) {
+            errors.add("Position name must not exceed 100 characters");
+        }
+
+        if (dto.getDepartment() == null || dto.getDepartment().trim().isEmpty()) {
+            errors.add("Department is required");
+        }
+
+        if (dto.getContractType() == null) {
+            errors.add("Contract type is required");
+        }
+
+        // Probation period validation
+        if (dto.getProbationPeriod() != null) {
+            if (dto.getProbationPeriod() < 0) {
+                errors.add("Probation period cannot be negative");
+            } else if (dto.getProbationPeriod() > 365) {
+                errors.add("Probation period cannot exceed 365 days");
+            }
+        }
+
+        // Contract type specific validation
+        if (dto.getContractType() != null) {
+            switch (dto.getContractType()) {
+                case HOURLY:
+                    if (dto.getHourlyRate() == null || dto.getHourlyRate() <= 0) {
+                        errors.add("Hourly rate must be greater than 0 for hourly contracts");
+                    }
+                    if (dto.getHoursPerShift() == null || dto.getHoursPerShift() <= 0) {
+                        errors.add("Hours per shift must be greater than 0 for hourly contracts");
+                    }
+                    if (dto.getWorkingDaysPerWeek() != null && (dto.getWorkingDaysPerWeek() < 1 || dto.getWorkingDaysPerWeek() > 7)) {
+                        errors.add("Working days per week must be between 1 and 7");
+                    }
+                    break;
+
+                case DAILY:
+                    if (dto.getDailyRate() == null || dto.getDailyRate() <= 0) {
+                        errors.add("Daily rate must be greater than 0 for daily contracts");
+                    }
+                    break;
+
+                case MONTHLY:
+                    if (dto.getMonthlyBaseSalary() == null || dto.getMonthlyBaseSalary() <= 0) {
+                        errors.add("Monthly base salary must be greater than 0 for monthly contracts");
+                    }
+
+                    // Time validation
+                    if (dto.getStartTime() != null && dto.getEndTime() != null) {
+                        if (!dto.getEndTime().isAfter(dto.getStartTime())) {
+                            errors.add("End time must be after start time");
+                        }
+                    }
+
+                    // Deduction field validation
+                    if (dto.getAbsentDeduction() != null && dto.getAbsentDeduction().compareTo(BigDecimal.ZERO) < 0) {
+                        errors.add("Absent deduction cannot be negative");
+                    }
+                    if (dto.getLateDeduction() != null && dto.getLateDeduction().compareTo(BigDecimal.ZERO) < 0) {
+                        errors.add("Late deduction cannot be negative");
+                    }
+                    if (dto.getLeaveDeduction() != null && dto.getLeaveDeduction().compareTo(BigDecimal.ZERO) < 0) {
+                        errors.add("Leave deduction cannot be negative");
+                    }
+                    if (dto.getLateForgivenessMinutes() != null && dto.getLateForgivenessMinutes() < 0) {
+                        errors.add("Late forgiveness minutes cannot be negative");
+                    }
+                    if (dto.getLateForgivenessCountPerQuarter() != null && dto.getLateForgivenessCountPerQuarter() < 0) {
+                        errors.add("Late forgiveness count per quarter cannot be negative");
+                    }
+                    break;
+            }
+        }
+
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(String.join("; ", errors));
+        }
+    }
+
+    /**
+     * Check if setting a parent would create a circular reference
+     */
+    private boolean wouldCreateCircularReference(JobPosition position, JobPosition proposedParent) {
+        if (proposedParent == null) {
+            return false;
+        }
+
+        // Walk up the parent chain to see if we encounter the position we're updating
+        JobPosition current = proposedParent;
+        Set<UUID> visited = new HashSet<>();
+
+        while (current != null) {
+            if (current.getId().equals(position.getId())) {
+                return true;
+            }
+            if (visited.contains(current.getId())) {
+                // Already visited this node - there's a cycle
+                return true;
+            }
+            visited.add(current.getId());
+            current = current.getParentJobPosition();
+        }
+
+        return false;
     }
 
     /**
@@ -828,22 +1093,17 @@ public class JobPositionService {
         JobPosition jobPosition = getJobPositionById(id);
         Map<String, Object> analytics = new HashMap<>();
 
-        // Combine all statistical data
         analytics.put("basic", convertToDTO(jobPosition));
         analytics.put("promotionStats", jobPosition.getPromotionStatistics());
         analytics.put("salaryStats", getSalaryStatistics(id));
         analytics.put("validation", getPositionValidation(id));
 
-        // Additional analytics
         analytics.put("employeeCount", jobPosition.getEmployees() != null ? jobPosition.getEmployees().size() : 0);
         analytics.put("vacancyCount", jobPosition.getVacancies() != null ? jobPosition.getVacancies().size() : 0);
-        analytics.put("departmentName", jobPosition.getDepartment() != null ? jobPosition.getDepartment().getName() : null);
-        analytics.put("createdDate", jobPosition.getId()); // Assuming timestamp in UUID, or add actual timestamp field
-
-        // Performance metrics
-        analytics.put("promotionRate", jobPosition.getPromotionRateFromPosition());
-        analytics.put("averageTimeBeforePromotion", jobPosition.getAverageTimeBeforePromotion());
-        analytics.put("averageSalaryIncrease", jobPosition.getAverageSalaryIncreaseFromPosition());
+        analytics.put("departmentName", jobPosition.getDepartment() != null ?
+                jobPosition.getDepartment().getName() : null);
+        analytics.put("hierarchyLevel", jobPosition.getHierarchyLevel());
+        analytics.put("hierarchyPath", jobPosition.getHierarchyPath());
 
         return analytics;
     }
@@ -1160,231 +1420,95 @@ public class JobPositionService {
 
     @Transactional()
     public JobPositionDetailsDTO getJobPositionDetailsDTO(UUID id) {
-        logger.info("🔍 Starting getJobPositionDetailsDTO for id: {}", id);
+        JobPosition jobPosition = getJobPositionById(id);
 
+        JobPositionDetailsDTO.JobPositionDetailsDTOBuilder builder = JobPositionDetailsDTO.builder();
+
+        // Basic info
+        builder.id(jobPosition.getId())
+                .positionName(jobPosition.getPositionName())
+                .departmentName(jobPosition.getDepartment() != null ? jobPosition.getDepartment().getName() : null)
+                .head(jobPosition.getHead())
+                .baseSalary(jobPosition.getBaseSalary())
+                .probationPeriod(jobPosition.getProbationPeriod())
+                .contractType(String.valueOf(jobPosition.getContractType()))
+                .experienceLevel(jobPosition.getExperienceLevel())
+                .active(jobPosition.getActive());
+
+        // Contract-specific fields
+        builder.workingDaysPerWeek(jobPosition.getWorkingDaysPerWeek())
+                .hoursPerShift(jobPosition.getHoursPerShift())
+                // FIX: Add null check for hourlyRate before converting to BigDecimal
+                .hourlyRate(jobPosition.getHourlyRate() != null ? BigDecimal.valueOf(jobPosition.getHourlyRate()) : null)
+                // FIX: Add null check for overtimeMultiplier
+                .overtimeMultiplier(jobPosition.getOvertimeMultiplier() != null ? BigDecimal.valueOf(jobPosition.getOvertimeMultiplier()) : null)
+                .trackBreaks(jobPosition.getTrackBreaks())
+                .breakDurationMinutes(jobPosition.getBreakDurationMinutes())
+                // FIX: Add null check for dailyRate
+                .dailyRate(jobPosition.getDailyRate() != null ? BigDecimal.valueOf(jobPosition.getDailyRate()) : null)
+                .includesWeekends(jobPosition.getIncludesWeekends())
+                // FIX: Add null check for monthlyBaseSalary
+                .monthlyBaseSalary(jobPosition.getMonthlyBaseSalary() != null ? BigDecimal.valueOf(jobPosition.getMonthlyBaseSalary()) : null)
+                .shifts(jobPosition.getShifts())
+                .workingHours(jobPosition.getWorkingHours())
+                .vacations(jobPosition.getVacations())
+                .startTime(jobPosition.getStartTime())
+                .endTime(jobPosition.getEndTime());
+
+        // NEW: Monthly deduction fields
+        builder.absentDeduction(jobPosition.getAbsentDeduction())
+                .lateDeduction(jobPosition.getLateDeduction())
+                .lateForgivenessMinutes(jobPosition.getLateForgivenessMinutes())
+                .lateForgivenessCountPerQuarter(jobPosition.getLateForgivenessCountPerQuarter())
+                .leaveDeduction(jobPosition.getLeaveDeduction());
+
+        // Calculated fields
         try {
-            // Step 1: Get basic job position with department
-            logger.debug("📋 Step 1: Fetching basic job position with department");
-            JobPosition jobPosition = jobPositionRepository.findByIdWithDepartment(id)
-                    .orElseThrow(() -> new RuntimeException("Job position not found with id: " + id));
-
-            logger.info("✅ Job position found: {} ({})", jobPosition.getPositionName(), jobPosition.getContractType());
-
-            // Step 2: Build the comprehensive DTO
-            logger.debug("🏗️ Step 2: Building DTO");
-            JobPositionDetailsDTO.JobPositionDetailsDTOBuilder builder = JobPositionDetailsDTO.builder();
-
-            // ===============================
-            // OVERVIEW DATA
-            // ===============================
-            logger.debug("📊 Building overview data");
-            try {
-                builder.id(jobPosition.getId())
-                        .positionName(jobPosition.getPositionName())
-//                      .department(jobPosition.getDepartment())
-                        .departmentName(jobPosition.getDepartment() != null ? jobPosition.getDepartment().getName() : null)
-                        .head(jobPosition.getHead())
-                        .baseSalary(jobPosition.getBaseSalary())
-                        .probationPeriod(jobPosition.getProbationPeriod())
-                        .contractType(jobPosition.getContractType())
-                        .experienceLevel(jobPosition.getExperienceLevel())
-                        .active(jobPosition.getActive());
-
-                // Contract-specific fields
-                builder.workingDaysPerWeek(jobPosition.getWorkingDaysPerWeek())
-                        .hoursPerShift(jobPosition.getHoursPerShift())
-                        .hourlyRate(jobPosition.getHourlyRate())
-                        .overtimeMultiplier(jobPosition.getOvertimeMultiplier())
-                        .trackBreaks(jobPosition.getTrackBreaks())
-                        .breakDurationMinutes(jobPosition.getBreakDurationMinutes())
-                        .dailyRate(jobPosition.getDailyRate())
-                        .workingDaysPerMonth(jobPosition.getWorkingDaysPerMonth())
-                        .includesWeekends(jobPosition.getIncludesWeekends())
-                        .monthlyBaseSalary(jobPosition.getMonthlyBaseSalary())
-                        .shifts(jobPosition.getShifts())
-                        .workingHours(jobPosition.getWorkingHours())
-                        .vacations(jobPosition.getVacations())
-                        .startTime(jobPosition.getStartTime())
-                        .endTime(jobPosition.getEndTime());
-
-                // Working time range - safely handle this
-                try {
-                    builder.workingTimeRange(jobPosition.getWorkingTimeRange());
-                } catch (Exception e) {
-                    logger.warn("⚠️ Could not get working time range: {}", e.getMessage());
-                    builder.workingTimeRange(null);
-                }
-
-                // Calculated fields - safely handle these
-                try {
-                    builder.calculatedMonthlySalary(jobPosition.calculateMonthlySalary())
-                            .calculatedDailySalary(jobPosition.calculateDailySalary())
-                            .isValidConfiguration(jobPosition.isValidConfiguration())
-                            .isHighLevelPosition(jobPosition.isHighLevelPosition());
-                } catch (Exception e) {
-                    logger.warn("⚠️ Could not calculate derived fields: {}", e.getMessage());
-                    builder.calculatedMonthlySalary(0.0)
-                            .calculatedDailySalary(0.0)
-                            .isValidConfiguration(false)
-                            .isHighLevelPosition(false);
-                }
-
-                logger.debug("✅ Overview data built successfully");
-
-            } catch (Exception e) {
-                logger.error("❌ Error building overview data: {}", e.getMessage(), e);
-                throw new RuntimeException("Failed to build overview data: " + e.getMessage());
-            }
-
-            // ===============================
-            // EMPLOYEES DATA
-            // ===============================
-            logger.debug("👥 Building employees data");
-            List<EmployeeSummaryDTO> employees = Collections.emptyList();
-            try {
-                employees = getEmployeeSummariesForPosition(id);
-                logger.info("✅ Found {} employees", employees.size());
-
-                builder.employees(employees)
-                        .totalEmployeeCount(employees.size())
-                        .activeEmployeeCount((int) employees.stream()
-                                .filter(e -> e != null && "ACTIVE".equals(e.getStatus())).count())
-                        .inactiveEmployeeCount((int) employees.stream()
-                                .filter(e -> e != null && !"ACTIVE".equals(e.getStatus())).count())
-                        .eligibleForPromotionEmployees(employees.stream()
-                                .filter(e -> e != null && Boolean.TRUE.equals(e.getEligibleForPromotion()))
-                                .collect(Collectors.toList()));
-
-            } catch (Exception e) {
-                logger.error("❌ Error building employees data: {}", e.getMessage(), e);
-                // Use empty data instead of failing
-                builder.employees(Collections.emptyList())
-                        .totalEmployeeCount(0)
-                        .activeEmployeeCount(0)
-                        .inactiveEmployeeCount(0)
-                        .eligibleForPromotionEmployees(Collections.emptyList());
-            }
-
-            // ===============================
-            // ANALYTICS DATA
-            // ===============================
-//        logger.debug("📈 Building analytics data");
-//        PositionAnalyticsDTO analytics = null;
-//        try {
-//            analytics = buildPositionAnalytics(jobPosition, employees);
-//            builder.analytics(analytics);
-//            logger.debug("✅ Analytics data built successfully");
-//        } catch (Exception e) {
-//            logger.error("❌ Error building analytics data: {}", e.getMessage(), e);
-//            // Create minimal analytics data
-//            analytics = PositionAnalyticsDTO.builder()
-//                    .averageEmployeeSalary(BigDecimal.ZERO)
-//                    .minEmployeeSalary(BigDecimal.ZERO)
-//                    .maxEmployeeSalary(BigDecimal.ZERO)
-//                    .totalPayroll(BigDecimal.ZERO)
-//                    .positionBaseSalary(BigDecimal.valueOf(jobPosition.getBaseSalary() != null ? jobPosition.getBaseSalary() : 0))
-//                    .totalEmployees(employees.size())
-//                    .activeEmployees(0)
-//                    .eligibleForPromotionCount(0)
-//                    .promotionEligibilityRate(0.0)
-//                    .averageMonthsInPosition(0.0)
-//                    .statusDistribution(new HashMap<>())
-//                    .contractTypeDistribution(new HashMap<>())
-//                    .isValidConfiguration(true)
-//                    .validationIssueCount(0)
-//                    .validationIssues(Collections.emptyList())
-//                    .recommendations(Collections.emptyList())
-//                    .build();
-//            builder.analytics(analytics);
-//        }
-
-            // ===============================
-            // PROMOTIONS DATA
-            // ===============================
-//        logger.debug("🚀 Building promotions data");
-//        PositionPromotionsDTO promotions = null;
-//        try {
-//            promotions = buildPositionPromotions(jobPosition);
-//            builder.promotions(promotions);
-//            logger.debug("✅ Promotions data built successfully");
-//        } catch (Exception e) {
-//            logger.error("❌ Error building promotions data: {}", e.getMessage(), e);
-//            // Create minimal promotions data
-//            promotions = PositionPromotionsDTO.builder()
-//                    .totalPromotionsFrom(0L)
-//                    .totalPromotionsTo(0L)
-//                    .pendingPromotionsFromCount(0L)
-//                    .pendingPromotionsToCount(0L)
-//                    .implementedPromotionsFrom(0L)
-//                    .implementedPromotionsTo(0L)
-//                    .rejectedPromotionsFrom(0L)
-//                    .rejectedPromotionsTo(0L)
-//                    .averageSalaryIncrease(BigDecimal.ZERO)
-//                    .averageTimeBeforePromotion(0.0)
-//                    .promotionRate(0.0)
-//                    .promotionSuccessRate(0.0)
-//                    .hasCareerProgression(false)
-//                    .isPromotionDestination(false)
-//                    .topPromotionDestinations(new HashMap<>())
-//                    .commonPromotionSources(new HashMap<>())
-//                    .promotionsFromList(Collections.emptyList())
-//                    .promotionsToList(Collections.emptyList())
-//                    .pendingPromotionsFromList(Collections.emptyList())
-//                    .pendingPromotionsToList(Collections.emptyList())
-//                    .recentPromotions(Collections.emptyList())
-//                    .careerPathSuggestions(Collections.emptyList())
-//                    .promotionDestinations(Collections.emptyList())
-//                    .promotionSources(Collections.emptyList())
-//                    .promotionsLastYear(0L)
-//                    .promotionsLastQuarter(0L)
-//                    .promotionsThisMonth(0L)
-//                    .build();
-//            builder.promotions(promotions);
-//        }
-
-            // ===============================
-            // SUMMARY COUNTS
-            // ===============================
-//        logger.debug("🔢 Building summary counts");
-//        try {
-//            int vacancyCount = getVacancyCountForPosition(id);
-//            int activeVacancyCount = getActiveVacancyCountForPosition(id);
-//
-//            int totalPromotionsCount = 0;
-//            int pendingPromotionsCount = 0;
-//
-////            if (promotions != null) {
-////                totalPromotionsCount = (promotions.getTotalPromotionsFrom() != null ? promotions.getTotalPromotionsFrom().intValue() : 0) +
-////                        (promotions.getTotalPromotionsTo() != null ? promotions.getTotalPromotionsTo().intValue() : 0);
-////                pendingPromotionsCount = (promotions.getPendingPromotionsFromCount() != null ? promotions.getPendingPromotionsFromCount().intValue() : 0) +
-////                        (promotions.getPendingPromotionsToCount() != null ? promotions.getPendingPromotionsToCount().intValue() : 0);
-////            }
-//
-//            builder.vacancyCount(vacancyCount)
-//                    .activeVacancyCount(activeVacancyCount)
-//                    .totalPromotionsCount(totalPromotionsCount)
-//                    .pendingPromotionsCount(pendingPromotionsCount);
-//
-//            logger.debug("✅ Summary counts: vacancies={}, activeVacancies={}, promotions={}, pending={}",
-//                    vacancyCount, activeVacancyCount, totalPromotionsCount, pendingPromotionsCount);
-//
-//        } catch (Exception e) {
-//            logger.error("❌ Error building summary counts: {}", e.getMessage(), e);
-//            // Use zero counts
-//            builder.vacancyCount(0)
-//                    .activeVacancyCount(0)
-//                    .totalPromotionsCount(0)
-//                    .pendingPromotionsCount(0);
-//        }
-
-            // Build and return
-            logger.info("🎉 Successfully built JobPositionDetailsDTO for position: {}", jobPosition.getPositionName());
-            return builder.build();
-
+            builder.calculatedMonthlySalary(jobPosition.calculateMonthlySalary())
+                    .calculatedDailySalary(jobPosition.calculateDailySalary())
+                    .isValidConfiguration(jobPosition.isValidConfiguration())
+                    .workingTimeRange(jobPosition.getWorkingTimeRange());
         } catch (Exception e) {
-            logger.error("💥 Fatal error in getJobPositionDetailsDTO for id {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException("Failed to create job position details: " + e.getMessage(), e);
+            logger.warn("Could not calculate derived fields: {}", e.getMessage());
+            builder.calculatedMonthlySalary(0.0)
+                    .calculatedDailySalary(0.0)
+                    .isValidConfiguration(false);
         }
+
+        // Hierarchy fields
+        builder.parentJobPositionId(jobPosition.getParentJobPosition() != null ?
+                        jobPosition.getParentJobPosition().getId() : null)
+                .parentJobPositionName(jobPosition.getParentJobPosition() != null ?
+                        jobPosition.getParentJobPosition().getPositionName() : null)
+                .isRootPosition(jobPosition.isRootPosition())
+                .hierarchyLevel(jobPosition.getHierarchyLevel())
+                .hierarchyPath(jobPosition.getHierarchyPath());
+
+        // Employee data
+        List<Employee> employees = jobPosition.getEmployees();
+        builder.employeeCount(employees != null ? employees.size() : 0);
+
+        if (employees != null && !employees.isEmpty()) {
+            List<EmployeeSummaryDTO> employeeSummaries = employees.stream()
+                    .map(emp -> EmployeeSummaryDTO.builder()
+                            .id(emp.getId())
+                            .firstName(emp.getFirstName())
+                            .lastName(emp.getLastName())
+                            .email(emp.getEmail())
+                            .photoUrl(emp.getPhotoUrl())
+                            .status(emp.getStatus())
+                            .hireDate(emp.getHireDate())
+                            .siteName(emp.getSite() != null ? emp.getSite().getName() : null)
+                            .build())
+                    .collect(Collectors.toList());
+            builder.employees(employeeSummaries);
+        } else {
+            builder.employees(new ArrayList<>());
+        }
+
+
+
+        return builder.build();
     }
 
     /**
@@ -1918,42 +2042,11 @@ public class JobPositionService {
         }
     }
 
-    /**
-     * Validate that no duplicate position exists with same name and level
-     *
-     * @param positionName    The position name
-     * @param experienceLevel The experience level
-     * @param excludeId       Optional ID to exclude from check (for updates)
-     * @throws RuntimeException if duplicate found
-     */
-    private void validatePositionNameAndLevel(String positionName, String experienceLevel, UUID excludeId) {
-        if (positionName == null || experienceLevel == null) {
-            return; // Skip validation if either is null
-        }
 
-        // For updates: need to check if the duplicate is not the current record
-        if (excludeId != null) {
-            // Get all positions with same name and level (case-insensitive)
-            List<JobPosition> existingPositions = jobPositionRepository
-                    .findByPositionNameIgnoreCaseAndExperienceLevelIgnoreCase(positionName, experienceLevel);
-
-            // Check if any of them is NOT the current record being updated
-            boolean hasDuplicate = existingPositions.stream()
-                    .anyMatch(pos -> !pos.getId().equals(excludeId));
-
-            if (hasDuplicate) {
-                String fullName = positionName + " " + experienceLevel;
-                throw new RuntimeException("A position with the name '" + fullName + "' already exists. " +
-                        "Position names combined with their level must be unique.");
-            }
-        } else {
-            // For new positions: simple existence check (case-insensitive)
-            if (jobPositionRepository.existsByPositionNameIgnoreCaseAndExperienceLevelIgnoreCase(
-                    positionName, experienceLevel)) {
-                String fullName = positionName + " " + experienceLevel;
-                throw new RuntimeException("A position with the name '" + fullName + "' already exists. " +
-                        "Position names combined with their level must be unique.");
-            }
-        }
-    }
 }
+
+
+// ======================================
+// DETAILS DTO
+// ======================================
+
