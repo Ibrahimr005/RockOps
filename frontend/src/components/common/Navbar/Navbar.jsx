@@ -5,6 +5,7 @@ import { useLanguage } from '../../../contexts/LanguageContext.jsx';
 import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import { useTranslation } from 'react-i18next';
 import { FaSignOutAlt, FaBars, FaTimes, FaMoon, FaSun, FaArrowLeft, FaBell } from 'react-icons/fa';
+import { API_BASE_URL } from '../../../config/api.config.js';
 import logoImage from '../../../assets/logos/Logo.png';
 import logoDarkImage from '../../../assets/logos/Logo-dark.png';
 import './Navbar.css';
@@ -92,7 +93,7 @@ const Navbar = () => {
 
             const stompClient = new Client({
                 // Use SockJS factory instead of raw WebSocket
-                webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+                webSocketFactory: () => new SockJS(`${API_BASE_URL}/ws`),
                 connectHeaders: {
                     'Authorization': `Bearer ${token}`
                 },
