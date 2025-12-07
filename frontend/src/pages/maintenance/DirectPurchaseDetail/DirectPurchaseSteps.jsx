@@ -247,7 +247,13 @@ const DirectPurchaseSteps = ({ ticket, onEditStep }) => {
         }
     };
 
-    const steps = [1, 2, 3, 4];
+    // Only show completed or in-progress steps (not pending/future steps)
+    const allSteps = [1, 2, 3, 4];
+    const steps = allSteps.filter(stepNumber => {
+        const isCompleted = ticket[`step${stepNumber}Completed`];
+        const isCurrentStep = ticket.currentStep === getStepPhase(stepNumber);
+        return isCompleted || isCurrentStep;
+    });
 
     return (
         <div className="direct-purchase-steps">

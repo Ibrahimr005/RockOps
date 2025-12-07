@@ -75,6 +75,9 @@ public class DirectPurchaseTicketDetailsDto {
 
     private Boolean step1Completed;
 
+    private BigDecimal expectedCost;
+    private java.time.LocalDate expectedEndDate;
+
     // Step 2 - Purchasing
     private BigDecimal downPayment;
 

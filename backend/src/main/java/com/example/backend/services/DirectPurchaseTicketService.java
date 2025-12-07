@@ -452,6 +452,8 @@ public class DirectPurchaseTicketService {
                     .step1StartedAt(ticket.getStep1StartedAt())
                     .step1CompletedAt(ticket.getStep1CompletedAt())
                     .step1Completed(ticket.getStep1Completed())
+                    .expectedCost(ticket.getExpectedCost())
+                    .expectedEndDate(ticket.getExpectedEndDate())
                     // Step 2 fields
                     .merchantName(ticket.getMerchant() != null ? ticket.getMerchant().getName() : null)
                     .downPayment(ticket.getDownPayment())
@@ -621,10 +623,10 @@ public class DirectPurchaseTicketService {
         // Add items (name + quantity only at this stage)
         for (DirectPurchaseItemDto itemDto : dto.getItems()) {
             DirectPurchaseItem item = DirectPurchaseItem.builder()
-                    .directPurchaseTicket(savedTicket)
                     .itemName(itemDto.getItemName())
                     .quantity(itemDto.getQuantity())
                     .build();
+            item.setDirectPurchaseTicket(savedTicket);
             itemRepository.save(item);
         }
 
@@ -687,6 +689,7 @@ public class DirectPurchaseTicketService {
 
         // Validate at least one item
         List<DirectPurchaseItem> items = itemRepository.findByDirectPurchaseTicketId(ticketId);
+        ticket.setItems(items);
         if (items.isEmpty()) {
             throw new MaintenanceException("At least one item is required");
         }
@@ -750,15 +753,16 @@ public class DirectPurchaseTicketService {
                     if (itemDto.getExpectedCostPerUnit() != null) {
                         item.setExpectedCostPerUnit(itemDto.getExpectedCostPerUnit());
                     }
+                    item.setDirectPurchaseTicket(ticket);
                     itemRepository.save(item);
                 } else {
                     // Add new item (with name, quantity, and expected cost)
                     DirectPurchaseItem newItem = DirectPurchaseItem.builder()
-                            .directPurchaseTicket(ticket)
                             .itemName(itemDto.getItemName())
                             .quantity(itemDto.getQuantity())
                             .expectedCostPerUnit(itemDto.getExpectedCostPerUnit())
                             .build();
+                    newItem.setDirectPurchaseTicket(ticket);
                     itemRepository.save(newItem);
                 }
             }
@@ -796,7 +800,9 @@ public class DirectPurchaseTicketService {
             throw new MaintenanceException("Merchant is required before completing Step 2");
         }
 
-        // Validate all items have expected costs
+        // Load items and validate all items have expected costs
+        List<DirectPurchaseItem> items = itemRepository.findByDirectPurchaseTicketId(ticketId);
+        ticket.setItems(items);
         if (!ticket.allItemsHaveExpectedCosts()) {
             throw new MaintenanceException("All items must have expected costs before completing Step 2");
         }
@@ -848,8 +854,9 @@ public class DirectPurchaseTicketService {
 
                 if (itemDto.getActualCostPerUnit() != null) {
                     item.setActualCostPerUnit(itemDto.getActualCostPerUnit());
-                    itemRepository.save(item);
                 }
+                item.setDirectPurchaseTicket(ticket);
+                itemRepository.save(item);
             }
         }
 
@@ -889,7 +896,9 @@ public class DirectPurchaseTicketService {
             throw new MaintenanceException("Ticket is not in FINALIZE_PURCHASING step. Current step: " + ticket.getCurrentStep());
         }
 
-        // Validate all items have actual costs
+        // Load items and validate all items have actual costs
+        List<DirectPurchaseItem> items = itemRepository.findByDirectPurchaseTicketId(ticketId);
+        ticket.setItems(items);
         if (!ticket.allItemsHaveActualCosts()) {
             throw new MaintenanceException("All items must have actual costs before completing Step 3");
         }

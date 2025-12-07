@@ -26,6 +26,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -46,6 +48,7 @@ import static org.mockito.Mockito.*;
  * Tests all workflows: Legacy, New 4-Step, Edge Cases, Validations
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("DirectPurchaseTicket Service Tests")
 public class DirectPurchaseTicketServiceTest {
 
@@ -165,6 +168,7 @@ public class DirectPurchaseTicketServiceTest {
 
             when(equipmentRepository.findById(any(UUID.class))).thenReturn(Optional.of(mockEquipment));
             when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(mockUser));
+            when(userRepository.findById(any(UUID.class))).thenReturn(Optional.of(mockUser));
             when(ticketRepository.save(any(DirectPurchaseTicket.class))).thenReturn(savedTicket);
             when(itemRepository.save(any(DirectPurchaseItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(itemRepository.findByDirectPurchaseTicketId(any(UUID.class))).thenReturn(new ArrayList<>());
@@ -184,7 +188,9 @@ public class DirectPurchaseTicketServiceTest {
             UUID ticketId = UUID.randomUUID();
             DirectPurchaseTicket ticket = createMockNewWorkflowTicket();
             ticket.setStep1Completed(false);
-            List<DirectPurchaseItem> items = Arrays.asList(createMockItem());
+            DirectPurchaseItem item = createMockItem(ticket);
+            ticket.getItems().add(item);
+            List<DirectPurchaseItem> items = Arrays.asList(item);
 
             when(ticketRepository.findById(ticketId)).thenReturn(Optional.of(ticket));
             when(itemRepository.findByDirectPurchaseTicketId(ticketId)).thenReturn(items);
@@ -235,7 +241,8 @@ public class DirectPurchaseTicketServiceTest {
             ticket.setCurrentStep(DirectPurchaseWorkflowStep.PURCHASING);
 
             UpdateDirectPurchaseStep2Dto dto = createStep2Dto();
-            DirectPurchaseItem item = createMockItem();
+            DirectPurchaseItem item = createMockItem(ticket);
+            ticket.getItems().add(item);
 
             when(ticketRepository.findById(ticketId)).thenReturn(Optional.of(ticket));
             when(merchantRepository.findById(any(UUID.class))).thenReturn(Optional.of(mockMerchant));
@@ -279,8 +286,9 @@ public class DirectPurchaseTicketServiceTest {
             ticket.setCurrentStep(DirectPurchaseWorkflowStep.PURCHASING);
             ticket.setMerchant(mockMerchant);
 
-            DirectPurchaseItem item = createMockItem();
+            DirectPurchaseItem item = createMockItem(ticket);
             item.setExpectedCostPerUnit(BigDecimal.TEN);
+            ticket.getItems().add(item);
 
             when(ticketRepository.findById(ticketId)).thenReturn(Optional.of(ticket));
             when(itemRepository.findByDirectPurchaseTicketId(ticketId)).thenReturn(Arrays.asList(item));
@@ -325,8 +333,9 @@ public class DirectPurchaseTicketServiceTest {
             ticket.setCurrentStep(DirectPurchaseWorkflowStep.PURCHASING);
             ticket.setMerchant(mockMerchant);
 
-            DirectPurchaseItem item = createMockItem();
+            DirectPurchaseItem item = createMockItem(ticket);
             item.setExpectedCostPerUnit(null); // Missing cost
+            ticket.getItems().add(item);
 
             when(ticketRepository.findById(ticketId)).thenReturn(Optional.of(ticket));
             when(itemRepository.findByDirectPurchaseTicketId(ticketId)).thenReturn(Arrays.asList(item));
@@ -350,8 +359,9 @@ public class DirectPurchaseTicketServiceTest {
             ticket.setCurrentStep(DirectPurchaseWorkflowStep.FINALIZE_PURCHASING);
 
             UpdateDirectPurchaseStep3Dto dto = createStep3Dto();
-            DirectPurchaseItem item = createMockItem();
+            DirectPurchaseItem item = createMockItem(ticket);
             item.setExpectedCostPerUnit(BigDecimal.TEN);
+            ticket.getItems().add(item);
 
             when(ticketRepository.findById(ticketId)).thenReturn(Optional.of(ticket));
             when(itemRepository.findById(any(UUID.class))).thenReturn(Optional.of(item));
@@ -377,9 +387,10 @@ public class DirectPurchaseTicketServiceTest {
             ticket.setStep2Completed(true);
             ticket.setCurrentStep(DirectPurchaseWorkflowStep.FINALIZE_PURCHASING);
 
-            DirectPurchaseItem item = createMockItem();
+            DirectPurchaseItem item = createMockItem(ticket);
             item.setExpectedCostPerUnit(BigDecimal.TEN);
             item.setActualCostPerUnit(new BigDecimal("12.00"));
+            ticket.getItems().add(item);
 
             when(ticketRepository.findById(ticketId)).thenReturn(Optional.of(ticket));
             when(itemRepository.findByDirectPurchaseTicketId(ticketId)).thenReturn(Arrays.asList(item));
@@ -408,8 +419,9 @@ public class DirectPurchaseTicketServiceTest {
             DirectPurchaseTicket ticket = createMockNewWorkflowTicket();
             ticket.setCurrentStep(DirectPurchaseWorkflowStep.FINALIZE_PURCHASING);
 
-            DirectPurchaseItem item = createMockItem();
+            DirectPurchaseItem item = createMockItem(ticket);
             item.setActualCostPerUnit(null); // Missing actual cost
+            ticket.getItems().add(item);
 
             when(ticketRepository.findById(ticketId)).thenReturn(Optional.of(ticket));
             when(itemRepository.findByDirectPurchaseTicketId(ticketId)).thenReturn(Arrays.asList(item));
@@ -592,7 +604,7 @@ public class DirectPurchaseTicketServiceTest {
             when(stepRepository.findByDirectPurchaseTicketIdOrderByStepNumberAsc(ticketId)).thenReturn(new ArrayList<>());
             when(itemRepository.findByDirectPurchaseTicketId(ticketId)).thenReturn(new ArrayList<>());
 
-            // When
+
             DirectPurchaseTicketDetailsDto result = service.getTicketById(ticketId);
 
             // Then
@@ -775,7 +787,8 @@ public class DirectPurchaseTicketServiceTest {
     // ==================== HELPER METHODS ====================
 
     private void setupSecurityContext() {
-        Authentication auth = new UsernamePasswordAuthenticationToken("testuser", "password");
+        // Use the 3-argument constructor to create an authenticated token
+        Authentication auth = new UsernamePasswordAuthenticationToken("testuser", "password", new ArrayList<>());
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(auth);
         SecurityContextHolder.setContext(securityContext);
@@ -849,6 +862,7 @@ public class DirectPurchaseTicketServiceTest {
         ticket.setStep4Completed(false);
         ticket.setStatus(DirectPurchaseStatus.IN_PROGRESS);
         ticket.setCreatedAt(LocalDateTime.now());
+        ticket.setItems(new ArrayList<>());
         return ticket;
     }
 
@@ -867,11 +881,12 @@ public class DirectPurchaseTicketServiceTest {
         return ticket;
     }
 
-    private DirectPurchaseItem createMockItem() {
+    private DirectPurchaseItem createMockItem(DirectPurchaseTicket ticket) {
         DirectPurchaseItem item = new DirectPurchaseItem();
         item.setId(UUID.randomUUID());
         item.setItemName("Test Item");
         item.setQuantity(2);
+        item.setDirectPurchaseTicket(ticket);
         return item;
     }
 

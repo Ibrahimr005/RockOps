@@ -202,6 +202,13 @@ const MaintenanceRecords = () => {
                 if (ticket.step3Completed) completedSteps++;
                 if (ticket.step4Completed) completedSteps++;
 
+                // For new workflow: totalSteps = completed + 1 (current step), not all 4
+                // Only show steps that have been started (completed or in-progress)
+                let totalVisibleSteps = completedSteps;
+                if (!isCompleted && ticket.currentStep) {
+                    totalVisibleSteps++; // Add current in-progress step
+                }
+
                 return {
                     id: ticket.id,
                     ticketType: 'DIRECT_PURCHASE',
@@ -222,15 +229,16 @@ const MaintenanceRecords = () => {
                     isActualCost: isCompleted,
                     creationDate: ticket.createdAt,
                     issueDate: ticket.createdAt,
-                    expectedCompletionDate: ticket.expectedCompletionDate || null,
+                    expectedCompletionDate: ticket.expectedEndDate || null,
                     actualCompletionDate: ticket.completedAt || null,
                     isOverdue: false,
                     durationInDays: 0,
-                    totalSteps: ticket.isLegacyTicket ? (ticket.totalSteps || 2) : 4,
+                    totalSteps: ticket.isLegacyTicket ? (ticket.totalSteps || 2) : totalVisibleSteps,
                     completedSteps: ticket.isLegacyTicket ? (ticket.completedSteps || 0) : completedSteps,
                     activeSteps: 0,
                     merchantName: ticket.merchantName,
                     isLegacyTicket: ticket.isLegacyTicket,
+                    currentStep: ticket.currentStepDisplay ? { description: ticket.currentStepDisplay } : null,
                     steps: []
                 };
             });

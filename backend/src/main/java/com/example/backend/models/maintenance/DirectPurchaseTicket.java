@@ -15,6 +15,8 @@ import lombok.Builder;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.GenericGenerator;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,6 +26,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "direct_purchase_tickets")
+@EntityListeners(AuditingEntityListener.class)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -175,7 +178,8 @@ public class DirectPurchaseTicket {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "created_by")
+    @CreatedBy
+    @Column(name = "created_by", updatable = false)
     private String createdBy;
 
     @UpdateTimestamp
