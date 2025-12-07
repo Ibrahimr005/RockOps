@@ -11,3 +11,7 @@ DASHBOARD_COMPLETE_GUIDE.md
 ENUM_REFERENCE.md
 RUNTIME_ERRORS_FIXED.md
 FRONTEND_DEBUGGING_GUIDE.md
+
+# AWS Pipeline configuration files
+backend-pipeline.json
+frontend-pipeline.json
