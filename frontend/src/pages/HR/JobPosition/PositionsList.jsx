@@ -346,7 +346,7 @@ const PositionsList = () => {
                 emptyMessage="No job positions found. Click 'Add Position' to create one."
                 onRowClick={handleRowClick}
                 showAddButton={true}
-                addButtonText="Add Position"
+                addButtonText="Add Positions"
                 addButtonIcon={<FiPlus />}
                 onAddClick={() => setShowAddForm(true)}
                 showExportButton={true}
