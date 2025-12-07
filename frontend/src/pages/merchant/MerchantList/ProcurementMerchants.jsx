@@ -34,7 +34,7 @@ const ProcurementMerchants = () => {
     // Form data for adding a new merchant
     const [formData, setFormData] = useState({
         name: '',
-        merchantType: '',
+        merchantTypes: [],  // Changed from merchantType to merchantTypes
         contactEmail: '',
         contactPhone: '',
         contactSecondPhone: '',
@@ -103,10 +103,9 @@ const ProcurementMerchants = () => {
     const onEdit = (merchant) => {
         console.log("Editing merchant:", merchant);
 
-        // Set form data with current merchant values
         setFormData({
             name: merchant.name,
-            merchantType: merchant.merchantType,
+            merchantTypes: merchant.merchantTypes || [],  // Changed from merchantType
             contactEmail: merchant.contactEmail || '',
             contactPhone: merchant.contactPhone || '',
             contactSecondPhone: merchant.contactSecondPhone || '',
@@ -121,17 +120,13 @@ const ProcurementMerchants = () => {
             notes: merchant.notes || ''
         });
 
-        // Set existing photo if available
         if (merchant.photoUrl) {
             setPreviewImage(merchant.photoUrl);
         } else {
             setPreviewImage(null);
         }
 
-        // Reset selected file since we're showing existing photo
         setSelectedFile(null);
-
-        // Set modal mode to edit
         setModalMode('edit');
         setCurrentMerchantId(merchant.id);
         setShowAddModal(true);
@@ -182,17 +177,15 @@ const ProcurementMerchants = () => {
     const handleOpenModal = () => {
         setShowAddModal(true);
     };
-
     const handleCloseModals = () => {
         setShowAddModal(false);
         setModalMode('add');
         setCurrentMerchantId(null);
-        setSelectedFile(null); // Reset file
+        setSelectedFile(null);
         setPreviewImage(null);
-        // Reset form data when closing modal
         setFormData({
             name: '',
-            merchantType: '',
+            merchantTypes: [],  // Changed here too
             contactEmail: '',
             contactPhone: '',
             contactSecondPhone: '',
@@ -247,7 +240,7 @@ const ProcurementMerchants = () => {
             // Create a merchant object from form data
             const merchantData = {
                 name: formData.name,
-                merchantType: formData.merchantType,
+                merchantTypes: formData.merchantTypes,
                 contactEmail: formData.contactEmail || '',
                 contactPhone: formData.contactPhone || '',
                 contactSecondPhone: formData.contactSecondPhone || '',
@@ -300,7 +293,7 @@ const ProcurementMerchants = () => {
             // Create a merchant object from form data
             const merchantData = {
                 name: formData.name,
-                merchantType: formData.merchantType,
+                merchantTypes: formData.merchantTypes,
                 contactEmail: formData.contactEmail || '',
                 contactPhone: formData.contactPhone || '',
                 contactSecondPhone: formData.contactSecondPhone || '',

@@ -243,6 +243,10 @@
             font-size: 16px;
             font-weight: 600;
             color: var(--color-text-primary);
+
+            &:hover {
+              color: var(--color-primary);
+            }
           }
 
           .merchant-contact {

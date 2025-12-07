@@ -17,5 +17,10 @@ export const merchantService = {
     getTransactions: async (merchantId) => {
         const response = await apiClient.get(MERCHANT_ENDPOINTS.TRANSACTIONS(merchantId));
         return response.data || response;
+    },
+
+    getPerformance: async (merchantId) => {  // ADD THIS METHOD
+        const response = await apiClient.get(MERCHANT_ENDPOINTS.PERFORMANCE(merchantId));
+        return response.data || response;
     }
 };

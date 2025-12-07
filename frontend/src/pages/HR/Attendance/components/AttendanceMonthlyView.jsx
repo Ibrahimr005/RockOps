@@ -1,10 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { FaChevronDown, FaChevronUp, FaClock } from 'react-icons/fa';
+import { FaChevronDown, FaChevronUp, FaClock, FaUsers } from 'react-icons/fa';
 import EmployeeAvatar from '../../../../components/common/EmployeeAvatar';
 import AttendanceCell from './AttendanceCell';
-// import './AttendanceMonthlyView.scss';
 
-const AttendanceMonthlyView = ({ monthlyData, onAttendanceUpdate, loading, month, year, showLegend = true }) => {
+const AttendanceMonthlyView = ({ monthlyData, onAttendanceUpdate, loading, month, year, showLegend = true, employeeCount }) => {
     const [expandedEmployees, setExpandedEmployees] = useState(new Set());
 
     // Get days in month
@@ -110,11 +109,20 @@ const AttendanceMonthlyView = ({ monthlyData, onAttendanceUpdate, loading, month
         );
     };
 
+    // Calculate the actual employee count
+    const totalEmployees = employeeCount || monthlyData.length;
+
     return (
         <div className="attendance-monthly-view">
             <div className="attendance-grid">
                 <div className="attendance-header">
-                    <div className="employee-info-header">Employee</div>
+                    <div className="employee-info-header">
+                        <span className="header-text">Employee</span>
+                        <span className="employee-count-badge">
+                            <FaUsers className="count-icon" />
+                            <span>{totalEmployees}</span>
+                        </span>
+                    </div>
                     <div className="days-header">
                         {monthDays.map(day => (
                             <div key={day} className={`day-header ${getDayAbbr(day) === 'Fri' || getDayAbbr(day) === 'Sat' ? 'weekend' : ''}`}>

@@ -79,7 +79,9 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
             } else if (employee.department.name) {
                 return employee.department.name;
             }
+
         }
+
         return position?.department || 'N/A';
     };
 
@@ -242,29 +244,29 @@ const PositionEmployees = ({ position, positionId, onRefresh }) => {
             </div>
 
             {/* Position Summary */}
-            <div className="position-summary">
-                <div className="summary-item">
-                    <label>Position</label>
-                    <span>{position?.positionName || 'N/A'}</span>
-                </div>
-                <div className="summary-item">
-                    <label>Department</label>
-                    <span>{position?.department || 'N/A'}</span>
-                </div>
-                <div className="summary-item">
-                    <label>Contract Type</label>
-                    <span>{position?.contractType ? position.contractType.replace('_', ' ') : 'N/A'}</span>
-                </div>
-                <div className="summary-item">
-                    <label>Experience Level</label>
-                    <span>
-                        {position?.experienceLevel ?
-                            position.experienceLevel.replace('_', ' ').toLowerCase()
-                                .replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'
-                        }
-                    </span>
-                </div>
-            </div>
+            {/*<div className="position-summary">*/}
+            {/*    <div className="summary-item">*/}
+            {/*        <label>Position</label>*/}
+            {/*        <span>{position?.positionName || 'N/A'}</span>*/}
+            {/*    </div>*/}
+            {/*    <div className="summary-item">*/}
+            {/*        <label>Department</label>*/}
+            {/*        <span>{position?.departmentName || 'N/A'}</span>*/}
+            {/*    </div>*/}
+            {/*    <div className="summary-item">*/}
+            {/*        <label>Contract Type</label>*/}
+            {/*        <span>{position?.contractType ? position.contractType.replace('_', ' ') : 'N/A'}</span>*/}
+            {/*    </div>*/}
+            {/*    <div className="summary-item">*/}
+            {/*        <label>Experience Level</label>*/}
+            {/*        <span>*/}
+            {/*            {position?.experienceLevel ?*/}
+            {/*                position.experienceLevel.replace('_', ' ').toLowerCase()*/}
+            {/*                    .replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'*/}
+            {/*            }*/}
+            {/*        </span>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             {/* Employees Data Table */}
             <DataTable

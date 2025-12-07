@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FaTimes, FaCheck } from 'react-icons/fa';
 
 const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded }) => {
-    const [isSelected, setIsSelected] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [tempData, setTempData] = useState({
         status: attendance?.status || 'ABSENT',
         checkIn: attendance?.checkIn || '',
@@ -32,19 +32,24 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
         });
     }, [attendance]);
 
-    // Close editor when clicking outside
+    // Handle escape key and body scroll lock
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (cellRef.current && !cellRef.current.contains(event.target)) {
-                if (isSelected) {
-                    setIsSelected(false);
-                }
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape' && isModalOpen) {
+                handleCancel();
             }
         };
 
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isSelected]);
+        if (isModalOpen) {
+            document.addEventListener('keydown', handleKeyDown);
+            document.body.style.overflow = 'hidden';
+        }
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            document.body.style.overflow = '';
+        };
+    }, [isModalOpen]);
 
     const handleCellClick = (e) => {
         e.stopPropagation();
@@ -52,7 +57,7 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
         const isEditable = attendance?.isEditable !== false;
 
         if (isEditable && !isFuture) {
-            setIsSelected(!isSelected);
+            setIsModalOpen(true);
         }
     };
 
@@ -63,7 +68,7 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
         if (contractType === 'DAILY') {
             const updates = { status: newStatus };
             onUpdate(updates);
-            setIsSelected(false);
+            setIsModalOpen(false);
         }
     };
 
@@ -82,7 +87,7 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
         }
 
         onUpdate(updates);
-        setIsSelected(false);
+        setIsModalOpen(false);
     };
 
     const handleCancel = () => {
@@ -94,7 +99,7 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
             hoursWorked: attendance?.hoursWorked || '',
             notes: attendance?.notes || ''
         });
-        setIsSelected(false);
+        setIsModalOpen(false);
     };
 
     const getStatusDisplay = () => {
@@ -152,6 +157,23 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
         }
     };
 
+    // Format date for modal header
+    const formatDateForModal = () => {
+        if (!attendance?.date) return `Day ${day}`;
+
+        try {
+            const date = new Date(attendance.date);
+            return date.toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        } catch (error) {
+            return `Day ${day}`;
+        }
+    };
+
     const renderExpandedInfo = () => {
         if (!isExpanded || !attendance) return null;
 
@@ -166,7 +188,7 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
                     <div className="time-display">
                         <span className="time-in">{formatTime12Hour(attendance.checkIn)}</span>
                         <span className="time-separator">→</span>
-                        <span className="time-out">{attendance.checkOut ? formatTime12Hour(attendance.checkOut) : '–'}</span>
+                        <span className="time-out">{attendance.checkOut ? formatTime12Hour(attendance.checkOut) : '—'}</span>
                     </div>
                     {workedHours && (
                         <div className="hours-total">
@@ -199,102 +221,120 @@ const AttendanceCell = ({ day, attendance, contractType, onUpdate, isExpanded })
     const isFuture = isFutureDay();
 
     return (
-        <div
-            ref={cellRef}
-            className={`attendance-cell ${statusConfig.color} ${isWeekend ? 'weekend' : ''} ${!isEditable || isFuture ? 'disabled' : ''} ${isFuture ? 'future' : ''} ${isSelected ? 'selected' : ''}`}
-            onClick={handleCellClick}
-            title={isFuture ? 'Future date - cannot edit' : statusConfig.label}
-        >
-            <div className="cell-main-content">
-                <span className="attendance-status-indicator">{statusConfig.label[0]}</span>
-                {attendance?.notes && <span className="has-notes">*</span>}
-                {renderExpandedInfo()}
+        <>
+            {/* Cell */}
+            <div
+                ref={cellRef}
+                className={`attendance-cell ${statusConfig.color} ${isWeekend ? 'weekend' : ''} ${!isEditable || isFuture ? 'disabled' : ''} ${isFuture ? 'future' : ''}`}
+                onClick={handleCellClick}
+                title={isFuture ? 'Future date - cannot edit' : statusConfig.label}
+            >
+                <div className="cell-main-content">
+                    <span className="attendance-status-indicator">{statusConfig.label[0]}</span>
+                    {attendance?.notes && <span className="has-notes">*</span>}
+                    {renderExpandedInfo()}
+                </div>
             </div>
 
-            {/* Edit Panel - Appears when selected */}
-            {isSelected && (
-                <div className="edit-panel" onClick={(e) => e.stopPropagation()}>
-                    <div className="edit-header">
-                        <span className="day-label">Day {day}</span>
-                        <div className="edit-actions">
-                            <button
-                                className="action-btn save-btn"
-                                onClick={handleSave}
-                                title="Save changes"
-                            >
-                                <FaCheck />
-                            </button>
-                            <button
-                                className="action-btn cancel-btn"
-                                onClick={handleCancel}
-                                title="Cancel"
-                            >
+            {/* Modal */}
+            {isModalOpen && (
+                <div className="attendance-modal-overlay" onClick={handleCancel}>
+                    <div className="attendance-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div className="modal-title">
+                                <h3>Edit Attendance</h3>
+                                <span className="modal-date">{formatDateForModal()}</span>
+                            </div>
+                            <button className="modal-close-btn" onClick={handleCancel}>
                                 <FaTimes />
                             </button>
                         </div>
-                    </div>
 
-                    <div className="status-options">
-                        {statusOptions.map(option => (
-                            <button
-                                key={option.value}
-                                className={`status-option ${option.color} ${tempData.status === option.value ? 'selected' : ''}`}
-                                onClick={() => handleStatusChange(option.value)}
-                            >
-                                {option.label}
+                        <div className="modal-body">
+                            {/* Status Selection */}
+                            <div className="modal-section">
+                                <label className="section-label">Status</label>
+                                <div className="status-grid">
+                                    {statusOptions.map(option => (
+                                        <button
+                                            key={option.value}
+                                            className={`status-option ${option.color} ${tempData.status === option.value ? 'selected' : ''}`}
+                                            onClick={() => handleStatusChange(option.value)}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Contract-specific inputs */}
+                            {contractType === 'MONTHLY' && (tempData.status === 'PRESENT' || tempData.status === 'LATE' || tempData.status === 'HALF_DAY') && (
+                                <div className="modal-section">
+                                    <label className="section-label">Time</label>
+                                    <div className="time-inputs-row">
+                                        <div className="input-field">
+                                            <label>Check In</label>
+                                            <input
+                                                type="time"
+                                                value={tempData.checkIn}
+                                                onChange={(e) => setTempData(prev => ({ ...prev, checkIn: e.target.value }))}
+                                            />
+                                        </div>
+                                        <div className="input-field">
+                                            <label>Check Out</label>
+                                            <input
+                                                type="time"
+                                                value={tempData.checkOut}
+                                                onChange={(e) => setTempData(prev => ({ ...prev, checkOut: e.target.value }))}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {contractType === 'HOURLY' && tempData.status === 'PRESENT' && (
+                                <div className="modal-section">
+                                    <label className="section-label">Hours Worked</label>
+                                    <div className="input-field">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="24"
+                                            step="0.5"
+                                            value={tempData.hoursWorked}
+                                            onChange={(e) => setTempData(prev => ({ ...prev, hoursWorked: e.target.value }))}
+                                            placeholder="Enter hours"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Notes */}
+                            <div className="modal-section">
+                                <label className="section-label">Notes</label>
+                                <div className="input-field">
+                                    <textarea
+                                        value={tempData.notes}
+                                        onChange={(e) => setTempData(prev => ({ ...prev, notes: e.target.value }))}
+                                        placeholder="Add notes..."
+                                        rows={3}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={handleCancel}>
+                                <FaTimes /> Cancel
                             </button>
-                        ))}
-                    </div>
-
-                    {/* Contract-specific inputs */}
-                    {contractType === 'MONTHLY' && (tempData.status === 'PRESENT' || tempData.status === 'LATE' || tempData.status === 'HALF_DAY') && (
-                        <div className="time-inputs">
-                            <div className="input-group">
-                                <label>Check In</label>
-                                <input
-                                    type="time"
-                                    value={tempData.checkIn}
-                                    onChange={(e) => setTempData(prev => ({ ...prev, checkIn: e.target.value }))}
-                                />
-                            </div>
-                            <div className="input-group">
-                                <label>Check Out</label>
-                                <input
-                                    type="time"
-                                    value={tempData.checkOut}
-                                    onChange={(e) => setTempData(prev => ({ ...prev, checkOut: e.target.value }))}
-                                />
-                            </div>
+                            <button className="btn btn-primary" onClick={handleSave}>
+                                <FaCheck /> Save
+                            </button>
                         </div>
-                    )}
-
-                    {contractType === 'HOURLY' && tempData.status === 'PRESENT' && (
-                        <div className="hours-input">
-                            <label>Hours Worked</label>
-                            <input
-                                type="number"
-                                min="0"
-                                max="24"
-                                step="0.5"
-                                value={tempData.hoursWorked}
-                                onChange={(e) => setTempData(prev => ({ ...prev, hoursWorked: e.target.value }))}
-                                placeholder="Enter hours"
-                            />
-                        </div>
-                    )}
-
-                    <div className="notes-input">
-                        <label>Notes</label>
-                        <input
-                            type="text"
-                            value={tempData.notes}
-                            onChange={(e) => setTempData(prev => ({ ...prev, notes: e.target.value }))}
-                            placeholder="Add notes..."
-                        />
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 };
 

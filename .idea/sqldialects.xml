@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="SqlDialectMappings">
-    <file url="file://$PROJECT_DIR$/backend/src/main/resources/db/migration/V20250110__Create_direct_purchase_tables.sql" dialect="GenericSQL" />
-    <file url="file://$PROJECT_DIR$/backend/src/main/resources/db/migration/V20250113__Add_4_step_workflow_to_direct_purchase_tickets.sql" dialect="PostgreSQL" />
-    <file url="PROJECT" dialect="PostgreSQL" />
-  </component>
-</project>

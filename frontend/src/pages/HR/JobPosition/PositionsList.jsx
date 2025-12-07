@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiEdit, FiTrash2, FiClock, FiEye, FiUsers, FiTrendingUp } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiClock, FiUsers, FiTrendingUp } from 'react-icons/fi';
 import AddPositionForm from './components/AddPositionForm.jsx';
 import EditPositionForm from './components/EditPositionForm.jsx';
 import DataTable from '../../../components/common/DataTable/DataTable';
@@ -29,12 +29,16 @@ const PositionsList = () => {
         try {
             const response = await jobPositionService.getAll();
             const data = response.data;
+            console.log(data)
 
-            console.log(data);
             setPositions(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching positions:', err);
-            const errorMessage = err.response?.data?.message || err.message || 'Failed to load positions';
+            // Handle backend custom error response structure
+            const errorMessage = err.response?.data?.userMessage ||
+                err.response?.data?.message ||
+                err.message ||
+                'Failed to load positions';
             setError(errorMessage);
             showError('Failed to load positions. Please try again.');
             setPositions([]);
@@ -46,24 +50,28 @@ const PositionsList = () => {
     const handleAddPosition = async (formData) => {
         try {
             setError(null);
-            const response = await jobPositionService.create(formData);
-
+            await jobPositionService.create(formData);
             await fetchPositions();
             setShowAddForm(false);
             showSuccess('Job position created successfully!');
         } catch (err) {
             console.error('Error adding position:', err);
-            const errorMessage = err.response?.data?.message || err.message || 'Failed to add position';
+            // Prioritize userMessage from backend Controller
+            const errorMessage = err.response?.data?.userMessage ||
+                err.response?.data?.message ||
+                err.message ||
+                'Failed to add position';
             setError(errorMessage);
-            showError('Failed to add position. Please try again.');
-            throw err; // Re-throw to let form handle it
+            showError(errorMessage);
+            throw err;
         }
     };
 
     const handleEditPosition = async (formData) => {
         try {
             setError(null);
-            const response = await jobPositionService.update(selectedPosition.id, formData);
+            // selectedPosition.id is used as the path variable
+            await jobPositionService.update(selectedPosition.id, formData);
 
             await fetchPositions();
             setShowEditForm(false);
@@ -71,10 +79,14 @@ const PositionsList = () => {
             showSuccess('Job position updated successfully!');
         } catch (err) {
             console.error('Error updating position:', err);
-            const errorMessage = err.response?.data?.message || err.message || 'Failed to update position';
+            // Prioritize userMessage from backend Controller (e.g. for duplicates)
+            const errorMessage = err.response?.data?.userMessage ||
+                err.response?.data?.message ||
+                err.message ||
+                'Failed to update position';
             setError(errorMessage);
-            showError('Failed to update position. Please try again.');
-            throw err; // Re-throw to let form handle it
+            showError(errorMessage);
+            throw err;
         }
     };
 
@@ -86,18 +98,18 @@ const PositionsList = () => {
         try {
             setError(null);
             await jobPositionService.delete(id);
-
             await fetchPositions();
             showSuccess('Job position deleted successfully!');
         } catch (err) {
             console.error('Error deleting position:', err);
-            const errorMessage = err.response?.data?.message || err.message || 'Failed to delete position';
+            const errorMessage = err.response?.data?.userMessage ||
+                err.message ||
+                'Failed to delete position';
             setError(errorMessage);
-            showError('Failed to delete position. Please try again.');
+            showError(errorMessage);
         }
     };
 
-    // Handle row click to navigate to details
     const handleRowClick = (row) => {
         navigate(`/hr/positions/${row.id}`);
     };
@@ -105,38 +117,25 @@ const PositionsList = () => {
     // Helper function to format time range
     const formatTimeRange = (startTime, endTime) => {
         if (!startTime || !endTime) return null;
-
-        // Handle different time formats
         const formatTime = (time) => {
             if (!time) return '';
-            // If time is in HH:mm:ss format, extract HH:mm
             if (time.includes(':')) {
                 const parts = time.split(':');
                 return `${parts[0]}:${parts[1]}`;
             }
             return time;
         };
-
-        const formattedStart = formatTime(startTime);
-        const formattedEnd = formatTime(endTime);
-
-        return `${formattedStart} - ${formattedEnd}`;
+        return `${formatTime(startTime)} - ${formatTime(endTime)}`;
     };
 
     // Helper function to calculate working hours from time range
     const calculateWorkingHours = (startTime, endTime) => {
         if (!startTime || !endTime) return null;
-
         try {
             const start = new Date(`1970-01-01T${startTime}`);
             const end = new Date(`1970-01-01T${endTime}`);
             let diffHours = (end - start) / (1000 * 60 * 60);
-
-            // Handle overnight shifts
-            if (diffHours < 0) {
-                diffHours += 24;
-            }
-
+            if (diffHours < 0) diffHours += 24;
             return Math.round(diffHours * 100) / 100;
         } catch (error) {
             return null;
@@ -151,9 +150,8 @@ const PositionsList = () => {
             render: (row) => (
                 <div className="position-name-cell">
                     <div className="position-title">
-                        {row.positionName} - {row.experienceLevel.replace("_"," ")}
+                        {row.positionName} - {row.experienceLevel?.replace("_"," ")}
                     </div>
-                    {/* Show hierarchy info if available */}
                     {row.hierarchyPath && (
                         <div className="hierarchy-path">
                             {row.hierarchyPath}
@@ -167,7 +165,6 @@ const PositionsList = () => {
             accessor: 'department',
             sortable: true
         },
-        // Conditional hierarchy column - only show if any position has hierarchy data
         ...(positions.some(p => p.hierarchyLevel !== undefined || p.isRootPosition !== undefined) ? [{
             header: 'Hierarchy',
             accessor: 'hierarchyLevel',
@@ -204,41 +201,24 @@ const PositionsList = () => {
             sortable: true,
             render: (row) => {
                 const contractType = row.contractType || row.type;
-                if (contractType) {
-                    return contractType.replace('_', ' ');
-                }
-                return 'N/A';
+                return contractType ? contractType.replace('_', ' ') : 'N/A';
             }
         },
-        // {
-        //     header: 'Experience Level',
-        //     accessor: 'experienceLevel',
-        //     sortable: true,
-        //     render: (row) => {
-        //         if (!row.experienceLevel) return 'N/A';
-        //         return row.experienceLevel.replace('_', ' ').toLowerCase()
-        //             .replace(/\b\w/g, l => l.toUpperCase());
-        //     }
-        // },
         {
             header: 'Base Salary',
             accessor: 'baseSalary',
             sortable: true,
             render: (row) => {
-                // Use calculated monthly salary if available, otherwise use base salary
                 const salary = row.calculatedMonthlySalary || row.monthlyBaseSalary || row.baseSalary;
-
                 if (!salary) return 'N/A';
 
                 const contractType = row.contractType || row.type;
 
                 switch (contractType) {
                     case 'HOURLY':
-                        const hourlyRate = row.hourlyRate;
-                        return hourlyRate ? `$${Number(hourlyRate).toLocaleString()}/hr` : 'N/A';
+                        return row.hourlyRate ? `$${Number(row.hourlyRate).toLocaleString()}/hr` : 'N/A';
                     case 'DAILY':
-                        const dailyRate = row.dailyRate;
-                        return dailyRate ? `$${Number(dailyRate).toLocaleString()}/day` : 'N/A';
+                        return row.dailyRate ? `$${Number(row.dailyRate).toLocaleString()}/day` : 'N/A';
                     case 'MONTHLY':
                     default:
                         return `$${Number(salary).toLocaleString()}/month`;
@@ -254,30 +234,22 @@ const PositionsList = () => {
 
                 switch (contractType) {
                     case 'HOURLY':
-                        const daysPerWeek = row.workingDaysPerWeek;
-                        const hoursPerShift = row.hoursPerShift;
                         return (
                             <div className="schedule-info">
-                                {daysPerWeek && <div>{daysPerWeek} days/week</div>}
-                                {hoursPerShift && <div>{hoursPerShift}h/shift</div>}
+                                {row.workingDaysPerWeek && <div>{row.workingDaysPerWeek} days/week</div>}
+                                {row.hoursPerShift && <div>{row.hoursPerShift}h/shift</div>}
                             </div>
                         );
-
                     case 'DAILY':
-                        const daysPerMonth = row.workingDaysPerMonth;
-                        const includesWeekends = row.includesWeekends;
                         return (
                             <div className="schedule-info">
-                                {daysPerMonth && <div>{daysPerMonth} days/month</div>}
-                                {includesWeekends && <div className="schedule-badge">Weekends</div>}
+                                {row.workingDaysPerMonth && <div>{row.workingDaysPerMonth} days/month</div>}
+                                {row.includesWeekends && <div className="schedule-badge">Weekends</div>}
                             </div>
                         );
-
                     case 'MONTHLY':
                         const timeRange = formatTimeRange(row.startTime, row.endTime);
                         const workingHours = calculateWorkingHours(row.startTime, row.endTime) || row.workingHours;
-                        const monthlyDays = row.workingDaysPerMonth;
-
                         return (
                             <div className="schedule-info">
                                 {timeRange && (
@@ -287,39 +259,12 @@ const PositionsList = () => {
                                     </div>
                                 )}
                                 {workingHours && <div>{workingHours}h/day</div>}
-                                {monthlyDays && <div>{monthlyDays} days/month</div>}
+                                {row.workingDaysPerMonth && <div>{row.workingDaysPerMonth} days/month</div>}
                             </div>
                         );
-
                     default:
                         return 'N/A';
                 }
-            }
-        },
-        {
-            header: 'Reporting To',
-            accessor: 'head',
-            sortable: true,
-            render: (row) => {
-                // Show both manager and parent position info if available
-                const manager = row.head;
-                const parentPosition = row.parentJobPositionName;
-
-                return (
-                    <div className="reporting-info">
-                        {manager && (
-                            <div className="manager-name">
-                                {manager}
-                            </div>
-                        )}
-                        {parentPosition && (
-                            <div className="parent-position">
-                                <FiTrendingUp size={12} /> {parentPosition}
-                            </div>
-                        )}
-                        {!manager && !parentPosition && 'N/A'}
-                    </div>
-                );
             }
         },
         {
@@ -335,7 +280,6 @@ const PositionsList = () => {
     ];
 
     const actions = [
-
         {
             label: 'Edit',
             icon: <FiEdit />,
@@ -353,20 +297,16 @@ const PositionsList = () => {
         }
     ];
 
-    // Create filterable columns array based on actual data structure
     const getFilterableColumns = () => {
         const baseColumns = [
             { accessor: 'department', header: 'Department', filterType: 'select' },
             { accessor: 'contractType', header: 'Contract Type', filterType: 'select' },
             { accessor: 'experienceLevel', header: 'Experience Level', filterType: 'select' },
-            // { accessor: 'active', header: 'Status', filterType: 'select' }
         ];
 
-        // Only add hierarchy filters if hierarchy data exists
         if (positions.some(p => p.hierarchyLevel !== undefined || p.isRootPosition !== undefined)) {
             baseColumns.push(
-                { accessor: 'hierarchyLevel', header: 'Hierarchy Level', filterType: 'select' },
-                // { accessor: 'isRootPosition', header: 'Position Type', filterType: 'select' }
+                { accessor: 'hierarchyLevel', header: 'Hierarchy Level', filterType: 'select' }
             );
         }
 
@@ -385,14 +325,7 @@ const PositionsList = () => {
                     <strong>Error:</strong> {error}
                     <button
                         onClick={() => setError(null)}
-                        style={{
-                            marginLeft: '10px',
-                            background: 'none',
-                            border: 'none',
-                            color: 'inherit',
-                            cursor: 'pointer',
-                            fontSize: '16px'
-                        }}
+                        style={{ marginLeft: '10px', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '16px' }}
                     >
                         ×
                     </button>
@@ -416,7 +349,6 @@ const PositionsList = () => {
                 addButtonText="Add Position"
                 addButtonIcon={<FiPlus />}
                 onAddClick={() => setShowAddForm(true)}
-                // Export functionality
                 showExportButton={true}
                 exportFileName="job_positions"
                 exportButtonText="Export Positions"
@@ -427,10 +359,9 @@ const PositionsList = () => {
                     contractType: 'Contract Type',
                     experienceLevel: 'Experience Level',
                     baseSalary: 'Base Salary',
-                    head: 'Reporting To',
                     active: 'Status'
                 }}
-                excludeColumnsFromExport={['workingSchedule', 'hierarchyLevel']}
+                excludeColumnsFromExport={['workingSchedule', 'hierarchyLevel', 'head']}
                 emptyValueText="N/A"
             />
 
