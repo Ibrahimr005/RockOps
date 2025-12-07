@@ -13,12 +13,16 @@ class WebSocketService {
     }
 
     // Get the correct WebSocket URL based on environment
+    // Get the correct WebSocket URL based on environment
     getWebSocketURL() {
         const hostname = window.location.hostname;
 
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
             // Local development
             return 'http://localhost:8080/ws';
+        } else if (hostname.includes('s3-website') || hostname.includes('s3.amazonaws.com')) {
+            // AWS S3 deployment
+            return 'http://rockops-backend-lb-97958241.us-east-1.elb.amazonaws.com/ws';
         } else if (hostname.includes('dev-rock-ops.vercel.app')) {
             // Development deployment
             return 'https://rockops.onrender.com/ws';
@@ -26,8 +30,8 @@ class WebSocketService {
             // Production deployment
             return 'https://rockops-backend.onrender.com/ws';
         } else {
-            // Fallback to local
-            return 'http://localhost:8080/ws';
+            // Fallback to AWS backend
+            return 'http://rockops-backend-lb-97958241.us-east-1.elb.amazonaws.com/ws';
         }
     }
 
