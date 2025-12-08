@@ -11,6 +11,7 @@ import MaintenanceAddModal from '../MaintenanceAddModal/MaintenanceAddModal';
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
 import PageHeader from '../../../components/common/PageHeader';
 import TransactionViewModal from '../../warehouse/WarehouseViewTransactions/TransactionViewModal/TransactionViewModal.jsx';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 
 const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, onAddTransactionClick, showAddButton = true, showHeader = true }, ref) => {
     const [maintenanceRecords, setMaintenanceRecords] = useState([]);
@@ -24,8 +25,12 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
     const [editingMaintenance, setEditingMaintenance] = useState(null);
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState(null);
+    const [deleteConfirmationState, setDeleteConfirmationState] = useState({
+        isOpen: false,
+        maintenance: null
+    });
 
-    const { showSuccess, showError, showInfo, showWarning, showConfirmation, hideSnackbar } = useSnackbar();
+    const { showSuccess, showError, showInfo, showWarning } = useSnackbar();
 
     // Get authentication context and permissions
     const auth = useAuth();
@@ -41,7 +46,7 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                 response.data.map(async (record) => {
                     // Get transaction info
                     const transactionCount = record.relatedTransactions?.length || 0;
-                    
+
                     // Extract maintenance type name from the MaintenanceType object
                     const maintenanceTypeName = record.maintenanceType?.name || record.maintenanceType || 'N/A';
 
@@ -92,7 +97,7 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                 (record.description?.toLowerCase() || '').includes(term.toLowerCase()) ||
                 (record.status?.toLowerCase() || '').includes(term.toLowerCase())
             ).length;
-            
+
             if (filteredCount === 0) {
                 showWarning(`No maintenance records found matching "${term}"`);
             } else {
@@ -127,11 +132,11 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
     // Format status for display (remove underscores and capitalize properly)
     const formatStatusDisplay = (status) => {
         if (!status) return "Unknown";
-        
+
         // Handle specific status formatting
         if (status === "IN_MAINTENANCE") return "In Maintenance";
         if (status === "IN_USE") return "In Use";
-        
+
         // For other statuses, replace underscores with spaces and capitalize properly
         return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
@@ -194,29 +199,27 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
         }
     };
 
-    const handleDeleteMaintenance = async (row) => {
-        const message = `Are you sure you want to delete the maintenance record "${row.maintenanceType}" performed by ${row.technicianName}? This action cannot be undone.`;
+    const handleDeleteMaintenance = (row) => {
+        setDeleteConfirmationState({
+            isOpen: true,
+            maintenance: row
+        });
+    };
 
-        showConfirmation(
-            message,
-            async () => {
-                try {
-                    await inSiteMaintenanceService.delete(equipmentId, row.id);
-                    await fetchMaintenanceRecords(); // Refresh the list and wait for completion
-                    // Small delay to ensure UI updates, then show success message with longer duration
-                    setTimeout(() => {
-                        showSuccess(`Maintenance record "${row.maintenanceType}" deleted successfully!`, 5000);
-                    }, 100);
-                } catch (error) {
-                    console.error('Error deleting maintenance record:', error);
-                    showError(`Failed to delete maintenance record "${row.maintenanceType}". Please try again.`, 5000);
-                }
-            },
-            () => {
-                // Optional: Handle cancel action if needed
-                console.log('Delete cancelled');
-            }
-        );
+    const confirmDeleteMaintenance = async () => {
+        const row = deleteConfirmationState.maintenance;
+        if (!row) return;
+
+        try {
+            await inSiteMaintenanceService.delete(equipmentId, row.id);
+            await fetchMaintenanceRecords(); // Refresh the list
+            showSuccess(`Maintenance record "${row.maintenanceType}" deleted successfully!`);
+        } catch (error) {
+            console.error('Error deleting maintenance record:', error);
+            showError(`Failed to delete maintenance record "${row.maintenanceType}". Please try again.`);
+        } finally {
+            setDeleteConfirmationState({ isOpen: false, maintenance: null });
+        }
     };
 
     const handleCloseEditModal = () => {
@@ -247,7 +250,7 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                     itemCategory: item.itemCategory || item.itemType?.category || "Unknown Category"
                 })) || []
             };
-            
+
             setSelectedTransaction(enrichedTransaction);
             setIsTransactionModalOpen(true);
         } catch (error) {
@@ -286,13 +289,13 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
         { header: 'Type', accessor: 'maintenanceType' },
         { header: 'Description', accessor: 'description', render: (rowData) => rowData.description?.length > 50 ? `${rowData.description.substring(0, 50)}...` : rowData.description },
         { header: 'Status', accessor: 'status', render: (rowData) => <span className={`r4m-status-badge r4m-${rowData.status.toLowerCase()}`}>{formatStatusDisplay(rowData.status)}</span> },
-        { 
-            header: 'Transaction', 
-            accessor: 'transaction', 
+        {
+            header: 'Transaction',
+            accessor: 'transaction',
             render: (rowData) => {
                 if (!rowData.relatedTransactions || rowData.relatedTransactions.length === 0) {
                     return (
-                        <span 
+                        <span
                             className="r4m-no-transactions"
                             title="No transactions linked to this maintenance record"
                         >
@@ -300,7 +303,7 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                         </span>
                     );
                 }
-                
+
                 // Show buttons for each transaction
                 return (
                     <div className="r4m-transaction-buttons">
@@ -372,7 +375,7 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                         showFilters={true}
                         filterableColumns={filterableColumns}
                         emptyMessage={
-                            searchTerm 
+                            searchTerm
                                 ? `No maintenance records found matching "${searchTerm}". Try different search terms or clear the search to see all records.`
                                 : "No maintenance records found. Create your first maintenance record using the Add button."
                         }
@@ -400,19 +403,19 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                         onExportComplete={(result) => showSuccess(`Exported ${result.rowCount} maintenance records to Excel`)}
                         onExportError={(error) => showError("Failed to export maintenance records")}
                     />
-                ) }
+                )}
             </div>
 
             {/* Maintenance Transaction Modal */}
             {isMaintenanceTransactionModalOpen && (
-                            <MaintenanceTransactionModal
-                isOpen={isMaintenanceTransactionModalOpen}
-                onClose={handleCloseMaintenanceTransactionModal}
-                equipmentId={equipmentId}
-                maintenanceId={selectedMaintenanceId}
-                initialBatchNumber={selectedBatchNumber}
-                onTransactionAdded={handleTransactionAdded}
-            />
+                <MaintenanceTransactionModal
+                    isOpen={isMaintenanceTransactionModalOpen}
+                    onClose={handleCloseMaintenanceTransactionModal}
+                    equipmentId={equipmentId}
+                    maintenanceId={selectedMaintenanceId}
+                    initialBatchNumber={selectedBatchNumber}
+                    onTransactionAdded={handleTransactionAdded}
+                />
             )}
 
             {/* Transaction View Modal */}
@@ -432,6 +435,17 @@ const InSiteMaintenanceLog = forwardRef(({ equipmentId, onAddMaintenanceClick, o
                     editingMaintenance={editingMaintenance}
                 />
             )}
+
+            <ConfirmationDialog
+                isVisible={deleteConfirmationState.isOpen}
+                title="Delete Maintenance Record"
+                message={deleteConfirmationState.maintenance ? `Are you sure you want to delete the maintenance record "${deleteConfirmationState.maintenance.maintenanceType}" performed by ${deleteConfirmationState.maintenance.technicianName}? This action cannot be undone.` : ''}
+                onConfirm={confirmDeleteMaintenance}
+                onCancel={() => setDeleteConfirmationState({ isOpen: false, maintenance: null })}
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="delete"
+            />
         </div>
     );
 });
