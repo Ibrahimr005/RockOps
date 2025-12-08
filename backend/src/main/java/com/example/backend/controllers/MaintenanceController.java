@@ -4,7 +4,6 @@ import com.example.backend.dtos.*;
 import com.example.backend.dto.merchant.MerchantDTO;
 import com.example.backend.dtos.UserDto;
 import com.example.backend.exceptions.MaintenanceException;
-import com.example.backend.models.MaintenanceRecord;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.services.MaintenanceService;
 import com.example.backend.services.ContactService;

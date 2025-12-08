@@ -1,4 +1,4 @@
-package com.example.backend.models;
+package com.example.backend.models.maintenance;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -45,12 +45,3 @@ public class StepType {
         updatedAt = LocalDateTime.now();
     }
 }
-
-
-
-
-
-
-
-
-

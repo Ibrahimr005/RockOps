@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaSearch, FaTools, FaFilter, FaTimes, FaEye,FaList,FaEdit,FaTrash  } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaTools, FaFilter, FaTimes, FaEye, FaList, FaEdit, FaTrash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -33,6 +33,7 @@ const MaintenanceRecords = () => {
     const [delegatingRecord, setDelegatingRecord] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeMenuId, setActiveMenuId] = useState(null);
+    const [viewingRecordType, setViewingRecordType] = useState('MAINTENANCE');
     const [filters, setFilters] = useState({
         status: 'all',
         ticketType: 'all', // Filter by ticket type: 'all', 'MAINTENANCE', 'DIRECT_PURCHASE'
@@ -114,6 +115,7 @@ const MaintenanceRecords = () => {
             try {
                 const directPurchaseResponse = await directPurchaseService.getAllTickets();
                 directPurchaseTickets = directPurchaseResponse.data || [];
+                console.log(directPurchaseTickets);
             } catch (directPurchaseError) {
                 console.error('Error loading direct purchase tickets:', directPurchaseError);
                 hasError = true;
@@ -192,7 +194,7 @@ const MaintenanceRecords = () => {
             // Transform direct purchase tickets
             const transformedDirectPurchaseTickets = directPurchaseTickets.map(ticket => {
                 const isCompleted = ticket.status === 'COMPLETED';
-                const expectedTotalCost = ticket.totalExpectedCost || 0;
+                const expectedTotalCost = ticket.expectedTotalCost || ticket.totalExpectedCost || 0;
                 const actualTotalCost = ticket.totalActualCost || 0;
 
                 // Count completed steps for new workflow
@@ -222,8 +224,9 @@ const MaintenanceRecords = () => {
                     currentResponsiblePhone: ticket.responsiblePersonPhone || '',
                     currentResponsibleEmail: ticket.responsiblePersonEmail || '',
                     site: ticket.site || 'N/A',
-                    totalCost: isCompleted ? actualTotalCost : expectedTotalCost,
+                    totalCost: isCompleted ? actualTotalCost : (expectedTotalCost || ticket.expectedCost),
                     expectedTotalCost: expectedTotalCost,
+                    expectedCost: ticket.expectedCost,
                     actualTotalCost: actualTotalCost,
                     costDifference: actualTotalCost - expectedTotalCost,
                     isActualCost: isCompleted,
@@ -286,14 +289,13 @@ const MaintenanceRecords = () => {
     };
 
     const handleViewRecord = (record) => {
-        if (record.ticketType === 'DIRECT_PURCHASE') {
-            // Navigate directly to direct purchase detail view
-            navigate(`/maintenance/direct-purchase/${record.id}`);
-        } else {
-            // Show maintenance record view modal
-            setViewingRecordId(record.id);
-            setIsViewModalOpen(true);
-        }
+        // Show view modal for both types
+        setViewingRecordId(record.id);
+        // We need to pass the type to the modal, but the modal currently only takes ID.
+        // We'll update the state to include the type or update the modal to accept it.
+        // For now, let's assume we can pass an object or use a separate state.
+        setViewingRecordType(record.ticketType);
+        setIsViewModalOpen(true);
     };
 
     const handleViewSteps = (record) => {
@@ -404,28 +406,37 @@ const MaintenanceRecords = () => {
 
     const handleDelegateSubmit = async (recordId, newResponsibleUserId) => {
         try {
-            // Fetch the full record first
-            const recordResponse = await maintenanceService.getRecordById(recordId);
-            const fullRecord = recordResponse.data;
+            // Check if it's a direct purchase ticket
+            const isDirectPurchase = delegatingRecord?.ticketType === 'DIRECT_PURCHASE';
 
-            // Update only the responsibleUserId while keeping all other fields
-            const updateData = {
-                equipmentId: fullRecord.equipmentId,
-                issueDate: fullRecord.issueDate,
-                sparePartName: fullRecord.sparePartName,
-                initialIssueDescription: fullRecord.initialIssueDescription,
-                expectedCompletionDate: fullRecord.expectedCompletionDate,
-                estimatedCost: fullRecord.estimatedCost || fullRecord.totalCost,
-                responsibleUserId: newResponsibleUserId
-            };
+            if (isDirectPurchase) {
+                // Use the specialized delegate endpoint which bypasses full DTO validation
+                await directPurchaseService.delegateTicket(recordId, newResponsibleUserId);
+                showSuccess('Direct purchase ticket delegated successfully');
+            } else {
+                // Fetch the full record first
+                const recordResponse = await maintenanceService.getRecordById(recordId);
+                const fullRecord = recordResponse.data;
 
-            await maintenanceService.updateRecord(recordId, updateData);
+                // Update only the responsibleUserId while keeping all other fields
+                const updateData = {
+                    equipmentId: fullRecord.equipmentId,
+                    issueDate: fullRecord.issueDate,
+                    sparePartName: fullRecord.sparePartName,
+                    initialIssueDescription: fullRecord.initialIssueDescription,
+                    expectedCompletionDate: fullRecord.expectedCompletionDate,
+                    estimatedCost: fullRecord.estimatedCost || fullRecord.totalCost,
+                    responsibleUserId: newResponsibleUserId
+                };
 
-            showSuccess('Maintenance record delegated successfully');
+                await maintenanceService.updateRecord(recordId, updateData);
+                showSuccess('Maintenance record delegated successfully');
+            }
+
             await loadMaintenanceRecords();
         } catch (error) {
-            console.error('Error delegating maintenance record:', error);
-            showError('Failed to delegate maintenance record');
+            console.error('Error delegating record:', error);
+            showError(`Failed to delegate ${delegatingRecord?.ticketType === 'DIRECT_PURCHASE' ? 'ticket' : 'record'}`);
             throw error; // Re-throw to let modal handle it
         }
     };
@@ -957,6 +968,7 @@ const MaintenanceRecords = () => {
                         setViewingRecordId(null);
                     }}
                     recordId={viewingRecordId}
+                    ticketType={viewingRecordType}
                 />
             )}
 

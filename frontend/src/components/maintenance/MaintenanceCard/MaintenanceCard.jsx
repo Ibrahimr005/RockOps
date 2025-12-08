@@ -3,25 +3,29 @@ import { FaEllipsisV, FaExclamationCircle, FaUser, FaMapMarkerAlt, FaDollarSign,
 import './MaintenanceCard.scss';
 
 const MaintenanceCard = ({
-                             record,
-                             onViewRecord,
-                             onViewSteps,
-                             onAddStep,
-                             onEdit,
-                             onDelete,
-                             onDelegate,
-                             activeMenuId,
-                             setActiveMenuId,
-                             canEdit,
-                             canDelete,
-                             canDelegate,
-                             formatCurrency,
-                             formatDate,
-                             getStatusBadge
-                         }) => {
+    record,
+    onViewRecord,
+    onViewSteps,
+    onAddStep,
+    onEdit,
+    onDelete,
+    onDelegate,
+    activeMenuId,
+    setActiveMenuId,
+    canEdit,
+    canDelete,
+    canDelegate,
+    formatCurrency,
+    formatDate,
+    getStatusBadge
+}) => {
     // Determine cost display based on status
     const getCostDisplay = () => {
-        const { status, expectedTotalCost, actualTotalCost, costDifference } = record;
+        // Handle field naming differences between MaintenanceRecord and DirectPurchaseTicket
+        const status = record.status;
+        const expectedTotalCost = record.expectedCost || record.expectedTotalCost || record.totalExpectedCost || 0;
+        const actualTotalCost = record.actualTotalCost || record.totalActualCost || 0;
+        const costDifference = record.costDifference || (actualTotalCost - expectedTotalCost);
 
         if (status === 'COMPLETED') {
             // FINISHED: Show only Total Cost
@@ -151,16 +155,18 @@ const MaintenanceCard = ({
                                 >
                                     <FaEye /> Quick View
                                 </button>
-                                <button
-                                    className="menu-item"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onViewSteps(record);
-                                    }}
-                                >
-                                    <FaList /> View Steps
-                                </button>
-                                {record.status !== 'COMPLETED' && (
+                                {record.ticketType !== 'DIRECT_PURCHASE' && (
+                                    <button
+                                        className="menu-item"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onViewSteps(record);
+                                        }}
+                                    >
+                                        <FaList /> View Steps
+                                    </button>
+                                )}
+                                {record.status !== 'COMPLETED' && record.ticketType !== 'DIRECT_PURCHASE' && (
                                     <button
                                         className="menu-item"
                                         onClick={(e) => {
@@ -171,7 +177,7 @@ const MaintenanceCard = ({
                                         <FaPlus /> Add Step
                                     </button>
                                 )}
-                                {canEdit && (
+                                {canEdit && record.ticketType !== 'DIRECT_PURCHASE' && (
                                     <button
                                         className="menu-item"
                                         onClick={(e) => {
@@ -221,7 +227,9 @@ const MaintenanceCard = ({
                         <div className="info-label">
                             {record.ticketType === 'DIRECT_PURCHASE' ? 'Description' : 'Issue'}
                         </div>
-                        <div className="info-value">{record.initialIssueDescription}</div>
+                        <div className="info-value">
+                            {record.initialIssueDescription || record.description}
+                        </div>
                     </div>
                 </div>
 
@@ -238,7 +246,7 @@ const MaintenanceCard = ({
                         <div className="info-details">
                             <div className="info-label">Responsible</div>
                             <div className="info-value">
-                                {record.currentResponsiblePerson || 'Not assigned'}
+                                {record.currentResponsiblePerson || record.responsiblePersonName || 'Not assigned'}
                             </div>
                         </div>
                     </div>
@@ -268,8 +276,7 @@ const MaintenanceCard = ({
                     </div>
                 </div>
 
-                {/* Timeline */}
-                <div className="info-item">
+                <div className="info-item timeline-item">
                     <div className="info-icon-wrapper">
                         <FaClock className="info-icon" />
                     </div>
@@ -282,12 +289,13 @@ const MaintenanceCard = ({
                                 </div>
                             )}
                             <div className="date-item">
-                                Created: {formatDate(record.creationDate)}
+                                Creation Date: {formatDate(record.creationDate || record.createdAt)}
                             </div>
                             <div className="date-item">
-                                {record.actualCompletionDate
-                                    ? `Completed: ${formatDate(record.actualCompletionDate)}`
-                                    : `Expected: ${formatDate(record.expectedCompletionDate)}`
+                                {/* Handle completion/expected dates for both types */}
+                                {(record.actualCompletionDate || record.completedAt)
+                                    ? `Completed At: ${formatDate(record.actualCompletionDate || record.completedAt)}`
+                                    : `Expected Completion Date:  ${formatDate(record.expectedCompletionDate || record.expectedEndDate)}`
                                 }
                             </div>
                             {record.totalSteps > 0 && (

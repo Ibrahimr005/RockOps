@@ -61,6 +61,13 @@ public class DirectPurchaseTicketDto {
     private BigDecimal totalExpectedCost;
     private BigDecimal totalActualCost;
 
+    // Display fields for frontend parity
+    private BigDecimal expectedCost;
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private java.time.LocalDate expectedEndDate;
+    private String site;
+    private String ticketType;
+
     // Related entity information (for display)
     private String equipmentName;
     private String equipmentModel;

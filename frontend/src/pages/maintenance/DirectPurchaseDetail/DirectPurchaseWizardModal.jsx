@@ -327,7 +327,7 @@ const DirectPurchaseWizardModal = ({ isOpen, ticketId, initialStep = 1, onClose,
                 <div className="wizard-modal-header">
                     <div className="header-content">
                         <h2>{currentStepInfo.title}</h2>
-                        <p className="header-description">{currentStepInfo.description}</p>
+                        {/*<p className="header-description">{currentStepInfo.description}</p>*/}
                     </div>
                     <button className="close-button" onClick={onClose}>
                         <FaTimes />

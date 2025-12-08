@@ -266,13 +266,14 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
                         onChange={handleInputChange}
                         className={errors.siteId ? 'error' : ''}
                     >
-                        <option value="">All sites...</option>
-                        <option value="none">Equipment not assigned to a site</option>
+                        <option value="">All sites</option>
                         {siteList.map(site => (
                             <option key={site.id} value={site.id}>
                                 {site.name}
                             </option>
                         ))}
+                        <option value="none">none</option>
+
                     </select>
                     {errors.siteId && <span className="error-message">{errors.siteId}</span>}
                     <small className="field-hint">Filter equipment by site</small>
@@ -322,7 +323,7 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
 
                 {/* Expected Cost */}
                 <div className="form-group">
-                    <label>Expected Cost</label>
+                    <label className="required" >Expected Cost</label>
                     <input
                         type="number"
                         name="expectedCost"
@@ -340,7 +341,7 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
 
                 {/* Expected End Date */}
                 <div className="form-group">
-                    <label>Expected End Date</label>
+                    <label className="required" >Expected End Date</label>
                     <input
                         type="date"
                         name="expectedEndDate"

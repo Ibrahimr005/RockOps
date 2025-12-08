@@ -1,4 +1,4 @@
-package com.example.backend.models;
+package com.example.backend.models.maintenance;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;

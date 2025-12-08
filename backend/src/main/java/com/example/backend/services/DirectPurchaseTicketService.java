@@ -128,8 +128,7 @@ public class DirectPurchaseTicketService {
                     notificationMessage,
                     com.example.backend.models.notification.NotificationType.INFO,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
 
             log.info("✅ Notification sent for new direct purchase ticket: {}", savedTicket.getId());
         } catch (Exception e) {
@@ -182,7 +181,8 @@ public class DirectPurchaseTicketService {
         // Update fields if provided
         if (dto.getEquipmentId() != null) {
             Equipment equipment = equipmentRepository.findById(dto.getEquipmentId())
-                    .orElseThrow(() -> new MaintenanceException("Equipment not found with id: " + dto.getEquipmentId()));
+                    .orElseThrow(
+                            () -> new MaintenanceException("Equipment not found with id: " + dto.getEquipmentId()));
             ticket.setEquipment(equipment);
         }
 
@@ -194,12 +194,14 @@ public class DirectPurchaseTicketService {
 
         if (dto.getResponsibleUserId() != null) {
             User responsibleUser = userRepository.findById(dto.getResponsibleUserId())
-                    .orElseThrow(() -> new MaintenanceException("User not found with id: " + dto.getResponsibleUserId()));
+                    .orElseThrow(
+                            () -> new MaintenanceException("User not found with id: " + dto.getResponsibleUserId()));
 
             // Validate user has appropriate role
             List<Role> allowedRoles = Arrays.asList(Role.ADMIN, Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE);
             if (!allowedRoles.contains(responsibleUser.getRole())) {
-                throw new MaintenanceException("User must have Admin, Maintenance Manager, or Maintenance Employee role");
+                throw new MaintenanceException(
+                        "User must have Admin, Maintenance Manager, or Maintenance Employee role");
             }
 
             ticket.setResponsibleUser(responsibleUser);
@@ -241,8 +243,7 @@ public class DirectPurchaseTicketService {
                     notificationMessage,
                     com.example.backend.models.notification.NotificationType.INFO,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
         } catch (Exception e) {
             log.error("❌ Failed to send notification for direct purchase ticket update", e);
         }
@@ -286,7 +287,8 @@ public class DirectPurchaseTicketService {
             // Send completion notification
             try {
                 String notificationTitle = "Direct Purchase Ticket Completed";
-                String notificationMessage = String.format("Direct purchase ticket for %s has been completed. Total cost: $%.2f",
+                String notificationMessage = String.format(
+                        "Direct purchase ticket for %s has been completed. Total cost: $%.2f",
                         ticket.getEquipment().getName(), totalActualCost);
                 String actionUrl = "/maintenance/direct-purchase/" + ticketId;
                 String relatedEntity = "DirectPurchaseTicket:" + ticketId;
@@ -296,8 +298,7 @@ public class DirectPurchaseTicketService {
                         notificationMessage,
                         com.example.backend.models.notification.NotificationType.SUCCESS,
                         actionUrl,
-                        relatedEntity
-                );
+                        relatedEntity);
             } catch (Exception e) {
                 log.error("❌ Failed to send notification for direct purchase ticket completion", e);
             }
@@ -343,8 +344,10 @@ public class DirectPurchaseTicketService {
     }
 
     private DirectPurchaseTicketDto convertToDto(DirectPurchaseTicket ticket) {
-        // Calculate total actual cost by loading steps separately to avoid lazy loading issues
-        List<DirectPurchaseStep> steps = stepRepository.findByDirectPurchaseTicketIdOrderByStepNumberAsc(ticket.getId());
+        // Calculate total actual cost by loading steps separately to avoid lazy loading
+        // issues
+        List<DirectPurchaseStep> steps = stepRepository
+                .findByDirectPurchaseTicketIdOrderByStepNumberAsc(ticket.getId());
         BigDecimal totalActualCost = steps.stream()
                 .filter(step -> step.getStatus() == DirectPurchaseStepStatus.COMPLETED)
                 .map(DirectPurchaseStep::getActualCost)
@@ -373,12 +376,20 @@ public class DirectPurchaseTicketService {
                 .merchantName(ticket.getMerchant() != null ? ticket.getMerchant().getName() : null)
                 .responsiblePersonName(ticket.getResponsiblePersonName())
                 .responsiblePersonPhone(ticket.getResponsiblePersonPhone())
+                // New fields for frontend dashboard consistency
+                .expectedCost(ticket.getExpectedCost())
+                .expectedEndDate(ticket.getExpectedEndDate())
+                .site(ticket.getEquipment() != null && ticket.getEquipment().getSite() != null
+                        ? ticket.getEquipment().getSite().getName()
+                        : "N/A")
+                .ticketType("DIRECT_PURCHASE")
                 .build();
     }
 
     private DirectPurchaseTicketDetailsDto convertToDetailsDto(DirectPurchaseTicket ticket) {
         // Get legacy steps (for legacy tickets)
-        List<DirectPurchaseStep> steps = stepRepository.findByDirectPurchaseTicketIdOrderByStepNumberAsc(ticket.getId());
+        List<DirectPurchaseStep> steps = stepRepository
+                .findByDirectPurchaseTicketIdOrderByStepNumberAsc(ticket.getId());
         List<DirectPurchaseStepDto> stepDtos = steps.stream()
                 .map(this::convertStepToDto)
                 .collect(Collectors.toList());
@@ -408,7 +419,8 @@ public class DirectPurchaseTicketService {
         }
 
         // Build DTO with ALL fields (legacy + new workflow)
-        DirectPurchaseTicketDetailsDto.DirectPurchaseTicketDetailsDtoBuilder builder = DirectPurchaseTicketDetailsDto.builder()
+        DirectPurchaseTicketDetailsDto.DirectPurchaseTicketDetailsDtoBuilder builder = DirectPurchaseTicketDetailsDto
+                .builder()
                 .id(ticket.getId())
                 .equipmentId(ticket.getEquipment() != null ? ticket.getEquipment().getId() : null)
                 .merchantId(ticket.getMerchant() != null ? ticket.getMerchant().getId() : null)
@@ -424,8 +436,12 @@ public class DirectPurchaseTicketService {
                 .equipmentName(ticket.getEquipment() != null ? ticket.getEquipment().getName() : "Unknown Equipment")
                 .equipmentModel(ticket.getEquipment() != null ? ticket.getEquipment().getModel() : "N/A")
                 .equipmentSerialNumber(ticket.getEquipment() != null ? ticket.getEquipment().getSerialNumber() : "N/A")
-                .equipmentType(ticket.getEquipment() != null && ticket.getEquipment().getType() != null ? ticket.getEquipment().getType().getName() : null)
-                .site(ticket.getEquipment() != null && ticket.getEquipment().getSite() != null ? ticket.getEquipment().getSite().getName() : "N/A")
+                .equipmentType(ticket.getEquipment() != null && ticket.getEquipment().getType() != null
+                        ? ticket.getEquipment().getType().getName()
+                        : null)
+                .site(ticket.getEquipment() != null && ticket.getEquipment().getSite() != null
+                        ? ticket.getEquipment().getSite().getName()
+                        : "N/A")
                 .responsiblePersonName(ticket.getResponsiblePersonName())
                 .responsiblePersonPhone(ticket.getResponsiblePersonPhone())
                 .responsiblePersonEmail(ticket.getResponsiblePersonEmail());
@@ -469,10 +485,15 @@ public class DirectPurchaseTicketService {
                     // Step 4 fields
                     .transportFromLocation(ticket.getTransportFromLocation())
                     .transportToSiteId(ticket.getTransportToSite() != null ? ticket.getTransportToSite().getId() : null)
-                    .transportToSiteName(ticket.getTransportToSite() != null ? ticket.getTransportToSite().getName() : null)
+                    .transportToSiteName(
+                            ticket.getTransportToSite() != null ? ticket.getTransportToSite().getName() : null)
                     .actualTransportationCost(ticket.getActualTransportationCost())
-                    .transportResponsibleContactId(ticket.getTransportResponsibleContact() != null ? ticket.getTransportResponsibleContact().getId() : null)
-                    .transportResponsibleEmployeeId(ticket.getTransportResponsibleEmployee() != null ? ticket.getTransportResponsibleEmployee().getId() : null)
+                    .transportResponsibleContactId(ticket.getTransportResponsibleContact() != null
+                            ? ticket.getTransportResponsibleContact().getId()
+                            : null)
+                    .transportResponsibleEmployeeId(ticket.getTransportResponsibleEmployee() != null
+                            ? ticket.getTransportResponsibleEmployee().getId()
+                            : null)
                     .transportResponsiblePersonName(ticket.getTransportResponsiblePersonName())
                     .transportResponsiblePersonPhone(ticket.getTransportResponsiblePersonPhone())
                     .transportResponsiblePersonEmail(ticket.getTransportResponsiblePersonEmail())
@@ -539,6 +560,7 @@ public class DirectPurchaseTicketService {
 
     /**
      * Get the currently authenticated user
+     * 
      * @return The current authenticated user, or null if not authenticated
      */
     private User getCurrentAuthenticatedUser() {
@@ -562,7 +584,9 @@ public class DirectPurchaseTicketService {
 
     /**
      * STEP 1: Create new ticket with basic information
-     * Creates a ticket with title, description, equipment, and initial items (name + quantity only)
+     * Creates a ticket with title, description, equipment, and initial items (name
+     * + quantity only)
+     * 
      * @param dto Step 1 creation data
      * @return Created ticket details
      */
@@ -611,7 +635,7 @@ public class DirectPurchaseTicketService {
                 .description(dto.getDescription())
                 .expectedCost(dto.getExpectedCost())
                 .expectedEndDate(dto.getExpectedEndDate())
-                .isLegacyTicket(false)  // Mark as NEW workflow
+                .isLegacyTicket(false) // Mark as NEW workflow
                 .currentStep(DirectPurchaseWorkflowStep.CREATION)
                 .step1StartedAt(LocalDateTime.now())
                 .step1Completed(false)
@@ -645,8 +669,7 @@ public class DirectPurchaseTicketService {
                     notificationMessage,
                     com.example.backend.models.notification.NotificationType.INFO,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
             log.info("✅ Notification sent for new direct purchase ticket: {}", savedTicket.getId());
         } catch (Exception e) {
             log.error("❌ Failed to send notification for direct purchase ticket creation", e);
@@ -657,6 +680,7 @@ public class DirectPurchaseTicketService {
 
     /**
      * STEP 1: Complete Step 1 and progress to Step 2
+     * 
      * @param ticketId Ticket ID
      * @return Updated ticket details
      */
@@ -689,7 +713,6 @@ public class DirectPurchaseTicketService {
 
         // Validate at least one item
         List<DirectPurchaseItem> items = itemRepository.findByDirectPurchaseTicketId(ticketId);
-        ticket.setItems(items);
         if (items.isEmpty()) {
             throw new MaintenanceException("At least one item is required");
         }
@@ -697,10 +720,10 @@ public class DirectPurchaseTicketService {
         // Complete Step 1 and progress to Step 2
         ticket.setStep1Completed(true);
         ticket.setStep1CompletedAt(LocalDateTime.now());
-        ticket.progressToNextStep();  // This sets currentStep to PURCHASING and step2StartedAt
+        ticket.progressToNextStep(); // This sets currentStep to PURCHASING and step2StartedAt
 
         DirectPurchaseTicket savedTicket = ticketRepository.save(ticket);
-        log.info("✅ Step 1 completed for ticket: {}. Now on Step 2: PURCHASING", ticketId);
+        log.info("Step 1 completed for ticket: {}. Now on Step 2: PURCHASING", ticketId);
 
         return convertToDetailsDto(savedTicket);
     }
@@ -708,10 +731,12 @@ public class DirectPurchaseTicketService {
     /**
      * STEP 2: Update purchasing information
      * Set merchant, add expected costs to items, set down payment
+     * 
      * @param ticketId Ticket ID
-     * @param dto Step 2 update data
+     * @param dto      Step 2 update data
      * @return Updated ticket details
      */
+
     public DirectPurchaseTicketDetailsDto updateStep2(UUID ticketId, UpdateDirectPurchaseStep2Dto dto) {
         log.info("Updating Step 2 for ticket: {}", ticketId);
 
@@ -776,6 +801,7 @@ public class DirectPurchaseTicketService {
 
     /**
      * STEP 2: Complete Step 2 and progress to Step 3
+     * 
      * @param ticketId Ticket ID
      * @return Updated ticket details
      */
@@ -792,7 +818,8 @@ public class DirectPurchaseTicketService {
 
         // Validate current step
         if (ticket.getCurrentStep() != DirectPurchaseWorkflowStep.PURCHASING) {
-            throw new MaintenanceException("Ticket is not in PURCHASING step. Current step: " + ticket.getCurrentStep());
+            throw new MaintenanceException(
+                    "Ticket is not in PURCHASING step. Current step: " + ticket.getCurrentStep());
         }
 
         // Validate merchant is set
@@ -802,7 +829,8 @@ public class DirectPurchaseTicketService {
 
         // Load items and validate all items have expected costs
         List<DirectPurchaseItem> items = itemRepository.findByDirectPurchaseTicketId(ticketId);
-        ticket.setItems(items);
+        // ticket.setItems(items); // Removing this line to prevent orphan deletion
+        // error
         if (!ticket.allItemsHaveExpectedCosts()) {
             throw new MaintenanceException("All items must have expected costs before completing Step 2");
         }
@@ -810,7 +838,7 @@ public class DirectPurchaseTicketService {
         // Complete Step 2 and progress to Step 3
         ticket.setStep2Completed(true);
         ticket.setStep2CompletedAt(LocalDateTime.now());
-        ticket.progressToNextStep();  // Sets currentStep to FINALIZE_PURCHASING and step3StartedAt
+        ticket.progressToNextStep(); // Sets currentStep to FINALIZE_PURCHASING and step3StartedAt
 
         DirectPurchaseTicket savedTicket = ticketRepository.save(ticket);
         log.info("✅ Step 2 completed for ticket: {}. Now on Step 3: FINALIZE_PURCHASING", ticketId);
@@ -821,8 +849,9 @@ public class DirectPurchaseTicketService {
     /**
      * STEP 3: Update finalize purchasing information
      * Set actual costs for items
+     * 
      * @param ticketId Ticket ID
-     * @param dto Step 3 update data
+     * @param dto      Step 3 update data
      * @return Updated ticket details
      */
     public DirectPurchaseTicketDetailsDto updateStep3(UUID ticketId, UpdateDirectPurchaseStep3Dto dto) {
@@ -877,6 +906,7 @@ public class DirectPurchaseTicketService {
 
     /**
      * STEP 3: Complete Step 3 and progress to Step 4
+     * 
      * @param ticketId Ticket ID
      * @return Updated ticket details
      */
@@ -893,12 +923,14 @@ public class DirectPurchaseTicketService {
 
         // Validate current step
         if (ticket.getCurrentStep() != DirectPurchaseWorkflowStep.FINALIZE_PURCHASING) {
-            throw new MaintenanceException("Ticket is not in FINALIZE_PURCHASING step. Current step: " + ticket.getCurrentStep());
+            throw new MaintenanceException(
+                    "Ticket is not in FINALIZE_PURCHASING step. Current step: " + ticket.getCurrentStep());
         }
 
         // Load items and validate all items have actual costs
         List<DirectPurchaseItem> items = itemRepository.findByDirectPurchaseTicketId(ticketId);
-        ticket.setItems(items);
+        // ticket.setItems(items); // Removing this line to prevent orphan deletion
+        // error
         if (!ticket.allItemsHaveActualCosts()) {
             throw new MaintenanceException("All items must have actual costs before completing Step 3");
         }
@@ -906,7 +938,7 @@ public class DirectPurchaseTicketService {
         // Complete Step 3 and progress to Step 4
         ticket.setStep3Completed(true);
         ticket.setStep3CompletedAt(LocalDateTime.now());
-        ticket.progressToNextStep();  // Sets currentStep to TRANSPORTING and step4StartedAt
+        ticket.progressToNextStep(); // Sets currentStep to TRANSPORTING and step4StartedAt
 
         DirectPurchaseTicket savedTicket = ticketRepository.save(ticket);
         log.info("✅ Step 3 completed for ticket: {}. Now on Step 4: TRANSPORTING", ticketId);
@@ -917,8 +949,9 @@ public class DirectPurchaseTicketService {
     /**
      * STEP 4: Update transporting information
      * Set transport from/to, cost, and responsible person
+     * 
      * @param ticketId Ticket ID
-     * @param dto Step 4 update data
+     * @param dto      Step 4 update data
      * @return Updated ticket details
      */
     public DirectPurchaseTicketDetailsDto updateStep4(UUID ticketId, UpdateDirectPurchaseStep4Dto dto) {
@@ -946,7 +979,8 @@ public class DirectPurchaseTicketService {
         // Update transport to site
         if (dto.getTransportToSiteId() != null) {
             Site site = siteRepository.findById(dto.getTransportToSiteId())
-                    .orElseThrow(() -> new MaintenanceException("Site not found with id: " + dto.getTransportToSiteId()));
+                    .orElseThrow(
+                            () -> new MaintenanceException("Site not found with id: " + dto.getTransportToSiteId()));
             ticket.setTransportToSite(site);
         } else if (ticket.getTransportToSite() == null) {
             // Default to equipment's site if not set
@@ -965,21 +999,24 @@ public class DirectPurchaseTicketService {
 
         // Update responsible person (either contact OR employee)
         if (dto.getTransportResponsibleContactId() != null && dto.getTransportResponsibleEmployeeId() != null) {
-            throw new MaintenanceException("Cannot set both contact and employee as transport responsible person. Choose one.");
+            throw new MaintenanceException(
+                    "Cannot set both contact and employee as transport responsible person. Choose one.");
         }
 
         if (dto.getTransportResponsibleContactId() != null) {
             Contact contact = contactRepository.findById(dto.getTransportResponsibleContactId())
-                    .orElseThrow(() -> new MaintenanceException("Contact not found with id: " + dto.getTransportResponsibleContactId()));
+                    .orElseThrow(() -> new MaintenanceException(
+                            "Contact not found with id: " + dto.getTransportResponsibleContactId()));
             ticket.setTransportResponsibleContact(contact);
-            ticket.setTransportResponsibleEmployee(null);  // Clear employee if contact is set
+            ticket.setTransportResponsibleEmployee(null); // Clear employee if contact is set
         }
 
         if (dto.getTransportResponsibleEmployeeId() != null) {
             Employee employee = employeeRepository.findById(dto.getTransportResponsibleEmployeeId())
-                    .orElseThrow(() -> new MaintenanceException("Employee not found with id: " + dto.getTransportResponsibleEmployeeId()));
+                    .orElseThrow(() -> new MaintenanceException(
+                            "Employee not found with id: " + dto.getTransportResponsibleEmployeeId()));
             ticket.setTransportResponsibleEmployee(employee);
-            ticket.setTransportResponsibleContact(null);  // Clear contact if employee is set
+            ticket.setTransportResponsibleContact(null); // Clear contact if employee is set
         }
 
         DirectPurchaseTicket savedTicket = ticketRepository.save(ticket);
@@ -990,6 +1027,7 @@ public class DirectPurchaseTicketService {
 
     /**
      * STEP 4: Complete Step 4 and mark ticket as COMPLETED
+     * 
      * @param ticketId Ticket ID
      * @return Updated ticket details
      */
@@ -1006,7 +1044,8 @@ public class DirectPurchaseTicketService {
 
         // Validate current step
         if (ticket.getCurrentStep() != DirectPurchaseWorkflowStep.TRANSPORTING) {
-            throw new MaintenanceException("Ticket is not in TRANSPORTING step. Current step: " + ticket.getCurrentStep());
+            throw new MaintenanceException(
+                    "Ticket is not in TRANSPORTING step. Current step: " + ticket.getCurrentStep());
         }
 
         // Validate required fields
@@ -1026,7 +1065,7 @@ public class DirectPurchaseTicketService {
         // Complete Step 4 and mark ticket as COMPLETED
         ticket.setStep4Completed(true);
         ticket.setStep4CompletedAt(LocalDateTime.now());
-        ticket.progressToNextStep();  // Sets currentStep to COMPLETED, completedAt, and status to COMPLETED
+        ticket.progressToNextStep(); // Sets currentStep to COMPLETED, completedAt, and status to COMPLETED
 
         DirectPurchaseTicket savedTicket = ticketRepository.save(ticket);
         log.info("🎉 Step 4 completed! Ticket {} is now COMPLETED!", ticketId);
@@ -1034,7 +1073,8 @@ public class DirectPurchaseTicketService {
         // Send completion notification
         try {
             String notificationTitle = "Direct Purchase Ticket Completed";
-            String notificationMessage = String.format("Direct purchase ticket '%s' for %s has been completed. Total cost: $%.2f",
+            String notificationMessage = String.format(
+                    "Direct purchase ticket '%s' for %s has been completed. Total cost: $%.2f",
                     ticket.getTitle(), ticket.getEquipment().getName(), ticket.getTotalActualCost());
             String actionUrl = "/maintenance/direct-purchase/" + ticketId;
             String relatedEntity = "DirectPurchaseTicket:" + ticketId;
@@ -1044,13 +1084,27 @@ public class DirectPurchaseTicketService {
                     notificationMessage,
                     com.example.backend.models.notification.NotificationType.SUCCESS,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
             log.info("✅ Completion notification sent for ticket: {}", ticketId);
         } catch (Exception e) {
             log.error("❌ Failed to send completion notification for ticket: {}", ticketId, e);
         }
 
+        return convertToDetailsDto(savedTicket);
+    }
+
+    public DirectPurchaseTicketDetailsDto delegateTicket(UUID id, UUID responsibleUserId) {
+        log.info("Delegating direct purchase ticket: {} to user: {}", id, responsibleUserId);
+
+        DirectPurchaseTicket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new MaintenanceException("Ticket not found with id: " + id));
+
+        User newResponsibleUser = userRepository.findById(responsibleUserId)
+                .orElseThrow(() -> new MaintenanceException("User not found with id: " + responsibleUserId));
+
+        ticket.setResponsibleUser(newResponsibleUser);
+
+        DirectPurchaseTicket savedTicket = ticketRepository.save(ticket);
         return convertToDetailsDto(savedTicket);
     }
 }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiEdit, FiTrash2, FiClock, FiUsers, FiTrendingUp } from 'react-icons/fi';
 import AddPositionForm from './components/AddPositionForm.jsx';
 import EditPositionForm from './components/EditPositionForm.jsx';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
@@ -18,10 +19,24 @@ const PositionsList = () => {
     const [showAddForm, setShowAddForm] = useState(false);
     const [showEditForm, setShowEditForm] = useState(false);
     const [selectedPosition, setSelectedPosition] = useState(null);
+    const [positionToDelete, setPositionToDelete] = useState(null);
 
     useEffect(() => {
         fetchPositions();
     }, []);
+
+    // Disable background scrolling when modals are open
+    useEffect(() => {
+        if (showAddForm || showEditForm) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddForm, showEditForm]);
 
     const fetchPositions = async () => {
         setLoading(true);
@@ -90,14 +105,16 @@ const PositionsList = () => {
         }
     };
 
-    const handleDeletePosition = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this position?')) {
-            return;
-        }
+    const handleDeletePosition = (row) => {
+        setPositionToDelete(row);
+    };
+
+    const confirmDelete = async () => {
+        if (!positionToDelete) return;
 
         try {
             setError(null);
-            await jobPositionService.delete(id);
+            await jobPositionService.delete(positionToDelete.id);
             await fetchPositions();
             showSuccess('Job position deleted successfully!');
         } catch (err) {
@@ -107,6 +124,8 @@ const PositionsList = () => {
                 'Failed to delete position';
             setError(errorMessage);
             showError(errorMessage);
+        } finally {
+            setPositionToDelete(null);
         }
     };
 
@@ -150,7 +169,7 @@ const PositionsList = () => {
             render: (row) => (
                 <div className="position-name-cell">
                     <div className="position-title">
-                        {row.positionName} - {row.experienceLevel?.replace("_"," ")}
+                        {row.positionName} - {row.experienceLevel?.replace("_", " ")}
                     </div>
                     {row.hierarchyPath && (
                         <div className="hierarchy-path">
@@ -293,7 +312,7 @@ const PositionsList = () => {
             label: 'Delete',
             icon: <FiTrash2 />,
             className: 'danger',
-            onClick: (row) => handleDeletePosition(row.id)
+            onClick: (row) => handleDeletePosition(row)
         }
     ];
 
@@ -388,6 +407,17 @@ const PositionsList = () => {
                     position={selectedPosition}
                 />
             )}
+
+            <ConfirmationDialog
+                isVisible={!!positionToDelete}
+                type="danger"
+                title="Delete Position"
+                message={`Are you sure you want to delete the position "${positionToDelete?.positionName}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={confirmDelete}
+                onCancel={() => setPositionToDelete(null)}
+            />
         </div>
     );
 };

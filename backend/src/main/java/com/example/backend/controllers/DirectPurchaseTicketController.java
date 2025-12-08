@@ -29,7 +29,8 @@ public class DirectPurchaseTicketController {
     // Ticket endpoints
 
     @PostMapping
-    public ResponseEntity<DirectPurchaseTicketDetailsDto> createTicket(@Valid @RequestBody CreateDirectPurchaseTicketDto dto) {
+    public ResponseEntity<DirectPurchaseTicketDetailsDto> createTicket(
+            @Valid @RequestBody CreateDirectPurchaseTicketDto dto) {
         try {
             DirectPurchaseTicketDetailsDto created = ticketService.createTicket(dto);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
@@ -113,6 +114,22 @@ public class DirectPurchaseTicketController {
         }
     }
 
+    @PutMapping("/{id}/delegate")
+    public ResponseEntity<DirectPurchaseTicketDetailsDto> delegateTicket(
+            @PathVariable UUID id,
+            @Valid @RequestBody DelegateTicketDto dto) {
+        try {
+            DirectPurchaseTicketDetailsDto updated = ticketService.delegateTicket(id, dto.getResponsibleUserId());
+            return ResponseEntity.ok(updated);
+        } catch (MaintenanceException e) {
+            log.error("Error delegating direct purchase ticket: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Unexpected error delegating direct purchase ticket: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     // ========================================
     // NEW 4-STEP WORKFLOW ENDPOINTS
     // ========================================
@@ -122,7 +139,8 @@ public class DirectPurchaseTicketController {
      * POST /api/direct-purchase-tickets/workflow/step-1
      */
     @PostMapping("/workflow/step-1")
-    public ResponseEntity<DirectPurchaseTicketDetailsDto> createTicketStep1(@Valid @RequestBody CreateDirectPurchaseStep1Dto dto) {
+    public ResponseEntity<DirectPurchaseTicketDetailsDto> createTicketStep1(
+            @Valid @RequestBody CreateDirectPurchaseStep1Dto dto) {
         try {
             DirectPurchaseTicketDetailsDto created = ticketService.createTicketStep1(dto);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);

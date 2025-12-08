@@ -1,7 +1,7 @@
 package com.example.backend.services;
 
 import com.example.backend.dto.dashboard.*;
-import com.example.backend.models.MaintenanceRecord;
+import com.example.backend.models.maintenance.MaintenanceRecord;
 import com.example.backend.models.hr.LeaveRequest;
 import com.example.backend.models.warehouse.ItemStatus;
 import com.example.backend.models.equipment.EquipmentStatus;

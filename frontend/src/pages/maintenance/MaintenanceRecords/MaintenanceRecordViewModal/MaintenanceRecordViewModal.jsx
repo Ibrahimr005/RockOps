@@ -3,11 +3,12 @@ import { FaTimes, FaEye, FaTools, FaUser, FaCalendarAlt, FaDollarSign, FaInfoCir
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import maintenanceService from '../../../../services/maintenanceService.js';
+import directPurchaseService from '../../../../services/directPurchaseService.js';
 import '../../../../styles/modal-styles.scss';
 import '../../../../styles/cancel-modal-button.scss';
 import './MaintenanceRecordViewModal.scss';
 
-const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId }) => {
+const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId, ticketType }) => {
     const navigate = useNavigate();
     const [maintenanceRecord, setMaintenanceRecord] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -38,8 +39,32 @@ const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId }) => {
             setLoading(true);
             setError(null);
 
-            const response = await maintenanceService.getRecordById(recordId);
-            setMaintenanceRecord(response.data);
+            if (ticketType === 'DIRECT_PURCHASE') {
+                const response = await directPurchaseService.getTicketById(recordId);
+                const data = response.data;
+                // Normalize for display
+                setMaintenanceRecord({
+                    ...data,
+                    initialIssueDescription: data.title || data.description || 'Direct Purchase Ticket',
+                    equipmentName: data.equipmentName || (data.equipment ? data.equipment.name : 'Unknown Equipment'),
+                    equipmentModel: data.equipmentModel || (data.equipment ? data.equipment.model : 'N/A'),
+                    equipmentSerialNumber: data.equipmentSerialNumber || (data.equipment ? data.equipment.serialNumber : 'N/A'),
+                    equipmentType: data.equipmentType || (data.equipment ? data.equipment.type : 'N/A'),
+                    site: data.site || (data.equipment && data.equipment.site ? data.equipment.site.name : 'N/A'),
+                    creationDate: data.createdAt,
+                    expectedCompletionDate: data.expectedEndDate,
+                    actualCompletionDate: data.completedAt,
+                    currentResponsiblePerson: data.responsiblePersonName,
+                    currentResponsiblePhone: data.responsiblePersonPhone,
+                    currentResponsibleEmail: data.responsiblePersonEmail,
+                    totalCost: data.totalCost || data.expectedCost || 0,
+                    // Direct Purchase specific
+                    merchantName: data.merchantName || (data.merchant ? data.merchant.name : null)
+                });
+            } else {
+                const response = await maintenanceService.getRecordById(recordId);
+                setMaintenanceRecord(response.data);
+            }
         } catch (error) {
             console.error('Error loading maintenance record:', error);
             setError('Failed to load maintenance record. Please try again.');
@@ -116,15 +141,8 @@ const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId }) => {
                         )}
                     </div>
                     <div className="header-actions">
-                        <button
-                            className="btn-secondary"
-                            onClick={handleViewFullDetails}
-                            title="View full details with steps"
-                        >
-                            <FaExternalLinkAlt />
-                            Full Details
-                        </button>
-                        <button className="modal-close btn-cancel" onClick={onClose}>
+
+                        <button className="btn-close" onClick={onClose}>
                             <FaTimes />
                         </button>
                     </div>
@@ -255,6 +273,12 @@ const MaintenanceRecordViewModal = ({ isOpen, onClose, recordId }) => {
                                         <label>Active Steps</label>
                                         <span>{maintenanceRecord.activeSteps || 0}</span>
                                     </div>
+                                    {maintenanceRecord.merchantName && (
+                                        <div className="info-row">
+                                            <label>Merchant</label>
+                                            <span>{maintenanceRecord.merchantName}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

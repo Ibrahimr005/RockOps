@@ -13,7 +13,7 @@ import apiClient from '../../../utils/apiClient.js';
 import '../../../styles/modal-styles.scss';
 import '../../../styles/cancel-modal-button.scss';
 import './MaintenanceStepModal.scss';
-import {merchantService} from "../../../services/merchant/merchantService.js";
+import { merchantService } from "../../../services/merchant/merchantService.js";
 
 const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintenanceRecord, restoredFormData }) => {
     const navigate = useNavigate();
@@ -69,7 +69,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
         if (isOpen) {
             // Prevent background scroll when modal is open
             document.body.style.overflow = 'hidden';
-            
+
             loadAvailableContacts();
             loadStepTypes();
             loadContactTypes();
@@ -172,12 +172,12 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
 
     const loadExistingSteps = async () => {
         if (!maintenanceRecord?.id) return;
-        
+
         try {
             const response = await apiClient.get(`/api/maintenance/records/${maintenanceRecord.id}/steps`);
             const steps = response.data || [];
             setExistingSteps(steps);
-            
+
             // Calculate current location for new steps
             calculateCurrentLocation(steps);
         } catch (error) {
@@ -196,7 +196,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
 
         // Get the last step
         const lastStep = steps[steps.length - 1];
-        
+
         // If last step was TRANSPORT, current location is its toLocation
         if (lastStep.stepTypeName && lastStep.stepTypeName.toUpperCase() === 'TRANSPORT') {
             setCurrentLocation(lastStep.toLocation || '');
@@ -210,24 +210,39 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     const loadEquipmentAndEmployees = async () => {
         try {
             console.log('Loading equipment and employees for maintenance record:', maintenanceRecord);
-            
+
             // Use equipmentService to get equipment
             const equipmentResponse = await equipmentService.getEquipmentById(maintenanceRecord.equipmentId);
             const equipment = equipmentResponse.data;
             console.log('Equipment loaded:', equipment);
-            
-            if (equipment.siteId) {
+
+            if (equipment?.siteId) {
                 // Load employees from that site
                 console.log('Fetching employees for site:', equipment.siteId);
                 const employeesResponse = await siteService.getSiteEmployees(equipment.siteId);
                 console.log('Employees loaded:', employeesResponse.data);
-                setAvailableEmployees(employeesResponse.data || []);
+
+                // Robustly handle response data
+                let employees = [];
+                if (employeesResponse.data && Array.isArray(employeesResponse.data)) {
+                    employees = employeesResponse.data;
+                } else if (employeesResponse.data && Array.isArray(employeesResponse.data.content)) {
+                    employees = employeesResponse.data.content;
+                } else if (Array.isArray(employeesResponse.data)) {
+                    employees = employeesResponse.data;
+                } else {
+                    console.warn('Unexpected employees response format:', employeesResponse);
+                }
+
+                setAvailableEmployees(employees);
             } else {
                 console.log('No site found on equipment, equipment object:', equipment);
+                setAvailableEmployees([]);
             }
         } catch (error) {
             console.error('Error loading equipment and employees:', error);
             console.error('Error details:', error.response);
+            setAvailableEmployees([]); // Ensure it's always an array on error
         }
     };
 
@@ -358,7 +373,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                 showError(`Cannot add new step. Please complete all previous steps first. Incomplete steps: ${incompleteDescriptions}`);
                 return false; // Return early, don't set errors object
             }
-            
+
             // VALIDATION: Check if start date is >= latest step's completion date
             if (incompleteSteps.length === 0 && existingSteps.length > 0) {
                 const latestStep = existingSteps[existingSteps.length - 1];
@@ -476,7 +491,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (validateForm()) {
             const submitData = {
                 stepTypeId: formData.stepTypeId,
@@ -514,7 +529,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                 submitData.fromLocation = formData.fromLocation || currentLocation;
                 submitData.toLocation = formData.fromLocation || currentLocation;
             }
-            
+
             console.log('Submitting maintenance step data:', submitData);
             try {
                 await onSubmit(submitData);
@@ -603,496 +618,496 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                 </div>
 
                 <div className="modal-body">
-                <form onSubmit={handleSubmit} className="maintenance-step-form" id="maintenance-step-form">
-                    <div className="form-section">
-                        <h3>Step Information</h3>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="stepTypeId">
-                                    Step Type <span className="required">*</span>
-                                </label>
-                                <select
-                                    id="stepTypeId"
-                                    name="stepTypeId"
-                                    value={formData.stepTypeId}
-                                    onChange={handleInputChange}
-                                    className={errors.stepTypeId ? 'error' : ''}
-                                >
-                                    <option value="">Select Step Type</option>
-                                    {stepTypes.map(type => (
-                                        <option key={type.id} value={type.id}>
-                                            {type.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.stepTypeId && <span className="error-message">{errors.stepTypeId}</span>}
-                            </div>
-                        </div>
-                        
-                        <div className="form-group">
-                            <label htmlFor="description">
-                                Description <span className="required">*</span>
-                            </label>
-                            <textarea
-                                id="description"
-                                name="description"
-                                value={formData.description}
-                                onChange={handleInputChange}
-                                placeholder="Describe the maintenance step in detail..."
-                                rows={4}
-                                className={errors.description ? 'error' : ''}
-                            />
-                            {errors.description && <span className="error-message">{errors.description}</span>}
-                        </div>
-                    </div>
-
-                    <div className="form-section">
-                        <h3>Responsible Person Assignment</h3>
-                        <div className="radio-group">
-                            <label className="radio-option">
-                                <input
-                                    type="radio"
-                                    name="responsiblePersonType"
-                                    value="site"
-                                    checked={responsiblePersonType === 'site'}
-                                    onChange={handleResponsibleTypeChange}
-                                />
-                                <span>From Equipment Site</span>
-                            </label>
-                            {/*<label className="radio-option">*/}
-                            {/*    <input*/}
-                            {/*        type="radio"*/}
-                            {/*        name="responsiblePersonType"*/}
-                            {/*        value="external"*/}
-                            {/*        checked={responsiblePersonType === 'external'}*/}
-                            {/*        onChange={handleResponsibleTypeChange}*/}
-                            {/*    />*/}
-                            {/*    <span>External Contact</span>*/}
-                            {/*</label>*/}
-                            <label className="radio-option">
-                                <input
-                                    type="radio"
-                                    name="responsiblePersonType"
-                                    value="merchant"
-                                    checked={responsiblePersonType === 'merchant'}
-                                    onChange={handleResponsibleTypeChange}
-                                />
-                                <span>Merchant</span>
-                            </label>
-                        </div>
-
-                        {responsiblePersonType === 'site' ? (
-                            <div className="form-group">
-                                <label htmlFor="responsibleEmployeeId">
-                                    Responsible Employee <span className="required">*</span>
-                                </label>
-                                <select
-                                    id="responsibleEmployeeId"
-                                    name="responsibleEmployeeId"
-                                    value={formData.responsibleEmployeeId}
-                                    onChange={handleInputChange}
-                                    className={errors.responsibleEmployeeId ? 'error' : ''}
-                                >
-                                    <option value="">Select Employee</option>
-                                    {availableEmployees.map(employee => (
-                                        <option key={employee.id} value={employee.id}>
-                                            {employee.fullName} {employee.jobPosition ? `- ${employee.jobPosition.positionName}` : ''}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.responsibleEmployeeId && <span className="error-message">{errors.responsibleEmployeeId}</span>}
-                                {availableEmployees.length === 0 && (
-                                    <span className="info-text">No employees available from equipment site</span>
-                                )}
-                            </div>
-                        ) : responsiblePersonType === 'external' ? (
-                            <div className="form-group">
-                                <label htmlFor="responsibleContactId">
-                                    Responsible Contact <span className="required">*</span>
-                                </label>
-                                <div className="contact-field-wrapper">
-                                    <div className="contact-dropdown">
-                                        <select
-                                            id="responsibleContactId"
-                                            name="responsibleContactId"
-                                            value={formData.responsibleContactId}
-                                            onChange={handleInputChange}
-                                            className={errors.responsibleContactId ? 'error' : ''}
-                                            disabled={loading}
-                                        >
-                                            <option value="">Select Contact</option>
-                                        {availableContacts.map(contact => (
-                                            <option key={contact.id} value={contact.id}>
-                                                {contact.firstName} {contact.lastName} - {contact.contactType}
-                                            </option>
-                                        ))}
-                                        </select>
-                                        {errors.responsibleContactId && <span className="error-message">{errors.responsibleContactId}</span>}
-                                        {loading && <span className="info-text">Loading contacts...</span>}
-                                    </div>
-                                    <button
-                                        type="button"
-                                        className="add-contact-btn"
-                                        onClick={handleAddNewContact}
-                                        title="Add New Contact"
-                                    >
-                                        <FaPlus /> Add Contact
-                                    </button>
-                                </div>
-
-                                {formData.responsibleContactId && getSelectedContact() && (
-                                    <div className="contact-details">
-                                        <div className="contact-name">
-                                            {getSelectedContact()?.firstName} {getSelectedContact()?.lastName}
-                                        </div>
-                                        <div className="contact-info">
-                                            <FaEnvelope /> {getSelectedContact()?.email}
-                                        </div>
-                                        <div className="contact-info">
-                                            <FaPhone /> {getSelectedContact()?.phoneNumber}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ) : responsiblePersonType === 'merchant' ? (
-                            <div className="merchant-section">
-                                <div className="form-group">
-                                    <label htmlFor="selectedMerchantId">
-                                        Select Merchant <span className="required">*</span>
-                                    </label>
-                                    <select
-                                        id="selectedMerchantId"
-                                        name="selectedMerchantId"
-                                        value={formData.selectedMerchantId || ''}
-                                        onChange={handleInputChange}
-                                        required
-                                        className={errors.selectedMerchantId ? 'error' : ''}
-                                    >
-                                        <option value="">Select a merchant...</option>
-
-                                        {Array.isArray(merchants) && merchants.filter(m => m.merchantType === 'SERVICE_PROVIDER').length > 0 && (
-                                            <optgroup label="Service Providers">
-                                                {merchants
-                                                    .filter(m => m.merchantType === 'SERVICE_PROVIDER')
-                                                    .map(merchant => (
-                                                        <option key={merchant.id} value={merchant.id}>
-                                                            {merchant.name}
-                                                        </option>
-                                                    ))
-                                                }
-                                            </optgroup>
-                                        )}
-
-                                        {Array.isArray(merchants) && merchants.filter(m => m.merchantType === 'SUPPLIER').length > 0 && (
-                                            <optgroup label="Suppliers">
-                                                {merchants
-                                                    .filter(m => m.merchantType === 'SUPPLIER')
-                                                    .map(merchant => (
-                                                        <option key={merchant.id} value={merchant.id}>
-                                                            {merchant.name}
-                                                        </option>
-                                                    ))
-                                                }
-                                            </optgroup>
-                                        )}
-
-                                        {Array.isArray(merchants) && merchants.filter(m => !m.merchantType || (m.merchantType !== 'SERVICE_PROVIDER' && m.merchantType !== 'SUPPLIER')).length > 0 && (
-                                            <optgroup label="Other">
-                                                {merchants
-                                                    .filter(m => !m.merchantType || (m.merchantType !== 'SERVICE_PROVIDER' && m.merchantType !== 'SUPPLIER'))
-                                                    .map(merchant => (
-                                                        <option key={merchant.id} value={merchant.id}>
-                                                            {merchant.name}
-                                                        </option>
-                                                    ))
-                                                }
-                                            </optgroup>
-                                        )}
-                                    </select>
-                                    {errors.selectedMerchantId && <span className="error-message">{errors.selectedMerchantId}</span>}
-                                </div>
-
-                                {/* Merchant Contact Dropdown (Cascading) */}
-                                {formData.selectedMerchantId && (
-                                    <div className="form-group">
-                                        <label htmlFor="merchantContactId">
-                                            Select Contact from Merchant
-                                        </label>
-                                        <select
-                                            id="merchantContactId"
-                                            name="responsibleContactId"
-                                            value={formData.responsibleContactId || ''}
-                                            onChange={handleInputChange}
-                                        >
-                                            <option value="">Select a contact (optional)...</option>
-                                            {merchantContacts.map(contact => (
-                                                <option key={contact.id} value={contact.id}>
-                                                    {contact.firstName} {contact.lastName} - {contact.position || contact.email}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {merchantContacts.length === 0 && (
-                                            <span className="info-text">No contacts available for this merchant</span>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* Merchant Items */}
-                                {formData.selectedMerchantId && (
-                                    <div className="merchant-items-section">
-                                        <h4>Items / Services</h4>
-                                        <p className="section-description">
-                                            Add description and cost for each item or service provided by the merchant
-                                        </p>
-
-                                        {merchantItems.map((item, index) => (
-                                            <div key={index} className="merchant-item-row">
-                                                <div className="form-group flex-grow">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Item description"
-                                                        value={item.description}
-                                                        onChange={(e) => {
-                                                            const updated = [...merchantItems];
-                                                            updated[index].description = e.target.value;
-                                                            setMerchantItems(updated);
-                                                        }}
-                                                        required
-                                                    />
-                                                </div>
-
-                                                <div className="form-group cost-input">
-                                                    <input
-                                                        type="number"
-                                                        placeholder="Cost"
-                                                        value={item.cost}
-                                                        onChange={(e) => {
-                                                            const updated = [...merchantItems];
-                                                            updated[index].cost = e.target.value;
-                                                            setMerchantItems(updated);
-                                                        }}
-                                                        min="0"
-                                                        step="0.01"
-                                                        required
-                                                    />
-                                                </div>
-
-                                                {merchantItems.length > 1 && (
-                                                    <button
-                                                        type="button"
-                                                        className="remove-item-button"
-                                                        onClick={() => {
-                                                            setMerchantItems(merchantItems.filter((_, i) => i !== index));
-                                                        }}
-                                                        title="Remove item"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ))}
-
-                                        <button
-                                            type="button"
-                                            className="add-item-button"
-                                            onClick={() => {
-                                                setMerchantItems([...merchantItems, { description: '', cost: '' }]);
-                                            }}
-                                        >
-                                            + Add Item
-                                        </button>
-
-                                        {merchantItems.length > 0 && (
-                                            <div className="merchant-total">
-                                                <strong>Total:</strong> $
-                                                {merchantItems
-                                                    .reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0)
-                                                    .toFixed(2)
-                                                }
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        ) : null}
-                    </div>
-
-                    {selectedStepType?.name?.toUpperCase() === 'TRANSPORT' && (
+                    <form onSubmit={handleSubmit} className="maintenance-step-form" id="maintenance-step-form">
                         <div className="form-section">
-                            <h3>Location & Movement</h3>
+                            <h3>Step Information</h3>
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label htmlFor="fromLocation">
-                                        From Location (Current Location) <span className="required">*</span>
+                                    <label htmlFor="stepTypeId">
+                                        Step Type <span className="required">*</span>
+                                    </label>
+                                    <select
+                                        id="stepTypeId"
+                                        name="stepTypeId"
+                                        value={formData.stepTypeId}
+                                        onChange={handleInputChange}
+                                        className={errors.stepTypeId ? 'error' : ''}
+                                    >
+                                        <option value="">Select Step Type</option>
+                                        {stepTypes.map(type => (
+                                            <option key={type.id} value={type.id}>
+                                                {type.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.stepTypeId && <span className="error-message">{errors.stepTypeId}</span>}
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="description">
+                                    Description <span className="required">*</span>
+                                </label>
+                                <textarea
+                                    id="description"
+                                    name="description"
+                                    value={formData.description}
+                                    onChange={handleInputChange}
+                                    placeholder="Describe the maintenance step in detail..."
+                                    rows={4}
+                                    className={errors.description ? 'error' : ''}
+                                />
+                                {errors.description && <span className="error-message">{errors.description}</span>}
+                            </div>
+                        </div>
+
+                        <div className="form-section">
+                            <h3>Responsible Person Assignment</h3>
+                            <div className="radio-group">
+                                <label className="radio-option">
+                                    <input
+                                        type="radio"
+                                        name="responsiblePersonType"
+                                        value="site"
+                                        checked={responsiblePersonType === 'site'}
+                                        onChange={handleResponsibleTypeChange}
+                                    />
+                                    <span>From Equipment Site</span>
+                                </label>
+                                {/*<label className="radio-option">*/}
+                                {/*    <input*/}
+                                {/*        type="radio"*/}
+                                {/*        name="responsiblePersonType"*/}
+                                {/*        value="external"*/}
+                                {/*        checked={responsiblePersonType === 'external'}*/}
+                                {/*        onChange={handleResponsibleTypeChange}*/}
+                                {/*    />*/}
+                                {/*    <span>External Contact</span>*/}
+                                {/*</label>*/}
+                                <label className="radio-option">
+                                    <input
+                                        type="radio"
+                                        name="responsiblePersonType"
+                                        value="merchant"
+                                        checked={responsiblePersonType === 'merchant'}
+                                        onChange={handleResponsibleTypeChange}
+                                    />
+                                    <span>Merchant</span>
+                                </label>
+                            </div>
+
+                            {responsiblePersonType === 'site' ? (
+                                <div className="form-group">
+                                    <label htmlFor="responsibleEmployeeId">
+                                        Responsible Employee <span className="required">*</span>
+                                    </label>
+                                    <select
+                                        id="responsibleEmployeeId"
+                                        name="responsibleEmployeeId"
+                                        value={formData.responsibleEmployeeId}
+                                        onChange={handleInputChange}
+                                        className={errors.responsibleEmployeeId ? 'error' : ''}
+                                    >
+                                        <option value="">Select Employee</option>
+                                        {Array.isArray(availableEmployees) && availableEmployees.map(employee => (
+                                            <option key={employee?.id || Math.random()} value={employee?.id}>
+                                                {employee?.fullName || 'Unknown Name'} {employee?.jobPosition?.positionName ? `- ${employee.jobPosition.positionName}` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.responsibleEmployeeId && <span className="error-message">{errors.responsibleEmployeeId}</span>}
+                                    {(!Array.isArray(availableEmployees) || availableEmployees.length === 0) && (
+                                        <span className="info-text">No employees available from equipment site</span>
+                                    )}
+                                </div>
+                            ) : responsiblePersonType === 'external' ? (
+                                <div className="form-group">
+                                    <label htmlFor="responsibleContactId">
+                                        Responsible Contact <span className="required">*</span>
+                                    </label>
+                                    <div className="contact-field-wrapper">
+                                        <div className="contact-dropdown">
+                                            <select
+                                                id="responsibleContactId"
+                                                name="responsibleContactId"
+                                                value={formData.responsibleContactId}
+                                                onChange={handleInputChange}
+                                                className={errors.responsibleContactId ? 'error' : ''}
+                                                disabled={loading}
+                                            >
+                                                <option value="">Select Contact</option>
+                                                {availableContacts.map(contact => (
+                                                    <option key={contact.id} value={contact.id}>
+                                                        {contact.firstName} {contact.lastName} - {contact.contactType}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {errors.responsibleContactId && <span className="error-message">{errors.responsibleContactId}</span>}
+                                            {loading && <span className="info-text">Loading contacts...</span>}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="add-contact-btn"
+                                            onClick={handleAddNewContact}
+                                            title="Add New Contact"
+                                        >
+                                            <FaPlus /> Add Contact
+                                        </button>
+                                    </div>
+
+                                    {formData.responsibleContactId && getSelectedContact() && (
+                                        <div className="contact-details">
+                                            <div className="contact-name">
+                                                {getSelectedContact()?.firstName} {getSelectedContact()?.lastName}
+                                            </div>
+                                            <div className="contact-info">
+                                                <FaEnvelope /> {getSelectedContact()?.email}
+                                            </div>
+                                            <div className="contact-info">
+                                                <FaPhone /> {getSelectedContact()?.phoneNumber}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : responsiblePersonType === 'merchant' ? (
+                                <div className="merchant-section">
+                                    <div className="form-group">
+                                        <label htmlFor="selectedMerchantId">
+                                            Select Merchant <span className="required">*</span>
+                                        </label>
+                                        <select
+                                            id="selectedMerchantId"
+                                            name="selectedMerchantId"
+                                            value={formData.selectedMerchantId || ''}
+                                            onChange={handleInputChange}
+                                            required
+                                            className={errors.selectedMerchantId ? 'error' : ''}
+                                        >
+                                            <option value="">Select a merchant...</option>
+
+                                            {Array.isArray(merchants) && merchants.filter(m => m.merchantType === 'SERVICE_PROVIDER').length > 0 && (
+                                                <optgroup label="Service Providers">
+                                                    {merchants
+                                                        .filter(m => m.merchantType === 'SERVICE_PROVIDER')
+                                                        .map(merchant => (
+                                                            <option key={merchant.id} value={merchant.id}>
+                                                                {merchant.name}
+                                                            </option>
+                                                        ))
+                                                    }
+                                                </optgroup>
+                                            )}
+
+                                            {Array.isArray(merchants) && merchants.filter(m => m.merchantType === 'SUPPLIER').length > 0 && (
+                                                <optgroup label="Suppliers">
+                                                    {merchants
+                                                        .filter(m => m.merchantType === 'SUPPLIER')
+                                                        .map(merchant => (
+                                                            <option key={merchant.id} value={merchant.id}>
+                                                                {merchant.name}
+                                                            </option>
+                                                        ))
+                                                    }
+                                                </optgroup>
+                                            )}
+
+                                            {Array.isArray(merchants) && merchants.filter(m => !m.merchantType || (m.merchantType !== 'SERVICE_PROVIDER' && m.merchantType !== 'SUPPLIER')).length > 0 && (
+                                                <optgroup label="Other">
+                                                    {merchants
+                                                        .filter(m => !m.merchantType || (m.merchantType !== 'SERVICE_PROVIDER' && m.merchantType !== 'SUPPLIER'))
+                                                        .map(merchant => (
+                                                            <option key={merchant.id} value={merchant.id}>
+                                                                {merchant.name}
+                                                            </option>
+                                                        ))
+                                                    }
+                                                </optgroup>
+                                            )}
+                                        </select>
+                                        {errors.selectedMerchantId && <span className="error-message">{errors.selectedMerchantId}</span>}
+                                    </div>
+
+                                    {/* Merchant Contact Dropdown (Cascading) */}
+                                    {formData.selectedMerchantId && (
+                                        <div className="form-group">
+                                            <label htmlFor="merchantContactId">
+                                                Select Contact from Merchant
+                                            </label>
+                                            <select
+                                                id="merchantContactId"
+                                                name="responsibleContactId"
+                                                value={formData.responsibleContactId || ''}
+                                                onChange={handleInputChange}
+                                            >
+                                                <option value="">Select a contact (optional)...</option>
+                                                {merchantContacts.map(contact => (
+                                                    <option key={contact.id} value={contact.id}>
+                                                        {contact.firstName} {contact.lastName} - {contact.position || contact.email}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {merchantContacts.length === 0 && (
+                                                <span className="info-text">No contacts available for this merchant</span>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Merchant Items */}
+                                    {formData.selectedMerchantId && (
+                                        <div className="merchant-items-section">
+                                            <h4>Items / Services</h4>
+                                            <p className="section-description">
+                                                Add description and cost for each item or service provided by the merchant
+                                            </p>
+
+                                            {merchantItems.map((item, index) => (
+                                                <div key={index} className="merchant-item-row">
+                                                    <div className="form-group flex-grow">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Item description"
+                                                            value={item.description}
+                                                            onChange={(e) => {
+                                                                const updated = [...merchantItems];
+                                                                updated[index].description = e.target.value;
+                                                                setMerchantItems(updated);
+                                                            }}
+                                                            required
+                                                        />
+                                                    </div>
+
+                                                    <div className="form-group cost-input">
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Cost"
+                                                            value={item.cost}
+                                                            onChange={(e) => {
+                                                                const updated = [...merchantItems];
+                                                                updated[index].cost = e.target.value;
+                                                                setMerchantItems(updated);
+                                                            }}
+                                                            min="0"
+                                                            step="0.01"
+                                                            required
+                                                        />
+                                                    </div>
+
+                                                    {merchantItems.length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            className="remove-item-button"
+                                                            onClick={() => {
+                                                                setMerchantItems(merchantItems.filter((_, i) => i !== index));
+                                                            }}
+                                                            title="Remove item"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+
+                                            <button
+                                                type="button"
+                                                className="add-item-button"
+                                                onClick={() => {
+                                                    setMerchantItems([...merchantItems, { description: '', cost: '' }]);
+                                                }}
+                                            >
+                                                + Add Item
+                                            </button>
+
+                                            {merchantItems.length > 0 && (
+                                                <div className="merchant-total">
+                                                    <strong>Total:</strong> $
+                                                    {merchantItems
+                                                        .reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0)
+                                                        .toFixed(2)
+                                                    }
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : null}
+                        </div>
+
+                        {selectedStepType?.name?.toUpperCase() === 'TRANSPORT' && (
+                            <div className="form-section">
+                                <h3>Location & Movement</h3>
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor="fromLocation">
+                                            From Location (Current Location) <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="fromLocation"
+                                            name="fromLocation"
+                                            value={formData.fromLocation}
+                                            readOnly
+                                            placeholder="Current equipment location"
+                                            className={`readonly-field ${errors.fromLocation ? 'error' : ''}`}
+                                        />
+                                        {errors.fromLocation && <span className="error-message">{errors.fromLocation}</span>}
+                                        <span className="info-text">Equipment is currently at this location</span>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="toLocation">
+                                            To Location (Destination) <span className="required">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="toLocation"
+                                            name="toLocation"
+                                            value={formData.toLocation}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g., Site B, Repair Facility, etc."
+                                            className={errors.toLocation ? 'error' : ''}
+                                        />
+                                        {errors.toLocation && <span className="error-message">{errors.toLocation}</span>}
+                                        <span className="info-text">Where equipment will be transported to</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="form-section">
+                            <h3>Schedule & Cost</h3>
+                            <div className="form-row">
+                                <div className="form-group">
+                                    <label htmlFor="startDate">
+                                        Start Date <span className="required">*</span>
                                     </label>
                                     <input
-                                        type="text"
-                                        id="fromLocation"
-                                        name="fromLocation"
-                                        value={formData.fromLocation}
-                                        readOnly
-                                        placeholder="Current equipment location"
-                                        className={`readonly-field ${errors.fromLocation ? 'error' : ''}`}
+                                        type="date"
+                                        id="startDate"
+                                        name="startDate"
+                                        value={formData.startDate}
+                                        onChange={handleInputChange}
+                                        className={errors.startDate ? 'error' : ''}
                                     />
-                                    {errors.fromLocation && <span className="error-message">{errors.fromLocation}</span>}
-                                    <span className="info-text">Equipment is currently at this location</span>
+                                    {errors.startDate && <span className="error-message">{errors.startDate}</span>}
                                 </div>
 
                                 <div className="form-group">
-                                    <label htmlFor="toLocation">
-                                        To Location (Destination) <span className="required">*</span>
+                                    <label htmlFor="expectedEndDate">
+                                        Expected End Date
                                     </label>
                                     <input
-                                        type="text"
-                                        id="toLocation"
-                                        name="toLocation"
-                                        value={formData.toLocation}
+                                        type="date"
+                                        id="expectedEndDate"
+                                        name="expectedEndDate"
+                                        value={formData.expectedEndDate}
                                         onChange={handleInputChange}
-                                        placeholder="e.g., Site B, Repair Facility, etc."
-                                        className={errors.toLocation ? 'error' : ''}
+                                        className={errors.expectedEndDate ? 'error' : ''}
                                     />
-                                    {errors.toLocation && <span className="error-message">{errors.toLocation}</span>}
-                                    <span className="info-text">Where equipment will be transported to</span>
+                                    {errors.expectedEndDate && <span className="error-message">{errors.expectedEndDate}</span>}
                                 </div>
                             </div>
-                        </div>
-                    )}
 
-                    <div className="form-section">
-                        <h3>Schedule & Cost</h3>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="startDate">
-                                    Start Date <span className="required">*</span>
-                                </label>
-                                <input
-                                    type="date"
-                                    id="startDate"
-                                    name="startDate"
-                                    value={formData.startDate}
-                                    onChange={handleInputChange}
-                                    className={errors.startDate ? 'error' : ''}
-                                />
-                                {errors.startDate && <span className="error-message">{errors.startDate}</span>}
+                            <div className="form-row two-columns">
+                                <div className="form-group">
+                                    <label htmlFor="expectedCost">
+                                        Expected Cost
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="expectedCost"
+                                        name="expectedCost"
+                                        value={formData.expectedCost}
+                                        onChange={handleInputChange}
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                        className={errors.expectedCost ? 'error' : ''}
+                                    />
+                                    {errors.expectedCost && <span className="error-message">{errors.expectedCost}</span>}
+                                </div>
+
+                                <div className="form-group">
+                                    <label htmlFor="downPayment">Down Payment</label>
+                                    <input
+                                        type="number"
+                                        id="downPayment"
+                                        name="downPayment"
+                                        value={formData.downPayment}
+                                        onChange={handleInputChange}
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                        className={errors.downPayment ? 'error' : ''}
+                                    />
+                                    {errors.downPayment && <span className="error-message">{errors.downPayment}</span>}
+                                </div>
                             </div>
 
                             <div className="form-group">
-                                <label htmlFor="expectedEndDate">
-                                    Expected End Date
-                                </label>
-                                <input
-                                    type="date"
-                                    id="expectedEndDate"
-                                    name="expectedEndDate"
-                                    value={formData.expectedEndDate}
-                                    onChange={handleInputChange}
-                                    className={errors.expectedEndDate ? 'error' : ''}
-                                />
-                                {errors.expectedEndDate && <span className="error-message">{errors.expectedEndDate}</span>}
-                            </div>
-                        </div>
-
-                        <div className="form-row two-columns">
-                            <div className="form-group">
-                                <label htmlFor="expectedCost">
-                                    Expected Cost
+                                <label htmlFor="remaining">
+                                    Remaining {remainingManuallyChanged && <span className="manual-override-indicator">(Manual Override)</span>}
                                 </label>
                                 <input
                                     type="number"
-                                    id="expectedCost"
-                                    name="expectedCost"
-                                    value={formData.expectedCost}
+                                    id="remaining"
+                                    name="remaining"
+                                    value={formData.remaining}
                                     onChange={handleInputChange}
                                     min="0"
                                     step="0.01"
-                                    placeholder="0.00"
-                                    className={errors.expectedCost ? 'error' : ''}
+                                    placeholder="Auto-calculated"
+                                    className={errors.remaining ? 'error' : ''}
                                 />
-                                {errors.expectedCost && <span className="error-message">{errors.expectedCost}</span>}
+                                {errors.remaining && <span className="error-message">{errors.remaining}</span>}
+                                <small className="field-hint">
+                                    {remainingManuallyChanged
+                                        ? 'Manual override active - value will be saved as entered'
+                                        : 'Auto-calculated as: Expected Cost - Down Payment'
+                                    }
+                                </small>
                             </div>
 
+                            {(editingStep?.actualEndDate || formData.actualEndDate) && (
+                                <div className="form-group">
+                                    <label htmlFor="actualCost">Actual Cost</label>
+                                    <input
+                                        type="number"
+                                        id="actualCost"
+                                        name="actualCost"
+                                        value={formData.actualCost}
+                                        onChange={handleInputChange}
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                        disabled={!editingStep?.actualEndDate}
+                                        className={errors.actualCost ? 'error' : ''}
+                                    />
+                                    {formData.expectedCost && (
+                                        <small className="field-hint">
+                                            Expected: ${parseFloat(formData.expectedCost).toFixed(2)}
+                                        </small>
+                                    )}
+                                    {errors.actualCost && <span className="error-message">{errors.actualCost}</span>}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="form-section">
+                            <h3>Additional Information</h3>
                             <div className="form-group">
-                                <label htmlFor="downPayment">Down Payment</label>
-                                <input
-                                    type="number"
-                                    id="downPayment"
-                                    name="downPayment"
-                                    value={formData.downPayment}
+                                <label htmlFor="notes">Notes</label>
+                                <textarea
+                                    id="notes"
+                                    name="notes"
+                                    value={formData.notes}
                                     onChange={handleInputChange}
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    className={errors.downPayment ? 'error' : ''}
+                                    placeholder="Additional notes, observations, or special instructions..."
+                                    rows={3}
                                 />
-                                {errors.downPayment && <span className="error-message">{errors.downPayment}</span>}
                             </div>
                         </div>
 
-                        <div className="form-group">
-                            <label htmlFor="remaining">
-                                Remaining {remainingManuallyChanged && <span className="manual-override-indicator">(Manual Override)</span>}
-                            </label>
-                            <input
-                                type="number"
-                                id="remaining"
-                                name="remaining"
-                                value={formData.remaining}
-                                onChange={handleInputChange}
-                                min="0"
-                                step="0.01"
-                                placeholder="Auto-calculated"
-                                className={errors.remaining ? 'error' : ''}
-                            />
-                            {errors.remaining && <span className="error-message">{errors.remaining}</span>}
-                            <small className="field-hint">
-                                {remainingManuallyChanged
-                                    ? 'Manual override active - value will be saved as entered'
-                                    : 'Auto-calculated as: Expected Cost - Down Payment'
-                                }
-                            </small>
-                        </div>
-
-                        {(editingStep?.actualEndDate || formData.actualEndDate) && (
-                            <div className="form-group">
-                                <label htmlFor="actualCost">Actual Cost</label>
-                                <input
-                                    type="number"
-                                    id="actualCost"
-                                    name="actualCost"
-                                    value={formData.actualCost}
-                                    onChange={handleInputChange}
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    disabled={!editingStep?.actualEndDate}
-                                    className={errors.actualCost ? 'error' : ''}
-                                />
-                                {formData.expectedCost && (
-                                    <small className="field-hint">
-                                        Expected: ${parseFloat(formData.expectedCost).toFixed(2)}
-                                    </small>
-                                )}
-                                {errors.actualCost && <span className="error-message">{errors.actualCost}</span>}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="form-section">
-                        <h3>Additional Information</h3>
-                        <div className="form-group">
-                            <label htmlFor="notes">Notes</label>
-                            <textarea
-                                id="notes"
-                                name="notes"
-                                value={formData.notes}
-                                onChange={handleInputChange}
-                                placeholder="Additional notes, observations, or special instructions..."
-                                rows={3}
-                            />
-                        </div>
-                    </div>
-
-                </form>
+                    </form>
                 </div>
                 <div className="modal-footer">
                     <button type="button" className="btn-cancel" onClick={onClose}>

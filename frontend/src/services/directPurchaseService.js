@@ -65,6 +65,16 @@ export const directPurchaseService = {
         }
     },
 
+    delegateTicket: async (ticketId, responsibleUserId) => {
+        try {
+            const response = await apiClient.put(`/api/direct-purchase-tickets/${ticketId}/delegate`, { responsibleUserId });
+            return response;
+        } catch (error) {
+            console.error('Error delegating direct purchase ticket:', error);
+            throw error;
+        }
+    },
+
     // Step operations
     getSteps: async (ticketId) => {
         try {

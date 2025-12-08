@@ -2,13 +2,14 @@ package com.example.backend.services;
 
 import com.example.backend.dtos.*;
 import com.example.backend.models.*;
-import com.example.backend.models.MaintenanceRecord;
-import com.example.backend.models.MaintenanceStep;
-import com.example.backend.models.MaintenanceStepMerchantItem;
+import com.example.backend.models.maintenance.MaintenanceRecord;
+
 import com.example.backend.models.contact.Contact;
 import com.example.backend.models.contact.ContactLog;
 import com.example.backend.models.contact.ContactType;
 import com.example.backend.models.hr.Employee;
+import com.example.backend.models.maintenance.MaintenanceStep;
+import com.example.backend.models.maintenance.MaintenanceStepMerchantItem;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.models.user.Role;
@@ -21,7 +22,7 @@ import com.example.backend.exceptions.MaintenanceException;
 import com.example.backend.models.equipment.Equipment;
 import com.example.backend.models.equipment.EquipmentStatus;
 import com.example.backend.repositories.equipment.EquipmentRepository;
-import com.example.backend.models.StepType;
+import com.example.backend.models.maintenance.StepType;
 import com.example.backend.repositories.StepTypeRepository;
 import com.example.backend.services.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +45,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Transactional
 public class MaintenanceService {
-    
+
     private final MaintenanceRecordRepository maintenanceRecordRepository;
     private final MaintenanceStepRepository maintenanceStepRepository;
     private final ContactLogRepository contactLogRepository;
@@ -57,9 +58,9 @@ public class MaintenanceService {
     private final MerchantRepository merchantRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
-    
+
     // Maintenance Record Operations
-    
+
     public MaintenanceRecordDto createMaintenanceRecord(MaintenanceRecordDto dto) {
         log.info("Creating new maintenance record for equipment: {}", dto.getEquipmentId());
 
@@ -84,20 +85,21 @@ public class MaintenanceService {
             }
         }
 
-        // Allow creating maintenance records even if equipment is already in maintenance
+        // Allow creating maintenance records even if equipment is already in
+        // maintenance
 
         MaintenanceRecord record = MaintenanceRecord.builder()
                 .equipmentId(dto.getEquipmentId())
-                .equipmentInfo(dto.getEquipmentInfo() != null ? dto.getEquipmentInfo() :
-                        equipment.getType().getName() + " - " + equipment.getFullModelName())
+                .equipmentInfo(dto.getEquipmentInfo() != null ? dto.getEquipmentInfo()
+                        : equipment.getType().getName() + " - " + equipment.getFullModelName())
                 .initialIssueDescription(dto.getInitialIssueDescription())
                 .issueDate(dto.getIssueDate())
                 .sparePartName(dto.getSparePartName().trim())
                 .expectedCompletionDate(dto.getExpectedCompletionDate())
                 .status(MaintenanceRecord.MaintenanceStatus.ACTIVE)
                 // ADD THIS LINE - Set initial cost from DTO
-                .totalCost(dto.getTotalCost() != null ? dto.getTotalCost() :
-                        (dto.getEstimatedCost() != null ? dto.getEstimatedCost() : BigDecimal.ZERO))
+                .totalCost(dto.getTotalCost() != null ? dto.getTotalCost()
+                        : (dto.getEstimatedCost() != null ? dto.getEstimatedCost() : BigDecimal.ZERO))
                 .build();
 
         // Set responsible user (defaults to current authenticated user if not provided)
@@ -123,7 +125,8 @@ public class MaintenanceService {
             // Validate user has appropriate role
             List<Role> allowedRoles = Arrays.asList(Role.ADMIN, Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE);
             if (!allowedRoles.contains(responsibleUser.getRole())) {
-                throw new MaintenanceException("User must have Admin, Maintenance Manager, or Maintenance Employee role");
+                throw new MaintenanceException(
+                        "User must have Admin, Maintenance Manager, or Maintenance Employee role");
             }
 
             record.setResponsibleUser(responsibleUser);
@@ -131,14 +134,17 @@ public class MaintenanceService {
                     responsibleUser.getFirstName(), responsibleUser.getLastName(), responsibleUser.getRole());
         }
 
-        // Set current responsible contact if provided, otherwise use equipment's main driver
+        // Set current responsible contact if provided, otherwise use equipment's main
+        // driver
         if (dto.getCurrentResponsibleContactId() != null) {
             try {
                 Contact contact = contactRepository.findById(dto.getCurrentResponsibleContactId())
-                        .orElseThrow(() -> new MaintenanceException("Contact not found with ID: " + dto.getCurrentResponsibleContactId()));
+                        .orElseThrow(() -> new MaintenanceException(
+                                "Contact not found with ID: " + dto.getCurrentResponsibleContactId()));
                 record.setCurrentResponsibleContact(contact);
             } catch (Exception e) {
-                log.warn("Could not assign contact with ID {} to record: {}", dto.getCurrentResponsibleContactId(), e.getMessage());
+                log.warn("Could not assign contact with ID {} to record: {}", dto.getCurrentResponsibleContactId(),
+                        e.getMessage());
             }
         } else if (equipment.getMainDriver() != null) {
             // Automatically assign equipment's main driver as responsible person
@@ -146,13 +152,13 @@ public class MaintenanceService {
                 Employee mainDriver = equipment.getMainDriver();
                 Contact driverContact = findOrCreateContactForEmployee(mainDriver);
                 record.setCurrentResponsibleContact(driverContact);
-                log.info("Automatically assigned main driver {} {} as responsible person for maintenance record", 
+                log.info("Automatically assigned main driver {} {} as responsible person for maintenance record",
                         mainDriver.getFirstName(), mainDriver.getLastName());
             } catch (Exception e) {
                 log.warn("Could not assign main driver as responsible contact: {}", e.getMessage());
             }
         }
-        
+
         MaintenanceRecord savedRecord = maintenanceRecordRepository.save(record);
 
         // Update equipment status to IN_MAINTENANCE if not already in maintenance
@@ -162,118 +168,118 @@ public class MaintenanceService {
         }
 
         // Note: Steps are NOT auto-created - user adds them manually
-        
+
         // Send notifications to MAINTENANCE_MANAGER, EQUIPMENT_MANAGER, and ADMIN
         try {
             String notificationTitle = "New Maintenance Record Created";
-            String notificationMessage = String.format("Maintenance record created for equipment '%s' (%s). Issue: %s", 
-                    equipment.getName(), 
+            String notificationMessage = String.format("Maintenance record created for equipment '%s' (%s). Issue: %s",
+                    equipment.getName(),
                     equipment.getFullModelName(),
-                    dto.getInitialIssueDescription() != null && dto.getInitialIssueDescription().length() > 100 
-                        ? dto.getInitialIssueDescription().substring(0, 100) + "..." 
-                        : dto.getInitialIssueDescription());
+                    dto.getInitialIssueDescription() != null && dto.getInitialIssueDescription().length() > 100
+                            ? dto.getInitialIssueDescription().substring(0, 100) + "..."
+                            : dto.getInitialIssueDescription());
             String actionUrl = "/maintenance/records/" + savedRecord.getId();
             String relatedEntity = savedRecord.getId().toString();
-            
+
             List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.EQUIPMENT_MANAGER, Role.ADMIN);
-            
+
             notificationService.sendNotificationToUsersByRoles(
                     targetRoles,
                     notificationTitle,
                     notificationMessage,
                     NotificationType.INFO,
                     actionUrl,
-                    relatedEntity
-            );
-            
+                    relatedEntity);
+
             log.info("Maintenance record creation notifications sent successfully");
         } catch (Exception e) {
             log.error("Failed to send maintenance record creation notifications: {}", e.getMessage());
         }
-        
+
         log.info("Created maintenance record: {} for equipment: {}", savedRecord.getId(), dto.getEquipmentId());
         return convertToDto(savedRecord);
     }
-    
+
     public MaintenanceRecordDto getMaintenanceRecord(UUID id) {
         MaintenanceRecord record = maintenanceRecordRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
-        
+
         return convertToDto(record);
     }
-    
+
     public List<MaintenanceRecordDto> getAllMaintenanceRecords() {
         return maintenanceRecordRepository.findAll().stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
-    
+
     public List<MaintenanceRecordDto> getMaintenanceRecordsByEquipment(UUID equipmentId) {
         return maintenanceRecordRepository.findByEquipmentIdOrderByCreationDateDesc(equipmentId).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
-    
+
     public List<MaintenanceRecordDto> getActiveMaintenanceRecords() {
         return maintenanceRecordRepository.findByStatus(MaintenanceRecord.MaintenanceStatus.ACTIVE).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
-    
+
     public List<MaintenanceRecordDto> getOverdueMaintenanceRecords() {
         return maintenanceRecordRepository.findOverdueRecords(LocalDateTime.now()).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
-    
+
     public MaintenanceRecordDto completeMaintenanceRecord(UUID id) {
         MaintenanceRecord record = maintenanceRecordRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
-        
+
         // Complete the record using the centralized completion logic
         completeMaintenanceRecordIfFinalStepCompleted(record);
-        
+
         return convertToDto(record);
     }
-    
+
     public MaintenanceRecordDto updateMaintenanceRecord(UUID id, MaintenanceRecordDto dto) {
         MaintenanceRecord record = maintenanceRecordRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
-        
+
         // Handle equipment change
         if (dto.getEquipmentId() != null && !dto.getEquipmentId().equals(record.getEquipmentId())) {
             // Get old equipment to potentially update its status
             Equipment oldEquipment = equipmentRepository.findById(record.getEquipmentId())
                     .orElseThrow(() -> new MaintenanceException("Old equipment not found"));
-            
+
             // Verify new equipment exists
             Equipment newEquipment = equipmentRepository.findById(dto.getEquipmentId())
-                    .orElseThrow(() -> new MaintenanceException("New equipment not found with id: " + dto.getEquipmentId()));
-            
+                    .orElseThrow(
+                            () -> new MaintenanceException("New equipment not found with id: " + dto.getEquipmentId()));
+
             // Update equipment ID
             record.setEquipmentId(dto.getEquipmentId());
-            
+
             // Check if old equipment has any other active maintenance records
             List<MaintenanceRecord> oldEquipmentActiveRecords = maintenanceRecordRepository
                     .findByEquipmentIdOrderByCreationDateDesc(oldEquipment.getId())
                     .stream()
-                    .filter(r -> r.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE 
+                    .filter(r -> r.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE
                             && !r.getId().equals(record.getId()))
                     .collect(Collectors.toList());
-            
+
             // If no other active records, set old equipment to AVAILABLE
             if (oldEquipmentActiveRecords.isEmpty() && oldEquipment.getStatus() == EquipmentStatus.IN_MAINTENANCE) {
                 oldEquipment.setStatus(EquipmentStatus.AVAILABLE);
                 equipmentRepository.save(oldEquipment);
             }
-            
+
             // If current record is active, set new equipment to IN_MAINTENANCE
             if (record.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE) {
                 newEquipment.setStatus(EquipmentStatus.IN_MAINTENANCE);
                 equipmentRepository.save(newEquipment);
             }
         }
-        
+
         if (dto.getInitialIssueDescription() != null) {
             record.setInitialIssueDescription(dto.getInitialIssueDescription());
         }
@@ -303,25 +309,28 @@ public class MaintenanceService {
 
         if (dto.getStatus() != null) {
             record.setStatus(dto.getStatus());
-            
+
             // If completing maintenance, check if there are other active records
             if (dto.getStatus() == MaintenanceRecord.MaintenanceStatus.COMPLETED) {
                 Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
                         .orElseThrow(() -> new MaintenanceException("Equipment not found"));
-                
+
                 // Check if there are other active maintenance records for this equipment
-                List<MaintenanceRecord> activeRecords = maintenanceRecordRepository.findByEquipmentIdOrderByCreationDateDesc(equipment.getId())
+                List<MaintenanceRecord> activeRecords = maintenanceRecordRepository
+                        .findByEquipmentIdOrderByCreationDateDesc(equipment.getId())
                         .stream()
-                        .filter(r -> r.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE && !r.getId().equals(record.getId()))
+                        .filter(r -> r.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE
+                                && !r.getId().equals(record.getId()))
                         .collect(Collectors.toList());
-                
-                // Only change equipment status to AVAILABLE if no other active maintenance records exist
+
+                // Only change equipment status to AVAILABLE if no other active maintenance
+                // records exist
                 if (activeRecords.isEmpty()) {
                     equipment.setStatus(EquipmentStatus.AVAILABLE);
                     equipmentRepository.save(equipment);
                 }
                 // If there are still active records, keep equipment status as IN_MAINTENANCE
-                
+
                 record.setActualCompletionDate(LocalDateTime.now());
             }
         }
@@ -329,12 +338,14 @@ public class MaintenanceService {
         // Update responsible user if provided
         if (dto.getResponsibleUserId() != null) {
             User responsibleUser = userRepository.findById(dto.getResponsibleUserId())
-                    .orElseThrow(() -> new MaintenanceException("User not found with ID: " + dto.getResponsibleUserId()));
+                    .orElseThrow(
+                            () -> new MaintenanceException("User not found with ID: " + dto.getResponsibleUserId()));
 
             // Validate user has appropriate role
             List<Role> allowedRoles = Arrays.asList(Role.ADMIN, Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE);
             if (!allowedRoles.contains(responsibleUser.getRole())) {
-                throw new MaintenanceException("User must have Admin, Maintenance Manager, or Maintenance Employee role");
+                throw new MaintenanceException(
+                        "User must have Admin, Maintenance Manager, or Maintenance Employee role");
             }
 
             record.setResponsibleUser(responsibleUser);
@@ -346,34 +357,38 @@ public class MaintenanceService {
         if (dto.getCurrentResponsibleContactId() != null) {
             try {
                 Contact contact = contactRepository.findById(dto.getCurrentResponsibleContactId())
-                        .orElseThrow(() -> new MaintenanceException("Contact not found with ID: " + dto.getCurrentResponsibleContactId()));
+                        .orElseThrow(() -> new MaintenanceException(
+                                "Contact not found with ID: " + dto.getCurrentResponsibleContactId()));
                 record.setCurrentResponsibleContact(contact);
             } catch (Exception e) {
-                log.warn("Could not assign contact with ID {} to record: {}", dto.getCurrentResponsibleContactId(), e.getMessage());
+                log.warn("Could not assign contact with ID {} to record: {}", dto.getCurrentResponsibleContactId(),
+                        e.getMessage());
             }
         }
 
         MaintenanceRecord savedRecord = maintenanceRecordRepository.save(record);
         return convertToDto(savedRecord);
     }
-    
+
     public void deleteMaintenanceRecord(UUID id) {
         MaintenanceRecord record = maintenanceRecordRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + id));
-        
+
         // Get equipment before deleting the record
         Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
                 .orElseThrow(() -> new MaintenanceException("Equipment not found"));
-        
+
         // Delete the maintenance record
         maintenanceRecordRepository.delete(record);
-        
-        // Check if there are any remaining active maintenance records for this equipment
-        List<MaintenanceRecord> remainingActiveRecords = maintenanceRecordRepository.findByEquipmentIdOrderByCreationDateDesc(equipment.getId())
+
+        // Check if there are any remaining active maintenance records for this
+        // equipment
+        List<MaintenanceRecord> remainingActiveRecords = maintenanceRecordRepository
+                .findByEquipmentIdOrderByCreationDateDesc(equipment.getId())
                 .stream()
                 .filter(r -> r.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE)
                 .collect(Collectors.toList());
-        
+
         // If no active maintenance records remain, change equipment status to AVAILABLE
         if (remainingActiveRecords.isEmpty()) {
             equipment.setStatus(EquipmentStatus.AVAILABLE);
@@ -386,49 +401,53 @@ public class MaintenanceService {
         List<Role> maintenanceRoles = Arrays.asList(
                 Role.ADMIN,
                 Role.MAINTENANCE_MANAGER,
-                Role.MAINTENANCE_EMPLOYEE
-        );
+                Role.MAINTENANCE_EMPLOYEE);
         return userRepository.findByRoleIn(maintenanceRoles);
     }
 
     // Maintenance Step Operations
-    
+
     public MaintenanceStepDto createMaintenanceStep(UUID maintenanceRecordId, MaintenanceStepDto dto) {
         MaintenanceRecord record = maintenanceRecordRepository.findById(maintenanceRecordId)
-                .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + maintenanceRecordId));
-        
+                .orElseThrow(
+                        () -> new MaintenanceException("Maintenance record not found with id: " + maintenanceRecordId));
+
         // Get all existing steps ordered by start date
-        List<MaintenanceStep> existingSteps = maintenanceStepRepository.findByMaintenanceRecordIdOrderByStartDateAsc(maintenanceRecordId);
-        
+        List<MaintenanceStep> existingSteps = maintenanceStepRepository
+                .findByMaintenanceRecordIdOrderByStartDateAsc(maintenanceRecordId);
+
         // VALIDATION 1: All previous steps must be completed before adding a new step
         List<MaintenanceStep> incompleteSteps = existingSteps.stream()
                 .filter(step -> step.getActualEndDate() == null)
                 .collect(Collectors.toList());
-        
+
         if (!incompleteSteps.isEmpty()) {
             String incompleteStepDescriptions = incompleteSteps.stream()
                     .map(step -> step.getDescription())
                     .collect(Collectors.joining(", "));
-            throw new MaintenanceException("Cannot add new step. Please complete all previous steps first. Incomplete steps: " + incompleteStepDescriptions);
+            throw new MaintenanceException(
+                    "Cannot add new step. Please complete all previous steps first. Incomplete steps: "
+                            + incompleteStepDescriptions);
         }
-        
-        // VALIDATION 2: New step's start date must be >= latest step's actual completion date
+
+        // VALIDATION 2: New step's start date must be >= latest step's actual
+        // completion date
         if (!existingSteps.isEmpty()) {
             MaintenanceStep latestStep = existingSteps.get(existingSteps.size() - 1);
             if (latestStep.getActualEndDate() != null && dto.getStartDate() != null) {
                 if (dto.getStartDate().isBefore(latestStep.getActualEndDate())) {
-                    throw new MaintenanceException("New step start date must be on or after " + 
-                        latestStep.getActualEndDate().toLocalDate() + 
-                        ". The previous step was completed on " + 
-                        latestStep.getActualEndDate().toLocalDate() + ".");
+                    throw new MaintenanceException("New step start date must be on or after " +
+                            latestStep.getActualEndDate().toLocalDate() +
+                            ". The previous step was completed on " +
+                            latestStep.getActualEndDate().toLocalDate() + ".");
                 }
             }
         }
-        
+
         // Get the step type
         StepType stepType = stepTypeRepository.findById(dto.getStepTypeId())
                 .orElseThrow(() -> new MaintenanceException("Step type not found with id: " + dto.getStepTypeId()));
-        
+
         // Get the responsible person (can be employee, contact, or merchant)
         Contact responsibleContact = null;
         Employee responsibleEmployee = null;
@@ -437,26 +456,32 @@ public class MaintenanceService {
         // Priority 1: Check if employee ID is provided (site employee assignment)
         if (dto.getResponsibleEmployeeId() != null) {
             responsibleEmployee = employeeRepository.findById(dto.getResponsibleEmployeeId())
-                    .orElseThrow(() -> new MaintenanceException("Employee not found with id: " + dto.getResponsibleEmployeeId()));
-            log.info("Assigned employee {} as responsible person for step", responsibleEmployee.getFirstName() + " " + responsibleEmployee.getLastName());
+                    .orElseThrow(() -> new MaintenanceException(
+                            "Employee not found with id: " + dto.getResponsibleEmployeeId()));
+            log.info("Assigned employee {} as responsible person for step",
+                    responsibleEmployee.getFirstName() + " " + responsibleEmployee.getLastName());
         }
         // Priority 2: Check if contact ID is provided (external contact assignment)
         else if (dto.getResponsibleContactId() != null) {
             try {
                 responsibleContact = contactRepository.findById(dto.getResponsibleContactId())
-                        .orElseThrow(() -> new MaintenanceException("Contact not found with ID: " + dto.getResponsibleContactId()));
-                log.info("Assigned contact {} as responsible person for step", responsibleContact.getFirstName() + " " + responsibleContact.getLastName());
+                        .orElseThrow(() -> new MaintenanceException(
+                                "Contact not found with ID: " + dto.getResponsibleContactId()));
+                log.info("Assigned contact {} as responsible person for step",
+                        responsibleContact.getFirstName() + " " + responsibleContact.getLastName());
             } catch (Exception e) {
-                log.warn("Could not assign contact with ID {} to step: {}", dto.getResponsibleContactId(), e.getMessage());
+                log.warn("Could not assign contact with ID {} to step: {}", dto.getResponsibleContactId(),
+                        e.getMessage());
             }
         }
         // Priority 3: Check if merchant ID is provided (merchant assignment)
         else if (dto.getSelectedMerchantId() != null) {
             selectedMerchant = merchantRepository.findById(dto.getSelectedMerchantId())
-                    .orElseThrow(() -> new MaintenanceException("Merchant not found with id: " + dto.getSelectedMerchantId()));
+                    .orElseThrow(() -> new MaintenanceException(
+                            "Merchant not found with id: " + dto.getSelectedMerchantId()));
             log.info("Assigned merchant {} as responsible for step", selectedMerchant.getName());
         }
-        
+
         // LOCATION TRACKING LOGIC
         // Determine current location based on previous steps and equipment site
         String currentLocation = "";
@@ -467,10 +492,11 @@ public class MaintenanceService {
             if (lastStep.getStepType() != null && "TRANSPORT".equalsIgnoreCase(lastStep.getStepType().getName())) {
                 currentLocation = lastStep.getToLocation() != null ? lastStep.getToLocation() : "";
             } else {
-                // Otherwise, inherit location from last step (whether fromLocation or toLocation)
-                currentLocation = lastStep.getToLocation() != null && !lastStep.getToLocation().isEmpty() 
-                    ? lastStep.getToLocation() 
-                    : (lastStep.getFromLocation() != null ? lastStep.getFromLocation() : "");
+                // Otherwise, inherit location from last step (whether fromLocation or
+                // toLocation)
+                currentLocation = lastStep.getToLocation() != null && !lastStep.getToLocation().isEmpty()
+                        ? lastStep.getToLocation()
+                        : (lastStep.getFromLocation() != null ? lastStep.getFromLocation() : "");
             }
         } else {
             // No previous steps, get location from equipment's site
@@ -479,14 +505,16 @@ public class MaintenanceService {
                 currentLocation = equipment.getSite().getName();
             }
         }
-        
-        // For TRANSPORT steps, fromLocation is current location, toLocation is user-specified
-        // For non-TRANSPORT steps, both fromLocation and toLocation can be the current location
-        String fromLocation = dto.getFromLocation() != null && !dto.getFromLocation().isEmpty() 
-            ? dto.getFromLocation() 
-            : currentLocation;
+
+        // For TRANSPORT steps, fromLocation is current location, toLocation is
+        // user-specified
+        // For non-TRANSPORT steps, both fromLocation and toLocation can be the current
+        // location
+        String fromLocation = dto.getFromLocation() != null && !dto.getFromLocation().isEmpty()
+                ? dto.getFromLocation()
+                : currentLocation;
         String toLocation = dto.getToLocation() != null ? dto.getToLocation() : "";
-        
+
         // Calculate remaining amount
         BigDecimal expectedCost = dto.getExpectedCost() != null ? dto.getExpectedCost() : BigDecimal.ZERO;
         BigDecimal downPayment = dto.getDownPayment() != null ? dto.getDownPayment() : BigDecimal.ZERO;
@@ -537,8 +565,9 @@ public class MaintenanceService {
             savedStep.setMerchantItems(merchantItems);
             savedStep = maintenanceStepRepository.save(savedStep);
         }
-        
-        // Update main record's current responsible contact (prefer employee over contact for display)
+
+        // Update main record's current responsible contact (prefer employee over
+        // contact for display)
         if (responsibleEmployee != null) {
             // We still need a contact for the record, so keep as null or handle differently
             record.setCurrentResponsibleContact(responsibleContact);
@@ -546,56 +575,56 @@ public class MaintenanceService {
             record.setCurrentResponsibleContact(responsibleContact);
         }
         maintenanceRecordRepository.save(record);
-        
+
         // Send notifications
         try {
             Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
                     .orElseThrow(() -> new MaintenanceException("Equipment not found"));
-            
+
             String notificationTitle = "New Maintenance Step Added";
-            String notificationMessage = String.format("New %s step added for equipment '%s'. Responsible: %s", 
+            String notificationMessage = String.format("New %s step added for equipment '%s'. Responsible: %s",
                     stepType.getName(),
                     equipment.getName(),
-                    responsibleEmployee != null 
-                        ? responsibleEmployee.getFirstName() + " " + responsibleEmployee.getLastName()
-                        : (responsibleContact != null 
-                            ? responsibleContact.getFirstName() + " " + responsibleContact.getLastName()
-                            : "Not assigned"));
+                    responsibleEmployee != null
+                            ? responsibleEmployee.getFirstName() + " " + responsibleEmployee.getLastName()
+                            : (responsibleContact != null
+                                    ? responsibleContact.getFirstName() + " " + responsibleContact.getLastName()
+                                    : "Not assigned"));
             String actionUrl = "/maintenance/records/" + record.getId() + "?tab=steps";
             String relatedEntity = record.getId().toString();
-            
-            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE, Role.EQUIPMENT_MANAGER, Role.ADMIN);
-            
+
+            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE,
+                    Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
             notificationService.sendNotificationToUsersByRoles(
                     targetRoles,
                     notificationTitle,
                     notificationMessage,
                     NotificationType.INFO,
                     actionUrl,
-                    relatedEntity
-            );
-            
+                    relatedEntity);
+
             log.info("Maintenance step creation notifications sent successfully");
         } catch (Exception e) {
             log.error("Failed to send maintenance step creation notifications: {}", e.getMessage());
         }
-        
+
         return convertToDto(savedStep);
     }
-    
+
     public MaintenanceStepDto getMaintenanceStep(UUID id) {
         MaintenanceStep step = maintenanceStepRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + id));
-        
+
         return convertToDto(step);
     }
-    
+
     public List<MaintenanceStepDto> getMaintenanceSteps(UUID maintenanceRecordId) {
         return maintenanceStepRepository.findByMaintenanceRecordIdOrderByStartDateAsc(maintenanceRecordId).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
-    
+
     public MaintenanceStepDto updateMaintenanceStep(UUID id, MaintenanceStepDto dto) {
         MaintenanceStep step = maintenanceStepRepository.findById(id)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + id));
@@ -614,19 +643,22 @@ public class MaintenanceService {
         // Update responsible person based on what's provided
         if (dto.getResponsibleEmployeeId() != null) {
             Employee employee = employeeRepository.findById(dto.getResponsibleEmployeeId())
-                    .orElseThrow(() -> new MaintenanceException("Employee not found with id: " + dto.getResponsibleEmployeeId()));
+                    .orElseThrow(() -> new MaintenanceException(
+                            "Employee not found with id: " + dto.getResponsibleEmployeeId()));
             step.setResponsibleEmployee(employee);
             step.setResponsibleContact(null);
             step.setSelectedMerchant(null);
         } else if (dto.getResponsibleContactId() != null) {
             Contact contact = contactRepository.findById(dto.getResponsibleContactId())
-                    .orElseThrow(() -> new MaintenanceException("Contact not found with id: " + dto.getResponsibleContactId()));
+                    .orElseThrow(() -> new MaintenanceException(
+                            "Contact not found with id: " + dto.getResponsibleContactId()));
             step.setResponsibleContact(contact);
             step.setResponsibleEmployee(null);
             step.setSelectedMerchant(null);
         } else if (dto.getSelectedMerchantId() != null) {
             Merchant merchant = merchantRepository.findById(dto.getSelectedMerchantId())
-                    .orElseThrow(() -> new MaintenanceException("Merchant not found with id: " + dto.getSelectedMerchantId()));
+                    .orElseThrow(() -> new MaintenanceException(
+                            "Merchant not found with id: " + dto.getSelectedMerchantId()));
             step.setSelectedMerchant(merchant);
             step.setResponsibleEmployee(null);
             step.setResponsibleContact(null);
@@ -685,25 +717,25 @@ public class MaintenanceService {
 
         return convertToDto(savedStep);
     }
-    
+
     public void deleteMaintenanceStep(UUID stepId) {
         MaintenanceStep step = maintenanceStepRepository.findById(stepId)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + stepId));
 
         UUID recordId = step.getMaintenanceRecord().getId();
-        
+
         maintenanceStepRepository.delete(step);
 
         // Recalculate total cost of parent record
         updateRecordTotalCost(recordId);
     }
-    
+
     public MaintenanceStepDto markStepAsFinal(UUID stepId) {
         MaintenanceStep stepToMark = maintenanceStepRepository.findById(stepId)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + stepId));
-        
+
         MaintenanceRecord record = stepToMark.getMaintenanceRecord();
-        
+
         // Ensure no other step is marked as final
         maintenanceStepRepository.findByMaintenanceRecordIdOrderByStartDateAsc(record.getId()).forEach(s -> {
             if (!s.getId().equals(stepId) && s.isFinalStep()) {
@@ -711,46 +743,46 @@ public class MaintenanceService {
                 maintenanceStepRepository.save(s);
             }
         });
-        
+
         stepToMark.setFinalStep(true);
         MaintenanceStep savedStep = maintenanceStepRepository.save(stepToMark);
-        
+
         // Send notifications for marking step as final
         try {
             Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
                     .orElseThrow(() -> new MaintenanceException("Equipment not found"));
-            
+
             String notificationTitle = "Final Maintenance Step Designated";
-            String notificationMessage = String.format("%s step has been marked as the final step for equipment '%s'", 
+            String notificationMessage = String.format("%s step has been marked as the final step for equipment '%s'",
                     savedStep.getStepType().getName(),
                     equipment.getName());
             String actionUrl = "/maintenance/records/" + record.getId() + "?tab=steps";
             String relatedEntity = record.getId().toString();
-            
-            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE, Role.EQUIPMENT_MANAGER, Role.ADMIN);
-            
+
+            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE,
+                    Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
             notificationService.sendNotificationToUsersByRoles(
                     targetRoles,
                     notificationTitle,
                     notificationMessage,
                     NotificationType.WARNING,
                     actionUrl,
-                    relatedEntity
-            );
-            
+                    relatedEntity);
+
             log.info("Final step designation notifications sent successfully");
         } catch (Exception e) {
             log.error("Failed to send final step designation notifications: {}", e.getMessage());
         }
-        
+
         // If this step is already completed, trigger record completion logic
         if (savedStep.isCompleted()) {
             completeMaintenanceRecordIfFinalStepCompleted(record);
         }
-        
+
         return convertToDto(savedStep);
     }
-    
+
     public void completeMaintenanceStep(UUID stepId, MaintenanceStepDto completionData) {
         MaintenanceStep step = maintenanceStepRepository.findById(stepId)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + stepId));
@@ -787,46 +819,46 @@ public class MaintenanceService {
         }
 
         maintenanceStepRepository.save(step);
-        
+
         // Recalculate total cost of parent record
         updateRecordTotalCost(step.getMaintenanceRecord().getId());
-        
+
         // Send notifications for step completion
         try {
             MaintenanceRecord record = step.getMaintenanceRecord();
             Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
                     .orElseThrow(() -> new MaintenanceException("Equipment not found"));
-            
+
             String notificationTitle = "Maintenance Step Completed";
-            String notificationMessage = String.format("%s step completed for equipment '%s'. Cost: %.2f", 
+            String notificationMessage = String.format("%s step completed for equipment '%s'. Cost: %.2f",
                     step.getStepType().getName(),
                     equipment.getName(),
                     step.getStepCost() != null ? step.getStepCost() : BigDecimal.ZERO);
             String actionUrl = "/maintenance/records/" + record.getId() + "?tab=steps";
             String relatedEntity = record.getId().toString();
-            
-            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE, Role.EQUIPMENT_MANAGER, Role.ADMIN);
-            
+
+            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE,
+                    Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
             notificationService.sendNotificationToUsersByRoles(
                     targetRoles,
                     notificationTitle,
                     notificationMessage,
                     NotificationType.SUCCESS,
                     actionUrl,
-                    relatedEntity
-            );
-            
+                    relatedEntity);
+
             log.info("Maintenance step completion notifications sent successfully");
         } catch (Exception e) {
             log.error("Failed to send maintenance step completion notifications: {}", e.getMessage());
         }
-        
+
         // If this was the final step, complete the parent record
         if (step.isFinalStep()) {
             completeMaintenanceRecordIfFinalStepCompleted(step.getMaintenanceRecord());
         }
     }
-    
+
     public void handoffToNextStep(UUID stepId, MaintenanceStepDto nextStepDto) {
         // Complete with current timestamp and existing cost
         MaintenanceStepDto completionData = new MaintenanceStepDto();
@@ -834,125 +866,130 @@ public class MaintenanceService {
         completeMaintenanceStep(stepId, completionData);
         createMaintenanceStep(nextStepDto.getMaintenanceRecordId(), nextStepDto);
     }
-    
+
     /**
      * Complete a maintenance record when its final step is completed.
-     * Also handles equipment status changes considering other active maintenance records.
+     * Also handles equipment status changes considering other active maintenance
+     * records.
      */
     private void completeMaintenanceRecordIfFinalStepCompleted(MaintenanceRecord record) {
         // Complete the maintenance record
         record.setStatus(MaintenanceRecord.MaintenanceStatus.COMPLETED);
         record.setActualCompletionDate(LocalDateTime.now());
         maintenanceRecordRepository.save(record);
-        
+
         // Handle equipment status change
         Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
                 .orElseThrow(() -> new MaintenanceException("Equipment not found for record"));
-        
+
         // Check if there are other active maintenance records for this equipment
         List<MaintenanceRecord> otherActiveRecords = maintenanceRecordRepository
                 .findByEquipmentIdOrderByCreationDateDesc(equipment.getId())
                 .stream()
-                .filter(r -> r.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE && 
-                           !r.getId().equals(record.getId()))
+                .filter(r -> r.getStatus() == MaintenanceRecord.MaintenanceStatus.ACTIVE &&
+                        !r.getId().equals(record.getId()))
                 .collect(Collectors.toList());
-        
+
         // Only set equipment to AVAILABLE if no other active maintenance records exist
         if (otherActiveRecords.isEmpty()) {
             equipment.setStatus(EquipmentStatus.AVAILABLE);
             equipmentRepository.save(equipment);
-            log.info("Equipment {} status changed to AVAILABLE - no other active maintenance records", equipment.getId());
+            log.info("Equipment {} status changed to AVAILABLE - no other active maintenance records",
+                    equipment.getId());
         } else {
-            log.info("Equipment {} remains IN_MAINTENANCE - {} other active maintenance records exist", 
+            log.info("Equipment {} remains IN_MAINTENANCE - {} other active maintenance records exist",
                     equipment.getId(), otherActiveRecords.size());
         }
-        
+
         // Send notifications for maintenance record completion
         try {
             String notificationTitle = "Maintenance Completed";
-            String notificationMessage = String.format("Maintenance completed for equipment '%s' (%s). Total cost: %.2f. Equipment status: %s", 
+            String notificationMessage = String.format(
+                    "Maintenance completed for equipment '%s' (%s). Total cost: %.2f. Equipment status: %s",
                     equipment.getName(),
                     equipment.getFullModelName(),
                     record.getTotalCost() != null ? record.getTotalCost() : BigDecimal.ZERO,
                     otherActiveRecords.isEmpty() ? "Available" : "Still in maintenance");
             String actionUrl = "/maintenance/records/" + record.getId();
             String relatedEntity = record.getId().toString();
-            
-            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE, Role.EQUIPMENT_MANAGER, Role.ADMIN);
-            
+
+            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE,
+                    Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
             notificationService.sendNotificationToUsersByRoles(
                     targetRoles,
                     notificationTitle,
                     notificationMessage,
                     NotificationType.SUCCESS,
                     actionUrl,
-                    relatedEntity
-            );
-            
+                    relatedEntity);
+
             log.info("Maintenance record completion notifications sent successfully");
         } catch (Exception e) {
             log.error("Failed to send maintenance record completion notifications: {}", e.getMessage());
         }
     }
-    
+
     public MaintenanceStepDto assignContactToStep(UUID stepId, UUID contactId) {
         MaintenanceStep step = maintenanceStepRepository.findById(stepId)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + stepId));
-        
+
         Contact contact = contactRepository.findById(contactId)
                 .orElseThrow(() -> new MaintenanceException("Contact not found with ID: " + contactId));
-        
+
         step.setResponsibleContact(contact);
-        
+
         MaintenanceStep savedStep = maintenanceStepRepository.save(step);
-        
+
         // Update main record's current responsible contact if this is the current step
         MaintenanceRecord record = step.getMaintenanceRecord();
-        Optional<MaintenanceStep> currentStep = maintenanceStepRepository.findCurrentStepByMaintenanceRecordId(record.getId());
+        Optional<MaintenanceStep> currentStep = maintenanceStepRepository
+                .findCurrentStepByMaintenanceRecordId(record.getId());
         if (currentStep.isPresent() && currentStep.get().getId().equals(stepId)) {
             record.setCurrentResponsibleContact(contact);
             maintenanceRecordRepository.save(record);
         }
-        
+
         // Send notifications for responsible person assignment
         try {
             Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
                     .orElseThrow(() -> new MaintenanceException("Equipment not found"));
-            
+
             String notificationTitle = "Maintenance Responsibility Assigned";
-            String notificationMessage = String.format("%s %s has been assigned as responsible person for %s step on equipment '%s'", 
+            String notificationMessage = String.format(
+                    "%s %s has been assigned as responsible person for %s step on equipment '%s'",
                     contact.getFirstName(),
                     contact.getLastName(),
                     savedStep.getStepType().getName(),
                     equipment.getName());
             String actionUrl = "/maintenance/records/" + record.getId() + "?tab=steps";
             String relatedEntity = record.getId().toString();
-            
-            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE, Role.EQUIPMENT_MANAGER, Role.ADMIN);
-            
+
+            List<Role> targetRoles = Arrays.asList(Role.MAINTENANCE_MANAGER, Role.MAINTENANCE_EMPLOYEE,
+                    Role.EQUIPMENT_MANAGER, Role.ADMIN);
+
             notificationService.sendNotificationToUsersByRoles(
                     targetRoles,
                     notificationTitle,
                     notificationMessage,
                     NotificationType.INFO,
                     actionUrl,
-                    relatedEntity
-            );
-            
+                    relatedEntity);
+
             log.info("Responsible person assignment notifications sent successfully");
         } catch (Exception e) {
             log.error("Failed to send responsible person assignment notifications: {}", e.getMessage());
         }
-        
+
         return convertToDto(savedStep);
     }
-    
+
     // Contact Log Operations
-    
+
     public ContactLogDto createContactLog(UUID stepId, ContactLogDto dto) {
         MaintenanceStep step = maintenanceStepRepository.findById(stepId)
                 .orElseThrow(() -> new MaintenanceException("Maintenance step not found with id: " + stepId));
-        
+
         ContactLog contactLog = ContactLog.builder()
                 .maintenanceStep(step)
                 .maintenanceRecord(step.getMaintenanceRecord())
@@ -966,54 +1003,56 @@ public class MaintenanceService {
                 .followUpDate(dto.getFollowUpDate())
                 .notes(dto.getNotes())
                 .build();
-        
+
         ContactLog savedLog = contactLogRepository.save(contactLog);
-        
+
         // Update step's last contact date
         step.updateLastContact();
         maintenanceStepRepository.save(step);
-        
+
         return convertToDto(savedLog);
     }
-    
+
     public List<ContactLogDto> getContactLogs(UUID maintenanceRecordId) {
         return contactLogRepository.findByMaintenanceRecordIdOrderByContactDateDesc(maintenanceRecordId)
                 .stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
-    
+
     // Dashboard and Analytics
-    
+
     public MaintenanceDashboardDto getDashboardData() {
         long totalRecords = maintenanceRecordRepository.count();
         long activeRecords = maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.ACTIVE);
         long overdueRecords = maintenanceRecordRepository.findOverdueRecords(LocalDateTime.now()).size();
-        long completedRecords = maintenanceRecordRepository.countByStatus(MaintenanceRecord.MaintenanceStatus.COMPLETED);
-        
+        long completedRecords = maintenanceRecordRepository
+                .countByStatus(MaintenanceRecord.MaintenanceStatus.COMPLETED);
+
         // Get recent records for dashboard display
         List<MaintenanceRecordDto> recentRecords = maintenanceRecordRepository.findAll().stream()
                 .limit(5)
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
-        
+
         // Calculate performance metrics
         double completionRate = totalRecords > 0 ? (double) completedRecords / totalRecords * 100 : 0;
-        
+
         // Calculate cost metrics
         double totalCost = maintenanceRecordRepository.findAll().stream()
                 .mapToDouble(record -> record.getTotalCost() != null ? record.getTotalCost().doubleValue() : 0.0)
                 .sum();
         double averageCost = totalRecords > 0 ? totalCost / totalRecords : 0;
-        
+
         // Calculate step metrics
         long totalSteps = maintenanceStepRepository.count();
         long completedSteps = maintenanceStepRepository.findAll().stream()
                 .filter(MaintenanceStep::isCompleted)
                 .count();
         long activeSteps = totalSteps - completedSteps;
-        
-        // Calculate equipment metrics - use findAll and filter instead of non-existent countByStatus
+
+        // Calculate equipment metrics - use findAll and filter instead of non-existent
+        // countByStatus
         List<Equipment> allEquipment = equipmentRepository.findAll();
         long equipmentInMaintenance = allEquipment.stream()
                 .filter(eq -> eq.getStatus() == EquipmentStatus.IN_MAINTENANCE)
@@ -1021,7 +1060,7 @@ public class MaintenanceService {
         long equipmentAvailable = allEquipment.stream()
                 .filter(eq -> eq.getStatus() == EquipmentStatus.AVAILABLE)
                 .count();
-        
+
         return MaintenanceDashboardDto.builder()
                 .totalRecords(totalRecords)
                 .activeRecords(activeRecords)
@@ -1038,19 +1077,21 @@ public class MaintenanceService {
                 .equipmentAvailable(equipmentAvailable)
                 .build();
     }
-    
+
     // Private conversion methods
-    
+
     private MaintenanceRecordDto convertToDto(MaintenanceRecord record) {
-        List<MaintenanceStep> steps = maintenanceStepRepository.findByMaintenanceRecordIdOrderByStartDateAsc(record.getId());
+        List<MaintenanceStep> steps = maintenanceStepRepository
+                .findByMaintenanceRecordIdOrderByStartDateAsc(record.getId());
         Optional<MaintenanceStep> currentStep = steps.stream()
                 .filter(step -> step.getActualEndDate() == null)
                 .findFirst();
-        
+
         // Get equipment information
         Equipment equipment = equipmentRepository.findById(record.getEquipmentId()).orElse(null);
 
-        // Only recalculate cost from steps if there are steps, otherwise preserve the record's totalCost
+        // Only recalculate cost from steps if there are steps, otherwise preserve the
+        // record's totalCost
         BigDecimal totalCost;
         if (!steps.isEmpty()) {
             totalCost = steps.stream()
@@ -1061,7 +1102,7 @@ public class MaintenanceService {
             // No steps yet, use the record's stored totalCost
             totalCost = record.getTotalCost() != null ? record.getTotalCost() : BigDecimal.ZERO;
         }
-        
+
         return MaintenanceRecordDto.builder()
                 .id(record.getId())
                 .equipmentId(record.getEquipmentId())
@@ -1076,7 +1117,9 @@ public class MaintenanceService {
                 .totalCost(record.getTotalCost())
                 .status(record.getStatus())
                 .responsibleUserId(record.getResponsibleUser() != null ? record.getResponsibleUser().getId() : null)
-                .currentResponsibleContactId(record.getCurrentResponsibleContact() != null ? record.getCurrentResponsibleContact().getId() : null)
+                .currentResponsibleContactId(
+                        record.getCurrentResponsibleContact() != null ? record.getCurrentResponsibleContact().getId()
+                                : null)
                 .lastUpdated(record.getLastUpdated())
                 .version(record.getVersion())
                 .isOverdue(record.isOverdue())
@@ -1086,8 +1129,10 @@ public class MaintenanceService {
                 .activeSteps((int) steps.stream().filter(step -> !step.isCompleted()).count())
                 .steps(steps.stream().map(this::convertToDto).collect(Collectors.toList()))
                 .currentStepDescription(currentStep.map(MaintenanceStep::getDescription).orElse(null))
-                .currentStepResponsiblePerson(currentStep.map(step ->
-                    step.getResponsibleContact() != null ? step.getResponsibleContact().getFullName() : null).orElse(null))
+                .currentStepResponsiblePerson(currentStep
+                        .map(step -> step.getResponsibleContact() != null ? step.getResponsibleContact().getFullName()
+                                : null)
+                        .orElse(null))
                 .currentStepExpectedEndDate(currentStep.map(MaintenanceStep::getExpectedEndDate).orElse(null))
                 .currentStepIsOverdue(currentStep.map(MaintenanceStep::isOverdue).orElse(false))
                 .equipmentName(equipment != null ? equipment.getName() : null)
@@ -1100,7 +1145,7 @@ public class MaintenanceService {
                 .currentResponsibleEmail(record.getCurrentResponsiblePersonEmail())
                 .build();
     }
-    
+
     private MaintenanceStepDto convertToDto(MaintenanceStep step) {
         // Format step type name in title case (TRANSPORT -> Transport)
         String stepTypeName = null;
@@ -1108,7 +1153,7 @@ public class MaintenanceService {
             String name = step.getStepType().getName();
             stepTypeName = name.substring(0, 1).toUpperCase() + name.substring(1).toLowerCase();
         }
-        
+
         // Convert merchant items to DTOs
         List<MaintenanceStepMerchantItemDto> merchantItemDtos = null;
         if (step.getMerchantItems() != null && !step.getMerchantItems().isEmpty()) {
@@ -1127,15 +1172,20 @@ public class MaintenanceService {
                 .stepTypeId(step.getStepType() != null ? step.getStepType().getId() : null)
                 .stepTypeName(stepTypeName)
                 .description(step.getDescription())
-                .responsibleContactId(step.getResponsibleContact() != null ? step.getResponsibleContact().getId() : null)
-                .responsibleEmployeeId(step.getResponsibleEmployee() != null ? step.getResponsibleEmployee().getId() : null)
+                .responsibleContactId(
+                        step.getResponsibleContact() != null ? step.getResponsibleContact().getId() : null)
+                .responsibleEmployeeId(
+                        step.getResponsibleEmployee() != null ? step.getResponsibleEmployee().getId() : null)
                 .selectedMerchantId(step.getSelectedMerchant() != null ? step.getSelectedMerchant().getId() : null)
                 .merchantItems(merchantItemDtos)
-                .contactEmail(step.getResponsibleContact() != null ? step.getResponsibleContact().getEmail() :
-                             (step.getResponsibleEmployee() != null ? step.getResponsibleEmployee().getEmail() : null))
-                .contactSpecialization(step.getResponsibleContact() != null ? step.getResponsibleContact().getSpecialization() :
-                                      (step.getResponsibleEmployee() != null && step.getResponsibleEmployee().getJobPosition() != null ?
-                                       step.getResponsibleEmployee().getJobPosition().getPositionName() : null))
+                .contactEmail(step.getResponsibleContact() != null ? step.getResponsibleContact().getEmail()
+                        : (step.getResponsibleEmployee() != null ? step.getResponsibleEmployee().getEmail() : null))
+                .contactSpecialization(
+                        step.getResponsibleContact() != null ? step.getResponsibleContact().getSpecialization()
+                                : (step.getResponsibleEmployee() != null
+                                        && step.getResponsibleEmployee().getJobPosition() != null
+                                                ? step.getResponsibleEmployee().getJobPosition().getPositionName()
+                                                : null))
                 .lastContactDate(step.getLastContactDate())
                 .startDate(step.getStartDate())
                 .expectedEndDate(step.getExpectedEndDate())
@@ -1161,7 +1211,7 @@ public class MaintenanceService {
                 .personPhoneNumber(step.getResponsiblePersonPhone())
                 .build();
     }
-    
+
     private ContactLogDto convertToDto(ContactLog contactLog) {
         return ContactLogDto.builder()
                 .id(contactLog.getId())
@@ -1178,28 +1228,30 @@ public class MaintenanceService {
                 .contactDate(contactLog.getContactDate())
                 .notes(contactLog.getNotes())
                 .isFollowUpOverdue(contactLog.isFollowUpOverdue())
-                .daysSinceContact(contactLog.getContactDate() != null ? 
-                        java.time.Duration.between(contactLog.getContactDate(), LocalDateTime.now()).toDays() : null)
+                .daysSinceContact(contactLog.getContactDate() != null
+                        ? java.time.Duration.between(contactLog.getContactDate(), LocalDateTime.now()).toDays()
+                        : null)
                 .build();
     }
-    
+
     private void updateRecordTotalCost(UUID recordId) {
         MaintenanceRecord record = maintenanceRecordRepository.findById(recordId)
                 .orElseThrow(() -> new MaintenanceException("Maintenance record not found with id: " + recordId));
 
         List<MaintenanceStep> steps = maintenanceStepRepository.findByMaintenanceRecordIdOrderByStartDateAsc(recordId);
-        
+
         BigDecimal totalCost = steps.stream()
                 .map(step -> step.getStepCost() != null ? step.getStepCost() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
+
         record.setTotalCost(totalCost);
         maintenanceRecordRepository.save(record);
     }
-    
+
     /**
      * Create default maintenance steps for a new maintenance record.
-     * Creates 4 steps: Transport, Purchasing Spare Parts, Maintenance, Transport Back to Site
+     * Creates 4 steps: Transport, Purchasing Spare Parts, Maintenance, Transport
+     * Back to Site
      */
     private void createDefaultMaintenanceSteps(MaintenanceRecord record, Equipment equipment) {
         try {
@@ -1214,7 +1266,7 @@ public class MaintenanceService {
 
             StepType purchasingType = stepTypeRepository.findAll().stream()
                     .filter(st -> "PURCHASING_SPARE_PARTS".equalsIgnoreCase(st.getName()) ||
-                                  "PURCHASING".equalsIgnoreCase(st.getName()))
+                            "PURCHASING".equalsIgnoreCase(st.getName()))
                     .findFirst()
                     .orElse(null);
 
@@ -1225,7 +1277,7 @@ public class MaintenanceService {
 
             StepType transportBackType = stepTypeRepository.findAll().stream()
                     .filter(st -> "TRANSPORT_BACK_TO_SITE".equalsIgnoreCase(st.getName()) ||
-                                  "TRANSPORT_BACK".equalsIgnoreCase(st.getName()))
+                            "TRANSPORT_BACK".equalsIgnoreCase(st.getName()))
                     .findFirst()
                     .orElse(transportType); // Fall back to transport type
 
@@ -1304,7 +1356,8 @@ public class MaintenanceService {
 
     /**
      * Find or create a Contact entity for an Employee.
-     * This is used to automatically assign equipment's main driver as responsible person
+     * This is used to automatically assign equipment's main driver as responsible
+     * person
      * when creating a maintenance record.
      *
      * @param employee The employee to find or create a contact for
@@ -1313,12 +1366,12 @@ public class MaintenanceService {
     private Contact findOrCreateContactForEmployee(Employee employee) {
         // Try to find existing contact by email
         Optional<Contact> existingContact = contactRepository.findByEmail(employee.getEmail());
-        
+
         if (existingContact.isPresent()) {
             log.info("Found existing contact for employee {} {}", employee.getFirstName(), employee.getLastName());
             return existingContact.get();
         }
-        
+
         // Create new contact for the employee
         // Find or create "INTERNAL_STAFF" contact type
         ContactType internalStaffType = contactTypeRepository.findByNameIgnoreCase("INTERNAL_STAFF")
@@ -1333,7 +1386,7 @@ public class MaintenanceService {
                             .build();
                     return contactTypeRepository.save(newType);
                 });
-        
+
         Contact newContact = Contact.builder()
                 .firstName(employee.getFirstName())
                 .lastName(employee.getLastName())
@@ -1345,7 +1398,7 @@ public class MaintenanceService {
                 .isActive(true)
                 .notes("Auto-created from employee record for maintenance tracking")
                 .build();
-        
+
         Contact savedContact = contactRepository.save(newContact);
         log.info("Created new contact for employee {} {} with ID {}",
                 employee.getFirstName(), employee.getLastName(), savedContact.getId());
@@ -1355,6 +1408,7 @@ public class MaintenanceService {
 
     /**
      * Get the currently authenticated user
+     * 
      * @return The current authenticated user, or null if not authenticated
      */
     private User getCurrentAuthenticatedUser() {
@@ -1371,4 +1425,4 @@ public class MaintenanceService {
             return null;
         }
     }
-} 
+}

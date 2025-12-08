@@ -1,6 +1,6 @@
 package com.example.backend.dtos;
 
-import com.example.backend.models.MaintenanceRecord;
+import com.example.backend.models.maintenance.MaintenanceRecord;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
