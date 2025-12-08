@@ -108,12 +108,26 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
         }
     };
 
+    const formatWithCommas = (value) => {
+        if (value === null || value === undefined || value === '') return '';
+        const parts = value.toString().split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts.join('.');
+    };
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
 
         let processedValue = value;
         if (name === 'expectedCost') {
-            processedValue = value === '' ? '' : parseFloat(value) || '';
+            // Remove commas for state storage
+            const rawValue = value.replace(/,/g, '');
+            // Allow only numbers and one decimal point
+            if (rawValue === '' || /^\d*\.?\d*$/.test(rawValue)) {
+                processedValue = rawValue;
+            } else {
+                return; // Ignore invalid input
+            }
         } else if (name === 'siteId' && value) {
             // Clear equipment selection when site changes
             setFormData(prev => ({
@@ -210,15 +224,23 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
         return Object.keys(newErrors).length === 0;
     };
 
+    const prepareDataForSubmission = (data) => {
+        return {
+            ...data,
+            siteId: (data.siteId === 'none' || data.siteId === '') ? null : data.siteId,
+            expectedCost: data.expectedCost ? parseFloat(data.expectedCost.toString().replace(/,/g, '')) : null
+        };
+    };
+
     const handleSave = async () => {
         if (validate()) {
-            onSave(formData);
+            onSave(prepareDataForSubmission(formData));
         }
     };
 
     const handleComplete = async () => {
         if (validate()) {
-            onComplete(formData);
+            onComplete(prepareDataForSubmission(formData));
         }
     };
 
@@ -325,32 +347,36 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
                 <div className="form-group">
                     <label className="required" >Expected Cost</label>
                     <input
-                        type="number"
+                        type="text"
                         name="expectedCost"
-                        value={formData.expectedCost === '' || formData.expectedCost === null ? '' : formData.expectedCost}
+                        value={formData.expectedCost === '' || formData.expectedCost === null ? '' : formatWithCommas(formData.expectedCost)}
                         onChange={handleInputChange}
                         placeholder="0.00"
-                        min="0"
-                        step="0.01"
                         className={errors.expectedCost ? 'error' : ''}
-                        onWheel={(e) => e.target.blur()}
                     />
                     {errors.expectedCost && <span className="error-message">{errors.expectedCost}</span>}
-                    <small className="field-hint">Optional - estimated total cost</small>
+                    {/*<small className="field-hint">Optional - estimated total cost</small>*/}
                 </div>
 
                 {/* Expected End Date */}
                 <div className="form-group">
                     <label className="required" >Expected End Date</label>
                     <input
-                        type="date"
+                        type={formData.expectedEndDate ? "date" : "text"}
                         name="expectedEndDate"
                         value={formData.expectedEndDate}
                         onChange={handleInputChange}
+                        onFocus={(e) => e.target.type = 'date'}
+                        onBlur={(e) => {
+                            if (!e.target.value) {
+                                e.target.type = 'text';
+                            }
+                        }}
+                        placeholder="dd-mm-yyyy"
                         className={errors.expectedEndDate ? 'error' : ''}
                     />
                     {errors.expectedEndDate && <span className="error-message">{errors.expectedEndDate}</span>}
-                    <small className="field-hint">Optional - target completion date</small>
+                    {/*<small className="field-hint">Optional - target completion date</small>*/}
                 </div>
             </div>
 
@@ -431,10 +457,10 @@ const Step1CreationForm = ({ ticketData, onSave, onComplete, isLoading }) => {
                         </table>
 
                         {/* Add More Items Button */}
-                        <div style={{ marginTop: '1rem' }}>
+                        <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
                             <button
                                 type="button"
-                                className="btn btn-secondary"
+                                className="btn-secondary"
                                 onClick={addNewItem}
                                 style={{
                                     display: 'inline-flex',

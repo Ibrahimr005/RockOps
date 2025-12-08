@@ -24,7 +24,7 @@ const Step3FinalizePurchasingForm = ({ ticketId, ticketData, onSave, onComplete,
         const updatedItems = [...formData.items];
         updatedItems[index] = {
             ...updatedItems[index],
-            actualCostPerUnit: parseFloat(value) || 0
+            actualCostPerUnit: value
         };
         setFormData(prev => ({
             ...prev,
@@ -66,15 +66,23 @@ const Step3FinalizePurchasingForm = ({ ticketId, ticketData, onSave, onComplete,
     };
 
     const handleSave = () => {
+        const submittedItems = formData.items.map(item => ({
+            ...item,
+            actualCostPerUnit: parseFloat(item.actualCostPerUnit) || 0
+        }));
         onSave({
-            items: formData.items
+            items: submittedItems
         });
     };
 
     const handleComplete = () => {
         if (validate()) {
+            const submittedItems = formData.items.map(item => ({
+                ...item,
+                actualCostPerUnit: parseFloat(item.actualCostPerUnit) || 0
+            }));
             onComplete({
-                items: formData.items
+                items: submittedItems
             });
         }
     };
@@ -127,7 +135,7 @@ const Step3FinalizePurchasingForm = ({ ticketId, ticketData, onSave, onComplete,
                                             <td>
                                                 <input
                                                     type="number"
-                                                    value={item.actualCostPerUnit || 0}
+                                                    value={item.actualCostPerUnit}
                                                     onChange={(e) => handleActualCostChange(index, e.target.value)}
                                                     min="0"
                                                     step="0.01"

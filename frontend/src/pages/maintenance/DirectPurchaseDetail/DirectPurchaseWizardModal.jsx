@@ -166,10 +166,9 @@ const DirectPurchaseWizardModal = ({ isOpen, ticketId, initialStep = 1, onClose,
             } else {
                 // Complete existing Step 1
                 await directPurchaseService.completeStep1(ticketId);
-                showToastSuccess('Step 1 Completed', 'Now proceeding to Step 2: Purchasing');
+                showToastSuccess('Step 1 Completed', 'Step 1 completed successfully');
                 showSuccess('Step 1 completed successfully');
-                await loadTicket();
-                setCurrentStep(2);
+                if (onComplete) onComplete();
             }
         } catch (error) {
             console.error('Error completing Step 1:', error);
@@ -201,10 +200,9 @@ const DirectPurchaseWizardModal = ({ isOpen, ticketId, initialStep = 1, onClose,
             setLoading(true);
             await directPurchaseService.updateStep2(ticketId, formData);
             await directPurchaseService.completeStep2(ticketId);
-            showToastSuccess('Step 2 Completed', 'Now proceeding to Step 3: Finalize Purchasing');
+            showToastSuccess('Step 2 Completed', 'Step 2 completed successfully');
             showSuccess('Step 2 completed successfully');
-            await loadTicket();
-            setCurrentStep(3);
+            if (onComplete) onComplete();
         } catch (error) {
             console.error('Error completing Step 2:', error);
             showToastError('Completion Failed', error.response?.data?.message || 'Failed to complete Step 2');
@@ -235,10 +233,9 @@ const DirectPurchaseWizardModal = ({ isOpen, ticketId, initialStep = 1, onClose,
             setLoading(true);
             await directPurchaseService.updateStep3(ticketId, formData);
             await directPurchaseService.completeStep3(ticketId);
-            showToastSuccess('Step 3 Completed', 'Now proceeding to Step 4: Transportation');
+            showToastSuccess('Step 3 Completed', 'Step 3 completed successfully');
             showSuccess('Step 3 completed successfully');
-            await loadTicket();
-            setCurrentStep(4);
+            if (onComplete) onComplete();
         } catch (error) {
             console.error('Error completing Step 3:', error);
             showToastError('Completion Failed', error.response?.data?.message || 'Failed to complete Step 3');

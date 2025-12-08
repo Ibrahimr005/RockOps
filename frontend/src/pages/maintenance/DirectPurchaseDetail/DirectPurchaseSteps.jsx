@@ -264,7 +264,12 @@ const DirectPurchaseSteps = ({ ticket, onEditStep }) => {
                     const canEdit = !ticket.isLegacyTicket && stepNumber <= 4;
 
                     return (
-                        <div key={stepNumber} className={`step-card ${status.class}`}>
+                        <div
+                            key={stepNumber}
+                            className={`step-card ${status.class} ${canEdit ? 'clickable' : ''}`}
+                            onClick={() => canEdit && onEditStep && onEditStep(stepNumber)}
+                            style={{ cursor: canEdit ? 'pointer' : 'default' }}
+                        >
                             {/* Card Header */}
                             <div className="step-card-header">
                                 <div className="step-header-left">
@@ -280,15 +285,7 @@ const DirectPurchaseSteps = ({ ticket, onEditStep }) => {
                                     <span className={`status-badge ${status.class}`}>
                                         {status.icon} {status.label}
                                     </span>
-                                    {canEdit && onEditStep && (
-                                        <button
-                                            className="btn-icon-sm"
-                                            onClick={() => onEditStep(stepNumber)}
-                                            title="Edit step"
-                                        >
-                                            <FaEdit />
-                                        </button>
-                                    )}
+
                                 </div>
                             </div>
 

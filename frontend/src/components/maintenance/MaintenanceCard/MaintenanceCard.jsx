@@ -150,6 +150,7 @@ const MaintenanceCard = ({
                                     className="menu-item"
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        setActiveMenuId(null);
                                         onViewRecord(record);
                                     }}
                                 >
@@ -160,6 +161,7 @@ const MaintenanceCard = ({
                                         className="menu-item"
                                         onClick={(e) => {
                                             e.stopPropagation();
+                                            setActiveMenuId(null);
                                             onViewSteps(record);
                                         }}
                                     >
@@ -171,6 +173,7 @@ const MaintenanceCard = ({
                                         className="menu-item"
                                         onClick={(e) => {
                                             e.stopPropagation();
+                                            setActiveMenuId(null);
                                             onAddStep(record);
                                         }}
                                     >
@@ -182,6 +185,7 @@ const MaintenanceCard = ({
                                         className="menu-item"
                                         onClick={(e) => {
                                             e.stopPropagation();
+                                            setActiveMenuId(null);
                                             onEdit(record);
                                         }}
                                     >
@@ -193,6 +197,7 @@ const MaintenanceCard = ({
                                         className="menu-item"
                                         onClick={(e) => {
                                             e.stopPropagation();
+                                            setActiveMenuId(null);
                                             onDelegate(record);
                                         }}
                                     >
@@ -204,6 +209,7 @@ const MaintenanceCard = ({
                                         className="menu-item danger"
                                         onClick={(e) => {
                                             e.stopPropagation();
+                                            setActiveMenuId(null);
                                             onDelete(record);
                                         }}
                                     >

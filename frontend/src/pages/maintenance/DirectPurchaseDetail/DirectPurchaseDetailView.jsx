@@ -277,12 +277,7 @@ const DirectPurchaseDetailView = () => {
             {/* Main Content */}
             <div className="detail-content">
                 {/* Timeline for New Workflow */}
-                {ticket && !ticket.isLegacyTicket && (
-                    <div className="info-card timeline-card">
-                        <h2><FaHistory /> Workflow Progress</h2>
-                        <DirectPurchaseTimeline ticket={ticket} />
-                    </div>
-                )}
+
 
                 {/* Ticket Information Card */}
                 <div className="info-card">
@@ -354,6 +349,13 @@ const DirectPurchaseDetailView = () => {
                     </div>
                 </div>
 
+                {ticket && !ticket.isLegacyTicket && (
+                    <div className="info-card timeline-card">
+                        <h2><FaHistory /> Workflow Progress</h2>
+                        <DirectPurchaseTimeline ticket={ticket} />
+                    </div>
+                )}
+
                 {/* Cost Summary Card - Only show for legacy or if has cost data */}
                 {(ticket.isLegacyTicket || ticket.totalExpectedCost > 0 || ticket.totalActualCost > 0) && (
                     <div className="info-card cost-summary-card">
@@ -388,12 +390,7 @@ const DirectPurchaseDetailView = () => {
                     <div className="info-card steps-card">
                         <div className="steps-header">
                             <h2>Workflow Steps</h2>
-                            <button
-                                className="btn btn-primary btn-sm"
-                                onClick={() => handleOpenWizard()}
-                            >
-                                <FaEdit /> Edit Steps
-                            </button>
+
                         </div>
                         <DirectPurchaseSteps ticket={ticket} onEditStep={handleOpenWizard} />
                     </div>
@@ -403,127 +400,127 @@ const DirectPurchaseDetailView = () => {
                 {ticket.isLegacyTicket && ticket.steps && ticket.steps.length > 0 && (
                     <div className="info-card steps-card">
                         <h2>Workflow Steps ({ticket.completedSteps}/{ticket.totalSteps} Completed)</h2>
-                    <div className="steps-container">
-                        {ticket.steps && ticket.steps.map((step, index) => (
-                            <div key={step.id} className={`step-item ${step.status.toLowerCase()}`}>
-                                <div className="step-header">
-                                    <div className="step-header-left">
-                                        <div className="step-number">Step {step.stepNumber}</div>
-                                        <h3>{step.stepName}</h3>
-                                        {getStatusBadge(step.status)}
-                                    </div>
-                                    <div className="step-header-right">
-                                        <button
-                                            className="menu-trigger"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setActiveStepMenu(activeStepMenu === step.id ? null : step.id);
-                                            }}
-                                        >
-                                            <FaEllipsisV />
-                                        </button>
-                                        {activeStepMenu === step.id && (
-                                            <>
-                                                <div
-                                                    className="menu-backdrop"
-                                                    onClick={() => setActiveStepMenu(null)}
-                                                />
-                                                <div className="menu-dropdown">
-                                                    <button
-                                                        className="menu-item"
-                                                        onClick={() => handleEditStep(step)}
-                                                    >
-                                                        <FaEdit /> Edit Step
-                                                    </button>
-                                                    {step.status !== 'COMPLETED' && (
+                        <div className="steps-container">
+                            {ticket.steps && ticket.steps.map((step, index) => (
+                                <div key={step.id} className={`step-item ${step.status.toLowerCase()}`}>
+                                    <div className="step-header">
+                                        <div className="step-header-left">
+                                            <div className="step-number">Step {step.stepNumber}</div>
+                                            <h3>{step.stepName}</h3>
+                                            {getStatusBadge(step.status)}
+                                        </div>
+                                        <div className="step-header-right">
+                                            <button
+                                                className="menu-trigger"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActiveStepMenu(activeStepMenu === step.id ? null : step.id);
+                                                }}
+                                            >
+                                                <FaEllipsisV />
+                                            </button>
+                                            {activeStepMenu === step.id && (
+                                                <>
+                                                    <div
+                                                        className="menu-backdrop"
+                                                        onClick={() => setActiveStepMenu(null)}
+                                                    />
+                                                    <div className="menu-dropdown">
                                                         <button
                                                             className="menu-item"
-                                                            onClick={() => handleCompleteStep(step)}
+                                                            onClick={() => handleEditStep(step)}
                                                         >
-                                                            <FaCheckCircle /> Complete Step
+                                                            <FaEdit /> Edit Step
                                                         </button>
-                                                    )}
-                                                    {step.status !== 'COMPLETED' && (
-                                                        <button
-                                                            className="menu-item danger"
-                                                            onClick={() => handleDeleteStep(step)}
-                                                        >
-                                                            <FaTrash /> Delete Step
-                                                        </button>
-                                                    )}
+                                                        {step.status !== 'COMPLETED' && (
+                                                            <button
+                                                                className="menu-item"
+                                                                onClick={() => handleCompleteStep(step)}
+                                                            >
+                                                                <FaCheckCircle /> Complete Step
+                                                            </button>
+                                                        )}
+                                                        {step.status !== 'COMPLETED' && (
+                                                            <button
+                                                                className="menu-item danger"
+                                                                onClick={() => handleDeleteStep(step)}
+                                                            >
+                                                                <FaTrash /> Delete Step
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="step-body">
+                                        <div className="step-info-grid">
+                                            <div className="step-info-item">
+                                                <label>Responsible Person</label>
+                                                <div>{step.responsiblePerson || 'Not assigned'}</div>
+                                            </div>
+                                            <div className="step-info-item">
+                                                <label>Phone Number</label>
+                                                <div>{step.phoneNumber || 'N/A'}</div>
+                                            </div>
+                                            <div className="step-info-item">
+                                                <label>Start Date</label>
+                                                <div>{formatDate(step.startDate)}</div>
+                                            </div>
+                                            <div className="step-info-item">
+                                                <label>Expected End Date</label>
+                                                <div>{formatDate(step.expectedEndDate)}</div>
+                                            </div>
+                                            {step.actualEndDate && (
+                                                <div className="step-info-item">
+                                                    <label>Actual End Date</label>
+                                                    <div>{formatDate(step.actualEndDate)}</div>
                                                 </div>
-                                            </>
+                                            )}
+                                            {step.lastChecked && (
+                                                <div className="step-info-item">
+                                                    <label>Last Checked</label>
+                                                    <div>
+                                                        <FaClock className="icon" /> {formatDateTime(step.lastChecked)}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="step-costs">
+                                            <div className="cost-row">
+                                                <span>Expected Cost:</span>
+                                                <strong>{formatCurrency(step.expectedCost)}</strong>
+                                            </div>
+                                            {step.actualCost !== null && (
+                                                <>
+                                                    <div className="cost-row">
+                                                        <span>Actual Cost:</span>
+                                                        <strong>{formatCurrency(step.actualCost)}</strong>
+                                                    </div>
+                                                    <div className="cost-row">
+                                                        <span>Advanced Payment:</span>
+                                                        <strong>{formatCurrency(step.advancedPayment)}</strong>
+                                                    </div>
+                                                    <div className="cost-row remaining">
+                                                        <span>Remaining Cost:</span>
+                                                        <strong>{formatCurrency(step.remainingCost)}</strong>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+
+                                        {step.description && (
+                                            <div className="step-description">
+                                                <label>Description</label>
+                                                <p>{step.description}</p>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
-
-                                <div className="step-body">
-                                    <div className="step-info-grid">
-                                        <div className="step-info-item">
-                                            <label>Responsible Person</label>
-                                            <div>{step.responsiblePerson || 'Not assigned'}</div>
-                                        </div>
-                                        <div className="step-info-item">
-                                            <label>Phone Number</label>
-                                            <div>{step.phoneNumber || 'N/A'}</div>
-                                        </div>
-                                        <div className="step-info-item">
-                                            <label>Start Date</label>
-                                            <div>{formatDate(step.startDate)}</div>
-                                        </div>
-                                        <div className="step-info-item">
-                                            <label>Expected End Date</label>
-                                            <div>{formatDate(step.expectedEndDate)}</div>
-                                        </div>
-                                        {step.actualEndDate && (
-                                            <div className="step-info-item">
-                                                <label>Actual End Date</label>
-                                                <div>{formatDate(step.actualEndDate)}</div>
-                                            </div>
-                                        )}
-                                        {step.lastChecked && (
-                                            <div className="step-info-item">
-                                                <label>Last Checked</label>
-                                                <div>
-                                                    <FaClock className="icon" /> {formatDateTime(step.lastChecked)}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="step-costs">
-                                        <div className="cost-row">
-                                            <span>Expected Cost:</span>
-                                            <strong>{formatCurrency(step.expectedCost)}</strong>
-                                        </div>
-                                        {step.actualCost !== null && (
-                                            <>
-                                                <div className="cost-row">
-                                                    <span>Actual Cost:</span>
-                                                    <strong>{formatCurrency(step.actualCost)}</strong>
-                                                </div>
-                                                <div className="cost-row">
-                                                    <span>Advanced Payment:</span>
-                                                    <strong>{formatCurrency(step.advancedPayment)}</strong>
-                                                </div>
-                                                <div className="cost-row remaining">
-                                                    <span>Remaining Cost:</span>
-                                                    <strong>{formatCurrency(step.remainingCost)}</strong>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-
-                                    {step.description && (
-                                        <div className="step-description">
-                                            <label>Description</label>
-                                            <p>{step.description}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>

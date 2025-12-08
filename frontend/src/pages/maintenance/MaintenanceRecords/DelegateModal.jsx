@@ -69,7 +69,7 @@ const DelegateModal = ({ isOpen, onClose, onSubmit, record }) => {
                     </h2>
                     <button
                         type="button"
-                        className="close-modal-button"
+                        className="btn-close"
                         onClick={onClose}
                         disabled={loading}
                     >
@@ -112,7 +112,7 @@ const DelegateModal = ({ isOpen, onClose, onSubmit, record }) => {
                                             value={user.id}
                                             disabled={user.id === record?.responsibleUserId}
                                         >
-                                            {user.firstName} {user.lastName} - {user.role}
+                                            {user.firstName} {user.lastName} - {user.role?.replace(/_/g, ' ')}
                                             {user.id === record?.responsibleUserId ? ' (Current)' : ''}
                                         </option>
                                     ))}
