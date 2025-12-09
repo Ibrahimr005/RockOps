@@ -67,6 +67,7 @@ import LoadingPage from "./components/common/LoadingPage/LoadingPage.jsx";
 import Payables from "./pages/finance/Payables/Payables.jsx";
 // ===================== Notifications =====================
 import Notifications from './pages/notification/Notifications.jsx';
+import { NotificationProvider } from './contexts/NotificationContext.jsx';
 import FixedAssets from "./pages/finance/FixedAssets/FixedAssets.jsx";
 
 // ===================== Maintenance Team Imports =====================
@@ -109,6 +110,7 @@ import DeductionManagement from "./pages/payroll/deduction/DeductionManagement.j
 import DepartmentDetails from "./pages/HR/Departments/DepartmentDetails.jsx";
 import Contacts from "./pages/maintenance/Contacts/Contacts.jsx";
 import MaintenanceRecordDetail from "./pages/maintenance/MaintenanceRecordDetail/MaintenanceRecordDetail.jsx";
+import DirectPurchaseDetailView from "./pages/maintenance/DirectPurchaseDetail/DirectPurchaseDetailView.jsx";
 import LeaveRequestList from "./pages/HR/LeaveRequests/LeaveRequestList.jsx";
 import PotentialCandidates from "./pages/HR/PotentialCandidates/PotentialCandidates.jsx";
 
@@ -156,7 +158,8 @@ function App() {
                 <LanguageProvider>
                     <ThemeProvider>
                         <AuthProvider>
-                            <Routes>
+                            <NotificationProvider>
+                                <Routes>
                                 <Route path="/login" element={<Login/>}/>
                                 <Route path="/" element={<AuthRedirect/>}/>
 
@@ -287,6 +290,7 @@ function App() {
                                         <Route index element={<MaintenanceManagerDashboard/>}/>
                                         <Route path="records" element={<MaintenanceRecords/>}/>
                                         <Route path="records/:recordId" element={<MaintenanceRecordDetail/>}/>
+                                        <Route path="direct-purchase/:ticketId" element={<DirectPurchaseDetailView/>}/>
                                         <Route path="contacts" element={<Contacts/>}/>
                                         <Route path="step-types" element={<RoleRoute allowedRoles={[ADMIN, MAINTENANCE_MANAGER]}><StepTypeManagement/></RoleRoute>}/>
                                         <Route path="contact-types" element={<RoleRoute allowedRoles={[ADMIN, MAINTENANCE_MANAGER]}><ContactTypeManagement/></RoleRoute>}/>
@@ -312,6 +316,7 @@ function App() {
                                 <Route path="*" element={<Navigate to="/" replace/>}/>
                                 {/* Your other routes here */}
                             </Routes>
+                            </NotificationProvider>
                         </AuthProvider>
                     </ThemeProvider>
                 </LanguageProvider>

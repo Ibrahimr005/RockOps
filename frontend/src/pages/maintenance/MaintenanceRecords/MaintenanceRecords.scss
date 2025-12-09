@@ -1,42 +1,7 @@
 .maintenance-records {
-    padding: 2rem;
-    background-color: var(--main-background-color);
+    padding: 2.5rem;
+    background: linear-gradient(135deg, var(--main-background-color) 0%, rgba(var(--color-primary-rgb, 66, 135, 245), 0.02) 100%);
     min-height: 100vh;
-
-    .maintenance-records-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 2rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--border-color);
-
-        h1 {
-            margin: 0;
-            font-size: 2rem;
-            font-weight: var(--bold-font-weight);
-            color: var(--head-title-color);
-            font-family: var(--font-family);
-
-            @media (max-width: 768px) {
-                font-size: 1.5rem;
-            }
-        }
-
-        .maintenance-records-header__subtitle {
-            margin: 0.5rem 0 0 0;
-            font-size: 1rem;
-            color: var(--paragraph-color);
-            font-weight: normal;
-            font-family: var(--font-family);
-        }
-
-        @media (max-width: 768px) {
-            flex-direction: column;
-            gap: 1rem;
-            align-items: stretch;
-        }
-    }
 
     .maintenance-records-error {
         display: flex;
@@ -140,7 +105,312 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
+
+
+    // Enhanced Filters Panel
+    .filters-panel {
+        background: var(--color-surface);
+        border: 2px solid rgba(var(--color-primary-rgb, 66, 135, 245), 0.15);
+        border-radius: var(--radius-lg);
+        padding: 1.75rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        animation: slideDown 0.3s ease-out;
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .filters-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+
+            h3 {
+                margin: 0;
+                font-size: 1.125rem;
+                font-weight: 700;
+                color: var(--head-title-color);
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+
+                &:before {
+                    content: "";
+                    width: 4px;
+                    height: 1.375rem;
+                    background: linear-gradient(135deg, var(--color-primary) 0%, rgba(var(--color-primary-rgb, 66, 135, 245), 0.7) 100%);
+                    border-radius: 2px;
+                }
+            }
+
+            .clear-filters-btn {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.625rem 1.125rem;
+                background: transparent;
+                border: 2px solid var(--color-danger);
+                border-radius: 10px;
+                color: var(--color-danger);
+                cursor: pointer;
+                font-size: 0.875rem;
+                font-weight: 700;
+                transition: all 0.3s ease;
+
+                &:hover {
+                    background: var(--color-danger);
+                    color: white;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+                }
+
+                svg {
+                    font-size: 0.875rem;
+                }
+            }
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+
+            @media (max-width: 768px) {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-group {
+                display: flex;
+                flex-direction: column;
+                gap: 0.625rem;
+
+                &.filter-group-full {
+                    grid-column: 1 / -1;
+
+                    @media (max-width: 768px) {
+                        grid-column: 1;
+                    }
+                }
+
+                .filter-label {
+                    font-size: 0.8125rem;
+                    font-weight: 700;
+                    color: var(--color-primary);
+                    text-transform: uppercase;
+                    letter-spacing: 0.08em;
+                }
+
+                .search-input-wrapper {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+
+                    .search-icon-filter {
+                        position: absolute;
+                        left: 1rem;
+                        color: var(--color-primary);
+                        font-size: 1rem;
+                        pointer-events: none;
+                    }
+
+                    .filter-input {
+                        padding-left: 2.75rem;
+                    }
+                }
+
+                .filter-select,
+                .filter-input {
+                    padding: 0.75rem 1rem;
+                    border: 2px solid var(--border-color);
+                    border-radius: 10px;
+                    background: var(--section-background-color);
+                    color: var(--color-text-primary);
+                    font-size: 0.9375rem;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    width: 100%;
+
+                    &:focus {
+                        outline: none;
+                        border-color: var(--color-primary);
+                        background: var(--color-surface);
+                        box-shadow: 0 0 0 4px rgba(var(--color-primary-rgb, 66, 135, 245), 0.12);
+                    }
+
+                    &:hover {
+                        border-color: var(--color-primary);
+                        background: var(--color-surface);
+                    }
+                }
+
+                .filter-input {
+                    cursor: text;
+                }
+            }
+        }
+    }
+
+    // Records Container with Grid Layout
+    .records-container {
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            text-align: center;
+            min-height: 400px;
+            background: var(--section-background-color);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+
+            .empty-icon {
+                font-size: 4rem;
+                color: var(--color-text-tertiary);
+                margin-bottom: 1.5rem;
+                opacity: 0.7;
+            }
+
+            h3 {
+                color: var(--head-title-color);
+                font-size: 1.5rem;
+                margin: 0 0 0.5rem 0;
+                font-weight: var(--bold-font-weight);
+            }
+
+            p {
+                color: var(--color-text-secondary);
+                margin: 0 0 2rem 0;
+                font-size: 1rem;
+                max-width: 500px;
+            }
+
+            .btn-primary {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.75rem 1.5rem;
+                background: var(--color-primary);
+                color: white;
+                border: none;
+                border-radius: var(--radius-sm);
+                font-weight: 600;
+                cursor: pointer;
+                transition: all var(--transition-fast);
+
+                &:hover {
+                    background: var(--color-primary-dark);
+                }
+            }
+        }
+
+        .error-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 2rem;
+            text-align: center;
+            min-height: 400px;
+            background: var(--section-background-color);
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(var(--color-danger-rgb, 239, 68, 68), 0.2);
+
+            .error-icon {
+                font-size: 4rem;
+                color: var(--color-danger);
+                margin-bottom: 1.5rem;
+                opacity: 0.8;
+            }
+
+            h3 {
+                color: var(--color-danger);
+                font-size: 1.5rem;
+                margin: 0 0 0.5rem 0;
+                font-weight: var(--bold-font-weight);
+            }
+
+            p {
+                color: var(--color-text-secondary);
+                margin: 0 0 2rem 0;
+                font-size: 1rem;
+                max-width: 500px;
+            }
+
+            .btn-primary {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.75rem 1.5rem;
+                background: var(--color-primary);
+                color: white;
+                border: none;
+                border-radius: var(--radius-sm);
+                font-weight: 600;
+                cursor: pointer;
+                transition: all var(--transition-fast);
+
+                &:hover {
+                    background: var(--color-primary-dark);
+                }
+            }
+        }
+
+        // Grid Layout for Cards - 2 per row
+        .records-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            align-items: start;
+
+            // Tablet - 1-2 cards per row
+            @media (min-width: 768px) and (max-width: 1199px) {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+
+            // Mobile - 1 card per row
+            @media (max-width: 767px) {
+                grid-template-columns: 1fr;
+                gap: 1.25rem;
+            }
+        }
+    }
+
+    // Results count header
+    .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding: 0 0.25rem;
+
+        .results-count {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+
+            .count-number {
+                color: var(--color-primary);
+                font-weight: 700;
+                font-size: 1.125rem;
+            }
+        }
+    }
 }
+
 
 // Responsive adjustments
 @media (max-width: 1024px) {
@@ -152,5 +422,9 @@
 @media (max-width: 768px) {
     .maintenance-records {
         padding: 1rem;
+
+        .filters-panel {
+            padding: 1rem;
+        }
     }
 } 

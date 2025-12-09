@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import PendingRequestOrders from './PendingRequestOrders/PendingRequestOrders';
 import ValidatedRequestOrders from './ValidatedRequestOrders/ValidatedRequestOrders';
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
+import Tabs from '../../../components/common/Tabs/Tabs.jsx';
 import './WarehouseRequestOrders.scss';
 
 const WarehouseRequestOrders = ({ warehouseId, onAddButtonClick, restockItems, shouldOpenRestockModal }) => {
@@ -111,17 +112,11 @@ const WarehouseRequestOrders = ({ warehouseId, onAddButtonClick, restockItems, s
     return (
         <div className="warehouse-request-orders-container">
             {/* Tab navigation */}
-            <div className="tabs-header">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab.id}
-                        className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-                        onClick={() => setActiveTab(tab.id)}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
-            </div>
+            <Tabs
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+            />
 
             {/* Tab Content */}
             <div className="request-orders-tab-content">

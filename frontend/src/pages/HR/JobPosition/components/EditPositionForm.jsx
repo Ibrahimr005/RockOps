@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import './AddPositionForm.scss';
-import {employeeService} from "../../../../services/hr/employeeService.js";
-import {departmentService} from "../../../../services/hr/departmentService.js";
-import {jobPositionService} from "../../../../services/hr/jobPositionService.js";
+import { employeeService } from "../../../../services/hr/employeeService.js";
+import { departmentService } from "../../../../services/hr/departmentService.js";
+import { jobPositionService } from "../../../../services/hr/jobPositionService.js";
 
 const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
     const { showError, showWarning } = useSnackbar();
+
+    // Initial state matching JobPositionDTO fields
     const [formData, setFormData] = useState({
         positionName: '',
-        department: '',
+        department: '', // State for the department name
         head: '',
         contractType: 'MONTHLY',
         experienceLevel: 'ENTRY_LEVEL',
         probationPeriod: 90,
         active: true,
 
-        // NEW: Hierarchy fields
+        // Hierarchy fields
         parentJobPositionId: '',
 
         // HOURLY fields
@@ -38,19 +40,26 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
         workingHours: 8,
         vacations: '21 days annual leave',
 
-        // NEW: Time fields for MONTHLY contracts
+        // Time fields for MONTHLY contracts
         startTime: '09:00',
-        endTime: '17:00'
+        endTime: '17:00',
+
+        // Monthly deduction fields (matching Backend DTO BigDecimal/Integer)
+        absentDeduction: '',
+        lateDeduction: '',
+        lateForgivenessMinutes: 0,
+        lateForgivenessCountPerQuarter: 0,
+        leaveDeduction: ''
     });
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [employees, setEmployees] = useState([]);
     const [departments, setDepartments] = useState([]);
-    const [jobPositions, setJobPositions] = useState([]); // NEW: For parent position selection
+    const [jobPositions, setJobPositions] = useState([]);
     const [loadingEmployees, setLoadingEmployees] = useState(false);
     const [loadingDepartments, setLoadingDepartments] = useState(false);
-    const [loadingPositions, setLoadingPositions] = useState(false); // NEW: Loading state for positions
+    const [loadingPositions, setLoadingPositions] = useState(false);
     const [calculatedSalary, setCalculatedSalary] = useState({
         daily: 0,
         monthly: 0,
@@ -71,22 +80,21 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
         { value: 'EXPERT_LEVEL', label: 'Expert Level' }
     ];
 
-    // Fetch employees, departments, and job positions when modal opens
+    // Fetch dependencies when modal opens
     useEffect(() => {
         if (isOpen) {
             fetchEmployees();
             fetchDepartments();
-            fetchJobPositions(); // NEW: Fetch positions for hierarchy
+            fetchJobPositions();
         }
     }, [isOpen]);
 
-    // Update form data when position prop changes
+    // Map existing position data to form state
     useEffect(() => {
         if (position && isOpen) {
-            // Convert time from HH:mm:ss to HH:mm format for HTML time input
+            // Convert time from HH:mm:ss to HH:mm for input
             const formatTimeForInput = (timeString) => {
                 if (!timeString) return '';
-                // If timeString is in HH:mm:ss format, extract HH:mm
                 if (timeString.includes(':')) {
                     const parts = timeString.split(':');
                     return `${parts[0]}:${parts[1]}`;
@@ -94,21 +102,22 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                 return timeString;
             };
 
-            // Map data from position to form
             const contractType = position.contractType || position.type || 'MONTHLY';
+
             const mappedData = {
                 positionName: position.positionName || '',
-                department: position.department || '',
+                // FIX APPLIED HERE: Check for departmentName (from Details) first, then department (from List)
+                department: position.departmentName || position.department || '',
                 head: position.head || '',
                 contractType: contractType,
                 experienceLevel: position.experienceLevel || 'ENTRY_LEVEL',
                 probationPeriod: position.probationPeriod || 90,
                 active: position.active !== undefined ? position.active : true,
 
-                // NEW: Map hierarchy fields
+                // Hierarchy
                 parentJobPositionId: position.parentJobPositionId || '',
 
-                // HOURLY fields
+                // HOURLY
                 workingDaysPerWeek: position.workingDaysPerWeek || 5,
                 hoursPerShift: position.hoursPerShift || 8,
                 hourlyRate: position.hourlyRate || 0,
@@ -116,20 +125,27 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                 trackBreaks: position.trackBreaks || false,
                 breakDurationMinutes: position.breakDurationMinutes || 30,
 
-                // DAILY fields
+                // DAILY
                 dailyRate: position.dailyRate || 0,
                 workingDaysPerMonth: position.workingDaysPerMonth || 22,
                 includesWeekends: position.includesWeekends || false,
 
-                // MONTHLY fields
+                // MONTHLY
                 monthlyBaseSalary: position.monthlyBaseSalary || position.baseSalary || 0,
                 shifts: position.shifts || 'Day Shift',
                 workingHours: position.workingHours || 8,
                 vacations: position.vacations || '21 days annual leave',
 
-                // NEW: Time fields
+                // Time
                 startTime: formatTimeForInput(position.startTime) || '09:00',
-                endTime: formatTimeForInput(position.endTime) || '17:00'
+                endTime: formatTimeForInput(position.endTime) || '17:00',
+
+                // Deduction fields - Handle nulls from backend
+                absentDeduction: position.absentDeduction !== null && position.absentDeduction !== undefined ? position.absentDeduction : '',
+                lateDeduction: position.lateDeduction !== null && position.lateDeduction !== undefined ? position.lateDeduction : '',
+                lateForgivenessMinutes: position.lateForgivenessMinutes || 0,
+                lateForgivenessCountPerQuarter: position.lateForgivenessCountPerQuarter || 0,
+                leaveDeduction: position.leaveDeduction !== null && position.leaveDeduction !== undefined ? position.leaveDeduction : ''
             };
 
             setFormData(mappedData);
@@ -149,36 +165,25 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
 
         switch (formData.contractType) {
             case 'HOURLY':
-                // Daily salary: hourly rate * hours per shift
                 daily = (formData.hourlyRate || 0) * (formData.hoursPerShift || 0);
-                // Monthly salary: hourly rate * hours per shift * working days per week * 4 weeks
                 monthly = daily * (formData.workingDaysPerWeek || 0) * 4;
                 workingHours = formData.hoursPerShift || 0;
                 break;
             case 'DAILY':
-                // Daily salary: daily rate
                 daily = formData.dailyRate || 0;
-                // Monthly salary: daily rate * working days per month
                 monthly = daily * (formData.workingDaysPerMonth || 0);
-                workingHours = formData.workingHours || 8; // Default to 8 hours
+                workingHours = formData.workingHours || 8;
                 break;
             case 'MONTHLY':
-                // Monthly salary: monthly base salary
                 monthly = formData.monthlyBaseSalary || 0;
-                // Daily salary: monthly salary / working days per month (default 22)
-                const workingDaysPerMonth = formData.workingDaysPerMonth || 22;
-                daily = workingDaysPerMonth > 0 ? monthly / workingDaysPerMonth : 0;
+                // Using standard 22 working days per month
+                daily = monthly > 0 ? monthly / 22 : 0;
 
-                // Calculate working hours from time range
                 if (formData.startTime && formData.endTime) {
                     const start = new Date(`1970-01-01T${formData.startTime}:00`);
                     const end = new Date(`1970-01-01T${formData.endTime}:00`);
                     let diffHours = (end - start) / (1000 * 60 * 60);
-
-                    // Handle overnight shifts
-                    if (diffHours < 0) {
-                        diffHours += 24;
-                    }
+                    if (diffHours < 0) diffHours += 24;
 
                     workingHours = Math.round(diffHours * 100) / 100;
                     workingTimeRange = `${formData.startTime} - ${formData.endTime}`;
@@ -207,8 +212,6 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
             setEmployees(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error('Error fetching employees:', err);
-            showError('Failed to load employees. Please try again.');
-            setError(prev => prev || 'Failed to load employees');
         } finally {
             setLoadingEmployees(false);
         }
@@ -221,14 +224,11 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
             setDepartments(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error('Error fetching departments:', err);
-            showError('Failed to load departments. Please try again.');
-            setError(prev => prev || 'Failed to load departments');
         } finally {
             setLoadingDepartments(false);
         }
     };
 
-    // NEW: Fetch job positions for hierarchy selection
     const fetchJobPositions = async () => {
         try {
             setLoadingPositions(true);
@@ -236,32 +236,26 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
             setJobPositions(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error('Error fetching job positions:', err);
-            showError('Failed to load job positions. Please try again.');
-            setError(prev => prev || 'Failed to load job positions');
         } finally {
             setLoadingPositions(false);
         }
     };
 
-    // NEW: Get hierarchy path for selected parent position
     const getSelectedParentHierarchyInfo = () => {
         if (!formData.parentJobPositionId) return null;
-
         const parentPosition = jobPositions.find(pos => pos.id === formData.parentJobPositionId);
         if (!parentPosition) return null;
 
         return {
             name: parentPosition.positionName,
-            department: parentPosition.department,
+            department: parentPosition.department || parentPosition.departmentName, // Use fallback here too
             hierarchyPath: parentPosition.hierarchyPath || parentPosition.positionName,
             hierarchyLevel: (parentPosition.hierarchyLevel || 0) + 1
         };
     };
 
-    // NEW: Get current position hierarchy info for display
     const getCurrentHierarchyInfo = () => {
         if (!position) return null;
-
         return {
             currentLevel: position.hierarchyLevel || 0,
             isRootPosition: position.isRootPosition || false,
@@ -283,74 +277,44 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
     const validateForm = () => {
         const errors = [];
 
-        // Basic validation
-        if (!formData.positionName.trim()) {
-            errors.push('Position name is required');
-        }
+        if (!formData.positionName.trim()) errors.push('Position name is required');
+        if (!formData.department) errors.push('Department is required');
 
-        if (!formData.department) {
-            errors.push('Department is required');
-        }
-
-        // NEW: Hierarchy validation - prevent circular references
+        // Hierarchy validation
         if (formData.parentJobPositionId && position) {
             if (formData.parentJobPositionId === position.id) {
                 errors.push('A position cannot be its own parent');
             }
-
-            // Check if the selected parent is currently a child of this position
             const parentPosition = jobPositions.find(pos => pos.id === formData.parentJobPositionId);
+            // NOTE: The current position details DTO does not expose childPositionIds directly
+            // when fetched from the details API. This validation assumes it is populated
+            // from the list API's data (jobPositions state).
             if (parentPosition && position.childPositionIds && position.childPositionIds.includes(formData.parentJobPositionId)) {
                 errors.push('Cannot select a child position as parent (would create circular reference)');
             }
         }
 
-        // Contract-specific validation
-        switch (formData.contractType) {
-            case 'HOURLY':
-                if (!formData.hourlyRate || formData.hourlyRate <= 0) {
-                    errors.push('Hourly rate must be greater than 0');
-                }
-                if (!formData.hoursPerShift || formData.hoursPerShift <= 0) {
-                    errors.push('Hours per shift must be greater than 0');
-                }
-                if (!formData.workingDaysPerWeek || formData.workingDaysPerWeek <= 0 || formData.workingDaysPerWeek > 7) {
-                    errors.push('Working days per week must be between 1 and 7');
-                }
-                break;
+        // Contract Specifics
+        if (formData.contractType === 'HOURLY') {
+            if (formData.hourlyRate <= 0) errors.push('Hourly rate must be greater than 0');
+            if (formData.hoursPerShift <= 0) errors.push('Hours per shift must be greater than 0');
+        } else if (formData.contractType === 'DAILY') {
+            if (formData.dailyRate <= 0) errors.push('Daily rate must be greater than 0');
+        } else if (formData.contractType === 'MONTHLY') {
+            if (formData.monthlyBaseSalary <= 0) errors.push('Monthly salary must be greater than 0');
 
-            case 'DAILY':
-                if (!formData.dailyRate || formData.dailyRate <= 0) {
-                    errors.push('Daily rate must be greater than 0');
+            if (formData.startTime && formData.endTime) {
+                const start = new Date(`1970-01-01T${formData.startTime}:00`);
+                const end = new Date(`1970-01-01T${formData.endTime}:00`);
+                if (start >= end && (end.getHours() !== 0 || end.getMinutes() !== 0)) {
+                    if (start.getTime() === end.getTime()) errors.push('End time must be different from start time');
                 }
-                if (!formData.workingDaysPerMonth || formData.workingDaysPerMonth <= 0 || formData.workingDaysPerMonth > 31) {
-                    errors.push('Working days per month must be between 1 and 31');
-                }
-                break;
+            }
 
-            case 'MONTHLY':
-                if (!formData.monthlyBaseSalary || formData.monthlyBaseSalary <= 0) {
-                    errors.push('Monthly salary must be greater than 0');
-                }
-                if (!formData.workingDaysPerMonth || formData.workingDaysPerMonth <= 0 || formData.workingDaysPerMonth > 31) {
-                    errors.push('Working days per month must be between 1 and 31');
-                }
-
-                // Validate time fields if provided
-                if (formData.startTime && formData.endTime) {
-                    const start = new Date(`1970-01-01T${formData.startTime}:00`);
-                    const end = new Date(`1970-01-01T${formData.endTime}:00`);
-
-                    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-                        errors.push('Invalid time format. Please use HH:MM format');
-                    } else if (start >= end && (end.getHours() !== 0 || end.getMinutes() !== 0)) {
-                        // Allow overnight shifts but warn if end time is same as start time
-                        if (start.getTime() === end.getTime()) {
-                            errors.push('End time must be different from start time');
-                        }
-                    }
-                }
-                break;
+            // Negative values check for deductions
+            if (formData.absentDeduction !== '' && Number(formData.absentDeduction) < 0) errors.push('Absent deduction cannot be negative');
+            if (formData.lateDeduction !== '' && Number(formData.lateDeduction) < 0) errors.push('Late deduction cannot be negative');
+            if (formData.leaveDeduction !== '' && Number(formData.leaveDeduction) < 0) errors.push('Leave deduction cannot be negative');
         }
 
         return errors;
@@ -362,16 +326,14 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
         setError(null);
 
         try {
-            // Validate form
             const validationErrors = validateForm();
             if (validationErrors.length > 0) {
-                const errorMessage = validationErrors.join('\n');
-                showError(errorMessage);
-                throw new Error(errorMessage);
+                throw new Error(validationErrors.join('\n'));
             }
 
-            // Prepare data for submission
+            // Construct DTO
             const submitData = {
+                id: position.id, // Ensure ID is present
                 positionName: formData.positionName.trim(),
                 department: formData.department,
                 head: formData.head || null,
@@ -380,10 +342,9 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                 probationPeriod: formData.probationPeriod,
                 active: formData.active,
 
-                // NEW: Include hierarchy fields
+                // Explicitly send null if string is empty to allow removal of parent
                 parentJobPositionId: formData.parentJobPositionId || null,
 
-                // Contract-specific fields
                 ...(formData.contractType === 'HOURLY' && {
                     workingDaysPerWeek: formData.workingDaysPerWeek,
                     hoursPerShift: formData.hoursPerShift,
@@ -401,28 +362,37 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
 
                 ...(formData.contractType === 'MONTHLY' && {
                     monthlyBaseSalary: formData.monthlyBaseSalary,
-                    workingDaysPerMonth: formData.workingDaysPerMonth,
                     shifts: formData.shifts,
                     workingHours: formData.workingHours,
                     vacations: formData.vacations,
-                    // NEW: Include time fields
-                    ...(formData.startTime && { startTime: formData.startTime + ':00' }), // Convert to HH:mm:ss format
-                    ...(formData.endTime && { endTime: formData.endTime + ':00' })
+                    // Append seconds to time for LocalTime parsing in Java
+                    ...(formData.startTime && { startTime: formData.startTime + ':00' }),
+                    ...(formData.endTime && { endTime: formData.endTime + ':00' }),
+
+                    // Deduction fields - Send null if empty string to clear values on backend
+                    absentDeduction: formData.absentDeduction !== '' ? Number(formData.absentDeduction) : null,
+                    lateDeduction: formData.lateDeduction !== '' ? Number(formData.lateDeduction) : null,
+                    leaveDeduction: formData.leaveDeduction !== '' ? Number(formData.leaveDeduction) : null,
+
+                    lateForgivenessMinutes: formData.lateForgivenessMinutes || 0,
+                    lateForgivenessCountPerQuarter: formData.lateForgivenessCountPerQuarter || 0,
                 }),
 
-                // Calculated fields
-                calculatedDailySalary: calculatedSalary.daily,
-                calculatedMonthlySalary: calculatedSalary.monthly,
-                calculatedWorkingHours: calculatedSalary.workingHours,
-                workingTimeRange: calculatedSalary.workingTimeRange
+                // Note: We do NOT send calculated fields (calculatedDailySalary, etc.)
+                // as the backend re-calculates them on save.
             };
 
             await onSubmit(submitData);
 
         } catch (err) {
             console.error('Error submitting form:', err);
-            showError(err?.response?.data?.message || 'Failed to update position');
-            setError(err?.response?.data?.message || 'Failed to update position');
+            // Check for the "userMessage" field from the Backend Controller's custom error response
+            const msg = err?.response?.data?.userMessage ||
+                err?.response?.data?.message ||
+                err.message ||
+                'Failed to update position';
+            showError(msg);
+            setError(msg);
         } finally {
             setLoading(false);
         }
@@ -436,91 +406,35 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                         <h4>Hourly Contract Configuration</h4>
                         <div className="jp-form-row">
                             <div className="jp-form-group">
-                                <label htmlFor="hourlyRate">
-                                    Hourly Rate ($) <span className="jp-required">*</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    id="hourlyRate"
-                                    name="hourlyRate"
-                                    value={formData.hourlyRate}
-                                    onChange={handleChange}
-                                    min="0"
-                                    step="0.01"
-                                    required
-                                    placeholder="0.00"
-                                />
+                                <label htmlFor="hourlyRate">Hourly Rate ($) <span className="jp-required">*</span></label>
+                                <input type="number" id="hourlyRate" name="hourlyRate" value={formData.hourlyRate} onChange={handleChange} min="0" step="0.01" required placeholder="0.00" />
                             </div>
                             <div className="jp-form-group">
-                                <label htmlFor="hoursPerShift">
-                                    Hours per Shift <span className="jp-required">*</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    id="hoursPerShift"
-                                    name="hoursPerShift"
-                                    value={formData.hoursPerShift}
-                                    onChange={handleChange}
-                                    min="1"
-                                    max="24"
-                                    required
-                                />
+                                <label htmlFor="hoursPerShift">Hours per Shift <span className="jp-required">*</span></label>
+                                <input type="number" id="hoursPerShift" name="hoursPerShift" value={formData.hoursPerShift} onChange={handleChange} min="1" max="24" required />
                             </div>
                         </div>
                         <div className="jp-form-row">
                             <div className="jp-form-group">
-                                <label htmlFor="workingDaysPerWeek">
-                                    Working Days per Week <span className="jp-required">*</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    id="workingDaysPerWeek"
-                                    name="workingDaysPerWeek"
-                                    value={formData.workingDaysPerWeek}
-                                    onChange={handleChange}
-                                    min="1"
-                                    max="7"
-                                    required
-                                />
+                                <label htmlFor="workingDaysPerWeek">Working Days per Week <span className="jp-required">*</span></label>
+                                <input type="number" id="workingDaysPerWeek" name="workingDaysPerWeek" value={formData.workingDaysPerWeek} onChange={handleChange} min="1" max="7" required />
                             </div>
                             <div className="jp-form-group">
                                 <label htmlFor="overtimeMultiplier">Overtime Multiplier</label>
-                                <input
-                                    type="number"
-                                    id="overtimeMultiplier"
-                                    name="overtimeMultiplier"
-                                    value={formData.overtimeMultiplier}
-                                    onChange={handleChange}
-                                    min="1"
-                                    max="3"
-                                    step="0.1"
-                                />
+                                <input type="number" id="overtimeMultiplier" name="overtimeMultiplier" value={formData.overtimeMultiplier} onChange={handleChange} min="1" max="3" step="0.1" />
                             </div>
                         </div>
                         <div className="jp-form-row">
                             <div className="jp-form-group jp-checkbox-group">
                                 <label>
-                                    <input
-                                        type="checkbox"
-                                        name="trackBreaks"
-                                        checked={formData.trackBreaks}
-                                        onChange={handleChange}
-                                    />
+                                    <input type="checkbox" name="trackBreaks" checked={formData.trackBreaks} onChange={handleChange} />
                                     Track Break Time
                                 </label>
                             </div>
                             {formData.trackBreaks && (
                                 <div className="jp-form-group">
                                     <label htmlFor="breakDurationMinutes">Break Duration (minutes)</label>
-                                    <input
-                                        type="number"
-                                        id="breakDurationMinutes"
-                                        name="breakDurationMinutes"
-                                        value={formData.breakDurationMinutes}
-                                        onChange={handleChange}
-                                        min="0"
-                                        max="120"
-                                    />
+                                    <input type="number" id="breakDurationMinutes" name="breakDurationMinutes" value={formData.breakDurationMinutes} onChange={handleChange} min="0" max="120" />
                                 </div>
                             )}
                         </div>
@@ -533,46 +447,18 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                         <h4>Daily Contract Configuration</h4>
                         <div className="jp-form-row">
                             <div className="jp-form-group">
-                                <label htmlFor="dailyRate">
-                                    Daily Rate ($) <span className="jp-required">*</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    id="dailyRate"
-                                    name="dailyRate"
-                                    value={formData.dailyRate}
-                                    onChange={handleChange}
-                                    min="0"
-                                    step="0.01"
-                                    required
-                                    placeholder="0.00"
-                                />
+                                <label htmlFor="dailyRate">Daily Rate ($) <span className="jp-required">*</span></label>
+                                <input type="number" id="dailyRate" name="dailyRate" value={formData.dailyRate} onChange={handleChange} min="0" step="0.01" required placeholder="0.00" />
                             </div>
                             <div className="jp-form-group">
-                                <label htmlFor="workingDaysPerMonth">
-                                    Working Days per Month <span className="jp-required">*</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    id="workingDaysPerMonth"
-                                    name="workingDaysPerMonth"
-                                    value={formData.workingDaysPerMonth}
-                                    onChange={handleChange}
-                                    min="1"
-                                    max="31"
-                                    required
-                                />
+                                <label htmlFor="workingDaysPerMonth">Working Days per Month <span className="jp-required">*</span></label>
+                                <input type="number" id="workingDaysPerMonth" name="workingDaysPerMonth" value={formData.workingDaysPerMonth} onChange={handleChange} min="1" max="31" required />
                             </div>
                         </div>
                         <div className="jp-form-row">
                             <div className="jp-form-group jp-checkbox-group">
                                 <label>
-                                    <input
-                                        type="checkbox"
-                                        name="includesWeekends"
-                                        checked={formData.includesWeekends}
-                                        onChange={handleChange}
-                                    />
+                                    <input type="checkbox" name="includesWeekends" checked={formData.includesWeekends} onChange={handleChange} />
                                     Includes Weekend Work
                                 </label>
                             </div>
@@ -586,69 +472,27 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                         <h4>Monthly Contract Configuration</h4>
                         <div className="jp-form-row">
                             <div className="jp-form-group">
-                                <label htmlFor="monthlyBaseSalary">
-                                    Monthly Base Salary ($) <span className="jp-required">*</span>
-                                </label>
-                                <input
-                                    type="number"
-                                    id="monthlyBaseSalary"
-                                    name="monthlyBaseSalary"
-                                    value={formData.monthlyBaseSalary}
-                                    onChange={handleChange}
-                                    min="0"
-                                    step="0.01"
-                                    required
-                                    placeholder="0.00"
-                                />
-                            </div>
-                            <div className="jp-form-group">
-                                <label htmlFor="workingDaysPerMonth">Working Days per Month</label>
-                                <input
-                                    type="number"
-                                    id="workingDaysPerMonth"
-                                    name="workingDaysPerMonth"
-                                    value={formData.workingDaysPerMonth}
-                                    onChange={handleChange}
-                                    min="1"
-                                    max="31"
-                                    placeholder="22"
-                                />
+                                <label htmlFor="monthlyBaseSalary">Monthly Base Salary ($) <span className="jp-required">*</span></label>
+                                <input type="number" id="monthlyBaseSalary" name="monthlyBaseSalary" value={formData.monthlyBaseSalary} onChange={handleChange} min="0" step="0.01" required placeholder="0.00" />
                             </div>
                         </div>
 
-                        {/* NEW: Working Time Section */}
                         <div className="jp-time-section">
                             <h5>Working Hours Schedule</h5>
                             <div className="jp-form-row">
                                 <div className="jp-form-group">
                                     <label htmlFor="startTime">Start Time</label>
-                                    <input
-                                        type="time"
-                                        id="startTime"
-                                        name="startTime"
-                                        value={formData.startTime}
-                                        onChange={handleChange}
-                                        className="jp-time-input"
-                                    />
+                                    <input type="time" id="startTime" name="startTime" value={formData.startTime} onChange={handleChange} className="jp-time-input" />
                                 </div>
                                 <div className="jp-form-group">
                                     <label htmlFor="endTime">End Time</label>
-                                    <input
-                                        type="time"
-                                        id="endTime"
-                                        name="endTime"
-                                        value={formData.endTime}
-                                        onChange={handleChange}
-                                        className="jp-time-input"
-                                    />
+                                    <input type="time" id="endTime" name="endTime" value={formData.endTime} onChange={handleChange} className="jp-time-input" />
                                 </div>
                             </div>
                             {calculatedSalary.workingTimeRange && (
                                 <div className="jp-time-preview">
                                     <span className="jp-time-label">Working Hours:</span>
-                                    <span className="jp-time-value">
-                                        {calculatedSalary.workingTimeRange} ({calculatedSalary.workingHours}h/day)
-                                    </span>
+                                    <span className="jp-time-value">{calculatedSalary.workingTimeRange} ({calculatedSalary.workingHours}h/day)</span>
                                 </div>
                             )}
                         </div>
@@ -657,12 +501,7 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                             <div className="jp-form-group">
                                 <label htmlFor="shifts">Shifts</label>
                                 <div className="jp-select-wrapper">
-                                    <select
-                                        id="shifts"
-                                        name="shifts"
-                                        value={formData.shifts}
-                                        onChange={handleChange}
-                                    >
+                                    <select id="shifts" name="shifts" value={formData.shifts} onChange={handleChange}>
                                         <option value="Day Shift">Day Shift</option>
                                         <option value="Night Shift">Night Shift</option>
                                         <option value="Rotating Shifts">Rotating Shifts</option>
@@ -672,394 +511,227 @@ const EditPositionForm = ({ isOpen, onClose, onSubmit, position }) => {
                             </div>
                             <div className="jp-form-group">
                                 <label htmlFor="workingHours">Manual Working Hours per Day</label>
-                                <input
-                                    type="number"
-                                    id="workingHours"
-                                    name="workingHours"
-                                    value={formData.workingHours}
-                                    onChange={handleChange}
-                                    min="1"
-                                    max="24"
-                                    placeholder="Leave empty to auto-calculate from time range"
-                                />
-                                <small className="jp-field-hint">
-                                    Leave empty to auto-calculate from start/end time
-                                </small>
+                                <input type="number" id="workingHours" name="workingHours" value={formData.workingHours} onChange={handleChange} min="1" max="24" placeholder="Leave empty to auto-calculate" />
                             </div>
                         </div>
                         <div className="jp-form-row">
                             <div className="jp-form-group">
                                 <label htmlFor="vacations">Vacation Policy</label>
-                                <input
-                                    type="text"
-                                    id="vacations"
-                                    name="vacations"
-                                    value={formData.vacations}
-                                    onChange={handleChange}
-                                    placeholder="e.g., 21 days annual leave"
-                                />
+                                <input type="text" id="vacations" name="vacations" value={formData.vacations} onChange={handleChange} placeholder="e.g., 21 days annual leave" />
+                            </div>
+                        </div>
+
+                        <div className="jp-deduction-section">
+                            <h5>Deduction Settings</h5>
+                            <p className="jp-section-description">Configure automatic deductions for attendance violations and leave excess.</p>
+
+                            <div className="jp-form-row">
+                                <div className="jp-form-group">
+                                    <label htmlFor="absentDeduction">Absent Deduction Amount ($)</label>
+                                    <input type="number" id="absentDeduction" name="absentDeduction" value={formData.absentDeduction} onChange={handleChange} min="0" step="0.01" placeholder="0.00" />
+                                    <small className="jp-field-hint">Amount deducted when attendance status is Absent</small>
+                                </div>
+                                <div className="jp-form-group">
+                                    <label htmlFor="lateDeduction">Late Deduction Amount ($)</label>
+                                    <input type="number" id="lateDeduction" name="lateDeduction" value={formData.lateDeduction} onChange={handleChange} min="0" step="0.01" placeholder="0.00" />
+                                    <small className="jp-field-hint">Amount deducted when attendance status is Late</small>
+                                </div>
+                            </div>
+
+                            <div className="jp-form-row">
+                                <div className="jp-form-group">
+                                    <label htmlFor="lateForgivenessMinutes">Late Forgiveness Minutes</label>
+                                    <input type="number" id="lateForgivenessMinutes" name="lateForgivenessMinutes" value={formData.lateForgivenessMinutes} onChange={handleChange} min="0" max="60" placeholder="0" />
+                                    <small className="jp-field-hint">Grace period in minutes before late deduction is applied</small>
+                                </div>
+                                <div className="jp-form-group">
+                                    <label htmlFor="lateForgivenessCountPerQuarter">Late Forgiveness Count per Quarter</label>
+                                    <input type="number" id="lateForgivenessCountPerQuarter" name="lateForgivenessCountPerQuarter" value={formData.lateForgivenessCountPerQuarter} onChange={handleChange} min="0" max="20" placeholder="0" />
+                                    <small className="jp-field-hint">Number of late occurrences forgiven per quarter</small>
+                                </div>
+                            </div>
+
+                            <div className="jp-form-row">
+                                <div className="jp-form-group">
+                                    <label htmlFor="leaveDeduction">Leave Excess Deduction per Day ($)</label>
+                                    <input type="number" id="leaveDeduction" name="leaveDeduction" value={formData.leaveDeduction} onChange={handleChange} min="0" step="0.01" placeholder="0.00" />
+                                    <small className="jp-field-hint">Amount deducted per day when exceeding annual leave</small>
+                                </div>
                             </div>
                         </div>
                     </div>
                 );
-
             default:
                 return null;
         }
     };
 
     const handleOverlayClick = (e) => {
-        // Only close if clicking on the overlay itself, not on the modal content
-        if (e.target === e.currentTarget) {
-            onClose();
-        }
+        if (e.target === e.currentTarget) onClose();
     };
-
 
     if (!isOpen) return null;
 
     return (
         <div className="modal-overlay" onClick={handleOverlayClick}>
-            <div className="modal-content modal-lg">
+            <div className="modal-content modal-xl">
                 <div className="modal-header">
-                    <h2>Edit Position</h2>
+                    <h2>Edit Position: {position?.positionName}</h2>
                     <button className="btn-close" onClick={onClose}>×</button>
                 </div>
-
-                {error && (
-                    <div className="jp-error">
-                        {error}
-                    </div>
-                )}
 
                 {(loadingDepartments || loadingEmployees || loadingPositions) ? (
                     <div className="jp-loading">Loading form data...</div>
                 ) : (
                     <div className="modal-body">
-                    <form onSubmit={handleSubmit}>
-                        {/* Basic Information */}
-                        <div className="jp-section">
-                            <h3>Basic Information</h3>
-                            <div className="jp-form-row">
-                                <div className="jp-form-group">
-                                    <label htmlFor="positionName">
-                                        Position Name <span className="jp-required">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id="positionName"
-                                        name="positionName"
-                                        value={formData.positionName}
-                                        onChange={handleChange}
-                                        required
-                                        placeholder="e.g. Software Engineer"
-                                    />
-                                </div>
-
-                                <div className="jp-form-group">
-                                    <label htmlFor="department">
-                                        Department <span className="jp-required">*</span>
-                                    </label>
-                                    <div className="jp-select-wrapper">
-                                        <select
-                                            id="department"
-                                            name="department"
-                                            value={formData.department}
-                                            onChange={handleChange}
-                                            required
-                                        >
-                                            <option value="" disabled>Select Department</option>
-                                            {departments.map(department => (
-                                                <option key={department.id} value={department.name}>
-                                                    {department.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="jp-form-row">
-                                <div className="jp-form-group">
-                                    <label htmlFor="head">Reporting To</label>
-                                    <div className="jp-select-wrapper">
-                                        <select
-                                            id="head"
-                                            name="head"
-                                            value={formData.head}
-                                            onChange={handleChange}
-                                        >
-                                            <option value="">Select Manager (Optional)</option>
-                                            {employees.map(employee => (
-                                                <option
-                                                    key={employee.id}
-                                                    value={employee.fullName || `${employee.firstName} ${employee.lastName}`}
-                                                >
-                                                    {employee.fullName || `${employee.firstName} ${employee.lastName}`}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="jp-form-group">
-                                    <label htmlFor="experienceLevel">Experience Level</label>
-                                    <div className="jp-select-wrapper">
-                                        <select
-                                            id="experienceLevel"
-                                            name="experienceLevel"
-                                            value={formData.experienceLevel}
-                                            onChange={handleChange}
-                                        >
-                                            {experienceLevels.map(level => (
-                                                <option key={level.value} value={level.value}>
-                                                    {level.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="jp-form-row">
-                                <div className="jp-form-group">
-                                    <label htmlFor="probationPeriod">Probation Period (days)</label>
-                                    <input
-                                        type="number"
-                                        id="probationPeriod"
-                                        name="probationPeriod"
-                                        value={formData.probationPeriod}
-                                        onChange={handleChange}
-                                        min="0"
-                                        max="365"
-                                        placeholder="90"
-                                    />
-                                </div>
-                                <div className="jp-checkbox-group">
-                                    <label>
-                                        <input
-                                            type="checkbox"
-                                            name="active"
-                                            checked={formData.active}
-                                            onChange={handleChange}
-                                        />
-                                        Active Position
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* NEW: Current Hierarchy Information */}
-                        {getCurrentHierarchyInfo() && (
+                        <form onSubmit={handleSubmit}>
                             <div className="jp-section">
-                                <h3>Current Hierarchy Information</h3>
-                                <div className="jp-current-hierarchy">
-                                    <div className="jp-hierarchy-item">
-                                        <span className="jp-hierarchy-label">Current Level:</span>
-                                        <span className="jp-hierarchy-value">
-                                            Level {getCurrentHierarchyInfo().currentLevel}
-                                        </span>
+                                <h3>Basic Information</h3>
+                                <div className="jp-form-row">
+                                    <div className="jp-form-group">
+                                        <label htmlFor="positionName">Position Name <span className="jp-required">*</span></label>
+                                        <input type="text" id="positionName" name="positionName" value={formData.positionName} onChange={handleChange} required placeholder="e.g. Software Engineer" />
                                     </div>
-                                    <div className="jp-hierarchy-item">
-                                        <span className="jp-hierarchy-label">Position Type:</span>
-                                        <span className="jp-hierarchy-value">
-                                            {getCurrentHierarchyInfo().isRootPosition ? 'Root Position' : 'Child Position'}
-                                        </span>
-                                    </div>
-                                    {getCurrentHierarchyInfo().parentPositionName && (
-                                        <div className="jp-hierarchy-item">
-                                            <span className="jp-hierarchy-label">Current Parent:</span>
-                                            <span className="jp-hierarchy-value">
-                                                {getCurrentHierarchyInfo().parentPositionName}
-                                            </span>
-                                        </div>
-                                    )}
-                                    <div className="jp-hierarchy-item">
-                                        <span className="jp-hierarchy-label">Hierarchy Path:</span>
-                                        <span className="jp-hierarchy-value">
-                                            {getCurrentHierarchyInfo().hierarchyPath}
-                                        </span>
-                                    </div>
-                                    {getCurrentHierarchyInfo().childCount > 0 && (
-                                        <div className="jp-hierarchy-item">
-                                            <span className="jp-hierarchy-label">Child Positions:</span>
-                                            <span className="jp-hierarchy-value">
-                                                {getCurrentHierarchyInfo().childCount} position(s)
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                                {getCurrentHierarchyInfo().childCount > 0 && (
-                                    <div className="jp-hierarchy-warning">
-                                        <strong>⚠️ Warning:</strong> This position has child positions.
-                                        Changing the parent will affect the entire hierarchy structure.
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* NEW: Position Hierarchy Section */}
-                        <div className="jp-section">
-                            <h3>Update Position Hierarchy</h3>
-                            <div className="jp-form-row">
-                                <div className="jp-form-group">
-                                    <label htmlFor="parentJobPositionId">Parent Position</label>
-                                    <div className="jp-select-wrapper">
-                                        <select
-                                            id="parentJobPositionId"
-                                            name="parentJobPositionId"
-                                            value={formData.parentJobPositionId}
-                                            onChange={handleChange}
-                                        >
-                                            <option value="">Make Root Position (No Parent)</option>
-                                            {jobPositions
-                                                .filter(pos =>
-                                                    pos.active &&
-                                                    pos.id !== position?.id && // Can't be parent of itself
-                                                    !(position?.childPositionIds || []).includes(pos.id) // Can't select current children
-                                                )
-                                                .map(jobPosition => (
-                                                    <option key={jobPosition.id} value={jobPosition.id}>
-                                                        {jobPosition.positionName} ({jobPosition.department})
-                                                        {jobPosition.hierarchyLevel !== undefined &&
-                                                            ` - Level ${jobPosition.hierarchyLevel}`}
-                                                    </option>
+                                    <div className="jp-form-group">
+                                        <label htmlFor="department">Department <span className="jp-required">*</span></label>
+                                        <div className="jp-select-wrapper">
+                                            <select id="department" name="department" value={formData.department} onChange={handleChange} required>
+                                                <option value="" disabled>Select Department</option>
+                                                {departments.map(department => (
+                                                    <option key={department.id} value={department.name}>{department.name}</option>
                                                 ))}
-                                        </select>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <small className="jp-field-hint">
-                                        Select a parent position to update the hierarchical relationship.
-                                        This will determine promotion paths and organizational structure.
-                                        Note: Child positions cannot be selected as parents.
-                                    </small>
+                                </div>
+                                <div className="jp-form-row">
+                                    <div className="jp-form-group">
+                                        <label htmlFor="experienceLevel">Experience Level</label>
+                                        <div className="jp-select-wrapper">
+                                            <select id="experienceLevel" name="experienceLevel" value={formData.experienceLevel} onChange={handleChange}>
+                                                {experienceLevels.map(level => (
+                                                    <option key={level.value} value={level.value}>{level.label}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="jp-form-group">
+                                        <label htmlFor="probationPeriod">Probation Period (days)</label>
+                                        <input type="number" id="probationPeriod" name="probationPeriod" value={formData.probationPeriod} onChange={handleChange} min="0" max="365" placeholder="90" />
+                                    </div>
+                                </div>
+                                <div className="jp-form-row">
+                                    <div className="jp-checkbox-group">
+                                        <label>
+                                            <input type="checkbox" name="active" checked={formData.active} onChange={handleChange} />
+                                            Active Position
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* NEW: Show hierarchy preview if parent is selected */}
-                            {getSelectedParentHierarchyInfo() && (
-                                <div className="jp-hierarchy-preview">
-                                    <h5>New Hierarchy Preview</h5>
-                                    <div className="jp-hierarchy-info">
-                                        <div className="jp-hierarchy-item">
-                                            <span className="jp-hierarchy-label">New Parent Position:</span>
-                                            <span className="jp-hierarchy-value">
-                                                {getSelectedParentHierarchyInfo().name}
-                                            </span>
+                            <div className="jp-section">
+                                <h3>Position Hierarchy</h3>
+                                {getCurrentHierarchyInfo() && (
+                                    <div className="jp-current-hierarchy">
+                                        <h5>Current Hierarchy</h5>
+                                        <div className="jp-hierarchy-info">
+                                            <div className="jp-hierarchy-item">
+                                                <span className="jp-hierarchy-label">Current Level:</span>
+                                                <span className="jp-hierarchy-value">Level {getCurrentHierarchyInfo().currentLevel}{getCurrentHierarchyInfo().isRootPosition && ' (Root Position)'}</span>
+                                            </div>
+                                            {getCurrentHierarchyInfo().parentPositionName && (
+                                                <div className="jp-hierarchy-item">
+                                                    <span className="jp-hierarchy-label">Current Parent:</span>
+                                                    <span className="jp-hierarchy-value">{getCurrentHierarchyInfo().parentPositionName}</span>
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="jp-hierarchy-item">
-                                            <span className="jp-hierarchy-label">Parent Department:</span>
-                                            <span className="jp-hierarchy-value">
-                                                {getSelectedParentHierarchyInfo().department}
-                                            </span>
-                                        </div>
-                                        <div className="jp-hierarchy-item">
-                                            <span className="jp-hierarchy-label">New Position Level:</span>
-                                            <span className="jp-hierarchy-value">
-                                                Level {getSelectedParentHierarchyInfo().hierarchyLevel}
-                                            </span>
-                                        </div>
-                                        <div className="jp-hierarchy-item">
-                                            <span className="jp-hierarchy-label">New Hierarchy Path:</span>
-                                            <span className="jp-hierarchy-value">
-                                                {getSelectedParentHierarchyInfo().hierarchyPath} → {formData.positionName || position?.positionName}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="jp-hierarchy-note">
-                                        <strong>Note:</strong> Employees in this position will only be able to be promoted to the parent position.
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Show warning when removing parent */}
-                            {!formData.parentJobPositionId && position?.parentJobPositionName && (
-                                <div className="jp-hierarchy-preview">
-                                    <h5>Hierarchy Change Warning</h5>
-                                    <div className="jp-hierarchy-warning">
-                                        <strong>⚠️ Warning:</strong> You are removing the parent relationship.
-                                        This position will become a root position, and current promotion paths may be affected.
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Contract Type Selection */}
-                        <div className="jp-section">
-                            <h3>Contract Type</h3>
-                            <div className="jp-contract-selector">
-                                {contractTypes.map(type => (
-                                    <div
-                                        key={type.value}
-                                        className={`jp-contract-option ${formData.contractType === type.value ? 'selected' : ''}`}
-                                        onClick={() => setFormData(prev => ({ ...prev, contractType: type.value }))}
-                                    >
-                                        <div className="jp-contract-header">
-                                            <input
-                                                type="radio"
-                                                name="contractType"
-                                                value={type.value}
-                                                checked={formData.contractType === type.value}
-                                                onChange={handleChange}
-                                            />
-                                            <span className="jp-contract-label">{type.label}</span>
-                                        </div>
-                                        <p className="jp-contract-description">{type.description}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Contract-Specific Fields */}
-                        {renderContractSpecificFields()}
-
-                        {/* Salary Calculation Preview */}
-                        <div className="jp-section">
-                            <h3>Salary Calculation Preview</h3>
-                            <div className="jp-salary-preview">
-                                <div className="jp-salary-item">
-                                    <span className="jp-salary-label">Calculated Daily Rate:</span>
-                                    <span className="jp-salary-value">${calculatedSalary.daily.toFixed(2)}</span>
-                                </div>
-                                <div className="jp-salary-item">
-                                    <span className="jp-salary-label">Calculated Monthly Salary:</span>
-                                    <span className="jp-salary-value">${calculatedSalary.monthly.toFixed(2)}</span>
-                                </div>
-                                {formData.contractType === 'MONTHLY' && calculatedSalary.workingHours > 0 && (
-                                    <div className="jp-salary-item">
-                                        <span className="jp-salary-label">Working Hours per Day:</span>
-                                        <span className="jp-salary-value">{calculatedSalary.workingHours}h</span>
                                     </div>
                                 )}
-                                {formData.contractType === 'MONTHLY' && calculatedSalary.workingTimeRange && (
-                                    <div className="jp-salary-item">
-                                        <span className="jp-salary-label">Working Time Range:</span>
-                                        <span className="jp-salary-value">{calculatedSalary.workingTimeRange}</span>
+
+                                <div className="jp-form-row">
+                                    <div className="jp-form-group">
+                                        <label htmlFor="parentJobPositionId">Parent Position (Optional)</label>
+                                        <div className="jp-select-wrapper">
+                                            <select id="parentJobPositionId" name="parentJobPositionId" value={formData.parentJobPositionId} onChange={handleChange}>
+                                                <option value="">Set as Root Position (No Parent)</option>
+                                                {jobPositions
+                                                    .filter(pos =>
+                                                        pos.active &&
+                                                        pos.id !== position?.id &&
+                                                        // NOTE: Filtering children relies on pos.childPositionIds being available in the jobPositions list.
+                                                        !(position?.childPositionIds || []).includes(pos.id)
+                                                    )
+                                                    .map(jobPosition => (
+                                                        <option key={jobPosition.id} value={jobPosition.id}>
+                                                            {jobPosition.positionName} ({jobPosition.department || jobPosition.departmentName})
+                                                            {jobPosition.hierarchyLevel !== undefined && ` - Level ${jobPosition.hierarchyLevel}`}
+                                                        </option>
+                                                    ))}
+                                            </select>
+                                        </div>
+                                        <small className="jp-field-hint">Select a parent position to update the hierarchical relationship. Child positions cannot be selected as parents.</small>
+                                    </div>
+                                </div>
+
+                                {getSelectedParentHierarchyInfo() && (
+                                    <div className="jp-hierarchy-preview">
+                                        <h5>New Hierarchy Preview</h5>
+                                        <div className="jp-hierarchy-info">
+                                            <div className="jp-hierarchy-item">
+                                                <span className="jp-hierarchy-label">New Parent:</span>
+                                                <span className="jp-hierarchy-value">{getSelectedParentHierarchyInfo().name}</span>
+                                            </div>
+                                            <div className="jp-hierarchy-item">
+                                                <span className="jp-hierarchy-label">New Level:</span>
+                                                <span className="jp-hierarchy-value">Level {getSelectedParentHierarchyInfo().hierarchyLevel}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
-                        </div>
+
+                            <div className="jp-section">
+                                <h3>Contract Type</h3>
+                                <div className="jp-contract-selector">
+                                    {contractTypes.map(type => (
+                                        <div key={type.value} className={`jp-contract-option ${formData.contractType === type.value ? 'selected' : ''}`} onClick={() => setFormData(prev => ({ ...prev, contractType: type.value }))}>
+                                            <div className="jp-contract-header">
+                                                <input type="radio" name="contractType" value={type.value} checked={formData.contractType === type.value} onChange={handleChange} />
+                                                <span className="jp-contract-label">{type.label}</span>
+                                            </div>
+                                            <p className="jp-contract-description">{type.description}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {renderContractSpecificFields()}
+
+                            <div className="jp-section">
+                                <h3>Salary Calculation Preview</h3>
+                                <div className="jp-salary-preview">
+                                    <div className="jp-salary-item">
+                                        <span className="jp-salary-label">Calculated Daily Rate:</span>
+                                        <span className="jp-salary-value">${calculatedSalary.daily.toFixed(2)}</span>
+                                    </div>
+                                    <div className="jp-salary-item">
+                                        <span className="jp-salary-label">Calculated Monthly Salary:</span>
+                                        <span className="jp-salary-value">${calculatedSalary.monthly.toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {error && <div className="jp-error-message">{error}</div>}
 
 
-                    </form>
+                        </form>
                     </div>
                 )}
                 <div className="modal-footer">
-                    <button
-                        type="button"
-                        className="btn-cancel"
-                        onClick={onClose}
-                        disabled={loading}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className="btn-primary"
-                        disabled={loading}
-                        onClick={handleSubmit}
-                    >
-                        {loading ? 'Updating...' : 'Update Position'}
-                    </button>
+                    <button type="button" className="btn-cancel" onClick={onClose} disabled={loading}>Cancel</button>
+                    <button type="submit" className="btn-primary" disabled={loading} onClick={handleSubmit}>{loading ? 'Updating...' : 'Update Position'}</button>
                 </div>
             </div>
         </div>

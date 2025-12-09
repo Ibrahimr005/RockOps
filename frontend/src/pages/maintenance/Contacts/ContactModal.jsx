@@ -86,6 +86,9 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
     // Load merchants and contact types when modal opens
     useEffect(() => {
         if (isOpen) {
+            // Prevent background scroll when modal is open
+            document.body.style.overflow = 'hidden';
+
             // Load merchants and contact types asynchronously without blocking modal
             setTimeout(() => {
                 loadMerchants().catch(error => {
@@ -95,7 +98,15 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
                     console.error('Failed to load contact types, but modal will still work:', error);
                 });
             }, 100); // Delay to ensure modal renders first
+        } else {
+            // Restore scroll when modal is closed
+            document.body.style.overflow = 'unset';
         }
+
+        // Cleanup function
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
     }, [isOpen]);
 
     const loadMerchants = async () => {
@@ -151,19 +162,33 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        
+
         let processedValue = type === 'checkbox' ? checked : value;
-        
+
         // Handle merchantId specifically - convert empty string to null
         if (name === 'merchantId' && processedValue === '') {
             processedValue = null;
         }
-        
+
+        // Validate phone number fields to only allow valid characters
+        if ((name === 'phoneNumber' || name === 'alternatePhone') && processedValue) {
+            // Only allow numbers, +, -, (, ), and spaces
+            const phoneRegex = /^[0-9+\-\s()]*$/;
+            if (!phoneRegex.test(processedValue)) {
+                // Invalid character entered, show error
+                setErrors(prev => ({
+                    ...prev,
+                    [name]: 'Only numbers and characters +, -, (, ) are allowed'
+                }));
+                return; // Don't update the field
+            }
+        }
+
         setFormData(prev => ({
             ...prev,
             [name]: processedValue
         }));
-        
+
         // Clear error when user starts typing
         if (errors[name]) {
             setErrors(prev => ({
@@ -192,6 +217,13 @@ const ContactModal = ({ isOpen, onClose, onSubmit, editingContact }) => {
 
         if (!formData.phoneNumber.trim()) {
             newErrors.phoneNumber = 'Phone number is required';
+        } else if (!/^[0-9+\-\s()]+$/.test(formData.phoneNumber)) {
+            newErrors.phoneNumber = 'Phone number contains invalid characters';
+        }
+
+        // Validate alternate phone if provided
+        if (formData.alternatePhone && !/^[0-9+\-\s()]+$/.test(formData.alternatePhone)) {
+            newErrors.alternatePhone = 'Phone number contains invalid characters';
         }
 
         if (!formData.contactTypeId) {

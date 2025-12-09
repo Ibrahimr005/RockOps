@@ -1,6 +1,6 @@
 package com.example.backend.repositories;
 
-import com.example.backend.models.MaintenanceStep;
+import com.example.backend.models.maintenance.MaintenanceStep;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -98,8 +98,15 @@ public interface MaintenanceStepRepository extends JpaRepository<MaintenanceStep
     Object[] getStepStatistics();
     
     // Find steps by maintenance record with status filter
+//    @Query("SELECT s FROM MaintenanceStep s WHERE s.maintenanceRecord.id = :recordId AND " +
+//           "(:completed IS NULL OR CASE WHEN :completed = true THEN s.actualEndDate IS NOT NULL ELSE s.actualEndDate IS NULL END)")
+//    List<MaintenanceStep> findByMaintenanceRecordIdAndCompletionStatus(
+//            @Param("recordId") UUID recordId, @Param("completed") Boolean completed);
+
     @Query("SELECT s FROM MaintenanceStep s WHERE s.maintenanceRecord.id = :recordId AND " +
-           "(:completed IS NULL OR CASE WHEN :completed = true THEN s.actualEndDate IS NOT NULL ELSE s.actualEndDate IS NULL END)")
+            "(:completed IS NULL OR " +
+            " (:completed = TRUE AND s.actualEndDate IS NOT NULL) OR " +
+            " (:completed = FALSE AND s.actualEndDate IS NULL))")
     List<MaintenanceStep> findByMaintenanceRecordIdAndCompletionStatus(
             @Param("recordId") UUID recordId, @Param("completed") Boolean completed);
 } 

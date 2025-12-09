@@ -6,6 +6,7 @@ import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx"
 import IncomingRequestOrders from './IncomingRequests/IncomingRequestOrders';
 import ApprovedRequestOrders from './ApprovedRequests/ApprovedRequestOrders';
 import PageHeader from '../../../components/common/PageHeader/PageHeader.jsx';
+import Tabs from "../../../components/common/Tabs/Tabs.jsx"
 import { requestOrderService } from '../../../services/procurement/requestOrderService.js';
 
 const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
@@ -73,24 +74,21 @@ const ProcurementRequestOrders = ({ onEdit, onDelete }) => {
                 subtitle="Create, manage, and approve procurement request orders across your organization"
             />
 
-            {/* Tabs Navigation */}
-            <div className="pro-ro-procurement-tabs">
-                <button
-                    className={`pro-ro-procurement-tab ${activeTab === 'incoming' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('incoming')}
-                >
-                    Incoming Requests
-                    {pendingOrders.length > 0 && (
-                        <span className="notification-dot"></span>
-                    )}
-                </button>
-                <button
-                    className={`pro-ro-procurement-tab ${activeTab === 'approved' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('approved')}
-                >
-                    Approved Requests
-                </button>
-            </div>
+            <Tabs
+                tabs={[
+                    {
+                        id: 'incoming',
+                        label: 'Incoming Requests',
+                        badge: pendingOrders.length
+                    },
+                    {
+                        id: 'approved',
+                        label: 'Approved Requests'
+                    }
+                ]}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+            />
 
             {/* Table Container with Theme Support */}
             <div className="pro-ro-table-container">

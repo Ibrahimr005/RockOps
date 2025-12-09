@@ -21,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -402,6 +404,8 @@ public class EquipmentTypeService {
      * Create job position immediately when equipment type is created
      * This method is called directly in the same transaction
      */
+
+
     private void createJobPositionForEquipmentType(EquipmentType equipmentType) {
         String requiredPositionName = equipmentType.getRequiredDriverPosition();
 
@@ -430,6 +434,10 @@ public class EquipmentTypeService {
         // Calculate base salary
         Double baseSalary = calculateBaseSalary(equipmentType);
 
+        // Define standard working hours
+        LocalTime defaultStartTime = LocalTime.of(9, 0); // 09:00:00
+        LocalTime defaultEndTime = LocalTime.of(17, 0);  // 17:00:00
+
         // Create the job position with smart defaults for MONTHLY contract
         JobPosition driverPosition = new JobPosition();
         driverPosition.setPositionName(requiredPositionName);
@@ -440,11 +448,25 @@ public class EquipmentTypeService {
         driverPosition.setExperienceLevel(determineExperienceLevel(equipmentType));
         driverPosition.setActive(true);
 
-        // Set only MONTHLY contract fields
+        // ======================================
+        // MONTHLY CONTRACT FIELDS
+        // ======================================
         driverPosition.setMonthlyBaseSalary(baseSalary);
         driverPosition.setWorkingHours(8);
         driverPosition.setShifts("Day Shift");
         driverPosition.setVacations("21 days annual leave");
+        // Added Start and End Time
+        driverPosition.setStartTime(defaultStartTime);
+        driverPosition.setEndTime(defaultEndTime);
+
+        // ======================================
+        // MONTHLY DEDUCTION FIELDS (Defaults to 0 or 0 minutes/count)
+        // ======================================
+        driverPosition.setAbsentDeduction(BigDecimal.ZERO);
+        driverPosition.setLateDeduction(BigDecimal.ZERO);
+        driverPosition.setLateForgivenessMinutes(0);
+        driverPosition.setLateForgivenessCountPerQuarter(0);
+        driverPosition.setLeaveDeduction(BigDecimal.ZERO);
 
         // Leave HOURLY and DAILY fields as null (default)
 
@@ -453,7 +475,6 @@ public class EquipmentTypeService {
         log.info("✅ Successfully created job position: {} with ID: {} for equipment type: {}",
                 requiredPositionName, savedPosition.getId(), equipmentType.getName());
     }
-
     /**
      * Update job position when equipment type is renamed
      * This handles the case where an equipment type name is changed

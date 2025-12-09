@@ -1,7 +1,213 @@
 // JobPositionDetails.scss - Tabbed Job Position Details Page Styles
 
 .position-details-container {
+  .position-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 2;
 
+    .pos-info-card {
+      background: var(--color-surface, #ffffff);
+      border-radius: var(--radius-md, 12px);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.1));
+      border: 1px solid var(--border-color, #e5e7eb);
+      display: flex;
+      flex-direction: column;
+
+      .pos-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color, #f0f0f0);
+
+        .pos-card-icon {
+          font-size: 1.25rem;
+          color: var(--color-primary, #6366f1);
+        }
+
+        h3 {
+          margin: 0;
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: var(--head-title-color, #1f2937);
+        }
+      }
+
+      .pos-card-content {
+        flex: 1;
+
+        &.two-col {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+        }
+      }
+    }
+  }
+
+  // Hierarchy Tree Visualization Styles
+  .hierarchy-tree-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center; // Align left to look like a list/path
+    gap: 0;
+    margin-bottom: 1.5rem;
+    padding-left: 0.5rem;
+
+    .tree-step {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      position: relative;
+    }
+
+    .tree-node {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      background-color: var(--section-background-color, #f9fafb);
+      border: 1px solid var(--border-color, #e5e7eb);
+      position: relative;
+      z-index: 2;
+      transition: all 0.2s ease;
+
+      svg {
+        font-size: 1rem;
+      }
+
+      .node-name {
+        font-weight: 500;
+        color: var(--color-text-primary, #374151);
+      }
+
+      // Ancestor Nodes
+      &.ancestor {
+        color: var(--color-text-secondary, #6b7280);
+        background-color: transparent;
+        border-color: transparent;
+        padding-left: 0;
+
+        svg {
+          color: var(--color-text-secondary, #9ca3af);
+        }
+      }
+
+      // Current Node (Last one)
+      &.current {
+        background-color: var(--color-surface-hover, #eff6ff); // Light blue bg
+        border-color: var(--color-primary, #3b82f6);
+        color: var(--color-primary, #1d4ed8);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-top: 0.25rem;
+
+        .node-name {
+          color: var(--color-primary, #1d4ed8);
+          font-weight: 700;
+        }
+
+        .current-badge {
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          background: var(--color-primary, #3b82f6);
+          color: white;
+          padding: 2px 6px;
+          border-radius: 4px;
+          margin-left: 0.5rem;
+        }
+      }
+    }
+
+    .tree-connector {
+      height: 1.5rem; // Height of line between nodes
+      display: flex;
+      justify-content: center;
+      width: 20px; // Approximate width of icon area to center line
+      margin-left: 0.4rem; // Align with the icon above
+
+      .line {
+        width: 2px;
+        height: 100%;
+        background-color: var(--border-color, #e5e7eb);
+      }
+    }
+  }
+
+  .hierarchy-meta {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--border-color, #e5e7eb);
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .label {
+        color: var(--color-text-secondary);
+        font-size: 0.9rem;
+      }
+      .value {
+        font-weight: 500;
+        color: var(--color-text-primary);
+      }
+    }
+  }
+
+  // Deduction Card Specific Styles
+  .deduction-card {
+    .deduction-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      &.full-width {
+        grid-column: 1 / -1;
+      }
+
+      .label {
+        font-size: 0.85rem;
+        color: var(--color-text-secondary, #6b7280);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .value {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--color-text-primary, #111827);
+
+        &.highlight-danger { color: var(--color-danger, #ef4444); }
+        &.highlight-warning { color: var(--color-warning, #f59e0b); }
+
+        &.small-text {
+          font-size: 0.95rem;
+          font-weight: 500;
+          .separator { margin: 0 0.5rem; color: #d1d5db; }
+        }
+      }
+    }
+  }
+
+  // Responsive adjustments for the new grid
+  @media (max-width: 768px) {
+    .position-info-grid {
+      grid-template-columns: 1fr;
+      margin-top: 0;
+
+      .card-content.two-col {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  }
   // Loading State
   .loading-container {
     display: flex;

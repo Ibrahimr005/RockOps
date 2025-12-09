@@ -1,0 +1,84 @@
+/* Edit Direct Purchase Step Modal - Using Global Styles */
+
+.edit-step-modal {
+    .edit-step-form {
+        .form-section {
+            margin-bottom: 2rem;
+
+            h3 {
+                font-size: 1.1rem;
+                font-weight: var(--bold-font-weight);
+                margin-bottom: 1rem;
+                color: var(--head-title-color);
+                padding-bottom: 0.5rem;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+
+            @media (max-width: 768px) {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+
+            label {
+                font-weight: 500;
+                margin-bottom: 0.5rem;
+                color: var(--color-text-primary);
+                font-size: 0.9rem;
+            }
+
+            input, select, textarea {
+                padding: 0.75rem;
+                border: 2px solid var(--border-color);
+                border-radius: var(--radius-sm);
+                font-size: 0.95rem;
+                background-color: var(--section-background-color);
+                color: var(--color-text-primary);
+                font-family: var(--font-family);
+                transition: all var(--transition-fast) ease;
+
+                &:focus {
+                    outline: none;
+                    border-color: var(--color-primary);
+                    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+                }
+
+                &.error {
+                    border-color: var(--color-danger);
+                    background-color: rgba(244, 67, 54, 0.05);
+                }
+
+                &.readonly-field {
+                    background-color: var(--color-surface-disabled);
+                    color: var(--color-text-secondary);
+                    cursor: not-allowed;
+                }
+            }
+
+            textarea {
+                resize: vertical;
+                min-height: 100px;
+            }
+
+            .error-message {
+                color: var(--color-danger);
+                font-size: 0.85rem;
+                margin-top: 0.25rem;
+            }
+        }
+    }
+}

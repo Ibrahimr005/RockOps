@@ -4,6 +4,7 @@ import { FiPackage, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import { purchaseOrderService } from '../../../services/procurement/purchaseOrderService';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import Snackbar from '../../../components/common/Snackbar2/Snackbar2';
+import Tabs from '../../../components/common/Tabs/Tabs'; // Add this import
 import OverviewTab from './tabs/OverviewTab/OverviewTab';
 import ReceivingTab from './tabs/ReceivingTab/ReceivingTab2';
 import IssuesTab from './tabs/IssuesTab/IssuesTab';
@@ -16,6 +17,7 @@ const PurchaseOrderDetailsPage = () => {
 
     const [purchaseOrder, setPurchaseOrder] = useState(null);
     const [issues, setIssues] = useState([]);
+    const [userRole, setUserRole] = useState(null);
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -26,7 +28,16 @@ const PurchaseOrderDetailsPage = () => {
     const [notificationType, setNotificationType] = useState('success');
     const [activeTab, setActiveTab] = useState('overview');
 
-// Add this useEffect to handle the initial tab from navigation state
+    // Get user role
+    useEffect(() => {
+        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+        if (userInfo && userInfo.role) {
+            setUserRole(userInfo.role);
+        }
+        console.log("role is:" + userRole);
+    }, []);
+
+    // Add this useEffect to handle the initial tab from navigation state
     useEffect(() => {
         if (location.state?.activeTab) {
             setActiveTab(location.state.activeTab);
@@ -128,6 +139,11 @@ const PurchaseOrderDetailsPage = () => {
     // Count unresolved issues
     const unresolvedIssuesCount = issues.filter(issue => issue.issueStatus === 'REPORTED').length;
 
+    // Count pending items for receiving tab badge
+    const pendingCount = purchaseOrder.purchaseOrderItems?.filter(item =>
+        item.status === 'PENDING' || item.status === 'PARTIAL'
+    ).length || 0;
+
     // Helper functions
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -167,6 +183,39 @@ const PurchaseOrderDetailsPage = () => {
         }
     ];
 
+    // Build tabs array based on user role
+    const getTabs = () => {
+        const tabs = [
+            {
+                id: 'overview',
+                label: 'Overview',
+                icon: <FiPackage />
+            }
+        ];
+
+        // Add Receiving tab for WAREHOUSE_MANAGER, WAREHOUSE_EMPLOYEE, or ADMIN
+        if (userRole === 'WAREHOUSE_MANAGER' || userRole === 'WAREHOUSE_EMPLOYEE' || userRole === 'ADMIN') {
+            tabs.push({
+                id: 'receiving',
+                label: 'Receiving',
+                icon: <FiCheckCircle />,
+                badge: pendingCount
+            });
+        }
+
+        // Add Issues tab for PROCUREMENT or ADMIN
+        if (userRole === 'PROCUREMENT' || userRole === 'ADMIN') {
+            tabs.push({
+                id: 'issues',
+                label: 'Issues',
+                icon: <FiAlertCircle />,
+                badge: unresolvedIssuesCount
+            });
+        }
+
+        return tabs;
+    };
+
     return (
         <div className="po-details-page">
             {/* IntroCard Header */}
@@ -178,60 +227,26 @@ const PurchaseOrderDetailsPage = () => {
                 stats={stats}
             />
 
-
-
             {/* Tabs */}
-            <div className="po-tabs">
-                <button
-                    className={`po-tab ${activeTab === 'overview' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('overview')}
-                >
-                    <FiPackage />
-                    <span>Overview</span>
-                </button>
-
-                <button
-                    className={`po-tab ${activeTab === 'receiving' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('receiving')}
-                >
-                    <FiCheckCircle />
-                    <span>Receiving</span>
-                    {(() => {
-                        const pendingCount = purchaseOrder.purchaseOrderItems?.filter(item =>
-                            item.status === 'PENDING' || item.status === 'PARTIAL'
-                        ).length || 0;
-
-                        return pendingCount > 0 && (
-                            <span className="tab-badge">{pendingCount}</span>
-                        );
-                    })()}
-                </button>
-
-                <button
-                    className={`po-tab ${activeTab === 'issues' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('issues')}
-                >
-                    <FiAlertCircle />
-                    <span>Issues</span>
-                    {unresolvedIssuesCount > 0 && (
-                        <span className="tab-badge">{unresolvedIssuesCount}</span>
-                    )}
-                </button>
-            </div>
+            <Tabs
+                tabs={getTabs()}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+            />
 
             {/* Tab Content */}
             <div className="po-tab-content">
                 {activeTab === 'overview' && (
                     <OverviewTab purchaseOrder={purchaseOrder} />
                 )}
-                {activeTab === 'receiving' && (
+                {activeTab === 'receiving' && (userRole === 'WAREHOUSE_MANAGER' || userRole === 'WAREHOUSE_EMPLOYEE' || userRole === 'ADMIN') && (
                     <ReceivingTab
                         purchaseOrder={purchaseOrder}
                         onSuccess={handleDeliveryProcessed}
                         onError={(msg) => showSnackbar(msg, 'error')}
                     />
                 )}
-                {activeTab === 'issues' && (
+                {activeTab === 'issues' && (userRole === 'PROCUREMENT' || userRole === 'ADMIN') && (
                     <IssuesTab
                         purchaseOrder={purchaseOrder}
                         issues={issues}

@@ -1,10 +1,14 @@
 package com.example.backend.controllers;
 
 import com.example.backend.dtos.*;
+import com.example.backend.dto.merchant.MerchantDTO;
+import com.example.backend.dtos.UserDto;
 import com.example.backend.exceptions.MaintenanceException;
-import com.example.backend.models.MaintenanceRecord;
+import com.example.backend.models.merchant.Merchant;
 import com.example.backend.services.MaintenanceService;
 import com.example.backend.services.ContactService;
+import com.example.backend.services.merchant.MerchantService;
+import com.example.backend.mappers.merchant.MerchantMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,6 +19,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/maintenance")
@@ -25,6 +30,8 @@ public class MaintenanceController {
     
     private final MaintenanceService maintenanceService;
     private final ContactService contactService;
+    private final MerchantService merchantService;
+    private final MerchantMapper merchantMapper;
     
     // Dashboard
     @GetMapping("/dashboard")
@@ -302,14 +309,14 @@ public class MaintenanceController {
     }
     
     // Search and Filter Endpoints
-    
+
     @GetMapping("/records/search")
     public ResponseEntity<List<MaintenanceRecordDto>> searchMaintenanceRecords(
             @RequestParam(required = false) UUID equipmentId,
             @RequestParam(required = false) String equipmentInfo,
             @RequestParam(required = false) String responsiblePerson,
             @RequestParam(required = false) String status) {
-        
+
         try {
             // Since pagination is handled on the frontend, return all records
             // The frontend can filter and paginate as needed
@@ -320,7 +327,42 @@ public class MaintenanceController {
             return ResponseEntity.internalServerError().build();
         }
     }
-    
+
+    // Merchants Endpoint
+
+    @GetMapping("/merchants")
+    public ResponseEntity<List<MerchantDTO>> getAvailableMerchants() {
+        try {
+            List<Merchant> merchants = merchantService.getAllMerchants();
+            List<MerchantDTO> merchantDTOs = merchantMapper.toDTOList(merchants);
+            return ResponseEntity.ok(merchantDTOs);
+        } catch (Exception e) {
+            log.error("Error retrieving merchants: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // Get maintenance users (Admin, Maintenance Manager, Maintenance Employee)
+    @GetMapping("/users/maintenance-team")
+    public ResponseEntity<List<UserDto>> getMaintenanceTeamUsers() {
+        try {
+            List<com.example.backend.models.user.User> users = maintenanceService.getMaintenanceTeamUsers();
+            List<UserDto> userDtos = users.stream()
+                    .map(user -> UserDto.builder()
+                            .id(user.getId())
+                            .username(user.getUsername())
+                            .firstName(user.getFirstName())
+                            .lastName(user.getLastName())
+                            .role(user.getRole().name())
+                            .build())
+                    .collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.ok(userDtos);
+        } catch (Exception e) {
+            log.error("Error retrieving maintenance team users: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     // Error Handling
     
     @ExceptionHandler(Exception.class)

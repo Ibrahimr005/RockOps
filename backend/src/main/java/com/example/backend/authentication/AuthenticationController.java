@@ -8,10 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import com.example.backend.dtos.UserDto;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -74,6 +72,21 @@ public class AuthenticationController {
     public ResponseEntity<String> logout() {
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok("Logged out successfully");
+    }
+
+    /**
+     * Get current user profile
+     */
+    @GetMapping("/profile")
+    public ResponseEntity<?> getCurrentUser() {
+        try {
+            UserDto user = authenticationService.getCurrentUserProfile();
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Failed to get profile", e.getMessage()));
+        }
     }
 
     /**

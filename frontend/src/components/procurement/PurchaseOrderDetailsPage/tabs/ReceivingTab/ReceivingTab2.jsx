@@ -902,8 +902,14 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                             const hasHistory = item.itemReceipts && item.itemReceipts.length > 0;
                             const needsProcessing = remaining > 0;
 
+                            // Calculate if locally complete based on input
+                            const good = parseFloat(data.goodQuantity) || 0;
+                            const issuesTotal = data.issues.reduce((sum, issue) => sum + (parseFloat(issue.affectedQuantity) || 0), 0);
+                            const totalEntered = good + issuesTotal;
+                            const isLocallyComplete = totalEntered >= remaining && remaining > 0;
+
                             return (
-                                <div key={item.id} className={`item-card ${isExpanded ? 'expanded' : ''}`}>
+                                <div key={item.id} className={`item-card ${isLocallyComplete ? 'completed' : ''} ${isExpanded ? 'expanded' : ''}`}>
                                     <div className="item-header" onClick={() => toggleItemExpansion(item.id)}>
                                         <div
                                             className="status-tag"
@@ -924,8 +930,8 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                         <button className="expand-btn">
                                             {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
                                         </button>
-                                        <div className="item-icon">
-                                            <FiPackage />
+                                        <div className={`item-icon ${isLocallyComplete ? 'completed' : ''}`}>
+                                            {isLocallyComplete ? <FiCheckCircle /> : <FiPackage />}
                                         </div>
                                         <div className="item-info">
                                             <h4>{item.itemType?.name}</h4>
@@ -965,8 +971,8 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                                                 const isOver = total > remaining;
                                                                 return (
                                                                     <span className={isComplete ? 'complete' : isOver ? 'over' : 'pending'}>
-                                                        {total}/{remaining} {item.itemType?.measuringUnit}
-                                                    </span>
+                                {total}/{remaining} {item.itemType?.measuringUnit}
+                            </span>
                                                                 );
                                                             })()}
                                                         </div>
@@ -1170,9 +1176,9 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                                                             <span className="delivery-number">Delivery #{index + 1}</span>
                                                                         </div>
                                                                         <div className="delivery-header-right">
-                                                            <span className="delivery-summary">
-                                                                {receipt.goodQuantity + (receipt.issues ? receipt.issues.reduce((sum, i) => sum + i.affectedQuantity, 0) : 0)} {receipt.measuringUnit}
-                                                            </span>
+                    <span className="delivery-summary">
+                        {receipt.goodQuantity + (receipt.issues ? receipt.issues.reduce((sum, i) => sum + i.affectedQuantity, 0) : 0)} {receipt.measuringUnit}
+                    </span>
                                                                             <button className="expand-toggle">
                                                                                 {isDeliveryExpanded ? <FiChevronUp /> : <FiChevronDown />}
                                                                             </button>
@@ -1185,8 +1191,8 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                                                                 <div className="info-row">
                                                                                     <span className="info-label">TOTAL PROCESSED</span>
                                                                                     <span className="info-value">
-                                                                        {receipt.goodQuantity + (receipt.issues ? receipt.issues.reduce((sum, i) => sum + i.affectedQuantity, 0) : 0)} {receipt.measuringUnit}
-                                                                    </span>
+                                {receipt.goodQuantity + (receipt.issues ? receipt.issues.reduce((sum, i) => sum + i.affectedQuantity, 0) : 0)} {receipt.measuringUnit}
+                            </span>
                                                                                 </div>
                                                                                 <div className="info-row">
                                                                                     <span className="info-label">GOOD RECEIVED</span>
@@ -1195,8 +1201,8 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                                                                 <div className="info-row">
                                                                                     <span className="info-label">TOTAL ISSUES</span>
                                                                                     <span className="info-value issue">
-                                                                        {receipt.issues ? receipt.issues.reduce((sum, i) => sum + i.affectedQuantity, 0) : 0} {receipt.measuringUnit}
-                                                                    </span>
+                                {receipt.issues ? receipt.issues.reduce((sum, i) => sum + i.affectedQuantity, 0) : 0} {receipt.measuringUnit}
+                            </span>
                                                                                 </div>
                                                                             </div>
 
@@ -1233,11 +1239,11 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                                                                                         <span className="issue-reporter">{issue.reportedBy}</span>
                                                                                                         <span className="issue-date">{new Date(issue.reportedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</span>
                                                                                                         <span className={`issue-status ${issue.issueStatus.toLowerCase()}`}>
-                                                                                            {issue.issueStatus}
+                                    {issue.issueStatus}
                                                                                                             {issue.issueStatus === 'RESOLVED' && (
                                                                                                                 <span className="expand-icon">{isIssueExpanded ? '▲' : '▼'}</span>
                                                                                                             )}
-                                                                                        </span>
+                                </span>
                                                                                                     </div>
                                                                                                     {isIssueExpanded && issue.issueStatus === 'RESOLVED' && (
                                                                                                         <div className="resolution-details">
@@ -1277,8 +1283,7 @@ const ReceivingTab = ({ purchaseOrder, onSuccess, onError }) => {
                                     )}
                                 </div>
                             );
-                        })}
-                    </div>
+                        })}                    </div>
                 )}
             </div>
 

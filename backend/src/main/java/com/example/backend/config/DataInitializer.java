@@ -2,11 +2,11 @@ package com.example.backend.config;
 
 import com.example.backend.authentication.AuthenticationService;
 import com.example.backend.authentication.RegisterRequest;
+import com.example.backend.models.maintenance.StepType;
 import com.example.backend.models.user.Role;
 import com.example.backend.models.hr.Department;
 import com.example.backend.models.hr.JobPosition;
 import com.example.backend.models.equipment.EquipmentType;
-import com.example.backend.models.StepType;
 import com.example.backend.repositories.hr.DepartmentRepository;
 import com.example.backend.repositories.hr.JobPositionRepository;
 import com.example.backend.repositories.equipment.EquipmentTypeRepository;

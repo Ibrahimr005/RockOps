@@ -4,6 +4,7 @@ import PendingPurchaseOrders from './PendingPurchaseOrders/PendingPurchaseOrders
 import DisputedPurchaseOrders from './DisputedPurchaseOrders/DisputedPurchaseOrders';
 import CompletedPurchaseOrders from './CompletedPurchaseOrders/CompletedPurchaseOrders';
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
+import Tabs from '../../../components/common/Tabs/Tabs.jsx';
 import './WarehousePurchaseOrders.scss';
 
 const WarehousePurchaseOrders = ({ warehouseId, onAddButtonClick }) => {
@@ -155,17 +156,11 @@ const WarehousePurchaseOrders = ({ warehouseId, onAddButtonClick }) => {
     return (
         <div className="warehouse-purchase-orders-container">
             {/* Tab navigation */}
-            <div className="inventory-tabs">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab.id}
-                        className={`inventory-tab ${activeTab === tab.id ? 'active' : ''}`}
-                        onClick={() => setActiveTab(tab.id)}
-                    >
-                        {tab.label}
-                    </button>
-                ))}
-            </div>
+            <Tabs
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+            />
 
             {/* Tab Content */}
             <div className="purchase-orders-tab-content">
