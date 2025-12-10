@@ -3,6 +3,7 @@ package com.example.backend.mappers.merchant;
 import com.example.backend.dto.merchant.MerchantDTO;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.merchant.MerchantType;
+import com.example.backend.models.site.Site;
 import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +22,6 @@ public class MerchantMapper {
                     .map(MerchantType::toString)
                     .collect(Collectors.toList());
         }
-
         return MerchantDTO.builder()
                 .id(merchant.getId())
                 .name(merchant.getName())
@@ -36,10 +36,15 @@ public class MerchantMapper {
                 .taxIdentificationNumber(merchant.getTaxIdentificationNumber())
                 .lastOrderDate(merchant.getLastOrderDate())
                 .photoUrl(merchant.getPhotoUrl())
-                .merchantTypes(merchantTypeStrings)  // Changed from merchantType to merchantTypes
+                .merchantTypes(merchantTypeStrings)
                 .notes(merchant.getNotes())
-                .siteId(merchant.getSite() != null ? merchant.getSite().getId() : null)
+                .siteIds(merchant.getSites() != null ?
+                        merchant.getSites().stream()
+                                .map(Site::getId)
+                                .collect(Collectors.toList())
+                        : new ArrayList<>())  // Changed from siteId to siteIds (List)
                 .build();
+
     }
 
     public List<MerchantDTO> toDTOList(List<Merchant> merchants) {

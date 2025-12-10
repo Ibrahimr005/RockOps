@@ -17,17 +17,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Site
-{
+public class Site {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
+
     private String name;
     private String physicalAddress;
     private String companyAddress;
@@ -42,9 +41,8 @@ public class Site
     @JsonIgnore
     private List<SitePartner> sitePartners = new ArrayList<>();
 
-
-    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL) // Equipment is the owner
-    @JsonBackReference // Prevents infinite loop
+    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL)
+    @JsonBackReference
     private List<Equipment> equipment;
 
     @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -55,15 +53,16 @@ public class Site
     @JsonBackReference
     private List<Employee> employees;
 
-    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL)
-    @JsonBackReference // for Merchant -> Site relationship
+    // CHANGED: From @OneToMany to @ManyToMany (mappedBy)
+    @ManyToMany(mappedBy = "sites")
+    @JsonBackReference
     private List<Merchant> merchants;
 
     @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<FixedAssets> fixedAssets;
 
-    // Helper methods to get counts
+    // Helper methods remain the same
     @Transient
     private int equipmentCount;
 
@@ -75,7 +74,6 @@ public class Site
 
     @Transient
     private int merchantCount;
-
 
     public int getEquipmentCount() {
         return equipment != null ? equipment.size() : 0;
@@ -108,5 +106,4 @@ public class Site
     public void setMerchantCount(int merchantCount) {
         this.merchantCount = merchantCount;
     }
-
 }

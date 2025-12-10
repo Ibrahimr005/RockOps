@@ -252,18 +252,52 @@ const MerchantModal = ({
                                 </div>
 
                                 <div className="proc-merchant-form-group">
-                                    <label className="required">Assigned Site</label>
+                                    <label className="required">Assigned Sites</label>
                                     <select
-                                        name="siteId"
-                                        value={formData.siteId}
-                                        onChange={handleChange}
-                                        required
+                                        name="site"
+                                        value=""
+                                        onChange={(e) => {
+                                            if (e.target.value) {
+                                                const currentSites = formData.siteIds || [];
+                                                if (!currentSites.includes(e.target.value)) {
+                                                    const newSites = [...currentSites, e.target.value];
+                                                    handleInputChange({ target: { name: 'siteIds', value: newSites } });
+                                                }
+                                            }
+                                        }}
+                                        className={errors.siteIds ? 'error' : ''}
                                     >
-                                        <option value="">Select a Site</option>
+                                        <option value="">Select Site</option>
                                         {sites.map(site => (
                                             <option key={site.id} value={site.id}>{site.name}</option>
                                         ))}
                                     </select>
+
+                                    {formData.siteIds && formData.siteIds.length > 0 && (
+                                        <div className="proc-merchant-type-tags">
+                                            {formData.siteIds.map(siteId => {
+                                                const site = sites.find(s => s.id === siteId);
+                                                return (
+                                                    <span key={siteId} className="proc-merchant-type-tag">
+                        {site ? site.name : siteId}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newSites = formData.siteIds.filter(id => id !== siteId);
+                                                                handleInputChange({ target: { name: 'siteIds', value: newSites } });
+                                                            }}
+                                                        >
+                            ×
+                        </button>
+                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
+                                    {errors.siteIds && (
+                                        <div className="proc-merchant-error-message">{errors.siteIds}</div>
+                                    )}
                                 </div>
                             </div>
 
