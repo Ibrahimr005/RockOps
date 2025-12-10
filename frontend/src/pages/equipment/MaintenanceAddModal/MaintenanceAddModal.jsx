@@ -7,16 +7,17 @@ import { itemTypeService } from '../../../services/warehouse/itemTypeService.js'
 import { warehouseService } from '../../../services/warehouse/warehouseService.js';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import InlineTransactionValidation from './InlineTransactionValidation';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import './MaintenanceAddModal.scss';
 import '../../../styles/form-validation.scss';
 
 const MaintenanceAddModal = ({
-                                 isOpen,
-                                 onClose,
-                                 equipmentId,
-                                 onMaintenanceAdded,
-                                 editingMaintenance = null
-                             }) => {
+    isOpen,
+    onClose,
+    equipmentId,
+    onMaintenanceAdded,
+    editingMaintenance = null
+}) => {
     const [formData, setFormData] = useState({
         technicianId: '',
         maintenanceDate: '',
@@ -53,22 +54,28 @@ const MaintenanceAddModal = ({
     const [showMaintenanceTypeModal, setShowMaintenanceTypeModal] = useState(false);
     const [newMaintenanceTypeData, setNewMaintenanceTypeData] = useState({ name: '', description: '', active: true });
     const [creatingMaintenanceType, setCreatingMaintenanceType] = useState(false);
+    const [confirmationState, setConfirmationState] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: null
+    });
 
-    const { showSuccess, showWarning, showError, showConfirmation } = useSnackbar();
+    const { showSuccess, showWarning, showError } = useSnackbar();
 
     const isEditing = !!editingMaintenance;
 
     // Format date for datetime-local input
     const formatDateForInput = (date) => {
         if (!date) return '';
-        
+
         const d = new Date(date);
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
         const hours = String(d.getHours()).padStart(2, '0');
         const minutes = String(d.getMinutes()).padStart(2, '0');
-        
+
         return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
 
@@ -95,7 +102,7 @@ const MaintenanceAddModal = ({
                     batchNumber: ''
                 });
             }
-            
+
             setError(null);
             setBatchVerificationResult(null);
             setShowTransactionForm(false);
@@ -107,6 +114,18 @@ const MaintenanceAddModal = ({
         }
     }, [isOpen, editingMaintenance, isEditing]);
 
+    // Handle body scroll lock
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isOpen]);
+
     const fetchTechnicians = async () => {
         try {
             console.log('=== Frontend: Fetching employees for equipment:', equipmentId);
@@ -115,7 +134,7 @@ const MaintenanceAddModal = ({
             const employeesList = response.data || [];
             console.log('=== Frontend: Employees list:', employeesList);
             setTechnicians(employeesList);
-            
+
             // Show warnings based on the results
             if (employeesList.length === 0) {
                 console.log('=== Frontend: No employees found, showing warning');
@@ -381,7 +400,7 @@ const MaintenanceAddModal = ({
         const selectedItemTypeIds = transactionFormData.items
             .map((item, index) => index !== currentIndex ? item.itemTypeId : null)
             .filter(id => id);
-        
+
         // Ensure itemTypes is always an array before filtering
         return (itemTypes || []).filter(itemType => !selectedItemTypeIds.includes(itemType.id));
     };
@@ -417,21 +436,21 @@ const MaintenanceAddModal = ({
     const handleReactivateMaintenanceType = async (maintenanceTypeName) => {
         try {
             const response = await maintenanceTypeService.reactivateByName(maintenanceTypeName, newMaintenanceTypeData);
-            
+
             // Refresh maintenance types list
             const typesResponse = await maintenanceTypeService.getAll();
             setMaintenanceTypes(typesResponse.data);
-            
+
             // Automatically select the reactivated maintenance type
             setFormData(prev => ({
                 ...prev,
                 maintenanceTypeId: response.data.id
             }));
-            
+
             // Close modal and reset form
             setShowMaintenanceTypeModal(false);
             setNewMaintenanceTypeData({ name: '', description: '', active: true });
-            
+
             showSuccess(`Maintenance type "${maintenanceTypeName}" has been reactivated and selected successfully with updated details.`);
         } catch (error) {
             console.error('Error reactivating maintenance type:', error);
@@ -466,7 +485,7 @@ const MaintenanceAddModal = ({
             showSuccess(`Maintenance type "${newMaintenanceType.name}" created successfully and selected`);
         } catch (error) {
             console.error('Error creating maintenance type:', error);
-            
+
             // Handle specific error cases
             if (error.response?.status === 409) {
                 // Check if it's our enhanced conflict response
@@ -474,11 +493,12 @@ const MaintenanceAddModal = ({
                     const { conflictType, resourceName, isInactive } = error.response.data;
                     if (isInactive) {
                         // Show confirmation dialog to reactivate inactive maintenance type
-                        showConfirmation(
-                            `Maintenance type "${resourceName}" already exists but was previously deactivated. Would you like to reactivate it instead of creating a new one?`,
-                            () => handleReactivateMaintenanceType(resourceName),
-                            () => showError(`Please choose a different name for the maintenance type.`)
-                        );
+                        setConfirmationState({
+                            isOpen: true,
+                            title: 'Reactivate Maintenance Type',
+                            message: `Maintenance type "${resourceName}" already exists but was previously deactivated. Would you like to reactivate it instead of creating a new one?`,
+                            onConfirm: () => handleReactivateMaintenanceType(resourceName)
+                        });
                     } else {
                         showError(`Maintenance type "${resourceName}" already exists. Please choose a different name.`);
                     }
@@ -511,24 +531,24 @@ const MaintenanceAddModal = ({
     // Create or update maintenance record and transaction if needed
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         // Check if we have a pending transaction that needs validation
         if (showInlineValidation && (!validationData || !validationData.isValid)) {
             setError('Please complete the transaction validation form above.');
             return;
         }
-        
+
         setIsLoading(true);
         setError(null);
 
         try {
             let maintenanceResponse;
-            
+
             if (isEditing) {
                 // Update existing maintenance record
                 maintenanceResponse = await inSiteMaintenanceService.update(
-                    equipmentId, 
-                    editingMaintenance.id, 
+                    equipmentId,
+                    editingMaintenance.id,
                     formData
                 );
             } else {
@@ -577,10 +597,10 @@ const MaintenanceAddModal = ({
             }
 
             // Show success message using snackbar
-            const successMessage = isEditing 
+            const successMessage = isEditing
                 ? "Maintenance record updated successfully"
                 : "Maintenance record created successfully";
-            
+
             showSuccess(successMessage);
 
             // Notify parent component and close
@@ -590,7 +610,7 @@ const MaintenanceAddModal = ({
             onClose();
         } catch (error) {
             console.error("Error saving maintenance:", error);
-            
+
             // Handle different types of errors
             if (error.response?.data?.error) {
                 setError(error.response.data.error);
@@ -615,7 +635,7 @@ const MaintenanceAddModal = ({
     };
 
     return (
-        <div className="maintenance-modal-backdrop"  onClick={handleOverlayClick}>
+        <div className="maintenance-modal-backdrop" onClick={handleOverlayClick}>
             <div className="maintenance-modal">
                 <div className="maintenance-modal-header">
                     <h2>{isEditing ? 'Edit Maintenance Record' : 'Add Maintenance Record'}</h2>
@@ -715,6 +735,14 @@ const MaintenanceAddModal = ({
                                 rows="4"
                                 placeholder="Describe the maintenance being performed..."
                             />
+                            <div className="character-count" style={{
+                                textAlign: 'right',
+                                fontSize: '0.8rem',
+                                color: '#6c757d',
+                                marginTop: '4px'
+                            }}>
+                                {formData.description.length} characters
+                            </div>
                         </div>
                     </div>
 
@@ -744,14 +772,13 @@ const MaintenanceAddModal = ({
                                 </div>
 
                                 {batchVerificationResult && (
-                                    <div className={`batch-result ${
-                                        batchVerificationResult.scenario === 'already_handled' ? 'error' : 
-                                        batchVerificationResult.scenario === 'pending_validation' ? 'success' : 
-                                        batchVerificationResult.scenario === 'other_status' ? 'error' :
-                                        batchVerificationResult.scenario === 'not_found' ? 'warning' : 'error'
-                                    }`}>
+                                    <div className={`batch-result ${batchVerificationResult.scenario === 'already_handled' ? 'error' :
+                                        batchVerificationResult.scenario === 'pending_validation' ? 'success' :
+                                            batchVerificationResult.scenario === 'other_status' ? 'error' :
+                                                batchVerificationResult.scenario === 'not_found' ? 'warning' : 'error'
+                                        }`}>
                                         <p>{batchVerificationResult.message}</p>
-                                        
+
                                         {/* Show transaction details for already handled transactions */}
                                         {batchVerificationResult.scenario === 'already_handled' && batchVerificationResult.transaction && (
                                             <div className="transaction-details">
@@ -791,196 +818,84 @@ const MaintenanceAddModal = ({
                                     />
                                 )}
                             </div>
-
-                            {showTransactionForm && (
-                                <div className="transaction-form">
-                                    <h4>Create New Transaction</h4>
-                                    <p>Since no transaction was found with the provided batch number, you can create a new one:</p>
-
-                                    <div className="form-row">
-                                        <div className="form-group">
-                                            <label>Site</label>
-                                            <select value={selectedSite} onChange={handleSiteChange} required>
-                                                <option value="">Select Site</option>
-                                                {sites.map(site => (
-                                                    <option key={site.id} value={site.id}>
-                                                        {site.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label>Warehouse</label>
-                                            <select
-                                                value={transactionFormData.senderId}
-                                                onChange={handleWarehouseChange}
-                                                required
-                                                disabled={!selectedSite}
-                                            >
-                                                <option value="">Select Warehouse</option>
-                                                {warehouses.map(warehouse => (
-                                                    <option key={warehouse.id} value={warehouse.id}>
-                                                        {warehouse.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="items-section">
-                                        <h5>Items</h5>
-                                        {transactionFormData.items.map((item, index) => (
-                                            <div key={index} className="item-row">
-                                                <div className="form-group">
-                                                    <label>Item Type</label>
-                                                    <select
-                                                        value={item.itemTypeId}
-                                                        onChange={(e) => handleItemChange(index, 'itemTypeId', e.target.value)}
-                                                        required
-                                                    >
-                                                        <option value="">Select Item Type</option>
-                                                        {getAvailableItemTypes(index).map(itemType => (
-                                                            <option key={itemType.id} value={itemType.id}>
-                                                                {itemType.name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                <div className="form-group">
-                                                    <label>Quantity</label>
-                                                    <input
-                                                        type="number"
-                                                        min="1"
-                                                        value={item.quantity}
-                                                        onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                                                        onWheel={(e) => e.target.blur()}
-                                                        required
-                                                    />
-                                                </div>
-
-                                                <button
-                                                    type="button"
-                                                    className="remove-item-button"
-                                                    onClick={() => removeItem(index)}
-                                                    disabled={transactionFormData.items.length === 1}
-                                                >
-                                                    Remove
-                                                </button>
-                                            </div>
-                                        ))}
-
-                                        <button type="button" className="add-item-button" onClick={addItem}>
-                                            Add Item
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     )}
 
-                    <div className="modal-actions">
-                        <button type="button" onClick={onClose}>
+                    <div className="form-actions">
+                        <button type="button" className="cancel-button" onClick={onClose} disabled={isLoading}>
                             Cancel
                         </button>
-                        <button 
-                            type="submit" 
-                            className="btn-primary" 
-                            disabled={isLoading || isValidatingTransaction || (showInlineValidation && (!validationData || !validationData.isValid))}
-                        >
-                            {isLoading ? 'Saving...' : 
-                             isValidatingTransaction ? 'Processing...' :
-                             showInlineValidation && validationData && validationData.isValid 
-                                ? (validationData.action === 'accept' 
-                                    ? 'Create Maintenance & Accept Transaction' 
-                                    : 'Create Maintenance & Reject Transaction')
-                                : showInlineValidation 
-                                    ? 'Complete validation form above'
-                                    : (isEditing ? 'Update Maintenance' : 'Create Maintenance')}
+                        <button type="submit" className="submit-button" disabled={isLoading}>
+                            {isLoading ? 'Saving...' : (isEditing ? 'Update Maintenance' : 'Create Maintenance')}
                         </button>
                     </div>
                 </form>
+
+                {/* Maintenance Type Creation Modal */}
+                {showMaintenanceTypeModal && (
+                    <div className="modal-overlay">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h2>Add New Maintenance Type</h2>
+                                <button className="modal-close" onClick={handleCancelMaintenanceTypeCreation}>&times;</button>
+                            </div>
+                            <form onSubmit={handleCreateMaintenanceType}>
+                                <div className="form-group">
+                                    <label>Name</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={newMaintenanceTypeData.name}
+                                        onChange={handleNewMaintenanceTypeInputChange}
+                                        placeholder="e.g. Oil Change, Tire Rotation"
+                                        required
+                                    />
+                                    <small className="form-help-text">Unique name for this maintenance type</small>
+                                </div>
+                                <div className="form-group">
+                                    <label>Description</label>
+                                    <textarea
+                                        name="description"
+                                        value={newMaintenanceTypeData.description}
+                                        onChange={handleNewMaintenanceTypeInputChange}
+                                        placeholder="Optional description..."
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="checkbox-label">
+                                        <input
+                                            type="checkbox"
+                                            name="active"
+                                            checked={newMaintenanceTypeData.active}
+                                            onChange={(e) => setNewMaintenanceTypeData(prev => ({ ...prev, active: e.target.checked }))}
+                                        />
+                                        <span className="checkbox-text">Active</span>
+                                    </label>
+                                </div>
+                                <div className="modal-actions">
+                                    <button type="button" onClick={handleCancelMaintenanceTypeCreation}>Cancel</button>
+                                    <button type="submit" className="save-button" disabled={creatingMaintenanceType}>
+                                        {creatingMaintenanceType ? 'Creating...' : 'Create Type'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Maintenance Type Creation Modal */}
-            {showMaintenanceTypeModal && (
-                <div className="modal-overlay" onClick={handleCancelMaintenanceTypeCreation}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>Add Maintenance Type</h2>
-                            <button
-                                className="modal-close"
-                                onClick={handleCancelMaintenanceTypeCreation}
-                                disabled={creatingMaintenanceType}
-                            >
-                                &times;
-                            </button>
-                        </div>
-                        <form onSubmit={handleCreateMaintenanceType}>
-                            <div className="form-group">
-                                <label htmlFor="maintenanceTypeName">Name <span className="required-field">*</span></label>
-                                <input
-                                    type="text"
-                                    id="maintenanceTypeName"
-                                    name="name"
-                                    value={newMaintenanceTypeData.name}
-                                    onChange={handleNewMaintenanceTypeInputChange}
-                                    placeholder="e.g., Oil Change, Repair, Inspection"
-                                    required
-                                    disabled={creatingMaintenanceType}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label htmlFor="maintenanceTypeDescription">Description</label>
-                                <textarea
-                                    id="maintenanceTypeDescription"
-                                    name="description"
-                                    value={newMaintenanceTypeData.description}
-                                    onChange={handleNewMaintenanceTypeInputChange}
-                                    placeholder="Describe this maintenance type..."
-                                    rows="3"
-                                    disabled={creatingMaintenanceType}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label className="checkbox-label">
-                                    <input
-                                        type="checkbox"
-                                        name="active"
-                                        checked={newMaintenanceTypeData.active !== false}
-                                        onChange={(e) => setNewMaintenanceTypeData(prev => ({
-                                            ...prev,
-                                            active: e.target.checked
-                                        }))}
-                                        disabled={creatingMaintenanceType}
-                                    />
-                                    <span className="checkbox-text">Active</span>
-                                </label>
-                                <small className="form-help-text">
-                                    Inactive maintenance types will not be available for selection
-                                </small>
-                            </div>
-                            <div className="modal-actions">
-                                <button
-                                    type="button"
-                                    onClick={handleCancelMaintenanceTypeCreation}
-                                    disabled={creatingMaintenanceType}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="btn-primary"
-                                    disabled={creatingMaintenanceType || !newMaintenanceTypeData.name.trim()}
-                                >
-                                    {creatingMaintenanceType ? 'Creating...' : 'Create Maintenance Type'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            <ConfirmationDialog
+                isVisible={confirmationState.isOpen}
+                title={confirmationState.title}
+                message={confirmationState.message}
+                onConfirm={() => {
+                    if (confirmationState.onConfirm) confirmationState.onConfirm();
+                    setConfirmationState(prev => ({ ...prev, isOpen: false }));
+                }}
+                onCancel={() => setConfirmationState(prev => ({ ...prev, isOpen: false }))}
+                confirmText="Reactivate"
+                type="warning"
+            />
         </div>
     );
 };
