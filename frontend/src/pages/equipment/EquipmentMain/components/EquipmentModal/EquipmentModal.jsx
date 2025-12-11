@@ -223,30 +223,30 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         setFormTouched(false);
         setFormValid(false);
         setError(null);
-        
+
         // Reset validation state
         setTabValidation({
             0: false,
             1: false,
             2: false
         });
-        
+
         // Reset documents
         setDocumentsByFieldType({
             SHIPPING: [],
             CUSTOMS: [],
             TAXES: []
         });
-        
+
         // Reset file input element
         const fileInput = document.getElementById('equipmentImage');
         if (fileInput) {
             fileInput.value = '';
         }
-        
+
         // Hide any existing snackbars
         hideSnackbar();
-        
+
         showSuccess("Form has been cleared successfully");
     };
 
@@ -264,7 +264,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         if (isOpen) {
             // Prevent background page scrolling when modal is open
             document.body.style.overflow = 'hidden';
-            
+
             fetchFormData();
             if (equipmentToEdit) {
                 populateFormForEditing();
@@ -296,7 +296,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             // Restore background page scrolling when modal is closed
             document.body.style.overflow = 'unset';
         }
-        
+
         return () => {
             // Cleanup: Always restore scrolling when component unmounts
             document.body.style.overflow = 'unset';
@@ -566,6 +566,16 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         }
     };
 
+    const handleFocus = (e) => {
+        const { name, value } = e.target;
+        if (value === "0" || value === 0) {
+            setDisplayValues(prev => ({
+                ...prev,
+                [name]: ""
+            }));
+        }
+    };
+
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
 
@@ -592,7 +602,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                 [name]: formatNumberWithCommas(numericValue)
             }));
         } else if (name === 'workedHours') {
-            const numericValue = parseNumberInput(value) || "0";
+            const numericValue = parseNumberInput(value);
             setFormData(prev => ({
                 ...prev,
                 [name]: numericValue
@@ -641,13 +651,13 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             const response = await equipmentService.getAllEquipment();
             const existingEquipment = response.data.find(
                 equipment => equipment.serialNumber.toLowerCase() === serialNumber.toLowerCase() &&
-                equipment.id !== (equipmentToEdit?.id)
+                    equipment.id !== (equipmentToEdit?.id)
             );
 
             if (existingEquipment) {
-                return { 
-                    isValid: false, 
-                    message: `Serial number already exists for equipment: ${existingEquipment.name || 'Unknown Equipment'}` 
+                return {
+                    isValid: false,
+                    message: `Serial number already exists for equipment: ${existingEquipment.name || 'Unknown Equipment'}`
                 };
             }
 
@@ -665,12 +675,12 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
 
         // Remove commas and check if it's a valid number
         const numericValue = parseNumberInput(value);
-        
+
         // Check if it's a valid number
         if (isNaN(numericValue) || numericValue < 0) {
-            return { 
-                isValid: false, 
-                message: `${fieldName} must be a valid positive number` 
+            return {
+                isValid: false,
+                message: `${fieldName} must be a valid positive number`
             };
         }
 
@@ -690,9 +700,9 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         }
 
         if (yearNumber < 1900 || yearNumber > currentYear) {
-            return { 
-                isValid: false, 
-                message: `Manufacture year must be between 1900 and ${currentYear}` 
+            return {
+                isValid: false,
+                message: `Manufacture year must be between 1900 and ${currentYear}`
             };
         }
 
@@ -708,16 +718,16 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         const maxSize = 5 * 1024 * 1024; // 5MB
 
         if (!allowedTypes.includes(file.type)) {
-            return { 
-                isValid: false, 
-                message: 'Only image files are allowed (JPEG, PNG, GIF, WebP)' 
+            return {
+                isValid: false,
+                message: 'Only image files are allowed (JPEG, PNG, GIF, WebP)'
             };
         }
 
         if (file.size > maxSize) {
-            return { 
-                isValid: false, 
-                message: 'Image file size must be less than 5MB' 
+            return {
+                isValid: false,
+                message: 'Image file size must be less than 5MB'
             };
         }
 
@@ -779,7 +789,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
     const handleModalWheel = (e) => {
         // Allow normal scrolling within the modal content area, but prevent changes to focused inputs
         const monetaryFields = ['egpPrice', 'dollarPrice', 'shipping', 'customs', 'taxes', 'workedHours'];
-        if ((e.target.type === 'number' || monetaryFields.includes(e.target.name)) && 
+        if ((e.target.type === 'number' || monetaryFields.includes(e.target.name)) &&
             document.activeElement === e.target) {
             e.preventDefault();
             e.target.blur();
@@ -791,7 +801,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         if (file) {
             // Validate the image file
             const validation = validateImageFile(file);
-            
+
             if (!validation.isValid) {
                 showError(validation.message);
                 // Clear the file input
@@ -843,11 +853,11 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         if (tabId === 0) {
             // Check image requirement
             const hasImage = imageFile !== null || (equipmentToEdit && equipmentToEdit.imageUrl);
-            
+
             // Check field-specific validations for tab 0
             const tab0Fields = ['serialNumber', 'manufactureYear'];
             const fieldsValid = tab0Fields.every(field => fieldValidation[field].isValid);
-            
+
             // Tab is valid only if all conditions are met
             isValid = isValid && hasImage && fieldsValid;
         }
@@ -856,7 +866,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         if (tabId === 1) {
             const tab1Fields = ['egpPrice', 'dollarPrice', 'shipping', 'customs', 'taxes'];
             const fieldsValid = tab1Fields.every(field => fieldValidation[field].isValid);
-            
+
             // Tab is valid only if required fields are filled AND field validations pass
             isValid = isValid && fieldsValid;
         }
@@ -865,7 +875,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         if (tabId === 2) {
             const tab2Fields = ['workedHours'];
             const fieldsValid = tab2Fields.every(field => fieldValidation[field].isValid);
-            
+
             // Tab is valid only if required fields are filled AND field validations pass
             isValid = isValid && fieldsValid;
         }
@@ -961,7 +971,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
 
                 // Show appropriate message based on missing field
                 let message = "Please complete all required fields before submitting.";
-                
+
                 // If it's a validation error, use the specific validation message
                 if (missingField.validationError) {
                     message = missingField.validationError;
@@ -1068,8 +1078,8 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
 
             // Handle workedHours - send 0 if empty, null, undefined, or whitespace-only
             const workedHoursValue = formData.workedHours &&
-            formData.workedHours !== "" &&
-            formData.workedHours.toString().trim() !== ""
+                formData.workedHours !== "" &&
+                formData.workedHours.toString().trim() !== ""
                 ? formData.workedHours : 0;
             formDataToSend.append('workedHours', workedHoursValue);
 
@@ -1226,7 +1236,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             showSuccess(`Brand "${newBrand.name}" created successfully and selected`);
         } catch (error) {
             console.error('Error creating brand:', error);
-            
+
             // Handle specific error cases
             if (error.response?.status === 409) {
                 // Check if it's our enhanced conflict response
@@ -1862,6 +1872,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
                                         name="workedHours"
                                         value={displayValues.workedHours}
                                         onChange={handleInputChange}
+                                        onFocus={handleFocus}
                                         onWheel={handleNumberInputWheel}
                                         className={!fieldValidation.workedHours.isValid ? 'error' : ''}
                                         placeholder="Enter worked hours"

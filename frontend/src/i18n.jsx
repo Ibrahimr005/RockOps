@@ -110,7 +110,9 @@ const enTranslations = {
         HR_MANAGER: 'HR Manager',
         HR_EMPLOYEE: 'HR Employee',
         FINANCE_EMPLOYEE: 'Finance Employee',
-        FINANCE_MANAGER: 'Finance Manager'
+        FINANCE_MANAGER: 'Finance Manager',
+        MAINTENANCE_MANAGER: 'Maintenance Manager',
+        MAINTENANCE_EMPLOYEE: 'Maintenance Employee'
     },
     hr: {
         dashboard: {
@@ -430,7 +432,7 @@ const enTranslations = {
         totalSales: 'Total Sales',
     }
 
-// Inside arTranslations
+    // Inside arTranslations
 
 
 };
@@ -543,7 +545,9 @@ const arTranslations = {
         HR_MANAGER: 'مدير الموارد البشرية',
         HR_EMPLOYEE: 'موظف الموارد البشرية',
         FINANCE_EMPLOYEE: 'موظف مالي',
-        FINANCE_MANAGER: 'مدير المالية'
+        FINANCE_MANAGER: 'مدير المالية',
+        MAINTENANCE_MANAGER: 'مدير الصيانة',
+        MAINTENANCE_EMPLOYEE: 'موظف الصيانة'
     },
     site: {
         site: 'الموقع',
@@ -617,7 +621,7 @@ const arTranslations = {
         candidates: 'المرشحين',
         positions: 'المناصب',
         tasks: 'المهام',
-        contractType: 'نوع العقد' ,
+        contractType: 'نوع العقد',
         employeeName: 'اسم الموظف',
     },
     promotions: {
