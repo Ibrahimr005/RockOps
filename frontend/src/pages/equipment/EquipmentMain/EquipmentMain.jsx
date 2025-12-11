@@ -1,4 +1,4 @@
-import React, { useState, useEffect,useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaPlus, FaFilter, FaSearch, FaExclamationCircle, FaChevronDown } from "react-icons/fa";
 import EquipmentModal from "./components/EquipmentModal/EquipmentModal.jsx";
@@ -12,12 +12,12 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { useEquipmentPermissions } from "../../../utils/rbac";
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage";
 import PageHeader from "../../../components/common/PageHeader/index.js";
-
+import equipmentimg from "../../../assets/imgs/equipmentimg.jpg"
 import { FaTools } from 'react-icons/fa';
 
 // Default placeholder for equipment image
 const equipmentPlaceholder = "data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100' height='100' fill='%23ddd'/%3e%3ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='%23999'%3eEquipment%3c/text%3e%3c/svg%3e";
-import equipmentimg from "../../../assets/imgs/equipmentimg.jpg"
+
 
 const EquipmentMain = () => {
     const [equipmentData, setEquipmentData] = useState([]);
@@ -26,14 +26,62 @@ const EquipmentMain = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [showFilters, setShowFilters] = useState(false);
-    const [equipmentTypes, setEquipmentTypes] = useState([]);
-    const [equipmentBrands, setEquipmentBrands] = useState([]);
-    const [sites, setSites] = useState([]);
-    const [statusOptions, setStatusOptions] = useState([]);
+    // Dynamic Reference Lists (derived from equipmentData)
+    const equipmentTypes = React.useMemo(() => {
+        const types = new Map();
+        equipmentData.forEach(item => {
+            if (item.typeId && item.typeName) {
+                types.set(item.typeId, item.typeName);
+            }
+        });
+        return Array.from(types, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+    }, [equipmentData]);
+
+    const equipmentBrands = React.useMemo(() => {
+        const brands = new Map();
+        equipmentData.forEach(item => {
+            if (item.brandId && item.brandName) {
+                brands.set(item.brandId, item.brandName);
+            }
+        });
+        return Array.from(brands, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+    }, [equipmentData]);
+
+    const sites = React.useMemo(() => {
+        const uniqueSites = new Map();
+        equipmentData.forEach(item => {
+            if (item.siteId && item.siteName) {
+                uniqueSites.set(item.siteId, item.siteName);
+            }
+        });
+        return Array.from(uniqueSites, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+    }, [equipmentData]);
+
+    const statusOptions = React.useMemo(() => {
+        const statuses = new Set();
+        equipmentData.forEach(item => {
+            if (item.status) {
+                statuses.add(item.status);
+            }
+        });
+
+        // Helper to format status label
+        const formatStatusLabel = (s) => s.replace(/_/g, ' ').toLowerCase()
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+
+        return Array.from(statuses).map(status => ({
+            value: status,
+            label: formatStatusLabel(status)
+        })).sort((a, b) => a.label.localeCompare(b.label));
+    }, [equipmentData]);
     const [selectedType, setSelectedType] = useState("");
     const [selectedBrand, setSelectedBrand] = useState("");
     const [selectedSite, setSelectedSite] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("");
+    const [filterName, setFilterName] = useState("");
+    const [selectedModel, setSelectedModel] = useState("");
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,40 +132,10 @@ const EquipmentMain = () => {
         }
     };
 
-    // Fetch equipment types and brands
-    const fetchReferenceLists = async () => {
-        try {
-            // Fetch equipment types
-            const typesResponse = await equipmentService.getAllEquipmentTypes();
-            if (Array.isArray(typesResponse.data)) {
-                setEquipmentTypes(typesResponse.data);
-            }
 
-            // Fetch equipment brands
-            const brandsResponse = await equipmentService.getAllEquipmentBrands();
-            if (Array.isArray(brandsResponse.data)) {
-                setEquipmentBrands(brandsResponse.data);
-            }
-
-            // Fetch sites
-            const sitesResponse = await equipmentService.getAllSites();
-            if (Array.isArray(sitesResponse.data)) {
-                setSites(sitesResponse.data);
-            }
-
-            // Fetch equipment status options
-            const statusResponse = await equipmentService.getEquipmentStatusOptions();
-            if (Array.isArray(statusResponse.data)) {
-                setStatusOptions(statusResponse.data);
-            }
-        } catch (error) {
-            console.error("Error fetching reference data:", error);
-        }
-    };
 
     useEffect(() => {
         fetchEquipmentData();
-        fetchReferenceLists();
     }, []);
 
     // Update equipment cards when data is available
@@ -152,6 +170,14 @@ const EquipmentMain = () => {
         });
     }, [filteredEquipment]);
 
+    // Derived unique models from existing equipment
+    const uniqueModels = React.useMemo(() => {
+        const models = equipmentData
+            .map(item => item.model)
+            .filter(model => model); // Filter out null/undefined
+        return [...new Set(models)].sort();
+    }, [equipmentData]);
+
     // Filter equipment based on search and filter criteria
     useEffect(() => {
         let result = [...equipmentData];
@@ -165,6 +191,19 @@ const EquipmentMain = () => {
                 (item.brand && item.brand.toLowerCase().includes(lowerCaseSearch)) ||
                 (item.serialNumber && item.serialNumber.toLowerCase().includes(lowerCaseSearch))
             );
+        }
+
+        // Apply Name filter from panel
+        if (filterName) {
+            const lowerCaseName = filterName.toLowerCase();
+            result = result.filter(item =>
+                item.name && item.name.toLowerCase().includes(lowerCaseName)
+            );
+        }
+
+        // Apply Model filter
+        if (selectedModel) {
+            result = result.filter(item => item.model === selectedModel);
         }
 
         // Apply type, brand, site and status filters
@@ -185,7 +224,7 @@ const EquipmentMain = () => {
         }
 
         setFilteredEquipment(result);
-    }, [equipmentData, searchTerm, selectedType, selectedBrand, selectedSite, selectedStatus]);
+    }, [equipmentData, searchTerm, selectedType, selectedBrand, selectedSite, selectedStatus, filterName, selectedModel]);
 
     const handleAddEquipment = () => {
         setEquipmentToEdit(null);
@@ -216,6 +255,8 @@ const EquipmentMain = () => {
         setSelectedBrand("");
         setSelectedSite("");
         setSelectedStatus("");
+        setFilterName("");
+        setSelectedModel("");
         setSearchTerm("");
     };
 
@@ -229,6 +270,8 @@ const EquipmentMain = () => {
         if (selectedBrand) count++;
         if (selectedSite) count++;
         if (selectedStatus) count++;
+        if (filterName) count++;
+        if (selectedModel) count++;
         return count;
     };
 
@@ -295,7 +338,12 @@ const EquipmentMain = () => {
             {showFilters && (
                 <div className="page-header__filter-panel">
                     <div className="page-header__filter-header">
-                        <h4>Filter Equipment</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <h4>Filter Equipment</h4>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>
+                                Showing {filteredEquipment.length} out of {equipmentData.length}
+                            </span>
+                        </div>
                         <div className="filter-actions">
                             <button
                                 className="filter-reset-btn"
@@ -314,6 +362,37 @@ const EquipmentMain = () => {
                     </div>
 
                     <div className="page-header__filter-list">
+                        <div className="page-header__filter-item">
+                            <label>Name</label>
+                            <input
+                                type="text"
+                                placeholder="Search by name..."
+                                value={filterName}
+                                onChange={(e) => setFilterName(e.target.value)}
+                                style={{
+                                    padding: '8px 12px',
+                                    borderRadius: '6px',
+                                    border: '1px solid var(--border-color)',
+                                    backgroundColor: 'var(--bg-secondary)',
+                                    color: 'var(--text-primary)',
+                                    width: '100%'
+                                }}
+                            />
+                        </div>
+
+                        <div className="page-header__filter-item">
+                            <label>Model</label>
+                            <select
+                                value={selectedModel}
+                                onChange={(e) => setSelectedModel(e.target.value)}
+                            >
+                                <option value="">All Models</option>
+                                {uniqueModels.map(model => (
+                                    <option key={model} value={model}>{model}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         <div className="page-header__filter-item">
                             <label>Equipment Type</label>
                             <select

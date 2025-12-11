@@ -60,7 +60,7 @@ public class Equipment {
     @Column(nullable = true)
     private String examinedBy;
 
-    @Column(nullable = true)
+    @Column(nullable = true, length = 5000)
     private String equipmentComplaints;
 
     @Column(nullable = false)
@@ -82,7 +82,7 @@ public class Equipment {
     @Enumerated(EnumType.STRING)
     private EquipmentStatus status;
 
-    @Column(nullable = true)
+    @Column(nullable = true, length = 5000)
     private String relatedDocuments;
 
     @Column(nullable = true)

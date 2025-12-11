@@ -98,6 +98,18 @@ public class EquipmentController {
             errorResponse.put("message", e.getMessage());
             errorResponse.put("status", 400);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        } catch (ResourceNotFoundException e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Not Found");
+            errorResponse.put("message", e.getMessage());
+            errorResponse.put("status", 404);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+             Map<String, Object> errorResponse = new HashMap<>();
+             errorResponse.put("error", "Data Integrity Violation");
+             errorResponse.put("message", "Database error: " + e.getMostSpecificCause().getMessage());
+             errorResponse.put("status", 409);
+             return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
         } catch (Exception e) {
             System.err.println("CONTROLLER ERROR (Internal Server Error): " + e.getMessage());
             e.printStackTrace();
