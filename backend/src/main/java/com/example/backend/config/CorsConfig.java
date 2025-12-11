@@ -18,8 +18,9 @@ public class CorsConfig {
         config.addAllowedOrigin("http://localhost:5173");
         config.addAllowedOrigin("http://localhost:5174");
         config.addAllowedOrigin("http://localhost:3000");
+        config.addAllowedOrigin("https://dev-rock-ops.vercel.app");
         config.addAllowedOrigin("https://rock-ops.vercel.app");
-        config.addAllowedOrigin("http://rockops.s3-website-us-east-1.amazonaws.com");
+        config.addAllowedOrigin("https://rockops.vercel.app");
 
         // Allow all HTTP methods
         config.addAllowedMethod("*");

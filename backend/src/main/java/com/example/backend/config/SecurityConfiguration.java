@@ -34,15 +34,14 @@ public class SecurityConfiguration {
                             "http://localhost:5174",
                             "http://localhost:3000",
 
-                            // AWS S3 deployment
-                            "http://rockops.s3-website-us-east-1.amazonaws.com",
-
                             // Development deployment
                             "https://dev-rock-ops.vercel.app",
 
+                            // Test deployment
+                            "https://rock-ops.vercel.app",
+
                             // Production deployment
-                            "https://rockops.vercel.app",
-                            "https://rock-ops.vercel.app"
+                            "https://rockops.vercel.app"
                     ));
                     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     configuration.setAllowedHeaders(Arrays.asList("*"));
