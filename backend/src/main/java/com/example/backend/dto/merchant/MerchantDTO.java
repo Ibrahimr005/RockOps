@@ -29,5 +29,5 @@ public class MerchantDTO {
     private String photoUrl;
     private List<String> merchantTypes; // Will be converted from enum to string
     private String notes;
-    private UUID siteId;  // Just the site ID to avoid circular references
+    private List<UUID> siteIds;  // NEW
 }

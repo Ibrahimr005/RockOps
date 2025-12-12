@@ -41,6 +41,7 @@ public class InSiteMaintenance {
     @JoinColumn(name = "maintenance_type_id")
     private MaintenanceType maintenanceType;
     
+    @Column(columnDefinition = "TEXT")
     private String description;
     private String status; // e.g., "COMPLETED", "IN_PROGRESS"
 

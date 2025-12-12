@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState,useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import "./ProcurementMerchants.scss"
 import DataTable from '../../../components/common/DataTable/DataTable.jsx';
@@ -40,7 +40,7 @@ const ProcurementMerchants = () => {
         contactSecondPhone: '',
         contactPersonName: '',
         address: '',
-        siteId: '',
+        siteId: [],
         preferredPaymentMethod: '',
         taxIdentificationNumber: '',
         reliabilityScore: '',
@@ -111,7 +111,7 @@ const ProcurementMerchants = () => {
             contactSecondPhone: merchant.contactSecondPhone || '',
             contactPersonName: merchant.contactPersonName || '',
             address: merchant.address || '',
-            siteId: merchant.site ? merchant.site.id : '',
+            siteIds: merchant.sites ? merchant.sites.map(site => site.id) : [],  // Changed from site to sites
             preferredPaymentMethod: merchant.preferredPaymentMethod || '',
             taxIdentificationNumber: merchant.taxIdentificationNumber || '',
             reliabilityScore: merchant.reliabilityScore || '',
@@ -191,7 +191,7 @@ const ProcurementMerchants = () => {
             contactSecondPhone: '',
             contactPersonName: '',
             address: '',
-            siteId: '',
+            siteId: [],
             preferredPaymentMethod: '',
             taxIdentificationNumber: '',
             reliabilityScore: '',
@@ -251,13 +251,11 @@ const ProcurementMerchants = () => {
                 reliabilityScore: formData.reliabilityScore ? parseFloat(formData.reliabilityScore) : null,
                 averageDeliveryTime: formData.averageDeliveryTime ? parseFloat(formData.averageDeliveryTime) : null,
                 lastOrderDate: formData.lastOrderDate ? new Date(formData.lastOrderDate).getTime() : null,
-                notes: formData.notes || ''
+                notes: formData.notes || '',
+                siteIds: formData.siteIds || []
             };
 
-            // Only include siteId if it has a value
-            if (formData.siteId && formData.siteId.trim() !== '') {
-                merchantData.siteId = formData.siteId;
-            }
+
 
             const response = await procurementService.addMerchant(merchantData, selectedFile);
             const newMerchant = response.data || response;
@@ -304,13 +302,11 @@ const ProcurementMerchants = () => {
                 reliabilityScore: formData.reliabilityScore ? parseFloat(formData.reliabilityScore) : null,
                 averageDeliveryTime: formData.averageDeliveryTime ? parseFloat(formData.averageDeliveryTime) : null,
                 lastOrderDate: formData.lastOrderDate ? new Date(formData.lastOrderDate).getTime() : null,
-                notes: formData.notes || ''
+                notes: formData.notes || '',
+                siteIds: formData.siteIds || []  // Changed from siteId
             };
 
-            // Only include siteId if it has a value
-            if (formData.siteId && formData.siteId.trim() !== '') {
-                merchantData.siteId = formData.siteId;
-            }
+
 
             const response = await procurementService.updateMerchant(currentMerchantId, merchantData, selectedFile);
             const updatedMerchant = response.data || response;
@@ -333,6 +329,19 @@ const ProcurementMerchants = () => {
         }
     };
 
+    // Preprocess merchants data to flatten arrays for filtering
+    const processedMerchants = useMemo(() => {
+        return merchants.map(merchant => ({
+            ...merchant,
+            // Keep original arrays for rendering
+            merchantTypes: merchant.merchantTypes,
+            sites: merchant.sites,
+            // Add flattened strings for filtering
+            merchantTypesForFilter: merchant.merchantTypes || [],
+            sitesForFilter: merchant.sites ? merchant.sites.map(s => s.name) : []
+        }));
+    }, [merchants]);
+
     // Define columns for DataTable - Updated with photo column and removed address
     const columns = [
         {
@@ -340,7 +349,7 @@ const ProcurementMerchants = () => {
             header: 'Photo',
             accessor: 'photoUrl',
             sortable: false,
-            width: '80px',
+            width: '130px',
             render: (merchant, photoUrl) => (
                 <EmployeeAvatar
                     photoUrl={photoUrl}
@@ -350,6 +359,17 @@ const ProcurementMerchants = () => {
                 />
             )
         },
+        {
+            id: 'merchantId',
+            header: 'MERCHANT ID',
+            accessor: 'merchantId',
+            sortable: true,
+            width: '100px',
+            render: (merchant, merchantId) => (
+                <span className="merchant-id-badge">{merchantId || '-'}</span>
+            )
+        },
+
         {
             id: 'name',
             header: 'MERCHANT',
@@ -373,33 +393,30 @@ const ProcurementMerchants = () => {
                 return merchantTypes.join(', ');
             }
         },
-        {
-            id: 'email',
-            header: 'EMAIL',
-            accessor: 'contactEmail',
-            sortable: true,
-            minWidth: '180px',
-            render: (row, value) => value || '-'
-        },
+
         {
             id: 'phone',
             header: 'PHONE',
             accessor: 'contactPhone',
             sortable: true,
-            minWidth: '130px',
+            minWidth: '110px',
             render: (row, value) => value || '-'
         },
         {
-            id: 'site',
-            header: 'SITE',
-            accessor: 'site.name',
-            sortable: true,
-            minWidth: '120px',
-            render: (row, value) => value || 'None'
+            id: 'sites',
+            header: 'SITES',
+            accessor: 'sites',
+            sortable: false,
+            minWidth: '80px',
+            render: (merchant, sites) => {
+                if (!sites || sites.length === 0) {
+                    return 'None';
+                }
+                return sites.map(site => site.name).join(', ');
+            }
         }
     ];
 
-    // Define filterable columns
     const filterableColumns = [
         {
             header: 'Merchant',
@@ -408,16 +425,25 @@ const ProcurementMerchants = () => {
         },
         {
             header: 'Type',
-            accessor: 'merchantType',
-            filterType: 'select'
+            accessor: 'merchantTypesForFilter',  // Use the flattened array
+            filterType: 'select',
+            customFilterAccessor: 'merchantTypesForFilter',
+            customFilterFunction: (row, filterValue) => {
+                if (!filterValue) return true;
+                return row.merchantTypesForFilter && row.merchantTypesForFilter.includes(filterValue);
+            }
         },
         {
-            header: 'Site',
-            accessor: 'site.name',
-            filterType: 'select'
+            header: 'Sites',
+            accessor: 'sitesForFilter',  // Use the flattened array of site names
+            filterType: 'select',
+            customFilterAccessor: 'sitesForFilter',
+            customFilterFunction: (row, filterValue) => {
+                if (!filterValue) return true;
+                return row.sitesForFilter && row.sitesForFilter.includes(filterValue);
+            }
         }
     ];
-
     // Define actions for each row - Removed the View action
     const actions = [
         {
@@ -468,7 +494,7 @@ const ProcurementMerchants = () => {
             {/* DataTable */}
             <div className="procurement-merchants-table-container">
                 <DataTable
-                    data={merchants}
+                    data={processedMerchants}
                     columns={columns}
                     loading={loading}
                     showSearch={true}
@@ -477,13 +503,13 @@ const ProcurementMerchants = () => {
                     actions={actions}
                     itemsPerPageOptions={[10, 20, 50]}
                     defaultItemsPerPage={10}
-                    defaultSortField="name"
-                    defaultSortDirection="asc"
+                    defaultSortField="merchantId"  // Changed
+                    defaultSortDirection="desc"     // Changed to desc
                     emptyMessage="No merchants found"
                     className="procurement-merchants-datatable"
                     // DataTable's built-in add button
                     showAddButton={userRole === 'PROCUREMENT' || userRole === 'ADMIN'}
-                    addButtonText="Add Merchant"
+                    addButtonText="Add Merchants"
                     addButtonIcon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M12 5v14M5 12h14" />
                     </svg>}

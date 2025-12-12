@@ -82,6 +82,11 @@ public interface JobPositionRepository extends JpaRepository<JobPosition, UUID> 
             @Param("positionName") String positionName,
             @Param("experienceLevel") String experienceLevel);
 
+    boolean existsByPositionNameAndExperienceLevelIgnoreCaseAndIdNot(
+            String positionName,
+            @Param("experienceLevel") String experienceLevel,
+            UUID id
+    );
     /**
      * Check if a position exists with the given name and experience level, excluding a specific ID
      * Used for update validation to exclude the current record

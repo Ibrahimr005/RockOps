@@ -47,6 +47,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         "http://127.0.0.1:*",
                         "http://localhost:*",
 
+                        // AWS S3 deployment - ADD THIS LINE
+                        "http://rockops.s3-website-us-east-1.amazonaws.com",
+
                         // Your specific Vercel deployments
                         "https://dev-rock-ops.vercel.app",
                         "https://rock-ops.vercel.app",
@@ -64,6 +67,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         "http://localhost:5173",
                         "http://127.0.0.1:*",
                         "http://localhost:*",
+                        "http://rockops.s3-website-us-east-1.amazonaws.com",  // ADD THIS LINE TOO
                         "https://dev-rock-ops.vercel.app",
                         "https://rock-ops.vercel.app"
                 );

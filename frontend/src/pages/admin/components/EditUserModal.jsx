@@ -1,14 +1,14 @@
-import React, {useEffect, useState} from 'react';
-import {useTranslation} from 'react-i18next';
-import {FaTimes} from 'react-icons/fa';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FaTimes } from 'react-icons/fa';
 import './EditUserModal.css';
-import {useSnackbar} from '../../../contexts/SnackbarContext';
+import { useSnackbar } from '../../../contexts/SnackbarContext';
 
-import {ROLES} from '../../../utils/roles.js'
+import { ROLES } from '../../../utils/roles.js'
 
-const EditUserModal = ({user, mode = 'edit', onCancel, onSave}) => {
-    const {t} = useTranslation();
-    const {showSnackbar} = useSnackbar();
+const EditUserModal = ({ user, mode = 'edit', onCancel, onSave }) => {
+    const { t } = useTranslation();
+    const { showSnackbar } = useSnackbar();
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -41,8 +41,16 @@ const EditUserModal = ({user, mode = 'edit', onCancel, onSave}) => {
         }
     }, [user, mode]);
 
+    // Prevent background scrolling when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     const handleFormChange = (e) => {
-        const {name, value} = e.target;
+        const { name, value } = e.target;
 
         // Convert username to lowercase automatically
         const processedValue = name === 'username' ? value.toLowerCase() : value;
@@ -149,12 +157,12 @@ const EditUserModal = ({user, mode = 'edit', onCancel, onSave}) => {
     };
 
     return (
-        <div className="modal-overlay"  onClick={handleOverlayClick}>
+        <div className="modal-overlay" onClick={handleOverlayClick}>
             <div className="modal-content">
                 <div className="modal-header">
                     <h2>{mode === 'edit' ? t('admin.editUser') : t('admin.addUser')}</h2>
                     <button className="btn-close" onClick={onCancel} disabled={isSubmitting}>
-                        <FaTimes/>
+                        <FaTimes />
                     </button>
                 </div>
 
@@ -172,6 +180,7 @@ const EditUserModal = ({user, mode = 'edit', onCancel, onSave}) => {
                                     disabled={isSubmitting}
                                     placeholder={t('admin.firstName')}
                                 />
+
                             </div>
                             <div className="form-group">
                                 <label>{t('admin.lastName')}</label>

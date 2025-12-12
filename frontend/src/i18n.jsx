@@ -621,7 +621,7 @@ const arTranslations = {
         candidates: 'المرشحين',
         positions: 'المناصب',
         tasks: 'المهام',
-        contractType: 'نوع العقد' ,
+        contractType: 'نوع العقد',
         employeeName: 'اسم الموظف',
     },
     promotions: {
