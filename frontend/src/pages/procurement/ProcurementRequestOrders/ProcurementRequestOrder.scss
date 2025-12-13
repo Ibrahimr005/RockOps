@@ -1,17 +1,24 @@
 /* Main container */
 
+/* Main container - ADD PROPER RESPONSIVE STYLING */
 .pro-ro-procurement-requests-container {
-  max-width: 1600px;
   background-color: var(--main-background-color);
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto; /* Critical for zoom handling */
+  box-sizing: border-box;
 }
 
+/* Table container - UPDATED */
 .pro-ro-table-container {
-  transition: all var(--transition-normal) ease;
+  margin-bottom: 45px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto; /* Allow horizontal scrolling when zoomed */
+  box-sizing: border-box;
 
-
-
-  /* Ensure the container adapts to content */
-  overflow: hidden;
+  /* Smooth scrolling on mobile/zoom */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Intro card */

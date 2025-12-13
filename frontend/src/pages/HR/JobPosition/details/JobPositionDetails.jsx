@@ -1,10 +1,22 @@
 import React, {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {FiArrowLeft, FiBriefcase, FiEdit, FiHome, FiInfo, FiTrendingUp, FiUser, FiUsers} from 'react-icons/fi';
+import {
+    FiArrowLeft,
+    FiBriefcase,
+    FiEdit,
+    FiHome,
+    FiInfo,
+    FiUsers,
+    FiGitCommit,
+    FiMinusCircle,
+    FiClock,
+    FiAlertCircle,
+    FiCheckCircle, // Added for the current node icon
+    FiChevronDown // Added for the connector
+} from 'react-icons/fi';
 import EditPositionForm from '../components/EditPositionForm.jsx';
 import PositionOverview from './components/PositionOverview.jsx';
 import PositionEmployees from './components/PositionEmployees.jsx';
-import PositionPromotions from './components/PositionPromotions.jsx';
 import {useSnackbar} from '../../../../contexts/SnackbarContext';
 import {jobPositionService} from '../../../../services/hr/jobPositionService.js';
 import './JobPositionDetails.scss';
@@ -35,13 +47,7 @@ const JobPositionDetails = () => {
             label: 'Employees',
             icon: <FiUsers/>,
             component: PositionEmployees
-        },
-        // {
-        //     id: 'promotions',
-        //     label: 'Promotions',
-        //     icon: <FiTrendingUp/>,
-        //     component: PositionPromotions
-        // }
+        }
     ];
 
     useEffect(() => {
@@ -87,9 +93,44 @@ const JobPositionDetails = () => {
         setActiveTab(tabId);
     };
 
+    const formatCurrency = (amount) => {
+        if (amount === null || amount === undefined) return 'Not Set';
+        return `$${Number(amount).toFixed(2)}`;
+    };
+
+    // Helper to render the hierarchy tree based on the path string
+    const renderHierarchyTree = () => {
+        // Fallback if no path exists (should imply root)
+        const pathString = position.hierarchyPath || position.positionName;
+        const nodes = pathString.split(' > ');
+
+        return (
+            <div className="hierarchy-tree-container">
+                {nodes.map((nodeName, index) => {
+                    const isLast = index === nodes.length - 1;
+                    return (
+                        <div key={index} className="tree-step">
+                            <div className={`tree-node ${isLast ? 'current' : 'ancestor'}`}>
+                                {isLast ? <FiCheckCircle /> :''}
+                                <span className="node-name">{nodeName}</span>
+                                {isLast && <span className="current-badge">Current</span>}
+                            </div>
+                            {/* Render connector line if not the last item */}
+                            {!isLast && (
+                                <div className="tree-connector">
+                                    <div className="line"></div>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
     if (loading) {
         return (
-           <ContentLoader message={"Loading Position Details.."} />
+            <ContentLoader message={"Loading Position Details.."} />
         );
     }
 
@@ -114,36 +155,22 @@ const JobPositionDetails = () => {
 
     const getBreadcrumbs = () => {
         return [
-            {
-                label: 'Home',
-                icon: <FiHome />,
-                onClick: () => navigate('/')
-            },
-            {
-                label: 'HR',
-                onClick: () => navigate('/hr')
-            },
-            {
-                label: 'Job Positions',
-                icon: <FiBriefcase />,
-                onClick: () => navigate('/hr/positions')
-            },
-            {
-                label: position.positionName
-            }
+            { label: 'Home', icon: <FiHome />, onClick: () => navigate('/') },
+            { label: 'HR', onClick: () => navigate('/hr') },
+            { label: 'Job Positions', icon: <FiBriefcase />, onClick: () => navigate('/hr/positions') },
+            { label: position.positionName }
         ];
     };
 
     const getPositionStats = () => {
         return [
             {
-                value: position.activeEmployeeCount || '0',
+                value: position.totalEmployeeCount || position.employeeCount || '0',
                 label: 'Total Employees'
             },
             {
-                value: position.experienceLevel?.replace('_', ' ').toLowerCase()
-                    .replace(/\b\w/g, l => l.toUpperCase()) || 'N/A',
-                label: 'Experience Level'
+                value: position.hierarchyLevel ? `Level ${position.hierarchyLevel}` : 'Root',
+                label: 'Hierarchy'
             },
             {
                 value: position.active ? 'Active' : 'Inactive',
@@ -151,7 +178,6 @@ const JobPositionDetails = () => {
             }
         ];
     };
-
 
     const getActionButtons = () => {
         return [
@@ -163,6 +189,8 @@ const JobPositionDetails = () => {
             }
         ];
     };
+
+    const isMonthly = position.contractType === 'MONTHLY' || position.monthlyContract === true;
 
     return (
         <div className="position-details-container">
@@ -177,43 +205,59 @@ const JobPositionDetails = () => {
                 className="position-intro-card"
             />
 
-            {/* Position Summary Card */}
-            {/*<div className="position-summary-card">*/}
-            {/*    <div className="summary-grid">*/}
-            {/*        <div className="summary-item">*/}
-            {/*            <div className="summary-icon">*/}
-            {/*                <FiUser/>*/}
-            {/*            </div>*/}
-            {/*            <div className="summary-content">*/}
-            {/*                <span className="summary-label">Experience Level</span>*/}
-            {/*                <span className="summary-value">*/}
-            {/*                    {position.experienceLevel?.replace('_', ' ').toLowerCase()*/}
-            {/*                        .replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}*/}
-            {/*                </span>*/}
-            {/*            </div>*/}
-            {/*        </div>*/}
-            {/*        <div className="summary-item">*/}
-            {/*            <div className="summary-icon">*/}
-            {/*                <FiUsers/>*/}
-            {/*            </div>*/}
-            {/*            <div className="summary-content">*/}
-            {/*                <span className="summary-label">Reporting To</span>*/}
-            {/*                <span className="summary-value">{position.head || 'Direct Report'}</span>*/}
-            {/*            </div>*/}
-            {/*        </div>*/}
-            {/*        <div className="summary-item">*/}
-            {/*            <div className="summary-icon">*/}
-            {/*                <FiTrendingUp/>*/}
-            {/*            </div>*/}
-            {/*            <div className="summary-content">*/}
-            {/*                <span className="summary-label">Status</span>*/}
-            {/*                <span className={`status-badge ${position.active ? 'active' : 'inactive'}`}>*/}
-            {/*                    {position.active ? 'Active' : 'Inactive'}*/}
-            {/*                </span>*/}
-            {/*            </div>*/}
-            {/*        </div>*/}
-            {/*    </div>*/}
-            {/*</div>*/}
+            {/* Info Cards Grid */}
+            <div className="position-info-grid">
+
+                {/* 1. Hierarchy Tree Card */}
+                <div className="pos-info-card hierarchy-card">
+                    <div className="pos-card-header">
+                        <FiGitCommit className="pos-card-icon" />
+                        <h3>Organizational Structure</h3>
+                    </div>
+                    <div className="pos-card-content">
+                        {renderHierarchyTree()}
+
+                        <div className="hierarchy-meta">
+                            <div className="meta-item">
+                                <span className="label">Reporting Head:</span>
+                                <span className="value">{position.head || 'Direct Report'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. Monthly Deductions Card (Conditional) */}
+                {isMonthly && (
+                    <div className="pos-info-card deduction-card">
+                        <div className="pos-card-header">
+                            <FiMinusCircle className="pos-card-icon" />
+                            <h3>Deduction Rules</h3>
+                        </div>
+                        <div className="pos-card-content two-col">
+                            <div className="deduction-item">
+                                <span className="label"><FiAlertCircle /> Absent Penalty</span>
+                                <span className="value highlight-danger">{formatCurrency(position.absentDeduction)}</span>
+                            </div>
+                            <div className="deduction-item">
+                                <span className="label"><FiClock /> Late Penalty</span>
+                                <span className="value highlight-warning">{formatCurrency(position.lateDeduction)}</span>
+                            </div>
+                            <div className="deduction-item full-width">
+                                <span className="label">Late Forgiveness Policy</span>
+                                <span className="value small-text">
+                                    {position.lateForgivenessMinutes || 0} min grace period
+                                    <span className="separator">•</span>
+                                    {position.lateForgivenessCountPerQuarter || 0} forgiven per quarter
+                                </span>
+                            </div>
+                            <div className="deduction-item full-width">
+                                <span className="label">Excess Leave Penalty (per day)</span>
+                                <span className="value">{formatCurrency(position.leaveDeduction)}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
 
             {/* Tabs Navigation */}
             <div className="tabs-container">

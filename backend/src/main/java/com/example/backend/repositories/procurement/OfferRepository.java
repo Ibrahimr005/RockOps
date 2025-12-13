@@ -15,4 +15,7 @@ public interface OfferRepository extends JpaRepository<Offer, UUID> {
     List<Offer> findByStatus(String status);
 
     List<Offer> findByFinanceStatus(String financeStatus);
+
+    // Dashboard metrics methods
+    long countByStatus(String status);
 }

@@ -1,0 +1,211 @@
+/* Direct Purchase Modal - Using Global Styles */
+
+.direct-purchase-modal {
+    .direct-purchase-form {
+        .form-section {
+            margin-bottom: 2rem;
+
+            h3 {
+                font-size: 1.1rem;
+                font-weight: var(--bold-font-weight);
+                margin-bottom: 1rem;
+                color: var(--head-title-color);
+                padding-bottom: 0.5rem;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+
+            @media (max-width: 768px) {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+
+            label {
+                font-weight: 500;
+                margin-bottom: 0.5rem;
+                color: var(--color-text-primary);
+                font-size: 0.9rem;
+
+                .required {
+                    color: var(--color-danger);
+                    margin-left: 0.25rem;
+                }
+            }
+
+            input, select, textarea {
+                padding: 0.75rem;
+                border: 2px solid var(--border-color);
+                border-radius: var(--radius-sm);
+                font-size: 0.95rem;
+                background-color: var(--section-background-color);
+                color: var(--color-text-primary);
+                font-family: var(--font-family);
+                transition: all var(--transition-fast) ease;
+
+                &:focus {
+                    outline: none;
+                    border-color: var(--color-primary);
+                    box-shadow: 0 0 0 3px rgba(72, 128, 255, 0.1);
+                }
+
+                &.error {
+                    border-color: var(--color-danger);
+                    background-color: rgba(244, 67, 54, 0.05);
+                }
+
+                &:disabled {
+                    background-color: var(--color-surface-disabled);
+                    cursor: not-allowed;
+                    opacity: 0.6;
+                }
+
+                &::placeholder {
+                    color: var(--color-text-muted);
+                }
+            }
+
+            // Fix date input display format
+            input[type="date"] {
+                position: relative;
+
+                &::-webkit-datetime-edit-fields-wrapper {
+                    padding: 0;
+                }
+
+                &::-webkit-datetime-edit-text {
+                    color: var(--color-text-secondary);
+                    padding: 0 0.25rem;
+                }
+
+                &::-webkit-datetime-edit-day-field,
+                &::-webkit-datetime-edit-month-field,
+                &::-webkit-datetime-edit-year-field {
+                    background-color: transparent;
+                    color: var(--color-text-primary);
+                    font-weight: var(--semi-bold-font-weight);
+                }
+
+                // When date is empty/invalid, show placeholder-like text
+                &:not(:valid):not(:focus)::-webkit-datetime-edit {
+                    color: transparent;
+                }
+
+                &:not(:valid):not(:focus)::before {
+                    content: attr(placeholder);
+                    color: var(--color-text-muted);
+                    position: absolute;
+                    left: 0.75rem;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    pointer-events: none;
+                }
+
+                &::-webkit-calendar-picker-indicator {
+                    cursor: pointer;
+                    opacity: 0.7;
+                    transition: opacity var(--transition-fast);
+
+                    &:hover {
+                        opacity: 1;
+                    }
+                }
+
+                &:focus::-webkit-datetime-edit-day-field,
+                &:focus::-webkit-datetime-edit-month-field,
+                &:focus::-webkit-datetime-edit-year-field {
+                    background-color: rgba(72, 128, 255, 0.1);
+                    border-radius: 2px;
+                }
+            }
+
+            textarea {
+                resize: vertical;
+                min-height: 100px;
+            }
+
+            .error-message {
+                color: var(--color-danger);
+                font-size: 0.85rem;
+                margin-top: 0.25rem;
+            }
+
+            .loading-message {
+                color: var(--color-info);
+                font-size: 0.85rem;
+                margin-top: 0.25rem;
+            }
+        }
+
+        .equipment-details {
+            grid-column: span 2;
+            margin-top: 0.5rem;
+
+            @media (max-width: 768px) {
+                grid-column: span 1;
+            }
+
+            .equipment-info {
+                background: var(--color-surface-hover);
+                padding: 1rem;
+                border-radius: var(--radius-sm);
+                border-left: 3px solid var(--color-primary);
+
+                strong {
+                    display: block;
+                    margin-bottom: 0.5rem;
+                    color: var(--color-text-secondary);
+                    font-size: 0.85rem;
+                }
+
+                div {
+                    color: var(--color-text-primary);
+                    font-weight: 500;
+                }
+
+                .equipment-subtitle {
+                    color: var(--color-text-secondary);
+                    font-size: 0.9rem;
+                    font-weight: normal;
+                    margin-top: 0.25rem;
+                }
+            }
+        }
+
+        .total-cost-display {
+            background: linear-gradient(135deg, rgba(72, 128, 255, 0.1), rgba(76, 175, 80, 0.1));
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            border: 2px solid rgba(72, 128, 255, 0.2);
+
+            strong {
+                color: var(--color-text-primary);
+                font-size: 1rem;
+                font-weight: var(--bold-font-weight);
+            }
+
+            .total-amount {
+                color: var(--color-primary);
+                font-size: 1.5rem;
+                font-weight: var(--bold-font-weight);
+            }
+        }
+    }
+}

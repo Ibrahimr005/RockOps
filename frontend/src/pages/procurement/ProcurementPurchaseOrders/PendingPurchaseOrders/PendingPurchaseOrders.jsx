@@ -7,10 +7,8 @@ import ConfirmationDialog from '../../../../components/common/ConfirmationDialog
 import PurchaseOrderViewModal from '../../../../components/procurement/PurchaseOrderViewModal/PurchaseOrderViewModal.jsx';
 import { purchaseOrderService } from '../../../../services/procurement/purchaseOrderService.js';
 
-const PendingPurchaseOrders = () => {
+const PendingPurchaseOrders = ({ purchaseOrders: propsPurchaseOrders, onDataChange, loading: parentLoading }) => {
     const navigate = useNavigate();
-    const [purchaseOrders, setPurchaseOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
@@ -24,29 +22,13 @@ const PendingPurchaseOrders = () => {
     const [showViewModal, setShowViewModal] = useState(false);
     const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
 
-    useEffect(() => {
-        fetchPendingPurchaseOrders();
-    }, []);
+    const purchaseOrders = propsPurchaseOrders || [];
 
-    const fetchPendingPurchaseOrders = async () => {
-        try {
-            setLoading(true);
-            const data = await purchaseOrderService.getPending();
-            setPurchaseOrders(data);
-        } catch (err) {
-            console.error('Error fetching pending purchase orders:', err);
-            setNotificationMessage('Failed to load pending purchase orders. Please try again later.');
-            setNotificationType('error');
-            setShowNotification(true);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleRowClick = (row) => {
-        setSelectedPurchaseOrder(row);
-        setShowViewModal(true);
+        navigate(`/procurement/purchase-orders/details/${row.id}`);
     };
+
 
     const handleCloseModal = () => {
         setShowViewModal(false);
@@ -195,7 +177,7 @@ const PendingPurchaseOrders = () => {
                     columns={columns}
                     actions={actions}
                     onRowClick={handleRowClick}
-                    loading={loading}
+                    loading={parentLoading}
                     emptyMessage="No pending purchase orders found"
                     className="pending-purchase-orders-table"
                     showSearch={true}

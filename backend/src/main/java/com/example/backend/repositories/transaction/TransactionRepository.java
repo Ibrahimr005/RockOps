@@ -58,5 +58,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID> 
      * Used to find all transactions where a specific party was the receiver
      */
     List<Transaction> findByReceiverIdAndReceiverType(UUID receiverId, PartyType receiverType);
+
+    // Dashboard metrics methods
+    long countByStatus(TransactionStatus status);
 }
 

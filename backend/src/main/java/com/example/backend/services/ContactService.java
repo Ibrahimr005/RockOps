@@ -1,8 +1,8 @@
 package com.example.backend.services;
 
 import com.example.backend.dtos.ContactDto;
-import com.example.backend.models.Contact;
-import com.example.backend.models.ContactType;
+import com.example.backend.models.contact.Contact;
+import com.example.backend.models.contact.ContactType;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.repositories.ContactRepository;
 import com.example.backend.repositories.ContactTypeRepository;
@@ -13,9 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -73,6 +71,7 @@ public class ContactService {
             throw new ContactException("Failed to create contact: " + e.getMessage());
         }
     }
+
     
     // Get contact by ID
     public ContactDto getContact(UUID id) {

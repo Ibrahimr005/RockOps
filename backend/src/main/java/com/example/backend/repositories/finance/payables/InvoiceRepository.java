@@ -41,6 +41,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     @Query("SELECT i FROM Invoice i WHERE i.status IN (:statuses) ORDER BY i.dueDate ASC")
     List<Invoice> findUnpaidInvoices(@Param("statuses") List<InvoiceStatus> statuses);
 
+    // Dashboard metrics methods
+
     // Find overdue invoices
     // Example: Show me all invoices past their due date
     @Query("SELECT i FROM Invoice i WHERE i.dueDate < :currentDate " +

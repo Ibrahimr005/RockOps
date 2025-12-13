@@ -6,12 +6,12 @@ import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx"
 import { merchantService } from '../../../services/merchant/merchantService.js';
 
 // Import reorganized tab components
-import BasicInfoTab from './tabs/BasicInfoTab.jsx';
-import ContactDetailsTab from './tabs/ContactDetailsTab.jsx';
-import PerformanceTab from './tabs/PerformanceTab.jsx';
-import DocumentsTab from './tabs/DocumentsTab.jsx';
-import TransactionsTab from './tabs/TransactionsTab.jsx';
-import ContactsTab from './tabs/ContactsTab.jsx';
+import OverviewTab from './tabs/OverviewTab/OverviewTab.jsx'
+
+import PerformanceTab from './tabs/PerformanceTab/PerformanceTab.jsx';
+import DocumentsTab from './tabs/DocuementsTab/DocumentsTab.jsx';
+import TransactionsTab from './tabs/TransactionsTab/TransactionsTab.jsx';
+import ContactsTab from './tabs/ContactsTab/ContactsTab.jsx';
 
 const MerchantDetails = () => {
     const { id } = useParams();
@@ -173,12 +173,7 @@ const MerchantDetails = () => {
                         >
                             Basic Info
                         </button>
-                        <button
-                            className={`tab-button ${activeTab === 'contact' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('contact')}
-                        >
-                            Contact Details
-                        </button>
+
                         <button
                             className={`tab-button ${activeTab === 'performance' ? 'active' : ''}`}
                             onClick={() => setActiveTab('performance')}
@@ -206,8 +201,7 @@ const MerchantDetails = () => {
                     </div>
 
                     <div className="tab-content">
-                        {activeTab === 'basic' && <BasicInfoTab merchant={merchant} formatDate={formatDate} getSiteName={getSiteName} />}
-                        {activeTab === 'contact' && <ContactDetailsTab merchant={merchant} />}
+                        {activeTab === 'basic' && <OverviewTab merchant={merchant} formatDate={formatDate} getSiteName={getSiteName} />}
                         {activeTab === 'performance' && <PerformanceTab merchant={merchant} formatDate={formatDate} />}
                         {activeTab === 'documents' && <DocumentsTab merchant={merchant} />}
                         {activeTab === 'transactions' && <TransactionsTab merchant={merchant} />}

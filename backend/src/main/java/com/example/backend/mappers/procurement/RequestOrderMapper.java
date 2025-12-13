@@ -2,6 +2,7 @@ package com.example.backend.mappers.procurement;
 
 import com.example.backend.dto.procurement.RequestOrderDTO;
 import com.example.backend.dto.procurement.RequestOrderItemDTO;
+import com.example.backend.models.procurement.PurchaseOrder;
 import com.example.backend.models.procurement.RequestOrder;
 import org.springframework.stereotype.Component;
 import java.util.ArrayList;
@@ -47,9 +48,12 @@ public class RequestOrderMapper {
             builder.requestItems(itemDTOs);
         }
 
-        // Purchase Order reference
-        if (requestOrder.getPurchaseOrder() != null) {
-            builder.purchaseOrderId(requestOrder.getPurchaseOrder().getId());
+// Purchase Orders references (changed from single to multiple)
+        if (requestOrder.getPurchaseOrders() != null && !requestOrder.getPurchaseOrders().isEmpty()) {
+            List<UUID> purchaseOrderIds = requestOrder.getPurchaseOrders().stream()
+                    .map(PurchaseOrder::getId)
+                    .collect(Collectors.toList());
+            builder.purchaseOrderIds(purchaseOrderIds);
         }
 
         // Offers list (minimal references)

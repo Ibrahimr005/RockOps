@@ -45,19 +45,49 @@ public class AttendanceController {
         return ResponseEntity.ok(attendance);
     }
 
+    // AttendanceController.java - Updated getMonthlyAttendance method
+
     /**
      * Get monthly attendance sheet
+     * Supports three modes:
+     * 1. Specific site UUID - returns attendance for that site's employees
+     * 2. "no-site" string - returns attendance for employees without site assignment
+     * 3. "all" string - returns attendance for all employees (future enhancement)
      */
     @GetMapping("/monthly")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR_MANAGER', 'HR_EMPLOYEE', 'SITE_ADMIN')")
     public ResponseEntity<List<EmployeeMonthlyAttendanceDTO>> getMonthlyAttendance(
-            @RequestParam UUID siteId,
+            @RequestParam String siteId,  // Changed from UUID to String to accept special values
             @RequestParam int year,
             @RequestParam int month) {
 
-        log.info("Fetching monthly attendance for site: {} for {}/{}", siteId, month, year);
-        List<EmployeeMonthlyAttendanceDTO> monthlyAttendance = attendanceService.getMonthlyAttendance(siteId, year, month);
-        return ResponseEntity.ok(monthlyAttendance);
+        log.info("Fetching monthly attendance for siteId: {} for {}/{}", siteId, month, year);
+
+        try {
+            List<EmployeeMonthlyAttendanceDTO> monthlyAttendance;
+
+            if ("no-site".equalsIgnoreCase(siteId)) {
+                // Fetch attendance for employees without site assignment
+                log.info("Fetching attendance for employees without site assignment");
+                monthlyAttendance = attendanceService.getMonthlyAttendanceForUnassignedEmployees(year, month);
+            } else if ("all".equalsIgnoreCase(siteId)) {
+                // Future enhancement: fetch all employees
+                log.info("Fetching attendance for all employees");
+                monthlyAttendance = attendanceService.getAllEmployeesMonthlyAttendance(year, month);
+            } else {
+                // Parse as UUID for specific site
+                UUID parsedSiteId = UUID.fromString(siteId);
+                monthlyAttendance = attendanceService.getMonthlyAttendance(parsedSiteId, year, month);
+            }
+
+            return ResponseEntity.ok(monthlyAttendance);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid siteId parameter: {}", siteId, e);
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error fetching monthly attendance", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**

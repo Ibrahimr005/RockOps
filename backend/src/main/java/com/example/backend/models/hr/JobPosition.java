@@ -1,6 +1,5 @@
 package com.example.backend.models.hr;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
@@ -62,20 +61,65 @@ public class JobPosition {
     private Integer workingHours;
     private String vacations;
 
-    // NEW: Time fields for MONTHLY contracts
+    // Time fields for MONTHLY contracts
     @Column(name = "start_time")
     private LocalTime startTime;
 
     @Column(name = "end_time")
     private LocalTime endTime;
 
+    // =====================================================
+    // NEW: Monthly Contract Deduction Fields
+    // =====================================================
+
+    /**
+     * Amount deducted when attendance status is Absent (unexcused leave/leave without notice)
+     */
+    @Column(name = "absent_deduction", precision = 10, scale = 2)
+    private BigDecimal absentDeduction;
+
+    /**
+     * Amount deducted when attendance status is Late (after grace period expires)
+     */
+    @Column(name = "late_deduction", precision = 10, scale = 2)
+    private BigDecimal lateDeduction;
+
+    /**
+     * Grace period in minutes before late deduction is applied
+     * Employee arrivals within this time window are forgiven
+     */
+    @Column(name = "late_forgiveness_minutes")
+    private Integer lateForgivenessMinutes;
+
+    /**
+     * Number of late occurrences forgiven per quarter before deductions apply
+     * Counter resets at the start of each quarter (Jan 1, Apr 1, Jul 1, Oct 1)
+     */
+    @Column(name = "late_forgiveness_count_per_quarter")
+    private Integer lateForgivenessCountPerQuarter;
+
+    /**
+     * Amount deducted per day when employee exceeds their allocated annual leave
+     * Example: If allowed 21 days and took 25 days, 4 extra days × this amount is deducted
+     */
+    @Column(name = "leave_deduction", precision = 10, scale = 2)
+    private BigDecimal leaveDeduction;
+
+    // =====================================================
+    // END: Monthly Contract Deduction Fields
+    // =====================================================
+
     @OneToMany(mappedBy = "jobPosition", cascade = CascadeType.ALL)
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent circular reference
+    @JsonIgnore
     private List<Employee> employees;
 
     @OneToMany(mappedBy = "jobPosition", cascade = CascadeType.ALL)
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent circular reference
+    @JsonIgnore
     private List<Vacancy> vacancies;
+
+    public boolean isActive() {
+        return this.active;
+    }
 
     // Enum for contract types
     @Getter
@@ -89,7 +133,6 @@ public class JobPosition {
         ContractType(String displayName) {
             this.displayName = displayName;
         }
-
     }
 
     // Helper methods for contract-specific calculations
@@ -105,10 +148,9 @@ public class JobPosition {
             case DAILY:
                 return dailyRate != null ? dailyRate : 0.0;
             case MONTHLY:
-                // For monthly contracts, calculate daily rate based on working days per month
-                Integer workingDays = workingDaysPerMonth != null ? workingDaysPerMonth : 22;
-                return (monthlyBaseSalary != null && workingDays > 0)
-                        ? monthlyBaseSalary / workingDays : 0.0;
+                // Daily salary = monthly salary / working days per month (default 22)
+                int days = workingDaysPerMonth != null && workingDaysPerMonth > 0 ? workingDaysPerMonth : 22;
+                return monthlyBaseSalary != null ? monthlyBaseSalary / days : 0.0;
             default:
                 return 0.0;
         }
@@ -116,24 +158,23 @@ public class JobPosition {
 
     public Double calculateMonthlySalary() {
         if (contractType == null) {
-            return 0.0;
+            return baseSalary != null ? baseSalary : 0.0;
         }
 
         switch (contractType) {
             case HOURLY:
-                // For hourly contracts: hourly rate * hours per shift * working days per week * 4 weeks
+                // Monthly = hourly rate * hours per shift * working days per week * 4 weeks
                 if (hourlyRate != null && hoursPerShift != null && workingDaysPerWeek != null) {
                     return hourlyRate * hoursPerShift * workingDaysPerWeek * 4;
                 }
                 return 0.0;
             case DAILY:
-                // For daily contracts: daily rate * working days per month
+                // Monthly = daily rate * working days per month
                 if (dailyRate != null && workingDaysPerMonth != null) {
                     return dailyRate * workingDaysPerMonth;
                 }
                 return 0.0;
             case MONTHLY:
-                // For monthly contracts: use the monthly base salary directly
                 return monthlyBaseSalary != null ? monthlyBaseSalary : 0.0;
             default:
                 return 0.0;
@@ -152,23 +193,95 @@ public class JobPosition {
         return contractType == ContractType.MONTHLY;
     }
 
-    // NEW: Helper method to calculate working hours from start and end time
+    // Helper method to calculate working hours from start and end time
     public Integer calculateWorkingHoursFromTime() {
         if (contractType == ContractType.MONTHLY && startTime != null && endTime != null) {
-            // Calculate duration in hours between start and end time
             long hours = java.time.Duration.between(startTime, endTime).toHours();
             return (int) hours;
         }
         return workingHours;
     }
 
-    // NEW: Helper method to format time range as string
+    // Helper method to format time range as string
     public String getWorkingTimeRange() {
         if (contractType == ContractType.MONTHLY && startTime != null && endTime != null) {
             return startTime + " - " + endTime;
         }
         return null;
     }
+
+    // =====================================================
+    // NEW: Deduction Calculation Helper Methods
+    // =====================================================
+
+    /**
+     * Check if absent deduction is configured
+     */
+    public boolean hasAbsentDeduction() {
+        return contractType == ContractType.MONTHLY &&
+                absentDeduction != null &&
+                absentDeduction.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    /**
+     * Check if late deduction is configured
+     */
+    public boolean hasLateDeduction() {
+        return contractType == ContractType.MONTHLY &&
+                lateDeduction != null &&
+                lateDeduction.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    /**
+     * Check if leave deduction is configured
+     */
+    public boolean hasLeaveDeduction() {
+        return contractType == ContractType.MONTHLY &&
+                leaveDeduction != null &&
+                leaveDeduction.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    /**
+     * Get effective late forgiveness minutes (default to 0 if not set)
+     */
+    public int getEffectiveLateForgivenessMinutes() {
+        return lateForgivenessMinutes != null ? lateForgivenessMinutes : 0;
+    }
+
+    /**
+     * Get effective late forgiveness count per quarter (default to 0 if not set)
+     */
+    public int getEffectiveLateForgivenessCountPerQuarter() {
+        return lateForgivenessCountPerQuarter != null ? lateForgivenessCountPerQuarter : 0;
+    }
+
+    /**
+     * Calculate absent deduction amount (returns 0 if not configured)
+     */
+    public BigDecimal calculateAbsentDeductionAmount() {
+        return hasAbsentDeduction() ? absentDeduction : BigDecimal.ZERO;
+    }
+
+    /**
+     * Calculate late deduction amount (returns 0 if not configured)
+     */
+    public BigDecimal calculateLateDeductionAmount() {
+        return hasLateDeduction() ? lateDeduction : BigDecimal.ZERO;
+    }
+
+    /**
+     * Calculate leave excess deduction for a number of excess days
+     */
+    public BigDecimal calculateLeaveExcessDeduction(int excessDays) {
+        if (!hasLeaveDeduction() || excessDays <= 0) {
+            return BigDecimal.ZERO;
+        }
+        return leaveDeduction.multiply(BigDecimal.valueOf(excessDays));
+    }
+
+    // =====================================================
+    // END: Deduction Calculation Helper Methods
+    // =====================================================
 
     // Validation methods
     public boolean isValidConfiguration() {
@@ -178,15 +291,12 @@ public class JobPosition {
                         && hoursPerShift != null && hoursPerShift > 0
                         && workingDaysPerWeek != null && workingDaysPerWeek > 0;
             case DAILY:
-                return dailyRate != null && dailyRate > 0
-                        && workingDaysPerMonth != null && workingDaysPerMonth > 0;
+                return dailyRate != null && dailyRate > 0;
             case MONTHLY:
-                boolean basicValidation = monthlyBaseSalary != null && monthlyBaseSalary > 0
-                        && workingDaysPerMonth != null && workingDaysPerMonth > 0;
+                boolean basicValidation = monthlyBaseSalary != null && monthlyBaseSalary > 0;
 
-                // NEW: Additional validation for time fields
+                // Additional validation for time fields
                 if (startTime != null && endTime != null) {
-                    // Validate that end time is after start time
                     return basicValidation && endTime.isAfter(startTime);
                 }
                 return basicValidation;
@@ -205,124 +315,197 @@ public class JobPosition {
             try {
                 this.contractType = ContractType.valueOf(type.toUpperCase());
             } catch (IllegalArgumentException e) {
-                // Handle legacy values or set default
                 this.contractType = ContractType.MONTHLY;
             }
         }
     }
 
-    public Boolean isActive() {
-        return active;
-    }
-
     // Override baseSalary getter to use contract-specific calculation
     public Double getBaseSalary() {
-        // If baseSalary is explicitly set, use it (for backward compatibility)
         if (baseSalary != null) {
             return baseSalary;
         }
-        // Otherwise, calculate based on contract type
         return calculateMonthlySalary();
     }
 
-    // Setter for baseSalary that also updates the appropriate contract-specific field
+    // Setter for baseSalary
     public void setBaseSalary(Double baseSalary) {
         this.baseSalary = baseSalary;
-
-        // If this is a monthly contract and no monthlyBaseSalary is set, use this value
         if (contractType == ContractType.MONTHLY && monthlyBaseSalary == null) {
             this.monthlyBaseSalary = baseSalary;
         }
     }
 
     @OneToMany(mappedBy = "currentJobPosition", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
+    @JsonIgnore
     private List<PromotionRequest> promotionsFromThisPosition;
 
     @OneToMany(mappedBy = "promotedToJobPosition", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
+    @JsonIgnore
     private List<PromotionRequest> promotionsToThisPosition;
 
-
-    /**
-     * Get promotions FROM this position
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
+    @JsonIgnore
     public List<PromotionRequest> getPromotionsFromThisPosition() {
         return promotionsFromThisPosition != null ? promotionsFromThisPosition : new ArrayList<>();
     }
 
-    /**
-     * Get promotions TO this position
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
+    @JsonIgnore
     public List<PromotionRequest> getPromotionsToThisPosition() {
         return promotionsToThisPosition != null ? promotionsToThisPosition : new ArrayList<>();
     }
 
-    /**
-     * Get count of employees promoted from this position
-     * @return Number of implemented promotions from this position
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
+    // Hierarchy fields
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_job_position_id")
+    @JsonIgnoreProperties({"childPositions", "employees", "vacancies", "promotionsFromThisPosition", "promotionsToThisPosition"})
+    private JobPosition parentJobPosition;
+
+    @OneToMany(mappedBy = "parentJobPosition", cascade = CascadeType.ALL)
+    @JsonIgnore
+    @Builder.Default
+    private List<JobPosition> childPositions = new ArrayList<>();
+
+    // Hierarchy helper methods
+    public boolean isRootPosition() {
+        return parentJobPosition == null;
+    }
+
+    public int getHierarchyLevel() {
+        int level = 0;
+        JobPosition current = this.parentJobPosition;
+        while (current != null) {
+            level++;
+            current = current.getParentJobPosition();
+        }
+        return level;
+    }
+
+    public String getHierarchyPath() {
+        List<String> path = new ArrayList<>();
+        JobPosition current = this;
+        while (current != null) {
+            path.add(0, current.getPositionName());
+            current = current.getParentJobPosition();
+        }
+        return String.join(" > ", path);
+    }
+
+    @JsonIgnore
+    public List<Employee> getEmployees() {
+        return employees != null ? employees : new ArrayList<>();
+    }
+
+    // Promotion statistics and helper methods
+    @JsonIgnore
     public long getPromotionsFromCount() {
-        return getPromotionsFromThisPosition().stream()
-                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
-                .count();
+        return promotionsFromThisPosition != null ? promotionsFromThisPosition.size() : 0;
     }
 
-    /**
-     * Get count of employees promoted to this position
-     * @return Number of implemented promotions to this position
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
+    @JsonIgnore
     public long getPromotionsToCount() {
-        return getPromotionsToThisPosition().stream()
-                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
-                .count();
+        return promotionsToThisPosition != null ? promotionsToThisPosition.size() : 0;
     }
 
-    /**
-     * Get pending promotion requests from this position
-     * @return List of pending promotion requests from this position
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
+    @JsonIgnore
     public List<PromotionRequest> getPendingPromotionsFrom() {
-        return getPromotionsFromThisPosition().stream()
-                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.PENDING ||
-                        request.getStatus() == PromotionRequest.PromotionStatus.UNDER_REVIEW)
+        if (promotionsFromThisPosition == null) return new ArrayList<>();
+        return promotionsFromThisPosition.stream()
+                .filter(p -> p.getStatus() == PromotionRequest.PromotionStatus.PENDING)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get pending promotion requests to this position
-     * @return List of pending promotion requests to this position
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
+    @JsonIgnore
     public List<PromotionRequest> getPendingPromotionsTo() {
-        return getPromotionsToThisPosition().stream()
-                .filter(request -> request.getStatus() == PromotionRequest.PromotionStatus.PENDING ||
-                        request.getStatus() == PromotionRequest.PromotionStatus.UNDER_REVIEW)
+        if (promotionsToThisPosition == null) return new ArrayList<>();
+        return promotionsToThisPosition.stream()
+                .filter(p -> p.getStatus() == PromotionRequest.PromotionStatus.PENDING)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Check if this position has career progression opportunities
-     * @return true if employees have been promoted from this position
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
-    public boolean hasCareerProgression() {
-        return getPromotionsFromCount() > 0;
+    @JsonIgnore
+    public boolean isHighLevelPosition() {
+        String positionNameLower = positionName != null ? positionName.toLowerCase() : "";
+        String experienceLevelLower = experienceLevel != null ? experienceLevel.toLowerCase() : "";
+
+        boolean hasSeniorKeywords = positionNameLower.contains("manager") ||
+                positionNameLower.contains("director") ||
+                positionNameLower.contains("senior") ||
+                positionNameLower.contains("lead") ||
+                positionNameLower.contains("supervisor") ||
+                positionNameLower.contains("head") ||
+                positionNameLower.contains("chief");
+
+        boolean isSeniorLevel = experienceLevelLower.contains("senior") ||
+                experienceLevelLower.contains("expert") ||
+                experienceLevelLower.contains("lead");
+
+        boolean hasHighSalary = baseSalary != null && baseSalary > 50000.0;
+
+        return hasSeniorKeywords || isSeniorLevel || hasHighSalary;
     }
 
-    /**
-     * Check if this position is a destination for promotions
-     * @return true if employees have been promoted to this position
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
-    public boolean isPromotionDestination() {
-        return getPromotionsToCount() > 0;
+    @JsonIgnore
+    public Map<String, Object> getPromotionStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("promotionsFromCount", getPromotionsFromCount());
+        stats.put("promotionsToCount", getPromotionsToCount());
+        stats.put("pendingPromotionsFromCount", getPendingPromotionsFrom().size());
+        stats.put("pendingPromotionsToCount", getPendingPromotionsTo().size());
+        return stats;
     }
+
+    @JsonIgnore
+    public Map<String, Long> getCommonPromotionDestinations() {
+        if (promotionsFromThisPosition == null || promotionsFromThisPosition.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        return promotionsFromThisPosition.stream()
+                .filter(p -> p.getPromotedToJobPosition() != null)
+                .collect(Collectors.groupingBy(
+                        p -> p.getPromotedToJobPosition().getPositionName(),
+                        Collectors.counting()
+                ));
+    }
+
+    @JsonIgnore
+    public boolean hasCareerProgression() {
+        return !getCommonPromotionDestinations().isEmpty() || parentJobPosition != null;
+    }
+
+    @JsonIgnore
+    public boolean isEligibleForPromotionFrom() {
+        return active != null && active && employees != null && !employees.isEmpty();
+    }
+
+    @JsonIgnore
+    public boolean isEligibleForPromotionTo() {
+        return active != null && active;
+    }
+
+    @JsonIgnore
+    public boolean isPromotionDestination() {
+        return promotionsToThisPosition != null && !promotionsToThisPosition.isEmpty();
+    }
+
+    @JsonIgnore
+    public boolean hasEmployeesReadyForPromotion() {
+        if (employees == null || employees.isEmpty()) return false;
+        return employees.stream().anyMatch(e ->
+                e.getStatus() != null && e.getStatus().equals("ACTIVE")
+        );
+    }
+
+    @JsonIgnore
+    public List<String> getCareerPathSuggestions() {
+        Map<String, Long> destinations = getCommonPromotionDestinations();
+        return destinations.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(5)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+    }
+
 
     /**
      * Get average salary increase from promotions from this position
@@ -370,71 +553,6 @@ public class JobPosition {
                 .orElse(0.0);
     }
 
-    /**
-     * Get most common promotion destinations from this position
-     * @return Map of position names to promotion counts
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
-    public Map<String, Long> getCommonPromotionDestinations() {
-        if (getPromotionsFromThisPosition() == null || getPromotionsFromThisPosition().isEmpty()) {
-            return new HashMap<>();
-        }
-
-        return getPromotionsFromThisPosition().stream()
-                .filter(request -> request != null && request.getStatus() == PromotionRequest.PromotionStatus.IMPLEMENTED)
-                .collect(Collectors.groupingBy(
-                        request -> {
-                            try {
-                                return request.getPromotedToPositionName();
-                            } catch (Exception e) {
-                                return "Unknown Position";
-                            }
-                        },
-                        Collectors.counting()
-                ));
-    }
-
-    /**
-     * Get promotion statistics for this position
-     * @return Map containing promotion-related statistics
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
-    public Map<String, Object> getPromotionStatistics() {
-        Map<String, Object> stats = new HashMap<>();
-
-        stats.put("promotionsFromCount", getPromotionsFromCount());
-        stats.put("promotionsToCount", getPromotionsToCount());
-        stats.put("pendingPromotionsFromCount", getPendingPromotionsFrom().size());
-        stats.put("pendingPromotionsToCount", getPendingPromotionsTo().size());
-        stats.put("hasCareerProgression", hasCareerProgression());
-        stats.put("isPromotionDestination", isPromotionDestination());
-        stats.put("averageSalaryIncrease", getAverageSalaryIncreaseFromPosition());
-        stats.put("averageTimeBeforePromotion", getAverageTimeBeforePromotion());
-        stats.put("commonPromotionDestinations", getCommonPromotionDestinations());
-
-        return stats;
-    }
-
-    /**
-     * Check if this position is eligible as a promotion source
-     * @return true if position can be a source for promotions
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
-    public boolean isEligibleForPromotionFrom() {
-        // Basic checks for promotion eligibility
-        return active != null && active &&
-                getEmployees() != null && !getEmployees().isEmpty();
-    }
-
-    /**
-     * Check if this position is eligible as a promotion destination
-     * @return true if position can be a destination for promotions
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
-    public boolean isEligibleForPromotionTo() {
-        // Basic checks for promotion destination eligibility
-        return active != null && active;
-    }
 
     /**
      * Get promotion rate from this position (promotions / total employees who held this position)
@@ -452,20 +570,6 @@ public class JobPosition {
         return (double) getPromotionsFromCount() / totalEmployeesEverInPosition * 100.0;
     }
 
-    /**
-     * Check if there are employees ready for promotion from this position
-     * @return true if there are employees eligible for promotion
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
-    public boolean hasEmployeesReadyForPromotion() {
-        if (getEmployees() == null || getEmployees().isEmpty()) {
-            return false;
-        }
-
-        return getEmployees().stream()
-                .filter(employee -> employee != null)
-                .anyMatch(Employee::isEligibleForPromotion);
-    }
 
     /**
      * Get employees eligible for promotion from this position
@@ -482,127 +586,4 @@ public class JobPosition {
                 .filter(Employee::isEligibleForPromotion)
                 .collect(Collectors.toList());
     }
-
-    /**
-     * Check if this position requires specific qualifications for promotion
-     * @return true if position has high requirements (senior level, high salary, etc.)
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
-    public boolean isHighLevelPosition() {
-        // Determine if this is a high-level position based on various factors
-        String positionNameLower = positionName != null ? positionName.toLowerCase() : "";
-        String experienceLevelLower = experienceLevel != null ? experienceLevel.toLowerCase() : "";
-
-        // Check for senior/management keywords
-        boolean hasSeniorKeywords = positionNameLower.contains("manager") ||
-                positionNameLower.contains("director") ||
-                positionNameLower.contains("senior") ||
-                positionNameLower.contains("lead") ||
-                positionNameLower.contains("supervisor") ||
-                positionNameLower.contains("head") ||
-                positionNameLower.contains("chief");
-
-        // Check experience level
-        boolean isSeniorLevel = experienceLevelLower.contains("senior") ||
-                experienceLevelLower.contains("expert") ||
-                experienceLevelLower.contains("lead");
-
-        // Check salary threshold (assuming positions with base salary > 50000 are high-level)
-        boolean hasHighSalary = baseSalary != null && baseSalary > 50000.0;
-
-        return hasSeniorKeywords || isSeniorLevel || hasHighSalary;
-    }
-
-    /**
-     * Get career path suggestions from this position
-     * @return List of suggested next positions based on promotion history
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
-    public List<String> getCareerPathSuggestions() {
-        Map<String, Long> destinations = getCommonPromotionDestinations();
-
-        return destinations.entrySet().stream()
-                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                .limit(5) // Top 5 destinations
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Get employees in this position
-     */
-    @JsonIgnore  // ✅ Fixed: Added @JsonIgnore to prevent serialization
-    public List<Employee> getEmployees() {
-        return employees != null ? employees : new ArrayList<>();
-    }
-
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_job_position_id")
-    @JsonIgnoreProperties({"employees", "vacancies", "promotionsFromThisPosition", "promotionsToThisPosition", "childPositions"})
-    private JobPosition parentJobPosition;
-
-    @OneToMany(mappedBy = "parentJobPosition", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
-    private List<JobPosition> childPositions = new ArrayList<>();
-
-    // Add these helper methods
-    @JsonIgnore
-    public boolean isRootPosition() {
-        return parentJobPosition == null;
-    }
-
-    @JsonIgnore
-    public boolean hasChildPositions() {
-        return childPositions != null && !childPositions.isEmpty();
-    }
-
-    @JsonIgnore
-    public List<JobPosition> getDirectChildPositions() {
-        return getChildPositions().stream()
-                .filter(child -> child.getActive())
-                .collect(Collectors.toList());
-    }
-
-    @JsonIgnore
-    public boolean isValidPromotionTo(JobPosition targetPosition) {
-        if (targetPosition == null) return false;
-
-        // Can only promote to parent position
-        return targetPosition.equals(this.parentJobPosition);
-    }
-
-    @JsonIgnore
-    public List<JobPosition> getEligiblePromotionTargets() {
-        List<JobPosition> targets = new ArrayList<>();
-        if (parentJobPosition != null && parentJobPosition.getActive()) {
-            targets.add(parentJobPosition);
-        }
-        return targets;
-    }
-
-    @JsonIgnore
-    public int getHierarchyLevel() {
-        int level = 0;
-        JobPosition current = this.parentJobPosition;
-        while (current != null) {
-            level++;
-            current = current.getParentJobPosition();
-        }
-        return level;
-    }
-
-    @JsonIgnore
-    public String getHierarchyPath() {
-        List<String> path = new ArrayList<>();
-        JobPosition current = this;
-
-        while (current != null) {
-            path.add(0, current.getPositionName());
-            current = current.getParentJobPosition();
-        }
-
-        return String.join(" → ", path);
-    }
-
 }

@@ -6,11 +6,14 @@ import contactService from '../../../services/contactService.js';
 import stepTypeService from '../../../services/stepTypeService.js';
 import { equipmentService } from '../../../services/equipmentService.js';
 import { siteService } from '../../../services/siteService.js';
+import contactTypeService from '../../../services/contactTypeService.js';
+import maintenanceService from '../../../services/maintenanceService.js';
 
 import apiClient from '../../../utils/apiClient.js';
 import '../../../styles/modal-styles.scss';
 import '../../../styles/cancel-modal-button.scss';
 import './MaintenanceStepModal.scss';
+import {merchantService} from "../../../services/merchant/merchantService.js";
 
 const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintenanceRecord, restoredFormData }) => {
     const navigate = useNavigate();
@@ -22,34 +25,69 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
         description: '',
         responsibleContactId: '',
         responsibleEmployeeId: '',
+        selectedMerchantId: '',
         startDate: '',
         expectedEndDate: '',
         fromLocation: '',
         toLocation: '',
-        stepCost: '',
+        downPayment: '',
+        expectedCost: '',
+        remaining: '',
+        remainingManuallySet: false,
+        actualCost: '',
+        stepCost: '', // Keep for backward compatibility
         notes: ''
     });
+
+    const [remainingManuallyChanged, setRemainingManuallyChanged] = useState(false);
 
     const [availableContacts, setAvailableContacts] = useState([]);
     const [availableEmployees, setAvailableEmployees] = useState([]);
     const [stepTypes, setStepTypes] = useState([]);
     const [selectedStepType, setSelectedStepType] = useState(null);
-    const [responsiblePersonType, setResponsiblePersonType] = useState('external'); // 'site' or 'external'
+    const [responsiblePersonType, setResponsiblePersonType] = useState('external'); // 'site', 'external', or 'merchant'
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [existingSteps, setExistingSteps] = useState([]);
     const [currentLocation, setCurrentLocation] = useState('');
+    const [showAddContactModal, setShowAddContactModal] = useState(false);
+    const [newContactData, setNewContactData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phoneNumber: '',
+        contactTypeId: '',
+        company: '',
+        specialization: ''
+    });
+    const [contactTypes, setContactTypes] = useState([]);
+    const [merchants, setMerchants] = useState([]);
+    const [merchantContacts, setMerchantContacts] = useState([]);
+    const [merchantItems, setMerchantItems] = useState([{ description: '', cost: '' }]);
 
     useEffect(() => {
         if (isOpen) {
+            // Prevent background scroll when modal is open
+            document.body.style.overflow = 'hidden';
+            
             loadAvailableContacts();
             loadStepTypes();
+            loadContactTypes();
+            loadMerchants();
             loadExistingSteps(); // Load existing steps for validation and location tracking
             // Load employees if we have equipment info with site
             if (maintenanceRecord?.equipmentId) {
                 loadEquipmentAndEmployees();
             }
+        } else {
+            // Restore scroll when modal is closed
+            document.body.style.overflow = 'unset';
         }
+
+        // Cleanup function
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
     }, [isOpen, maintenanceRecord]);
 
     useEffect(() => {
@@ -62,15 +100,22 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                 description: editingStep.description || '',
                 responsibleContactId: editingStep.responsibleContactId || '',
                 responsibleEmployeeId: editingStep.responsibleEmployeeId || '',
-                startDate: editingStep.startDate ? 
+                selectedMerchantId: editingStep.selectedMerchantId || '',
+                startDate: editingStep.startDate ?
                     editingStep.startDate.split('T')[0] : '',
-                expectedEndDate: editingStep.expectedEndDate ? 
+                expectedEndDate: editingStep.expectedEndDate ?
                     editingStep.expectedEndDate.split('T')[0] : '',
                 fromLocation: editingStep.fromLocation || '',
                 toLocation: editingStep.toLocation || '',
+                downPayment: editingStep.downPayment || '',
+                expectedCost: editingStep.expectedCost || editingStep.stepCost || '',
+                remaining: editingStep.remaining || '',
+                remainingManuallySet: editingStep.remainingManuallySet || false,
+                actualCost: editingStep.actualCost || '',
                 stepCost: editingStep.stepCost || '',
                 notes: editingStep.notes || ''
             });
+            setRemainingManuallyChanged(editingStep.remainingManuallySet || false);
             // Set selected step type for editing
             if (editingStep.stepTypeId && stepTypes.length > 0) {
                 const stepType = stepTypes.find(st => st.id === editingStep.stepTypeId);
@@ -79,6 +124,8 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
             // Set responsible person type based on which ID is present
             if (editingStep.responsibleEmployeeId) {
                 setResponsiblePersonType('site');
+            } else if (editingStep.selectedMerchantId) {
+                setResponsiblePersonType('merchant');
             } else {
                 setResponsiblePersonType('external');
             }
@@ -89,14 +136,21 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                 description: '',
                 responsibleContactId: '',
                 responsibleEmployeeId: '',
+                selectedMerchantId: '',
                 startDate: new Date().toISOString().split('T')[0],
                 expectedEndDate: '',
                 fromLocation: currentLocation,
                 toLocation: '',
+                downPayment: '',
+                expectedCost: '',
+                remaining: '',
+                remainingManuallySet: false,
+                actualCost: '',
                 stepCost: '',
                 notes: ''
             });
             setResponsiblePersonType('external');
+            setRemainingManuallyChanged(false);
         }
         setErrors({});
     }, [editingStep, isOpen, restoredFormData, stepTypes, currentLocation]);
@@ -189,17 +243,86 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
         }
     };
 
+    const loadContactTypes = async () => {
+        try {
+            const response = await contactTypeService.getAllContactTypes();
+            setContactTypes(response.data || []);
+        } catch (error) {
+            console.error('Error loading contact types:', error);
+        }
+    };
+
+    const loadMerchants = async () => {
+        try {
+            const response = await merchantService.getAllMerchants();
+            console.log('Merchants loaded:', response.data);
+            setMerchants(response.data || []);
+        } catch (error) {
+            console.error('Error loading merchants:', error);
+        }
+    };
+
+    const loadMerchantContacts = async (merchantId) => {
+        if (!merchantId) {
+            setMerchantContacts([]);
+            return;
+        }
+        try {
+            console.log('Loading contacts for merchant:', merchantId);
+            const response = await maintenanceService.getContactsByMerchant(merchantId);
+            console.log('Merchant contacts loaded:', response.data);
+            setMerchantContacts(response.data || []);
+        } catch (error) {
+            console.error('Error loading merchant contacts:', error);
+            setMerchantContacts([]);
+        }
+    };
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+
+        // Special handling for remaining field - user manual override
+        if (name === 'remaining') {
+            if (!remainingManuallyChanged) {
+                setRemainingManuallyChanged(true);
+                showError('You are manually overriding the calculated remaining amount. This will be saved as-is.');
+            }
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                remainingManuallySet: true
+            }));
+        } else {
+            setFormData(prev => {
+                const newData = {
+                    ...prev,
+                    [name]: value
+                };
+
+                // Auto-calculate remaining when expectedCost or downPayment changes
+                // Only if remaining wasn't manually changed
+                if ((name === 'expectedCost' || name === 'downPayment') && !remainingManuallyChanged) {
+                    const expectedCost = name === 'expectedCost' ? parseFloat(value) || 0 : parseFloat(prev.expectedCost) || 0;
+                    const downPayment = name === 'downPayment' ? parseFloat(value) || 0 : parseFloat(prev.downPayment) || 0;
+                    newData.remaining = (expectedCost - downPayment).toFixed(2);
+                    newData.remainingManuallySet = false;
+                }
+
+                return newData;
+            });
+        }
 
         // Update selected step type when step type changes
         if (name === 'stepTypeId') {
             const stepType = stepTypes.find(st => st.id === value);
             setSelectedStepType(stepType);
+        }
+
+        // Load merchant contacts when merchant is selected
+        if (name === 'selectedMerchantId') {
+            loadMerchantContacts(value);
+            // Clear contact selection when merchant changes
+            setFormData(prev => ({ ...prev, responsibleContactId: '' }));
         }
 
         // Clear error when user starts typing
@@ -214,11 +337,13 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
     const handleResponsibleTypeChange = (e) => {
         const type = e.target.value;
         setResponsiblePersonType(type);
-        // Clear the opposite field
+        // Clear other fields
         if (type === 'site') {
-            setFormData(prev => ({ ...prev, responsibleContactId: '' }));
-        } else {
-            setFormData(prev => ({ ...prev, responsibleEmployeeId: '' }));
+            setFormData(prev => ({ ...prev, responsibleContactId: '', selectedMerchantId: '' }));
+        } else if (type === 'external') {
+            setFormData(prev => ({ ...prev, responsibleEmployeeId: '', selectedMerchantId: '' }));
+        } else if (type === 'merchant') {
+            setFormData(prev => ({ ...prev, responsibleEmployeeId: '', responsibleContactId: '' }));
         }
     };
 
@@ -262,9 +387,26 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
             if (!formData.responsibleEmployeeId) {
                 newErrors.responsibleEmployeeId = 'Responsible employee is required';
             }
-        } else {
+        } else if (responsiblePersonType === 'external') {
             if (!formData.responsibleContactId) {
                 newErrors.responsibleContactId = 'Responsible contact is required';
+            }
+        } else if (responsiblePersonType === 'merchant') {
+            if (!formData.selectedMerchantId) {
+                newErrors.selectedMerchantId = 'Please select a merchant';
+            }
+
+            // Validate merchant items
+            if (merchantItems.length === 0) {
+                showError('Please add at least one item');
+                return false;
+            }
+
+            for (const item of merchantItems) {
+                if (!item.description || !item.cost) {
+                    showError('All merchant items must have description and cost');
+                    return false;
+                }
             }
         }
 
@@ -272,9 +414,10 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
             newErrors.startDate = 'Start date is required';
         }
 
-        if (!formData.expectedEndDate) {
-            newErrors.expectedEndDate = 'Expected end date is required';
-        }
+        // Expected end date is now optional
+        // if (!formData.expectedEndDate) {
+        //     newErrors.expectedEndDate = 'Expected end date is required';
+        // }
 
         if (formData.startDate && formData.expectedEndDate) {
             const startDate = new Date(formData.startDate);
@@ -295,12 +438,36 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
             }
         }
 
-        if (formData.stepCost && isNaN(formData.stepCost)) {
-            newErrors.stepCost = 'Cost must be a valid number';
+        // Validate cost fields
+        if (formData.downPayment && isNaN(formData.downPayment)) {
+            newErrors.downPayment = 'Down payment must be a valid number';
         }
 
-        if (formData.stepCost && parseFloat(formData.stepCost) < 0) {
-            newErrors.stepCost = 'Cost must be non-negative';
+        if (formData.downPayment && parseFloat(formData.downPayment) < 0) {
+            newErrors.downPayment = 'Down payment must be non-negative';
+        }
+
+        if (formData.expectedCost && isNaN(formData.expectedCost)) {
+            newErrors.expectedCost = 'Expected cost must be a valid number';
+        }
+
+        if (formData.expectedCost && parseFloat(formData.expectedCost) < 0) {
+            newErrors.expectedCost = 'Expected cost must be non-negative';
+        }
+
+        if (formData.actualCost && isNaN(formData.actualCost)) {
+            newErrors.actualCost = 'Actual cost must be a valid number';
+        }
+
+        if (formData.actualCost && parseFloat(formData.actualCost) < 0) {
+            newErrors.actualCost = 'Actual cost must be non-negative';
+        }
+
+        // Validate that down payment doesn't exceed expected cost
+        if (formData.downPayment && formData.expectedCost) {
+            if (parseFloat(formData.downPayment) > parseFloat(formData.expectedCost)) {
+                newErrors.downPayment = 'Down payment cannot exceed expected cost';
+            }
         }
 
         setErrors(newErrors);
@@ -315,16 +482,27 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                 stepTypeId: formData.stepTypeId,
                 description: formData.description,
                 startDate: formData.startDate + 'T09:00:00',
-                expectedEndDate: formData.expectedEndDate + 'T17:00:00',
-                stepCost: formData.stepCost ? parseFloat(formData.stepCost) : 0,
-                notes: formData.notes
+                expectedEndDate: formData.expectedEndDate ? formData.expectedEndDate + 'T17:00:00' : null,
+                downPayment: formData.downPayment ? parseFloat(formData.downPayment) : 0,
+                expectedCost: formData.expectedCost ? parseFloat(formData.expectedCost) : 0,
+                remaining: formData.remaining ? parseFloat(formData.remaining) : 0,
+                remainingManuallySet: formData.remainingManuallySet || false,
+                actualCost: formData.actualCost ? parseFloat(formData.actualCost) : null,
+                stepCost: formData.expectedCost ? parseFloat(formData.expectedCost) : 0, // For backward compatibility
+                notes: formData.notes || ''
             };
 
             // Add responsible person based on type
             if (responsiblePersonType === 'site') {
                 submitData.responsibleEmployeeId = formData.responsibleEmployeeId;
-            } else {
+            } else if (responsiblePersonType === 'external') {
                 submitData.responsibleContactId = formData.responsibleContactId;
+            } else if (responsiblePersonType === 'merchant') {
+                submitData.selectedMerchantId = formData.selectedMerchantId;
+                submitData.merchantItems = merchantItems.map(item => ({
+                    description: item.description,
+                    cost: parseFloat(item.cost)
+                }));
             }
 
             // Only include location fields if step type is TRANSPORT
@@ -352,16 +530,57 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
         }
     };
 
-    const handleAddNewContact = () => {
-        // Preserve the full path including query params
-        const returnPath = location.pathname + location.search;
-        navigate('/maintenance/contacts', {
-            state: {
-                action: 'add-and-return',
-                returnPath: returnPath,
-                formDataToRestore: formData
-            }
-        });
+    const handleAddNewContact = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowAddContactModal(true);
+    };
+
+    const handleCreateContact = async (e) => {
+        e.preventDefault();
+
+        // Validate required fields
+        if (!newContactData.firstName || !newContactData.lastName || !newContactData.email || !newContactData.phoneNumber || !newContactData.contactTypeId) {
+            showError('Please fill in all required fields');
+            return;
+        }
+
+        try {
+            const response = await contactService.createContact({
+                ...newContactData,
+                isActive: true,
+                emergencyContact: false,
+                preferredContactMethod: 'PHONE'
+            });
+
+            const createdContact = response.data;
+
+            // Update the responsible contact dropdown with new contact
+            setFormData(prev => ({
+                ...prev,
+                responsibleContactId: createdContact.id
+            }));
+
+            // Refresh contacts list
+            await loadAvailableContacts();
+
+            // Close modal and reset form
+            setShowAddContactModal(false);
+            setNewContactData({
+                firstName: '',
+                lastName: '',
+                email: '',
+                phoneNumber: '',
+                contactTypeId: '',
+                company: '',
+                specialization: ''
+            });
+
+            showError('Contact created successfully!'); // Using showError as notification
+        } catch (error) {
+            console.error('Error creating contact:', error);
+            showError(error.response?.data?.message || 'Failed to create contact');
+        }
     };
 
     const getSelectedContact = () => {
@@ -430,7 +649,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                     <div className="form-section">
                         <h3>Responsible Person Assignment</h3>
                         <div className="radio-group">
-                            <label>
+                            <label className="radio-option">
                                 <input
                                     type="radio"
                                     name="responsiblePersonType"
@@ -438,17 +657,27 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                     checked={responsiblePersonType === 'site'}
                                     onChange={handleResponsibleTypeChange}
                                 />
-                                From Equipment Site
+                                <span>From Equipment Site</span>
                             </label>
-                            <label>
+                            {/*<label className="radio-option">*/}
+                            {/*    <input*/}
+                            {/*        type="radio"*/}
+                            {/*        name="responsiblePersonType"*/}
+                            {/*        value="external"*/}
+                            {/*        checked={responsiblePersonType === 'external'}*/}
+                            {/*        onChange={handleResponsibleTypeChange}*/}
+                            {/*    />*/}
+                            {/*    <span>External Contact</span>*/}
+                            {/*</label>*/}
+                            <label className="radio-option">
                                 <input
                                     type="radio"
                                     name="responsiblePersonType"
-                                    value="external"
-                                    checked={responsiblePersonType === 'external'}
+                                    value="merchant"
+                                    checked={responsiblePersonType === 'merchant'}
                                     onChange={handleResponsibleTypeChange}
                                 />
-                                External Contact
+                                <span>Merchant</span>
                             </label>
                         </div>
 
@@ -476,7 +705,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                     <span className="info-text">No employees available from equipment site</span>
                                 )}
                             </div>
-                        ) : (
+                        ) : responsiblePersonType === 'external' ? (
                             <div className="form-group">
                                 <label htmlFor="responsibleContactId">
                                     Responsible Contact <span className="required">*</span>
@@ -525,7 +754,167 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                     </div>
                                 )}
                             </div>
-                        )}
+                        ) : responsiblePersonType === 'merchant' ? (
+                            <div className="merchant-section">
+                                <div className="form-group">
+                                    <label htmlFor="selectedMerchantId">
+                                        Select Merchant <span className="required">*</span>
+                                    </label>
+                                    <select
+                                        id="selectedMerchantId"
+                                        name="selectedMerchantId"
+                                        value={formData.selectedMerchantId || ''}
+                                        onChange={handleInputChange}
+                                        required
+                                        className={errors.selectedMerchantId ? 'error' : ''}
+                                    >
+                                        <option value="">Select a merchant...</option>
+
+                                        {Array.isArray(merchants) && merchants.filter(m => m.merchantType === 'SERVICE_PROVIDER').length > 0 && (
+                                            <optgroup label="Service Providers">
+                                                {merchants
+                                                    .filter(m => m.merchantType === 'SERVICE_PROVIDER')
+                                                    .map(merchant => (
+                                                        <option key={merchant.id} value={merchant.id}>
+                                                            {merchant.name}
+                                                        </option>
+                                                    ))
+                                                }
+                                            </optgroup>
+                                        )}
+
+                                        {Array.isArray(merchants) && merchants.filter(m => m.merchantType === 'SUPPLIER').length > 0 && (
+                                            <optgroup label="Suppliers">
+                                                {merchants
+                                                    .filter(m => m.merchantType === 'SUPPLIER')
+                                                    .map(merchant => (
+                                                        <option key={merchant.id} value={merchant.id}>
+                                                            {merchant.name}
+                                                        </option>
+                                                    ))
+                                                }
+                                            </optgroup>
+                                        )}
+
+                                        {Array.isArray(merchants) && merchants.filter(m => !m.merchantType || (m.merchantType !== 'SERVICE_PROVIDER' && m.merchantType !== 'SUPPLIER')).length > 0 && (
+                                            <optgroup label="Other">
+                                                {merchants
+                                                    .filter(m => !m.merchantType || (m.merchantType !== 'SERVICE_PROVIDER' && m.merchantType !== 'SUPPLIER'))
+                                                    .map(merchant => (
+                                                        <option key={merchant.id} value={merchant.id}>
+                                                            {merchant.name}
+                                                        </option>
+                                                    ))
+                                                }
+                                            </optgroup>
+                                        )}
+                                    </select>
+                                    {errors.selectedMerchantId && <span className="error-message">{errors.selectedMerchantId}</span>}
+                                </div>
+
+                                {/* Merchant Contact Dropdown (Cascading) */}
+                                {formData.selectedMerchantId && (
+                                    <div className="form-group">
+                                        <label htmlFor="merchantContactId">
+                                            Select Contact from Merchant
+                                        </label>
+                                        <select
+                                            id="merchantContactId"
+                                            name="responsibleContactId"
+                                            value={formData.responsibleContactId || ''}
+                                            onChange={handleInputChange}
+                                        >
+                                            <option value="">Select a contact (optional)...</option>
+                                            {merchantContacts.map(contact => (
+                                                <option key={contact.id} value={contact.id}>
+                                                    {contact.firstName} {contact.lastName} - {contact.position || contact.email}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {merchantContacts.length === 0 && (
+                                            <span className="info-text">No contacts available for this merchant</span>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Merchant Items */}
+                                {formData.selectedMerchantId && (
+                                    <div className="merchant-items-section">
+                                        <h4>Items / Services</h4>
+                                        <p className="section-description">
+                                            Add description and cost for each item or service provided by the merchant
+                                        </p>
+
+                                        {merchantItems.map((item, index) => (
+                                            <div key={index} className="merchant-item-row">
+                                                <div className="form-group flex-grow">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Item description"
+                                                        value={item.description}
+                                                        onChange={(e) => {
+                                                            const updated = [...merchantItems];
+                                                            updated[index].description = e.target.value;
+                                                            setMerchantItems(updated);
+                                                        }}
+                                                        required
+                                                    />
+                                                </div>
+
+                                                <div className="form-group cost-input">
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Cost"
+                                                        value={item.cost}
+                                                        onChange={(e) => {
+                                                            const updated = [...merchantItems];
+                                                            updated[index].cost = e.target.value;
+                                                            setMerchantItems(updated);
+                                                        }}
+                                                        min="0"
+                                                        step="0.01"
+                                                        required
+                                                    />
+                                                </div>
+
+                                                {merchantItems.length > 1 && (
+                                                    <button
+                                                        type="button"
+                                                        className="remove-item-button"
+                                                        onClick={() => {
+                                                            setMerchantItems(merchantItems.filter((_, i) => i !== index));
+                                                        }}
+                                                        title="Remove item"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+
+                                        <button
+                                            type="button"
+                                            className="add-item-button"
+                                            onClick={() => {
+                                                setMerchantItems([...merchantItems, { description: '', cost: '' }]);
+                                            }}
+                                        >
+                                            + Add Item
+                                        </button>
+
+                                        {merchantItems.length > 0 && (
+                                            <div className="merchant-total">
+                                                <strong>Total:</strong> $
+                                                {merchantItems
+                                                    .reduce((sum, item) => sum + (parseFloat(item.cost) || 0), 0)
+                                                    .toFixed(2)
+                                                }
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ) : null}
                     </div>
 
                     {selectedStepType?.name?.toUpperCase() === 'TRANSPORT' && (
@@ -589,7 +978,7 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
 
                             <div className="form-group">
                                 <label htmlFor="expectedEndDate">
-                                    Expected End Date <span className="required">*</span>
+                                    Expected End Date
                                 </label>
                                 <input
                                     type="date"
@@ -601,23 +990,91 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                                 />
                                 {errors.expectedEndDate && <span className="error-message">{errors.expectedEndDate}</span>}
                             </div>
+                        </div>
 
+                        <div className="form-row two-columns">
                             <div className="form-group">
-                                <label htmlFor="stepCost">Step Cost</label>
+                                <label htmlFor="expectedCost">
+                                    Expected Cost
+                                </label>
                                 <input
                                     type="number"
-                                    id="stepCost"
-                                    name="stepCost"
-                                    value={formData.stepCost}
+                                    id="expectedCost"
+                                    name="expectedCost"
+                                    value={formData.expectedCost}
                                     onChange={handleInputChange}
-                                    placeholder="0.00"  // Remove $ from here
-                                    step="0.01"
                                     min="0"
-                                    className={errors.stepCost ? 'error' : ''}
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    className={errors.expectedCost ? 'error' : ''}
                                 />
-                                {errors.stepCost && <span className="error-message">{errors.stepCost}</span>}
+                                {errors.expectedCost && <span className="error-message">{errors.expectedCost}</span>}
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="downPayment">Down Payment</label>
+                                <input
+                                    type="number"
+                                    id="downPayment"
+                                    name="downPayment"
+                                    value={formData.downPayment}
+                                    onChange={handleInputChange}
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    className={errors.downPayment ? 'error' : ''}
+                                />
+                                {errors.downPayment && <span className="error-message">{errors.downPayment}</span>}
                             </div>
                         </div>
+
+                        <div className="form-group">
+                            <label htmlFor="remaining">
+                                Remaining {remainingManuallyChanged && <span className="manual-override-indicator">(Manual Override)</span>}
+                            </label>
+                            <input
+                                type="number"
+                                id="remaining"
+                                name="remaining"
+                                value={formData.remaining}
+                                onChange={handleInputChange}
+                                min="0"
+                                step="0.01"
+                                placeholder="Auto-calculated"
+                                className={errors.remaining ? 'error' : ''}
+                            />
+                            {errors.remaining && <span className="error-message">{errors.remaining}</span>}
+                            <small className="field-hint">
+                                {remainingManuallyChanged
+                                    ? 'Manual override active - value will be saved as entered'
+                                    : 'Auto-calculated as: Expected Cost - Down Payment'
+                                }
+                            </small>
+                        </div>
+
+                        {(editingStep?.actualEndDate || formData.actualEndDate) && (
+                            <div className="form-group">
+                                <label htmlFor="actualCost">Actual Cost</label>
+                                <input
+                                    type="number"
+                                    id="actualCost"
+                                    name="actualCost"
+                                    value={formData.actualCost}
+                                    onChange={handleInputChange}
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    disabled={!editingStep?.actualEndDate}
+                                    className={errors.actualCost ? 'error' : ''}
+                                />
+                                {formData.expectedCost && (
+                                    <small className="field-hint">
+                                        Expected: ${parseFloat(formData.expectedCost).toFixed(2)}
+                                    </small>
+                                )}
+                                {errors.actualCost && <span className="error-message">{errors.actualCost}</span>}
+                            </div>
+                        )}
                     </div>
 
                     <div className="form-section">
@@ -647,6 +1104,148 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
                     </button>
                 </div>
             </div>
+
+            {/* Inline Add Contact Modal */}
+            {showAddContactModal && (
+                <div className="modal-backdrop nested-modal" onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAddContactModal(false);
+                }}>
+                    <div className="modal-container modal-md" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div className="modal-title">
+                                <FaUser />
+                                Add New Contact
+                            </div>
+                            <button className="btn-close" onClick={() => setShowAddContactModal(false)}>
+                                <FaTimes />
+                            </button>
+                        </div>
+
+                        <div className="modal-body">
+                            <form onSubmit={handleCreateContact} id="add-contact-form">
+                                <div className="form-section">
+                                    <h3>Basic Information</h3>
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label htmlFor="firstName">
+                                                First Name <span className="required">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="firstName"
+                                                name="firstName"
+                                                value={newContactData.firstName}
+                                                onChange={(e) => setNewContactData({ ...newContactData, firstName: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label htmlFor="lastName">
+                                                Last Name <span className="required">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="lastName"
+                                                name="lastName"
+                                                value={newContactData.lastName}
+                                                onChange={(e) => setNewContactData({ ...newContactData, lastName: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label htmlFor="email">
+                                                Email <span className="required">*</span>
+                                            </label>
+                                            <input
+                                                type="email"
+                                                id="email"
+                                                name="email"
+                                                value={newContactData.email}
+                                                onChange={(e) => setNewContactData({ ...newContactData, email: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label htmlFor="phoneNumber">
+                                                Phone Number <span className="required">*</span>
+                                            </label>
+                                            <input
+                                                type="tel"
+                                                id="phoneNumber"
+                                                name="phoneNumber"
+                                                value={newContactData.phoneNumber}
+                                                onChange={(e) => setNewContactData({ ...newContactData, phoneNumber: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-row">
+                                        <div className="form-group">
+                                            <label htmlFor="contactTypeId">
+                                                Contact Type <span className="required">*</span>
+                                            </label>
+                                            <select
+                                                id="contactTypeId"
+                                                name="contactTypeId"
+                                                value={newContactData.contactTypeId}
+                                                onChange={(e) => setNewContactData({ ...newContactData, contactTypeId: e.target.value })}
+                                                required
+                                            >
+                                                <option value="">Select Contact Type</option>
+                                                {contactTypes.map(type => (
+                                                    <option key={type.id} value={type.id}>
+                                                        {type.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div className="form-group">
+                                            <label htmlFor="company">Company</label>
+                                            <input
+                                                type="text"
+                                                id="company"
+                                                name="company"
+                                                value={newContactData.company}
+                                                onChange={(e) => setNewContactData({ ...newContactData, company: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label htmlFor="specialization">Specialization</label>
+                                        <input
+                                            type="text"
+                                            id="specialization"
+                                            name="specialization"
+                                            value={newContactData.specialization}
+                                            onChange={(e) => setNewContactData({ ...newContactData, specialization: e.target.value })}
+                                            placeholder="e.g., Hydraulic Systems, Electrical Repairs, etc."
+                                        />
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div className="modal-footer">
+                            <button type="button" className="btn-cancel" onClick={() => setShowAddContactModal(false)}>
+                                Cancel
+                            </button>
+                            <button type="submit" className="btn-primary" form="add-contact-form">
+                                <FaSave />
+                                Create Contact
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

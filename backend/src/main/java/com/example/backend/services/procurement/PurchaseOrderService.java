@@ -1,15 +1,15 @@
 package com.example.backend.services.procurement;
 
-
-import com.example.backend.models.procurement.Offer;
-import com.example.backend.models.procurement.OfferItem;
-import com.example.backend.models.procurement.PurchaseOrder;
-import com.example.backend.models.procurement.PurchaseOrderItem;
-import com.example.backend.models.procurement.TimelineEventType;
-import com.example.backend.repositories.procurement.OfferItemRepository;
-import com.example.backend.repositories.procurement.OfferRepository;
-import com.example.backend.repositories.procurement.PurchaseOrderItemRepository;
-import com.example.backend.repositories.procurement.PurchaseOrderRepository;
+import com.example.backend.dto.merchant.MerchantDTO;
+import com.example.backend.dto.procurement.*;
+import com.example.backend.dto.warehouse.ItemTypeDTO;
+import com.example.backend.models.merchant.Merchant;
+import com.example.backend.models.procurement.*;
+import com.example.backend.models.warehouse.*;
+import com.example.backend.repositories.procurement.*;
+import com.example.backend.repositories.warehouse.ItemRepository;
+import com.example.backend.repositories.warehouse.WarehouseRepository;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +25,14 @@ public class PurchaseOrderService {
     private final OfferItemRepository offerItemRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
-    private final OfferTimelineService offerTimelineService; // ADDED
+    private final OfferTimelineService offerTimelineService;
+    private final ItemRepository itemRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final DeliverySessionRepository deliverySessionRepository;
+    private final DeliveryItemReceiptRepository deliveryItemReceiptRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Autowired
     public PurchaseOrderService(
@@ -33,37 +40,33 @@ public class PurchaseOrderService {
             OfferItemRepository offerItemRepository,
             PurchaseOrderRepository purchaseOrderRepository,
             PurchaseOrderItemRepository purchaseOrderItemRepository,
-            OfferTimelineService offerTimelineService) { // ADDED PARAMETER
+            OfferTimelineService offerTimelineService,
+            ItemRepository itemRepository,
+            WarehouseRepository warehouseRepository,
+            DeliverySessionRepository deliverySessionRepository,
+            DeliveryItemReceiptRepository deliveryItemReceiptRepository) {
         this.offerRepository = offerRepository;
         this.offerItemRepository = offerItemRepository;
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.purchaseOrderItemRepository = purchaseOrderItemRepository;
-        this.offerTimelineService = offerTimelineService; // ADDED
+        this.offerTimelineService = offerTimelineService;
+        this.itemRepository = itemRepository;
+        this.warehouseRepository = warehouseRepository;
+        this.deliverySessionRepository = deliverySessionRepository;
+        this.deliveryItemReceiptRepository = deliveryItemReceiptRepository;
     }
 
-    /**
-     * Finalizes an offer and creates a purchase order from the finalized items
-     *
-     * @param offerId          The ID of the offer to finalize
-     * @param finalizedItemIds List of offer item IDs that have been finalized
-     * @param username         The username of the person finalizing the offer
-     * @return The created purchase order
-     */
     @Transactional
     public PurchaseOrder finalizeOfferAndCreatePurchaseOrder(UUID offerId, List<UUID> finalizedItemIds, String username) {
-        // Find the offer
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
 
-        // Check if the offer is in the correct status (should be FINALIZING)
         if (!"FINALIZING".equals(offer.getStatus())) {
             throw new IllegalStateException("Offer must be in FINALIZING status to be finalized. Current status: " + offer.getStatus());
         }
 
-        // Get all offer items that are finalized and finance-accepted
         List<OfferItem> finalizedItems = offerItemRepository.findAllById(finalizedItemIds);
 
-        // Validate that all items are part of this offer and finance-accepted
         for (OfferItem item : finalizedItems) {
             if (!item.getOffer().getId().equals(offerId)) {
                 throw new IllegalArgumentException("Item " + item.getId() + " does not belong to offer " + offerId);
@@ -78,25 +81,20 @@ public class PurchaseOrderService {
             throw new IllegalArgumentException("No valid items to finalize");
         }
 
-        // MARK ALL FINALIZED ITEMS AS FINALIZED
         for (OfferItem item : finalizedItems) {
             item.setFinalized(true);
             offerItemRepository.save(item);
         }
 
-        // UPDATE OFFER STATUS AND ADD TIMELINE EVENTS
         String previousStatus = offer.getStatus();
 
-        // Create OFFER_FINALIZING timeline event
         offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_FINALIZED, username,
                 "Starting finalization process with " + finalizedItems.size() + " items",
                 previousStatus, "COMPLETED");
 
-        // Update offer status to COMPLETED
         offer.setStatus("COMPLETED");
         offerRepository.save(offer);
 
-        // Create purchase order
         PurchaseOrder purchaseOrder = new PurchaseOrder();
         purchaseOrder.setPoNumber("PO-" + generatePoNumber());
         purchaseOrder.setCreatedAt(LocalDateTime.now());
@@ -105,15 +103,14 @@ public class PurchaseOrderService {
         purchaseOrder.setRequestOrder(offer.getRequestOrder());
         purchaseOrder.setOffer(offer);
         purchaseOrder.setCreatedBy(username);
-        purchaseOrder.setPaymentTerms("Net 30"); // Default, can be customized
-        purchaseOrder.setExpectedDeliveryDate(LocalDateTime.now().plusDays(30)); // Default expected delivery
+        purchaseOrder.setPaymentTerms("Net 30");
+        purchaseOrder.setExpectedDeliveryDate(LocalDateTime.now().plusDays(30));
         purchaseOrder.setPurchaseOrderItems(new ArrayList<>());
+        purchaseOrder.setDeliverySessions(new ArrayList<>());
 
-        // Determine currency from the first item (assuming all items use the same currency)
         String currency = finalizedItems.get(0).getCurrency();
         purchaseOrder.setCurrency(currency);
 
-        // Calculate total amount and create PO items
         double totalAmount = 0.0;
 
         for (OfferItem offerItem : finalizedItems) {
@@ -127,18 +124,21 @@ public class PurchaseOrderService {
             poItem.setComment(offerItem.getComment());
             poItem.setPurchaseOrder(purchaseOrder);
             poItem.setOfferItem(offerItem);
+            poItem.setItemType(offerItem.getRequestOrderItem().getItemType());
+            poItem.setItemReceipts(new ArrayList<>());
+
+            if (offerItem.getMerchant() != null) {
+                poItem.setMerchant(offerItem.getMerchant());
+            }
 
             purchaseOrder.getPurchaseOrderItems().add(poItem);
-
             totalAmount += poItem.getTotalPrice();
         }
 
         purchaseOrder.setTotalAmount(totalAmount);
 
-        // Save the purchase order
         PurchaseOrder savedPurchaseOrder = purchaseOrderRepository.save(purchaseOrder);
 
-        // CREATE OFFER_COMPLETED TIMELINE EVENT AFTER PO IS CREATED
         offerTimelineService.createTimelineEvent(offer, TimelineEventType.OFFER_COMPLETED, username,
                 "Purchase order " + savedPurchaseOrder.getPoNumber() + " created with total value: " +
                         savedPurchaseOrder.getCurrency() + " " + String.format("%.2f", totalAmount),
@@ -147,9 +147,6 @@ public class PurchaseOrderService {
         return savedPurchaseOrder;
     }
 
-    /**
-     * Generates a random PO number
-     */
     private String generatePoNumber() {
         String datePart = LocalDateTime.now().toString().substring(0, 10).replace("-", "");
         int randomNum = new Random().nextInt(10000);
@@ -157,31 +154,6 @@ public class PurchaseOrderService {
         return datePart + "-" + randomPart;
     }
 
-    /**
-     * Update status of an individual offer item (accept or reject)
-     */
-
-
-    /**
-     * Complete finance review for an offer
-     */
-
-
-    /**
-     * Create a purchase order from accepted items in an offer
-     */
-    /**
-     * Create a purchase order from accepted items in an offer
-     */
-
-
-    /**
-     * Get offers that have been completely processed by finance
-     */
-
-    /**
-     * Get all offers pending finance review
-     */
     public List<Offer> getOffersPendingFinanceReview() {
         return offerRepository.findByStatus("ACCEPTED")
                 .stream()
@@ -193,14 +165,10 @@ public class PurchaseOrderService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get purchase order by offer ID
-     */
     public PurchaseOrder getPurchaseOrderByOffer(UUID offerId) {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
-        // Use a custom query method or manual search
         List<PurchaseOrder> allPOs = purchaseOrderRepository.findAll();
         Optional<PurchaseOrder> matchingPO = allPOs.stream()
                 .filter(po -> po.getOffer() != null && po.getOffer().getId().equals(offer.getId()))
@@ -209,24 +177,15 @@ public class PurchaseOrderService {
         return matchingPO.orElse(null);
     }
 
-    /**
-     * Get all purchase orders
-     */
     public List<PurchaseOrder> getAllPurchaseOrders() {
         return purchaseOrderRepository.findAll();
     }
 
-    /**
-     * Get purchase order by ID
-     */
     public PurchaseOrder getPurchaseOrderById(UUID id) {
         return purchaseOrderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Purchase Order not found"));
     }
 
-    /**
-     * Update purchase order status
-     */
     @Transactional
     public PurchaseOrder updatePurchaseOrderStatus(UUID id, String status, String username) {
         PurchaseOrder po = purchaseOrderRepository.findById(id)
@@ -241,5 +200,301 @@ public class PurchaseOrderService {
         }
 
         return purchaseOrderRepository.save(po);
+    }
+
+    @Transactional(readOnly = true)
+    public PurchaseOrderDTO getPurchaseOrderWithDeliveries(UUID id) {
+        PurchaseOrder po = purchaseOrderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("PO not found"));
+
+        PurchaseOrderDTO dto = convertToDTO(po);
+
+        List<DeliverySessionDTO> sessions = po.getDeliverySessions().stream()
+                .map(this::convertDeliverySessionToDTO)
+                .toList();
+        dto.setDeliverySessions(sessions);
+
+        for (PurchaseOrderItemDTO itemDTO : dto.getPurchaseOrderItems()) {
+            PurchaseOrderItem item = po.getPurchaseOrderItems().stream()
+                    .filter(i -> i.getId().equals(itemDTO.getId()))
+                    .findFirst()
+                    .orElseThrow();
+
+            List<DeliveryItemReceiptDTO> receipts = item.getItemReceipts().stream()
+                    .map(this::convertReceiptToDTO)
+                    .toList();
+            itemDTO.setItemReceipts(receipts);
+
+            double totalGood = item.getItemReceipts().stream()
+                    .mapToDouble(DeliveryItemReceipt::getGoodQuantity)
+                    .sum();
+
+            double totalIssuesNotRedelivering = item.getItemReceipts().stream()
+                    .flatMap(r -> r.getIssues().stream())
+                    .filter(i -> i.getResolutionType() != null && i.getResolutionType() != PurchaseOrderResolutionType.REDELIVERY)
+                    .mapToDouble(PurchaseOrderIssue::getAffectedQuantity)
+                    .sum();
+
+            itemDTO.setRemainingQuantity(item.getQuantity() - totalGood - totalIssuesNotRedelivering);
+        }
+
+        return dto;
+    }
+
+    private DeliverySessionDTO convertDeliverySessionToDTO(DeliverySession session) {
+        return DeliverySessionDTO.builder()
+                .id(session.getId())
+                .purchaseOrderId(session.getPurchaseOrder().getId())
+                .merchantId(session.getMerchant().getId())
+                .merchantName(session.getMerchant().getName())
+                .processedBy(session.getProcessedBy())
+                .processedAt(session.getProcessedAt())
+                .deliveryNotes(session.getDeliveryNotes())
+                .itemReceipts(session.getItemReceipts().stream()
+                        .map(this::convertReceiptToDTO)
+                        .toList())
+                .build();
+    }
+
+    private DeliveryItemReceiptDTO convertReceiptToDTO(DeliveryItemReceipt receipt) {
+        return DeliveryItemReceiptDTO.builder()
+                .id(receipt.getId())
+                .deliverySessionId(receipt.getDeliverySession().getId())
+                .purchaseOrderItemId(receipt.getPurchaseOrderItem().getId())
+                .itemTypeName(receipt.getPurchaseOrderItem().getItemType().getName())
+                .measuringUnit(receipt.getPurchaseOrderItem().getItemType().getMeasuringUnit())
+                .goodQuantity(receipt.getGoodQuantity())
+                .isRedelivery(receipt.getIsRedelivery())
+                .processedBy(receipt.getDeliverySession().getProcessedBy())    // ADD THIS
+                .processedAt(receipt.getDeliverySession().getProcessedAt())    // ADD THIS
+                .issues(receipt.getIssues().stream()
+                        .map(this::convertIssueToDTO)
+                        .toList())
+                .build();
+    }
+
+    private PurchaseOrderIssueDTO convertIssueToDTO(PurchaseOrderIssue issue) {
+        PurchaseOrderIssueDTO dto = PurchaseOrderIssueDTO.builder()
+                .id(issue.getId())
+                .purchaseOrderId(issue.getPurchaseOrder().getId())
+                .purchaseOrderItemId(issue.getPurchaseOrderItem().getId())
+                .issueType(issue.getIssueType())
+                .issueStatus(issue.getIssueStatus())
+                .affectedQuantity(issue.getAffectedQuantity())
+                .issueDescription(issue.getIssueDescription())
+                .reportedBy(issue.getReportedBy())
+                .reportedAt(issue.getReportedAt())
+                .resolutionType(issue.getResolutionType())
+                .resolvedBy(issue.getResolvedBy())
+                .resolvedAt(issue.getResolvedAt())
+                .resolutionNotes(issue.getResolutionNotes())
+                .itemTypeName(issue.getPurchaseOrderItem().getItemType().getName())
+                .measuringUnit(issue.getPurchaseOrderItem().getItemType().getMeasuringUnit())
+                .itemTypeCategoryName(issue.getPurchaseOrderItem().getItemType().getItemCategory() != null
+                        ? issue.getPurchaseOrderItem().getItemType().getItemCategory().getName()
+                        : null)
+                .build();
+
+        if (issue.getPurchaseOrderItem() != null && issue.getPurchaseOrderItem().getMerchant() != null) {
+            Merchant merchant = issue.getPurchaseOrderItem().getMerchant();
+            dto.setMerchantId(merchant.getId());
+            dto.setMerchantName(merchant.getName());
+            dto.setMerchantContactPhone(merchant.getContactPhone());
+            dto.setMerchantContactSecondPhone(merchant.getContactSecondPhone());
+            dto.setMerchantContactEmail(merchant.getContactEmail());
+            dto.setMerchantContactPersonName(merchant.getContactPersonName());
+            dto.setMerchantAddress(merchant.getAddress());
+            dto.setMerchantPhotoUrl(merchant.getPhotoUrl());
+        }
+
+        return dto;
+    }
+
+    private PurchaseOrderDTO convertToDTO(PurchaseOrder po) {
+        // DEBUG LOGGING - safer version
+        System.out.println("=== Converting PO to DTO ===");
+        System.out.println("PO ID: " + po.getId());
+        System.out.flush();
+
+        RequestOrder requestOrder = null;
+        Offer offer = null;
+
+        try {
+            requestOrder = po.getRequestOrder();
+            System.out.println("RequestOrder is null? " + (requestOrder == null));
+            if (requestOrder != null) {
+                System.out.println("RequestOrder ID: " + requestOrder.getId());
+                System.out.println("RequestOrder Title: " + requestOrder.getTitle());
+            }
+        } catch (Exception e) {
+            System.out.println("Error accessing RequestOrder: " + e.getMessage());
+            e.printStackTrace();
+        }
+        System.out.flush();
+
+        try {
+            offer = po.getOffer();
+            System.out.println("Offer is null? " + (offer == null));
+            if (offer != null) {
+                System.out.println("Offer ID: " + offer.getId());
+                System.out.println("Offer Title: " + offer.getTitle());
+            }
+        } catch (Exception e) {
+            System.out.println("Error accessing Offer: " + e.getMessage());
+            e.printStackTrace();
+        }
+        System.out.flush();
+        System.out.println("============================");
+
+        PurchaseOrderDTO dto = new PurchaseOrderDTO();
+        dto.setId(po.getId());
+        dto.setPoNumber(po.getPoNumber());
+        dto.setCreatedAt(po.getCreatedAt());
+        dto.setUpdatedAt(po.getUpdatedAt());
+        dto.setStatus(po.getStatus());
+        dto.setCreatedBy(po.getCreatedBy());
+        dto.setApprovedBy(po.getApprovedBy());
+        dto.setFinanceApprovalDate(po.getFinanceApprovalDate());
+        dto.setPaymentTerms(po.getPaymentTerms());
+        dto.setExpectedDeliveryDate(po.getExpectedDeliveryDate());
+        dto.setTotalAmount(po.getTotalAmount());
+        dto.setCurrency(po.getCurrency());
+        if (requestOrder != null) {
+            dto.setRequestOrderId(requestOrder.getId());
+
+            RequestOrderDTO requestOrderDTO = new RequestOrderDTO();
+            requestOrderDTO.setId(requestOrder.getId());
+            requestOrderDTO.setTitle(requestOrder.getTitle());
+            requestOrderDTO.setDescription(requestOrder.getDescription());
+            requestOrderDTO.setRequesterName(requestOrder.getRequesterName());
+            requestOrderDTO.setDeadline(requestOrder.getDeadline());
+            requestOrderDTO.setStatus(requestOrder.getStatus());
+            requestOrderDTO.setPartyType(requestOrder.getPartyType());
+            requestOrderDTO.setCreatedAt(requestOrder.getCreatedAt());
+            requestOrderDTO.setCreatedBy(requestOrder.getCreatedBy());
+            requestOrderDTO.setApprovedAt(requestOrder.getApprovedAt());
+            requestOrderDTO.setApprovedBy(requestOrder.getApprovedBy());
+            requestOrderDTO.setEmployeeRequestedBy(requestOrder.getEmployeeRequestedBy());
+            requestOrderDTO.setRejectionReason(requestOrder.getRejectionReason());
+            dto.setRequestOrder(requestOrderDTO);
+        }
+
+        if (offer != null) {
+            dto.setOfferId(offer.getId());
+
+            OfferDTO offerDTO = new OfferDTO();
+            offerDTO.setId(offer.getId());
+            offerDTO.setTitle(offer.getTitle());
+            offerDTO.setDescription(offer.getDescription());
+            offerDTO.setCreatedBy(offer.getCreatedBy());
+            offerDTO.setCreatedAt(offer.getCreatedAt());
+            offerDTO.setStatus(offer.getStatus());
+            offerDTO.setFinanceStatus(offer.getFinanceStatus());
+            offerDTO.setValidUntil(offer.getValidUntil());
+            offerDTO.setNotes(offer.getNotes());
+            offerDTO.setCurrentAttemptNumber(offer.getCurrentAttemptNumber());
+            offerDTO.setTotalRetries(offer.getTotalRetries());
+            dto.setOffer(offerDTO);
+        }
+
+        List<PurchaseOrderItemDTO> itemDTOs = po.getPurchaseOrderItems().stream()
+                .map(this::convertItemToDTO)
+                .collect(Collectors.toList());
+        dto.setPurchaseOrderItems(itemDTOs);
+
+        return dto;
+    }
+
+    private PurchaseOrderItemDTO convertItemToDTO(PurchaseOrderItem item) {
+        PurchaseOrderItemDTO dto = PurchaseOrderItemDTO.builder()
+                .id(item.getId())
+                .quantity(item.getQuantity())
+                .unitPrice(item.getUnitPrice())
+                .totalPrice(item.getTotalPrice())
+                .status(item.getStatus())
+                .estimatedDeliveryDays(item.getEstimatedDeliveryDays())
+                .deliveryNotes(item.getDeliveryNotes())
+                .comment(item.getComment())
+                .purchaseOrderId(item.getPurchaseOrder().getId())
+                .build();
+
+        if (item.getItemType() != null) {
+            dto.setItemTypeId(item.getItemType().getId());
+            ItemTypeDTO itemTypeDTO = new ItemTypeDTO();
+            itemTypeDTO.setId(item.getItemType().getId());
+            itemTypeDTO.setName(item.getItemType().getName());
+            itemTypeDTO.setMeasuringUnit(item.getItemType().getMeasuringUnit());
+
+            // Add category info
+            if (item.getItemType().getItemCategory() != null) {
+                itemTypeDTO.setItemCategoryId(item.getItemType().getItemCategory().getId());
+                itemTypeDTO.setItemCategoryName(item.getItemType().getItemCategory().getName());
+            }
+
+            dto.setItemType(itemTypeDTO);
+        }
+        if (item.getMerchant() != null) {
+            dto.setMerchantId(item.getMerchant().getId());
+            MerchantDTO merchantDTO = new MerchantDTO();
+            merchantDTO.setId(item.getMerchant().getId());
+            merchantDTO.setName(item.getMerchant().getName());
+            merchantDTO.setContactEmail(item.getMerchant().getContactEmail());
+            merchantDTO.setContactPhone(item.getMerchant().getContactPhone());
+            merchantDTO.setContactSecondPhone(item.getMerchant().getContactSecondPhone());
+            merchantDTO.setContactPersonName(item.getMerchant().getContactPersonName());
+            merchantDTO.setAddress(item.getMerchant().getAddress());
+            merchantDTO.setPhotoUrl(item.getMerchant().getPhotoUrl());
+            dto.setMerchant(merchantDTO);
+        }
+
+        return dto;
+    }
+    public List<PurchaseOrderDTO> getAllPurchaseOrderDTOs() {
+        List<PurchaseOrder> purchaseOrders = getAllPurchaseOrders();
+        return purchaseOrders.stream()
+                .map(this::convertToBasicDTO)  // We'll create this method next
+                .collect(Collectors.toList());
+    }
+
+    private PurchaseOrderDTO convertToBasicDTO(PurchaseOrder po) {
+        PurchaseOrderDTO dto = new PurchaseOrderDTO();
+        dto.setId(po.getId());
+        dto.setPoNumber(po.getPoNumber());
+        dto.setCreatedAt(po.getCreatedAt());
+        dto.setUpdatedAt(po.getUpdatedAt());
+        dto.setStatus(po.getStatus());
+        dto.setTotalAmount(po.getTotalAmount());
+        dto.setCurrency(po.getCurrency());
+        dto.setExpectedDeliveryDate(po.getExpectedDeliveryDate());
+
+        if (po.getRequestOrder() != null) {
+            dto.setRequestOrderId(po.getRequestOrder().getId());
+
+            RequestOrderDTO requestOrderDTO = new RequestOrderDTO();
+            requestOrderDTO.setId(po.getRequestOrder().getId());
+            requestOrderDTO.setTitle(po.getRequestOrder().getTitle());
+            requestOrderDTO.setDescription(po.getRequestOrder().getDescription());
+            requestOrderDTO.setRequesterName(po.getRequestOrder().getRequesterName());
+            requestOrderDTO.setDeadline(po.getRequestOrder().getDeadline());
+            requestOrderDTO.setRequesterId(po.getRequestOrder().getRequesterId()); // ADD THIS LINE
+            requestOrderDTO.setPartyType(po.getRequestOrder().getPartyType());     // ADD THIS LINE TOO
+            // Add any other fields your RequestOrderDTO needs
+            dto.setRequestOrder(requestOrderDTO);
+        }
+
+        if (po.getOffer() != null) {
+            dto.setOfferId(po.getOffer().getId());
+
+            OfferDTO offerDTO = new OfferDTO();
+            offerDTO.setId(po.getOffer().getId());
+            offerDTO.setTitle(po.getOffer().getTitle());
+            offerDTO.setDescription(po.getOffer().getDescription());
+            offerDTO.setCreatedBy(po.getOffer().getCreatedBy());
+            offerDTO.setCreatedAt(po.getOffer().getCreatedAt());
+            // Add any other fields your OfferDTO needs
+            dto.setOffer(offerDTO);
+        }
+
+        return dto;
     }
 }

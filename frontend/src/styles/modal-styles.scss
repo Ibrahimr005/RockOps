@@ -65,6 +65,10 @@
 
 /* Modal Header */
 .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
   background: var(--color-surface-hover);
   border-bottom: 2px solid var(--border-color);
   position: relative;
@@ -1017,7 +1021,7 @@
 }
 
 /* High contrast mode */
-@media (prefers-contrast: high) {
+@media (prefers-contrast:less) {
   .modal-header .modal-title {
     font-weight: 900;
   }

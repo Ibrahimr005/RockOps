@@ -1,10 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaChevronDown, FaChevronUp, FaClock, FaUsers } from 'react-icons/fa';
 import EmployeeAvatar from '../../../../components/common/EmployeeAvatar';
 import AttendanceCell from './AttendanceCell';
-// import './AttendanceMonthlyView.scss';
 
-const AttendanceMonthlyView = ({ monthlyData, onAttendanceUpdate, loading, month, year }) => {
+const AttendanceMonthlyView = ({ monthlyData, onAttendanceUpdate, loading, month, year, showLegend = true, employeeCount }) => {
     const [expandedEmployees, setExpandedEmployees] = useState(new Set());
 
     // Get days in month
@@ -44,6 +43,7 @@ const AttendanceMonthlyView = ({ monthlyData, onAttendanceUpdate, loading, month
                     <button
                         className="expand-toggle"
                         onClick={() => toggleEmployeeExpand(employee.employeeId)}
+                        aria-label={isExpanded ? "Collapse details" : "Expand details"}
                     >
                         {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
                     </button>
@@ -67,20 +67,21 @@ const AttendanceMonthlyView = ({ monthlyData, onAttendanceUpdate, loading, month
                     <div className="employee-stats">
                         <div className="stat">
                             <span className="stat-label">Present:</span>
-                            <span className="stat-value">{employee.presentDays}</span>
+                            <span className="stat-value present">{employee.presentDays}</span>
                         </div>
                         <div className="stat">
                             <span className="stat-label">Absent:</span>
-                            <span className="stat-value">{employee.absentDays}</span>
+                            <span className="stat-value absent">{employee.absentDays}</span>
                         </div>
                         <div className="stat">
                             <span className="stat-label">Leave:</span>
-                            <span className="stat-value">{employee.leaveDays}</span>
+                            <span className="stat-value leave">{employee.leaveDays}</span>
                         </div>
                         {employee.contractType !== 'DAILY' && (
-                            <div className="stat">
+                            <div className="stat hours-stat">
+                                <FaClock className="hours-icon" />
                                 <span className="stat-label">Hours:</span>
-                                <span className="stat-value">{employee.totalHours?.toFixed(1)}</span>
+                                <span className="stat-value hours">{employee.totalHours?.toFixed(1)}h</span>
                             </div>
                         )}
                     </div>
@@ -108,11 +109,20 @@ const AttendanceMonthlyView = ({ monthlyData, onAttendanceUpdate, loading, month
         );
     };
 
+    // Calculate the actual employee count
+    const totalEmployees = employeeCount || monthlyData.length;
+
     return (
         <div className="attendance-monthly-view">
             <div className="attendance-grid">
                 <div className="attendance-header">
-                    <div className="employee-info-header">Employee</div>
+                    <div className="employee-info-header">
+                        <span className="header-text">Employee</span>
+                        <span className="employee-count-badge">
+                            <FaUsers className="count-icon" />
+                            <span>{totalEmployees}</span>
+                        </span>
+                    </div>
                     <div className="days-header">
                         {monthDays.map(day => (
                             <div key={day} className={`day-header ${getDayAbbr(day) === 'Fri' || getDayAbbr(day) === 'Sat' ? 'weekend' : ''}`}>
@@ -128,33 +138,35 @@ const AttendanceMonthlyView = ({ monthlyData, onAttendanceUpdate, loading, month
                 </div>
             </div>
 
-            {/* Legend */}
-            <div className="attendance-legend">
-                <div className="legend-item">
-                    <span className="legend-color present"></span>
-                    <span>Present</span>
+            {/* Legend - only show if showLegend prop is true */}
+            {showLegend && (
+                <div className="attendance-legend">
+                    <div className="legend-item">
+                        <span className="legend-color present"></span>
+                        <span>Present</span>
+                    </div>
+                    <div className="legend-item">
+                        <span className="legend-color absent"></span>
+                        <span>Absent</span>
+                    </div>
+                    <div className="legend-item">
+                        <span className="legend-color off"></span>
+                        <span>Off Day</span>
+                    </div>
+                    <div className="legend-item">
+                        <span className="legend-color leave"></span>
+                        <span>On Leave</span>
+                    </div>
+                    <div className="legend-item">
+                        <span className="legend-color late"></span>
+                        <span>Late</span>
+                    </div>
+                    <div className="legend-item">
+                        <span className="legend-color half-day"></span>
+                        <span>Half Day</span>
+                    </div>
                 </div>
-                <div className="legend-item">
-                    <span className="legend-color absent"></span>
-                    <span>Absent</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color off"></span>
-                    <span>Off Day</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color leave"></span>
-                    <span>On Leave</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color late"></span>
-                    <span>Late</span>
-                </div>
-                <div className="legend-item">
-                    <span className="legend-color half-day"></span>
-                    <span>Half Day</span>
-                </div>
-            </div>
+            )}
         </div>
     );
 };

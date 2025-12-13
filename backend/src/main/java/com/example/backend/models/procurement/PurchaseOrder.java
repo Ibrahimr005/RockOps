@@ -24,38 +24,32 @@ public class PurchaseOrder {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    // Purchase Order identification
     private String poNumber;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    // Purchase Order status (DRAFT, PENDING_PROCUREMENT_APPROVAL, APPROVED_BY_PROCUREMENT,
-    // PENDING_FINANCE_APPROVAL, APPROVED, REJECTED)
     private String status;
 
-    // Associated request
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "request_order_id")
-    @JsonManagedReference
     private RequestOrder requestOrder;
 
-    // Associated offer (the offer that generated this PO)
     @OneToOne
     @JoinColumn(name = "offer_id")
     @JsonManagedReference
     private Offer offer;
 
-    // Purchase Order creators and approvers (string identifiers instead of User entities)
     private String createdBy;
     private String approvedBy;
 
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference  // ORIGINAL VALUE
+    @JsonManagedReference
     private List<PurchaseOrderItem> purchaseOrderItems = new ArrayList<>();
 
-    private LocalDateTime financeApprovalDate;
+    @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<DeliverySession> deliverySessions = new ArrayList<>();
 
-    // Payment and delivery information
+    private LocalDateTime financeApprovalDate;
     private String paymentTerms;
     private LocalDateTime expectedDeliveryDate;
     private double totalAmount;

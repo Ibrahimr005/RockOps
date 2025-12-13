@@ -86,7 +86,8 @@ public class Document {
         WAREHOUSE,
         EMPLOYEE,
         VEHICLE,
-        PROJECT
+        PROJECT,
+        MERCHANT
         // Add more entity types as needed
     }
 }

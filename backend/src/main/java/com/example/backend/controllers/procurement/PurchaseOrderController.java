@@ -1,9 +1,14 @@
 package com.example.backend.controllers.procurement;
 
-
+import com.example.backend.dto.procurement.*;
 import com.example.backend.models.procurement.Offer;
 import com.example.backend.models.procurement.PurchaseOrder;
 import com.example.backend.services.procurement.PurchaseOrderService;
+import com.example.backend.services.procurement.DeliveryProcessingService;
+import com.example.backend.services.procurement.IssueResolutionService;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,15 +28,19 @@ import java.util.stream.Collectors;
 public class PurchaseOrderController {
 
     private final PurchaseOrderService purchaseOrderService;
+    private final DeliveryProcessingService deliveryProcessingService;
+    private final IssueResolutionService issueResolutionService;
 
     @Autowired
-    public PurchaseOrderController(PurchaseOrderService purchaseOrderService) {
+    public PurchaseOrderController(
+            PurchaseOrderService purchaseOrderService,
+            DeliveryProcessingService deliveryProcessingService,
+            IssueResolutionService issueResolutionService) {
         this.purchaseOrderService = purchaseOrderService;
+        this.deliveryProcessingService = deliveryProcessingService;
+        this.issueResolutionService = issueResolutionService;
     }
 
-    /**
-     * Get all offers pending finance review
-     */
     @GetMapping("/pending-offers")
     public ResponseEntity<List<Offer>> getPendingOffers() {
         try {
@@ -42,24 +51,6 @@ public class PurchaseOrderController {
         }
     }
 
-    /**
-     * Update an offer item's finance status (accept or reject)
-     */
-
-
-    /**
-     * Complete finance review for an offer
-     */
-
-
-    /**
-     * Get all finance-completed offers
-     */
-
-
-    /**
-     * Get purchase order for an offer
-     */
     @GetMapping("/offers/{offerId}/purchase-order")
     public ResponseEntity<?> getPurchaseOrderForOffer(@PathVariable UUID offerId) {
         try {
@@ -76,23 +67,18 @@ public class PurchaseOrderController {
         }
     }
 
-    /**
-     * Get all purchase orders
-     */
     @GetMapping()
-    public ResponseEntity<List<PurchaseOrder>> getAllPurchaseOrders() {
+    public ResponseEntity<List<PurchaseOrderDTO>> getAllPurchaseOrders() {
         try {
-            List<PurchaseOrder> purchaseOrders = purchaseOrderService.getAllPurchaseOrders();
+            List<PurchaseOrderDTO> purchaseOrders = purchaseOrderService.getAllPurchaseOrderDTOs();
             return ResponseEntity.ok(purchaseOrders);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    /**
-     * Get purchase order by ID
-     */
-    @GetMapping("/purchase-orders/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<PurchaseOrder> getPurchaseOrderById(@PathVariable UUID id) {
         try {
             PurchaseOrder purchaseOrder = purchaseOrderService.getPurchaseOrderById(id);
@@ -102,10 +88,17 @@ public class PurchaseOrderController {
         }
     }
 
-    /**
-     * Update purchase order status
-     */
-    @PutMapping("/purchase-orders/{id}/status")
+    @GetMapping("/{id}/with-deliveries")
+    public ResponseEntity<PurchaseOrderDTO> getPurchaseOrderWithDeliveries(@PathVariable UUID id) {
+        try {
+            PurchaseOrderDTO dto = purchaseOrderService.getPurchaseOrderWithDeliveries(id);
+            return ResponseEntity.ok(dto);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @PutMapping("/{id}/status")
     public ResponseEntity<?> updatePurchaseOrderStatus(
             @PathVariable UUID id,
             @RequestParam String status,
@@ -124,11 +117,10 @@ public class PurchaseOrderController {
     @PostMapping("/offers/{offerId}/finalize")
     public ResponseEntity<?> finalizeOffer(
             @PathVariable UUID offerId,
-            @RequestBody Map<String, Object> requestBody,  // CHANGED: was Map<String, List<UUID>>
+            @RequestBody Map<String, Object> requestBody,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            // Convert string UUIDs to UUID objects
             @SuppressWarnings("unchecked")
             List<String> finalizedItemIdStrings = (List<String>) requestBody.get("finalizedItemIds");
 
@@ -169,6 +161,48 @@ public class PurchaseOrderController {
             return ResponseEntity.internalServerError().body(Map.of(
                     "message", "Unexpected error: " + e.getMessage(),
                     "success", false
+            ));
+        }
+    }
+
+    @PostMapping("/{id}/process-delivery")
+    public ResponseEntity<?> processDelivery(
+            @PathVariable UUID id,
+            @RequestBody ProcessDeliveryRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        try {
+            String username = userDetails.getUsername();
+            DeliverySessionDTO response = deliveryProcessingService.processDelivery(request);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("Error processing delivery: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    @PostMapping("/{id}/resolve-issues")
+    public ResponseEntity<?> resolveIssues(
+            @PathVariable UUID id,
+            @RequestBody List<ResolveIssueRequest> requests,
+            @RequestParam String resolvedBy) {
+
+        try {
+            issueResolutionService.resolveIssues(requests, resolvedBy);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Issues resolved successfully"
+            ));
+        } catch (Exception e) {
+            System.err.println("Error resolving issues: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "success", false,
+                    "message", "Error resolving issues: " + e.getMessage()
             ));
         }
     }

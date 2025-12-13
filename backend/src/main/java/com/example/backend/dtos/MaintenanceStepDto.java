@@ -47,7 +47,6 @@ public class MaintenanceStepDto {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startDate;
     
-    @NotNull(message = "Expected end date is required")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime expectedEndDate;
     
@@ -60,7 +59,25 @@ public class MaintenanceStepDto {
     
     @DecimalMin(value = "0.0", inclusive = true, message = "Step cost must be non-negative")
     private BigDecimal stepCost;
-    
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "Down payment must be non-negative")
+    private BigDecimal downPayment;
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "Expected cost must be non-negative")
+    private BigDecimal expectedCost;
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "Actual cost must be non-negative")
+    private BigDecimal actualCost;
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "Remaining must be non-negative")
+    private BigDecimal remaining;
+
+    private Boolean remainingManuallySet;
+
+    private UUID selectedMerchantId;
+
+    private List<MaintenanceStepMerchantItemDto> merchantItems;
+
     private String notes;
     
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")

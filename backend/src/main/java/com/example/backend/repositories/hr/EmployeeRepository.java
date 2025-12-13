@@ -31,6 +31,9 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
     // Count by status
     long countByStatus(String status);
 
+    // Count active employees - use countByStatus("ACTIVE") instead
+    // Note: Employee has status field, not isActive field
+
     // Count new hires
     long countByHireDateAfter(LocalDate date);
 
@@ -179,4 +182,20 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
             "AND e.id NOT IN (SELECT eq.mainDriver.id FROM Equipment eq WHERE eq.mainDriver IS NOT NULL) " +
             "AND e.id NOT IN (SELECT eq.subDriver.id FROM Equipment eq WHERE eq.subDriver IS NOT NULL)")
     List<Employee> findUnassignedEmployeesNotAssignedAsDrivers();
+
+
+    // EmployeeRepository.java - Add this method
+
+    /**
+     * Find employees without site assignment
+     * Used for attendance tracking of unassigned employees
+     *
+     * @return List of employees with null site
+     */
+
+    /**
+     * Alternate naming convention (if the above doesn't work with your JPA version)
+     */
+    @Query("SELECT e FROM Employee e WHERE e.site IS NULL")
+    List<Employee> findEmployeesWithoutSite();
 }

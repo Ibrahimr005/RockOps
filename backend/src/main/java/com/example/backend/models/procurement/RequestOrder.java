@@ -13,13 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class  RequestOrder {
+public class RequestOrder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -46,13 +45,13 @@ public class  RequestOrder {
 
     // Existing relationships
     @OneToMany(mappedBy = "requestOrder", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference // ✅ Change to this!
+    @JsonManagedReference
     private List<RequestOrderItem> requestItems = new ArrayList<>();
 
-
-    @OneToOne(mappedBy = "requestOrder", cascade = CascadeType.ALL)
+    // CHANGE THIS: From @OneToOne to @OneToMany
+    @OneToMany(mappedBy = "requestOrder", cascade = CascadeType.ALL)
     @JsonBackReference
-    private PurchaseOrder purchaseOrder;
+    private List<PurchaseOrder> purchaseOrders = new ArrayList<>(); // Changed from 'purchaseOrder' to 'purchaseOrders'
 
     private String rejectionReason;
 

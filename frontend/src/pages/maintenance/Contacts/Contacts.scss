@@ -2,6 +2,8 @@
     padding: 24px;
     background-color: var(--color-background);
     min-height: 100vh;
+    max-width: 100%;
+    overflow-x: hidden; // Prevent horizontal scrollbar on the page
 
     .contacts-header {
         display: flex;

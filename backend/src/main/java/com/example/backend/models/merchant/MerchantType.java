@@ -2,6 +2,5 @@ package com.example.backend.models.merchant;
 
 public enum MerchantType {
     SUPPLIER,
-    CUSTOMER,
-    BOTH
+    SERVICE  // Changed from CUSTOMER to SERVICE to match frontend
 }

@@ -58,8 +58,15 @@ const Contacts = () => {
                 Array.isArray(response?.data) ? response.data :
                     Array.isArray(response) ? response : [];
 
-            console.log('Processed contacts data:', contactsData);
-            setContacts(contactsData);
+            // Transform contacts data to include computed fields for export
+            const transformedContacts = contactsData.map(contact => ({
+                ...contact,
+                fullName: `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
+                statusText: contact.isActive ? 'Active' : 'Inactive'
+            }));
+
+            console.log('Processed contacts data:', transformedContacts);
+            setContacts(transformedContacts);
         } catch (error) {
             console.error('Error loading contacts:', error);
             setError('Failed to load contacts');
@@ -218,7 +225,7 @@ const Contacts = () => {
     const columns = [
         {
             header: 'Name',
-            accessor: 'firstName',
+            accessor: 'fullName',
             sortable: true,
             render: (row) => (
                 <div className="contact-info" style={{ cursor: 'pointer' }} onClick={() => handleViewContact(row)}>
@@ -275,7 +282,7 @@ const Contacts = () => {
         },
         {
             header: 'Status',
-            accessor: 'isActive',
+            accessor: 'statusText',
             sortable: true,
             render: (row) => (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -333,11 +340,11 @@ const Contacts = () => {
     ];
 
     const filterableColumns = [
-        { header: 'Name', accessor: 'firstName' },
-        { header: 'Contact Type', accessor: 'contactType' },
-        { header: 'Merchant', accessor: 'merchantName' },
-        { header: 'Company', accessor: 'company' },
-        { header: 'Status', accessor: 'isActive' }
+        { header: 'Name', accessor: 'fullName', filterType: 'text' },
+        { header: 'Contact Type', accessor: 'contactTypeName', filterType: 'select' },
+        { header: 'Merchant', accessor: 'merchantName', filterType: 'select' },
+        { header: 'Company', accessor: 'company', filterType: 'select' },
+        { header: 'Status', accessor: 'statusText', filterType: 'select' }
     ];
 
     if (error) {

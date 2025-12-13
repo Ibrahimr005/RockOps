@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-// You will need to create these components
+import { purchaseOrderService } from '../../../services/procurement/purchaseOrderService';
 import PendingPurchaseOrders from './PendingPurchaseOrders/PendingPurchaseOrders';
-import PartialPurchaseOrders from './PartialPurchaseOrders/PartialPurchaseOrders';
+import DisputedPurchaseOrders from './DisputedPurchaseOrders/DisputedPurchaseOrders';
 import CompletedPurchaseOrders from './CompletedPurchaseOrders/CompletedPurchaseOrders';
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import './WarehousePurchaseOrders.scss';
 
 const WarehousePurchaseOrders = ({ warehouseId, onAddButtonClick }) => {
-    const [activeTab, setActiveTab] = useState('pending');
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [activeTab, setActiveTab] = useState('awaiting');
+    const [allOrders, setAllOrders] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
     const [userRole, setUserRole] = useState("");
     const pendingOrdersRef = useRef(null);
 
@@ -17,11 +18,11 @@ const WarehousePurchaseOrders = ({ warehouseId, onAddButtonClick }) => {
     const [notificationMessage, setNotificationMessage] = useState('');
     const [notificationType, setNotificationType] = useState('success');
 
-    // Tab configuration with the new "partial" tab
+    // Tab configuration
     const tabs = [
-        { id: "pending", label: "Pending Orders", component: PendingPurchaseOrders },
-        { id: "partial", label: "Partial Orders", component: PartialPurchaseOrders },
-        { id: "completed", label: "Completed Orders", component: CompletedPurchaseOrders }
+        { id: "awaiting", label: "Awaiting Delivery", component: PendingPurchaseOrders },
+        { id: "disputed", label: "Issues Reported", component: DisputedPurchaseOrders },
+        { id: "completed", label: "Completed", component: CompletedPurchaseOrders }
     ];
 
     // Get user role from localStorage
@@ -37,15 +38,60 @@ const WarehousePurchaseOrders = ({ warehouseId, onAddButtonClick }) => {
         }
     }, []);
 
-    // Function to trigger refresh across components
-    const triggerRefresh = () => {
-        setRefreshTrigger(prev => prev + 1);
+    // Fetch all purchase orders for this warehouse
+    useEffect(() => {
+        if (warehouseId) {
+            fetchPurchaseOrders();
+        }
+    }, [warehouseId]);
+
+    const fetchPurchaseOrders = async () => {
+        setIsLoading(true);
+        try {
+            const allPOs = await purchaseOrderService.getAll();
+
+            // Filter only orders for this warehouse
+            const warehouseOrders = allPOs.filter(order =>
+                order.requestOrder?.requesterId === warehouseId
+
+            );
+            console.log('All poooooooososooss:', JSON.stringify(allPOs, null, 2));
+
+            setAllOrders(warehouseOrders);
+        } catch (error) {
+            console.error('Error fetching purchase orders:', error);
+            setAllOrders([]);
+            showSnackbar('Failed to fetch purchase orders.', 'error');
+        } finally {
+            setIsLoading(false);
+        }
     };
+
+    // Filter orders by status for each tab
+    const awaitingOrders = allOrders.filter(order =>
+        order.status === 'PENDING' || order.status === 'DISPUTED'
+    );
+
+    const disputedOrders = allOrders.filter(order =>
+        order.status === 'DISPUTED'
+    );
+
+    const completedOrders = allOrders.filter(order =>
+        order.status === 'COMPLETED'
+    );
+
+    console.log('=== WAREHOUSE PURCHASE ORDERS ===');
+    console.log('All Orders:', JSON.stringify(allOrders, null, 2));
+    console.log('Awaiting Orders (PENDING + DISPUTED):', JSON.stringify(awaitingOrders, null, 2));
+    console.log('Disputed Orders (DISPUTED only):', JSON.stringify(disputedOrders, null, 2));
+    console.log('Completed Orders:', JSON.stringify(completedOrders, null, 2));
+    console.log('================================');
+
 
     useEffect(() => {
         if (onAddButtonClick && pendingOrdersRef.current) {
             onAddButtonClick(() => {
-                setActiveTab('pending');
+                setActiveTab('awaiting');
                 setTimeout(() => {
                     if (pendingOrdersRef.current && pendingOrdersRef.current.handleAddPurchaseOrder) {
                         pendingOrdersRef.current.handleAddPurchaseOrder();
@@ -69,23 +115,23 @@ const WarehousePurchaseOrders = ({ warehouseId, onAddButtonClick }) => {
 
     // Render the active tab content
     const renderActiveTabContent = () => {
-        if (activeTab === 'pending') {
+        if (activeTab === 'awaiting') {
             return (
                 <PendingPurchaseOrders
                     ref={pendingOrdersRef}
-                    warehouseId={warehouseId}
-                    refreshTrigger={refreshTrigger}
+                    orders={awaitingOrders}
+                    isLoading={isLoading}
                     onShowSnackbar={showSnackbar}
                     userRole={userRole}
                 />
             );
         }
 
-        if (activeTab === 'partial') {
+        if (activeTab === 'disputed') {
             return (
-                <PartialPurchaseOrders
-                    warehouseId={warehouseId}
-                    refreshTrigger={refreshTrigger}
+                <DisputedPurchaseOrders
+                    orders={disputedOrders}
+                    isLoading={isLoading}
                     onShowSnackbar={showSnackbar}
                     userRole={userRole}
                 />
@@ -95,8 +141,8 @@ const WarehousePurchaseOrders = ({ warehouseId, onAddButtonClick }) => {
         if (activeTab === 'completed') {
             return (
                 <CompletedPurchaseOrders
-                    warehouseId={warehouseId}
-                    refreshTrigger={refreshTrigger}
+                    orders={completedOrders}
+                    isLoading={isLoading}
                     onShowSnackbar={showSnackbar}
                     userRole={userRole}
                 />
@@ -108,7 +154,7 @@ const WarehousePurchaseOrders = ({ warehouseId, onAddButtonClick }) => {
 
     return (
         <div className="warehouse-purchase-orders-container">
-            {/* Tab navigation with the correct class names */}
+            {/* Tab navigation */}
             <div className="inventory-tabs">
                 {tabs.map((tab) => (
                     <button

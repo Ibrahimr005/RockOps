@@ -1,6 +1,47 @@
 // src/config/api.config.js
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||  'http://localhost:8080';
 
+
+// Direct Purchase Ticket module endpoints
+export const DIRECT_PURCHASE_ENDPOINTS = {
+    BASE: '/api/direct-purchase-tickets',
+    BY_ID: (id) => `/api/direct-purchase-tickets/${id}`,
+    CREATE: '/api/direct-purchase-tickets',
+    UPDATE: (id) => `/api/direct-purchase-tickets/${id}`,
+    DELETE: (id) => `/api/direct-purchase-tickets/${id}`,
+
+    // Query-based endpoints
+    BY_STATUS: (status) => `/api/direct-purchase-tickets?status=${status}`,
+    BY_EQUIPMENT: (equipmentId) => `/api/direct-purchase-tickets?equipmentId=${equipmentId}`,
+    BY_MERCHANT: (merchantId) => `/api/direct-purchase-tickets?merchantId=${merchantId}`,
+
+    // Step endpoints
+    STEPS: {
+        BY_TICKET: (ticketId) => `/api/direct-purchase-tickets/${ticketId}/steps`,
+        BY_ID: (ticketId, stepId) => `/api/direct-purchase-tickets/${ticketId}/steps/${stepId}`,
+        UPDATE: (ticketId, stepId) => `/api/direct-purchase-tickets/${ticketId}/steps/${stepId}`,
+        COMPLETE: (ticketId, stepId) => `/api/direct-purchase-tickets/${ticketId}/steps/${stepId}/complete`,
+        DELETE: (ticketId, stepId) => `/api/direct-purchase-tickets/${ticketId}/steps/${stepId}`
+    }
+};
+// Dashboard endpoints
+export const DASHBOARD_ENDPOINTS = {
+    BASE: '/api/dashboard',
+    ADMIN: '/api/dashboard/admin',
+    SITE_ADMIN: '/api/dashboard/site-admin',
+    EQUIPMENT_MANAGER: '/api/dashboard/equipment-manager',
+    WAREHOUSE_MANAGER: '/api/dashboard/warehouse-manager',
+    HR_MANAGER: '/api/dashboard/hr-manager',
+    HR_EMPLOYEE: '/api/dashboard/hr-employee',
+    FINANCE_MANAGER: '/api/dashboard/finance-manager',
+    FINANCE_EMPLOYEE: '/api/dashboard/finance-employee',
+    MAINTENANCE_MANAGER: '/api/dashboard/maintenance-manager',
+    MAINTENANCE_EMPLOYEE: '/api/dashboard/maintenance-employee',
+    PROCUREMENT: '/api/dashboard/procurement',
+    SECRETARY: '/api/dashboard/secretary',
+    USER: '/api/dashboard/user',
+};
+
 // Equipment module endpoints
 export const EQUIPMENT_ENDPOINTS = {
     BASE: '/api/equipment',
@@ -402,7 +443,9 @@ export const SITE_ENDPOINTS = {
 // Fix this in your api.config.js
 export const MERCHANT_ENDPOINTS = {
     BASE: '/api/v1/merchants',
-    BY_ID: (id) => `/api/v1/merchants/${id}`  // ✅ Added /v1/
+    BY_ID: (id) => `/api/v1/merchants/${id}`,
+    TRANSACTIONS: (id) => `/api/v1/merchants/${id}/transactions`,
+    PERFORMANCE: (id) => `/api/v1/merchants/${id}/performance`// ADD THIS
 };
 
 // Work Type module endpoints
@@ -514,7 +557,8 @@ export const AUTH_ENDPOINTS = {
     BASE: '/api/v1/auth',
     REGISTER: '/api/v1/auth/register',
     LOGIN: '/api/v1/auth/login',
-    AUTHENTICATE: '/api/v1/auth/authenticate'
+    AUTHENTICATE: '/api/v1/auth/authenticate',
+    PROFILE: '/api/v1/auth/profile'
 };
 
 // Admin module endpoints
@@ -769,15 +813,23 @@ export const PROCUREMENT_ENDPOINTS = {
 };
 
 // Add this to your existing api.config.js file
-
+// In your api.config.js or wherever PURCHASE_ORDER_ENDPOINTS is defined
+// API Config
 export const PURCHASE_ORDER_ENDPOINTS = {
     BASE: '/api/v1/purchaseOrders',
-    BY_ID: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}`,
+    BY_ID: (id) => `/api/v1/purchaseOrders/${id}`,
+    WITH_DELIVERIES: (id) => `/api/v1/purchaseOrders/${id}/with-deliveries`,
     PENDING_OFFERS: '/api/v1/purchaseOrders/pending-offers',
     BY_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/purchase-order`,
-    UPDATE_STATUS: (id) => `/api/v1/purchaseOrders/purchase-orders/${id}/status`,
-    FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`
+    UPDATE_STATUS: (id) => `/api/v1/purchaseOrders/${id}/status`,
+    FINALIZE_OFFER: (offerId) => `/api/v1/purchaseOrders/offers/${offerId}/finalize`,
+    PROCESS_DELIVERY: (id) => `/api/v1/purchaseOrders/${id}/process-delivery`,
+    RESOLVE_ISSUES: () => `/api/procurement/issues/resolve`,
+    GET_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues`,
+    GET_ACTIVE_ISSUES: (id) => `/api/v1/purchaseOrders/${id}/issues/active`
 };
+
+
 export const MAINTENANCE_ENDPOINTS = {
     // Dashboard
     DASHBOARD: '/api/maintenance/dashboard',
@@ -814,7 +866,15 @@ export const MAINTENANCE_ENDPOINTS = {
     },
 
     // Available Contacts
-    AVAILABLE_CONTACTS: '/api/maintenance/available-contacts'
+    AVAILABLE_CONTACTS: '/api/maintenance/available-contacts',
+
+    // Merchants
+    MERCHANTS: '/api/maintenance/merchants',
+
+    // Users
+    USERS: {
+        MAINTENANCE_TEAM: '/api/maintenance/users/maintenance-team'
+    }
 };
 
 // Contact Management module endpoints

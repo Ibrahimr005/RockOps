@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiChevronRight } from 'react-icons/fi';
+import { useNavigate,useLocation } from 'react-router-dom';
+
+import { FiClock, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import { purchaseOrderService } from '../../../services/procurement/purchaseOrderService.js';
 import PendingPurchaseOrders from './PendingPurchaseOrders/PendingPurchaseOrders.jsx';
-import ValidatedPurchaseOrders from './ValidatedPurchaseOrders/ValidatedPurchaseOrders.jsx';
+import CompletedPurchaseOrders from './CompletedPurchaseOrders/CompletedPurchaseOrders.jsx';
+import DisputedPurchaseOrders from './DisputedPurchaseOrders/DisputedPurchaseOrders.jsx';
 import PageHeader from '../../../components/common/PageHeader/PageHeader.jsx';
+import Tabs from '../../../components/common/Tabs/Tabs.jsx';
 import "./PurchaseOrders.scss";
 
 const PurchaseOrders = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('pending'); // Default to pending tab
+    const [activeTab, setActiveTab] = useState('pending');
     const [allPurchaseOrders, setAllPurchaseOrders] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -21,6 +24,15 @@ const PurchaseOrders = () => {
         try {
             setLoading(true);
             const data = await purchaseOrderService.getAll();
+
+            // ADD THESE LOGS
+            console.log('=== ALL PURCHASE ORDERS FROM API ===');
+            console.log(data);
+            console.log('Purchase Order Statuses:', data.map(po => ({
+                poNumber: po.poNumber,
+                status: po.status
+            })));
+
             setAllPurchaseOrders(data);
         } catch (err) {
             console.error('Error fetching purchase orders:', err);
@@ -29,58 +41,67 @@ const PurchaseOrders = () => {
         }
     };
 
-    // Calculate statistics
     const stats = purchaseOrderService.utils.getStatistics(allPurchaseOrders);
 
-    // Function to refresh data (passed to child components)
     const handleDataChange = () => {
         fetchPurchaseOrders();
     };
 
-    // Calculate tab-specific stats
-    const getTabStats = () => {
-        if (activeTab === 'pending') {
-            // Filter pending orders (adjust status values based on your data)
-            const pendingOrders = allPurchaseOrders.filter(order =>
-                order.status === 'PENDING' ||
-                order.status === 'CREATED' ||
-                order.status === 'DRAFT'
-            );
+    const getPendingOrders = () => {
+        const pending = allPurchaseOrders.filter(order =>
+            order.status !== 'DISPUTED' &&
+            order.status !== 'COMPLETED' &&
+            order.status !== 'CANCELLED'
+        );
 
-            const totalValue = pendingOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
-
-            return [
-                {
-                    value: pendingOrders.length,
-                    label: 'Pending Orders'
-                }
-            ];
-        } else if (activeTab === 'validated') {
-            // Filter validated orders
-            const validatedOrders = allPurchaseOrders.filter(order =>
-                order.status === 'VALIDATED' ||
-                order.status === 'APPROVED' ||
-                order.status === 'DELIVERED'
-            );
-
-            const totalValue = validatedOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
-
-            return [
-                {
-                    value: validatedOrders.length,
-                    label: 'Validated Orders'
-                }
-            ];
-        }
-
-        // Default fallback
-        return [
-            {
-                value: stats.total,
-                label: 'Total Orders'
-            }
-        ];
+        // ADD THIS LOG
+        console.log('=== PENDING ORDERS ===', pending.map(o => ({ poNumber: o.poNumber, status: o.status })));
+        return pending;
     };
+
+    const getDisputedOrders = () => {
+        const disputed = allPurchaseOrders.filter(order =>
+            order.status === 'DISPUTED'
+        );
+
+        // ADD THIS LOG
+        console.log('=== DISPUTED ORDERS ===', disputed.map(o => ({ poNumber: o.poNumber, status: o.status })));
+        return disputed;
+    };
+
+    const getCompletedOrders = () => {
+        return allPurchaseOrders.filter(order =>
+            order.status === 'COMPLETED' ||
+            order.status === 'CANCELLED'
+        );
+    };
+
+    const pendingCount = getPendingOrders().length;
+    const disputedCount = getDisputedOrders().length;
+    const completedCount = getCompletedOrders().length;
+
+    // Tabs configuration
+    const tabsConfig = [
+        {
+            id: 'pending',
+            label: 'Awaiting Delivery',
+            icon: <FiClock />,
+            badge: 0
+        },
+        {
+            id: 'disputed',
+            label: 'Issues to Resolve',
+            icon: <FiAlertCircle />,
+            badge: disputedCount,
+            badgeVariant: 'disputed'
+        },
+        {
+            id: 'completed',
+            label: 'Completed',
+            icon: <FiCheckCircle />,
+            badge: 0
+        }
+    ];
 
     return (
         <div className="purchase-orders-container">
@@ -90,31 +111,30 @@ const PurchaseOrders = () => {
             />
 
             {/* Tabs */}
-            <div className="tabs">
-                <button
-                    className={`tab ${activeTab === 'pending' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('pending')}
-                >
-                    Pending Orders
-                </button>
-                <button
-                    className={`tab ${activeTab === 'validated' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('validated')}
-                >
-                    Completed Orders
-                </button>
-            </div>
+            <Tabs
+                tabs={tabsConfig}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+            />
 
-            {/* Tab Content */}
             <div className="tab-content-po">
                 {activeTab === 'pending' && (
                     <PendingPurchaseOrders
+                        purchaseOrders={getPendingOrders()} // Pass filtered data
                         onDataChange={handleDataChange}
                         loading={loading}
                     />
                 )}
-                {activeTab === 'validated' && (
-                    <ValidatedPurchaseOrders
+                {activeTab === 'disputed' && (
+                    <DisputedPurchaseOrders
+                        purchaseOrders={getDisputedOrders()} // Pass filtered data
+                        onDataChange={handleDataChange}
+                        loading={loading}
+                    />
+                )}
+                {activeTab === 'completed' && (
+                    <CompletedPurchaseOrders
+                        purchaseOrders={getCompletedOrders()} // Pass filtered data
                         onDataChange={handleDataChange}
                         loading={loading}
                     />

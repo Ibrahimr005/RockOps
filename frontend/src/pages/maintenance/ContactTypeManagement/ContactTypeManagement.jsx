@@ -53,8 +53,14 @@ const ContactTypeManagement = () => {
             // Admin sees all contact types, others see only active ones
             const isAdmin = userRoles.includes(ROLES.ADMIN);
             const filteredContactTypes = isAdmin ? response : response.filter(contactType => contactType.isActive);
-            
-            setContactTypes(filteredContactTypes);
+
+            // Transform contact types to include computed fields for export
+            const transformedContactTypes = filteredContactTypes.map(contactType => ({
+                ...contactType,
+                statusText: contactType.isActive ? 'Active' : 'Inactive'
+            }));
+
+            setContactTypes(transformedContactTypes);
             
             if (filteredContactTypes.length === 0) {
                 showInfo(isAdmin ? 'No contact types found. Add your first contact type!' : 'No active contact types found.');
@@ -248,7 +254,7 @@ const ContactTypeManagement = () => {
         },
         {
             header: 'Status',
-            accessor: 'isActive',
+            accessor: 'statusText',
             sortable: true,
             render: (row) => (
                 <span className={`status-badge ${row.isActive ? 'active' : 'inactive'}`}>
