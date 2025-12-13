@@ -102,6 +102,7 @@ import Contacts from "./pages/maintenance/Contacts/Contacts.jsx";
 import MaintenanceRecordDetail from "./pages/maintenance/MaintenanceRecordDetail/MaintenanceRecordDetail.jsx";
 import LeaveRequestList from "./pages/HR/LeaveRequests/LeaveRequestList.jsx";
 import PotentialCandidates from "./pages/HR/PotentialCandidates/PotentialCandidates.jsx";
+import Balances from "./pages/finance/Balances/Balances.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -275,7 +276,7 @@ function App() {
                                     <Route path="/finance/payables" element={<RoleRoute allowedRoles={allRoles}><Payables/></RoleRoute>} />
                                     <Route path="/finance/fixed-assets" element={<RoleRoute allowedRoles={allRoles}><FixedAssets/></RoleRoute>} />
                                     <Route path="/finance/bank-reconciliation" element={<RoleRoute allowedRoles={allRoles}><BankReconciliation/></RoleRoute>} />
-
+                                    <Route path="/finance/balances" element={<RoleRoute allowedRoles={allRoles}><Balances/></RoleRoute>} />
 
 
                                     {/* Generic Related Documents Route */}

@@ -453,6 +453,12 @@ const Sidebar = () => {
                     path: '/finance/bank-reconciliation',
                     roles: ['ADMIN', 'USER', 'HR_MANAGER', 'HR_EMPLOYEE', 'FINANCE_MANAGER', 'FINANCE_EMPLOYEE'],
                 },
+                {
+                    title: 'Balances',
+                    icon: <FaPiggyBank/>,
+                    path: '/finance/balances',
+                    roles: [ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                }
             ]
         },
         {

@@ -729,5 +729,157 @@ export const financeService = {
                 return apiClient.get(FINANCE_ENDPOINTS.BANK_RECONCILIATION.RECONCILIATION_REPORTS.TREND(bankAccountId));
             }
         }
+    },
+
+    // Balances module operations
+    balances: {
+        // Bank Account operations
+        bankAccounts: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.BY_ID(id));
+            },
+
+            getAllActive: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.ACTIVE);
+            },
+
+            create: (accountData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.BASE, accountData);
+            },
+
+            update: (id, accountData) => {
+                return apiClient.put(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.BY_ID(id), accountData);
+            },
+
+            delete: (id) => {
+                return apiClient.delete(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.BY_ID(id));
+            },
+
+            activate: (id) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.ACTIVATE(id));
+            },
+
+            deactivate: (id) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.BALANCES.BANK_ACCOUNTS.DEACTIVATE(id));
+            }
+        },
+
+        // Cash Safe operations
+        cashSafes: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.BY_ID(id));
+            },
+
+            getAllActive: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.ACTIVE);
+            },
+
+            create: (safeData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.BASE, safeData);
+            },
+
+            update: (id, safeData) => {
+                return apiClient.put(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.BY_ID(id), safeData);
+            },
+
+            delete: (id) => {
+                return apiClient.delete(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.BY_ID(id));
+            },
+
+            activate: (id) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.ACTIVATE(id));
+            },
+
+            deactivate: (id) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.BALANCES.CASH_SAFES.DEACTIVATE(id));
+            }
+        },
+
+        // Cash With Person operations
+        cashWithPersons: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.BY_ID(id));
+            },
+
+            getAllActive: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.ACTIVE);
+            },
+
+            create: (personData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.BASE, personData);
+            },
+
+            update: (id, personData) => {
+                return apiClient.put(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.BY_ID(id), personData);
+            },
+
+            delete: (id) => {
+                return apiClient.delete(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.BY_ID(id));
+            },
+
+            activate: (id) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.ACTIVATE(id));
+            },
+
+            deactivate: (id) => {
+                return apiClient.patch(FINANCE_ENDPOINTS.BALANCES.CASH_WITH_PERSONS.DEACTIVATE(id));
+            }
+        },
+
+        // Balance Transaction operations
+        transactions: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.BY_ID(id));
+            },
+
+            create: (transactionData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.BASE, transactionData);
+            },
+
+            approve: (id) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.APPROVE(id));
+            },
+
+            reject: (id, rejectionReason) => {
+                return apiClient.post(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.REJECT(id), {
+                    approved: false,
+                    rejectionReason: rejectionReason
+                });
+            },
+
+            getPending: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.PENDING);
+            },
+
+            getPendingCount: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.PENDING_COUNT);
+            },
+
+            getByAccount: (accountType, accountId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.BY_ACCOUNT(accountType, accountId));
+            },
+
+            getByDateRange: (startDate, endDate) => {
+                return apiClient.get(FINANCE_ENDPOINTS.BALANCES.TRANSACTIONS.DATE_RANGE, {
+                    params: { startDate, endDate }
+                });
+            }
+        }
     }
 };
