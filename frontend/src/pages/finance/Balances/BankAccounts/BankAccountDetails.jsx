@@ -40,7 +40,7 @@ const BankAccountDetails = ({ account, onClose, onEdit }) => {
                         <FaUniversity />
                         <h2>Bank Account Details</h2>
                     </div>
-                    <button className="modal-close-btn" onClick={onClose}>
+                    <button className="modern-modal-close" onClick={onClose}>
                         <FaTimes />
                     </button>
                 </div>
@@ -93,12 +93,12 @@ const BankAccountDetails = ({ account, onClose, onEdit }) => {
                     <div className="details-section">
                         <h3>Status & Dates</h3>
                         <div className="details-grid">
-                            <div className="detail-item">
-                                <label>Status</label>
-                                <span className={`status-badge ${account.isActive ? 'status-active' : 'status-inactive'}`}>
-                                    {account.isActive ? 'Active' : 'Inactive'}
-                                </span>
-                            </div>
+                            {/*<div className="detail-item">*/}
+                            {/*    <label>Status</label>*/}
+                            {/*    <span className={`status-badge ${account.isActive ? 'status-active' : 'status-inactive'}`}>*/}
+                            {/*        {account.isActive ? 'Active' : 'Inactive'}*/}
+                            {/*    </span>*/}
+                            {/*</div>*/}
                             <div className="detail-item">
                                 <label>Opening Date</label>
                                 <span>{formatDate(account.openingDate)}</span>

@@ -215,6 +215,15 @@ const CashSafeList = ({ onDataChange }) => {
                 />
             )}
 
+            {showForm && (
+                <CashSafeForm
+                    safe={selectedSafe}
+                    mode={formMode}
+                    onClose={() => setShowForm(false)}
+                    onSubmit={handleFormSubmit}
+                />
+            )}
+
             {showDetails && selectedSafe && (
                 <CashSafeDetails
                     safe={selectedSafe}
@@ -225,16 +234,7 @@ const CashSafeList = ({ onDataChange }) => {
                     }}
                 />
             )}
-            {showDetails && selectedAccount && (
-                <BankAccountDetails
-                    account={selectedAccount}
-                    onClose={() => setShowDetails(false)}
-                    onEdit={() => {
-                        setShowDetails(false);
-                        handleEdit(selectedAccount);
-                    }}
-                />
-            )}
+
 
             <ConfirmationDialog
                 isVisible={showDeleteConfirm}

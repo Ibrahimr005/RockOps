@@ -114,6 +114,7 @@ import DirectPurchaseDetailView from "./pages/maintenance/DirectPurchaseDetail/D
 import LeaveRequestList from "./pages/HR/LeaveRequests/LeaveRequestList.jsx";
 import PotentialCandidates from "./pages/HR/PotentialCandidates/PotentialCandidates.jsx";
 import Balances from "./pages/finance/Balances/Balances.jsx";
+import AccountsPayable from "./pages/finance/AccountsPayable/AccountsPayable.jsx";
 
 const AuthRedirect = () => {
     const {currentUser, isAuthenticated, loading} = useAuth();
@@ -303,6 +304,7 @@ function App() {
                                     <Route path="/finance/fixed-assets" element={<RoleRoute allowedRoles={allRoles}><FixedAssets/></RoleRoute>} />
                                     <Route path="/finance/bank-reconciliation" element={<RoleRoute allowedRoles={allRoles}><BankReconciliation/></RoleRoute>} />
                                     <Route path="/finance/balances" element={<RoleRoute allowedRoles={allRoles}><Balances/></RoleRoute>} />
+                                    <Route path="/finance/accounts-payable" element={<RoleRoute allowedRoles={allRoles}><AccountsPayable/></RoleRoute>} />
 
 
                                     {/* Generic Related Documents Route */}

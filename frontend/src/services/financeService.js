@@ -881,5 +881,115 @@ export const financeService = {
                 });
             }
         }
+    },
+
+    // Add this after the balances section in financeService
+
+// Accounts Payable operations
+    accountsPayable: {
+        // Offer Financial Reviews
+        offerReviews: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.BY_ID(id));
+            },
+
+            getPending: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.PENDING);
+            },
+
+            getByStatus: (status) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.BY_STATUS(status));
+            },
+
+            getByOffer: (offerId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.BY_OFFER(offerId));
+            },
+
+            review: (reviewData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.REVIEW, reviewData);
+            }
+        },
+
+        // Payment Requests
+        paymentRequests: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.BY_ID(id));
+            },
+
+            getPending: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.PENDING);
+            },
+
+            getReadyToPay: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.READY_TO_PAY);
+            },
+
+            getByMerchant: (merchantId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.BY_MERCHANT(merchantId));
+            },
+
+            approveReject: (requestData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.APPROVE_REJECT, requestData);
+            },
+
+            createFromPO: (purchaseOrderId) => {
+                return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENT_REQUESTS.CREATE_FROM_PO(purchaseOrderId));
+            }
+        },
+
+        // Payments
+        payments: {
+            getAll: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.BASE);
+            },
+
+            getById: (id) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.BY_ID(id));
+            },
+
+            process: (paymentData) => {
+                return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.PROCESS, paymentData);
+            },
+
+            getByPaymentRequest: (paymentRequestId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.BY_PAYMENT_REQUEST(paymentRequestId));
+            },
+
+            getToday: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.TODAY);
+            },
+
+            getByMerchant: (merchantId) => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.BY_MERCHANT(merchantId));
+            },
+
+            getHistory: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.PAYMENTS.HISTORY);
+            }
+        },
+
+        // Dashboard
+        dashboard: {
+            getSummary: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.DASHBOARD.SUMMARY);
+            },
+
+            getBalances: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.DASHBOARD.BALANCES);
+            },
+
+            getMerchants: () => {
+                return apiClient.get(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.DASHBOARD.MERCHANTS);
+            }
+        }
     }
+
 };

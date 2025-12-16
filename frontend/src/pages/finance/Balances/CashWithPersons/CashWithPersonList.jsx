@@ -232,16 +232,6 @@ const CashWithPersonList = ({ onDataChange }) => {
                     }}
                 />
             )}
-            {showDetails && selectedAccount && (
-                <BankAccountDetails
-                    account={selectedAccount}
-                    onClose={() => setShowDetails(false)}
-                    onEdit={() => {
-                        setShowDetails(false);
-                        handleEdit(selectedAccount);
-                    }}
-                />
-            )}
 
             <ConfirmationDialog
                 isVisible={showDeleteConfirm}

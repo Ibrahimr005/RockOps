@@ -363,6 +363,50 @@ export const FINANCE_ENDPOINTS = {
             BY_ACCOUNT: (accountType, accountId) => `/api/v1/finance/balances/transactions/account/${accountType}/${accountId}`,
             DATE_RANGE: '/api/v1/finance/balances/transactions/date-range'
         }
+    },
+
+    // Inside FINANCE_ENDPOINTS object, add:
+
+// Accounts Payable endpoints
+    ACCOUNTS_PAYABLE: {
+        // Offer Financial Reviews
+        OFFER_REVIEWS: {
+            BASE: '/api/v1/finance/offer-reviews',
+            BY_ID: (id) => `/api/v1/finance/offer-reviews/${id}`,
+            PENDING: '/api/v1/finance/offer-reviews/pending',
+            BY_STATUS: (status) => `/api/v1/finance/offer-reviews/status/${status}`,
+            BY_OFFER: (offerId) => `/api/v1/finance/offer-reviews/offer/${offerId}`,
+            REVIEW: '/api/v1/finance/offer-reviews/review'
+        },
+
+        // Payment Requests
+        PAYMENT_REQUESTS: {
+            BASE: '/api/v1/finance/payment-requests',
+            BY_ID: (id) => `/api/v1/finance/payment-requests/${id}`,
+            PENDING: '/api/v1/finance/payment-requests/pending',
+            READY_TO_PAY: '/api/v1/finance/payment-requests/ready-to-pay',
+            BY_MERCHANT: (merchantId) => `/api/v1/finance/payment-requests/merchant/${merchantId}`,
+            APPROVE_REJECT: '/api/v1/finance/payment-requests/approve-reject',
+            CREATE_FROM_PO: (poId) => `/api/v1/finance/payment-requests/create-from-po/${poId}`
+        },
+
+        // Payments
+        PAYMENTS: {
+            BASE: '/api/v1/finance/payments',
+            BY_ID: (id) => `/api/v1/finance/payments/${id}`,
+            PROCESS: '/api/v1/finance/payments/process',
+            BY_PAYMENT_REQUEST: (prId) => `/api/v1/finance/payments/payment-request/${prId}`,
+            TODAY: '/api/v1/finance/payments/today',
+            BY_MERCHANT: (merchantId) => `/api/v1/finance/payments/merchant/${merchantId}`,
+            HISTORY: '/api/v1/finance/payments/history'
+        },
+
+        // Dashboard
+        DASHBOARD: {
+            SUMMARY: '/api/v1/finance/dashboard/summary',
+            BALANCES: '/api/v1/finance/dashboard/balances',
+            MERCHANTS: '/api/v1/finance/dashboard/merchants'
+        }
     }
 };
 

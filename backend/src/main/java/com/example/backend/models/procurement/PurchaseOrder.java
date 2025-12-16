@@ -1,6 +1,6 @@
 package com.example.backend.models.procurement;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.example.backend.models.finance.accountsPayable.enums.POPaymentStatus;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,4 +55,15 @@ public class PurchaseOrder {
     private LocalDateTime expectedDeliveryDate;
     private double totalAmount;
     private String currency;
+
+    // Add these fields:
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", length = 50)
+    private POPaymentStatus paymentStatus;
+
+    @Column(name = "payment_request_id")
+    private UUID paymentRequestId;
+
+    @Column(name = "total_paid_amount", precision = 15, scale = 2)
+    private BigDecimal totalPaidAmount;
 }

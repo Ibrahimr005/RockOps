@@ -65,12 +65,33 @@ public class BankAccount {
     @Column(name = "created_by")
     private String createdBy;
 
+    @Column(name = "available_balance", precision = 15, scale = 2)
+    private BigDecimal availableBalance;
+
+    @Column(name = "reserved_balance", precision = 15, scale = 2)
+    private BigDecimal reservedBalance;
+
+    @Column(name = "total_balance", precision = 15, scale = 2)
+    private BigDecimal totalBalance;
+
+    @Column(name = "last_transaction_at")
+    private LocalDateTime lastTransactionAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         if (currentBalance == null) {
             currentBalance = BigDecimal.ZERO;
+        }
+        if (availableBalance == null) {
+            availableBalance = BigDecimal.ZERO;
+        }
+        if (reservedBalance == null) {
+            reservedBalance = BigDecimal.ZERO;
+        }
+        if (totalBalance == null) {
+            totalBalance = BigDecimal.ZERO;
         }
     }
 

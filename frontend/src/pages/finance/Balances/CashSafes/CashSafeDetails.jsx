@@ -31,7 +31,7 @@ const CashSafeDetails = ({ safe, onClose, onEdit }) => {
                         <FaPiggyBank />
                         <h2>Cash Safe Details</h2>
                     </div>
-                    <button className="modal-close-btn" onClick={onClose}>
+                    <button className="modern-modal-close" onClick={onClose}>
                         <FaTimes />
                     </button>
                 </div>
@@ -52,12 +52,12 @@ const CashSafeDetails = ({ safe, onClose, onEdit }) => {
                                 <label>Current Balance</label>
                                 <span className="balance-amount">{formatCurrency(safe.currentBalance)}</span>
                             </div>
-                            <div className="detail-item">
-                                <label>Status</label>
-                                <span className={`status-badge ${safe.isActive ? 'status-active' : 'status-inactive'}`}>
-                                    {safe.isActive ? 'Active' : 'Inactive'}
-                                </span>
-                            </div>
+                            {/*<div className="detail-item">*/}
+                            {/*    <label>Status</label>*/}
+                            {/*    <span className={`status-badge ${safe.isActive ? 'status-active' : 'status-inactive'}`}>*/}
+                            {/*        {safe.isActive ? 'Active' : 'Inactive'}*/}
+                            {/*    </span>*/}
+                            {/*</div>*/}
                         </div>
                     </div>
 

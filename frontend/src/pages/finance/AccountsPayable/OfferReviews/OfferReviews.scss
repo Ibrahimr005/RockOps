@@ -1,0 +1,243 @@
+.offer-reviews-list {
+  .filter-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .filter-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+
+    svg {
+      font-size: 16px;
+    }
+
+    &:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      background: rgba(var(--primary-rgb), 0.05);
+    }
+
+    &.active {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+  }
+
+  .status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+
+    &.status-pending {
+      background: rgba(255, 152, 0, 0.1);
+      color: #FF9800;
+    }
+
+    &.status-approved {
+      background: rgba(76, 175, 80, 0.1);
+      color: #4CAF50;
+    }
+
+    &.status-rejected {
+      background: rgba(244, 67, 54, 0.1);
+      color: #F44336;
+    }
+  }
+}
+
+.offer-review-modal {
+  max-width: 700px;
+  width: 90%;
+
+  .offer-details-section {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+
+    h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      color: var(--text-color);
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+      }
+
+      span {
+        font-size: 14px;
+        color: var(--text-color);
+
+        &.amount {
+          font-size: 16px;
+          font-weight: 700;
+          color: var(--primary-color);
+        }
+      }
+    }
+  }
+
+  .action-selection {
+    margin-bottom: 20px;
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .action-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: all 0.3s ease;
+
+      svg {
+        font-size: 18px;
+      }
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      &.approve-btn {
+        &:hover {
+          border-color: #4CAF50;
+          color: #4CAF50;
+          background: rgba(76, 175, 80, 0.05);
+        }
+
+        &.active {
+          background: #4CAF50;
+          border-color: #4CAF50;
+          color: white;
+        }
+      }
+
+      &.reject-btn {
+        &:hover {
+          border-color: #F44336;
+          color: #F44336;
+          background: rgba(244, 67, 54, 0.05);
+        }
+
+        &.active {
+          background: #F44336;
+          border-color: #F44336;
+          color: white;
+        }
+      }
+    }
+  }
+
+  .modern-form-field {
+    margin-bottom: 16px;
+
+    .modern-form-label {
+      display: block;
+      font-weight: 500;
+      color: var(--text-color);
+      font-size: 14px;
+      margin-bottom: 6px;
+
+      .required {
+        color: var(--color-danger);
+        margin-left: 4px;
+      }
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 14px;
+      background: var(--main-background-color);
+      color: var(--text-color);
+      transition: border-color 0.2s ease;
+
+      &:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+      }
+
+      &.error {
+        border-color: var(--color-danger);
+      }
+    }
+
+    .error-text {
+      color: var(--color-danger);
+      font-size: 12px;
+      margin-top: 4px;
+      display: block;
+    }
+  }
+
+  .btn-danger {
+    background: #F44336;
+    border-color: #F44336;
+
+    &:hover {
+      background: #D32F2F;
+      border-color: #D32F2F;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .offer-review-modal {
+    .offer-details-section .details-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .action-selection .action-buttons {
+      flex-direction: column;
+    }
+  }
+}

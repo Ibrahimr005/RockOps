@@ -497,6 +497,12 @@ const Sidebar = () => {
                     icon: <FaPiggyBank/>,
                     path: '/finance/balances',
                     roles: [ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE],
+                },
+                {
+                    title: 'Accounts Payable',
+                    icon: <FaFileInvoiceDollar/>,
+                    path: '/finance/accounts-payable',
+                    roles: [ADMIN, FINANCE_MANAGER, FINANCE_EMPLOYEE],
                 }
             ]
         },

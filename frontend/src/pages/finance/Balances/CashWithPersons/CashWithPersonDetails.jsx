@@ -31,7 +31,7 @@ const CashWithPersonDetails = ({ person, onClose, onEdit }) => {
                         <FaUserTie />
                         <h2>Cash Holder Details</h2>
                     </div>
-                    <button className="modal-close-btn" onClick={onClose}>
+                    <button className="modern-modal-close" onClick={onClose}>
                         <FaTimes />
                     </button>
                 </div>
@@ -80,12 +80,12 @@ const CashWithPersonDetails = ({ person, onClose, onEdit }) => {
                     <div className="details-section">
                         <h3>Status & Audit</h3>
                         <div className="details-grid">
-                            <div className="detail-item">
-                                <label>Status</label>
-                                <span className={`status-badge ${person.isActive ? 'status-active' : 'status-inactive'}`}>
-                                    {person.isActive ? 'Active' : 'Inactive'}
-                                </span>
-                            </div>
+                            {/*<div className="detail-item">*/}
+                            {/*    <label>Status</label>*/}
+                            {/*    <span className={`status-badge ${person.isActive ? 'status-active' : 'status-inactive'}`}>*/}
+                            {/*        {person.isActive ? 'Active' : 'Inactive'}*/}
+                            {/*    </span>*/}
+                            {/*</div>*/}
                             <div className="detail-item">
                                 <label>Created By</label>
                                 <span>{person.createdBy || 'N/A'}</span>
