@@ -3,7 +3,7 @@ package com.example.backend.services;
 import com.example.backend.dtos.StepTypeDto;
 import com.example.backend.exceptions.ResourceConflictException;
 import com.example.backend.exceptions.ResourceNotFoundException;
-import com.example.backend.models.StepType;
+import com.example.backend.models.maintenance.StepType;
 import com.example.backend.repositories.StepTypeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

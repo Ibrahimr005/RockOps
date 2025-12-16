@@ -6,6 +6,7 @@ import PageHeader from "../../../components/common/PageHeader/PageHeader.jsx";
 import Snackbar from "../../../components/common/Snackbar/Snackbar.jsx";
 import ConfirmationDialog from "../../../components/common/ConfirmationDialog/ConfirmationDialog.jsx";
 import { itemCategoryService } from '../../../services/warehouse/itemCategoryService';
+import Tabs from "../../../components/common/Tabs/Tabs.jsx";
 
 const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => {
   const [allCategories, setAllCategories] = useState([]);
@@ -152,22 +153,21 @@ const WarehouseViewItemCategoriesTable = ({ warehouseId, onAddButtonClick }) => 
             subtitle="Organize inventory items into logical categories for better management"
         />
 
-        {/* Tabs Container */}
         <div className="categories-tabs-container">
-          <div className="categories-tabs">
-            <button
-                className={`categories-tab ${activeTab === 'parent' ? 'active' : ''}`}
-                onClick={() => setActiveTab('parent')}
-            >
-              Parent Categories
-            </button>
-            <button
-                className={`categories-tab ${activeTab === 'child' ? 'active' : ''}`}
-                onClick={() => setActiveTab('child')}
-            >
-              Child Categories
-            </button>
-          </div>
+          <Tabs
+              tabs={[
+                {
+                  id: 'parent',
+                  label: 'Parent Categories'
+                },
+                {
+                  id: 'child',
+                  label: 'Child Categories'
+                }
+              ]}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+          />
         </div>
 
         {/*/!* Category Info Cards *!/*/}

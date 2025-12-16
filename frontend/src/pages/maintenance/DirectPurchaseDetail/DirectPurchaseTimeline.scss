@@ -1,0 +1,315 @@
+/* Direct Purchase Timeline - Using Theme Variables */
+
+.direct-purchase-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 1.25rem 0;
+    position: relative;
+
+    .timeline-event {
+        display: flex;
+        gap: 1.25rem;
+        position: relative;
+        padding-bottom: 1.875rem;
+
+        &:last-child {
+            padding-bottom: 0;
+
+            .timeline-line {
+                display: none;
+            }
+        }
+
+        .timeline-icon-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+
+            .timeline-icon {
+                width: 45px;
+                height: 45px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.2rem;
+                background: var(--color-surface-hover);
+                color: var(--color-text-secondary);
+                border: 3px solid var(--border-color);
+                z-index: 2;
+                flex-shrink: 0;
+                transition: all var(--transition-normal) ease;
+            }
+
+            .timeline-line {
+                position: absolute;
+                top: 45px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 3px;
+                height: calc(100% + 1.875rem);
+                background: var(--border-color);
+                z-index: 1;
+            }
+        }
+
+        .timeline-content {
+            flex: 1;
+            background: var(--section-background-color);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-normal) ease;
+
+            &:hover {
+                box-shadow: var(--shadow-md);
+                border-color: var(--color-primary);
+                transform: translateX(4px);
+            }
+
+            .timeline-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 1rem;
+                margin-bottom: 0.5rem;
+                flex-wrap: wrap;
+
+                .timeline-event-name {
+                    font-size: 1rem;
+                    font-weight: var(--bold-font-weight);
+                    color: var(--head-title-color);
+                }
+
+                .timeline-time {
+                    font-size: 0.85rem;
+                    color: var(--color-text-secondary);
+                    white-space: nowrap;
+                    font-weight: 500;
+                }
+            }
+
+            .timeline-description {
+                margin: 0;
+                font-size: 0.9rem;
+                color: var(--paragraph-color);
+                line-height: 1.5;
+            }
+        }
+
+        // Status-based styling
+        &.completed {
+            .timeline-icon-wrapper .timeline-icon {
+                background: var(--color-success);
+                color: var(--color-text-inverse);
+                border-color: var(--color-success);
+                box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
+            }
+
+            .timeline-icon-wrapper .timeline-line {
+                background: var(--color-success);
+            }
+        }
+
+        &.in-progress {
+            .timeline-icon-wrapper .timeline-icon {
+                background: var(--color-primary);
+                color: var(--color-text-inverse);
+                border-color: var(--color-primary);
+                box-shadow: 0 0 0 4px rgba(72, 128, 255, 0.1);
+                animation: pulse 2s ease-in-out infinite;
+            }
+
+            .timeline-content {
+                border-left: 4px solid var(--color-primary);
+            }
+        }
+
+        &.success {
+            .timeline-icon-wrapper .timeline-icon {
+                background: var(--color-success);
+                color: var(--color-text-inverse);
+                border-color: var(--color-success);
+                box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.15);
+            }
+
+            .timeline-content {
+                border-left: 4px solid var(--color-success);
+                background: rgba(76, 175, 80, 0.05);
+            }
+        }
+
+        &.info {
+            .timeline-icon-wrapper .timeline-icon {
+                background: var(--color-surface-hover);
+                color: var(--color-text-secondary);
+                border-color: var(--border-color-medium);
+            }
+
+            .timeline-content {
+                background: var(--color-surface-secondary);
+            }
+        }
+    }
+}
+
+// Empty state
+.timeline-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3.75rem 1.25rem;
+    background: var(--color-surface-hover);
+    border-radius: var(--radius-md);
+    border: 2px dashed var(--border-color);
+
+    p {
+        margin: 0;
+        font-size: 1rem;
+        color: var(--color-text-secondary);
+        font-style: italic;
+    }
+}
+
+// Pulse animation for in-progress items
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 4px rgba(72, 128, 255, 0.1);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(72, 128, 255, 0.2);
+    }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+    .direct-purchase-timeline {
+        padding: 1rem 0;
+
+        .timeline-event {
+            gap: 0.75rem;
+            padding-bottom: 1.5rem;
+
+            .timeline-icon-wrapper {
+                .timeline-icon {
+                    width: 38px;
+                    height: 38px;
+                    font-size: 1rem;
+                }
+
+                .timeline-line {
+                    top: 38px;
+                    height: calc(100% + 1.5rem);
+                }
+            }
+
+            .timeline-content {
+                padding: 0.875rem 1rem;
+
+                &:hover {
+                    transform: translateX(2px);
+                }
+
+                .timeline-header {
+                    flex-direction: column;
+                    gap: 0.5rem;
+                    align-items: flex-start;
+
+                    .timeline-event-name {
+                        font-size: 0.95rem;
+                    }
+
+                    .timeline-time {
+                        font-size: 0.8rem;
+                    }
+                }
+
+                .timeline-description {
+                    font-size: 0.85rem;
+                }
+            }
+        }
+    }
+
+    .timeline-empty {
+        padding: 2.5rem 1rem;
+
+        p {
+            font-size: 0.9rem;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .direct-purchase-timeline {
+        .timeline-event {
+            .timeline-content {
+                padding: 0.75rem 0.875rem;
+
+                &:hover {
+                    transform: none;
+                }
+            }
+        }
+    }
+}
+
+// Print styles
+@media print {
+    .direct-purchase-timeline {
+        .timeline-event {
+            page-break-inside: avoid;
+
+            .timeline-icon-wrapper .timeline-icon {
+                box-shadow: none;
+                border-color: #ccc !important;
+                background: white !important;
+                color: #333 !important;
+            }
+
+            .timeline-content {
+                box-shadow: none;
+                border: 1px solid #ccc !important;
+
+                &:hover {
+                    box-shadow: none;
+                    transform: none;
+                }
+
+                .timeline-header {
+                    .timeline-event-name {
+                        color: #000 !important;
+                    }
+
+                    .timeline-time {
+                        color: #666 !important;
+                    }
+                }
+
+                .timeline-description {
+                    color: #333 !important;
+                }
+            }
+
+            &.in-progress .timeline-icon-wrapper .timeline-icon {
+                animation: none;
+            }
+
+            .timeline-icon-wrapper .timeline-line {
+                background: #ccc !important;
+            }
+        }
+    }
+
+    .timeline-empty {
+        border: 1px solid #ccc !important;
+        background: white !important;
+
+        p {
+            color: #666 !important;
+        }
+    }
+}

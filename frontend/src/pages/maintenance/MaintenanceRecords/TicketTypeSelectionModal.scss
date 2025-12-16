@@ -1,0 +1,104 @@
+/* Ticket Type Selection Modal - Using Global Styles */
+
+.ticket-type-selection-modal {
+    max-width: 700px;
+
+    .selection-subtitle {
+        text-align: center;
+        color: var(--color-text-secondary);
+        margin-bottom: 2rem;
+        font-size: 0.95rem;
+    }
+
+    .ticket-type-cards {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+        padding: 0 1rem;
+    }
+
+    .ticket-type-card {
+        background: var(--section-background-color);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 2rem 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all var(--transition-normal) ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+
+        &:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            transition: all var(--transition-normal) ease;
+        }
+
+        h3 {
+            font-size: 1.1rem;
+            font-weight: var(--bold-font-weight);
+            margin: 0;
+            color: var(--head-title-color);
+        }
+
+        p {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary);
+            margin: 0;
+            line-height: 1.5;
+        }
+    }
+
+    .maintenance-card {
+        &:hover {
+            border-color: var(--color-primary);
+        }
+
+        .card-icon {
+            background: rgba(72, 128, 255, 0.1);
+            color: var(--color-primary);
+        }
+
+        &:hover .card-icon {
+            background: var(--color-primary);
+            color: var(--color-text-inverse);
+        }
+    }
+
+    .direct-purchase-card {
+        &:hover {
+            border-color: var(--color-success);
+        }
+
+        .card-icon {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--color-success);
+        }
+
+        &:hover .card-icon {
+            background: var(--color-success);
+            color: var(--color-text-inverse);
+        }
+    }
+}
+
+@media (max-width: 640px) {
+    .ticket-type-selection-modal {
+        .ticket-type-cards {
+            grid-template-columns: 1fr;
+        }
+    }
+}

@@ -111,8 +111,8 @@ const enTranslations = {
         HR_EMPLOYEE: 'HR Employee',
         FINANCE_EMPLOYEE: 'Finance Employee',
         FINANCE_MANAGER: 'Finance Manager',
-        MAINTENANCE_MANAGER: 'Maintenance Manager',
-        MAINTENANCE_EMPLOYEE: 'Maintenance Employee'
+        MAINTENANCE_EMPLOYEE: 'Maintenance Employee',
+        MAINTENANCE_MANAGER: 'Maintenance Manager'
     },
     hr: {
         dashboard: {
@@ -432,7 +432,7 @@ const enTranslations = {
         totalSales: 'Total Sales',
     }
 
-    // Inside arTranslations
+// Inside arTranslations
 
 
 };
@@ -546,8 +546,8 @@ const arTranslations = {
         HR_EMPLOYEE: 'موظف الموارد البشرية',
         FINANCE_EMPLOYEE: 'موظف مالي',
         FINANCE_MANAGER: 'مدير المالية',
-        MAINTENANCE_MANAGER: 'مدير الصيانة',
-        MAINTENANCE_EMPLOYEE: 'موظف الصيانة'
+        MAINTENANCE_EMPLOYEE: 'موظف الصيانة',
+        MAINTENANCE_MANAGER: 'مدير الصيانة'
     },
     site: {
         site: 'الموقع',

@@ -71,6 +71,7 @@ public class ContactService {
             throw new ContactException("Failed to create contact: " + e.getMessage());
         }
     }
+
     
     // Get contact by ID
     public ContactDto getContact(UUID id) {

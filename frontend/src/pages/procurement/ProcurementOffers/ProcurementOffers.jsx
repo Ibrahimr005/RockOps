@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../contexts/ThemeContext.jsx';
 import './ProcurementOffers.scss';
 import { useLocation } from 'react-router-dom';
+import Tabs from "../../../components/common/Tabs/Tabs.jsx"
 
 // Import services
 import { offerService } from '../../../services/procurement/offerService.js';
@@ -446,55 +447,48 @@ const ProcurementOffers = () => {
             />
 
             {/* Tabs Navigation */}
-            <div className="procurement-offers-tabs">
-                <button
-                    className={`procurement-offers-tab ${activeTab === 'unstarted' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('unstarted')}
-                >
-                    <FiInbox /> Unstarted
-                </button>
-                <button
-                    className={`procurement-offers-tab ${activeTab === 'inprogress' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('inprogress')}
-                >
-                    <FiEdit /> In Progress
-                </button>
-                <button
-                    className={`procurement-offers-tab ${activeTab === 'submitted' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('submitted')}
-                >
-                    <FiSend /> Submitted
-                </button>
 
-                <button
-                    className={`procurement-offers-tab ${activeTab === 'validated' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('validated')}
-                >
-                    <FiCheck /> Manager Validated
-                </button>
-
-                <button
-                    className={`procurement-offers-tab ${activeTab === 'finance' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('finance')}
-                >
-                    <FiDollarSign /> Finance Validated
-                </button>
-
-                <button
-                    className={`procurement-offers-tab ${activeTab === 'finalize' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('finalize')}
-                >
-                    <FiCheckCircle /> Finalize
-                </button>
-
-                {/* Add the Completed Offers tab */}
-                <button
-                    className={`procurement-offers-tab ${activeTab === 'completed' ? 'active' : ''}`}
-                    onClick={() => handleTabChange('completed')}
-                >
-                    <FiCheckCircle /> Completed
-                </button>
-            </div>
+            <Tabs
+                tabs={[
+                    {
+                        id: 'unstarted',
+                        label: 'Unstarted',
+                        icon: <FiInbox />
+                    },
+                    {
+                        id: 'inprogress',
+                        label: 'In Progress',
+                        icon: <FiEdit />
+                    },
+                    {
+                        id: 'submitted',
+                        label: 'Submitted',
+                        icon: <FiSend />
+                    },
+                    {
+                        id: 'validated',
+                        label: 'Manager Validated',
+                        icon: <FiCheck />
+                    },
+                    {
+                        id: 'finance',
+                        label: 'Finance Validated',
+                        icon: <FiDollarSign />
+                    },
+                    {
+                        id: 'finalize',
+                        label: 'Finalize',
+                        icon: <FiCheckCircle />
+                    },
+                    {
+                        id: 'completed',
+                        label: 'Completed',
+                        icon: <FiCheckCircle />
+                    }
+                ]}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+            />
 
             {/* Content Container with Theme Support */}
             <div className="procurement-content-container">

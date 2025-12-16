@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FaEdit, FaTrash, FaEye, FaCheck, FaClock, FaUser, FaMapMarkerAlt, FaDollarSign, FaStar } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCheck, FaClock, FaUser, FaMapMarkerAlt, FaDollarSign, FaStar, FaTimes, FaEllipsisV, FaPlus, FaSearch, FaFilter } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
-import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import MaintenanceStepModal from './MaintenanceStepModal';
 import CompleteStepModal from './CompleteStepModal';
@@ -24,10 +23,13 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
     const [isModalOpen, setIsModalOpen] = useState(shouldOpenModalInitially);
     const [editingStep, setEditingStep] = useState(null);
     const [selectedStep, setSelectedStep] = useState(null);
+    const [viewModalOpen, setViewModalOpen] = useState(false);
     const [maintenanceRecord, setMaintenanceRecord] = useState(null);
     const [restoredDataForModal, setRestoredDataForModal] = useState(null);
     const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
     const [stepToComplete, setStepToComplete] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeMenuId, setActiveMenuId] = useState(null);
 
     const { showSuccess, showError, showInfo, showWarning } = useSnackbar();
     const { currentUser } = useAuth();
@@ -71,7 +73,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             // Transform data for display
             const transformedSteps = steps.map(step => ({
                 id: step.id,
-                stepType: step.stepTypeName || step.stepType, // Use stepTypeName from new structure
+                stepType: step.stepTypeName || step.stepType,
                 stepTypeId: step.stepTypeId,
                 description: step.description,
                 responsiblePerson: step.responsiblePerson || 'Not assigned',
@@ -79,6 +81,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                 responsibleEmail: step.contactEmail || '',
                 responsibleContactId: step.responsibleContactId,
                 responsibleEmployeeId: step.responsibleEmployeeId,
+                selectedMerchantId: step.selectedMerchantId,
                 lastContactDate: step.lastContactDate,
                 startDate: step.startDate,
                 expectedEndDate: step.expectedEndDate,
@@ -86,7 +89,11 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                 fromLocation: step.fromLocation,
                 toLocation: step.toLocation,
                 stepCost: step.stepCost || 0,
-                actualCost: step.actualCost || step.stepCost || 0, // Use actual cost if available, fallback to estimated
+                downPayment: step.downPayment || 0,
+                expectedCost: step.expectedCost || step.stepCost || 0,
+                remaining: step.remaining || 0,
+                remainingManuallySet: step.remainingManuallySet || false,
+                actualCost: step.actualCost || step.stepCost || 0,
                 notes: step.notes,
                 isCompleted: step.isCompleted,
                 isOverdue: step.isOverdue,
@@ -117,13 +124,15 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
 
     const handleOpenModal = (step = null) => {
         setEditingStep(step);
-        setRestoredDataForModal(null); // Clear any restored data when manually opening
+        setRestoredDataForModal(null);
         setIsModalOpen(true);
+        setActiveMenuId(null);
     };
 
     const handleViewStep = (step) => {
         setSelectedStep(step);
-        showInfo(`Viewing maintenance step: ${step.stepType}`);
+        setViewModalOpen(true);
+        setActiveMenuId(null);
     };
 
     const handleDeleteStep = async (id) => {
@@ -148,13 +157,14 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             showError(errorMessage);
         } finally {
             setLoading(false);
+            setActiveMenuId(null);
         }
     };
 
     const handleCompleteStep = (step) => {
-        // Open the complete modal instead of completing directly
         setStepToComplete(step);
         setIsCompleteModalOpen(true);
+        setActiveMenuId(null);
     };
 
     const handleConfirmComplete = async (completionData) => {
@@ -187,6 +197,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             showError('Failed to mark step as final. Please try again.');
         } finally {
             setLoading(false);
+            setActiveMenuId(null);
         }
     };
 
@@ -208,10 +219,8 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             if (onStepUpdate) onStepUpdate();
         } catch (error) {
             console.error('Error saving maintenance step:', error);
-            // Extract error message from backend response
             const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to save maintenance step. Please try again.';
             showError(errorMessage);
-            // Re-throw error so modal can handle it
             throw error;
         } finally {
             setLoading(false);
@@ -232,6 +241,9 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
     };
 
     const getStepTypeBadge = (stepType) => {
+        if (!stepType) {
+            return <span className="step-type-badge">Unknown</span>;
+        }
         const color = getStepTypeColor(stepType);
         return (
             <span
@@ -262,220 +274,70 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
             );
         } else {
             return (
-                <span className="status-badge active">
-                    <FaClock /> Active
+                <span className="status-badge in-progress">
+                    <FaClock /> In Progress
                 </span>
             );
         }
     };
 
-    const columns = [
-        {
-            header: 'Step Type',
-            accessor: 'stepType',
-            sortable: true,
-            render: (row) => (
-                <div className="step-type-cell">
-                    {row.isFinalStep && <FaStar className="final-star-icon" title="Final Step" />}
-                    {getStepTypeBadge(row.stepType)}
-                </div>
-            )
-        },
-        {
-            header: 'Description',
-            accessor: 'description',
-            sortable: true,
-            render: (row) => (
-                <div className="step-description">
-                    {row.description.length > 60
-                        ? `${row.description.substring(0, 60)}...`
-                        : row.description
-                    }
-                </div>
-            )
-        },
-        {
-            header: 'Status',
-            accessor: 'isCompleted',
-            sortable: true,
-            render: (row) => getStatusBadge(row)
-        },
-        {
-            header: 'Responsible Person',
-            accessor: 'responsiblePerson',
-            sortable: true,
-            render: (row) => (
-                <div className="responsible-person">
-                    <div className="person-name">
-                        <FaUser /> {row.responsiblePerson}
-                    </div>
-                    <div className="person-contact">
-                        {row.responsiblePhone && <span>{row.responsiblePhone}</span>}
-                        {row.responsibleEmail && <span>{row.responsibleEmail}</span>}
-                    </div>
-                </div>
-            )
-        },
-        {
-            header: 'Location',
-            accessor: 'fromLocation',
-            sortable: true,
-            render: (row) => {
-                // Determine what location to show based on step type and completion status
-                const isTransport = row.stepType?.toUpperCase() === 'TRANSPORT';
-                const isCompleted = row.isCompleted;
-                
-                let displayLocation = '';
-                let locationLabel = '';
-                
-                if (isTransport) {
-                    if (isCompleted) {
-                        // Transport step that is completed - show destination
-                        displayLocation = row.toLocation;
-                        locationLabel = 'Destination';
-                    } else {
-                        // Transport step that is not completed - show origin
-                        displayLocation = row.fromLocation;
-                        locationLabel = 'From';
-                    }
-                } else {
-                    // Non-transport step - show current location (fromLocation)
-                    displayLocation = row.fromLocation;
-                    locationLabel = 'Current Location';
-                }
-                
-                return (
-                    <div className="location-info">
-                        <div className="current-location">
-                            <FaMapMarkerAlt /> {locationLabel}: {displayLocation}
-                        </div>
-                    </div>
-                );
-            }
-        },
-        {
-            header: 'Cost',
-            accessor: 'stepCost',
-            sortable: true,
-            render: (row) => (
-                <div className="cost-info">
-                    <div className="estimated-cost">
-                        Est: {row.stepCost?.toFixed(2) || '0.00'}
-                    </div>
-                    {row.isCompleted && row.actualCost && (
-                        <div className="actual-cost">
-                            Act: {row.actualCost.toFixed(2)}
-                        </div>
-                    )}
-                </div>
-            )
-        },
-        {
-            header: 'Dates',
-            accessor: 'startDate',
-            sortable: true,
-            render: (row) => (
-                <div className="date-info">
-                    <div className="start-date">
-                        Start: {new Date(row.startDate).toLocaleDateString()}
-                    </div>
-                    <div className="end-date">
-                        {row.actualEndDate
-                            ? `Completed: ${new Date(row.actualEndDate).toLocaleDateString()}`
-                            : `Expected: ${new Date(row.expectedEndDate).toLocaleDateString()}`
-                        }
-                    </div>
-                </div>
-            )
-        }
-    ];
+    const shouldShowMarkAsFinal = (step) => {
+        const isStepCompleted = step.isCompleted === true && step.actualEndDate != null;
 
-    const actions = [
-        {
-            label: 'View',
-            icon: <FaEye />,
-            onClick: (row) => handleViewStep(row),
-            className: 'primary'
-        },
-        {
-            label: 'Edit',
-            icon: <FaEdit />,
-            onClick: (row) => handleOpenModal(row),
-            className: 'primary',
-            show: (row) => !row.isCompleted
-        },
-        {
-            label: 'Mark as Final',
-            icon: <FaStar />,
-            onClick: (row) => handleMarkAsFinal(row.id),
-            className: 'warning',
-            show: (row) => {
-                // CRITICAL: A step is only completed if it has BOTH flags
-                const isStepCompleted = row.isCompleted === true && row.actualEndDate != null;
-                
-                // Don't show if already marked as final or not completed
-                if (row.isFinalStep || !isStepCompleted) {
-                    return false;
-                }
-                
-                // Check if ALL steps are completed (have actualEndDate)
-                const allStepsCompleted = maintenanceSteps.every(s => {
-                    return s.isCompleted === true && s.actualEndDate != null;
-                });
-                
-                // If not all steps are completed, don't show "Mark as Final" for any step
-                if (!allStepsCompleted) {
-                    return false;
-                }
-                
-                // All steps are completed - only show for the latest completed step
-                // Filter to only truly completed steps (those with actualEndDate)
-                const completedSteps = maintenanceSteps.filter(s => {
-                    return s.isCompleted === true && s.actualEndDate != null;
-                });
-                
-                if (completedSteps.length === 0) return false;
-                
-                // Sort by actual end date (most recent first)
-                const sortedCompletedSteps = [...completedSteps].sort((a, b) => {
-                    const dateA = new Date(a.actualEndDate);
-                    const dateB = new Date(b.actualEndDate);
-                    return dateB - dateA;
-                });
-                
-                // Only show for the latest completed step (the one with the most recent completion date)
-                return sortedCompletedSteps[0].id === row.id;
-            }
-        },
-        {
-            label: 'Complete',
-            icon: <FaCheck />,
-            onClick: (row) => handleCompleteStep(row),
-            className: 'success',
-            show: (row) => {
-                // Only show for incomplete steps
-                return !row.isCompleted;
-            }
-        },
-        {
-            label: 'Delete',
-            icon: <FaTrash />,
-            onClick: (row) => {
-                if (window.confirm(`Are you sure you want to delete this maintenance step?`)) {
-                    handleDeleteStep(row.id);
-                }
-            },
-            className: 'danger',
-            show: (row) => !row.isCompleted
+        if (step.isFinalStep || !isStepCompleted) {
+            return false;
         }
-    ];
 
-    const filterableColumns = [
-        { header: 'Step Type', accessor: 'stepType' },
-        { header: 'Responsible Person', accessor: 'responsiblePerson' },
-        { header: 'From Location', accessor: 'fromLocation' },
-        { header: 'To Location', accessor: 'toLocation' }
-    ];
+        const allStepsCompleted = maintenanceSteps.every(s => {
+            return s.isCompleted === true && s.actualEndDate != null;
+        });
+
+        if (!allStepsCompleted) {
+            return false;
+        }
+
+        const completedSteps = maintenanceSteps.filter(s => {
+            return s.isCompleted === true && s.actualEndDate != null;
+        });
+
+        if (completedSteps.length === 0) return false;
+
+        const sortedCompletedSteps = [...completedSteps].sort((a, b) => {
+            const dateA = new Date(a.actualEndDate);
+            const dateB = new Date(b.actualEndDate);
+            return dateB - dateA;
+        });
+
+        return sortedCompletedSteps[0].id === step.id;
+    };
+
+    const filteredSteps = maintenanceSteps.filter(step => {
+        if (!searchTerm) return true;
+        const search = searchTerm.toLowerCase();
+        return (
+            step.stepType?.toLowerCase().includes(search) ||
+            step.description?.toLowerCase().includes(search) ||
+            step.responsiblePerson?.toLowerCase().includes(search) ||
+            step.fromLocation?.toLowerCase().includes(search) ||
+            step.toLocation?.toLowerCase().includes(search)
+        );
+    });
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'Not set';
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(amount || 0);
+    };
 
     if (error) {
         return (
@@ -498,42 +360,227 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                 subtitle={maintenanceRecord ? `Equipment: ${maintenanceRecord.equipmentInfo} - ${maintenanceRecord.initialIssueDescription}` : ''}
             />
 
-            <DataTable
-                data={maintenanceSteps}
-                columns={columns}
-                loading={loading}
-                actions={actions}
-                tableTitle=""
-                showSearch={true}
-                showFilters={true}
-                filterableColumns={filterableColumns}
-                emptyStateMessage="No maintenance steps found. Create your first step to get started."
-                showAddButton={true}
-                addButtonText="New Step"
-                onAddClick={() => handleOpenModal()}
-                addButtonProps={{
-                    disabled: maintenanceRecord?.status === 'COMPLETED'
-                }}
-            />
+            {/* Header with Search and Add Button */}
+            <div className="steps-header">
+                <div className="search-container">
+                    <FaSearch className="search-icon" />
+                    <input
+                        type="text"
+                        placeholder="Search steps..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="search-input"
+                    />
+                </div>
+                <button
+                    className="add-step-btn"
+                    onClick={() => handleOpenModal()}
+                    disabled={maintenanceRecord?.status === 'COMPLETED'}
+                >
+                    <FaPlus /> New Step
+                </button>
+            </div>
 
-            <div className="maintenance-steps-footer">
-                <div className="total-cost">
-                    <h3>Total Record Cost:</h3>
-                    <span>{maintenanceSteps.reduce((total, step) => {
-                        // Use actual cost if step is completed and has actual cost, otherwise use estimated cost
+            {/* Cost Summary */}
+            <div className="cost-summary">
+                <div className="summary-label">Expected Total Cost</div>
+                <div className="summary-value">
+                    {formatCurrency(maintenanceSteps.reduce((total, step) => {
                         const cost = step.isCompleted && step.actualCost ? step.actualCost : step.stepCost;
                         return total + (cost || 0);
-                    }, 0).toFixed(2)}</span>
+                    }, 0))}
                 </div>
             </div>
 
+            {/* Workflow Steps */}
+            <div className="workflow-steps-section">
+                <h3 className="section-title">Workflow Steps</h3>
+
+                {loading ? (
+                    <div className="loading-container">
+                        <div className="loading-spinner">Loading steps...</div>
+                    </div>
+                ) : filteredSteps.length === 0 ? (
+                    <div className="empty-state">
+                        <p>No maintenance steps found. Create your first step to get started.</p>
+                    </div>
+                ) : (
+                    <div className="steps-container">
+                        {filteredSteps.map((step, index) => {
+                            const isTransport = step.stepType?.toUpperCase() === 'TRANSPORT';
+                            const displayLocation = isTransport
+                                ? (step.isCompleted ? step.toLocation : step.fromLocation)
+                                : step.fromLocation;
+                            const locationLabel = isTransport
+                                ? (step.isCompleted ? 'Destination' : 'From')
+                                : 'Current Location';
+
+                            return (
+                                <div key={step.id} className={`step-card ${step.isCompleted ? 'completed' : ''}`}>
+                                    {/* Card Header */}
+                                    <div className="step-card-header">
+                                        <div className="step-header-left">
+                                            <div className="step-number">Step {index + 1}</div>
+                                            <div className="step-type-name">{step.stepType?.replace('_', ' ')}</div>
+                                            {step.isFinalStep && (
+                                                <FaStar className="final-star-icon" title="Final Step" />
+                                            )}
+                                        </div>
+                                        <div className="step-header-right">
+                                            {getStatusBadge(step)}
+                                            <div className="menu-container">
+                                                <button
+                                                    className="menu-trigger"
+                                                    onClick={() => setActiveMenuId(activeMenuId === step.id ? null : step.id)}
+                                                >
+                                                    <FaEllipsisV />
+                                                </button>
+                                                {activeMenuId === step.id && (
+                                                    <>
+                                                        <div className="menu-backdrop" onClick={() => setActiveMenuId(null)} />
+                                                        <div className="menu-dropdown">
+                                                            <button
+                                                                className="menu-item"
+                                                                onClick={() => handleViewStep(step)}
+                                                            >
+                                                                <FaEye /> View Details
+                                                            </button>
+                                                            {!step.isCompleted && (
+                                                                <>
+                                                                    <button
+                                                                        className="menu-item"
+                                                                        onClick={() => handleOpenModal(step)}
+                                                                    >
+                                                                        <FaEdit /> Edit
+                                                                    </button>
+                                                                    <button
+                                                                        className="menu-item complete"
+                                                                        onClick={() => handleCompleteStep(step)}
+                                                                    >
+                                                                        <FaCheck /> Complete
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                            {shouldShowMarkAsFinal(step) && (
+                                                                <button
+                                                                    className="menu-item warning"
+                                                                    onClick={() => handleMarkAsFinal(step.id)}
+                                                                >
+                                                                    <FaStar /> Mark as Final
+                                                                </button>
+                                                            )}
+                                                            {!step.isCompleted && (
+                                                                <button
+                                                                    className="menu-item danger"
+                                                                    onClick={() => {
+                                                                        if (window.confirm(`Are you sure you want to delete this maintenance step?`)) {
+                                                                            handleDeleteStep(step.id);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <FaTrash /> Delete
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Card Body */}
+                                    <div className="step-card-body">
+                                        {/* Responsible Person */}
+                                        <div className="step-info-row">
+                                            <FaUser className="info-icon" />
+                                            <div className="info-content">
+                                                <div className="info-label">Responsible Person</div>
+                                                <div className="info-value">{step.responsiblePerson}</div>
+                                            </div>
+                                        </div>
+
+                                        {/* Actual End Date (only if completed) */}
+                                        {step.actualEndDate && (
+                                            <div className="step-info-row">
+                                                <FaClock className="info-icon" />
+                                                <div className="info-content">
+                                                    <div className="info-label">Actual End</div>
+                                                    <div className="info-value">{formatDate(step.actualEndDate)}</div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Expected End Date (if not completed) */}
+                                        {!step.isCompleted && (
+                                            <div className="step-info-row">
+                                                <FaClock className="info-icon" />
+                                                <div className="info-content">
+                                                    <div className="info-label">Expected End</div>
+                                                    <div className="info-value">{formatDate(step.expectedEndDate)}</div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Costs */}
+                                        <div className="step-info-row">
+                                            <div className="info-icon">$</div>
+                                            <div className="info-content">
+                                                <div className="info-label">Costs</div>
+                                                <div className="info-value costs-row">
+                                                    <span className="cost-item">
+                                                        Expected: {formatCurrency(step.expectedCost || step.stepCost)}
+                                                    </span>
+                                                    {step.downPayment > 0 && (
+                                                        <span className="cost-item">
+                                                            Down Payment: {formatCurrency(step.downPayment)}
+                                                        </span>
+                                                    )}
+                                                    <span className="cost-item">
+                                                        Remaining: {formatCurrency(step.remaining)}
+                                                    </span>
+                                                    {step.isCompleted && step.actualCost && (
+                                                        <span className="cost-item actual">
+                                                            Actual: {formatCurrency(step.actualCost)}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Description */}
+                                        <div className="step-info-row description-row">
+                                            <div className="info-content full-width">
+                                                <div className="info-label">Description</div>
+                                                <div className="info-value description">{step.description}</div>
+                                            </div>
+                                        </div>
+
+                                        {/* Location */}
+                                        {displayLocation && (
+                                            <div className="step-info-row">
+                                                <FaMapMarkerAlt className="info-icon" />
+                                                <div className="info-content">
+                                                    <div className="info-label">{locationLabel}</div>
+                                                    <div className="info-value">{displayLocation}</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* Modals */}
             {isModalOpen && (
                 <MaintenanceStepModal
                     isOpen={isModalOpen}
                     onClose={() => {
                         setIsModalOpen(false);
                         setEditingStep(null);
-                        setRestoredDataForModal(null); // Clean up on close
+                        setRestoredDataForModal(null);
                     }}
                     onSubmit={handleSubmit}
                     editingStep={editingStep}
@@ -552,6 +599,87 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                     onConfirm={handleConfirmComplete}
                     step={stepToComplete}
                 />
+            )}
+
+            {viewModalOpen && selectedStep && (
+                <div className="modal-backdrop" onClick={() => setViewModalOpen(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Step Details: {selectedStep.stepType}</h2>
+                            <button className="btn-close" onClick={() => setViewModalOpen(false)}>
+                                <FaTimes />
+                            </button>
+                        </div>
+
+                        <div className="modal-body">
+                            <div className="detail-section">
+                                <h3>Description</h3>
+                                <p>{selectedStep.description}</p>
+                            </div>
+
+                            <div className="detail-section">
+                                <h3>Cost Information</h3>
+                                <div className="cost-grid">
+                                    <div className="cost-item">
+                                        <label>Expected Cost:</label>
+                                        <span>{formatCurrency(selectedStep.expectedCost || selectedStep.stepCost || 0)}</span>
+                                    </div>
+                                    <div className="cost-item">
+                                        <label>Down Payment:</label>
+                                        <span>{formatCurrency(selectedStep.downPayment || 0)}</span>
+                                    </div>
+                                    <div className="cost-item">
+                                        <label>Remaining:</label>
+                                        <span>{formatCurrency(selectedStep.remaining || 0)}</span>
+                                    </div>
+                                    {selectedStep.actualCost && (
+                                        <div className="cost-item">
+                                            <label>Actual Cost:</label>
+                                            <span>{formatCurrency(selectedStep.actualCost)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="detail-section">
+                                <h3>Schedule</h3>
+                                <p><strong>Start:</strong> {formatDate(selectedStep.startDate)}</p>
+                                <p><strong>Expected End:</strong> {formatDate(selectedStep.expectedEndDate)}</p>
+                                {selectedStep.actualEndDate && (
+                                    <p><strong>Completed:</strong> {formatDate(selectedStep.actualEndDate)}</p>
+                                )}
+                            </div>
+
+                            {selectedStep.responsiblePerson && (
+                                <div className="detail-section">
+                                    <h3>Responsible Person</h3>
+                                    <p><strong>Name:</strong> {selectedStep.responsiblePerson}</p>
+                                    {selectedStep.responsiblePhone && <p><strong>Phone:</strong> {selectedStep.responsiblePhone}</p>}
+                                    {selectedStep.responsibleEmail && <p><strong>Email:</strong> {selectedStep.responsibleEmail}</p>}
+                                </div>
+                            )}
+
+                            {(selectedStep.fromLocation || selectedStep.toLocation) && (
+                                <div className="detail-section">
+                                    <h3>Location</h3>
+                                    {selectedStep.fromLocation && <p><strong>From:</strong> {selectedStep.fromLocation}</p>}
+                                    {selectedStep.toLocation && <p><strong>To:</strong> {selectedStep.toLocation}</p>}
+                                </div>
+                            )}
+
+                            {selectedStep.notes && (
+                                <div className="detail-section">
+                                    <h3>Notes</h3>
+                                    <p>{selectedStep.notes}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="modal-footer">
+                            <button className="btn-cancel" onClick={() => setViewModalOpen(false)}>Close</button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

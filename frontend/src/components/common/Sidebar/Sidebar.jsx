@@ -547,17 +547,18 @@ const Sidebar = () => {
                     roles: [ADMIN, USER, SITE_ADMIN, EQUIPMENT_MANAGER, MAINTENANCE_MANAGER, MAINTENANCE_EMPLOYEE]
                 },
                 {
-                    title: 'Contacts',
-                    icon: <FaAddressBook/>,
-                    path: '/maintenance/contacts',
-                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'EQUIPMENT_MANAGER', 'MAINTENANCE_EMPLOYEE', 'MAINTENANCE_MANAGER']
-                },
-                {
                     title: 'Step Types',
                     icon: <FaTools/>,
                     path: '/maintenance/step-types',
                     roles: [ADMIN, MAINTENANCE_MANAGER]
                 },
+                {
+                    title: 'Contacts',
+                    icon: <FaAddressBook/>,
+                    path: '/maintenance/contacts',
+                    roles: ['ADMIN', 'USER', 'SITE_ADMIN', 'EQUIPMENT_MANAGER', 'MAINTENANCE_EMPLOYEE', 'MAINTENANCE_MANAGER']
+                },
+
                 {
                     title: 'Contact Types',
                     icon: <FaUsers/>,

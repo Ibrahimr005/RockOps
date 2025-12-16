@@ -28,7 +28,7 @@ export const authService = {
         return apiClient.post(AUTH_ENDPOINTS.REFRESH, refreshTokenData);
     },
 
-    // Get current user profile
+    // Get current user profile with full details including ID
     getCurrentUser: () => {
         return apiClient.get(AUTH_ENDPOINTS.PROFILE);
     },

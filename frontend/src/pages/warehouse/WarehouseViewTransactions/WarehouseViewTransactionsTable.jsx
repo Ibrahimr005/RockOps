@@ -4,6 +4,7 @@ import PendingTransactionsTable from "./PendingTransactions/PendingTransactionsT
 import ValidatedTransactionsTable from "./ValidatedTransactions/ValidatedTransactionsTable.jsx";
 import IncomingTransactionsTable from "./IncomingTransactions/IncomingTransactionsTable.jsx";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2"; // Import the Snackbar component
+import Tabs from '../../../components/common/Tabs/Tabs.jsx';
 
 const WarehouseViewTransactionsTable = ({
                                           warehouseId,
@@ -148,22 +149,15 @@ const WarehouseViewTransactionsTable = ({
         </div>
 
         {/* Tab navigation */}
-        <div className="inventory-tabs">
-          {tabs.map((tab) => (
-              <button
-                  key={tab.id}
-                  className={`inventory-tab ${activeTab === tab.id ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
-                {tab.showBadge && tab.count > 0 && (
-                    <span className="tab-badge">
-                        {tab.count}
-                    </span>
-                )}
-              </button>
-          ))}
-        </div>
+        <Tabs
+            tabs={tabs.map(tab => ({
+              id: tab.id,
+              label: tab.label,
+              badge: tab.showBadge ? tab.count : 0
+            }))}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+        />
 
         {/* Tab Content */}
         <div className="transaction-tab-content">

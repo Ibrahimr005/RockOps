@@ -1,7 +1,8 @@
 package com.example.backend.models.contact;
 
-import com.example.backend.models.MaintenanceRecord;
-import com.example.backend.models.MaintenanceStep;
+
+import com.example.backend.models.maintenance.MaintenanceRecord;
+import com.example.backend.models.maintenance.MaintenanceStep;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;

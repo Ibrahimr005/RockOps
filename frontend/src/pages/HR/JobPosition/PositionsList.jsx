@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiEdit, FiTrash2, FiClock, FiUsers, FiTrendingUp } from 'react-icons/fi';
 import AddPositionForm from './components/AddPositionForm.jsx';
 import EditPositionForm from './components/EditPositionForm.jsx';
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
 import DataTable from '../../../components/common/DataTable/DataTable';
 import PageHeader from '../../../components/common/PageHeader/PageHeader';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
@@ -18,10 +19,24 @@ const PositionsList = () => {
     const [showAddForm, setShowAddForm] = useState(false);
     const [showEditForm, setShowEditForm] = useState(false);
     const [selectedPosition, setSelectedPosition] = useState(null);
+    const [positionToDelete, setPositionToDelete] = useState(null);
 
     useEffect(() => {
         fetchPositions();
     }, []);
+
+    // Disable background scrolling when modals are open
+    useEffect(() => {
+        if (showAddForm || showEditForm) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [showAddForm, showEditForm]);
 
     const fetchPositions = async () => {
         setLoading(true);
@@ -29,8 +44,8 @@ const PositionsList = () => {
         try {
             const response = await jobPositionService.getAll();
             const data = response.data;
-            console.log(data)
 
+            console.log(data);
             setPositions(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching positions:', err);
@@ -50,7 +65,8 @@ const PositionsList = () => {
     const handleAddPosition = async (formData) => {
         try {
             setError(null);
-            await jobPositionService.create(formData);
+            const response = await jobPositionService.create(formData);
+
             await fetchPositions();
             setShowAddForm(false);
             showSuccess('Job position created successfully!');
@@ -90,14 +106,16 @@ const PositionsList = () => {
         }
     };
 
-    const handleDeletePosition = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this position?')) {
-            return;
-        }
+    const handleDeletePosition = (row) => {
+        setPositionToDelete(row);
+    };
+
+    const confirmDelete = async () => {
+        if (!positionToDelete) return;
 
         try {
             setError(null);
-            await jobPositionService.delete(id);
+            await jobPositionService.delete(positionToDelete.id);
             await fetchPositions();
             showSuccess('Job position deleted successfully!');
         } catch (err) {
@@ -107,9 +125,12 @@ const PositionsList = () => {
                 'Failed to delete position';
             setError(errorMessage);
             showError(errorMessage);
+        } finally {
+            setPositionToDelete(null);
         }
     };
 
+    // Handle row click to navigate to details
     const handleRowClick = (row) => {
         navigate(`/hr/positions/${row.id}`);
     };
@@ -117,8 +138,11 @@ const PositionsList = () => {
     // Helper function to format time range
     const formatTimeRange = (startTime, endTime) => {
         if (!startTime || !endTime) return null;
+
+        // Handle different time formats
         const formatTime = (time) => {
             if (!time) return '';
+            // If time is in HH:mm:ss format, extract HH:mm
             if (time.includes(':')) {
                 const parts = time.split(':');
                 return `${parts[0]}:${parts[1]}`;
@@ -131,6 +155,7 @@ const PositionsList = () => {
     // Helper function to calculate working hours from time range
     const calculateWorkingHours = (startTime, endTime) => {
         if (!startTime || !endTime) return null;
+
         try {
             const start = new Date(`1970-01-01T${startTime}`);
             const end = new Date(`1970-01-01T${endTime}`);
@@ -150,7 +175,7 @@ const PositionsList = () => {
             render: (row) => (
                 <div className="position-name-cell">
                     <div className="position-title">
-                        {row.positionName} - {row.experienceLevel?.replace("_"," ")}
+                        {row.positionName} - {row.experienceLevel?.replace("_", " ")}
                     </div>
                     {row.hierarchyPath && (
                         <div className="hierarchy-path">
@@ -165,6 +190,7 @@ const PositionsList = () => {
             accessor: 'department',
             sortable: true
         },
+        // Conditional hierarchy column - only show if any position has hierarchy data
         ...(positions.some(p => p.hierarchyLevel !== undefined || p.isRootPosition !== undefined) ? [{
             header: 'Hierarchy',
             accessor: 'hierarchyLevel',
@@ -204,12 +230,24 @@ const PositionsList = () => {
                 return contractType ? contractType.replace('_', ' ') : 'N/A';
             }
         },
+        // {
+        //     header: 'Experience Level',
+        //     accessor: 'experienceLevel',
+        //     sortable: true,
+        //     render: (row) => {
+        //         if (!row.experienceLevel) return 'N/A';
+        //         return row.experienceLevel.replace('_', ' ').toLowerCase()
+        //             .replace(/\b\w/g, l => l.toUpperCase());
+        //     }
+        // },
         {
             header: 'Base Salary',
             accessor: 'baseSalary',
             sortable: true,
             render: (row) => {
+                // Use calculated monthly salary if available, otherwise use base salary
                 const salary = row.calculatedMonthlySalary || row.monthlyBaseSalary || row.baseSalary;
+
                 if (!salary) return 'N/A';
 
                 const contractType = row.contractType || row.type;
@@ -234,22 +272,30 @@ const PositionsList = () => {
 
                 switch (contractType) {
                     case 'HOURLY':
+                        const daysPerWeek = row.workingDaysPerWeek;
+                        const hoursPerShift = row.hoursPerShift;
                         return (
                             <div className="schedule-info">
                                 {row.workingDaysPerWeek && <div>{row.workingDaysPerWeek} days/week</div>}
                                 {row.hoursPerShift && <div>{row.hoursPerShift}h/shift</div>}
                             </div>
                         );
+
                     case 'DAILY':
+                        const daysPerMonth = row.workingDaysPerMonth;
+                        const includesWeekends = row.includesWeekends;
                         return (
                             <div className="schedule-info">
                                 {row.workingDaysPerMonth && <div>{row.workingDaysPerMonth} days/month</div>}
                                 {row.includesWeekends && <div className="schedule-badge">Weekends</div>}
                             </div>
                         );
+
                     case 'MONTHLY':
                         const timeRange = formatTimeRange(row.startTime, row.endTime);
                         const workingHours = calculateWorkingHours(row.startTime, row.endTime) || row.workingHours;
+                        const monthlyDays = row.workingDaysPerMonth;
+
                         return (
                             <div className="schedule-info">
                                 {timeRange && (
@@ -262,9 +308,36 @@ const PositionsList = () => {
                                 {row.workingDaysPerMonth && <div>{row.workingDaysPerMonth} days/month</div>}
                             </div>
                         );
+
                     default:
                         return 'N/A';
                 }
+            }
+        },
+        {
+            header: 'Reporting To',
+            accessor: 'head',
+            sortable: true,
+            render: (row) => {
+                // Show both manager and parent position info if available
+                const manager = row.head;
+                const parentPosition = row.parentJobPositionName;
+
+                return (
+                    <div className="reporting-info">
+                        {manager && (
+                            <div className="manager-name">
+                                {manager}
+                            </div>
+                        )}
+                        {parentPosition && (
+                            <div className="parent-position">
+                                <FiTrendingUp size={12} /> {parentPosition}
+                            </div>
+                        )}
+                        {!manager && !parentPosition && 'N/A'}
+                    </div>
+                );
             }
         },
         {
@@ -280,6 +353,7 @@ const PositionsList = () => {
     ];
 
     const actions = [
+
         {
             label: 'Edit',
             icon: <FiEdit />,
@@ -293,17 +367,20 @@ const PositionsList = () => {
             label: 'Delete',
             icon: <FiTrash2 />,
             className: 'danger',
-            onClick: (row) => handleDeletePosition(row.id)
+            onClick: (row) => handleDeletePosition(row)
         }
     ];
 
+    // Create filterable columns array based on actual data structure
     const getFilterableColumns = () => {
         const baseColumns = [
             { accessor: 'department', header: 'Department', filterType: 'select' },
             { accessor: 'contractType', header: 'Contract Type', filterType: 'select' },
             { accessor: 'experienceLevel', header: 'Experience Level', filterType: 'select' },
+            // { accessor: 'active', header: 'Status', filterType: 'select' }
         ];
 
+        // Only add hierarchy filters if hierarchy data exists
         if (positions.some(p => p.hierarchyLevel !== undefined || p.isRootPosition !== undefined)) {
             baseColumns.push(
                 { accessor: 'hierarchyLevel', header: 'Hierarchy Level', filterType: 'select' }
@@ -346,9 +423,10 @@ const PositionsList = () => {
                 emptyMessage="No job positions found. Click 'Add Position' to create one."
                 onRowClick={handleRowClick}
                 showAddButton={true}
-                addButtonText="Add Positions"
+                addButtonText="Add Position"
                 addButtonIcon={<FiPlus />}
                 onAddClick={() => setShowAddForm(true)}
+                // Export functionality
                 showExportButton={true}
                 exportFileName="job_positions"
                 exportButtonText="Export Positions"
@@ -388,6 +466,17 @@ const PositionsList = () => {
                     position={selectedPosition}
                 />
             )}
+
+            <ConfirmationDialog
+                isVisible={!!positionToDelete}
+                type="danger"
+                title="Delete Position"
+                message={`Are you sure you want to delete the position "${positionToDelete?.positionName}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={confirmDelete}
+                onCancel={() => setPositionToDelete(null)}
+            />
         </div>
     );
 };

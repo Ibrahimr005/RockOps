@@ -1,5 +1,29 @@
 // src/config/api.config.js
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||  'http://localhost:8080';
+
+
+// Direct Purchase Ticket module endpoints
+export const DIRECT_PURCHASE_ENDPOINTS = {
+    BASE: '/api/direct-purchase-tickets',
+    BY_ID: (id) => `/api/direct-purchase-tickets/${id}`,
+    CREATE: '/api/direct-purchase-tickets',
+    UPDATE: (id) => `/api/direct-purchase-tickets/${id}`,
+    DELETE: (id) => `/api/direct-purchase-tickets/${id}`,
+
+    // Query-based endpoints
+    BY_STATUS: (status) => `/api/direct-purchase-tickets?status=${status}`,
+    BY_EQUIPMENT: (equipmentId) => `/api/direct-purchase-tickets?equipmentId=${equipmentId}`,
+    BY_MERCHANT: (merchantId) => `/api/direct-purchase-tickets?merchantId=${merchantId}`,
+
+    // Step endpoints
+    STEPS: {
+        BY_TICKET: (ticketId) => `/api/direct-purchase-tickets/${ticketId}/steps`,
+        BY_ID: (ticketId, stepId) => `/api/direct-purchase-tickets/${ticketId}/steps/${stepId}`,
+        UPDATE: (ticketId, stepId) => `/api/direct-purchase-tickets/${ticketId}/steps/${stepId}`,
+        COMPLETE: (ticketId, stepId) => `/api/direct-purchase-tickets/${ticketId}/steps/${stepId}/complete`,
+        DELETE: (ticketId, stepId) => `/api/direct-purchase-tickets/${ticketId}/steps/${stepId}`
+    }
+};
 // Dashboard endpoints
 export const DASHBOARD_ENDPOINTS = {
     BASE: '/api/dashboard',
@@ -492,7 +516,8 @@ export const AUTH_ENDPOINTS = {
     BASE: '/api/v1/auth',
     REGISTER: '/api/v1/auth/register',
     LOGIN: '/api/v1/auth/login',
-    AUTHENTICATE: '/api/v1/auth/authenticate'
+    AUTHENTICATE: '/api/v1/auth/authenticate',
+    PROFILE: '/api/v1/auth/profile'
 };
 
 // Admin module endpoints
@@ -800,7 +825,15 @@ export const MAINTENANCE_ENDPOINTS = {
     },
 
     // Available Contacts
-    AVAILABLE_CONTACTS: '/api/maintenance/available-contacts'
+    AVAILABLE_CONTACTS: '/api/maintenance/available-contacts',
+
+    // Merchants
+    MERCHANTS: '/api/maintenance/merchants',
+
+    // Users
+    USERS: {
+        MAINTENANCE_TEAM: '/api/maintenance/users/maintenance-team'
+    }
 };
 
 // Contact Management module endpoints

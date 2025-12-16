@@ -4,6 +4,7 @@ import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import InWarehouseItems from "./InWarehouse/InWarehouseItems.jsx";
 import DiscrepancyItems from "./DiscrepancyItems/DiscrepancyItems.jsx";
 import ResolutionHistory from "./ResolutionHistory/ResolutionHistory.jsx";
+import Tabs from '../../../components/common/Tabs/Tabs.jsx';
 import { itemService } from '../../../services/warehouse/itemService';
 import { warehouseService } from '../../../services/warehouse/warehouseService';
 
@@ -150,42 +151,34 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
   return (
       <div className="warehouse-view4">
         {/* Tab navigation */}
-        <div className="inventory-tabs">
-          <button
-              className={`inventory-tab ${activeTab === 'inWarehouse' ? 'active' : ''}`}
-              onClick={() => setActiveTab('inWarehouse')}
-          >
-            In Warehouse
-          </button>
-          <button
-              className={`inventory-tab ${activeTab === 'missingItems' ? 'active' : ''}`}
-              onClick={() => setActiveTab('missingItems')}
-          >
-            Missing Items
-            {Array.isArray(tableData) && tableData.filter(item => item.itemStatus === 'MISSING' && !item.resolved).length > 0 && (
-                <span className="tab-badge">
-              {tableData.filter(item => item.itemStatus === 'MISSING' && !item.resolved).length}
-            </span>
-            )}
-          </button>
-          <button
-              className={`inventory-tab ${activeTab === 'excessItems' ? 'active' : ''}`}
-              onClick={() => setActiveTab('excessItems')}
-          >
-            Excess Items
-            {Array.isArray(tableData) && tableData.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved).length > 0 && (
-                <span className="tab-badge">
-              {tableData.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved).length}
-            </span>
-            )}
-          </button>
-          <button
-              className={`inventory-tab ${activeTab === 'resolvedHistory' ? 'active' : ''}`}
-              onClick={() => setActiveTab('resolvedHistory')}
-          >
-            Resolution History
-          </button>
-        </div>
+        <Tabs
+            tabs={[
+              {
+                id: 'inWarehouse',
+                label: 'In Warehouse'
+              },
+              {
+                id: 'missingItems',
+                label: 'Missing Items',
+                badge: Array.isArray(tableData)
+                    ? tableData.filter(item => item.itemStatus === 'MISSING' && !item.resolved).length
+                    : 0
+              },
+              {
+                id: 'excessItems',
+                label: 'Excess Items',
+                badge: Array.isArray(tableData)
+                    ? tableData.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved).length
+                    : 0
+              },
+              {
+                id: 'resolvedHistory',
+                label: 'Resolution History'
+              }
+            ]}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+        />
 
         {/* Tab Content */}
         {activeTab === 'inWarehouse' && (
