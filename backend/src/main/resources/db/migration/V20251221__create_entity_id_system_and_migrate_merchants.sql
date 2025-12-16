@@ -61,19 +61,41 @@ generated_id := 'MCH' || LPAD(counter::TEXT, 6, '0');
 UPDATE merchant SET merchant_id = generated_id WHERE id = merchant_record.id;
 END LOOP;
 
-    -- Update the sequence to the current count
+    -- Update the sequence to the current count only if we generated IDs
+    IF counter > 0 THEN
 UPDATE entity_id_sequences
 SET current_sequence = counter
 WHERE entity_type = 'MERCHANT';
 
 RAISE NOTICE 'Generated % merchant IDs', counter;
+ELSE
+        RAISE NOTICE 'No merchant IDs needed to be generated';
+END IF;
 END $$;
 
 -- ==========================================
 -- Step 5: Make merchant_id NOT NULL and UNIQUE after populating
 -- ==========================================
+DO $$
+BEGIN
+    -- Make merchant_id NOT NULL only if it isn't already
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'merchant'
+        AND column_name = 'merchant_id'
+        AND is_nullable = 'YES'
+    ) THEN
 ALTER TABLE merchant ALTER COLUMN merchant_id SET NOT NULL;
+END IF;
+
+    -- Add unique constraint only if it doesn't exist
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'unique_merchant_id'
+    ) THEN
 ALTER TABLE merchant ADD CONSTRAINT unique_merchant_id UNIQUE (merchant_id);
+END IF;
+END $$;
 
 -- ==========================================
 -- Step 6: Create index for performance
