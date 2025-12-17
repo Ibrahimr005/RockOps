@@ -877,3 +877,25 @@ export const LOAN_ENDPOINTS = {
     STATISTICS: '/api/v1/payroll/loans/statistics'
 };
 
+// Finance - Inventory Valuation Endpoints
+export const INVENTORY_VALUATION_ENDPOINTS = {
+    BASE: '/api/finance/inventory-valuation',
+
+    // Pending Approvals
+    PENDING_APPROVALS: '/api/finance/inventory-valuation/pending-approvals',
+    PENDING_APPROVALS_BY_WAREHOUSE: (warehouseId) => `/api/finance/inventory-valuation/pending-approvals/warehouse/${warehouseId}`,
+
+    // Approval Actions
+    APPROVE_ITEM: (itemId) => `/api/finance/inventory-valuation/approve/${itemId}`,
+    APPROVE_BULK: '/api/finance/inventory-valuation/approve/bulk',
+
+    // Warehouse Balances
+    WAREHOUSE_BALANCE: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/balance`,
+    RECALCULATE_WAREHOUSE_BALANCE: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/recalculate-balance`,
+
+    // Site Balances
+    SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/balance`,
+    ALL_SITE_BALANCES: '/api/finance/inventory-valuation/sites/balances',
+    RECALCULATE_SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/recalculate-balance`
+};
+

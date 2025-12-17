@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import "./WarehouseViewItems.scss";
 import Snackbar from "../../../components/common/Snackbar2/Snackbar2.jsx";
 import InWarehouseItems from "./InWarehouse/InWarehouseItems.jsx";
+import PendingItems from "./PendingItems/PendingItems.jsx"; // NEW IMPORT
 import DiscrepancyItems from "./DiscrepancyItems/DiscrepancyItems.jsx";
 import ResolutionHistory from "./ResolutionHistory/ResolutionHistory.jsx";
 import Tabs from '../../../components/common/Tabs/Tabs.jsx';
 import { itemService } from '../../../services/warehouse/itemService';
 import { warehouseService } from '../../../services/warehouse/warehouseService';
 
-const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems,onDiscrepancyCountChange }) => {
-  // Shared states
+const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems, onDiscrepancyCountChange }) => {
   const [tableData, setTableData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('inWarehouse');
@@ -20,24 +20,20 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
     employees: []
   });
 
-  // Snackbar states
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [notificationType, setNotificationType] = useState('success');
 
-  // Helper function to show snackbar
   const showSnackbar = (message, type = "success") => {
     setNotificationMessage(message);
     setNotificationType(type);
     setShowNotification(true);
   };
 
-  // Helper function to close snackbar
   const closeSnackbar = () => {
     setShowNotification(false);
   };
 
-  // Helper function to check if item is low stock
   const isLowStock = (item) => {
     if (!item.itemType?.minQuantity) return false;
     return item.quantity < item.itemType.minQuantity;
@@ -51,25 +47,6 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
     setLoading(true);
     try {
       const data = await itemService.getItemsByWarehouse(warehouseId);
-
-      // ADD THESE DEBUG LOGS
-      console.log('=== DEBUG: API Response ===');
-      console.log('1. Raw data from API:', data);
-      console.log('2. Total items received:', data?.length);
-
-      const macbooksFromAPI = data?.filter(item =>
-          item.itemType?.name?.toLowerCase().includes('macbook')
-      );
-      console.log('3. ALL Macbooks from API (before any filtering):', macbooksFromAPI);
-      console.log('4. Macbook details:', macbooksFromAPI?.map(m => ({
-        id: m.id,
-        quantity: m.quantity,
-        itemSource: m.itemSource,
-        itemStatus: m.itemStatus,
-        resolved: m.resolved
-      })));
-      console.log('=== END DEBUG ===');
-
       const itemsArray = Array.isArray(data) ? data : [];
       setTableData(itemsArray);
     } catch (error) {
@@ -81,17 +58,15 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
   };
 
   const getDiscrepancyCounts = () => {
-    // Ensure tableData is always an array
     if (!Array.isArray(tableData)) {
       return { missingCount: 0, excessCount: 0, totalDiscrepancies: 0 };
     }
-    
+
     const missingCount = tableData.filter(item => item.itemStatus === 'MISSING' && !item.resolved).length;
     const excessCount = tableData.filter(item => item.itemStatus === 'OVERRECEIVED' && !item.resolved).length;
     return { missingCount, excessCount, totalDiscrepancies: missingCount + excessCount };
   };
 
-// Add this useEffect to notify parent component about discrepancy counts
   useEffect(() => {
     if (onDiscrepancyCountChange) {
       const counts = getDiscrepancyCounts();
@@ -113,26 +88,25 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
     }
   };
 
-  // Initialize data
   useEffect(() => {
     fetchItems();
     fetchWarehouseDetails();
   }, [warehouseId]);
 
-  // Refresh data function to pass to child components
   const refreshItems = () => {
     fetchItems();
   };
 
-  // Function to get filtered data for current tab
   const getFilteredData = () => {
-    // Ensure tableData is always an array
     if (!Array.isArray(tableData)) {
       console.warn('tableData is not an array:', tableData);
       return [];
     }
-    
+
     return tableData.filter((item) => {
+      if (activeTab === 'pending') {
+        return item.itemStatus === 'PENDING' && !item.unitPrice;
+      }
       if (activeTab === 'inWarehouse') {
         return item.itemStatus === 'IN_WAREHOUSE' && !item.resolved;
       }
@@ -148,11 +122,20 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
 
   const filteredData = getFilteredData();
 
+  // Calculate pending count
+  const pendingCount = Array.isArray(tableData)
+      ? tableData.filter(item => item.itemStatus === 'PENDING' && !item.unitPrice).length
+      : 0;
+
   return (
       <div className="warehouse-view4">
         {/* Tab navigation */}
         <Tabs
             tabs={[
+              {
+                id: 'pending',
+                label: 'Pending Approval',
+              },
               {
                 id: 'inWarehouse',
                 label: 'In Warehouse'
@@ -181,6 +164,17 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
         />
 
         {/* Tab Content */}
+        {activeTab === 'pending' && (
+            <PendingItems
+                warehouseId={warehouseId}
+                warehouseData={warehouseData}
+                filteredData={filteredData}
+                loading={loading}
+                showSnackbar={showSnackbar}
+                refreshItems={refreshItems}
+            />
+        )}
+
         {activeTab === 'inWarehouse' && (
             <InWarehouseItems
                 warehouseId={warehouseId}
@@ -190,7 +184,7 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
                 isLowStock={isLowStock}
                 showSnackbar={showSnackbar}
                 refreshItems={refreshItems}
-                onRestockItems={onRestockItems}  // ADD THIS LINE
+                onRestockItems={onRestockItems}
             />
         )}
 
@@ -212,7 +206,6 @@ const WarehouseViewItemsTable = ({ warehouseId, onAddButtonClick, onRestockItems
             />
         )}
 
-        {/* Snackbar Component */}
         <Snackbar
             type={notificationType}
             text={notificationMessage}

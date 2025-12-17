@@ -88,4 +88,42 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
 
     // Dashboard metrics methods
     long countByItemStatus(ItemStatus itemStatus);
+
+    // NEW METHODS - ADD THESE:
+
+    /**
+     * Find all pending items waiting for price approval (no price set yet)
+     */
+    @Query("SELECT i FROM Item i WHERE i.itemStatus = 'PENDING' AND i.unitPrice IS NULL ORDER BY i.createdAt DESC")
+    List<Item> findAllPendingPriceApproval();
+
+    /**
+     * Find pending items for a specific warehouse
+     */
+    @Query("SELECT i FROM Item i WHERE i.warehouse = :warehouse AND i.itemStatus = 'PENDING' AND i.unitPrice IS NULL ORDER BY i.createdAt DESC")
+    List<Item> findPendingPriceApprovalByWarehouse(@Param("warehouse") Warehouse warehouse);
+
+    /**
+     * Calculate total value of all items in a warehouse (only IN_WAREHOUSE status)
+     */
+    @Query("SELECT COALESCE(SUM(i.totalValue), 0.0) FROM Item i WHERE i.warehouse = :warehouse AND i.itemStatus = 'IN_WAREHOUSE' AND i.unitPrice IS NOT NULL")
+    Double calculateWarehouseBalance(@Param("warehouse") Warehouse warehouse);
+
+    /**
+     * Calculate total value across all warehouses in a site
+     */
+    @Query("SELECT COALESCE(SUM(i.totalValue), 0.0) FROM Item i WHERE i.warehouse.site.id = :siteId AND i.itemStatus = 'IN_WAREHOUSE' AND i.unitPrice IS NOT NULL")
+    Double calculateSiteBalance(@Param("siteId") UUID siteId);
+
+    /**
+     * Get count of items in warehouse by status
+     */
+    @Query("SELECT COUNT(i) FROM Item i WHERE i.warehouse = :warehouse AND i.itemStatus = :status")
+    Long countByWarehouseAndStatus(@Param("warehouse") Warehouse warehouse, @Param("status") ItemStatus status);
+
+    /**
+     * Get total quantity of items in warehouse (IN_WAREHOUSE only)
+     */
+    @Query("SELECT COALESCE(SUM(i.quantity), 0) FROM Item i WHERE i.warehouse = :warehouse AND i.itemStatus = 'IN_WAREHOUSE'")
+    Integer getTotalQuantityInWarehouse(@Param("warehouse") Warehouse warehouse);
 }

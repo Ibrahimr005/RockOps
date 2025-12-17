@@ -13,6 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.fasterxml.jackson.annotation.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -75,6 +76,14 @@ public class Site
 
     @Transient
     private int merchantCount;
+
+    // Add these fields to your existing Site model:
+
+    @Column(name = "total_balance")
+    private Double totalBalance = 0.0; // Sum of all warehouse balances in this site
+
+    @Column(name = "balance_updated_at")
+    private LocalDateTime balanceUpdatedAt;
 
 
     public int getEquipmentCount() {

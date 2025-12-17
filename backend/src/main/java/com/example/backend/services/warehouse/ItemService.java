@@ -1,12 +1,15 @@
 package com.example.backend.services.warehouse;
 
 import com.example.backend.dto.item.ItemResolutionDTO;
+import com.example.backend.models.finance.inventoryValuation.ApprovalStatus;
+import com.example.backend.models.finance.inventoryValuation.ItemPriceApproval;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.models.transaction.Transaction;
 import com.example.backend.models.transaction.TransactionItem;
 import com.example.backend.models.transaction.TransactionStatus;
 import com.example.backend.models.user.Role;
 import com.example.backend.models.warehouse.*;
+import com.example.backend.repositories.finance.inventoryValuation.ItemPriceApprovalRepository;
 import com.example.backend.repositories.transaction.TransactionRepository;
 import com.example.backend.repositories.warehouse.ItemRepository;
 import com.example.backend.repositories.warehouse.ItemResolutionRepository;
@@ -41,9 +44,107 @@ public class ItemService {
     @Autowired
     private NotificationService notificationService;
 
-    // Your existing methods...
+    @Autowired
+    private ItemPriceApprovalRepository itemPriceApprovalRepository;
 
-    // Add this logging to your ItemService.getItemsByWarehouse method:
+    public Item createItem(UUID itemTypeId, UUID warehouseId, int initialQuantity, String username, LocalDateTime createdAt) {
+        System.out.println("Service: Creating item with ItemTypeId: " + itemTypeId +
+                ", WarehouseId: " + warehouseId +
+                ", Quantity: " + initialQuantity +
+                ", Username: " + username +
+                ", CreatedAt: " + createdAt);
+
+        try {
+            ItemType itemType = itemTypeRepository.findById(itemTypeId)
+                    .orElseThrow(() -> new IllegalArgumentException("ItemType not found with id: " + itemTypeId));
+            System.out.println("✅ Found ItemType: " + itemType.getName());
+
+            Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                    .orElseThrow(() -> new IllegalArgumentException("Warehouse not found with id: " + warehouseId));
+            System.out.println("✅ Found Warehouse: " + warehouse.getName());
+
+            // Create new item with PENDING status (waiting for price approval)
+            Item newItem = new Item();
+            newItem.setItemType(itemType);
+            newItem.setWarehouse(warehouse);
+            newItem.setQuantity(initialQuantity);
+            newItem.setItemStatus(ItemStatus.PENDING); // CHANGED: Set to PENDING instead of IN_WAREHOUSE
+            newItem.setCreatedAt(createdAt);
+            newItem.setCreatedBy(username);
+            newItem.setItemSource(ItemSource.MANUAL_ENTRY);
+            newItem.setUnitPrice(null); // No price yet - awaiting finance approval
+            newItem.setTotalValue(0.0);
+
+            System.out.println("✅ Created item object - about to save with:");
+            System.out.println("   - ItemType: " + newItem.getItemType().getName());
+            System.out.println("   - Warehouse: " + newItem.getWarehouse().getName());
+            System.out.println("   - Quantity: " + newItem.getQuantity());
+            System.out.println("   - Status: " + newItem.getItemStatus());
+            System.out.println("   - CreatedAt: " + newItem.getCreatedAt());
+            System.out.println("   - CreatedBy: " + newItem.getCreatedBy());
+
+            Item savedItem = itemRepository.save(newItem);
+            System.out.println("✅ Successfully saved item with ID: " + savedItem.getId());
+
+            // NEW: Create ItemPriceApproval request for finance
+            ItemPriceApproval priceApproval = ItemPriceApproval.builder()
+                    .item(savedItem)
+                    .warehouse(warehouse)
+                    .approvalStatus(ApprovalStatus.PENDING)
+                    .requestedAt(LocalDateTime.now())
+                    .requestedBy(username)
+                    .suggestedPrice(itemType.getBasePrice()) // Use ItemType's base price as suggestion
+                    .build();
+
+            itemPriceApprovalRepository.save(priceApproval);
+            System.out.println("✅ Created price approval request for item");
+
+            // Send notification to FINANCE users
+            try {
+                if (notificationService != null) {
+                    String warehouseName = savedItem.getWarehouse() != null ?
+                            savedItem.getWarehouse().getName() : "Unknown Warehouse";
+
+                    String itemTypeName = savedItem.getItemType() != null ?
+                            savedItem.getItemType().getName() : "Unknown Item";
+
+                    String notificationTitle = "New Item Awaiting Price Approval";
+                    String notificationMessage = itemTypeName + " (" + savedItem.getQuantity() +
+                            " units) added to " + warehouseName + " is awaiting price approval";
+
+                    List<Role> targetRoles = Arrays.asList(
+                            Role.FINANCE_MANAGER,
+                            Role.FINANCE_EMPLOYEE,
+                            Role.ADMIN
+                    );
+
+                    notificationService.sendNotificationToUsersByRoles(
+                            targetRoles,
+                            notificationTitle,
+                            notificationMessage,
+                            NotificationType.WARNING,
+                            "/finance/inventory-valuation",
+                            "ITEM_APPROVAL_" + savedItem.getId()
+                    );
+
+                    System.out.println("✅ Item price approval notifications sent to finance");
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ Failed to send item approval notification: " + e.getMessage());
+            }
+
+            return savedItem;
+
+        } catch (Exception e) {
+            System.err.println("❌ Error in createItem service:");
+            System.err.println("   Error type: " + e.getClass().getSimpleName());
+            System.err.println("   Error message: " + e.getMessage());
+            System.err.println("   Stack trace:");
+            e.printStackTrace();
+
+            throw new RuntimeException("Failed to create item: " + e.getMessage(), e);
+        }
+    }
 
     public List<Item> getItemsByWarehouse(UUID warehouseId) {
         System.out.println("🔍 ItemService: Getting items for warehouse: " + warehouseId);
@@ -71,94 +172,7 @@ public class ItemService {
             throw e; // Re-throw to see the full stack trace
         }
     }
-    public Item createItem(UUID itemTypeId, UUID warehouseId, int initialQuantity, String username, LocalDateTime createdAt) {
-        System.out.println("Service: Creating item with ItemTypeId: " + itemTypeId +
-                ", WarehouseId: " + warehouseId +
-                ", Quantity: " + initialQuantity +
-                ", Username: " + username +
-                ", CreatedAt: " + createdAt);
 
-        try {
-            ItemType itemType = itemTypeRepository.findById(itemTypeId)
-                    .orElseThrow(() -> new IllegalArgumentException("ItemType not found with id: " + itemTypeId));
-            System.out.println("✅ Found ItemType: " + itemType.getName());
-
-            Warehouse warehouse = warehouseRepository.findById(warehouseId)
-                    .orElseThrow(() -> new IllegalArgumentException("Warehouse not found with id: " + warehouseId));
-            System.out.println("✅ Found Warehouse: " + warehouse.getName());
-
-            // Always create a new item instead of merging
-            Item newItem = new Item();
-            newItem.setItemType(itemType);
-            newItem.setWarehouse(warehouse);
-            newItem.setQuantity(initialQuantity);
-            newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
-            newItem.setCreatedAt(createdAt);
-            newItem.setCreatedBy(username);
-            newItem.setItemSource(ItemSource.MANUAL_ENTRY);
-
-            System.out.println("✅ Created item object - about to save with:");
-            System.out.println("   - ItemType: " + newItem.getItemType().getName());
-            System.out.println("   - Warehouse: " + newItem.getWarehouse().getName());
-            System.out.println("   - Quantity: " + newItem.getQuantity());
-            System.out.println("   - Status: " + newItem.getItemStatus());
-            System.out.println("   - CreatedAt: " + newItem.getCreatedAt());
-            System.out.println("   - CreatedBy: " + newItem.getCreatedBy());
-
-//            Item savedItem = itemRepository.save(newItem);
-//            System.out.println("✅ Successfully saved item with ID: " + savedItem.getId());
-//            return savedItem;
-
-            Item savedItem = itemRepository.save(newItem);
-            System.out.println("✅ Successfully saved item with ID: " + savedItem.getId());
-
-// Send notification to warehouse users and ADMIN
-            try {
-                if (notificationService != null) {
-                    String warehouseName = savedItem.getWarehouse() != null ?
-                            savedItem.getWarehouse().getName() : "Unknown Warehouse";
-
-                    String itemTypeName = savedItem.getItemType() != null ?
-                            savedItem.getItemType().getName() : "Unknown Item";
-
-                    String notificationTitle = "New Item Added to Warehouse";
-                    String notificationMessage = itemTypeName + " (" + savedItem.getQuantity() +
-                            " units) has been added to " + warehouseName;
-
-                    List<Role> targetRoles = Arrays.asList(
-                            Role.WAREHOUSE_MANAGER,
-                            Role.WAREHOUSE_EMPLOYEE,
-                            Role.ADMIN
-                    );
-
-                    notificationService.sendNotificationToUsersByRoles(
-                            targetRoles,
-                            notificationTitle,
-                            notificationMessage,
-                            NotificationType.SUCCESS,
-                            "/warehouses/" + savedItem.getWarehouse().getId(),
-                            "ITEM_" + savedItem.getId()
-                    );
-
-                    System.out.println("✅ Item creation notifications sent successfully");
-                }
-            } catch (Exception e) {
-                System.err.println("⚠️ Failed to send item creation notification: " + e.getMessage());
-            }
-
-            return savedItem;
-
-        } catch (Exception e) {
-            System.err.println("❌ Error in createItem service:");
-            System.err.println("   Error type: " + e.getClass().getSimpleName());
-            System.err.println("   Error message: " + e.getMessage());
-            System.err.println("   Stack trace:");
-            e.printStackTrace();
-
-            // Re-throw with more context
-            throw new RuntimeException("Failed to create item: " + e.getMessage(), e);
-        }
-    }
 
     // CLEAN RESOLUTION METHOD - Updated with transaction status logic
     @Transactional
