@@ -43,9 +43,9 @@ public class EquipmentTypeService {
 
     @Autowired
     public EquipmentTypeService(EquipmentTypeRepository equipmentTypeRepository,
-                                WorkTypeRepository workTypeRepository,
-                                DepartmentRepository departmentRepository,
-                                JobPositionRepository jobPositionRepository) {
+            WorkTypeRepository workTypeRepository,
+            DepartmentRepository departmentRepository,
+            JobPositionRepository jobPositionRepository) {
         this.equipmentTypeRepository = equipmentTypeRepository;
         this.workTypeRepository = workTypeRepository;
         this.departmentRepository = departmentRepository;
@@ -75,7 +75,8 @@ public class EquipmentTypeService {
         // Check if equipment type with this name already exists
         Optional<EquipmentType> existingType = equipmentTypeRepository.findByName(dto.getName());
         if (existingType.isPresent()) {
-            // For equipment types, we don't have soft delete, so it's always an active duplicate
+            // For equipment types, we don't have soft delete, so it's always an active
+            // duplicate
             throw ResourceConflictException.duplicateActive("Equipment type", dto.getName());
         }
 
@@ -95,8 +96,13 @@ public class EquipmentTypeService {
         // Send notifications
         try {
             String notificationTitle = "New Equipment Type Created";
+            String description = dto.getDescription();
+            if (description != null && description.length() > 100) {
+                description = description.substring(0, 100) + "...";
+            }
+
             String notificationMessage = "Equipment type '" + savedEntity.getName() + "' has been created. " +
-                    (dto.getDescription() != null ? dto.getDescription() : "");
+                    (description != null ? description : "");
             String actionUrl = "/equipment/type-management";
             String relatedEntity = savedEntity.getId().toString();
 
@@ -108,8 +114,7 @@ public class EquipmentTypeService {
                     notificationMessage,
                     NotificationType.SUCCESS,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
 
             System.out.println("Equipment type creation notification sent successfully");
         } catch (Exception e) {
@@ -154,12 +159,14 @@ public class EquipmentTypeService {
                     log.info("Equipment type '{}' is now drivable - creating job position", dto.getName());
                     createJobPositionForEquipmentType(updatedEntity);
                 } else {
-                    log.info("Equipment type renamed from '{}' to '{}' - updating job position", oldName, dto.getName());
+                    log.info("Equipment type renamed from '{}' to '{}' - updating job position", oldName,
+                            dto.getName());
                     handleEquipmentTypeRenamed(oldName, updatedEntity);
                 }
             }
         } else if (wasDrivable) {
-            // Equipment type is no longer drivable - try to delete the position if it has no employees
+            // Equipment type is no longer drivable - try to delete the position if it has
+            // no employees
             log.info("Equipment type '{}' is no longer drivable - attempting to remove job position", dto.getName());
             deleteJobPositionIfUnused(oldName + " Driver");
         }
@@ -167,8 +174,13 @@ public class EquipmentTypeService {
         // Send notifications
         try {
             String notificationTitle = "Equipment Type Updated";
+            String description = dto.getDescription();
+            if (description != null && description.length() > 100) {
+                description = description.substring(0, 100) + "...";
+            }
+
             String notificationMessage = "Equipment type '" + updatedEntity.getName() + "' has been updated. " +
-                    (dto.getDescription() != null ? dto.getDescription() : "");
+                    (description != null ? description : "");
             String actionUrl = "/equipment/type-management";
             String relatedEntity = updatedEntity.getId().toString();
 
@@ -180,8 +192,7 @@ public class EquipmentTypeService {
                     notificationMessage,
                     NotificationType.INFO,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
 
             System.out.println("Equipment type update notification sent successfully");
         } catch (Exception e) {
@@ -198,11 +209,10 @@ public class EquipmentTypeService {
         if (!equipmentType.getEquipments().isEmpty()) {
             int equipmentCount = equipmentType.getEquipments().size();
             throw ResourceInUseException.create(
-                "equipment type", 
-                equipmentType.getName(), 
-                equipmentCount, 
-                "equipment unit"
-            );
+                    "equipment type",
+                    equipmentType.getName(),
+                    equipmentCount,
+                    "equipment unit");
         }
 
         // Send notifications
@@ -221,8 +231,7 @@ public class EquipmentTypeService {
                     notificationMessage,
                     NotificationType.WARNING,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
 
             System.out.println("Equipment type deletion notification sent successfully");
         } catch (Exception e) {
@@ -242,7 +251,8 @@ public class EquipmentTypeService {
     @Transactional
     public EquipmentTypeDTO addSupportedWorkTypes(UUID equipmentTypeId, List<UUID> workTypeIds) {
         EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
 
         for (UUID workTypeId : workTypeIds) {
             WorkType workType = workTypeRepository.findById(workTypeId)
@@ -281,8 +291,7 @@ public class EquipmentTypeService {
                     notificationMessage,
                     NotificationType.INFO,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
 
             System.out.println("Work types addition notification sent successfully");
         } catch (Exception e) {
@@ -298,7 +307,8 @@ public class EquipmentTypeService {
     @Transactional
     public EquipmentTypeDTO removeSupportedWorkTypes(UUID equipmentTypeId, List<UUID> workTypeIds) {
         EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
 
         for (UUID workTypeId : workTypeIds) {
             equipmentType.getSupportedWorkTypes().removeIf(wt -> wt.getId().equals(workTypeId));
@@ -322,8 +332,7 @@ public class EquipmentTypeService {
                     notificationMessage,
                     NotificationType.INFO,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
 
             System.out.println("Work types removal notification sent successfully");
         } catch (Exception e) {
@@ -339,7 +348,8 @@ public class EquipmentTypeService {
     @Transactional
     public EquipmentTypeDTO setSupportedWorkTypes(UUID equipmentTypeId, List<UUID> workTypeIds) {
         EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
 
         // Clear existing work types
         equipmentType.getSupportedWorkTypes().clear();
@@ -369,8 +379,7 @@ public class EquipmentTypeService {
                     notificationMessage,
                     NotificationType.INFO,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
 
             System.out.println("Work types update notification sent successfully");
         } catch (Exception e) {
@@ -385,7 +394,8 @@ public class EquipmentTypeService {
      */
     public List<WorkTypeDTO> getSupportedWorkTypes(UUID equipmentTypeId) {
         EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
 
         return equipmentType.getSupportedWorkTypes().stream()
                 .filter(WorkType::isActive)
@@ -404,7 +414,6 @@ public class EquipmentTypeService {
      * Create job position immediately when equipment type is created
      * This method is called directly in the same transaction
      */
-
 
     private void createJobPositionForEquipmentType(EquipmentType equipmentType) {
         String requiredPositionName = equipmentType.getRequiredDriverPosition();
@@ -436,7 +445,7 @@ public class EquipmentTypeService {
 
         // Define standard working hours
         LocalTime defaultStartTime = LocalTime.of(9, 0); // 09:00:00
-        LocalTime defaultEndTime = LocalTime.of(17, 0);  // 17:00:00
+        LocalTime defaultEndTime = LocalTime.of(17, 0); // 17:00:00
 
         // Create the job position with smart defaults for MONTHLY contract
         JobPosition driverPosition = new JobPosition();
@@ -475,6 +484,7 @@ public class EquipmentTypeService {
         log.info("✅ Successfully created job position: {} with ID: {} for equipment type: {}",
                 requiredPositionName, savedPosition.getId(), equipmentType.getName());
     }
+
     /**
      * Update job position when equipment type is renamed
      * This handles the case where an equipment type name is changed

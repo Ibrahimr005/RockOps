@@ -599,6 +599,9 @@ const EquipmentMain = () => {
                                     statusClass: getStatusClass(equipment.status)
                                 }
                             ]}
+
+                            // Performance: Enable lazy loading for images in the grid
+                            lazyImageFetch={true}
                             actions={[
                                 ...(permissions.canEdit ? [{
                                     label: 'Edit',

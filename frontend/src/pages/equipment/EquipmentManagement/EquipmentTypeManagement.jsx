@@ -40,9 +40,9 @@ const EquipmentTypeManagement = () => {
             // Transform data to include display values for filtering
             const typesWithDisplayValues = response.data.map(type => {
                 // Create a flat list of supported work type names for filtering
-                const supportedWorkTypeNames = type.supportedWorkTypes && type.supportedWorkTypes.length > 0 ? 
+                const supportedWorkTypeNames = type.supportedWorkTypes && type.supportedWorkTypes.length > 0 ?
                     type.supportedWorkTypes.map(wt => wt.name) : [];
-                    
+
                 return {
                     ...type,
                     drivableText: type.drivable ? 'Yes' : 'No',
@@ -83,9 +83,9 @@ const EquipmentTypeManagement = () => {
                 description: type.description || '',
                 drivable: type.drivable !== undefined ? type.drivable : true
             });
-            
+
             // Get work types that this equipment type currently supports
-            const supportedWorkTypeIds = type.supportedWorkTypes ? 
+            const supportedWorkTypeIds = type.supportedWorkTypes ?
                 type.supportedWorkTypes.map(wt => wt.id) : [];
             setSelectedWorkTypes(supportedWorkTypeIds);
         } else {
@@ -124,19 +124,19 @@ const EquipmentTypeManagement = () => {
         try {
             if (editingType) {
                 await equipmentService.updateEquipmentType(editingType.id, formData);
-                
+
                 // Update supported work types
                 await equipmentService.setSupportedWorkTypesForEquipmentType(editingType.id, selectedWorkTypes);
-                
+
                 showSuccess(`Equipment type "${formData.name}" has been updated successfully`);
             } else {
                 const response = await equipmentService.createEquipmentType(formData);
-                
+
                 // Set supported work types for new equipment type
                 if (selectedWorkTypes.length > 0) {
                     await equipmentService.setSupportedWorkTypesForEquipmentType(response.data.id, selectedWorkTypes);
                 }
-                
+
                 showSuccess(`Equipment type "${formData.name}" has been added successfully`);
             }
 
@@ -144,7 +144,7 @@ const EquipmentTypeManagement = () => {
             fetchTypes(); // Refresh the list with display values
         } catch (err) {
             console.error('Error saving equipment type:', err);
-            
+
             // Handle specific error cases
             if (err.response?.status === 409) {
                 // Check if it's our enhanced conflict response
@@ -196,7 +196,7 @@ const EquipmentTypeManagement = () => {
             fetchTypes(); // Refresh the list with display values
         } catch (err) {
             console.error('Error deleting equipment type:', err);
-            
+
             // Handle specific error cases
             if (err.response?.status === 409) {
                 // Check if it's a resource in use error
@@ -224,7 +224,7 @@ const EquipmentTypeManagement = () => {
             header: 'Name',
             accessor: 'name',
             sortable: true,
-            filterType: 'text' 
+            filterType: 'text'
         },
         {
             header: 'Description',
@@ -236,15 +236,15 @@ const EquipmentTypeManagement = () => {
             render: (row) => {
                 const description = row.description || 'N/A';
                 const maxLength = 80; // Character limit before truncation
-                
+
                 if (description === 'N/A' || description.length <= maxLength) {
                     return <span className="description-text">{description}</span>;
                 }
-                
+
                 const truncated = description.substring(0, maxLength) + '...';
                 return (
-                    <span 
-                        className="description-text truncated" 
+                    <span
+                        className="description-text truncated"
                         title={description}
                         style={{
                             display: 'block',
@@ -398,11 +398,11 @@ const EquipmentTypeManagement = () => {
                                     value={formData.description}
                                     onChange={handleChange}
                                     rows="4"
-                                    maxLength="1000"
-                                    placeholder="Enter a description of this equipment type... (Max 1000 characters)"
+                                    maxLength="5000"
+                                    placeholder="Enter a description of this equipment type... (Max 5000 characters)"
                                 />
                                 <div className="character-counter">
-                                    {formData.description.length}/1000 characters
+                                    {formData.description.length}/5000 characters
                                 </div>
                             </div>
                             <div className="form-group">
@@ -417,7 +417,7 @@ const EquipmentTypeManagement = () => {
                                     <span className="checkbox-text">Requires Driver</span>
                                 </label>
                                 <small className="form-help-text">
-                                    Check this if equipment of this type requires a driver to operate (e.g., bulldozers, trucks). 
+                                    Check this if equipment of this type requires a driver to operate (e.g., bulldozers, trucks).
                                     Uncheck for stationary equipment like generators or compressors.
                                 </small>
                             </div>
