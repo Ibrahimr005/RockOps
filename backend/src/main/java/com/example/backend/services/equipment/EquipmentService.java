@@ -87,7 +87,15 @@ public class EquipmentService {
                     EquipmentDTO dto = EquipmentDTO.fromEntity(equipment);
                     // Performance Fix: Don't pre-fetch images for list view
                     // Logic moved to frontend lazy-loading
-                    dto.setImageUrl(null);
+
+                    //dto.setImageUrl(null);
+                    try {
+                        String imageUrl = minioService.getEquipmentMainPhoto(equipment.getId());
+                        dto.setImageUrl(imageUrl);
+                    } catch (Exception e) {
+                        dto.setImageUrl(null);
+                    }
+
                     return dto;
                 })
                 .collect(Collectors.toList());
