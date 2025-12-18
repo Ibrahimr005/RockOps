@@ -109,9 +109,8 @@ public class Equipment {
     @JsonBackReference("equipment-maintenance")
     private List<InSiteMaintenance> maintenanceRecords = new ArrayList<>();
 
-
-
-
+    @Column(columnDefinition = "TEXT")
+    private String imageStorageKey;
 
     public Equipment() {
         this.status = EquipmentStatus.AVAILABLE;

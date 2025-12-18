@@ -495,7 +495,8 @@ public class EquipmentTypeService {
         String newPositionName = updatedEquipmentType.getRequiredDriverPosition();
 
         // Find the old position
-        Optional<JobPosition> existingPosition = findExistingPosition(oldPositionName);
+        Optional<JobPosition> existingPosition =
+                findExistingPosition(oldPositionName);
 
         if (existingPosition.isPresent()) {
             JobPosition position = existingPosition.get();

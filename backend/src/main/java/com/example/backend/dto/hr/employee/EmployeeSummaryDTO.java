@@ -92,4 +92,27 @@ public class EmployeeSummaryDTO {
     public boolean isActive() {
         return "ACTIVE".equals(getStatus());
     }
+
+    // Static mapper method
+    public static EmployeeSummaryDTO fromEntity(com.example.backend.models.hr.Employee employee) {
+        if (employee == null) return null;
+
+        return EmployeeSummaryDTO.builder()
+                .id(employee.getId())
+                .firstName(employee.getFirstName())
+                .lastName(employee.getLastName())
+                .fullName(employee.getFullName())
+                .email(employee.getEmail())
+                .phoneNumber(employee.getPhoneNumber())
+                .status(employee.getStatus() != null ? employee.getStatus().toString() : "UNKNOWN")
+                .photoUrl(employee.getPhotoUrl())
+                // Only set department name to avoid circular loops
+                .departmentName(employee.getJobPosition() != null && employee.getJobPosition().getDepartment() != null
+                        ? employee.getJobPosition().getDepartment().getName()
+                        : null)
+                .position(employee.getJobPosition() != null ? employee.getJobPosition().getPositionName() : null)
+                .siteName(employee.getSite() != null ? employee.getSite().getName() : null)
+                .hireDate(employee.getHireDate())
+                .build();
+    }
 }
