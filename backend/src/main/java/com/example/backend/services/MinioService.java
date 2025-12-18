@@ -297,7 +297,6 @@ public class MinioService implements FileStorageService {
                         .sourceKey(oldKey)
                         .destinationBucket(bucketName)
                         .destinationKey(newKey)
-                        .acl(ObjectCannedACL.PUBLIC_READ) // Or inherit, but explicit is safe
                         .build();
                         
                     s3Client.copyObject(copyReq);
