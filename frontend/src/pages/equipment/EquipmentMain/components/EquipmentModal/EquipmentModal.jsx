@@ -425,6 +425,7 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         console.log(equipmentToEdit);
 
         // Prepare the form data
+        // Fix populateFormForEditing
         const newFormData = {
             name: equipmentToEdit.name || "",
             model: equipmentToEdit.model || "",
@@ -438,18 +439,20 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
             manufactureYear: equipmentToEdit.manufactureYear ? equipmentToEdit.manufactureYear.toString() : "",
             purchasedDate: formatDateForInput(equipmentToEdit.purchasedDate) || "",
             deliveredDate: formatDateForInput(equipmentToEdit.deliveredDate) || "",
-            egpPrice: equipmentToEdit.egpPrice || "",
-            dollarPrice: equipmentToEdit.dollarPrice || "",
+            egpPrice: equipmentToEdit.egpPrice ?? "",
+            dollarPrice: equipmentToEdit.dollarPrice ?? "",
             purchasedFrom: equipmentToEdit.purchasedFromId || "",
             examinedBy: equipmentToEdit.examinedBy || "",
             equipmentComplaints: equipmentToEdit.equipmentComplaints || "",
             countryOfOrigin: equipmentToEdit.countryOfOrigin || "",
-            shipping: equipmentToEdit.shipping || "",
-            customs: equipmentToEdit.customs || "",
-            taxes: equipmentToEdit.taxes || "",
+            shipping: equipmentToEdit.shipping ?? "",
+            customs: equipmentToEdit.customs ?? "",
+            taxes: equipmentToEdit.taxes ?? "",
             relatedDocuments: equipmentToEdit.relatedDocuments || "",
-            workedHours: equipmentToEdit.workedHours || 0
+            workedHours: equipmentToEdit.workedHours ?? 0
         };
+
+
 
         setFormData(newFormData);
 
@@ -947,7 +950,9 @@ const EquipmentModal = ({ isOpen, onClose, onSave, equipmentToEdit = null }) => 
         // Check all required fields in tab order
         for (const tab of tabs) {
             for (const field of tab.requiredFields) {
-                if (!formData[field] || formData[field] === "" || formData[field] === null || formData[field] === undefined) {
+                // Strict check to allow 0 as valid value
+                const val = formData[field];
+                if (val === "" || val === null || val === undefined) {
                     return { field, tabId: tab.id };
                 }
             }
