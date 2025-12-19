@@ -322,6 +322,91 @@ export const FINANCE_ENDPOINTS = {
             EXPORT_CSV: (bankAccountId) => `/api/v1/reconciliation-reports/export/csv/bank-account/${bankAccountId}`,
             TREND: (bankAccountId) => `/api/v1/reconciliation-reports/trend/bank-account/${bankAccountId}`
         }
+    },
+    // Balances submodule endpoints (inside FINANCE_ENDPOINTS)
+    BALANCES: {
+        // Bank Account endpoints
+        BANK_ACCOUNTS: {
+            BASE: '/api/v1/finance/balances/bank-accounts',
+            BY_ID: (id) => `/api/v1/finance/balances/bank-accounts/${id}`,
+            ACTIVE: '/api/v1/finance/balances/bank-accounts/active',
+            ACTIVATE: (id) => `/api/v1/finance/balances/bank-accounts/${id}/activate`,
+            DEACTIVATE: (id) => `/api/v1/finance/balances/bank-accounts/${id}/deactivate`
+        },
+
+        // Cash Safe endpoints
+        CASH_SAFES: {
+            BASE: '/api/v1/finance/balances/cash-safes',
+            BY_ID: (id) => `/api/v1/finance/balances/cash-safes/${id}`,
+            ACTIVE: '/api/v1/finance/balances/cash-safes/active',
+            ACTIVATE: (id) => `/api/v1/finance/balances/cash-safes/${id}/activate`,
+            DEACTIVATE: (id) => `/api/v1/finance/balances/cash-safes/${id}/deactivate`
+        },
+
+        // Cash With Person endpoints
+        CASH_WITH_PERSONS: {
+            BASE: '/api/v1/finance/balances/cash-with-persons',
+            BY_ID: (id) => `/api/v1/finance/balances/cash-with-persons/${id}`,
+            ACTIVE: '/api/v1/finance/balances/cash-with-persons/active',
+            ACTIVATE: (id) => `/api/v1/finance/balances/cash-with-persons/${id}/activate`,
+            DEACTIVATE: (id) => `/api/v1/finance/balances/cash-with-persons/${id}/deactivate`
+        },
+
+        // Balance Transaction endpoints
+        TRANSACTIONS: {
+            BASE: '/api/v1/finance/balances/transactions',
+            BY_ID: (id) => `/api/v1/finance/balances/transactions/${id}`,
+            APPROVE: (id) => `/api/v1/finance/balances/transactions/${id}/approve`,
+            REJECT: (id) => `/api/v1/finance/balances/transactions/${id}/reject`,
+            PENDING: '/api/v1/finance/balances/transactions/pending',
+            PENDING_COUNT: '/api/v1/finance/balances/transactions/pending/count',
+            BY_ACCOUNT: (accountType, accountId) => `/api/v1/finance/balances/transactions/account/${accountType}/${accountId}`,
+            DATE_RANGE: '/api/v1/finance/balances/transactions/date-range'
+        }
+    },
+
+    // Inside FINANCE_ENDPOINTS object, add:
+
+// Accounts Payable endpoints
+    ACCOUNTS_PAYABLE: {
+        // Offer Financial Reviews
+        OFFER_REVIEWS: {
+            BASE: '/api/v1/finance/offer-reviews',
+            BY_ID: (id) => `/api/v1/finance/offer-reviews/${id}`,
+            PENDING: '/api/v1/finance/offer-reviews/pending',
+            BY_STATUS: (status) => `/api/v1/finance/offer-reviews/status/${status}`,
+            BY_OFFER: (offerId) => `/api/v1/finance/offer-reviews/offer/${offerId}`,
+            REVIEW: '/api/v1/finance/offer-reviews/review'
+        },
+
+        // Payment Requests
+        PAYMENT_REQUESTS: {
+            BASE: '/api/v1/finance/payment-requests',
+            BY_ID: (id) => `/api/v1/finance/payment-requests/${id}`,
+            PENDING: '/api/v1/finance/payment-requests/pending',
+            READY_TO_PAY: '/api/v1/finance/payment-requests/ready-to-pay',
+            BY_MERCHANT: (merchantId) => `/api/v1/finance/payment-requests/merchant/${merchantId}`,
+            APPROVE_REJECT: '/api/v1/finance/payment-requests/approve-reject',
+            CREATE_FROM_PO: (poId) => `/api/v1/finance/payment-requests/create-from-po/${poId}`
+        },
+
+        // Payments
+        PAYMENTS: {
+            BASE: '/api/v1/finance/payments',
+            BY_ID: (id) => `/api/v1/finance/payments/${id}`,
+            PROCESS: '/api/v1/finance/payments/process',
+            BY_PAYMENT_REQUEST: (prId) => `/api/v1/finance/payments/payment-request/${prId}`,
+            TODAY: '/api/v1/finance/payments/today',
+            BY_MERCHANT: (merchantId) => `/api/v1/finance/payments/merchant/${merchantId}`,
+            HISTORY: '/api/v1/finance/payments/history'
+        },
+
+        // Dashboard
+        DASHBOARD: {
+            SUMMARY: '/api/v1/finance/dashboard/summary',
+            BALANCES: '/api/v1/finance/dashboard/balances',
+            MERCHANTS: '/api/v1/finance/dashboard/merchants'
+        }
     }
 };
 
