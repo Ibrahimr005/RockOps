@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import './UnifiedCard.scss';
 
 /**
@@ -6,27 +6,77 @@ import './UnifiedCard.scss';
  * Supports presigned URL refresh for MinIO/S3 images
  */
 const UnifiedCard = ({
-                         id,
-                         title = 'Untitled',
-                         imageUrl,
-                         imageFallback,
-                         stats = [],
-                         actions = [],
-                         hasAlert = false,
-                         alertTooltip = '',
-                         onClick,
-                         className = '',
-                         // Empty state props
-                         isEmpty = false,
-                         emptyIcon: EmptyIcon,
-                         emptyMessage = 'No data available',
-                         emptyIconSize = 54,
-                         // New prop for presigned URL refresh
-                         onImageRefresh = null
-                     }) => {
+    id,
+    title = 'Untitled',
+    imageUrl,
+    imageFallback,
+    stats = [],
+    actions = [],
+    hasAlert = false,
+    alertTooltip = '',
+    onClick,
+    className = '',
+    // Empty state props
+    isEmpty = false,
+    emptyIcon: EmptyIcon,
+    emptyMessage = 'No data available',
+    emptyIconSize = 54,
+    // New prop for presigned URL refresh
+    onImageRefresh = null,
+    // Performance prop
+    lazyImageFetch = false
+}) => {
 
     const [imageRefreshAttempted, setImageRefreshAttempted] = useState(false);
     const [refreshedImageUrl, setRefreshedImageUrl] = useState(null);
+    const cardRef = useRef(null);
+
+    // Initial load - fetch presigned URL if refresh function provided
+    React.useEffect(() => {
+        let isMounted = true;
+
+        // Lazy loading handler
+        const fetchImage = async () => {
+            // If we already have a URL or already attempted refresh, stop
+            if (!onImageRefresh || imageUrl || imageRefreshAttempted) return;
+
+            try {
+                const newUrl = await onImageRefresh(id);
+                if (isMounted && newUrl) {
+                    setRefreshedImageUrl(newUrl);
+                    setImageRefreshAttempted(true);
+                }
+            } catch (error) {
+                console.error(`Failed to load image for ${title}`, error);
+            }
+        };
+
+        if (lazyImageFetch) {
+            // Lazy loading implementation
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    fetchImage();
+                    observer.disconnect();
+                }
+            });
+
+            if (cardRef.current) {
+                observer.observe(cardRef.current);
+            }
+
+            return () => {
+                isMounted = false;
+                observer.disconnect();
+            };
+        } else {
+            // Eager loading implementation (legacy/default behavior)
+            fetchImage();
+        }
+
+        return () => {
+            isMounted = false;
+        };
+    }, [id, imageUrl, onImageRefresh, title, imageRefreshAttempted]);
 
     const handleImageError = async (e) => {
         // If we have a refresh callback and haven't attempted refresh yet
@@ -43,7 +93,7 @@ const UnifiedCard = ({
                 console.error(`Failed to refresh image for ${title}:`, error);
             }
         }
-        
+
         // Fallback to placeholder
         if (imageFallback && e.target.src !== imageFallback) {
             e.target.src = imageFallback;
@@ -81,6 +131,7 @@ const UnifiedCard = ({
     // Render normal card
     return (
         <div
+            ref={cardRef}
             className={`unified-card ${className}`}
             onClick={handleCardClick}
             title={hasAlert ? alertTooltip : undefined}

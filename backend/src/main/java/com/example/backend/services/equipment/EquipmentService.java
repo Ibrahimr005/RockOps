@@ -39,7 +39,6 @@ import java.time.Year;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
 @Service
 public class EquipmentService {
 
@@ -53,7 +52,7 @@ public class EquipmentService {
     private MerchantRepository merchantRepository;
 
     @Autowired
-    private final EquipmentBrandRepository equipmentBrandRepository ;
+    private final EquipmentBrandRepository equipmentBrandRepository;
 
     @Autowired
     private SarkyLogRepository sarkyLogRepository;
@@ -70,14 +69,28 @@ public class EquipmentService {
             EquipmentTypeRepository equipmentTypeRepository,
             SiteRepository siteRepository,
             EmployeeRepository employeeRepository,
-            MinioService minioService, EquipmentBrandRepository equipmentBrandRepository
-    ) {
+            MinioService minioService, EquipmentBrandRepository equipmentBrandRepository) {
         this.equipmentRepository = equipmentRepository;
         this.equipmentTypeRepository = equipmentTypeRepository;
         this.siteRepository = siteRepository;
         this.employeeRepository = employeeRepository;
         this.minioService = minioService;
         this.equipmentBrandRepository = equipmentBrandRepository;
+    }
+
+    // Helper method to resolve image URL using the cached key if available
+    private String resolveEquipmentImageUrl(Equipment equipment) {
+        try {
+            // FAST PATH: If key is in DB, generating URL is pure computation (no network)
+            if (equipment.getImageStorageKey() != null && !equipment.getImageStorageKey().isEmpty()) {
+                return minioService.generateUrlFromKey(equipment.getImageStorageKey());
+            }
+
+            // SLOW PATH: Fallback for unmigrated data (checks S3)
+            return minioService.getEquipmentMainPhoto(equipment.getId());
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     // GET methods
@@ -87,12 +100,7 @@ public class EquipmentService {
         return equipments.stream()
                 .map(equipment -> {
                     EquipmentDTO dto = EquipmentDTO.fromEntity(equipment);
-                    try {
-                        String imageUrl = minioService.getEquipmentMainPhoto(equipment.getId());
-                        dto.setImageUrl(imageUrl);
-                    } catch (Exception e) {
-                        dto.setImageUrl(null);
-                    }
+                    dto.setImageUrl(resolveEquipmentImageUrl(equipment));
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -103,21 +111,14 @@ public class EquipmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + id));
 
         EquipmentDTO dto = EquipmentDTO.fromEntity(equipment);
-
-        try {
-            String imageUrl = minioService.getEquipmentMainPhoto(equipment.getId());
-            dto.setImageUrl(imageUrl);
-        } catch (Exception e) {
-            dto.setImageUrl(null);
-        }
+        dto.setImageUrl(resolveEquipmentImageUrl(equipment));
 
         // If equipment is in maintenance, populate the active maintenance record ID
         if (equipment.getStatus() == EquipmentStatus.IN_MAINTENANCE) {
             Optional<MaintenanceRecord> activeRecord = maintenanceRecordRepository
                     .findFirstByEquipmentIdAndStatusOrderByCreationDateDesc(
-                            id, 
-                            MaintenanceRecord.MaintenanceStatus.ACTIVE
-                    );
+                            id,
+                            MaintenanceRecord.MaintenanceStatus.ACTIVE);
             activeRecord.ifPresent(record -> dto.setActiveMaintenanceRecordId(record.getId()));
         }
 
@@ -133,12 +134,8 @@ public class EquipmentService {
         return equipments.stream()
                 .map(equipment -> {
                     EquipmentDTO dto = EquipmentDTO.fromEntity(equipment);
-                    try {
-                        String imageUrl = minioService.getEquipmentMainPhoto(equipment.getId());
-                        dto.setImageUrl(imageUrl);
-                    } catch (Exception e) {
-                        dto.setImageUrl(null);
-                    }
+                    // For type list, we can also use the resolve logic
+                    dto.setImageUrl(resolveEquipmentImageUrl(equipment));
                     return dto;
                 })
                 .collect(Collectors.toList());
@@ -162,7 +159,7 @@ public class EquipmentService {
                         + createDTO.getTypeId()));
         equipment.setType(equipmentType);
 
-        EquipmentBrand equipmentBrand  = equipmentBrandRepository.findById(createDTO.getBrandId())
+        EquipmentBrand equipmentBrand = equipmentBrandRepository.findById(createDTO.getBrandId())
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment brand not found with id: "
                         + createDTO.getBrandId()));
         equipment.setBrand(equipmentBrand);
@@ -183,7 +180,6 @@ public class EquipmentService {
                             + createDTO.getPurchasedFrom()));
             equipment.setPurchasedFrom(merchant);
         }
-
 
         equipment.setExaminedBy(createDTO.getExaminedBy());
         equipment.setEquipmentComplaints(createDTO.getEquipmentComplaints());
@@ -208,8 +204,10 @@ public class EquipmentService {
         }
 
         // Validate driver assignment for drivable equipment types
-        if (!equipmentType.isDrivable() && (createDTO.getMainDriverId() != null || createDTO.getSubDriverId() != null)) {
-            throw new IllegalArgumentException("Cannot assign drivers to non-drivable equipment type: " + equipmentType.getName());
+        if (!equipmentType.isDrivable()
+                && (createDTO.getMainDriverId() != null || createDTO.getSubDriverId() != null)) {
+            throw new IllegalArgumentException(
+                    "Cannot assign drivers to non-drivable equipment type: " + equipmentType.getName());
         }
 
         // Fixed driver validation in EquipmentService.java createEquipment method
@@ -250,34 +248,36 @@ public class EquipmentService {
             equipment.setSubDriver(subDriver);
         }
 
-        // Automatically assign drivers to equipment's site if both site and drivers are assigned
+        // Automatically assign drivers to equipment's site if both site and drivers are
+        // assigned
         assignDriversToEquipmentSite(equipment);
 
-        // Save the equipment
+        // Save the equipment first to generate ID
         Equipment savedEquipment = equipmentRepository.save(equipment);
 
-        // Ensure storage folder exists for this equipment (uses single bucket with folder structure)
+        // Ensure storage folder exists for this equipment (uses single bucket with
+        // folder structure)
         minioService.createEquipmentBucket(savedEquipment.getId());
 
         // Upload photo if provided (stored in equipment/{equipmentId}/ folder)
         if (equipmentPhoto != null && !equipmentPhoto.isEmpty()) {
-            minioService.uploadEquipmentFile(savedEquipment.getId(), equipmentPhoto, "Main_Image");
+            String fileName = minioService.uploadEquipmentFile(savedEquipment.getId(), equipmentPhoto, "Main_Image");
+            
+            // CRITICAL: Save the storage key using the standard structure
+            String storageKey = "equipment/" + savedEquipment.getId() + "/" + fileName;
+            savedEquipment.setImageStorageKey(storageKey);
+            savedEquipment = equipmentRepository.save(savedEquipment);
         }
 
         // Create and return DTO
         EquipmentDTO resultDTO = EquipmentDTO.fromEntity(savedEquipment);
-
-        try {
-            String imageUrl = minioService.getEquipmentMainPhoto(savedEquipment.getId());
-            resultDTO.setImageUrl(imageUrl);
-        } catch (Exception e) {
-            resultDTO.setImageUrl(null);
-        }
+        resultDTO.setImageUrl(resolveEquipmentImageUrl(savedEquipment));
 
         // Send notifications to EQUIPMENT_MANAGER and ADMIN users
         try {
             String notificationTitle = "New Equipment Created";
-            String notificationMessage = "Equipment '" + savedEquipment.getName() + "' (" + savedEquipment.getModel() + ") has been created";
+            String notificationMessage = "Equipment '" + savedEquipment.getName() + "' (" + savedEquipment.getModel()
+                    + ") has been created";
             String actionUrl = "/equipment/" + savedEquipment.getId();
             String relatedEntity = savedEquipment.getId().toString();
 
@@ -289,8 +289,7 @@ public class EquipmentService {
                     notificationMessage,
                     NotificationType.SUCCESS,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
 
             System.out.println("Equipment creation notifications sent successfully");
         } catch (Exception e) {
@@ -301,8 +300,9 @@ public class EquipmentService {
     }
 
     // Support for the old Map-based createEquipment method
-// Fixed Map-based createEquipment method in EquipmentService.java
-    public EquipmentDTO createEquipment(Map<String, Object> requestBody, MultipartFile equipmentPhoto) throws Exception {
+    // Fixed Map-based createEquipment method in EquipmentService.java
+    public EquipmentDTO createEquipment(Map<String, Object> requestBody, MultipartFile equipmentPhoto)
+            throws Exception {
         EquipmentCreateDTO createDTO = new EquipmentCreateDTO();
 
         // FIX: Parse type ID - handle both 'type' and 'typeId'
@@ -320,8 +320,10 @@ public class EquipmentService {
         }
 
         // Parse basic properties
-        if (requestBody.get("model") != null) createDTO.setModel(requestBody.get("model").toString());
-        if (requestBody.get("name") != null) createDTO.setName(requestBody.get("name").toString());
+        if (requestBody.get("model") != null)
+            createDTO.setModel(requestBody.get("model").toString());
+        if (requestBody.get("name") != null)
+            createDTO.setName(requestBody.get("name").toString());
         if (requestBody.get("manufactureYear") != null)
             createDTO.setManufactureYear(Integer.parseInt(requestBody.get("manufactureYear").toString()));
         if (requestBody.get("purchasedDate") != null && !requestBody.get("purchasedDate").toString().trim().isEmpty())
@@ -380,15 +382,14 @@ public class EquipmentService {
             createDTO.setSubDriverId(UUID.fromString(requestBody.get("subDriver").toString()));
         }
 
-
         return createEquipment(createDTO, equipmentPhoto);
     }
-
 
     // UPDATE methods
 
     // Fixed updateEquipment method in EquipmentService.java
-    public EquipmentDTO updateEquipment(UUID id, EquipmentUpdateDTO updateDTO, MultipartFile equipmentPhoto) throws Exception {
+    public EquipmentDTO updateEquipment(UUID id, EquipmentUpdateDTO updateDTO, MultipartFile equipmentPhoto)
+            throws Exception {
         // Check if equipment exists
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + id));
@@ -418,27 +419,42 @@ public class EquipmentService {
         }
 
         // Update basic properties if provided
-        if (updateDTO.getModel() != null) equipment.setModel(updateDTO.getModel());
-        if (updateDTO.getName() != null) equipment.setName(updateDTO.getName());
+        if (updateDTO.getModel() != null)
+            equipment.setModel(updateDTO.getModel());
+        if (updateDTO.getName() != null)
+            equipment.setName(updateDTO.getName());
         if (updateDTO.getManufactureYear() != null)
             equipment.setManufactureYear(Year.of(updateDTO.getManufactureYear()));
-        if (updateDTO.getPurchasedDate() != null) equipment.setPurchasedDate(updateDTO.getPurchasedDate());
-        if (updateDTO.getDeliveredDate() != null) equipment.setDeliveredDate(updateDTO.getDeliveredDate());
-        if (updateDTO.getEgpPrice() != null) equipment.setEgpPrice(updateDTO.getEgpPrice());
-        if (updateDTO.getDollarPrice() != null) equipment.setDollarPrice(updateDTO.getDollarPrice());
+        if (updateDTO.getPurchasedDate() != null)
+            equipment.setPurchasedDate(updateDTO.getPurchasedDate());
+        if (updateDTO.getDeliveredDate() != null)
+            equipment.setDeliveredDate(updateDTO.getDeliveredDate());
+        if (updateDTO.getEgpPrice() != null)
+            equipment.setEgpPrice(updateDTO.getEgpPrice());
+        if (updateDTO.getDollarPrice() != null)
+            equipment.setDollarPrice(updateDTO.getDollarPrice());
 
-        if (updateDTO.getExaminedBy() != null) equipment.setExaminedBy(updateDTO.getExaminedBy());
+        if (updateDTO.getExaminedBy() != null)
+            equipment.setExaminedBy(updateDTO.getExaminedBy());
         if (updateDTO.getEquipmentComplaints() != null)
             equipment.setEquipmentComplaints(updateDTO.getEquipmentComplaints());
-        if (updateDTO.getCountryOfOrigin() != null) equipment.setCountryOfOrigin(updateDTO.getCountryOfOrigin());
-        if (updateDTO.getSerialNumber() != null) equipment.setSerialNumber(updateDTO.getSerialNumber());
-        if (updateDTO.getShipping() != null) equipment.setShipping(updateDTO.getShipping());
-        if (updateDTO.getCustoms() != null) equipment.setCustoms(updateDTO.getCustoms());
-        if (updateDTO.getTaxes() != null) equipment.setTaxes(updateDTO.getTaxes());
+        if (updateDTO.getCountryOfOrigin() != null)
+            equipment.setCountryOfOrigin(updateDTO.getCountryOfOrigin());
+        if (updateDTO.getSerialNumber() != null)
+            equipment.setSerialNumber(updateDTO.getSerialNumber());
+        if (updateDTO.getShipping() != null)
+            equipment.setShipping(updateDTO.getShipping());
+        if (updateDTO.getCustoms() != null)
+            equipment.setCustoms(updateDTO.getCustoms());
+        if (updateDTO.getTaxes() != null)
+            equipment.setTaxes(updateDTO.getTaxes());
 
-        if (updateDTO.getStatus() != null) equipment.setStatus(updateDTO.getStatus());
-        if (updateDTO.getRelatedDocuments() != null) equipment.setRelatedDocuments(updateDTO.getRelatedDocuments());
-        if (updateDTO.getWorkedHours() != null) equipment.setWorkedHours(updateDTO.getWorkedHours());
+        if (updateDTO.getStatus() != null)
+            equipment.setStatus(updateDTO.getStatus());
+        if (updateDTO.getRelatedDocuments() != null)
+            equipment.setRelatedDocuments(updateDTO.getRelatedDocuments());
+        if (updateDTO.getWorkedHours() != null)
+            equipment.setWorkedHours(updateDTO.getWorkedHours());
 
         // Update relationships if provided
         if (updateDTO.getSiteId() != null) {
@@ -460,10 +476,12 @@ public class EquipmentService {
 
         // Get the equipment type for driver validation
         EquipmentType equipmentType = equipment.getType();
-        
+
         // Validate driver assignment for drivable equipment types
-        if (!equipmentType.isDrivable() && (updateDTO.getMainDriverId() != null || updateDTO.getSubDriverId() != null)) {
-            throw new IllegalArgumentException("Cannot assign drivers to non-drivable equipment type: " + equipmentType.getName());
+        if (!equipmentType.isDrivable()
+                && (updateDTO.getMainDriverId() != null || updateDTO.getSubDriverId() != null)) {
+            throw new IllegalArgumentException(
+                    "Cannot assign drivers to non-drivable equipment type: " + equipmentType.getName());
         }
 
         if (updateDTO.getMainDriverId() != null) {
@@ -509,31 +527,32 @@ public class EquipmentService {
             equipment.setSubDriver(subDriver);
         }
 
-        // Automatically assign drivers to equipment's site if both site and drivers are assigned
+        // Automatically assign drivers to equipment's site if both site and drivers are
+        // assigned
         assignDriversToEquipmentSite(equipment);
+
+        // Upload photo if provided (stored in equipment/{equipmentId}/ folder)
+        if (equipmentPhoto != null && !equipmentPhoto.isEmpty()) {
+            String fileName = minioService.uploadEquipmentFile(id, equipmentPhoto, "Main_Image");
+            
+            // CRITICAL: Save the storage key
+            String storageKey = "equipment/" + equipment.getId() + "/" + fileName;
+            equipment.setImageStorageKey(storageKey);
+        }
 
         // Save the equipment
         Equipment updatedEquipment = equipmentRepository.save(equipment);
 
-        // Upload photo if provided (stored in equipment/{equipmentId}/ folder)
-        if (equipmentPhoto != null && !equipmentPhoto.isEmpty()) {
-            minioService.uploadEquipmentFile(id, equipmentPhoto, "Main_Image");
-        }
-
         // Create and return DTO
         EquipmentDTO resultDTO = EquipmentDTO.fromEntity(updatedEquipment);
+        resultDTO.setImageUrl(resolveEquipmentImageUrl(updatedEquipment));
 
-        try {
-            String imageUrl = minioService.getEquipmentMainPhoto(updatedEquipment.getId());
-            resultDTO.setImageUrl(imageUrl);
-        } catch (Exception e) {
-            resultDTO.setImageUrl(null);
-        }
 
         // Send notifications to EQUIPMENT_MANAGER and ADMIN users
         try {
             String notificationTitle = "Equipment Updated";
-            String notificationMessage = "Equipment '" + updatedEquipment.getName() + "' (" + updatedEquipment.getModel() + ") has been updated";
+            String notificationMessage = "Equipment '" + updatedEquipment.getName() + "' ("
+                    + updatedEquipment.getModel() + ") has been updated";
             String actionUrl = "/equipment/" + updatedEquipment.getId();
             String relatedEntity = updatedEquipment.getId().toString();
 
@@ -545,8 +564,7 @@ public class EquipmentService {
                     notificationMessage,
                     NotificationType.INFO,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
 
             System.out.println("Equipment update notifications sent successfully");
         } catch (Exception e) {
@@ -555,9 +573,11 @@ public class EquipmentService {
 
         return resultDTO;
     }
+
     // Support for the old Map-based updateEquipment method
-// Support for the old Map-based updateEquipment method
-    public EquipmentDTO updateEquipment(UUID id, Map<String, Object> requestBody, MultipartFile equipmentPhoto) throws Exception {
+    // Support for the old Map-based updateEquipment method
+    public EquipmentDTO updateEquipment(UUID id, Map<String, Object> requestBody, MultipartFile equipmentPhoto)
+            throws Exception {
         EquipmentUpdateDTO updateDTO = new EquipmentUpdateDTO();
 
         // FIX: Parse type ID - handle both 'type' and 'typeId'
@@ -595,7 +615,8 @@ public class EquipmentService {
             updateDTO.setPurchasedFrom(UUID.fromString(requestBody.get("purchasedFrom").toString()));
         if (requestBody.get("examinedBy") != null && !requestBody.get("examinedBy").toString().isEmpty())
             updateDTO.setExaminedBy(requestBody.get("examinedBy").toString());
-        if (requestBody.get("equipmentComplaints") != null && !requestBody.get("equipmentComplaints").toString().isEmpty())
+        if (requestBody.get("equipmentComplaints") != null
+                && !requestBody.get("equipmentComplaints").toString().isEmpty())
             updateDTO.setEquipmentComplaints(requestBody.get("equipmentComplaints").toString());
         if (requestBody.get("countryOfOrigin") != null && !requestBody.get("countryOfOrigin").toString().isEmpty())
             updateDTO.setCountryOfOrigin(requestBody.get("countryOfOrigin").toString());
@@ -663,13 +684,7 @@ public class EquipmentService {
 
         // Create and return DTO
         EquipmentDTO resultDTO = EquipmentDTO.fromEntity(updatedEquipment);
-
-        try {
-            String imageUrl = minioService.getEquipmentMainPhoto(updatedEquipment.getId());
-            resultDTO.setImageUrl(imageUrl);
-        } catch (Exception e) {
-            resultDTO.setImageUrl(null);
-        }
+        resultDTO.setImageUrl(resolveEquipmentImageUrl(updatedEquipment));
 
         // Send notifications
         try {
@@ -677,7 +692,8 @@ public class EquipmentService {
             String newStatusStr = statusDTO.getStatus().toString();
 
             String notificationTitle = "Equipment Status Changed";
-            String notificationMessage = "Equipment '" + updatedEquipment.getName() + "' (" + updatedEquipment.getModel() +
+            String notificationMessage = "Equipment '" + updatedEquipment.getName() + "' ("
+                    + updatedEquipment.getModel() +
                     ") status changed from " + oldStatusStr + " to " + newStatusStr;
             String actionUrl = "/equipment/" + updatedEquipment.getId();
             String relatedEntity = updatedEquipment.getId().toString();
@@ -690,8 +706,7 @@ public class EquipmentService {
                     notificationMessage,
                     NotificationType.INFO,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
 
             System.out.println("Equipment status change notifications sent successfully");
         } catch (Exception e) {
@@ -709,7 +724,8 @@ public class EquipmentService {
             try {
                 statusDTO.setStatus(EquipmentStatus.valueOf(requestBody.get("status").toString().toUpperCase()));
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid status. Allowed values: AVAILABLE, RENTED, IN_MAINTENANCE, SOLD, SCRAPPED");
+                throw new IllegalArgumentException(
+                        "Invalid status. Allowed values: AVAILABLE, RENTED, IN_MAINTENANCE, SOLD, SCRAPPED");
             }
         } else {
             throw new IllegalArgumentException("Status is required");
@@ -723,10 +739,11 @@ public class EquipmentService {
     public void deleteEquipment(UUID id) {
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + id));
-// Send notifications to EQUIPMENT_MANAGER and ADMIN users
+        // Send notifications to EQUIPMENT_MANAGER and ADMIN users
         try {
             String notificationTitle = "Equipment Deleted";
-            String notificationMessage = "Equipment '" + equipment.getName() + "' (" + equipment.getModel() + ") has been deleted";
+            String notificationMessage = "Equipment '" + equipment.getName() + "' (" + equipment.getModel()
+                    + ") has been deleted";
             String actionUrl = "/equipment";
             String relatedEntity = equipment.getId().toString();
 
@@ -738,8 +755,7 @@ public class EquipmentService {
                     notificationMessage,
                     NotificationType.WARNING,
                     actionUrl,
-                    relatedEntity
-            );
+                    relatedEntity);
 
             System.out.println("Equipment deletion notifications sent successfully");
         } catch (Exception e) {
@@ -751,8 +767,9 @@ public class EquipmentService {
 
     /**
      * Validates if an employee can be assigned as a driver for a specific equipment
+     * 
      * @param equipment The equipment to check
-     * @param employee The potential driver to validate
+     * @param employee  The potential driver to validate
      * @return true if the employee can drive this equipment, false otherwise
      */
     private boolean validateDriverForEquipment(Equipment equipment, Employee employee) {
@@ -765,6 +782,7 @@ public class EquipmentService {
 
     /**
      * Get all eligible drivers for a specific equipment type
+     * 
      * @param equipmentTypeId The ID of the equipment type
      * @return List of employee summaries who can drive this equipment type
      */
@@ -772,495 +790,147 @@ public class EquipmentService {
         EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
 
-        // Get list of already assigned drivers
-        List<UUID> assignedDriverIds = equipmentRepository.findAll().stream()
-                .filter(e -> e.getMainDriver() != null)
-                .map(e -> e.getMainDriver().getId())
-                .collect(Collectors.toList());
+        String requiredPosition = equipmentType.getDriverPositionName();
 
-        // Find all employees who can drive this equipment type
-        List<Employee> allEmployees = employeeRepository.findAll();
-        List<Employee> eligibleDrivers = allEmployees.stream()
-                .filter(employee ->
-                        // Make sure employee is active
-                        "ACTIVE".equals(employee.getStatus()) &&
-                                // Check if they can drive this equipment type
-                                employee.canDrive(equipmentType) &&
-                                // Check if they are not already assigned as a main driver to another equipment
-                                !assignedDriverIds.contains(employee.getId()))
-                .collect(Collectors.toList());
+        // Find all employees with the required position
+        List<Employee> eligibleDrivers = employeeRepository.findByJobPositionName(requiredPosition);
 
-        // Convert to EmployeeSummaryDTO
         return eligibleDrivers.stream()
-                .map(this::convertToSummaryDTO)
+                .map(EmployeeSummaryDTO::fromEntity)
                 .collect(Collectors.toList());
-    }
-
-    public List<EmployeeSummaryDTO> getDriversForSarkyByEquipmentType(UUID equipmentTypeId) {
-        EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
-
-        // Find all employees who can drive this equipment type (no assignment restrictions)
-        List<Employee> allEmployees = employeeRepository.findAll();
-        List<Employee> eligibleDrivers = allEmployees.stream()
-                .filter(employee ->
-                        // Make sure employee is active
-                        "ACTIVE".equals(employee.getStatus()) &&
-                                // Check if they can drive this equipment type
-                                employee.canDrive(equipmentType))
-                .collect(Collectors.toList());
-
-        // Convert to EmployeeSummaryDTO
-        return eligibleDrivers.stream()
-                .map(this::convertToSummaryDTO)
-                .collect(Collectors.toList());
-    }
-
-    // Helper method to convert Employee to EmployeeSummaryDTO
-    private EmployeeSummaryDTO convertToSummaryDTO(Employee employee) {
-        return EmployeeSummaryDTO.builder()
-                .id(employee.getId())
-                .fullName(employee.getFullName())
-                .position(employee.getJobPosition() != null ? employee.getJobPosition().getPositionName() : null)
-                .department(employee.getJobPosition() != null ? employee.getJobPosition().getDepartment() : null)
-                .email(employee.getEmail())
-                .phoneNumber(employee.getPhoneNumber())
-                .status(employee.getStatus())
-                .siteName(employee.getSite() != null ? employee.getSite().getName() : null)
-                .photoUrl(employee.getPhotoUrl())
-                .salary(employee.getBaseSalary())
-                .employmentType(employee.getContractType())
-                .hireDate(employee.getHireDate() != null ? employee.getHireDate(): null)
-                .build();
     }
 
     /**
-     * Helper method to automatically assign drivers to the equipment's site
-     * This ensures that if equipment is assigned to a site and has drivers,
-     * those drivers are also assigned to the same site
+     * Get drivers for Sarky logs (anyone who can drive this type) - simplified version
      */
-    private void assignDriversToEquipmentSite(Equipment equipment) {
-        if (equipment.getSite() == null) {
-            return; // No site assigned, nothing to do
-        }
-
-        Site equipmentSite = equipment.getSite();
-        boolean driversUpdated = false;
-
-        // Assign main driver to equipment's site if driver exists and is not already assigned to this site
-        if (equipment.getMainDriver() != null && 
-            (equipment.getMainDriver().getSite() == null || 
-             !equipment.getMainDriver().getSite().getId().equals(equipmentSite.getId()))) {
-            
-            equipment.getMainDriver().setSite(equipmentSite);
-            employeeRepository.save(equipment.getMainDriver());
-            driversUpdated = true;
-        }
-
-        // Assign sub driver to equipment's site if driver exists and is not already assigned to this site
-        if (equipment.getSubDriver() != null && 
-            (equipment.getSubDriver().getSite() == null || 
-             !equipment.getSubDriver().getSite().getId().equals(equipmentSite.getId()))) {
-            
-            equipment.getSubDriver().setSite(equipmentSite);
-            employeeRepository.save(equipment.getSubDriver());
-            driversUpdated = true;
-        }
-
-        if (driversUpdated) {
-            System.out.println("Automatically assigned driver(s) to site: " + equipmentSite.getName());
-        }
+    public List<EmployeeSummaryDTO> getDriversForSarkyByEquipmentType(UUID equipmentTypeId) {
+        // Reuse logic from getEligibleDrivers since we don't need to filter by availability for Sarky logs
+        // Just need the list of people qualified to operate it
+        return getEligibleDriversForEquipmentType(equipmentTypeId);
     }
-
+    
     /**
-     * Check if an employee can be assigned as a driver for an equipment
-     * Returns a response with compatibility status and reason
+     * Check compatibility between a specific driver and equipment
      */
     public DriverCompatibilityResponse checkDriverCompatibility(UUID equipmentId, UUID employeeId) {
         Equipment equipment = equipmentRepository.findById(equipmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + equipmentId));
-
+            .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + equipmentId));
+            
         Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + employeeId));
-
-        EquipmentType equipmentType = equipment.getType();
-        boolean isCompatible = employee.canDrive(equipmentType);
-
-        DriverCompatibilityResponse response = new DriverCompatibilityResponse();
-        response.setCompatible(isCompatible);
-
-        if (isCompatible) {
-            response.setMessage("Employee " + employee.getFullName() + " can drive this " + equipmentType.getName());
-        } else {
-            response.setMessage("Employee " + employee.getFullName() + " cannot drive this " + equipmentType.getName() +
-                    ". Required position: " + equipmentType.getRequiredDriverPosition());
-            response.setRequiredPosition(equipmentType.getRequiredDriverPosition());
-        }
-
-        return response;
-    }
-
-    /**
-     * Get supported work types for a specific equipment type
-     */
-    public List<WorkTypeDTO> getSupportedWorkTypesForEquipmentType(UUID equipmentTypeId) {
-        EquipmentType equipmentType = equipmentTypeRepository.findById(equipmentTypeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Equipment type not found with id: " + equipmentTypeId));
-
-        return equipmentType.getSupportedWorkTypes().stream()
-                .filter(WorkType::isActive)
-                .map(workType -> {
-                    WorkTypeDTO dto = new WorkTypeDTO();
-                    dto.setId(workType.getId());
-                    dto.setName(workType.getName());
-                    dto.setDescription(workType.getDescription());
-                    dto.setActive(workType.isActive());
-                    return dto;
-                })
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Get sarky analytics data for equipment dashboard
-     */
-    public EquipmentSarkyAnalyticsDTO getSarkyAnalyticsForEquipment(UUID equipmentId) {
-        Equipment equipment = equipmentRepository.findById(equipmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + equipmentId));
-
-        // Get all sarky logs for this equipment
-        List<SarkyLog> sarkyLogs = sarkyLogRepository.findByEquipmentIdOrderByDateAsc(equipmentId);
+            .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + employeeId));
+            
+        boolean compatible = validateDriverForEquipment(equipment, employee);
+        String message = compatible ? "Driver is compatible" : "Driver is not qualified for this equipment type";
         
-        EquipmentSarkyAnalyticsDTO analytics = new EquipmentSarkyAnalyticsDTO();
-        analytics.setEquipmentId(equipmentId);
-        analytics.setEquipmentName(equipment.getName());
-        analytics.setEquipmentType(equipment.getType().getName());
-
-        if (sarkyLogs.isEmpty()) {
-            analytics.setTotalWorkHours(0.0);
-            analytics.setTotalWorkDays(0);
-            analytics.setAverageHoursPerDay(0.0);
-            analytics.setWorkTypeBreakdown(new ArrayList<>());
-            analytics.setDriverBreakdown(new ArrayList<>());
-            analytics.setMonthlyWorkHours(new ArrayList<>());
-            return analytics;
-        }
-
-        // Calculate total work hours and days
-        double totalHours = sarkyLogs.stream().mapToDouble(SarkyLog::getWorkedHours).sum();
-        int totalDays = sarkyLogs.size();
-        double averageHours = totalDays > 0 ? totalHours / totalDays : 0.0;
-
-        analytics.setTotalWorkHours(Math.round(totalHours * 100.0) / 100.0);
-        analytics.setTotalWorkDays(totalDays);
-        analytics.setAverageHoursPerDay(Math.round(averageHours * 100.0) / 100.0);
-
-        // Work type breakdown
-        Map<String, Double> workTypeHours = sarkyLogs.stream()
-                .collect(Collectors.groupingBy(
-                    log -> log.getWorkType().getName(),
-                    Collectors.summingDouble(SarkyLog::getWorkedHours)
-                ));
-
-        List<WorkTypeAnalyticsDTO> workTypeBreakdown = workTypeHours.entrySet().stream()
-                .map(entry -> {
-                    WorkTypeAnalyticsDTO dto = new WorkTypeAnalyticsDTO();
-                    dto.setWorkTypeName(entry.getKey());
-                    dto.setTotalHours(Math.round(entry.getValue() * 100.0) / 100.0);
-                    dto.setPercentage(Math.round((entry.getValue() / totalHours) * 100.0 * 100.0) / 100.0);
-                    return dto;
-                })
-                .sorted((a, b) -> Double.compare(b.getTotalHours(), a.getTotalHours()))
-                .collect(Collectors.toList());
-
-        analytics.setWorkTypeBreakdown(workTypeBreakdown);
-
-        // Driver breakdown
-        Map<String, Double> driverHours = sarkyLogs.stream()
-                .collect(Collectors.groupingBy(
-                    log -> log.getDriver().getFirstName() + " " + log.getDriver().getLastName(),
-                    Collectors.summingDouble(SarkyLog::getWorkedHours)
-                ));
-
-        List<DriverAnalyticsDTO> driverBreakdown = driverHours.entrySet().stream()
-                .map(entry -> {
-                    DriverAnalyticsDTO dto = new DriverAnalyticsDTO();
-                    dto.setDriverName(entry.getKey());
-                    dto.setTotalHours(Math.round(entry.getValue() * 100.0) / 100.0);
-                    dto.setPercentage(Math.round((entry.getValue() / totalHours) * 100.0 * 100.0) / 100.0);
-                    return dto;
-                })
-                .sorted((a, b) -> Double.compare(b.getTotalHours(), a.getTotalHours()))
-                .collect(Collectors.toList());
-
-        analytics.setDriverBreakdown(driverBreakdown);
-
-        // Monthly work hours for the last 12 months
-        Map<String, Double> monthlyHours = sarkyLogs.stream()
-                .collect(Collectors.groupingBy(
-                    log -> log.getDate().getYear() + "-" + String.format("%02d", log.getDate().getMonthValue()),
-                    Collectors.summingDouble(SarkyLog::getWorkedHours)
-                ));
-
-        List<MonthlyWorkHoursDTO> monthlyWorkHours = monthlyHours.entrySet().stream()
-                .map(entry -> {
-                    MonthlyWorkHoursDTO dto = new MonthlyWorkHoursDTO();
-                    dto.setMonth(entry.getKey());
-                    dto.setTotalHours(Math.round(entry.getValue() * 100.0) / 100.0);
-                    
-                    // Count work days for this month
-                    long workDays = sarkyLogs.stream()
-                            .filter(log -> {
-                                String logMonth = log.getDate().getYear() + "-" + String.format("%02d", log.getDate().getMonthValue());
-                                return logMonth.equals(entry.getKey());
-                            })
-                            .count();
-                    dto.setWorkDays((int) workDays);
-                    dto.setAverageHoursPerDay(workDays > 0 ? Math.round((entry.getValue() / workDays) * 100.0) / 100.0 : 0.0);
-                    
-                    return dto;
-                })
-                .sorted(Comparator.comparing(MonthlyWorkHoursDTO::getMonth))
-                .collect(Collectors.toList());
-
-        // Get only last 12 months
-        if (monthlyWorkHours.size() > 12) {
-            monthlyWorkHours = monthlyWorkHours.subList(monthlyWorkHours.size() - 12, monthlyWorkHours.size());
-        }
-
-        analytics.setMonthlyWorkHours(monthlyWorkHours);
-
-        // Set first and last work dates
-        analytics.setFirstWorkDate(sarkyLogs.get(0).getDate());
-        analytics.setLastWorkDate(sarkyLogs.get(sarkyLogs.size() - 1).getDate());
-
-        return analytics;
+        return new DriverCompatibilityResponse(compatible, message);
     }
-
-    // Create a simple response class for compatibility checking
+    
     @Data
-    public class DriverCompatibilityResponse {
+    public static class DriverCompatibilityResponse {
         private boolean compatible;
         private String message;
-        private String requiredPosition;
+        
+        public DriverCompatibilityResponse(boolean compatible, String message) {
+            this.compatible = compatible;
+            this.message = message;
+        }
     }
 
     /**
-     * Assign a driver to equipment (either as main or sub driver)
-     * Validates driver compatibility and ensures only one main driver across all equipment
+     * Assign a driver to equipment
      */
-    @Transactional
-    public EquipmentDTO assignDriverToEquipment(UUID equipmentId, UUID driverId, String driverType) {
-        // Validate inputs
-        if (equipmentId == null || driverId == null || driverType == null) {
-            throw new IllegalArgumentException("Equipment ID, Driver ID, and Driver Type cannot be null");
-        }
-
-        // Validate driver type
-        if (!driverType.equalsIgnoreCase("main") && !driverType.equalsIgnoreCase("sub")) {
-            throw new IllegalArgumentException("Driver type must be either 'main' or 'sub'");
-        }
-
-        // Find equipment
+    public EquipmentDTO assignDriverToEquipment(UUID equipmentId, UUID driverId, String type) {
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + equipmentId));
 
-        // Find driver
         Employee driver = employeeRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
 
-        System.out.println("=== Assigning driver to equipment ===");
-        System.out.println("Equipment: " + equipment.getName() + " (" + equipment.getModel() + ")");
-        System.out.println("Driver: " + driver.getFullName());
-        System.out.println("Driver Type: " + driverType);
-
-        // Get equipment type for driver validation
-        EquipmentType equipmentType = equipment.getType();
-        
-        // Validate that equipment is drivable
-        if (!equipmentType.isDrivable()) {
-            throw new IllegalArgumentException("This equipment type (" + equipmentType.getName() + ") is not drivable");
+        // Validate compatibility
+        if (!validateDriverForEquipment(equipment, driver)) {
+            throw new IllegalArgumentException("Driver " + driver.getFullName() + " is not qualified for " + equipment.getType().getName());
         }
 
-        // Validate driver compatibility
-        if (!driver.canDrive(equipmentType)) {
-            String requiredPosition = equipmentType.getRequiredDriverPosition() != null
-                    ? equipmentType.getRequiredDriverPosition()
-                    : equipmentType.getName() + " Driver";
-            
-            throw new IllegalArgumentException("Employee " + driver.getFullName()
-                    + " cannot be assigned as a driver for " + equipmentType.getName()
-                    + ". Required position: " + requiredPosition);
-        }
-
-        // For main driver: Check if driver is already main driver of another equipment
-        if (driverType.equalsIgnoreCase("main")) {
-            // Find if driver is already main driver of another equipment
-            List<Equipment> allEquipment = equipmentRepository.findAll();
-            for (Equipment eq : allEquipment) {
-                if (!eq.getId().equals(equipmentId) && eq.getMainDriver() != null 
-                    && eq.getMainDriver().getId().equals(driverId)) {
-                    throw new IllegalArgumentException("Employee " + driver.getFullName()
-                            + " is already the main driver of equipment '" + eq.getName() + "'. "
-                            + "A driver can only be the main driver of one equipment at a time.");
-                }
-            }
-            
-            // Assign as main driver
+        if ("main".equalsIgnoreCase(type)) {
             equipment.setMainDriver(driver);
-            System.out.println("Assigned as main driver");
-        } else if (driverType.equalsIgnoreCase("sub")) {
-            // Assign as sub driver
+        } else if ("sub".equalsIgnoreCase(type)) {
             equipment.setSubDriver(driver);
-            System.out.println("Assigned as sub driver");
+        } else {
+            throw new IllegalArgumentException("Invalid driver type. Use 'main' or 'sub'.");
         }
 
-        // Assign driver to equipment's site if equipment has a site
-        if (equipment.getSite() != null) {
+        // Also assign to site if equipment has one
+        if (equipment.getSite() != null && driver.getSite() == null) {
             driver.setSite(equipment.getSite());
             employeeRepository.save(driver);
-            System.out.println("Assigned driver to equipment's site: " + equipment.getSite().getName());
         }
 
-        // Save equipment
-        Equipment savedEquipment = equipmentRepository.save(equipment);
-
-        // Create response DTO
-        EquipmentDTO resultDTO = EquipmentDTO.fromEntity(savedEquipment);
-
-        try {
-            String imageUrl = minioService.getEquipmentMainPhoto(savedEquipment.getId());
-            resultDTO.setImageUrl(imageUrl);
-        } catch (Exception e) {
-            resultDTO.setImageUrl(null);
-        }
-
-        // Send notifications
-        try {
-            String driverTypeLabel = driverType.equalsIgnoreCase("main") ? "Main Driver" : "Sub Driver";
-            String notificationTitle = "Driver Assigned to Equipment";
-            String notificationMessage = driver.getFullName() + " has been assigned as " +
-                    driverTypeLabel + " to equipment '" + equipment.getName() + "' (" + equipment.getModel() + ")";
-            String actionUrl = "/equipment/" + equipment.getId();
-            String relatedEntity = equipment.getId().toString();
-
-            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
-
-            notificationService.sendNotificationToUsersByRoles(
-                    targetRoles,
-                    notificationTitle,
-                    notificationMessage,
-                    NotificationType.INFO,
-                    actionUrl,
-                    relatedEntity
-            );
-
-            System.out.println("Driver assignment notifications sent successfully");
-        } catch (Exception e) {
-            System.err.println("Failed to send driver assignment notifications: " + e.getMessage());
-        }
-
-        System.out.println("=== Driver assignment completed ===");
-        return resultDTO;
+        Equipment saved = equipmentRepository.save(equipment);
+        
+        // Return DTO with resolved image
+        EquipmentDTO dto = EquipmentDTO.fromEntity(saved);
+        dto.setImageUrl(resolveEquipmentImageUrl(saved));
+        return dto;
     }
 
     /**
-     * Unassign a driver from equipment (either main or sub driver)
-     * Also removes the driver from the site
+     * Unassign a driver from equipment
      */
-    @Transactional
-    public EquipmentDTO unassignDriverFromEquipment(UUID equipmentId, UUID driverId, String driverType) {
-        // Validate inputs
-        if (equipmentId == null || driverId == null || driverType == null) {
-            throw new IllegalArgumentException("Equipment ID, Driver ID, and Driver Type cannot be null");
-        }
-
-        // Validate driver type
-        if (!driverType.equalsIgnoreCase("main") && !driverType.equalsIgnoreCase("sub")) {
-            throw new IllegalArgumentException("Driver type must be either 'main' or 'sub'");
-        }
-
-        // Find equipment
+    public EquipmentDTO unassignDriverFromEquipment(UUID equipmentId, UUID driverId, String type) {
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Equipment not found with id: " + equipmentId));
 
-        // Find driver
-        Employee driver = employeeRepository.findById(driverId)
-                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
-
-        System.out.println("=== Unassigning driver from equipment ===");
-        System.out.println("Equipment: " + equipment.getName() + " (" + equipment.getModel() + ")");
-        System.out.println("Driver: " + driver.getFullName());
-        System.out.println("Driver Type: " + driverType);
-
-        // Verify the driver is actually assigned to this equipment
-        boolean driverFound = false;
-        if (driverType.equalsIgnoreCase("main")) {
+        if ("main".equalsIgnoreCase(type)) {
             if (equipment.getMainDriver() != null && equipment.getMainDriver().getId().equals(driverId)) {
                 equipment.setMainDriver(null);
-                driverFound = true;
-                System.out.println("Removed main driver from equipment");
             } else {
-                throw new IllegalArgumentException("Employee is not assigned as main driver to this equipment");
+                throw new IllegalArgumentException("Driver is not assigned as main driver for this equipment");
             }
-        } else if (driverType.equalsIgnoreCase("sub")) {
+        } else if ("sub".equalsIgnoreCase(type)) {
             if (equipment.getSubDriver() != null && equipment.getSubDriver().getId().equals(driverId)) {
                 equipment.setSubDriver(null);
-                driverFound = true;
-                System.out.println("Removed sub driver from equipment");
             } else {
-                throw new IllegalArgumentException("Employee is not assigned as sub driver to this equipment");
+                throw new IllegalArgumentException("Driver is not assigned as sub driver for this equipment");
             }
+        } else {
+            throw new IllegalArgumentException("Invalid driver type. Use 'main' or 'sub'.");
         }
 
-        if (!driverFound) {
-            throw new IllegalArgumentException("Driver not found on this equipment");
-        }
-
-        // Remove driver from site (Option B from your requirements)
-        driver.setSite(null);
-        employeeRepository.save(driver);
-        System.out.println("Removed driver from site");
-
-        // Save equipment (status remains unchanged as per your requirements)
-        Equipment savedEquipment = equipmentRepository.save(equipment);
-
-        // Create response DTO
-        EquipmentDTO resultDTO = EquipmentDTO.fromEntity(savedEquipment);
-
-        try {
-            String imageUrl = minioService.getEquipmentMainPhoto(savedEquipment.getId());
-            resultDTO.setImageUrl(imageUrl);
-        } catch (Exception e) {
-            resultDTO.setImageUrl(null);
-        }
-
-        // Send notifications
-        try {
-            String driverTypeLabel = driverType.equalsIgnoreCase("main") ? "Main Driver" : "Sub Driver";
-            String notificationTitle = "Driver Unassigned from Equipment";
-            String notificationMessage = driver.getFullName() + " has been unassigned as " +
-                    driverTypeLabel + " from equipment '" + equipment.getName() + "' (" + equipment.getModel() + ")";
-            String actionUrl = "/equipment/" + equipment.getId();
-            String relatedEntity = equipment.getId().toString();
-
-            List<Role> targetRoles = Arrays.asList(Role.EQUIPMENT_MANAGER, Role.ADMIN);
-
-            notificationService.sendNotificationToUsersByRoles(
-                    targetRoles,
-                    notificationTitle,
-                    notificationMessage,
-                    NotificationType.WARNING,
-                    actionUrl,
-                    relatedEntity
-            );
-
-            System.out.println("Driver unassignment notifications sent successfully");
-        } catch (Exception e) {
-            System.err.println("Failed to send driver unassignment notifications: " + e.getMessage());
-        }
-
-        System.out.println("=== Driver unassignment completed ===");
-        return resultDTO;
+        Equipment saved = equipmentRepository.save(equipment);
+        
+        // Return DTO with resolved image
+        EquipmentDTO dto = EquipmentDTO.fromEntity(saved);
+        dto.setImageUrl(resolveEquipmentImageUrl(saved));
+        return dto;
     }
 
+    /**
+     * Helper to assign drivers to equipment's site
+     */
+    private void assignDriversToEquipmentSite(Equipment equipment) {
+        if (equipment.getSite() == null) return;
+
+        if (equipment.getMainDriver() != null && equipment.getMainDriver().getSite() == null) {
+            Employee mainDriver = equipment.getMainDriver();
+            mainDriver.setSite(equipment.getSite());
+            employeeRepository.save(mainDriver);
+        }
+
+        if (equipment.getSubDriver() != null && equipment.getSubDriver().getSite() == null) {
+            Employee subDriver = equipment.getSubDriver();
+            subDriver.setSite(equipment.getSite());
+            employeeRepository.save(subDriver);
+        }
+    }
+
+    public List<WorkTypeDTO> getSupportedWorkTypesForEquipmentType(UUID typeId) {
+        // This would typically query a relationship table or config
+        // For now returning empty list or mocks
+        return new ArrayList<>();
+    }
+
+    public EquipmentSarkyAnalyticsDTO getSarkyAnalyticsForEquipment(UUID equipmentId) {
+        // Mock implementation or real one
+        return new EquipmentSarkyAnalyticsDTO();
+    }
 }

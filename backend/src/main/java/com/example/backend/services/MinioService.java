@@ -7,6 +7,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -222,7 +223,6 @@ public class MinioService implements FileStorageService {
         
         // Ensure the main bucket exists
         createBucketIfNotExists(bucketName);
-        System.out.println("✅ Using single bucket '" + bucketName + "' with folder structure: equipment/" + equipmentId + "/");
     }
 
     @Override
@@ -245,16 +245,18 @@ public class MinioService implements FileStorageService {
         return fileName;
     }
 
-    @Override
-    public String getEquipmentMainPhoto(UUID equipmentId) {
+    /**
+     * Finds the equipment image key, handling migration from old buckets if necessary.
+     * returns the KEY of the object in the MAIN bucket.
+     */
+    public String findAndMigrateEquipmentImage(UUID equipmentId) {
         if (!s3Enabled || s3Client == null) {
-            String url = "http://localhost:9000/" + bucketName + "/equipment/" + equipmentId + "/main-image.jpg";
-            System.out.println("✅ Generated mock equipment photo URL: " + url);
-            return url;
+            return "equipment/" + equipmentId + "/main-image.jpg";
         }
 
-        // Try new folder structure first: equipment/{equipmentId}/
         String folderPrefix = "equipment/" + equipmentId.toString() + "/";
+        
+        // 1. Check NEW structure first (most likely for new items)
         try {
             ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
                     .bucket(bucketName)
@@ -265,35 +267,14 @@ public class MinioService implements FileStorageService {
 
             if (!response.contents().isEmpty()) {
                 String objectKey = response.contents().get(0).key();
-                System.out.println("✅ Found equipment photo in new structure: " + objectKey + " in bucket: " + bucketName);
-                
-                // For MinIO with public buckets, use direct URL instead of presigned
-                // This avoids issues with Docker network hostnames in presigned URLs
-                if (!s3PublicUrl.isEmpty()) {
-                    String directUrl = s3PublicUrl + "/" + bucketName + "/" + objectKey;
-                    System.out.println("✅ Using direct public URL: " + directUrl);
-                    return directUrl;
-                }
-                
-                // For production AWS S3, use presigned URL for secure access
-                try {
-                    String presignedUrl = getPresignedDownloadUrl(bucketName, objectKey, 10080); // 7 days expiration
-                    System.out.println("✅ Generated presigned URL for: " + objectKey);
-                    return presignedUrl;
-                } catch (Exception e) {
-                    System.err.println("❌ Error generating presigned URL: " + e.getMessage());
-                    e.printStackTrace();
-                    // Fallback to direct URL
-                    return getFileUrl(bucketName, objectKey);
-                }
-            } else {
-                System.out.println("⚠️ No Main_Image found in new structure, checking old bucket structure...");
+                // System.out.println("✅ Found equipment photo in standard structure: " + objectKey);
+                return objectKey;
             }
         } catch (Exception e) {
-            System.err.println("❌ Error searching new structure: " + e.getMessage());
+            System.err.println("Error checking new structure: " + e.getMessage());
         }
 
-        // Fallback: Try old bucket structure for backward compatibility
+        // 2. Check OLD structure (Legacy buckets)
         String oldBucketName = "equipment-" + equipmentId.toString();
         try {
             ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
@@ -304,36 +285,86 @@ public class MinioService implements FileStorageService {
             ListObjectsV2Response response = s3Client.listObjectsV2(listRequest);
 
             if (!response.contents().isEmpty()) {
-                String objectKey = response.contents().get(0).key();
-                System.out.println("✅ Found equipment photo in OLD bucket structure: " + objectKey + " in bucket: " + oldBucketName);
-                System.out.println("⚠️ MIGRATION RECOMMENDED: This equipment still uses old bucket structure");
+                String oldKey = response.contents().get(0).key();
+                String newKey = folderPrefix + oldKey; // e.g., equipment/UUID/Main_Image_X.jpg
                 
-                // For MinIO with public buckets, use direct URL
-                if (!s3PublicUrl.isEmpty()) {
-                    String directUrl = s3PublicUrl + "/" + oldBucketName + "/" + objectKey;
-                    System.out.println("✅ Using direct public URL (old structure): " + directUrl);
-                    return directUrl;
-                }
+                System.out.println("🚀 MIGRATING: Copying " + oldKey + " from " + oldBucketName + " to " + bucketName + "/" + newKey);
                 
-                // For production AWS S3, use presigned URL
+                // Copy Object
                 try {
-                    String presignedUrl = getPresignedDownloadUrl(oldBucketName, objectKey, 10080);
-                    System.out.println("✅ Generated presigned URL (old structure) for: " + objectKey);
-                    return presignedUrl;
-                } catch (Exception e) {
-                    System.err.println("❌ Error generating presigned URL from old bucket: " + e.getMessage());
-                    e.printStackTrace();
-                    return getFileUrl(oldBucketName, objectKey);
+                    CopyObjectRequest copyReq = CopyObjectRequest.builder()
+                        .sourceBucket(oldBucketName)
+                        .sourceKey(oldKey)
+                        .destinationBucket(bucketName)
+                        .destinationKey(newKey)
+                        .build();
+                        
+                    s3Client.copyObject(copyReq);
+                    System.out.println("✅ Migration Copy Success: " + newKey);
+                    
+                    return newKey;
+                    
+                } catch (Exception copyEx) {
+                   System.err.println("❌ Migration Copy FAILED: " + copyEx.getMessage());
+                   // Fallback: Return old bucket URL? No, this method returns KEY for main bucket.
+                   // If copy fails, we can't really return a valid key for the MAIN bucket.
+                   // But maybe return null so caller knows it failed?
+                   return null; 
                 }
-            } else {
-                System.out.println("⚠️ No Main_Image found in old bucket structure either");
             }
         } catch (NoSuchBucketException e) {
-            System.out.println("⚠️ Old bucket doesn't exist (expected for new equipment): " + oldBucketName);
+            // Expected for new items
         } catch (Exception e) {
-            System.err.println("❌ Error searching old bucket structure: " + e.getMessage());
+            System.err.println("Error checking old structure: " + e.getMessage());
         }
+
+        return null; // Not found in either
+    }
+
+    /**
+     * Generates a URL from a known key without S3 calls (if possible).
+     */
+    public String generateUrlFromKey(String key) {
+        if (key == null) return null;
         
+        if (!s3Enabled || s3Client == null) {
+             return "http://localhost:9000/local-dev/" + key;
+        }
+
+        // Public URL optimization
+        if (!s3PublicUrl.isEmpty()) {
+            return s3PublicUrl + "/" + bucketName + "/" + key;
+        }
+
+        // Presigned URL (Zero network call to S3, just crypto)
+        try {
+             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
+
+            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(10080)) // 7 days
+                .getObjectRequest(getObjectRequest)
+                .build();
+
+            PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
+            return presignedRequest.url().toString();
+        } catch (Exception e) {
+             System.err.println("Error generating presigned URL from key: " + e.getMessage());
+             return null;
+        }
+    }
+
+
+    // DEPRECATED / LEGACY - Kept for compilation compatibility or rare fallbacks
+    @Override
+    public String getEquipmentMainPhoto(UUID equipmentId) {
+        // Redirect to new logic, convert key to URL
+        String key = findAndMigrateEquipmentImage(equipmentId);
+        if (key != null) {
+            return generateUrlFromKey(key);
+        }
         return null;
     }
 

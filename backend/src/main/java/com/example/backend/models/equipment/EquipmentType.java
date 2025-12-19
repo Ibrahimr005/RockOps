@@ -20,7 +20,7 @@ public class EquipmentType {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @Column(nullable = true, length = 1000)
+    @Column(nullable = true, columnDefinition = "TEXT")
     private String description;
 
     @OneToMany(mappedBy = "type", cascade = CascadeType.ALL)
@@ -34,11 +34,7 @@ public class EquipmentType {
     private boolean drivable = true;
 
     @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "equipment_type_work_types",
-        joinColumns = @JoinColumn(name = "equipment_type_id"),
-        inverseJoinColumns = @JoinColumn(name = "work_type_id")
-    )
+    @JoinTable(name = "equipment_type_work_types", joinColumns = @JoinColumn(name = "equipment_type_id"), inverseJoinColumns = @JoinColumn(name = "work_type_id"))
     private List<WorkType> supportedWorkTypes = new ArrayList<>();
 
     public EquipmentType() {

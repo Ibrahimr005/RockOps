@@ -574,6 +574,7 @@ const EquipmentMain = () => {
                             imageUrl={equipment.imageUrl}
                             imageFallback={equipmentimg}
                             onImageRefresh={handleImageRefresh}
+                            lazyImageFetch={true}
                             onClick={(id) => navigate(`/equipment/${id}`)}
                             stats={[
                                 {
@@ -599,6 +600,9 @@ const EquipmentMain = () => {
                                     statusClass: getStatusClass(equipment.status)
                                 }
                             ]}
+
+                            // Performance: Enable lazy loading for images in the grid
+                            lazyImageFetch={true}
                             actions={[
                                 ...(permissions.canEdit ? [{
                                     label: 'Edit',

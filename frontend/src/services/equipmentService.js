@@ -264,7 +264,7 @@ export const equipmentService = {
             transactionDate,
             description
         });
-        
+
         const params = new URLSearchParams({
             senderId: senderId,
             senderType: senderType,
@@ -400,7 +400,7 @@ export const equipmentService = {
     // Search maintenance records for linking
     searchMaintenanceRecords: (equipmentId, searchCriteria) => {
         const params = new URLSearchParams();
-        
+
         if (searchCriteria.startDate) params.append('startDate', searchCriteria.startDate);
         if (searchCriteria.endDate) params.append('endDate', searchCriteria.endDate);
         if (searchCriteria.technicianId) params.append('technicianId', searchCriteria.technicianId);

@@ -244,67 +244,55 @@ const EquipmentDashboard = forwardRef(({ equipmentId }, ref) => {
         );
     }
 
+    const stats = dashboardData.summaryStats;
+
     return (
         <div className="rockops-equipment-dashboard">
-            <PageHeader
-                title="Equipment Dashboard"
-                subtitle="Comprehensive overview of equipment metrics and maintenance history"
-            />
-
-            {/* Header */}
-            <div className="rockops-dashboard-header">
-                <div className="rockops-dashboard-title">
-                    <TrendingUp size={24} />
-                    <h2>Equipment Performance Dashboard</h2>
-                </div>
-                <div className="rockops-dashboard-subtitle">
-                    <p>Comprehensive overview of equipment metrics and maintenance history</p>
-                </div>
-            </div>
+            {/* Header removed: Displayed in parent Introduction Card */}
 
             {/* Summary Stats */}
             <div className="rockops-dashboard-stats">
-                <div className="rockops-stat-card primary">
+                <div className="rockops-kpi-card primary">
                     <div className="rockops-stat-icon">
                         <Clock size={24} />
                     </div>
                     <div className="rockops-stat-content">
-                        <div className="rockops-stat-value">{dashboardData.summaryStats.totalWorkHours}</div>
-                        <div className="rockops-stat-label">Total Work Hours</div>
-                        <div className="rockops-stat-sublabel">Last 12 months</div>
+                        <h3 className="rockops-stat-value">{stats.totalWorkHours}</h3>
+                        <p className="rockops-stat-label">Total Work Hours</p>
+                        <span className="rockops-stat-sublabel">Last 12 months</span>
                     </div>
                 </div>
 
-                <div className="rockops-stat-card success">
+                <div className="rockops-kpi-card success">
                     <div className="rockops-stat-icon">
                         <Package size={24} />
                     </div>
                     <div className="rockops-stat-content">
-                        <div className="rockops-stat-value">{dashboardData.summaryStats.totalConsumables}</div>
-                        <div className="rockops-stat-label">Consumables Used</div>
-                        <div className="rockops-stat-sublabel">Total quantity</div>
+                        <h3 className="rockops-stat-value">{stats.totalConsumables}</h3>
+                        <p className="rockops-stat-label">Consumables Used</p>
+                        <span className="rockops-stat-sublabel">Total quantity</span>
                     </div>
                 </div>
 
-                <div className="rockops-stat-card warning">
+                <div className="rockops-kpi-card warning">
                     <div className="rockops-stat-icon">
                         <Wrench size={24} />
                     </div>
                     <div className="rockops-stat-content">
-                        <div className="rockops-stat-value">{dashboardData.summaryStats.maintenanceEvents}</div>
-                        <div className="rockops-stat-label">Maintenance Events</div>
-                        <div className="rockops-stat-sublabel">Last 12 months</div>
+                        <h3 className="rockops-stat-value">{stats.maintenanceEvents}</h3>
+                        <p className="rockops-stat-label">Maintenance Events</p>
+                        <span className="rockops-stat-sublabel">Last 12 months</span>
                     </div>
                 </div>
 
-                <div className="rockops-stat-card info">
+                <div className="rockops-kpi-card info">
                     <div className="rockops-stat-icon">
                         <Activity size={24} />
                     </div>
                     <div className="rockops-stat-content">
-                        <div className="rockops-stat-value">{dashboardData.summaryStats.averageWorkHours}</div>
-                        <div className="rockops-stat-label">Average Hours/Month</div>
-                        <div className="rockops-stat-sublabel">Monthly average</div>
+                        <h3 className="rockops-stat-value">{stats.averageWorkHours}</h3>
+                        <p className="rockops-stat-label">Average Hours/Month</p>
+                        <span className="rockops-stat-sublabel">Monthly average</span>
                     </div>
                 </div>
             </div>

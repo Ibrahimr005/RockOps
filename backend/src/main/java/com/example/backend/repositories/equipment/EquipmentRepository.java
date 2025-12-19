@@ -20,4 +20,6 @@ public interface EquipmentRepository extends JpaRepository<Equipment, UUID> {
 
     // Dashboard metrics methods
     long countByStatus(EquipmentStatus status);
+
+    List<Equipment> findByImageStorageKeyIsNull();
 }

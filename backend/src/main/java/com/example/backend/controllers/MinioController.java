@@ -1,6 +1,7 @@
 package com.example.backend.controllers;
 
 import com.example.backend.services.FileStorageService;
+import com.example.backend.services.MinioService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,10 +15,10 @@ import java.util.UUID;
 @CrossOrigin(origins = "http://localhost:3000")
 public class MinioController {
 
-    private final FileStorageService fileStorageService;
+    private final MinioService minioService;
 
-    public MinioController(FileStorageService fileStorageService) {
-        this.fileStorageService = fileStorageService;
+    public MinioController(MinioService minioService) {
+        this.minioService = minioService;
     }
 
     @PostMapping("/upload")
@@ -41,7 +42,7 @@ public class MinioController {
                     "Content Type = " + file.getContentType());
 
             // Call service to upload file
-            String fileName = fileStorageService.uploadFile(file);
+            String fileName = minioService.uploadFile(file);
 
             System.out.println("File uploaded successfully: " + fileName);
             return ResponseEntity.ok("File uploaded successfully: " + fileName);
@@ -57,7 +58,7 @@ public class MinioController {
             @PathVariable UUID equipmentId,
             @RequestParam("file") MultipartFile file) {
         try {
-            String fileName = fileStorageService.uploadEquipmentFile(equipmentId, file, "");
+            String fileName = minioService.uploadEquipmentFile(equipmentId, file, "");
             return ResponseEntity.ok("File uploaded successfully to equipment bucket: " + fileName);
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error uploading file: " + e.getMessage());
@@ -67,7 +68,7 @@ public class MinioController {
     @GetMapping("/equipment/{equipmentId}/main-photo")
     public ResponseEntity<String> getEquipmentMainPhoto(@PathVariable UUID equipmentId) {
         try {
-            String imageUrl = fileStorageService.getEquipmentMainPhoto(equipmentId);
+            String imageUrl = minioService.getEquipmentMainPhoto(equipmentId);
             if (imageUrl != null) {
                 return ResponseEntity.ok(imageUrl);
             } else {
@@ -83,7 +84,7 @@ public class MinioController {
     public ResponseEntity<String> refreshEquipmentMainPhoto(@PathVariable UUID equipmentId) {
         try {
             // Force refresh of presigned URL
-            String imageUrl = fileStorageService.getEquipmentMainPhoto(equipmentId);
+            String imageUrl = minioService.getEquipmentMainPhoto(equipmentId);
             if (imageUrl != null) {
                 return ResponseEntity.ok(imageUrl);
             } else {
