@@ -253,23 +253,7 @@ const PendingItems = ({
 
     return (
         <>
-            {/* Info Banner */}
-            <div className="pending-info-banner">
-                <div className="info-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M12 16v-4" />
-                        <path d="M12 8h.01" />
-                    </svg>
-                </div>
-                <div className="info-content">
-                    <h4>Awaiting Finance Approval</h4>
-                    <p>
-                        These items have been added to the warehouse but are waiting for the finance team
-                        to approve their prices before they can be used in inventory and transactions.
-                    </p>
-                </div>
-            </div>
+
 
             {/* DataTable */}
             <DataTable

@@ -34,21 +34,24 @@ public class SecurityConfiguration {
                             "http://localhost:5174",
                             "http://localhost:3000",
 
-                            // Development deployment - ADD THIS!
+                            // Development deployment
                             "https://dev-rock-ops.vercel.app",
 
+                            // Test deployment
+                            "https://rock-ops.vercel.app",
+
                             // Production deployment
-                            "https://rockops.vercel.app",
-                            "https://rock-ops.vercel.app"
+                            "https://rockops.vercel.app"
                     ));
                     configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
+                    configuration.setAllowedHeaders(Arrays.asList("*"));
                     configuration.setAllowCredentials(true);
                     configuration.setMaxAge(3600L);
                     return configuration;
                 }))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/").permitAll()  // ADD THIS - Allow health check
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAuthority(Role.ADMIN.name())

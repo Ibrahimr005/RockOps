@@ -56,9 +56,10 @@ public class Site
     @JsonBackReference
     private List<Employee> employees;
 
-    @OneToMany(mappedBy = "site", cascade = CascadeType.ALL)
-    @JsonBackReference // for Merchant -> Site relationship
-    private List<Merchant> merchants;
+    @ManyToMany(mappedBy = "sites", fetch = FetchType.LAZY)
+    @JsonBackReference
+    @Builder.Default
+    private List<Merchant> merchants = new ArrayList<>();
 
     @OneToMany(mappedBy = "site", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore

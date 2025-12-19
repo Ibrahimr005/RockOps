@@ -896,6 +896,9 @@ export const INVENTORY_VALUATION_ENDPOINTS = {
     // Site Balances
     SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/balance`,
     ALL_SITE_BALANCES: '/api/finance/inventory-valuation/sites/balances',
-    RECALCULATE_SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/recalculate-balance`
+    RECALCULATE_SITE_BALANCE: (siteId) => `/api/finance/inventory-valuation/site/${siteId}/recalculate-balance`,
+    APPROVAL_HISTORY: '/api/finance/inventory-valuation/approval-history',
+    WAREHOUSE_ITEMS_BREAKDOWN: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/items-breakdown`,
+    WAREHOUSE_TRANSACTIONS: (warehouseId) => `/api/finance/inventory-valuation/warehouse/${warehouseId}/transactions`
 };
 

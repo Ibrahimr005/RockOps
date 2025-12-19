@@ -126,4 +126,6 @@ public interface ItemRepository extends JpaRepository<Item, UUID> {
      */
     @Query("SELECT COALESCE(SUM(i.quantity), 0) FROM Item i WHERE i.warehouse = :warehouse AND i.itemStatus = 'IN_WAREHOUSE'")
     Integer getTotalQuantityInWarehouse(@Param("warehouse") Warehouse warehouse);
+
+
 }

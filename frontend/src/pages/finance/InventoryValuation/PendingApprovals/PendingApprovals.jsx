@@ -64,9 +64,10 @@ const PendingApprovals = ({ showSnackbar, onPendingCountUpdate }) => {
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
-        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit'
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
         });
     };
 
@@ -117,7 +118,7 @@ const PendingApprovals = ({ showSnackbar, onPendingCountUpdate }) => {
         },
         {
             accessor: 'createdAt',
-            header: 'REQUESTED',
+            header: 'REQUESTED AT',
             width: '180px',
             render: (row) => (
                 <span className="date-value">{formatDate(row.createdAt)}</span>
@@ -195,13 +196,20 @@ const PendingApprovals = ({ showSnackbar, onPendingCountUpdate }) => {
             />
 
             {/* Price Approval Modal */}
+            {/* Price Approval Modal */}
             <PriceApprovalModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                selectedItems={selectedItems}
-                isBulkMode={isBulkMode}
-                onApprovalComplete={handleApprovalComplete}
-                showSnackbar={showSnackbar}
+                item={selectedItems[0]} // Pass the first item (single approval mode)
+                onApprove={async (itemId, approvedPrice) => {
+                    try {
+                        await inventoryValuationService.approveItemPrice(itemId, approvedPrice);
+                        handleApprovalComplete();
+                    } catch (error) {
+                        console.error('Failed to approve price:', error);
+                        showSnackbar('Failed to approve price', 'error');
+                    }
+                }}
             />
         </>
     );

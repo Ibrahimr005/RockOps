@@ -1,16 +1,20 @@
 package com.example.backend.services.finance.inventoryValuation;
 
 import com.example.backend.dto.finance.inventoryValuation.*;
+import com.example.backend.models.PartyType;
 import com.example.backend.models.finance.inventoryValuation.ApprovalStatus;
 import com.example.backend.models.finance.inventoryValuation.ItemPriceApproval;
 import com.example.backend.models.notification.NotificationType;
 import com.example.backend.models.site.Site;
+import com.example.backend.models.transaction.Transaction;
+import com.example.backend.models.transaction.TransactionItem;
 import com.example.backend.models.user.Role;
 import com.example.backend.models.warehouse.Item;
 import com.example.backend.models.warehouse.ItemStatus;
 import com.example.backend.models.warehouse.Warehouse;
 import com.example.backend.repositories.finance.inventoryValuation.ItemPriceApprovalRepository;
 import com.example.backend.repositories.site.SiteRepository;
+import com.example.backend.repositories.transaction.TransactionRepository;
 import com.example.backend.repositories.warehouse.ItemRepository;
 import com.example.backend.repositories.warehouse.WarehouseRepository;
 import com.example.backend.services.notification.NotificationService;
@@ -39,6 +43,9 @@ public class InventoryValuationService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private TransactionRepository transactionRepository;
 
     /**
      * Get all pending item price approvals across all warehouses
@@ -272,5 +279,160 @@ public class InventoryValuationService {
                 .createdAt(approval.getRequestedAt().toString())
                 .comment(item.getComment())
                 .build();
+    }
+
+    /**
+     * Get all approved item price approvals (history)
+     */
+    public List<ApprovedItemHistoryDTO> getApprovalHistory() {
+        List<ItemPriceApproval> approvedItems = itemPriceApprovalRepository
+                .findByApprovalStatusOrderByApprovedAtDesc(ApprovalStatus.APPROVED);
+
+        return approvedItems.stream()
+                .map(this::convertToApprovedHistoryDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Helper method to convert ItemPriceApproval to Approved History DTO
+     */
+    private ApprovedItemHistoryDTO convertToApprovedHistoryDTO(ItemPriceApproval approval) {
+        Item item = approval.getItem();
+
+        return ApprovedItemHistoryDTO.builder()
+                .itemId(item.getId())
+                .warehouseId(approval.getWarehouse().getId())
+                .warehouseName(approval.getWarehouse().getName())
+                .siteName(approval.getWarehouse().getSite().getName())
+                .itemTypeName(item.getItemType().getName())
+                .itemTypeCategory(item.getItemType().getItemCategory().getName())
+                .measuringUnit(item.getItemType().getMeasuringUnit())
+                .quantity(item.getQuantity())
+                .approvedPrice(approval.getApprovedPrice())
+                .totalValue(approval.getApprovedPrice() * item.getQuantity())
+                .approvedBy(approval.getApprovedBy())
+                .approvedAt(approval.getApprovedAt().toString())
+                .build();
+    }
+
+    /**
+     * Get item breakdown (value composition) for a warehouse
+     */
+    public List<ItemBreakdownDTO> getWarehouseItemBreakdown(UUID warehouseId) {
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
+
+        // Get all IN_WAREHOUSE items with approved prices
+        List<Item> items = itemRepository.findByWarehouseAndItemStatus(warehouse, ItemStatus.IN_WAREHOUSE);
+
+        return items.stream()
+                .filter(item -> item.getUnitPrice() != null && item.getUnitPrice() > 0)
+                .map(item -> ItemBreakdownDTO.builder()
+                        .itemId(item.getId())
+                        .itemName(item.getItemType().getName())
+                        .quantity(item.getQuantity())
+                        .measuringUnit(item.getItemType().getMeasuringUnit())
+                        .unitPrice(item.getUnitPrice())
+                        .totalValue(item.getTotalValue())
+                        .build())
+                .collect(Collectors.toList());
+    }
+    /**
+     * Get transaction history for a warehouse (finance view)
+     */
+    /**
+     * Get transaction history for a warehouse (finance view)
+     * Returns one row per transaction item
+     */
+    public List<WarehouseTransactionHistoryDTO> getWarehouseTransactionHistory(UUID warehouseId) {
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
+
+        // Get all transactions where this warehouse is sender or receiver
+        List<Transaction> transactions = transactionRepository.findBySenderIdOrReceiverId(warehouseId, warehouseId);
+
+        List<WarehouseTransactionHistoryDTO> result = new ArrayList<>();
+
+        for (Transaction tx : transactions) {
+            // Get sender and receiver names
+            String senderName = getEntityName(tx.getSenderType(), tx.getSenderId());
+            String receiverName = getEntityName(tx.getReceiverType(), tx.getReceiverId());
+
+            // Create one row per transaction item
+            for (TransactionItem txItem : tx.getItems()) {
+                // Get unit price from warehouse items
+                Double unitPrice = getItemUnitPrice(txItem.getItemType().getId(), warehouseId);
+
+                // Determine quantity based on role
+                boolean isReceiver = tx.getReceiverId().equals(warehouseId);
+                Integer quantity = isReceiver
+                        ? (txItem.getReceivedQuantity() != null ? txItem.getReceivedQuantity() : txItem.getQuantity())
+                        : txItem.getQuantity();
+
+                Double totalValue = null;
+                if (unitPrice != null && quantity != null) {
+                    totalValue = unitPrice * quantity;
+                }
+
+                result.add(WarehouseTransactionHistoryDTO.builder()
+                        .transactionId(tx.getId())
+                        .batchNumber(tx.getBatchNumber())
+                        .transactionDate(tx.getTransactionDate() != null ? tx.getTransactionDate().toString() : null)
+                        .status(tx.getStatus().name())
+                        .senderName(senderName)
+                        .senderType(tx.getSenderType().name())
+                        .receiverName(receiverName)
+                        .receiverType(tx.getReceiverType().name())
+                        .itemName(txItem.getItemType().getName())
+                        .quantity(quantity)
+                        .measuringUnit(txItem.getItemType().getMeasuringUnit())
+                        .unitPrice(unitPrice)
+                        .totalValue(totalValue)
+                        .createdBy(tx.getAddedBy())
+                        .approvedBy(tx.getApprovedBy())
+                        .completedAt(tx.getCompletedAt() != null ? tx.getCompletedAt().toString() : null)
+                        .build());
+            }
+        }
+
+        // Sort by transaction date descending (most recent first)
+        result.sort((a, b) -> {
+            String dateA = a.getTransactionDate();
+            String dateB = b.getTransactionDate();
+            if (dateA == null) return 1;
+            if (dateB == null) return -1;
+            return dateB.compareTo(dateA);
+        });
+
+        return result;
+    }
+
+    private Double getItemUnitPrice(UUID itemTypeId, UUID warehouseId) {
+        List<Item> items = itemRepository.findAllByItemTypeIdAndWarehouseIdAndItemStatus(
+                itemTypeId, warehouseId, ItemStatus.IN_WAREHOUSE);
+
+        return items.stream()
+                .map(Item::getUnitPrice)
+                .filter(price -> price != null && price > 0)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Helper to get entity name by type and ID
+     */
+    private String getEntityName(PartyType type, UUID id) {
+        try {
+            if (type == PartyType.WAREHOUSE) {
+                return warehouseRepository.findById(id)
+                        .map(Warehouse::getName)
+                        .orElse("Unknown Warehouse");
+            } else if (type == PartyType.EQUIPMENT) {
+                return "Equipment"; // You'd need EquipmentRepository for full name
+            }
+            return "Unknown";
+        } catch (Exception e) {
+            return "Unknown";
+        }
     }
 }

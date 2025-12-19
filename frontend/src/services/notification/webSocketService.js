@@ -12,7 +12,6 @@ class WebSocketService {
         this.token = null;
     }
 
-    // Get the correct WebSocket URL based on environment
     getWebSocketURL() {
         const hostname = window.location.hostname;
 
@@ -23,10 +22,13 @@ class WebSocketService {
             // Development deployment
             return 'https://rockops.onrender.com/ws';
         } else if (hostname.includes('rock-ops.vercel.app')) {
-            // Production deployment
+            // Test deployment (with hyphen)
             return 'https://rockops-backend.onrender.com/ws';
+        } else if (hostname === 'rockops.vercel.app') {
+            // NEW Production deployment (no hyphen)
+            return 'https://rockops-production-backend.onrender.com/ws';
         } else {
-            // Fallback to local
+            // Fallback to localhost
             return 'http://localhost:8080/ws';
         }
     }

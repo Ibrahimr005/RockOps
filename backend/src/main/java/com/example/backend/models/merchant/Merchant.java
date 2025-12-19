@@ -25,6 +25,10 @@ public class Merchant {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+
+    @Column(unique = true, nullable = false)
+    private String merchantId;
+
     @Column(nullable = false)
     private String name;
 
@@ -42,7 +46,6 @@ public class Merchant {
     @Column(length = 500)
     private String photoUrl;
 
-    // CHANGE THIS: From single merchantType to multiple merchantTypes
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "merchant_types", joinColumns = @JoinColumn(name = "merchant_id"))
     @Enumerated(EnumType.STRING)
@@ -60,10 +63,16 @@ public class Merchant {
 
     private String notes;
 
-    @ManyToOne()
-    @JoinColumn(name = "site_id")
+    // CHANGED: From @ManyToOne to @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "merchant_sites",
+            joinColumns = @JoinColumn(name = "merchant_id"),
+            inverseJoinColumns = @JoinColumn(name = "site_id")
+    )
     @JsonManagedReference
-    private Site site;
+    @Builder.Default
+    private List<Site> sites = new ArrayList<>();
 
     @OneToMany(mappedBy = "merchant", cascade = CascadeType.ALL, orphanRemoval = false, fetch = FetchType.LAZY)
     @JsonManagedReference("merchant-contacts")

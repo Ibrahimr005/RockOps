@@ -36,7 +36,7 @@ export const inventoryValuationService = {
     approveItemPrice: async (itemId, unitPrice) => {
         const response = await apiClient.post(
             INVENTORY_VALUATION_ENDPOINTS.APPROVE_ITEM(itemId),
-            { unitPrice }
+            { unitPrice }  // This is correct - matches backend
         );
         return response.data || response;
     },
@@ -109,5 +109,33 @@ export const inventoryValuationService = {
             INVENTORY_VALUATION_ENDPOINTS.RECALCULATE_SITE_BALANCE(siteId)
         );
         return response.data || response;
-    }
+    },
+
+    /**
+     * Get approval history (all approved items)
+     */
+    getApprovalHistory: async () => {
+        const response = await apiClient.get(
+            INVENTORY_VALUATION_ENDPOINTS.APPROVAL_HISTORY
+        );
+        return response.data || response;
+    },
+    /**
+     * Get item breakdown (value composition) for a warehouse
+     */
+    getWarehouseItemBreakdown: async (warehouseId) => {
+        const response = await apiClient.get(
+            INVENTORY_VALUATION_ENDPOINTS.WAREHOUSE_ITEMS_BREAKDOWN(warehouseId)
+        );
+        return response.data || response;
+    },
+    /**
+     * Get transaction history for a warehouse (finance view)
+     */
+    getWarehouseTransactionHistory: async (warehouseId) => {
+        const response = await apiClient.get(
+            INVENTORY_VALUATION_ENDPOINTS.WAREHOUSE_TRANSACTIONS(warehouseId)
+        );
+        return response.data || response;
+    },
 };

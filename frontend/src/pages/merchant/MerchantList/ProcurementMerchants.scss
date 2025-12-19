@@ -848,4 +848,15 @@
     stroke: #2563eb;
   }
 }
+.merchant-id-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background: var(--color-primary-alpha-10);
+  color: var(--color-primary);
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
 

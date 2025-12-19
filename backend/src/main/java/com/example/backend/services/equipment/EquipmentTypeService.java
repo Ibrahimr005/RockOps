@@ -159,9 +159,9 @@ public class EquipmentTypeService {
                 }
             }
         } else if (wasDrivable) {
-            // Equipment type is no longer drivable - optionally handle job position removal
-            log.info("Equipment type '{}' is no longer drivable - consider removing job position", dto.getName());
-            // Note: We don't automatically delete job positions as they might have employees
+            // Equipment type is no longer drivable - try to delete the position if it has no employees
+            log.info("Equipment type '{}' is no longer drivable - attempting to remove job position", dto.getName());
+            deleteJobPositionIfUnused(oldName + " Driver");
         }
 
         // Send notifications
@@ -573,6 +573,25 @@ public class EquipmentTypeService {
         // Transport and general equipment - entry level acceptable
         else {
             return "Entry Level";
+        }
+    }
+
+    /**
+     * Delete a job position if it has no assigned employees
+     */
+    private void deleteJobPositionIfUnused(String positionName) {
+        Optional<JobPosition> positionOpt = findExistingPosition(positionName);
+        if (positionOpt.isPresent()) {
+            JobPosition position = positionOpt.get();
+            if (position.getEmployees().isEmpty()) {
+                log.info("Deleting unused job position: {}", positionName);
+                jobPositionRepository.delete(position);
+            } else {
+                log.warn("Cannot delete job position '{}' as it has {} assigned employees",
+                        positionName, position.getEmployees().size());
+            }
+        } else {
+            log.warn("Job position '{}' not found for deletion", positionName);
         }
     }
 }

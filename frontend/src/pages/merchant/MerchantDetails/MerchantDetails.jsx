@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import './MerchantDetails.scss';
 import { FaBuilding, FaArrowLeft } from 'react-icons/fa';
+import { FiInfo, FiTrendingUp, FiFileText, FiDollarSign, FiUsers } from 'react-icons/fi';
 import LoadingPage from "../../../components/common/LoadingPage/LoadingPage.jsx";
 import { merchantService } from '../../../services/merchant/merchantService.js';
+import Tabs from '../../../components/common/Tabs/Tabs.jsx';
+import IntroCard from '../../../components/common/IntroCard/IntroCard.jsx';
+
 
 // Import reorganized tab components
 import OverviewTab from './tabs/OverviewTab/OverviewTab.jsx'
@@ -57,6 +61,34 @@ const MerchantDetails = () => {
             return 'Not specified';
         }
     };
+
+    const tabs = [
+        {
+            id: 'basic',
+            label: 'Basic Info',
+
+        },
+        {
+            id: 'performance',
+            label: 'Performance',
+        },
+        {
+            id: 'documents',
+            label: 'Documents',
+
+
+        },
+        {
+            id: 'transactions',
+            label: 'Transactions',
+
+        },
+        {
+            id: 'contacts',
+            label: 'Contacts',
+
+        }
+    ];
 
     // Calculate days since last order
     const calculateDaysSinceLastOrder = (lastOrderDate) => {
@@ -129,76 +161,55 @@ const MerchantDetails = () => {
         <div className="merchant-details-container">
             <div className="merchant-details-content">
                 {/* Beautiful Merchant Info Bar */}
-                <div className="merchant-details-info-bar">
-                    <div className="merchant-details-info-content">
-                        <div className="merchant-details-avatar">
-                            {merchant.photoUrl ? (
-                                <img
-                                    src={merchant.photoUrl}
-                                    alt={merchant.name}
-                                    onError={(e) => {
-                                        e.target.style.display = 'none';
-                                        e.target.nextSibling.style.display = 'flex';
-                                    }}
-                                />
-                            ) : (
-                                <div className="merchant-details-avatar__placeholder">
-                                    <FaBuilding />
-                                </div>
-                            )}
-                            <div className="merchant-details-avatar__placeholder" style={{ display: 'none' }}>
-                                <FaBuilding />
-                            </div>
-                        </div>
+                {/* Merchant Intro Card */}
+                <IntroCard
+                    title={merchant.name}
+                    label="MERCHANT DETAILS"
+                    breadcrumbs={[
+                        {
+                            label: 'Merchants',
+                            icon: <FaBuilding />,
+                            onClick: () => navigate('/merchants')
+                        },
+                        {
+                            label: merchant.name
+                        }
+                    ]}
+                    icon={merchant.photoUrl ? null : <FaBuilding />}
+                    lightModeImage={merchant.photoUrl}
+                    darkModeImage={merchant.photoUrl}
+                    stats={[
+                        {
+                            value: merchant.merchantTypes?.join(', ') || 'N/A',
+                            label: 'Type'
+                        },
+                        {
+                            value: merchant.sites?.length > 0
+                                ? merchant.sites.map(s => s.name).join(', ')
+                                : 'No sites',
+                            label: 'Sites'
+                        },
+                        {
+                            value: merchant.reliabilityScore ? `${merchant.reliabilityScore}/5` : 'Not rated',
+                            label: 'Reliability'
+                        },
+                        {
+                            value: merchant.contacts?.length || 0,
+                            label: 'Contacts'
+                        }
+                    ]}
 
-                        <div className="merchant-details-basic-info">
-                            <h1 className="merchant-details-name">
-                                {merchant.name}
-                            </h1>
-                            <div className="merchant-details-meta">
-                                <span className="merchant-details-site">{getSiteName()}</span>
-                                <span className="merchant-details-separator">•</span>
-                                <span className="merchant-details-contact">{merchant.contactPersonName || 'No contact assigned'}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    className="merchant-details-intro"
+                />
 
                 {/* Reorganized Tabs */}
+                {/* Reorganized Tabs */}
                 <div className="merchant-details-tabs">
-                    <div className="tabs-header">
-                        <button
-                            className={`tab-button ${activeTab === 'basic' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('basic')}
-                        >
-                            Basic Info
-                        </button>
-
-                        <button
-                            className={`tab-button ${activeTab === 'performance' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('performance')}
-                        >
-                            Performance
-                        </button>
-                        <button
-                            className={`tab-button ${activeTab === 'documents' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('documents')}
-                        >
-                            Documents
-                        </button>
-                        <button
-                            className={`tab-button ${activeTab === 'transactions' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('transactions')}
-                        >
-                            Transactions
-                        </button>
-                        <button
-                            className={`tab-button ${activeTab === 'contacts' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('contacts')}
-                        >
-                            Contacts
-                        </button>
-                    </div>
+                    <Tabs
+                        tabs={tabs}
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
+                    />
 
                     <div className="tab-content">
                         {activeTab === 'basic' && <OverviewTab merchant={merchant} formatDate={formatDate} getSiteName={getSiteName} />}

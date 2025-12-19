@@ -535,7 +535,7 @@ const InWarehouseItems = ({
                 ]}
                 actions={actions}
                 className="inventory-items-table"
-
+                onRowClick={handleOpenTransactionDetailsModal}
                 showExportButton={true}
                 exportButtonText="Export Items"
                 exportButtonIcon={

@@ -350,9 +350,10 @@ public class JobPositionService {
 
             // Check for duplicates - EXCLUDING the current position ID
             if (jobPositionDTO.getPositionName() != null && jobPositionDTO.getExperienceLevel() != null) {
-                if (jobPositionRepository.existsByPositionNameAndExperienceLevelIgnoreCase(
+                if (jobPositionRepository.existsByPositionNameAndExperienceLevelIgnoreCaseAndIdNot(
                         jobPositionDTO.getPositionName().trim(),
-                        jobPositionDTO.getExperienceLevel())) {
+                        jobPositionDTO.getExperienceLevel(),
+                        id)) {
                     String fullPositionName = buildFullPositionName(jobPositionDTO.getPositionName(), jobPositionDTO.getExperienceLevel());
                     throw new IllegalArgumentException(
                             "A position with the name '" + fullPositionName + "' already exists. " +

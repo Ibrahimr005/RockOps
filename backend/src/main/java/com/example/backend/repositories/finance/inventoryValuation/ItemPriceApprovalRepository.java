@@ -35,4 +35,6 @@ public interface ItemPriceApprovalRepository extends JpaRepository<ItemPriceAppr
 
     // Get all approvals by status and warehouse
     List<ItemPriceApproval> findByWarehouseAndApprovalStatus(Warehouse warehouse, ApprovalStatus status);
+
+    List<ItemPriceApproval> findByApprovalStatusOrderByApprovedAtDesc(ApprovalStatus status);
 }

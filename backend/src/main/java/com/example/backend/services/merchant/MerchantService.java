@@ -41,11 +41,19 @@ public class MerchantService {
                 System.out.println("Contact Email: " + m.getContactEmail());
                 System.out.println("Contact Phone: " + m.getContactPhone());
                 System.out.println("Address: " + m.getAddress());
-                System.out.println("Merchant Type: " + m.getMerchantTypes());
+                System.out.println("Merchant Types: " + m.getMerchantTypes());
                 System.out.println("Notes: " + m.getNotes());
-                if (m.getSite() != null) {
-                    System.out.println("Site: " + m.getSite().getName());
+
+                // Changed: Handle multiple sites instead of single site
+                if (m.getSites() != null && !m.getSites().isEmpty()) {
+                    System.out.println("Sites (" + m.getSites().size() + "):");
+                    m.getSites().forEach(site -> {
+                        System.out.println("\t- " + site.getName());
+                    });
+                } else {
+                    System.out.println("Sites: None");
                 }
+
                 System.out.println("Item Categories: " + m.getItemCategories().size());
                 m.getItemCategories().forEach(itemCategory -> {
                     System.out.println("\t- " + itemCategory.getName());

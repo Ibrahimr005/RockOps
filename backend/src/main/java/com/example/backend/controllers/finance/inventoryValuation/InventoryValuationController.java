@@ -244,4 +244,64 @@ public class InventoryValuationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    /**
+     * GET approval history (all approved items)
+     * Endpoint: GET /api/finance/inventory-valuation/approval-history
+     */
+    @GetMapping("/approval-history")
+    public ResponseEntity<List<ApprovedItemHistoryDTO>> getApprovalHistory() {
+        try {
+            System.out.println("📜 Fetching approval history");
+            List<ApprovedItemHistoryDTO> history = inventoryValuationService.getApprovalHistory();
+            System.out.println("✅ Found " + history.size() + " approved items");
+            return ResponseEntity.ok(history);
+        } catch (Exception e) {
+            System.err.println("❌ Error fetching approval history: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    /**
+     * GET item breakdown (value composition) for a warehouse
+     * Endpoint: GET /api/finance/inventory-valuation/warehouse/{warehouseId}/items-breakdown
+     */
+    @GetMapping("/warehouse/{warehouseId}/items-breakdown")
+    public ResponseEntity<List<ItemBreakdownDTO>> getWarehouseItemBreakdown(@PathVariable UUID warehouseId) {
+        try {
+            System.out.println("📊 Fetching item breakdown for warehouse: " + warehouseId);
+            List<ItemBreakdownDTO> breakdown = inventoryValuationService.getWarehouseItemBreakdown(warehouseId);
+            System.out.println("✅ Found " + breakdown.size() + " items");
+            return ResponseEntity.ok(breakdown);
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Warehouse not found: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception e) {
+            System.err.println("❌ Error fetching item breakdown: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    /**
+     * GET transaction history for a warehouse (finance view)
+     * Endpoint: GET /api/finance/inventory-valuation/warehouse/{warehouseId}/transactions
+     */
+    @GetMapping("/warehouse/{warehouseId}/transactions")
+    public ResponseEntity<List<WarehouseTransactionHistoryDTO>> getWarehouseTransactionHistory(
+            @PathVariable UUID warehouseId) {
+        try {
+            System.out.println("📜 Fetching transaction history for warehouse: " + warehouseId);
+            List<WarehouseTransactionHistoryDTO> history =
+                    inventoryValuationService.getWarehouseTransactionHistory(warehouseId);
+            System.out.println("✅ Found " + history.size() + " transactions");
+            return ResponseEntity.ok(history);
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Warehouse not found: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception e) {
+            System.err.println("❌ Error fetching transaction history: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
