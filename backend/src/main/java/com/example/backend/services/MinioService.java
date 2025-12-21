@@ -195,6 +195,7 @@ public class MinioService implements FileStorageService {
         return String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, fileName);
     }
 
+    @jakarta.annotation.PostConstruct
     @Override
     public void initializeService() {
         if (!s3Enabled || s3Client == null) {
@@ -250,14 +251,19 @@ public class MinioService implements FileStorageService {
      * returns the KEY of the object in the MAIN bucket.
      */
     public String findAndMigrateEquipmentImage(UUID equipmentId) {
+        // Log entry
+        System.out.println("🔍 Finding image for equipment: " + equipmentId);
+
         if (!s3Enabled || s3Client == null) {
             return "equipment/" + equipmentId + "/main-image.jpg";
         }
 
         String folderPrefix = "equipment/" + equipmentId.toString() + "/";
         
-        // 1. Check NEW structure first (most likely for new items)
+        // 1. Check NEW structure first (rockops bucket)
         try {
+            System.out.println("   Checking bucket: " + bucketName + " with prefix: " + folderPrefix + "Main_Image");
+            
             ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
                     .bucket(bucketName)
                     .prefix(folderPrefix + "Main_Image")
@@ -267,16 +273,42 @@ public class MinioService implements FileStorageService {
 
             if (!response.contents().isEmpty()) {
                 String objectKey = response.contents().get(0).key();
-                // System.out.println("✅ Found equipment photo in standard structure: " + objectKey);
+                System.out.println("✅ Found equipment photo in standard structure: " + objectKey);
                 return objectKey;
+            } else {
+                System.out.println("   ⚠️ Strict prefix search found nothing. Trying broader folder search...");
+                
+                // Fallback: List everything in the folder to see what's there (debug + recovery)
+                ListObjectsV2Request folderRequest = ListObjectsV2Request.builder()
+                    .bucket(bucketName)
+                    .prefix(folderPrefix)
+                    .build();
+                ListObjectsV2Response folderResponse = s3Client.listObjectsV2(folderRequest);
+                
+                if (!folderResponse.contents().isEmpty()) {
+                    System.out.println("   📂 Folder contents:");
+                    for (S3Object obj : folderResponse.contents()) {
+                        System.out.println("      - " + obj.key());
+                        // Recovery: If we find a PNG/JPG that looks like a main image, pick it
+                        if (obj.key().contains("Main_Image") || obj.key().toLowerCase().endsWith(".png") || obj.key().toLowerCase().endsWith(".jpg")) {
+                            System.out.println("   ✨ Recovered likely image: " + obj.key());
+                            return obj.key();
+                        }
+                    }
+                } else {
+                    System.out.println("   ❌ Folder appears empty.");
+                }
             }
         } catch (Exception e) {
-            System.err.println("Error checking new structure: " + e.getMessage());
+            System.err.println("❌ Error checking new structure: " + e.getMessage());
+            e.printStackTrace();
         }
 
         // 2. Check OLD structure (Legacy buckets)
         String oldBucketName = "equipment-" + equipmentId.toString();
         try {
+            System.out.println("   Checking legacy bucket: " + oldBucketName);
+            
             ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
                     .bucket(oldBucketName)
                     .prefix("Main_Image")
@@ -286,11 +318,13 @@ public class MinioService implements FileStorageService {
 
             if (!response.contents().isEmpty()) {
                 String oldKey = response.contents().get(0).key();
-                String newKey = folderPrefix + oldKey; // e.g., equipment/UUID/Main_Image_X.jpg
+                String newKey = folderPrefix + oldKey; 
                 
                 System.out.println("🚀 MIGRATING: Copying " + oldKey + " from " + oldBucketName + " to " + bucketName + "/" + newKey);
                 
-                // Copy Object
+                // Ensure destination bucket exists before copying
+                createBucketIfNotExists(bucketName);
+
                 try {
                     CopyObjectRequest copyReq = CopyObjectRequest.builder()
                         .sourceBucket(oldBucketName)
@@ -301,16 +335,14 @@ public class MinioService implements FileStorageService {
                         
                     s3Client.copyObject(copyReq);
                     System.out.println("✅ Migration Copy Success: " + newKey);
-                    
                     return newKey;
                     
                 } catch (Exception copyEx) {
                    System.err.println("❌ Migration Copy FAILED: " + copyEx.getMessage());
-                   // Fallback: Return old bucket URL? No, this method returns KEY for main bucket.
-                   // If copy fails, we can't really return a valid key for the MAIN bucket.
-                   // But maybe return null so caller knows it failed?
                    return null; 
                 }
+            } else {
+                System.out.println("   Legacy bucket empty or not found.");
             }
         } catch (NoSuchBucketException e) {
             // Expected for new items
@@ -360,11 +392,33 @@ public class MinioService implements FileStorageService {
     // DEPRECATED / LEGACY - Kept for compilation compatibility or rare fallbacks
     @Override
     public String getEquipmentMainPhoto(UUID equipmentId) {
-        // Redirect to new logic, convert key to URL
+        // 1. Try to find valid key (handling migration)
         String key = findAndMigrateEquipmentImage(equipmentId);
         if (key != null) {
             return generateUrlFromKey(key);
         }
+
+        // 2. Fallback: If migration returned null (e.g. copy failed), 
+        // try to find in the legacy bucket directly and return that URL
+        if (s3Enabled && s3Client != null) {
+             String oldBucketName = "equipment-" + equipmentId.toString();
+             try {
+                ListObjectsV2Request listRequest = ListObjectsV2Request.builder()
+                        .bucket(oldBucketName)
+                        .prefix("Main_Image")
+                        .build();
+
+                ListObjectsV2Response response = s3Client.listObjectsV2(listRequest);
+                if (!response.contents().isEmpty()) {
+                    String oldKey = response.contents().get(0).key();
+                    // Return presigned URL for the OLD bucket
+                    return getPresignedDownloadUrl(oldBucketName, oldKey, 60); // 1 hour
+                }
+             } catch (Exception e) {
+                 // Ignore, nothing found
+             }
+        }
+
         return null;
     }
 

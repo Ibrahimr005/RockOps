@@ -9,7 +9,7 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
         expectedCost: step?.expectedCost || step?.stepCost || '',
         downPayment: step?.downPayment || '',
         actualEndDate: new Date().toISOString().split('T')[0],
-        actualCost: step?.actualCost || ''
+        actualCost: '' // Initially empty as requested
     });
     const [errors, setErrors] = useState({});
 
@@ -24,7 +24,7 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                     expectedCost: step.expectedCost || step.stepCost || '',
                     downPayment: step.downPayment || '',
                     actualEndDate: new Date().toISOString().split('T')[0],
-                    actualCost: step.actualCost || ''
+                    actualCost: '' // Initially empty
                 });
             }
         } else {
@@ -37,6 +37,9 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
             document.body.style.overflow = 'unset';
         };
     }, [isOpen, step]);
+
+    // Calculate remaining cost
+    const remainingCost = (parseFloat(formData.actualCost) || 0) - (parseFloat(formData.downPayment) || 0);
 
     if (!isOpen) return null;
 
@@ -65,26 +68,17 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
             // Validate that actual end date is not before step start date
             const actualEndDate = new Date(formData.actualEndDate + 'T00:00:00');
             const startDate = new Date(step.startDate);
-            
+
             // Normalize dates to compare only the date part (ignore time)
             const actualDateOnly = new Date(actualEndDate.getFullYear(), actualEndDate.getMonth(), actualEndDate.getDate());
             const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-            
-            // Debug logging
-            console.log('Date comparison:', {
-                actualEndDate: formData.actualEndDate,
-                actualDateOnly: actualDateOnly.toISOString().split('T')[0],
-                startDate: step.startDate,
-                startDateOnly: startDateOnly.toISOString().split('T')[0],
-                isBefore: actualDateOnly < startDateOnly
-            });
-            
+
             if (actualDateOnly < startDateOnly) {
                 newErrors.actualEndDate = 'Completion date cannot be before the step start date';
             }
         }
 
-        if (!formData.actualCost && formData.actualCost !== 0) {
+        if (formData.actualCost === '' || formData.actualCost === null) {
             newErrors.actualCost = 'Actual cost is required';
         } else if (isNaN(formData.actualCost)) {
             newErrors.actualCost = 'Cost must be a valid number';
@@ -105,7 +99,8 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                 expectedCost: formData.expectedCost ? parseFloat(formData.expectedCost) : null,
                 downPayment: formData.downPayment ? parseFloat(formData.downPayment) : null,
                 actualEndDate: formData.actualEndDate + 'T' + new Date().toTimeString().split(' ')[0],
-                actualCost: parseFloat(formData.actualCost)
+                actualCost: parseFloat(formData.actualCost),
+                remaining: remainingCost
             });
         }
     };
@@ -130,7 +125,7 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                     </div>
 
                     <form onSubmit={handleSubmit} className="complete-step-form">
-                        <h4 className="section-title">Expected Values (Optional)</h4>
+                        <h4 className="section-title">Expected Values (Read Only)</h4>
 
                         <div className="form-group">
                             <label htmlFor="expectedEndDate">
@@ -141,7 +136,8 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                                 id="expectedEndDate"
                                 name="expectedEndDate"
                                 value={formData.expectedEndDate}
-                                onChange={handleInputChange}
+                                readOnly
+                                className="readonly-field"
                             />
                         </div>
 
@@ -155,9 +151,8 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                                     id="expectedCost"
                                     name="expectedCost"
                                     value={formData.expectedCost}
-                                    onChange={handleInputChange}
-                                    step="0.01"
-                                    min="0"
+                                    readOnly
+                                    className="readonly-field"
                                     placeholder="0.00"
                                 />
                             </div>
@@ -176,6 +171,7 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                                     min="0"
                                     placeholder="0.00"
                                 />
+                                <span className="info-text">You can override the initial down payment</span>
                             </div>
                         </div>
 
@@ -223,6 +219,18 @@ const CompleteStepModal = ({ isOpen, onClose, onConfirm, step }) => {
                                 Estimated: ${step?.stepCost || step?.expectedCost || 0}
                             </span>
                         </div>
+
+                        {/* Display Remaining Cost */}
+                        {(formData.actualCost !== '' && formData.actualCost !== null) && (
+                            <div className="form-group remaining-display" style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(var(--color-primary-rgb), 0.1)', borderRadius: 'var(--radius-sm)' }}>
+                                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                                    Remaining Cost (Actual - Down Payment)
+                                </label>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+                                    ${remainingCost.toFixed(2)}
+                                </div>
+                            </div>
+                        )}
                     </form>
                 </div>
 

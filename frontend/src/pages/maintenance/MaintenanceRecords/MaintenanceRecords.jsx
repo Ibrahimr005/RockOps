@@ -187,7 +187,11 @@ const MaintenanceRecords = () => {
                     completedSteps: record.completedSteps || 0,
                     activeSteps: record.activeSteps || 0,
                     currentStep: currentStep,
-                    steps: record.steps || []
+                    activeSteps: record.activeSteps || 0,
+                    currentStep: currentStep,
+                    steps: record.steps || [],
+                    // Pass original user data for modal population
+                    responsibleUserId: record.responsibleUserId
                 };
             });
 

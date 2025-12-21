@@ -155,6 +155,24 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
         setErrors({});
     }, [editingStep, isOpen, restoredFormData, stepTypes, currentLocation]);
 
+    // Sync selectedStepType with formData.stepTypeId
+    useEffect(() => {
+        if (formData.stepTypeId && stepTypes.length > 0) {
+            // Use loose equality to handle string/number mismatches
+            const stepType = stepTypes.find(st => st.id == formData.stepTypeId);
+            setSelectedStepType(stepType || null);
+        } else {
+            setSelectedStepType(null);
+        }
+    }, [formData.stepTypeId, stepTypes]);
+
+    // Sync fromLocation with currentLocation for new steps
+    useEffect(() => {
+        if (!editingStep && currentLocation && !formData.fromLocation) {
+            setFormData(prev => ({ ...prev, fromLocation: currentLocation }));
+        }
+    }, [currentLocation, editingStep, formData.fromLocation]);
+
     const loadStepTypes = async () => {
         try {
             const response = await stepTypeService.getAllStepTypes();
@@ -327,11 +345,11 @@ const MaintenanceStepModal = ({ isOpen, onClose, onSubmit, editingStep, maintena
             });
         }
 
-        // Update selected step type when step type changes
-        if (name === 'stepTypeId') {
-            const stepType = stepTypes.find(st => st.id === value);
-            setSelectedStepType(stepType);
-        }
+        // Update selected step type when step type changes - handled by useEffect now
+        // if (name === 'stepTypeId') {
+        //     const stepType = stepTypes.find(st => st.id === value);
+        //     setSelectedStepType(stepType);
+        // }
 
         // Load merchant contacts when merchant is selected
         if (name === 'selectedMerchantId') {
