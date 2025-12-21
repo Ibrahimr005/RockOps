@@ -16,7 +16,7 @@
         p {
             color: var(--color-text-secondary);
             margin: 8px 0;
-            
+
             &:first-child {
                 font-weight: 600;
                 color: var(--color-text-primary);
@@ -83,7 +83,7 @@
                         height: 0;
                         width: 0;
 
-                        &:checked ~ .checkmark {
+                        &:checked~.checkmark {
                             background-color: var(--color-primary);
                             border-color: var(--color-primary);
 
@@ -157,6 +157,9 @@
         justify-content: flex-end;
         align-items: center;
     }
+
+
+
 }
 
 // Responsive adjustments
