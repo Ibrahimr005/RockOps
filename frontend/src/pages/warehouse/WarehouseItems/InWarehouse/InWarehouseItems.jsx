@@ -5,6 +5,8 @@ import { itemService } from '../../../../services/warehouse/itemService';
 import { itemTypeService } from '../../../../services/warehouse/itemTypeService';
 import { itemCategoryService } from '../../../../services/warehouse/itemCategoryService';
 import { warehouseService } from '../../../../services/warehouse/warehouseService';
+import { useNavigate } from 'react-router-dom';
+
 
 // Helper functions for quantity color coding
 const getQuantityColorClass = (currentQuantity, minQuantity) => {
@@ -43,7 +45,7 @@ const InWarehouseItems = ({
     const [selectedItem, setSelectedItem] = useState(null);
     const [transactionDetails, setTransactionDetails] = useState([]);
     const [transactionDetailsLoading, setTransactionDetailsLoading] = useState(false);
-
+    const navigate = useNavigate();
     // Add item form states
     const [addItemData, setAddItemData] = useState({
         parentCategoryId: "",
@@ -275,52 +277,14 @@ const InWarehouseItems = ({
         }
     };
 
-    const handleOpenTransactionDetailsModal = async (item) => {
-        setSelectedItem(item);
-        setIsTransactionDetailsModalOpen(true);
-        setTransactionDetailsLoading(true);
 
-        try {
-            const details = await itemService.getItemTransactionDetails(warehouseId, item.itemType.id);
 
-            const detailsWithWarehouseNames = await Promise.all(
-                details.map(async (detail) => {
-                    if (detail.transactionItem?.transaction) {
-                        const transaction = detail.transactionItem.transaction;
-                        let senderName = "Unknown";
-                        let receiverName = "Unknown";
-
-                        if (transaction.senderType === 'WAREHOUSE' && transaction.senderId) {
-                            senderName = await fetchWarehouseName(transaction.senderId);
-                        }
-                        if (transaction.receiverType === 'WAREHOUSE' && transaction.receiverId) {
-                            receiverName = await fetchWarehouseName(transaction.receiverId);
-                        }
-
-                        return {
-                            ...detail,
-                            senderWarehouseName: senderName,
-                            receiverWarehouseName: receiverName
-                        };
-                    }
-                    return detail;
-                })
-            );
-
-            const sortedDetails = detailsWithWarehouseNames.sort((a, b) => {
-                const dateA = new Date(a.createdAt || 0);
-                const dateB = new Date(b.createdAt || 0);
-                return dateB - dateA; // Most recent first
-            });
-
-            setTransactionDetails(sortedDetails);
-        } catch (error) {
-            console.error("Error fetching transaction details:", error);
-            showSnackbar("Error loading transaction details", "error");
-        } finally {
-            setTransactionDetailsLoading(false);
-        }
+    const handleOpenTransactionDetailsModal = (item) => {
+        navigate(`/warehouses/${warehouseId}/items/${item.itemType.id}`);
     };
+
+
+
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);

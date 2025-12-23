@@ -213,6 +213,9 @@ public class InventoryValuationService {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
 
+        // ✅ RECALCULATE from actual items, don't use cached value
+        Double totalValue = itemRepository.calculateWarehouseBalance(warehouse);
+
         Integer totalItems = itemRepository.getTotalQuantityInWarehouse(warehouse);
         Long pendingCount = itemPriceApprovalRepository.countPendingApprovalsByWarehouse(warehouse);
 
@@ -221,7 +224,7 @@ public class InventoryValuationService {
                 .warehouseName(warehouse.getName())
                 .siteId(warehouse.getSite().getId())
                 .siteName(warehouse.getSite().getName())
-                .totalValue(warehouse.getBalance() != null ? warehouse.getBalance() : 0.0)
+                .totalValue(totalValue != null ? totalValue : 0.0) // ✅ USE FRESH CALCULATION
                 .totalItems(totalItems != null ? totalItems : 0)
                 .pendingApprovalCount(pendingCount.intValue())
                 .build();
@@ -238,10 +241,15 @@ public class InventoryValuationService {
                 .map(warehouse -> getWarehouseBalance(warehouse.getId()))
                 .collect(Collectors.toList());
 
+        // ✅ CALCULATE from warehouse balances, don't use cached value
+        Double totalValue = warehouseBalances.stream()
+                .mapToDouble(WarehouseBalanceDTO::getTotalValue)
+                .sum();
+
         return SiteBalanceDTO.builder()
                 .siteId(site.getId())
                 .siteName(site.getName())
-                .totalValue(site.getTotalBalance() != null ? site.getTotalBalance() : 0.0)
+                .totalValue(totalValue) // ✅ USE FRESH CALCULATION
                 .totalWarehouses(site.getWarehouses().size())
                 .warehouses(warehouseBalances)
                 .build();
@@ -322,10 +330,22 @@ public class InventoryValuationService {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
 
+        System.out.println("🔍 Warehouse found: " + warehouse.getName());
+
         // Get all IN_WAREHOUSE items with approved prices
         List<Item> items = itemRepository.findByWarehouseAndItemStatus(warehouse, ItemStatus.IN_WAREHOUSE);
 
-        return items.stream()
+        System.out.println("📦 Total items with IN_WAREHOUSE status: " + items.size());
+
+        // Log each item before filtering
+        items.forEach(item -> {
+            System.out.println("  - Item: " + item.getItemType().getName() +
+                    ", Quantity: " + item.getQuantity() +
+                    ", UnitPrice: " + item.getUnitPrice() +
+                    ", Status: " + item.getItemStatus());
+        });
+
+        List<ItemBreakdownDTO> breakdown = items.stream()
                 .filter(item -> item.getUnitPrice() != null && item.getUnitPrice() > 0)
                 .map(item -> ItemBreakdownDTO.builder()
                         .itemId(item.getId())
@@ -336,6 +356,10 @@ public class InventoryValuationService {
                         .totalValue(item.getTotalValue())
                         .build())
                 .collect(Collectors.toList());
+
+        System.out.println("✅ Items after filtering (with valid prices): " + breakdown.size());
+
+        return breakdown;
     }
     /**
      * Get transaction history for a warehouse (finance view)

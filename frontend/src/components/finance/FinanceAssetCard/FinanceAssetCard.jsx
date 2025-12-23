@@ -7,6 +7,8 @@ const FinanceAssetCard = ({
                               value,
                               subtitle,
                               icon: Icon,
+                              imageUrl,
+                              imageFallback,
                               stats = [],
                               categoryBreakdown = [],
                               isExpanded = false,
@@ -20,9 +22,19 @@ const FinanceAssetCard = ({
     return (
         <div className={`finance-asset-card variant-${variant} size-${size} ${isExpanded ? 'expanded' : ''} ${className}`}>
             <div className="finance-card-header" onClick={onExpand && !categoryBreakdown.length ? onExpand : undefined}>
-                {Icon && (
+                {(imageUrl || imageFallback || Icon) && (
                     <div className="finance-card-icon">
-                        <Icon size={size === 'compact' ? 14 : 16} />
+                        {imageUrl || imageFallback ? (
+                            <img
+                                src={imageUrl || imageFallback}
+                                alt={title}
+                                onError={(e) => {
+                                    if (imageFallback) e.target.src = imageFallback;
+                                }}
+                            />
+                        ) : (
+                            Icon && <Icon size={size === 'compact' ? 14 : 16} />
+                        )}
                     </div>
                 )}
 

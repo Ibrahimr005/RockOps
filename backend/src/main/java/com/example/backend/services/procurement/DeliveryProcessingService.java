@@ -184,23 +184,44 @@ public class DeliveryProcessingService {
                 .deliveryNotes(session.getDeliveryNotes())
                 .build();
     }
+
+
     private void createWarehouseItems(DeliverySession session) {
-        // Get the warehouse (you might need to determine which warehouse based on your logic)
-        Warehouse warehouse = warehouseRepository.findAll().stream()
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("No warehouse found"));
+        System.out.println("🔍 Starting createWarehouseItems for PO: " + session.getPurchaseOrder().getPoNumber());
+
+        // Get the warehouse from the Request Order
+        RequestOrder requestOrder = session.getPurchaseOrder().getRequestOrder();
+
+        if (requestOrder == null) {
+            throw new RuntimeException("Request Order not found for PO: " + session.getPurchaseOrder().getPoNumber());
+        }
+
+        if (!"WAREHOUSE".equals(requestOrder.getPartyType())) {
+            throw new RuntimeException("Request Order is not from a warehouse. Party type: " + requestOrder.getPartyType());
+        }
+
+        UUID warehouseId = requestOrder.getRequesterId();
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new RuntimeException("Warehouse not found with ID: " + warehouseId));
+
+        System.out.println("📦 Target warehouse: " + warehouse.getName() + " (ID: " + warehouse.getId() + ")");
 
         for (DeliveryItemReceipt receipt : session.getItemReceipts()) {
             double goodQuantity = receipt.getGoodQuantity();
 
+            System.out.println("  Item: " + receipt.getPurchaseOrderItem().getItemType().getName());
+            System.out.println("  Good quantity: " + goodQuantity);
+
             if (goodQuantity > 0) {
-                // Create a single Item entry with the quantity
+                Double unitPrice = receipt.getPurchaseOrderItem().getUnitPrice();
+
                 Item item = Item.builder()
                         .itemType(receipt.getPurchaseOrderItem().getItemType())
                         .warehouse(warehouse)
                         .quantity((int) goodQuantity)
+                        .unitPrice(unitPrice)
                         .itemStatus(ItemStatus.IN_WAREHOUSE)
-                        .itemSource(ItemSource.PURCHASE_ORDER) // Make sure you have this enum
+                        .itemSource(ItemSource.PURCHASE_ORDER)
                         .sourceReference(session.getPurchaseOrder().getPoNumber())
                         .merchantName(receipt.getPurchaseOrderItem().getMerchant() != null
                                 ? receipt.getPurchaseOrderItem().getMerchant().getName()
@@ -212,8 +233,21 @@ public class DeliveryProcessingService {
                         .comment("Received via PO " + session.getPurchaseOrder().getPoNumber())
                         .build();
 
-                itemRepository.save(item);
+                if (unitPrice != null) {
+                    item.calculateTotalValue();
+                }
+
+                Item savedItem = itemRepository.save(item);
+                System.out.println("  ✅ Saved item ID: " + savedItem.getId() +
+                        " - Quantity: " + savedItem.getQuantity() +
+                        " @ " + unitPrice + " EGP = " + savedItem.getTotalValue() + " EGP");
+            } else {
+                System.out.println("  ⚠️ Skipping item - good quantity is 0");
             }
         }
+
+        System.out.println("✅ createWarehouseItems completed for warehouse: " + warehouse.getName());
     }
+
+    
 }

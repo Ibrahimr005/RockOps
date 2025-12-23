@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import './AssetValuesView.scss';
+import SubPageHeader from '../../../../components/common/SubPageHeader/SubPageHeader';
 import FinanceAssetCard from '../../../../components/Finance/FinanceAssetCard/FinanceAssetCard.jsx';
 import DataTable from '../../../../components/common/DataTable/DataTable.jsx';
 import { inventoryValuationService } from '../../../../services/finance/inventoryValuationService.js';
-import { FiMapPin, FiPackage, FiTool, FiArchive } from 'react-icons/fi';
+import { FiMapPin, FiPackage, FiTool, FiArchive, FiFilter } from 'react-icons/fi';
+import siteimgg from "../../../../assets/imgs/siteimgg.jpg";
 
 const AssetValuesView = ({ showSnackbar }) => {
     const [sitesData, setSitesData] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    // Filter states
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [filterBySite, setFilterBySite] = useState('');
+    const [filteredSitesData, setFilteredSitesData] = useState([]);
 
     const [expandedSite, setExpandedSite] = useState(null);
     const [expandedCategory, setExpandedCategory] = useState(null);
@@ -27,12 +34,33 @@ const AssetValuesView = ({ showSnackbar }) => {
         try {
             const data = await inventoryValuationService.getAllSiteBalances();
             setSitesData(data);
+            setFilteredSitesData(data);
         } catch (error) {
             console.error('Failed to fetch site balances:', error);
             showSnackbar('Failed to load site balances', 'error');
         } finally {
             setLoading(false);
         }
+    };
+
+    // Filter logic
+    useEffect(() => {
+        if (!filterBySite) {
+            setFilteredSitesData(sitesData);
+        } else {
+            const filtered = sitesData.filter(site =>
+                site.siteName.toLowerCase().includes(filterBySite.toLowerCase())
+            );
+            setFilteredSitesData(filtered);
+        }
+    }, [filterBySite, sitesData]);
+
+    const handleClearFilters = () => {
+        setFilterBySite('');
+    };
+
+    const getActiveFilterCount = () => {
+        return filterBySite ? 1 : 0;
     };
 
     const handleViewCategory = async (siteId, category) => {
@@ -148,7 +176,6 @@ const AssetValuesView = ({ showSnackbar }) => {
                 </div>
             )
         },
-
         {
             accessor: 'itemName',
             header: 'ITEM',
@@ -194,12 +221,12 @@ const AssetValuesView = ({ showSnackbar }) => {
 
                 return (
                     <div className={`value-impact ${isGaining ? 'positive' : 'negative'}`}>
-                <span className="value-arrow">
-                    {isGaining ? '↑' : '↓'}
-                </span>
+                        <span className="value-arrow">
+                            {isGaining ? '↑' : '↓'}
+                        </span>
                         <span className="value-amount">
-                    {row.totalValue.toFixed(2)} EGP
-                </span>
+                            {row.totalValue.toFixed(2)} EGP
+                        </span>
                     </div>
                 );
             }
@@ -218,6 +245,58 @@ const AssetValuesView = ({ showSnackbar }) => {
 
     return (
         <div className="asset-values-view">
+            <SubPageHeader
+                title="Asset Values"
+                subtitle="Monitor inventory values across sites and warehouses"
+                filterButton={{
+                    onClick: () => setShowFilterModal(!showFilterModal),
+                    isActive: showFilterModal,
+                    activeCount: getActiveFilterCount(),
+                    disabled: false
+                }}
+            />
+
+            {/* Filter Panel */}
+            {showFilterModal && (
+                <div className="page-header__filter-panel">
+                    <div className="page-header__filter-header">
+                        <h4>
+                            <FiFilter size={16} />
+                            Filter Options
+                        </h4>
+                        <div className="filter-actions">
+                            <button
+                                className="filter-reset-btn"
+                                onClick={handleClearFilters}
+                                disabled={getActiveFilterCount() === 0}
+                            >
+                                Clear Filters
+                            </button>
+                        </div>
+                    </div>
+                    <div className="page-header__filter-list">
+                        <div className="page-header__filter-item">
+                            <label>Site Name</label>
+                            <input
+                                type="text"
+                                placeholder="Search by site name..."
+                                value={filterBySite}
+                                onChange={(e) => setFilterBySite(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.625rem 0.875rem',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: 'var(--radius-sm)',
+                                    background: 'var(--color-surface)',
+                                    color: 'var(--color-text-primary)',
+                                    fontSize: '0.875rem'
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {loading && !expandedSite ? (
                 <div className="loading-state">
                     <div className="spinner"></div>
@@ -225,16 +304,8 @@ const AssetValuesView = ({ showSnackbar }) => {
                 </div>
             ) : (
                 <div className="sites-section">
-                    <div className="sites-section-header">
-                        <h3 className="sites-section-title">
-                            <FiMapPin size={16} />
-                            Sites
-                        </h3>
-                        <span className="sites-section-count">{sitesData.length} Total</span>
-                    </div>
-
                     <div className="sites-list">
-                        {sitesData.map((site, siteIndex) => (
+                        {filteredSitesData.map((site, siteIndex) => (
                             <React.Fragment key={site.siteId}>
                                 <div className="site-item">
                                     {/* Site Card */}
@@ -242,7 +313,8 @@ const AssetValuesView = ({ showSnackbar }) => {
                                         title={site.siteName}
                                         subtitle="Asset Categories"
                                         value={site.totalValue?.toFixed(2) || '0.00'}
-                                        icon={FiMapPin}
+                                        imageUrl={site.photoUrl}
+                                        imageFallback={siteimgg}
                                         variant="site"
                                         showValueLabel={true}
                                         categoryBreakdown={[
@@ -250,7 +322,7 @@ const AssetValuesView = ({ showSnackbar }) => {
                                                 label: 'Warehouses',
                                                 icon: FiPackage,
                                                 count: site.totalWarehouses || 0,
-                                                value: (site.totalValue * 0.6).toFixed(2),
+                                                value: site.totalValue?.toFixed(2) || '0.00',
                                                 onViewDetails: () => handleViewCategory(site.siteId, 'warehouses'),
                                                 disabled: false,
                                                 isActive: expandedSite === site.siteId && expandedCategory === 'warehouses'
@@ -258,8 +330,8 @@ const AssetValuesView = ({ showSnackbar }) => {
                                             {
                                                 label: 'Equipment',
                                                 icon: FiTool,
-                                                count: 3,
-                                                value: '475,000.00',
+                                                count: 0,
+                                                value: '0.00',
                                                 onViewDetails: () => handleViewCategory(site.siteId, 'equipment'),
                                                 disabled: true,
                                                 isActive: expandedSite === site.siteId && expandedCategory === 'equipment'
@@ -267,8 +339,8 @@ const AssetValuesView = ({ showSnackbar }) => {
                                             {
                                                 label: 'Fixed Assets',
                                                 icon: FiArchive,
-                                                count: 2,
-                                                value: '1,970,000.00',
+                                                count: 0,
+                                                value: '0.00',
                                                 onViewDetails: () => handleViewCategory(site.siteId, 'fixedAssets'),
                                                 disabled: true,
                                                 isActive: expandedSite === site.siteId && expandedCategory === 'fixedAssets'
@@ -366,7 +438,6 @@ const AssetValuesView = ({ showSnackbar }) => {
                                                                                 filterableColumns={[
                                                                                     { accessor: 'senderName', header: 'Sender' },
                                                                                     { accessor: 'receiverName', header: 'Receiver' },
-
                                                                                     { accessor: 'itemName', header: 'Item' },
                                                                                     { accessor: 'status', header: 'Status' }
                                                                                 ]}
@@ -413,7 +484,7 @@ const AssetValuesView = ({ showSnackbar }) => {
                                 </div>
 
                                 {/* Site Separator */}
-                                {siteIndex < sitesData.length - 1 && (
+                                {siteIndex < filteredSitesData.length - 1 && (
                                     <div className="site-separator"></div>
                                 )}
                             </React.Fragment>

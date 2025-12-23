@@ -279,9 +279,16 @@ public class TransactionService {
                 // Validate and immediately deduct from sender warehouse
                 validateSenderHasAvailableInventory(senderType, senderId, items);
                 for (TransactionItem item : items) {
-                    deductFromWarehouseInventory(senderId, item.getItemType(), item.getQuantity());
+                    List<Map<String, Object>> deductedItems = deductFromWarehouseInventory(
+                            senderId, item.getItemType(), item.getQuantity());
+
+                    // Store the deduction info in the transaction item
+                    item.setDeductedItems(deductedItems);
+
+                    System.out.println("💾 Stored deduction info for " + item.getItemType().getName() +
+                            ": " + deductedItems.size() + " batch(es)");
                 }
-                System.out.println("✅ Immediately deducted warehouse inventory from sender");
+                System.out.println("✅ Immediately deducted warehouse inventory from sender and stored price info");
             } else {
                 // For equipment, just validate (keep original behavior - don't touch equipment logic)
                 validateSenderHasAvailableInventory(senderType, senderId, items);
@@ -396,34 +403,95 @@ public class TransactionService {
         return saved;
     }
 
-    /**
-     * 🆕 NEW METHOD: Adds inventory to warehouse when receiver initiates transaction
-     * This creates a new item entry when a warehouse claims they received items
-     */
-    private void addToWarehouseInventoryOnReceive(UUID receivingWarehouseId, TransactionItem transactionItem) {
-        System.out.println("📦 Adding " + transactionItem.getQuantity() + " units to receiver warehouse on initiation");
 
-        // Fetch the warehouse entity
+    private void addToWarehouseInventoryOnReceive(UUID receivingWarehouseId, TransactionItem transactionItem) {
+        System.out.println("📦 Adding " + transactionItem.getQuantity() + " units to warehouse inventory (receiver-initiated)");
+
         Warehouse warehouse = warehouseRepository.findById(receivingWarehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found: " + receivingWarehouseId));
 
-        // Create a new item entry for the received quantity
-        Item newItem = new Item();
-        newItem.setItemType(transactionItem.getItemType());
-        newItem.setQuantity(transactionItem.getQuantity());
-        newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
-        newItem.setWarehouse(warehouse);
-        newItem.setTransactionItem(transactionItem); // Link to TransactionItem for traceability
-        newItem.setResolved(false);
-        newItem.setCreatedAt(LocalDateTime.now());
-        newItem.setCreatedBy("Created by a Transaction");
-        newItem.setItemSource(ItemSource.TRANSACTION_TRANSFER);
+        // For receiver-initiated transactions, we need to look up prices from sender's warehouse
+        // since the items haven't been deducted yet from sender
+        UUID senderId = transactionItem.getTransaction().getSenderId();
 
-        itemRepository.save(newItem);
+        if (transactionItem.getTransaction().getSenderType() == PartyType.WAREHOUSE) {
+            System.out.println("🔍 Looking up prices from sender warehouse for receiver-initiated transaction");
 
-        System.out.println("✅ Created new item entry with quantity: " + transactionItem.getQuantity() +
-                " for item type: " + transactionItem.getItemType().getName() +
-                " in warehouse: " + warehouse.getName());
+            List<Item> senderItems = itemRepository.findAllByItemTypeIdAndWarehouseIdAndItemStatus(
+                    transactionItem.getItemType().getId(), senderId, ItemStatus.IN_WAREHOUSE);
+
+            // Sort FIFO (same as deduction logic)
+            senderItems.sort((a, b) -> {
+                LocalDateTime dateA = a.getCreatedAt();
+                LocalDateTime dateB = b.getCreatedAt();
+                if (dateA == null && dateB == null) return 0;
+                if (dateA == null) return 1;
+                if (dateB == null) return -1;
+                return dateA.compareTo(dateB);
+            });
+
+            // Build list of items that would be deducted (without actually deducting yet)
+            int remaining = transactionItem.getQuantity();
+            List<Map<String, Object>> priceBreakdown = new ArrayList<>();
+
+            for (Item senderItem : senderItems) {
+                if (remaining <= 0) break;
+
+                int qtyToTake = Math.min(senderItem.getQuantity(), remaining);
+                Map<String, Object> priceInfo = new HashMap<>();
+                priceInfo.put("quantity", qtyToTake);
+                priceInfo.put("unitPrice", senderItem.getUnitPrice());
+                priceBreakdown.add(priceInfo);
+
+                remaining -= qtyToTake;
+            }
+
+            System.out.println("💰 Found " + priceBreakdown.size() + " price batch(es) from sender");
+
+            // Create items with the prices we found
+            for (Map<String, Object> priceInfo : priceBreakdown) {
+                Integer quantity = (Integer) priceInfo.get("quantity");
+                Double unitPrice = (Double) priceInfo.get("unitPrice");
+
+                Item newItem = new Item();
+                newItem.setItemType(transactionItem.getItemType());
+                newItem.setQuantity(quantity);
+                newItem.setUnitPrice(unitPrice);
+                newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
+                newItem.setWarehouse(warehouse);
+                newItem.setTransactionItem(transactionItem);
+                newItem.setResolved(false);
+                newItem.setCreatedAt(LocalDateTime.now());
+                newItem.setCreatedBy("Created by a Transaction");
+                newItem.setItemSource(ItemSource.TRANSACTION_TRANSFER);
+
+                if (unitPrice != null) {
+                    newItem.calculateTotalValue();
+                }
+
+                itemRepository.save(newItem);
+
+                System.out.println("  ✅ Created: " + quantity + "x " + transactionItem.getItemType().getName() +
+                        " @ " + unitPrice + " EGP");
+            }
+        } else {
+            // Sender is equipment - create item without price
+            Item newItem = new Item();
+            newItem.setItemType(transactionItem.getItemType());
+            newItem.setQuantity(transactionItem.getQuantity());
+            newItem.setUnitPrice(null);
+            newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
+            newItem.setWarehouse(warehouse);
+            newItem.setTransactionItem(transactionItem);
+            newItem.setResolved(false);
+            newItem.setCreatedAt(LocalDateTime.now());
+            newItem.setCreatedBy("Created by a Transaction");
+            newItem.setItemSource(ItemSource.TRANSACTION_TRANSFER);
+
+            itemRepository.save(newItem);
+
+            System.out.println("✅ Created item from equipment sender (no price tracking)");
+        }
     }
 
     // ========================================
@@ -792,9 +860,7 @@ public class TransactionService {
     /**
      * 🚨 FIXED METHOD: Handles inventory for sender-initiated transactions
      */
-    /**
-     * 🚨 FIXED METHOD: Handles inventory for sender-initiated transactions
-     */
+
     private void handleSenderInitiatedInventoryChanges(Transaction transaction, TransactionItem item,
                                                        int senderClaimedQuantity, int receiverClaimedQuantity) {
         System.out.println("📤 Handling sender-initiated inventory changes");
@@ -841,9 +907,14 @@ public class TransactionService {
 
         // Receiver already added during creation, now handle sender side
         if (transaction.getSenderType() == PartyType.WAREHOUSE) {
-            // 🚨 FIXED: Deduct only what receiver claims they got, NOT what sender claims they sent
-            System.out.println("🏭 Deducting from warehouse what RECEIVER claims they got: " + receiverClaimedQuantity);
-            deductFromWarehouseInventory(transaction.getSenderId(), item.getItemType(), senderClaimedQuantity);
+            System.out.println("🏭 Deducting from warehouse what SENDER claims: " + senderClaimedQuantity);
+            List<Map<String, Object>> deductedItems = deductFromWarehouseInventory(
+                    transaction.getSenderId(), item.getItemType(), senderClaimedQuantity);
+
+            // Store the deduction info for later use
+            item.setDeductedItems(deductedItems);
+
+            System.out.println("💾 Stored deduction info: " + deductedItems.size() + " batch(es)");
         }
         // Equipment sender handling unchanged (preserve equipment logic)
 
@@ -942,17 +1013,34 @@ public class TransactionService {
         Warehouse warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new IllegalArgumentException("Warehouse not found: " + warehouseId));
 
+        // Try to find an existing item with a price to use as reference
+        List<Item> existingItems = itemRepository.findAllByItemTypeIdAndWarehouseIdAndItemStatus(
+                itemType.getId(), warehouseId, ItemStatus.IN_WAREHOUSE);
+
+        Double unitPrice = existingItems.stream()
+                .map(Item::getUnitPrice)
+                .filter(price -> price != null && price > 0)
+                .findFirst()
+                .orElse(null);
+
+        System.out.println("💰 Using reference unit price: " + unitPrice + " for returned items");
+
         // Create a new item entry for the returned quantity
         Item returnedItem = new Item();
         returnedItem.setItemType(itemType);
         returnedItem.setQuantity(quantity);
+        returnedItem.setUnitPrice(unitPrice);
         returnedItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
         returnedItem.setWarehouse(warehouse);
         returnedItem.setResolved(false);
         returnedItem.setItemSource(ItemSource.TRANSACTION_TRANSFER);
 
+        if (unitPrice != null) {
+            returnedItem.calculateTotalValue();
+        }
+
         itemRepository.save(returnedItem);
-        System.out.println("✅ Added back " + quantity + " units to warehouse inventory");
+        System.out.println("✅ Added back " + quantity + " units with unitPrice: " + unitPrice);
     }
 
     private void addActualReceivedQuantityToReceiver(Transaction transaction, TransactionItem item, int receivedQuantity) {
@@ -1056,8 +1144,7 @@ public class TransactionService {
     // ========================================
     // WAREHOUSE INVENTORY OPERATIONS (UNCHANGED)
     // ========================================
-
-    private void deductFromWarehouseInventory(UUID warehouseId, ItemType itemType, int quantityToDeduct) {
+    private List<Map<String, Object>> deductFromWarehouseInventory(UUID warehouseId, ItemType itemType, int quantityToDeduct) {
         List<Item> availableItems = itemRepository.findAllByItemTypeIdAndWarehouseIdAndItemStatus(
                 itemType.getId(), warehouseId, ItemStatus.IN_WAREHOUSE);
 
@@ -1065,55 +1152,30 @@ public class TransactionService {
             throw new IllegalArgumentException("No available items in warehouse for: " + itemType.getName());
         }
 
-        // Calculate total available quantity across all items
         int totalAvailable = availableItems.stream().mapToInt(Item::getQuantity).sum();
         if (totalAvailable < quantityToDeduct) {
             throw new IllegalArgumentException("Not enough quantity in warehouse for: " + itemType.getName() +
                     ". Available: " + totalAvailable + ", Requested: " + quantityToDeduct);
         }
 
-        // 🔧 IMPROVED FIFO SORTING: Handle null dates properly and add more debugging
+        // FIFO SORTING
         availableItems.sort((a, b) -> {
             LocalDateTime dateA = a.getCreatedAt();
             LocalDateTime dateB = b.getCreatedAt();
 
-            System.out.println("🔍 Comparing items:");
-            System.out.println("  Item A - ID: " + a.getId() + ", Created: " + dateA + ", Qty: " + a.getQuantity());
-            System.out.println("  Item B - ID: " + b.getId() + ", Created: " + dateB + ", Qty: " + b.getQuantity());
-
-            // Handle null dates - items with null dates go to the end (treated as newest)
             if (dateA == null && dateB == null) {
-                // Both null, fall back to ID comparison for consistency
-                int result = a.getId().compareTo(b.getId());
-                System.out.println("  Both dates null, comparing by ID: " + result);
-                return result;
+                return a.getId().compareTo(b.getId());
             }
-            if (dateA == null) {
-                System.out.println("  A is null, B comes first: 1");
-                return 1; // A goes after B (null dates are "newer")
-            }
-            if (dateB == null) {
-                System.out.println("  B is null, A comes first: -1");
-                return -1; // B goes after A (null dates are "newer")
-            }
-
-            // Both dates exist, compare normally (oldest first)
-            int result = dateA.compareTo(dateB);
-            System.out.println("  Date comparison result: " + result + " (negative = A is older)");
-            return result;
+            if (dateA == null) return 1;
+            if (dateB == null) return -1;
+            return dateA.compareTo(dateB);
         });
-
-        System.out.println("📋 SORTED ITEMS (FIFO ORDER - oldest first):");
-        for (int i = 0; i < availableItems.size(); i++) {
-            Item item = availableItems.get(i);
-            System.out.println("  " + (i + 1) + ". ID: " + item.getId() +
-                    ", Created: " + item.getCreatedAt() +
-                    ", Qty: " + item.getQuantity() +
-                    ", TransactionItem: " + (item.getTransactionItem() != null ? item.getTransactionItem().getId() : "null"));
-        }
 
         int remainingToDeduct = quantityToDeduct;
         List<Item> itemsToDelete = new ArrayList<>();
+
+        // Track each deduction with its price
+        List<Map<String, Object>> deductedItems = new ArrayList<>();
 
         System.out.println("🔄 Deducting " + quantityToDeduct + " from warehouse inventory using FIFO method:");
 
@@ -1121,24 +1183,30 @@ public class TransactionService {
             if (remainingToDeduct <= 0) break;
 
             int currentItemQuantity = item.getQuantity();
+            int quantityToTake = Math.min(currentItemQuantity, remainingToDeduct);
+
+            // Record this deduction with its price
+            Map<String, Object> deduction = new HashMap<>();
+            deduction.put("quantity", quantityToTake);
+            deduction.put("unitPrice", item.getUnitPrice());
+            deductedItems.add(deduction);
+
+            System.out.println("  ➖ Taking " + quantityToTake + " @ " + item.getUnitPrice() + " EGP each (Item ID: " + item.getId() + ")");
 
             if (currentItemQuantity <= remainingToDeduct) {
                 // Use entire item and mark for deletion
                 remainingToDeduct -= currentItemQuantity;
                 itemsToDelete.add(item);
-                System.out.println("  ➖ Using ENTIRE item: " + currentItemQuantity +
-                        " (Item ID: " + item.getId() +
-                        ", Created: " + item.getCreatedAt() + ")");
-            } else {
-                // Partially use this item
-                item.setQuantity(currentItemQuantity - remainingToDeduct);
-                itemRepository.save(item);
-                System.out.println("  ➖ PARTIALLY using item: " + remainingToDeduct + " from " + currentItemQuantity +
-                        " (Item ID: " + item.getId() +
-                        ", Created: " + item.getCreatedAt() +
-                        ", Remaining: " + item.getQuantity() + ")");
-                remainingToDeduct = 0;
-            }
+                System.out.println("  ➖ Using ENTIRE item: " + currentItemQuantity);
+            }  else {
+            // Partially use this item
+            item.setQuantity(currentItemQuantity - remainingToDeduct);
+            item.calculateTotalValue(); // ✅ ADD THIS LINE
+            itemRepository.save(item);
+            System.out.println("  ➖ PARTIALLY using item: " + remainingToDeduct + " from " + currentItemQuantity +
+                    " (Remaining: " + item.getQuantity() + ", New total value: " + item.getTotalValue() + ")");
+            remainingToDeduct = 0;
+        }
         }
 
         // Delete items that were completely used
@@ -1147,66 +1215,74 @@ public class TransactionService {
             System.out.println("  🗑️ Deleted " + itemsToDelete.size() + " fully depleted items");
         }
 
-        System.out.println("✅ Successfully deducted " + quantityToDeduct + " from warehouse inventory using FIFO");
+        System.out.println("✅ Successfully deducted " + quantityToDeduct + " in " + deductedItems.size() + " batch(es)");
+
+        return deductedItems;
     }
 
-
     private void addToWarehouseInventory(Transaction transaction, TransactionItem transactionItem, int actualQuantity) {
-        System.out.println("📦 Adding " + actualQuantity + " units to warehouse inventory as NEW ITEM ENTRY");
+        System.out.println("📦 Adding " + actualQuantity + " units to warehouse inventory");
 
         try {
-            // Get the receiving warehouse
             UUID receivingWarehouseId = transaction.getReceiverId();
-            System.out.println("🔍 DEBUG: Retrieved receiver warehouse ID from transaction: " + receivingWarehouseId);
-
-            // Fetch the warehouse entity
             Warehouse warehouse = warehouseRepository.findById(receivingWarehouseId)
                     .orElseThrow(() -> new IllegalArgumentException("Warehouse not found: " + receivingWarehouseId));
-            System.out.println("🔍 DEBUG: Successfully fetched warehouse from repository: " + warehouse.getName() + " (ID: " + warehouse.getId() + ")");
 
-            // Create new item entry
-            Item newItem = new Item();
-            System.out.println("🔍 DEBUG: Initialized new Item instance");
+            // Get the deducted items info (which has the original prices)
+            List<Map<String, Object>> deductedItems = transactionItem.getDeductedItems();
 
-            // Set properties one by one with logging
-            System.out.println("🔍 DEBUG: Setting item type: " + transactionItem.getItemType().getName());
-            newItem.setItemType(transactionItem.getItemType());
+            if (deductedItems != null && !deductedItems.isEmpty()) {
+                System.out.println("💰 Creating items with original prices from sender (" + deductedItems.size() + " batch(es))");
 
-            System.out.println("🔍 DEBUG: Setting quantity: " + actualQuantity);
-            newItem.setQuantity(actualQuantity);
+                // Create separate Item records for each deduction (preserving original prices)
+                for (Map<String, Object> deductedItem : deductedItems) {
+                    Integer quantity = (Integer) deductedItem.get("quantity");
+                    Double unitPrice = (Double) deductedItem.get("unitPrice");
 
-            System.out.println("🔍 DEBUG: Setting item status to IN_WAREHOUSE");
-            newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
+                    Item newItem = new Item();
+                    newItem.setItemType(transactionItem.getItemType());
+                    newItem.setQuantity(quantity);
+                    newItem.setUnitPrice(unitPrice);
+                    newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
+                    newItem.setWarehouse(warehouse);
+                    newItem.setTransactionItem(transactionItem);
+                    newItem.setResolved(false);
+                    newItem.setItemSource(ItemSource.TRANSACTION_TRANSFER);
+                    newItem.setCreatedAt(LocalDateTime.now());
+                    newItem.setCreatedBy("Created by a Transaction");
 
-            System.out.println("🔍 DEBUG: Assigning warehouse to new item");
-            newItem.setWarehouse(warehouse);
+                    if (unitPrice != null) {
+                        newItem.calculateTotalValue();
+                    }
 
-            System.out.println("🔍 DEBUG: Linking to TransactionItem: " + transactionItem.getId());
-            newItem.setTransactionItem(transactionItem);
+                    Item savedItem = itemRepository.save(newItem);
 
-            System.out.println("🔍 DEBUG: Setting resolved status to false");
-            newItem.setResolved(false);
-            newItem.setItemSource(ItemSource.TRANSACTION_TRANSFER);
+                    System.out.println("  ✅ Created: " + quantity + "x " + transactionItem.getItemType().getName() +
+                            " @ " + unitPrice + " EGP (Total: " + savedItem.getTotalValue() + " EGP)");
+                }
+            } else {
+                System.out.println("⚠️ No deduction info available - creating item without price tracking");
 
-            LocalDateTime now = LocalDateTime.now();
-            System.out.println("🔍 DEBUG: Setting createdAt to: " + now);
-            newItem.setCreatedAt(now);
+                // Fallback: Create single item without price info
+                Item newItem = new Item();
+                newItem.setItemType(transactionItem.getItemType());
+                newItem.setQuantity(actualQuantity);
+                newItem.setUnitPrice(null);
+                newItem.setItemStatus(ItemStatus.IN_WAREHOUSE);
+                newItem.setWarehouse(warehouse);
+                newItem.setTransactionItem(transactionItem);
+                newItem.setResolved(false);
+                newItem.setItemSource(ItemSource.TRANSACTION_TRANSFER);
+                newItem.setCreatedAt(LocalDateTime.now());
+                newItem.setCreatedBy("Created by a Transaction");
 
-            System.out.println("🔍 DEBUG: Setting createdBy");
-            newItem.setCreatedBy("Created by a Transaction");
+                itemRepository.save(newItem);
+            }
 
-            System.out.println("🔍 DEBUG: About to save new item to database...");
-            Item savedItem = itemRepository.save(newItem);
-            System.out.println("🔍 DEBUG: Successfully saved new item with ID: " + savedItem.getId());
-
-            System.out.println("✅ Created NEW item entry with quantity: " + actualQuantity +
-                    " linked to transaction: " + transaction.getId() +
-                    " (batch #" + transaction.getBatchNumber() + ")");
+            System.out.println("✅ Successfully added items to warehouse " + warehouse.getName());
 
         } catch (Exception e) {
             System.err.println("❌ ERROR in addToWarehouseInventory:");
-            System.err.println("  Error type: " + e.getClass().getSimpleName());
-            System.err.println("  Error message: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Failed to add item to warehouse inventory", e);
         }
@@ -1638,6 +1714,7 @@ public class TransactionService {
                 int removeAmount = Math.abs(difference);
                 System.out.println("➖ Need to remove from receiver: " + removeAmount);
                 deductFromWarehouseInventory(currentTransaction.getReceiverId(), newItem.getItemType(), removeAmount);
+                // Note: We don't track deductions when removing from receiver during updates
             } else {
                 // No change needed
                 System.out.println("✅ No change needed - quantities match");
@@ -1770,7 +1847,13 @@ public class TransactionService {
             if (difference > 0) {
                 // New quantity is HIGHER than old quantity - need to deduct MORE
                 System.out.println("➖ Need to deduct additional: " + difference);
-                deductFromWarehouseInventory(currentTransaction.getSenderId(), newItem.getItemType(), difference);
+                List<Map<String, Object>> additionalDeductions = deductFromWarehouseInventory(
+                        currentTransaction.getSenderId(), newItem.getItemType(), difference);
+
+                // Merge with existing deductions
+                List<Map<String, Object>> existingDeductions = newItem.getDeductedItems();
+                existingDeductions.addAll(additionalDeductions);
+                newItem.setDeductedItems(existingDeductions);
 
             } else if (difference < 0) {
                 // New quantity is LOWER than old quantity - need to ADD BACK

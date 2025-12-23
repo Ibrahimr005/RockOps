@@ -46,6 +46,7 @@ import WarehouseDetails from "./pages/warehouse/WarehousesDetails/WarehouseDetai
 import WarehouseInformation from "./pages/warehouse/WarehousesInformation/WarehouseInformation.jsx";
 import WarehouseViewItemCategoriesTable from "./pages/warehouse/WarehouseCategories/WarehouseViewItemsCategoriesTable.jsx";
 import WarehouseViewItemTypesTable from "./pages/warehouse/WarehouseItemTypes/WarehouseViewItemTypesTable.jsx";
+import ItemDetailsPage from "./pages/warehouse/WarehouseItems/ItemDetailsPage/ItemDetailsPage.jsx";
 
 // ===================== Merchant & Procurement Components =====================
 import ProcurementOffers from "./pages/procurement/ProcurementOffers/ProcurementOffers.jsx";
@@ -197,6 +198,7 @@ function App() {
                                             <Route path="item-types" element={<RoleRoute allowedRoles={allRoles}><WarehouseViewItemTypesTable/></RoleRoute>}/>
                                             <Route path=":id" element={<WarehouseDetails/>}/>
                                             <Route path="warehouse-details/:id" element={<WarehouseInformation/>}/>
+                                            <Route path=":id/items/:itemTypeId" element={<ItemDetailsPage/>}/>
                                         </Route>
 
                                         {/* ===================== Merchant Routes ===================== */}
