@@ -174,9 +174,13 @@ const FinalizeOffers = ({
         }
 
         // Check if there are unfinalized accepted items
-        const allAcceptedItems = activeOffer.offerItems.filter(item =>
-            item.financeStatus === 'ACCEPTED'
-        );
+        // const allAcceptedItems = activeOffer.offerItems.filter(item =>
+        //     item.financeStatus === 'ACCEPTED'
+        // );
+
+        // Check if there are unfinalized items
+        const allAcceptedItems = activeOffer.offerItems || [];
+
         const unfinalizedItems = allAcceptedItems.filter(item =>
             !finalizedItemIds.includes(item.id.toString())
         );
@@ -261,17 +265,27 @@ const FinalizeOffers = ({
             .join(' ');
     };
 
+    // const getOfferItemsForRequestItem = (requestItemId) => {
+    //     if (!activeOffer || !activeOffer.offerItems) return [];
+    //     return activeOffer.offerItems.filter(
+    //         item => (item.requestOrderItem?.id === requestItemId || item.requestOrderItemId === requestItemId) &&
+    //             item.financeStatus === 'ACCEPTED'
+    //     );
+    // };
+
     const getOfferItemsForRequestItem = (requestItemId) => {
         if (!activeOffer || !activeOffer.offerItems) return [];
         return activeOffer.offerItems.filter(
-            item => (item.requestOrderItem?.id === requestItemId || item.requestOrderItemId === requestItemId) &&
-                item.financeStatus === 'ACCEPTED'
+            item => (item.requestOrderItem?.id === requestItemId || item.requestOrderItemId === requestItemId)
+            // Remove the financeStatus check - ALL items in a FINALIZING offer should be shown
         );
     };
 
-    const totalAcceptedItems = activeOffer?.offerItems?.filter(item =>
-        item.financeStatus === 'ACCEPTED'
-    ).length || 0;
+    // const totalAcceptedItems = activeOffer?.offerItems?.filter(item =>
+    //     item.financeStatus === 'ACCEPTED'
+    // ).length || 0;
+
+    const totalAcceptedItems = activeOffer?.offerItems?.length || 0;
 
     const totalFinalizedItems = Object.values(finalizedItems).filter(v => v).length;
 
@@ -619,8 +633,8 @@ const FinalizeOffers = ({
                 type="info"
                 title="Handle Unfinalized Items"
                 message={`You have selected to finalize ${Object.values(finalizedItems).filter(v => v).length} items, but ${activeOffer?.offerItems?.filter(item =>
-                    item.financeStatus === 'ACCEPTED' && !Object.keys(finalizedItems).some(id => id === item.id.toString() && finalizedItems[id])
-                ).length || 0} accepted items remain unfinalized. What would you like to do with the unfinalized items?`}
+                    !Object.keys(finalizedItems).some(id => id === item.id.toString() && finalizedItems[id])
+                ).length || 0} items remain unfinalized. What would you like to do with the unfinalized items?`}
                 confirmText="Create New Offer for Remaining"
                 cancelText="Finalize Selected Only"
                 onConfirm={() => {

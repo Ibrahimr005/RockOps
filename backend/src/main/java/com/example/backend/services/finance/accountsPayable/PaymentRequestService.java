@@ -17,6 +17,7 @@ import com.example.backend.repositories.finance.accountsPayable.PaymentRequestSt
 import com.example.backend.repositories.procurement.PurchaseOrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -24,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -50,39 +52,57 @@ public class PaymentRequestService {
     /**
      * Auto-create payment request when PO is created (called from Procurement)
      */
-    @Transactional
-    public PaymentRequestResponseDTO createPaymentRequestFromPO(UUID purchaseOrderId, String createdByUsername) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public PaymentRequestResponseDTO createPaymentRequestFromPO(UUID purchaseOrderId, UUID offerId, String createdByUsername) {
+        System.err.println("💚 ENTERED createPaymentRequestFromPO - NEW TRANSACTION");
+        System.err.println("💚 PO ID: " + purchaseOrderId);
+        System.err.println("💚 Offer ID: " + offerId);
+
+        // Fresh load of PO in this new transaction
         PurchaseOrder po = purchaseOrderRepository.findById(purchaseOrderId)
                 .orElseThrow(() -> new RuntimeException("Purchase Order not found with ID: " + purchaseOrderId));
+        System.err.println("💚 Found PO: " + po.getPoNumber());
 
         // Check if payment request already exists for this PO
-        if (paymentRequestRepository.findByPurchaseOrderId(purchaseOrderId).isPresent()) {
+        System.err.println("💚 Checking for existing payment requests...");
+        Optional<PaymentRequest> existingRequest = paymentRequestRepository.findByPurchaseOrderId(purchaseOrderId);
+        System.err.println("💚 Existing request present? " + existingRequest.isPresent());
+
+        if (existingRequest.isPresent()) {
+            System.err.println("❌ Payment request already exists!");
             throw new RuntimeException("Payment request already exists for this Purchase Order");
         }
+        System.err.println("💚 No existing request, continuing...");
 
-        // Get the offer financial review
-        OfferFinancialReview offerReview = offerFinancialReviewRepository.findByOfferId(po.getOffer().getId())
-                .orElse(null);
-
-        // Generate request number
+        System.err.println("💚 Generating request number...");
         String requestNumber = generatePaymentRequestNumber();
+        System.err.println("💚 Request number: " + requestNumber);
 
-        // Get merchant info from PO items (assuming single merchant per PO or first merchant)
-        Merchant merchant = po.getPurchaseOrderItems().isEmpty() ? null :
-                po.getPurchaseOrderItems().get(0).getMerchant();
+        System.err.println("💚 Getting merchant info from PO items...");
+
+        // Eagerly load PO items to avoid lazy loading issues
+        List<PurchaseOrderItem> poItems = po.getPurchaseOrderItems();
+        if (poItems == null || poItems.isEmpty()) {
+            throw new RuntimeException("Purchase Order has no items");
+        }
+
+        Merchant merchant = poItems.get(0).getMerchant();
+        System.err.println("💚 Merchant: " + (merchant != null ? merchant.getName() : "null"));
+
+        System.err.println("💚 Building payment request object...");
 
         // Build payment request
         PaymentRequest paymentRequest = PaymentRequest.builder()
                 .requestNumber(requestNumber)
                 .purchaseOrder(po)
-                .offerFinancialReview(offerReview)
+                .offerFinancialReview(null) // We'll skip this for now since it's optional
                 .requestedAmount(BigDecimal.valueOf(po.getTotalAmount()))
                 .currency(po.getCurrency())
                 .description("Payment request for PO: " + po.getPoNumber())
                 .status(PaymentRequestStatus.PENDING)
                 .requestedByUserId(UUID.fromString("00000000-0000-0000-0000-000000000000")) // System
                 .requestedByUserName("System")
-                .requestedByDepartment(offerReview != null ? offerReview.getDepartment() : null)
+                .requestedByDepartment(null)
                 .requestedAt(LocalDateTime.now())
                 .paymentDueDate(po.getExpectedDeliveryDate() != null ?
                         po.getExpectedDeliveryDate().toLocalDate() : null)
@@ -95,9 +115,11 @@ public class PaymentRequestService {
                 .merchantContactEmail(merchant != null ? merchant.getContactEmail() : null)
                 .build();
 
+        System.err.println("💚 Creating payment request items...");
+
         // Create payment request items from PO items
         List<PaymentRequestItem> items = new ArrayList<>();
-        for (PurchaseOrderItem poItem : po.getPurchaseOrderItems()) {
+        for (PurchaseOrderItem poItem : poItems) {
             PaymentRequestItem item = PaymentRequestItem.builder()
                     .paymentRequest(paymentRequest)
                     .itemId(poItem.getId())
@@ -114,20 +136,40 @@ public class PaymentRequestService {
         }
 
         paymentRequest.setPaymentRequestItems(items);
+        System.err.println("💚 Created " + items.size() + " payment request items");
 
         // Save payment request
+        System.err.println("💚 Saving payment request...");
         PaymentRequest savedRequest = paymentRequestRepository.save(paymentRequest);
+        System.err.println("💚 Payment request saved with ID: " + savedRequest.getId());
 
         // Create status history
+        System.err.println("💚 Creating status history...");
         createStatusHistory(savedRequest, null, PaymentRequestStatus.PENDING, null, "Payment request created automatically");
+        System.err.println("💚 Status history created");
 
         // Update PO with payment request ID
+        System.err.println("💚 Updating PO with payment request ID...");
         po.setPaymentRequestId(savedRequest.getId());
         purchaseOrderRepository.save(po);
+        System.err.println("💚 PO updated");
 
-        // TODO: Send notification to finance team
+        System.err.println("✅ Payment request created successfully! ID: " + savedRequest.getId());
 
-        return convertToDTO(savedRequest);
+        // Return a MINIMAL DTO
+        PaymentRequestResponseDTO dto = PaymentRequestResponseDTO.builder()
+                .id(savedRequest.getId())
+                .requestNumber(savedRequest.getRequestNumber())
+                .purchaseOrderId(po.getId())
+                .purchaseOrderNumber(po.getPoNumber())
+                .requestedAmount(savedRequest.getRequestedAmount())
+                .currency(savedRequest.getCurrency())
+                .status(savedRequest.getStatus())
+                .requestedAt(savedRequest.getRequestedAt())
+                .build();
+
+        System.err.println("💚💚💚 RETURNING DTO, TRANSACTION WILL COMMIT");
+        return dto;
     }
 
     /**
@@ -264,10 +306,10 @@ public class PaymentRequestService {
     // ================== Helper Methods ==================
 
     private String generatePaymentRequestNumber() {
-        // Generate format: PR-YYYYMMDD-XXXX
+        // Generate format: PR-YYYYMMDD-RANDOM
         String date = LocalDate.now().toString().replace("-", "");
-        long count = paymentRequestRepository.count() + 1;
-        return String.format("PR-%s-%04d", date, count);
+        int randomNum = new java.util.Random().nextInt(10000);
+        return String.format("PR-%s-%04d", date, randomNum);
     }
 
     private void createStatusHistory(

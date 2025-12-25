@@ -6,9 +6,13 @@ import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.*;
 import com.example.backend.repositories.procurement.*;
 import com.example.backend.repositories.merchant.MerchantRepository;
+import com.example.backend.services.finance.accountsPayable.PaymentRequestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.example.backend.models.finance.accountsPayable.enums.OfferFinanceValidationStatus;
+import com.example.backend.models.procurement.TimelineEventType;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -25,6 +29,7 @@ public class OfferService {
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final OfferTimelineService timelineService;
+    private final PaymentRequestService paymentRequestService;
 
     // Add mappers
     private final OfferMapper offerMapper;
@@ -46,7 +51,8 @@ public class OfferService {
                         OfferItemMapper offerItemMapper,
                         PurchaseOrderMapper purchaseOrderMapper,
                         RequestOrderMapper requestOrderMapper,
-                        OfferTimelineEventMapper timelineEventMapper) {
+                        OfferTimelineEventMapper timelineEventMapper,
+                        PaymentRequestService paymentRequestService) {
         this.offerRepository = offerRepository;
         this.offerItemRepository = offerItemRepository;
         this.requestOrderRepository = requestOrderRepository;
@@ -60,6 +66,11 @@ public class OfferService {
         this.purchaseOrderMapper = purchaseOrderMapper;
         this.requestOrderMapper = requestOrderMapper;
         this.timelineEventMapper = timelineEventMapper;
+        this.paymentRequestService = paymentRequestService;
+
+        // ADD THIS LINE:
+        System.out.println("🚀🚀🚀 OfferService initialized! PaymentRequestService is: " + (this.paymentRequestService != null ? "AVAILABLE ✓" : "NULL ✗"));
+
     }
 
     @Transactional
@@ -1051,6 +1062,23 @@ public class OfferService {
             // Save and return the updated purchase order
             PurchaseOrder finalPO = purchaseOrderRepository.save(savedPO);
             System.out.println("✓ Final purchase order saved with total: $" + totalAmount);
+            // Automatically create payment request for the new purchase order
+            try {
+                System.out.println("DEBUG: Creating payment request for PO: " + finalPO.getId());
+
+                // Pass BOTH purchaseOrderId AND offerId
+                paymentRequestService.createPaymentRequestFromPO(
+                        finalPO.getId(),
+                        offer.getId(),  // ADD THIS PARAMETER
+                        username
+                );
+
+                System.out.println("✓ Payment request created successfully");
+            } catch (Exception e) {
+                System.err.println("ERROR: Failed to create payment request: " + e.getMessage());
+                e.printStackTrace();
+            }
+
             System.out.println("=== DEBUG: createPurchaseOrderForItems SUCCESS ===");
 
             return finalPO;
@@ -1225,15 +1253,44 @@ public class OfferService {
             // Don't throw - this is optional
         }
     }
+//    @Transactional
+//    public PurchaseOrderDTO createPurchaseOrderFromItems(UUID offerId, List<UUID> offerItemIds, String username) {
+//        Offer offer = offerRepository.findById(offerId)
+//                .orElseThrow(() -> new RuntimeException("Offer not found"));
+//
+//        // Get the specified offer items
+//        List<OfferItem> selectedItems = offer.getOfferItems().stream()
+//                .filter(item -> offerItemIds.contains(item.getId()) &&
+//                        "ACCEPTED".equals(item.getFinanceStatus()))
+//                .collect(Collectors.toList());
+//
+//        if (selectedItems.isEmpty()) {
+//            throw new IllegalStateException("No valid items found for purchase order creation");
+//        }
+//
+//        // MARK ALL SELECTED ITEMS AS FINALIZED
+//        for (OfferItem item : selectedItems) {
+//            item.setFinalized(true);
+//            offerItemRepository.save(item);
+//        }
+//
+//        PurchaseOrder po = createPurchaseOrderForItems(offer, selectedItems, username);
+//        return purchaseOrderMapper.toDTO(po);
+//    }
+
     @Transactional
     public PurchaseOrderDTO createPurchaseOrderFromItems(UUID offerId, List<UUID> offerItemIds, String username) {
         Offer offer = offerRepository.findById(offerId)
                 .orElseThrow(() -> new RuntimeException("Offer not found"));
 
-        // Get the specified offer items
+        // **UPDATED: Check offer status instead of item financeStatus**
+        if (!"FINALIZING".equals(offer.getStatus())) {
+            throw new IllegalStateException("Offer must be in FINALIZING status. Current status: " + offer.getStatus());
+        }
+
+        // Get the specified offer items (no financeStatus check needed)
         List<OfferItem> selectedItems = offer.getOfferItems().stream()
-                .filter(item -> offerItemIds.contains(item.getId()) &&
-                        "ACCEPTED".equals(item.getFinanceStatus()))
+                .filter(item -> offerItemIds.contains(item.getId()))
                 .collect(Collectors.toList());
 
         if (selectedItems.isEmpty()) {
@@ -1273,18 +1330,94 @@ public class OfferService {
         }
     }
 
+//    @Transactional
+//    public void finalizeSpecificItems(List<UUID> offerItemIds, String username) {
+//        List<OfferItem> items = offerItemRepository.findAllById(offerItemIds);
+//
+//        for (OfferItem item : items) {
+//            if (!"ACCEPTED".equals(item.getFinanceStatus())) {
+//                throw new IllegalStateException("Cannot finalize item " + item.getId() + " - not finance accepted");
+//            }
+//
+//            item.setFinalized(true);
+//            offerItemRepository.save(item);
+//        }
+//    }
+
     @Transactional
     public void finalizeSpecificItems(List<UUID> offerItemIds, String username) {
         List<OfferItem> items = offerItemRepository.findAllById(offerItemIds);
 
         for (OfferItem item : items) {
-            if (!"ACCEPTED".equals(item.getFinanceStatus())) {
-                throw new IllegalStateException("Cannot finalize item " + item.getId() + " - not finance accepted");
+            // **UPDATED: Check if the offer is in FINALIZING status instead of item financeStatus**
+            if (item.getOffer() == null) {
+                throw new IllegalStateException("Cannot finalize item " + item.getId() + " - no offer associated");
+            }
+
+            if (!"FINALIZING".equals(item.getOffer().getStatus())) {
+                throw new IllegalStateException("Cannot finalize item " + item.getId() + " - offer is not in FINALIZING status");
             }
 
             item.setFinalized(true);
             offerItemRepository.save(item);
         }
+    }
+
+    /**
+     * Handle Finance Module's approval/rejection response
+     * This is called by the Finance Module after they review an offer
+     */
+    @Transactional
+    public OfferDTO handleFinanceValidationResponse(UUID offerId, String decision, UUID reviewerUserId) {
+        Offer offer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + offerId));
+
+        if (offer.getFinanceValidationStatus() != OfferFinanceValidationStatus.PENDING_FINANCE_VALIDATION) {
+            throw new RuntimeException("Offer is not pending finance validation. Current status: " +
+                    offer.getFinanceValidationStatus());
+        }
+
+        if ("APPROVE".equalsIgnoreCase(decision)) {
+            offer.setFinanceValidationStatus(OfferFinanceValidationStatus.FINANCE_APPROVED);
+            offer.setFinanceReviewedAt(LocalDateTime.now());
+            offer.setFinanceReviewedByUserId(reviewerUserId);
+
+            // Set status to FINALIZING so it appears in Finalize tab in Procurement
+            offer.setStatus("FINALIZING");
+
+            // Create timeline event for finance approval
+            timelineService.createTimelineEvent(
+                    offer,
+                    TimelineEventType.FINANCE_ACCEPTED,
+                    "Finance Module",
+                    "Offer approved by Finance Module",
+                    "MANAGERACCEPTED",
+                    "FINALIZING"
+            );
+
+        } else if ("REJECT".equalsIgnoreCase(decision)) {
+            offer.setFinanceValidationStatus(OfferFinanceValidationStatus.FINANCE_REJECTED);
+            offer.setFinanceReviewedAt(LocalDateTime.now());
+            offer.setFinanceReviewedByUserId(reviewerUserId);
+
+            // Status stays as MANAGERACCEPTED, but finance rejected
+            // Procurement can edit and resubmit
+
+            // Create timeline event for finance rejection
+            timelineService.createTimelineEvent(
+                    offer,
+                    TimelineEventType.FINANCE_REJECTED,
+                    "Finance Module",
+                    "Offer rejected by Finance Module",
+                    offer.getStatus(),
+                    offer.getStatus()
+            );
+        } else {
+            throw new RuntimeException("Invalid decision: " + decision + ". Must be APPROVE or REJECT");
+        }
+
+        Offer savedOffer = offerRepository.save(offer);
+        return offerMapper.toDTO(savedOffer);
     }
 
 }

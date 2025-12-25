@@ -669,7 +669,11 @@ export const OFFER_ENDPOINTS = {
     TIMELINE_ATTEMPT: (offerId, attemptNumber) => `/api/v1/offers/${offerId}/timeline/attempt/${attemptNumber}`,
     TIMELINE_STATS: (offerId) => `/api/v1/offers/${offerId}/timeline/stats`,
     // NEW: Continue and Return endpoint
-    CONTINUE_AND_RETURN: (offerId) => `/api/v1/offers/${offerId}/continue-and-return`
+    CONTINUE_AND_RETURN: (offerId) => `/api/v1/offers/${offerId}/continue-and-return`,
+
+    UPDATE_FINANCE_VALIDATION_STATUS: (id) => `/api/v1/offers/${id}/finance-validation-status`,
+
+
 };
 
 // Updated Candidate module endpoints

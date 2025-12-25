@@ -1,6 +1,10 @@
 package com.example.backend.controllers.procurement;
 
 import com.example.backend.dto.procurement.*;
+import com.example.backend.mappers.procurement.OfferMapper;
+import com.example.backend.models.finance.accountsPayable.enums.OfferFinanceValidationStatus;
+import com.example.backend.models.procurement.Offer;
+import com.example.backend.repositories.procurement.OfferRepository;
 import com.example.backend.services.procurement.OfferService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +24,12 @@ import java.util.stream.Collectors;
 public class OfferController {
 
     private final OfferService offerService;
+
+    @Autowired
+    private OfferRepository offerRepository;
+
+    @Autowired
+    private OfferMapper offerMapper;
 
     @Autowired
     public OfferController(OfferService offerService) {
@@ -465,6 +475,55 @@ public class OfferController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to copy timeline: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Update finance validation status (for Finance Module integration)
+     * PUT /api/v1/offers/{id}/finance-validation-status
+     */
+    @PutMapping("/{id}/finance-validation-status")
+    public ResponseEntity<?> updateFinanceValidationStatus(
+            @PathVariable UUID id,
+            @RequestParam String status) {
+        try {
+            OfferFinanceValidationStatus validationStatus = OfferFinanceValidationStatus.valueOf(status);
+            Offer offer = offerRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Offer not found"));
+
+            offer.setFinanceValidationStatus(validationStatus);
+            offer.setFinanceReviewedAt(null); // Will be set when Finance reviews
+            offer.setFinanceReviewedByUserId(null);
+
+            Offer savedOffer = offerRepository.save(offer);
+
+            return ResponseEntity.ok(offerMapper.toDTO(savedOffer));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid status: " + status);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating finance validation status: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Receive Finance Module's validation response
+     * Called by Finance Module after they approve/reject an offer
+     * PUT /api/v1/offers/{id}/finance-validation-response
+     */
+    @PutMapping("/{id}/finance-validation-response")
+    public ResponseEntity<?> handleFinanceValidationResponse(
+            @PathVariable UUID id,
+            @RequestParam String decision,
+            @RequestParam UUID reviewerUserId) {
+        try {
+            OfferDTO offer = offerService.handleFinanceValidationResponse(id, decision, reviewerUserId);
+            return ResponseEntity.ok(offer);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error processing finance validation response: " + e.getMessage());
         }
     }
 }

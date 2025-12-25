@@ -8,6 +8,7 @@ import com.example.backend.models.finance.accountsPayable.enums.OfferFinanceVali
 import com.example.backend.models.procurement.Offer;
 import com.example.backend.repositories.finance.accountsPayable.OfferFinancialReviewRepository;
 import com.example.backend.repositories.procurement.OfferRepository;
+import com.example.backend.services.procurement.OfferService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,13 +24,15 @@ public class OfferFinancialReviewService {
 
     private final OfferFinancialReviewRepository reviewRepository;
     private final OfferRepository offerRepository;
+    private final OfferService offerService;
 
     @Autowired
     public OfferFinancialReviewService(
             OfferFinancialReviewRepository reviewRepository,
-            OfferRepository offerRepository) {
+            OfferRepository offerRepository, OfferService offerService) {
         this.reviewRepository = reviewRepository;
         this.offerRepository = offerRepository;
+        this.offerService = offerService;
     }
 
     /**
@@ -129,13 +132,28 @@ public class OfferFinancialReviewService {
 
         OfferFinancialReview savedReview = reviewRepository.save(review);
 
-        // Update offer status in procurement module
-        offer.setFinanceValidationStatus(
-                isApproval ? OfferFinanceValidationStatus.FINANCE_APPROVED : OfferFinanceValidationStatus.FINANCE_REJECTED
-        );
-        offer.setFinanceReviewedAt(LocalDateTime.now());
-        offer.setFinanceReviewedByUserId(reviewerUserId);
-        offerRepository.save(offer);
+        // **CALL PROCUREMENT MODULE FIRST - BEFORE CHANGING STATUS**
+// The OfferService.handleFinanceValidationResponse will update the status
+        try {
+            offerService.handleFinanceValidationResponse(
+                    offer.getId(),
+                    isApproval ? "APPROVE" : "REJECT",
+                    reviewerUserId
+            );
+            System.out.println("✓ Successfully notified Procurement Module of finance decision for offer: " + offer.getId());
+        } catch (Exception e) {
+            System.err.println("Error notifying Procurement Module: " + e.getMessage());
+            e.printStackTrace();
+            // If the Procurement update fails, still update our local copy
+            // This ensures the Finance module has the correct record
+            offer.setFinanceValidationStatus(
+                    isApproval ? OfferFinanceValidationStatus.FINANCE_APPROVED : OfferFinanceValidationStatus.FINANCE_REJECTED
+            );
+            offer.setFinanceReviewedAt(LocalDateTime.now());
+            offer.setFinanceReviewedByUserId(reviewerUserId);
+            offerRepository.save(offer);
+        }
+
 
         // TODO: Send notification to procurement team
 

@@ -1,8 +1,10 @@
 package com.example.backend.controllers.procurement;
 
+import com.example.backend.dto.finance.accountsPayable.PaymentRequestResponseDTO;
 import com.example.backend.dto.procurement.*;
 import com.example.backend.models.procurement.Offer;
 import com.example.backend.models.procurement.PurchaseOrder;
+import com.example.backend.services.finance.accountsPayable.PaymentRequestService;
 import com.example.backend.services.procurement.PurchaseOrderService;
 import com.example.backend.services.procurement.DeliveryProcessingService;
 import com.example.backend.services.procurement.IssueResolutionService;
@@ -30,15 +32,18 @@ public class PurchaseOrderController {
     private final PurchaseOrderService purchaseOrderService;
     private final DeliveryProcessingService deliveryProcessingService;
     private final IssueResolutionService issueResolutionService;
+    private PaymentRequestService paymentRequestService;
 
     @Autowired
     public PurchaseOrderController(
             PurchaseOrderService purchaseOrderService,
             DeliveryProcessingService deliveryProcessingService,
-            IssueResolutionService issueResolutionService) {
+            IssueResolutionService issueResolutionService,
+            PaymentRequestService paymentRequestService) {
         this.purchaseOrderService = purchaseOrderService;
         this.deliveryProcessingService = deliveryProcessingService;
         this.issueResolutionService = issueResolutionService;
+        this.paymentRequestService = paymentRequestService;
     }
 
     @GetMapping("/pending-offers")
@@ -114,6 +119,57 @@ public class PurchaseOrderController {
         }
     }
 
+//    @PostMapping("/offers/{offerId}/finalize")
+//    public ResponseEntity<?> finalizeOffer(
+//            @PathVariable UUID offerId,
+//            @RequestBody Map<String, Object> requestBody,
+//            @AuthenticationPrincipal UserDetails userDetails) {
+//
+//        try {
+//            @SuppressWarnings("unchecked")
+//            List<String> finalizedItemIdStrings = (List<String>) requestBody.get("finalizedItemIds");
+//
+//            if (finalizedItemIdStrings == null || finalizedItemIdStrings.isEmpty()) {
+//                return ResponseEntity.badRequest().body(Map.of(
+//                        "message", "No finalized items provided",
+//                        "success", false
+//                ));
+//            }
+//
+//            List<UUID> finalizedItemIds = finalizedItemIdStrings.stream()
+//                    .map(UUID::fromString)
+//                    .collect(Collectors.toList());
+//
+//            String username = userDetails.getUsername();
+//
+//            PurchaseOrder purchaseOrder = purchaseOrderService.finalizeOfferAndCreatePurchaseOrder(
+//                    offerId, finalizedItemIds, username);
+//
+//            Map<String, Object> response = new HashMap<>();
+//            response.put("message", "Offer finalized successfully. Purchase order created.");
+//            response.put("success", true);
+//            response.put("purchaseOrder", purchaseOrder);
+//
+//            return ResponseEntity.ok(response);
+//
+//        } catch (ClassCastException e) {
+//            return ResponseEntity.badRequest().body(Map.of(
+//                    "message", "Invalid request format",
+//                    "success", false
+//            ));
+//        } catch (IllegalArgumentException e) {
+//            return ResponseEntity.badRequest().body(Map.of(
+//                    "message", "Invalid UUID format: " + e.getMessage(),
+//                    "success", false
+//            ));
+//        } catch (Exception e) {
+//            return ResponseEntity.internalServerError().body(Map.of(
+//                    "message", "Unexpected error: " + e.getMessage(),
+//                    "success", false
+//            ));
+//        }
+//    }
+
     @PostMapping("/offers/{offerId}/finalize")
     public ResponseEntity<?> finalizeOffer(
             @PathVariable UUID offerId,
@@ -140,31 +196,44 @@ public class PurchaseOrderController {
             PurchaseOrder purchaseOrder = purchaseOrderService.finalizeOfferAndCreatePurchaseOrder(
                     offerId, finalizedItemIds, username);
 
+            // Extract primitive values immediately
+            UUID poId = purchaseOrder.getId();
+            String poNumber = purchaseOrder.getPoNumber();
+            Double totalAmount = purchaseOrder.getTotalAmount();
+            String currency = purchaseOrder.getCurrency();
+
+            // Build success response
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Offer finalized successfully. Purchase order created.");
             response.put("success", true);
-            response.put("purchaseOrder", purchaseOrder);
+            response.put("purchaseOrderId", poId);
+            response.put("purchaseOrderNumber", poNumber);
+            response.put("totalAmount", totalAmount);
+            response.put("currency", currency);
 
             return ResponseEntity.ok(response);
 
         } catch (ClassCastException e) {
+            System.err.println("Invalid request format: " + e.getMessage());
             return ResponseEntity.badRequest().body(Map.of(
                     "message", "Invalid request format",
                     "success", false
             ));
         } catch (IllegalArgumentException e) {
+            System.err.println("Invalid UUID format: " + e.getMessage());
             return ResponseEntity.badRequest().body(Map.of(
                     "message", "Invalid UUID format: " + e.getMessage(),
                     "success", false
             ));
         } catch (Exception e) {
+            System.err.println("Error finalizing offer " + offerId + ": " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.internalServerError().body(Map.of(
                     "message", "Unexpected error: " + e.getMessage(),
                     "success", false
             ));
         }
     }
-
     @PostMapping("/{id}/process-delivery")
     public ResponseEntity<?> processDelivery(
             @PathVariable UUID id,

@@ -125,6 +125,61 @@ const SubmittedOffers = ({
     };
 
     // Handle confirmed approval
+    // const handleConfirmApprove = async (offer) => {
+    //     try {
+    //         setConfirmationDialog(prev => ({ ...prev, isLoading: true }));
+    //
+    //         // First, update the offer status to ACCEPTED using the service
+    //         await offerService.updateStatus(offer.id, 'MANAGERACCEPTED');
+    //
+    //         // Then, update the finance status to PENDING_FINANCE_REVIEW using the service
+    //         //await offerService.updateFinanceStatus(offer.id, 'PENDING_FINANCE_REVIEW');
+    //         await offerService.updateFinanceValidationStatus(offer.id, 'PENDING_FINANCE_VALIDATION');
+    //
+    //         // Create the updated offer object for redirection
+    //         const updatedOffer = {
+    //             ...offer,
+    //             status: 'MANAGERACCEPTED',
+    //             // financeStatus: 'PENDING_FINANCE_REVIEW'
+    //             financeValidationStatus: 'PENDING_FINANCE_VALIDATION'
+    //         };
+    //
+    //         // Remove the offer from the submitted offers list
+    //         const updatedOffers = offers.filter(o => o.id !== offer.id);
+    //         setOffers(updatedOffers);
+    //
+    //         // Clear active offer if it was the approved one
+    //         if (activeOffer && activeOffer.id === offer.id) {
+    //             setActiveOffer(updatedOffers.length > 0 ? updatedOffers[0] : null);
+    //         }
+    //
+    //         // Call the parent component's handler if provided
+    //         if (onApproveOffer) {
+    //             onApproveOffer(offer.id);
+    //         }
+    //
+    //         // Close dialog first
+    //         setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
+    //
+    //         // Show success notification
+    //         showNotification('Offer has been approved and sent to finance for review!', 'success');
+    //
+    //         // NEW: Redirect to validated tab with this offer as active
+    //         if (onOfferValidated) {
+    //             // Small delay to ensure state updates are processed
+    //             setTimeout(() => {
+    //                 onOfferValidated(updatedOffer, 'approved');
+    //             }, 100);
+    //         }
+    //
+    //     } catch (error) {
+    //         console.error('Error approving offer:', error);
+    //         setConfirmationDialog(prev => ({ ...prev, isLoading: false }));
+    //         showNotification(`Error: ${error.message || 'Failed to approve offer'}`, 'error');
+    //     }
+    // };
+
+    // Handle confirmed approval
     const handleConfirmApprove = async (offer) => {
         try {
             setConfirmationDialog(prev => ({ ...prev, isLoading: true }));
@@ -132,14 +187,14 @@ const SubmittedOffers = ({
             // First, update the offer status to ACCEPTED using the service
             await offerService.updateStatus(offer.id, 'MANAGERACCEPTED');
 
-            // Then, update the finance status to PENDING_FINANCE_REVIEW using the service
-            await offerService.updateFinanceStatus(offer.id, 'PENDING_FINANCE_REVIEW');
+            // **CHANGED: Use the new method for Finance Module integration**
+            await offerService.updateFinanceValidationStatus(offer.id, 'PENDING_FINANCE_VALIDATION');
 
             // Create the updated offer object for redirection
             const updatedOffer = {
                 ...offer,
                 status: 'MANAGERACCEPTED',
-                financeStatus: 'PENDING_FINANCE_REVIEW'
+                financeValidationStatus: 'PENDING_FINANCE_VALIDATION' // **CHANGED: from financeStatus**
             };
 
             // Remove the offer from the submitted offers list
@@ -160,11 +215,10 @@ const SubmittedOffers = ({
             setConfirmationDialog(prev => ({ ...prev, show: false, isLoading: false }));
 
             // Show success notification
-            showNotification('Offer has been approved and sent to finance for review!', 'success');
+            showNotification('Offer has been approved and sent to Finance Module for validation!', 'success');
 
-            // NEW: Redirect to validated tab with this offer as active
+            // Redirect to validated tab with this offer as active
             if (onOfferValidated) {
-                // Small delay to ensure state updates are processed
                 setTimeout(() => {
                     onOfferValidated(updatedOffer, 'approved');
                 }, 100);

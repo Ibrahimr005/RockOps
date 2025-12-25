@@ -14,6 +14,7 @@ import Snackbar from '../../../../components/common/Snackbar/Snackbar.jsx';
 import OfferTimeline from '../../../../components/procurement/OfferTimeline/OfferTimeline.jsx';
 import { offerService } from '../../../../services/procurement/offerService.js';
 
+
 const ValidatedOffers = ({
                              offers,
                              activeOffer,
@@ -36,9 +37,9 @@ const ValidatedOffers = ({
     const [isProcessingFinance, setIsProcessingFinance] = useState(false);
 
     // Finance review states
-    const [showFinanceReview, setShowFinanceReview] = useState(false);
-    const [financeDecisions, setFinanceDecisions] = useState({});
-    const [rejectionReasons, setRejectionReasons] = useState({});
+    // const [showFinanceReview, setShowFinanceReview] = useState(false);
+    // const [financeDecisions, setFinanceDecisions] = useState({});
+    // const [rejectionReasons, setRejectionReasons] = useState({});
 
     // Get offer items for a specific request item
     const getOfferItemsForRequestItem = (requestItemId) => {
@@ -414,17 +415,17 @@ const ValidatedOffers = ({
                             </div>
                             <div className="procurement-header-actions">
                                 {/* Finance review button for accepted offers */}
-                                {activeOffer.status === 'MANAGERACCEPTED' && (
-                                    <button
-                                        className="btn-primary"
-                                        onClick={initializeFinanceDecisions}
-                                        title="Start Finance Review"
-                                        style={{ marginRight: '10px' }}
-                                    >
-                                        <FiDollarSign size={16} />
-                                        Finance Review
-                                    </button>
-                                )}
+                                {/*{activeOffer.status === 'MANAGERACCEPTED' && (*/}
+                                {/*    <button*/}
+                                {/*        className="btn-primary"*/}
+                                {/*        onClick={initializeFinanceDecisions}*/}
+                                {/*        title="Start Finance Review"*/}
+                                {/*        style={{ marginRight: '10px' }}*/}
+                                {/*    >*/}
+                                {/*        <FiDollarSign size={16} />*/}
+                                {/*        Finance Review*/}
+                                {/*    </button>*/}
+                                {/*)}*/}
 
                                 {/* Action buttons for rejected offers */}
                                 {activeOffer.status === 'MANAGERREJECTED' && (
@@ -570,104 +571,104 @@ const ValidatedOffers = ({
             </div>
 
             {/* Finance Review Modal */}
-            {showFinanceReview && (
-                <div className="pro-ro-modal-backdrop">
-                    <div className="pro-ro-modal" style={{ maxWidth: '800px' }}>
-                        <div className="pro-ro-modal-header">
-                            <h2>
-                                <FiDollarSign style={{ marginRight: '10px' }} />
-                                Finance Review - {activeOffer?.title}
-                            </h2>
-                            <button className="btn-close" onClick={cancelFinanceReview}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path d="M18 6L6 18M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
+            {/*{showFinanceReview && (*/}
+            {/*    <div className="pro-ro-modal-backdrop">*/}
+            {/*        <div className="pro-ro-modal" style={{ maxWidth: '800px' }}>*/}
+            {/*            <div className="pro-ro-modal-header">*/}
+            {/*                <h2>*/}
+            {/*                    <FiDollarSign style={{ marginRight: '10px' }} />*/}
+            {/*                    Finance Review - {activeOffer?.title}*/}
+            {/*                </h2>*/}
+            {/*                <button className="btn-close" onClick={cancelFinanceReview}>*/}
+            {/*                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">*/}
+            {/*                        <path d="M18 6L6 18M6 6l12 12"/>*/}
+            {/*                    </svg>*/}
+            {/*                </button>*/}
+            {/*            </div>*/}
 
-                        <div className="pro-ro-modal-content">
-                            <div className="submitted-offer-finance-review-content">
-                                <div className="submitted-offer-finance-review-instructions">
-                                    <FiAlertTriangle style={{ color: '#f59e0b', marginRight: '8px' }} />
-                                    <p>Review each offer item and decide whether to accept or reject it. Rejected items require a reason.</p>
-                                </div>
+            {/*            <div className="pro-ro-modal-content">*/}
+            {/*                <div className="submitted-offer-finance-review-content">*/}
+            {/*                    <div className="submitted-offer-finance-review-instructions">*/}
+            {/*                        <FiAlertTriangle style={{ color: '#f59e0b', marginRight: '8px' }} />*/}
+            {/*                        <p>Review each offer item and decide whether to accept or reject it. Rejected items require a reason.</p>*/}
+            {/*                    </div>*/}
 
-                                <div className="submitted-offer-finance-review-items">
-                                    {activeOffer?.offerItems?.map(offerItem => (
-                                        <div key={offerItem.id} className="submitted-offer-finance-review-item">
-                                            <div className="submitted-offer-finance-item-header">
-                                                <h4>{offerItem.merchant?.name || 'Unknown Merchant'}</h4>
-                                                <div className="submitted-offer-finance-item-details">
-                                                    <span>Qty: {offerItem.quantity}</span>
-                                                    <span>Unit Price: ${parseFloat(offerItem.unitPrice).toFixed(2)}</span>
-                                                    <span>Total: ${parseFloat(offerItem.totalPrice).toFixed(2)}</span>
-                                                </div>
-                                            </div>
+            {/*                    <div className="submitted-offer-finance-review-items">*/}
+            {/*                        {activeOffer?.offerItems?.map(offerItem => (*/}
+            {/*                            <div key={offerItem.id} className="submitted-offer-finance-review-item">*/}
+            {/*                                <div className="submitted-offer-finance-item-header">*/}
+            {/*                                    <h4>{offerItem.merchant?.name || 'Unknown Merchant'}</h4>*/}
+            {/*                                    <div className="submitted-offer-finance-item-details">*/}
+            {/*                                        <span>Qty: {offerItem.quantity}</span>*/}
+            {/*                                        <span>Unit Price: ${parseFloat(offerItem.unitPrice).toFixed(2)}</span>*/}
+            {/*                                        <span>Total: ${parseFloat(offerItem.totalPrice).toFixed(2)}</span>*/}
+            {/*                                    </div>*/}
+            {/*                                </div>*/}
 
-                                            <div className="submitted-offer-finance-decision-controls">
-                                                <div className="submitted-offer-finance-decision-buttons">
-                                                    <button
-                                                        className={`submitted-offer-finance-decision-btn accept ${financeDecisions[offerItem.id] === 'ACCEPTED' ? 'selected' : ''}`}
-                                                        onClick={() => handleFinanceDecisionChange(offerItem.id, 'ACCEPTED')}
-                                                    >
-                                                        <FiCheck /> Accept
-                                                    </button>
-                                                    <button
-                                                        className={`submitted-offer-finance-decision-btn reject ${financeDecisions[offerItem.id] === 'REJECTED' ? 'selected' : ''}`}
-                                                        onClick={() => handleFinanceDecisionChange(offerItem.id, 'REJECTED')}
-                                                    >
-                                                        <FiX /> Reject
-                                                    </button>
-                                                </div>
+            {/*                                <div className="submitted-offer-finance-decision-controls">*/}
+            {/*                                    <div className="submitted-offer-finance-decision-buttons">*/}
+            {/*                                        <button*/}
+            {/*                                            className={`submitted-offer-finance-decision-btn accept ${financeDecisions[offerItem.id] === 'ACCEPTED' ? 'selected' : ''}`}*/}
+            {/*                                            onClick={() => handleFinanceDecisionChange(offerItem.id, 'ACCEPTED')}*/}
+            {/*                                        >*/}
+            {/*                                            <FiCheck /> Accept*/}
+            {/*                                        </button>*/}
+            {/*                                        <button*/}
+            {/*                                            className={`submitted-offer-finance-decision-btn reject ${financeDecisions[offerItem.id] === 'REJECTED' ? 'selected' : ''}`}*/}
+            {/*                                            onClick={() => handleFinanceDecisionChange(offerItem.id, 'REJECTED')}*/}
+            {/*                                        >*/}
+            {/*                                            <FiX /> Reject*/}
+            {/*                                        </button>*/}
+            {/*                                    </div>*/}
 
-                                                {financeDecisions[offerItem.id] === 'REJECTED' && (
-                                                    <div className="submitted-offer-rejection-reason">
-                                                        <label>Rejection Reason:</label>
-                                                        <textarea
-                                                            value={rejectionReasons[offerItem.id] || ''}
-                                                            onChange={(e) => handleRejectionReasonChange(offerItem.id, e.target.value)}
-                                                            placeholder="Please provide a reason for rejection..."
-                                                            required
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+            {/*                                    {financeDecisions[offerItem.id] === 'REJECTED' && (*/}
+            {/*                                        <div className="submitted-offer-rejection-reason">*/}
+            {/*                                            <label>Rejection Reason:</label>*/}
+            {/*                                            <textarea*/}
+            {/*                                                value={rejectionReasons[offerItem.id] || ''}*/}
+            {/*                                                onChange={(e) => handleRejectionReasonChange(offerItem.id, e.target.value)}*/}
+            {/*                                                placeholder="Please provide a reason for rejection..."*/}
+            {/*                                                required*/}
+            {/*                                            />*/}
+            {/*                                        </div>*/}
+            {/*                                    )}*/}
+            {/*                                </div>*/}
+            {/*                            </div>*/}
+            {/*                        ))}*/}
+            {/*                    </div>*/}
 
-                                <div className="submitted-offer-finance-review-summary">
-                                    <h4>Review Summary</h4>
-                                    <p>Overall Status: <strong>{calculateOverallFinanceStatus()}</strong></p>
-                                    <p>
-                                        Accepted: {Object.values(financeDecisions).filter(d => d === 'ACCEPTED').length} |
-                                        Rejected: {Object.values(financeDecisions).filter(d => d === 'REJECTED').length} |
-                                        Pending: {Object.values(financeDecisions).filter(d => d === 'PENDING').length}
-                                    </p>
-                                </div>
-                            </div>
+            {/*                    <div className="submitted-offer-finance-review-summary">*/}
+            {/*                        <h4>Review Summary</h4>*/}
+            {/*                        <p>Overall Status: <strong>{calculateOverallFinanceStatus()}</strong></p>*/}
+            {/*                        <p>*/}
+            {/*                            Accepted: {Object.values(financeDecisions).filter(d => d === 'ACCEPTED').length} |*/}
+            {/*                            Rejected: {Object.values(financeDecisions).filter(d => d === 'REJECTED').length} |*/}
+            {/*                            Pending: {Object.values(financeDecisions).filter(d => d === 'PENDING').length}*/}
+            {/*                        </p>*/}
+            {/*                    </div>*/}
+            {/*                </div>*/}
 
-                            <div className="pro-ro-modal-footer">
-                                <button
-                                    type="button"
-                                    className="btn-cancel"
-                                    onClick={cancelFinanceReview}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    className="btn-primary"
-                                    onClick={handleSubmitFinanceReview}
-                                    disabled={isProcessingFinance || Object.values(financeDecisions).some(d => d === 'PENDING')}
-                                >
-                                    {isProcessingFinance ? 'Processing...' : 'Submit Finance Review'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/*                <div className="pro-ro-modal-footer">*/}
+            {/*                    <button*/}
+            {/*                        type="button"*/}
+            {/*                        className="btn-cancel"*/}
+            {/*                        onClick={cancelFinanceReview}*/}
+            {/*                    >*/}
+            {/*                        Cancel*/}
+            {/*                    </button>*/}
+            {/*                    <button*/}
+            {/*                        type="button"*/}
+            {/*                        className="btn-primary"*/}
+            {/*                        onClick={handleSubmitFinanceReview}*/}
+            {/*                        disabled={isProcessingFinance || Object.values(financeDecisions).some(d => d === 'PENDING')}*/}
+            {/*                    >*/}
+            {/*                        {isProcessingFinance ? 'Processing...' : 'Submit Finance Review'}*/}
+            {/*                    </button>*/}
+            {/*                </div>*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
+            {/*    </div>*/}
+            {/*)}*/}
 
             {/* Delete Confirmation Dialog */}
             <ConfirmationDialog

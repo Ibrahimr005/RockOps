@@ -19,9 +19,11 @@ public interface PaymentRequestRepository extends JpaRepository<PaymentRequest, 
     // Find by request number
     Optional<PaymentRequest> findByRequestNumber(String requestNumber);
 
-    // Find by purchase order
-    Optional<PaymentRequest> findByPurchaseOrderId(UUID purchaseOrderId);
-
+//    // Find by purchase order
+//    Optional<PaymentRequest> findByPurchaseOrderId(UUID purchaseOrderId);
+// In PaymentRequestRepository.java, change this:
+@Query("SELECT pr FROM PaymentRequest pr WHERE pr.purchaseOrder.id = :purchaseOrderId")
+Optional<PaymentRequest> findByPurchaseOrderId(@Param("purchaseOrderId") UUID purchaseOrderId);
     // Find by status
     List<PaymentRequest> findByStatus(PaymentRequestStatus status);
 

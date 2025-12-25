@@ -115,10 +115,12 @@ public class PaymentRequestController {
     @PostMapping("/create-from-po/{purchaseOrderId}")
     public ResponseEntity<?> createPaymentRequestFromPO(
             @PathVariable UUID purchaseOrderId,
+            @PathVariable UUID offerId,
             @AuthenticationPrincipal User user) {
         try {
             PaymentRequestResponseDTO paymentRequest = paymentRequestService.createPaymentRequestFromPO(
                     purchaseOrderId,
+                    offerId,
                     user.getUsername()
             );
             return ResponseEntity.ok(paymentRequest);
