@@ -4,8 +4,11 @@ import com.example.backend.dto.procurement.*;
 import com.example.backend.mappers.procurement.*;
 import com.example.backend.models.merchant.Merchant;
 import com.example.backend.models.procurement.*;
+import com.example.backend.models.warehouse.ItemType;
 import com.example.backend.repositories.procurement.*;
 import com.example.backend.repositories.merchant.MerchantRepository;
+import com.example.backend.repositories.warehouse.ItemRepository;
+import com.example.backend.repositories.warehouse.ItemTypeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +25,8 @@ public class OfferService {
     private final RequestOrderRepository requestOrderRepository;
     private final RequestOrderItemRepository requestOrderItemRepository;
     private final MerchantRepository merchantRepository;
+
+    private final ItemTypeRepository itemTypeRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final PurchaseOrderItemRepository purchaseOrderItemRepository;
     private final OfferTimelineService timelineService;
@@ -39,6 +44,7 @@ public class OfferService {
                         RequestOrderRepository requestOrderRepository,
                         RequestOrderItemRepository requestOrderItemRepository,
                         MerchantRepository merchantRepository,
+                        ItemTypeRepository itemTypeRepository ,
                         PurchaseOrderRepository purchaseOrderRepository,
                         PurchaseOrderItemRepository purchaseOrderItemRepository,
                         OfferTimelineService timelineService,
@@ -60,6 +66,7 @@ public class OfferService {
         this.purchaseOrderMapper = purchaseOrderMapper;
         this.requestOrderMapper = requestOrderMapper;
         this.timelineEventMapper = timelineEventMapper;
+        this.itemTypeRepository = itemTypeRepository;
     }
 
     @Transactional
@@ -1285,6 +1292,51 @@ public class OfferService {
             item.setFinalized(true);
             offerItemRepository.save(item);
         }
+    }
+    /**
+     * Confirm and import RFQ response data
+     */
+    @Transactional
+    public List<OfferItemDTO> confirmRFQImport(UUID offerId, UUID merchantId, List<UUID> validRowIds,
+                                               RFQImportPreviewDTO preview, String username) {
+        Offer offer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new RuntimeException("Offer not found"));
+
+        Merchant merchant = merchantRepository.findById(merchantId)
+                .orElseThrow(() -> new RuntimeException("Merchant not found"));
+
+        List<OfferItem> createdItems = new ArrayList<>();
+
+        // Filter only valid rows that user selected
+        List<RFQImportPreviewDTO.RFQImportRow> rowsToImport = preview.getRows().stream()
+                .filter(row -> row.isValid() && validRowIds.contains(row.getItemTypeId()))
+                .toList();
+
+        for (RFQImportPreviewDTO.RFQImportRow row : rowsToImport) {
+            // Create offer item from imported data
+            OfferItem offerItem = new OfferItem();
+            offerItem.setOffer(offer);
+            offerItem.setMerchant(merchant);
+
+            ItemType itemType = itemTypeRepository.findById(row.getItemTypeId())
+                    .orElseThrow(() -> new RuntimeException("Item type not found"));
+            offerItem.setItemType(itemType);
+
+            // Get request order item
+            RequestOrderItem requestOrderItem = requestOrderItemRepository.findById(row.getRequestOrderItemId())
+                    .orElseThrow(() -> new RuntimeException("Request order item not found"));
+            offerItem.setRequestOrderItem(requestOrderItem);
+
+            offerItem.setQuantity(row.getResponseQuantity());
+            offerItem.setUnitPrice(row.getUnitPrice());
+            offerItem.setTotalPrice(row.getTotalPrice());
+            offerItem.setCurrency("EGP"); // Default, can be added to import later
+
+            OfferItem savedItem = offerItemRepository.save(offerItem);
+            createdItems.add(savedItem);
+        }
+
+        return offerItemMapper.toDTOList(createdItems);
     }
 
 }
