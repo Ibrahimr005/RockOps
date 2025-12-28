@@ -1,5 +1,6 @@
 package com.example.backend.dtos;
 
+import com.example.backend.models.equipment.MaintenanceStatus;
 import com.example.backend.models.maintenance.MaintenanceRecord;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -58,7 +59,7 @@ public class MaintenanceRecordDto {
 
 
     
-    private MaintenanceRecord.MaintenanceStatus status;
+    private MaintenanceStatus status;
 
     private UUID responsibleUserId;
 

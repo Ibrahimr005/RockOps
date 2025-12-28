@@ -1,6 +1,7 @@
 package com.example.backend.repositories;
 
 
+import com.example.backend.models.equipment.MaintenanceStatus;
 import com.example.backend.models.maintenance.MaintenanceRecord;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,13 +23,13 @@ public interface MaintenanceRecordRepository extends JpaRepository<MaintenanceRe
     List<MaintenanceRecord> findByEquipmentIdOrderByCreationDateDesc(UUID equipmentId);
     
     // Find active maintenance record for equipment
-    Optional<MaintenanceRecord> findFirstByEquipmentIdAndStatusOrderByCreationDateDesc(UUID equipmentId, MaintenanceRecord.MaintenanceStatus status);
+    Optional<MaintenanceRecord> findFirstByEquipmentIdAndStatusOrderByCreationDateDesc(UUID equipmentId, MaintenanceStatus status);
     
     // Find records by status
-    List<MaintenanceRecord> findByStatusOrderByCreationDateDesc(MaintenanceRecord.MaintenanceStatus status);
+    List<MaintenanceRecord> findByStatusOrderByCreationDateDesc(MaintenanceStatus status);
     
     // Find active records
-    List<MaintenanceRecord> findByStatus(MaintenanceRecord.MaintenanceStatus status);
+    List<MaintenanceRecord> findByStatus(MaintenanceStatus status);
     
     // Find overdue records
     @Query("SELECT r FROM MaintenanceRecord r WHERE r.status = 'ACTIVE' AND r.expectedCompletionDate < :now")
@@ -49,13 +50,13 @@ public interface MaintenanceRecordRepository extends JpaRepository<MaintenanceRe
             LocalDateTime startDate, LocalDateTime endDate);
     
     // Find records with pagination
-    Page<MaintenanceRecord> findByStatus(MaintenanceRecord.MaintenanceStatus status, Pageable pageable);
+    Page<MaintenanceRecord> findByStatus(MaintenanceStatus status, Pageable pageable);
     
     // Find records by equipment with pagination
     Page<MaintenanceRecord> findByEquipmentId(UUID equipmentId, Pageable pageable);
     
     // Count records by status
-    long countByStatus(MaintenanceRecord.MaintenanceStatus status);
+    long countByStatus(MaintenanceStatus status);
     
     // Count records by equipment
     long countByEquipmentId(UUID equipmentId);

@@ -14,11 +14,18 @@ RockOps is a comprehensive mining site management system with REST API + WebSock
 - **Charts**: Recharts
 - **Internationalization**: i18next (config in `frontend/src/i18n.jsx`)
 - **File Processing**: xlsx
-- **Database**: PostgreSQL + Spring Data JPA
-- **Storage**: MinIO (local) / Cloudflare R2 (production)
+- **Database**: PostgreSQL + Spring Data JPA + Flyway (Migrations)
+- **Storage**: MinIO (Local) / AWS S3 (Production)
+- **Deployment**:
+  - **Backend & DB**: Render
+  - **Frontend**: Vercel
+- **Branching Strategy**:
+  - `main`: Deployed for testing/staging (mimics production)
+  - `production`: Live deployment for actual users
 - **Authentication**: JWT + Role-based (13 roles)
 - **Real-time**: WebSocket + STOMP
 - **Build**: Maven (backend) + Vite (frontend) + Docker
+- **Database Migrations**: Flyway
 
 ## 📁 Project Structure (EXACT ACTUAL PATHS)
 ```
@@ -122,6 +129,8 @@ RockOps/
 
 ### 2. Styling Consistency
 - **ALWAYS use styles from `frontend/src/styles/` folder** for consistency
+- **CRITICAL**: ALWAYS use variables from `frontend/src/styles/theme-variables.css` to support Dark/Light mode
+- **NEVER** hardcode hex colors; always use `var(--...)` tokens from theme variables
 - **NEVER** write inline styles or create new CSS files without checking existing styles
 - **USE existing style files** like `primary-button.scss`, `modal-styles.scss`, `status-badges.scss`
 - **FOLLOW the theme variables** defined in `theme-variables.css`
@@ -297,8 +306,19 @@ try {
   - `procurement-order-header`, `warehouse-transaction-row`, `finance-report-chart`
 - **ADD data-testid attributes** for testing and easy identification
 - **USE semantic HTML elements** with unique class names when possible
+- **ADD data-testid attributes** for testing and easy identification
 
-### 10. Testing Requirements (Backend)
+### 11. Numeric Input & Display Rules (CRITICAL UX)
+- **ALWAYS use thousands separators** for all numeric displays (prices, quantities, etc.)
+- **PREVENT scroll-wheel value changes** on all numeric inputs
+  - This is a recurring bug: users scroll the page and accidentally change values
+  - **SOLUTION**: Use a custom `NumberInput` component that disables wheel events
+  - **OR**: Use `type="text"` with trusted masking libraries for input
+- **FORMAT inputs dynamically**: Add thousands separators as the user types
+- **NEVER use raw `<input type="number">`** without scroll protection (wheel event prevention)
+- **ENSURE** value remains "80" and not "78.86" after scrolling page/modal
+
+### 12. Testing Requirements (Backend)
 - **ALWAYS create tests** for new backend components in `backend/src/test/`
 - **TEST all edge cases** based on described scenarios
 - **INCLUDE unit tests** for service layer methods

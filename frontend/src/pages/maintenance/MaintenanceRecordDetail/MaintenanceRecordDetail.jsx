@@ -40,7 +40,7 @@ const MaintenanceRecordDetail = () => {
         try {
             setLoading(true);
             setError(null);
-            
+
             const response = await maintenanceService.getRecordById(recordId);
             setMaintenanceRecord(response.data);
         } catch (error) {
@@ -56,6 +56,25 @@ const MaintenanceRecordDetail = () => {
         loadMaintenanceRecord();
     };
 
+    const handleAction = async (actionType) => {
+        try {
+            setLoading(true);
+            if (actionType === 'SUBMIT') {
+                await maintenanceService.submitForApproval(recordId);
+                showSuccess('Submitted for approval successfully');
+            } else if (actionType === 'APPROVE_MANAGER') {
+                await maintenanceService.approveByManager(recordId);
+                showSuccess('Approved by Manager successfully');
+            }
+            // Refresh data
+            loadMaintenanceRecord();
+        } catch (err) {
+            console.error('Action failed:', err);
+            showError(err.response?.data?.message || 'Action failed');
+            setLoading(false); // Ensure loading is off if error
+        }
+    };
+
     const getStatusColor = (status) => {
         switch (status) {
             case 'COMPLETED': return 'var(--color-success)';
@@ -69,9 +88,22 @@ const MaintenanceRecordDetail = () => {
 
     const getStatusBadge = (status) => {
         const statusClass = status.toLowerCase().replace(/_/g, '-');
+        let icon = null;
+
+        switch (status) {
+            case 'COMPLETED': icon = <FaCheckCircle />; break;
+            case 'ACTIVE': icon = <FaTools />; break;
+            case 'PENDING_MANAGER_APPROVAL':
+            case 'PENDING_FINANCE_APPROVAL':
+                icon = <FaHourglassHalf />;
+                break;
+            case 'REJECTED': icon = <FaInfoCircle />; break;
+            default: icon = <FaInfoCircle />;
+        }
+
         return (
             <span className={`status-badge ${statusClass}`}>
-                {status.replace(/_/g, ' ')}
+                {icon} {status.replace(/_/g, ' ')}
             </span>
         );
     };
@@ -161,19 +193,39 @@ const MaintenanceRecordDetail = () => {
                         text: getStatusBadge(maintenanceRecord.status),
                         className: 'secondary',
                         disabled: true
+                    },
+                    // Dynamic Buttons based on Status
+                    (maintenanceRecord.status === 'DRAFT' || maintenanceRecord.status === 'REJECTED') && {
+                        text: 'Submit for Approval',
+                        className: 'primary',
+                        onClick: () => handleAction('SUBMIT'),
+                        icon: <FaCheckCircle />
+                    },
+                    (maintenanceRecord.status === 'PENDING_MANAGER_APPROVAL') && {
+                        text: 'Approve (Manager)',
+                        className: 'primary',
+                        onClick: () => handleAction('APPROVE_MANAGER'),
+                        icon: <FaCheckCircle />
+                    },
+                    // Finance approval is handled in Finance Module, maybe show specific message or disabled button
+                    (maintenanceRecord.status === 'PENDING_FINANCE_APPROVAL') && {
+                        text: 'Pending Finance Review',
+                        className: 'secondary',
+                        disabled: true,
+                        icon: <FaDollarSign />
                     }
-                ]}
+                ].filter(Boolean)}
             />
 
             <div className="detail-content">
                 <div className="new-tabs-header">
-                    <button 
+                    <button
                         className={`new-tab-button ${activeTab === 'overview' ? 'active' : ''}`}
                         onClick={() => setActiveTab('overview')}
                     >
                         <FaInfoCircle /> Overview
                     </button>
-                    <button 
+                    <button
                         className={`new-tab-button ${activeTab === 'steps' ? 'active' : ''}`}
                         onClick={() => setActiveTab('steps')}
                     >
@@ -302,8 +354,8 @@ const MaintenanceRecordDetail = () => {
 
                     {activeTab === 'steps' && (
                         <div className="steps-tab">
-                            <MaintenanceSteps 
-                                recordId={recordId} 
+                            <MaintenanceSteps
+                                recordId={recordId}
                                 onStepUpdate={handleStepUpdate}
                             />
                         </div>

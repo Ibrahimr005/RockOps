@@ -10,6 +10,8 @@ import '../../../styles/status-badges.scss';
 import './MaintenanceSteps.scss';
 import maintenanceService from "../../../services/maintenanceService.js";
 
+import ConfirmationDialog from '../../../components/common/ConfirmationDialog/ConfirmationDialog';
+
 const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -30,6 +32,10 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
     const [stepToComplete, setStepToComplete] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeMenuId, setActiveMenuId] = useState(null);
+
+    // Delete Confirmation State
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [stepToDelete, setStepToDelete] = useState(null);
 
     const { showSuccess, showError, showInfo, showWarning } = useSnackbar();
     const { currentUser } = useAuth();
@@ -135,10 +141,18 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
         setActiveMenuId(null);
     };
 
-    const handleDeleteStep = async (id) => {
+    const confirmDeleteStep = (step) => {
+        setStepToDelete(step);
+        setShowDeleteConfirm(true);
+        setActiveMenuId(null);
+    };
+
+    const handleDeleteStep = async () => {
+        if (!stepToDelete) return;
+
         try {
             setLoading(true);
-            await maintenanceService.deleteStep(id);
+            await maintenanceService.deleteStep(stepToDelete.id);
             showSuccess('Maintenance step deleted successfully');
             loadMaintenanceSteps();
             if (onStepUpdate) onStepUpdate();
@@ -148,18 +162,19 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
 
             if (error.response?.data?.error) {
                 errorMessage = error.response.data.error;
-            } else if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error.message) {
-                errorMessage = error.message;
             }
-
             showError(errorMessage);
         } finally {
             setLoading(false);
-            setActiveMenuId(null);
+            setShowDeleteConfirm(false);
+            setStepToDelete(null);
         }
     };
+
+    // ... (rest of the file remains same, need to find the place where handleDeleteStep was originally called)
+    // Wait, I need to replace the original handleDeleteStep and add the dialog render logic at the end.
+    // I will use replace_file_content carefully.
+
 
     const handleCompleteStep = (step) => {
         setStepToComplete(step);
@@ -515,11 +530,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                                                                 {!step.isCompleted && (
                                                                     <button
                                                                         className="menu-item danger"
-                                                                        onClick={() => {
-                                                                            if (window.confirm(`Are you sure you want to delete this maintenance step?`)) {
-                                                                                handleDeleteStep(step.id);
-                                                                            }
-                                                                        }}
+                                                                        onClick={() => confirmDeleteStep(step)}
                                                                     >
                                                                         <FaTrash /> Delete
                                                                     </button>
@@ -638,6 +649,18 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                     step={stepToComplete}
                 />
             )}
+
+            <ConfirmationDialog
+                isVisible={showDeleteConfirm}
+                type="delete"
+                title="Delete Maintenance Step"
+                message={`Are you sure you want to delete this ${stepToDelete?.stepType?.replace('_', ' ') || 'maintenance'} step? This action cannot be undone.`}
+                confirmText="Delete Step"
+                cancelText="Cancel"
+                onConfirm={handleDeleteStep}
+                onCancel={() => setShowDeleteConfirm(false)}
+                isLoading={loading}
+            />
 
             {viewModalOpen && selectedStep && (
                 <div className="modal-backdrop" onClick={() => setViewModalOpen(false)}>

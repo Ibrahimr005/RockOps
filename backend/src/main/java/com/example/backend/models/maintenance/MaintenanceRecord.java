@@ -1,5 +1,6 @@
 package com.example.backend.models.maintenance;
 
+import com.example.backend.models.equipment.MaintenanceStatus;
 import com.example.backend.models.contact.Contact;
 import com.example.backend.models.user.User;
 import jakarta.persistence.*;
@@ -73,7 +74,7 @@ public class MaintenanceRecord {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private MaintenanceStatus status = MaintenanceStatus.ACTIVE;
+    private MaintenanceStatus status = MaintenanceStatus.DRAFT;
 
     @OneToMany(mappedBy = "maintenanceRecord", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @OrderBy("startDate ASC")
@@ -95,9 +96,6 @@ public class MaintenanceRecord {
     @Column(name = "version")
     private Long version;
 
-    public enum MaintenanceStatus {
-        ACTIVE, COMPLETED, ON_HOLD, CANCELLED
-    }
 
     // Helper methods
     public void addStep(MaintenanceStep step) {

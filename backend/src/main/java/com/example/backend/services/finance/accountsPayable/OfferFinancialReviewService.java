@@ -9,6 +9,10 @@ import com.example.backend.models.procurement.Offer;
 import com.example.backend.repositories.finance.accountsPayable.OfferFinancialReviewRepository;
 import com.example.backend.repositories.procurement.OfferRepository;
 import com.example.backend.services.procurement.OfferService;
+import com.example.backend.models.maintenance.MaintenanceRecord;
+import com.example.backend.models.equipment.MaintenanceStatus;
+import com.example.backend.repositories.MaintenanceRecordRepository;
+import com.example.backend.services.MaintenanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,28 +29,46 @@ public class OfferFinancialReviewService {
     private final OfferFinancialReviewRepository reviewRepository;
     private final OfferRepository offerRepository;
     private final OfferService offerService;
+    private final MaintenanceRecordRepository maintenanceRecordRepository;
+    private final MaintenanceService maintenanceService;
 
     @Autowired
     public OfferFinancialReviewService(
             OfferFinancialReviewRepository reviewRepository,
-            OfferRepository offerRepository, OfferService offerService) {
+            OfferRepository offerRepository, 
+            OfferService offerService,
+            MaintenanceRecordRepository maintenanceRecordRepository,
+            MaintenanceService maintenanceService) {
         this.reviewRepository = reviewRepository;
         this.offerRepository = offerRepository;
         this.offerService = offerService;
+        this.maintenanceRecordRepository = maintenanceRecordRepository;
+        this.maintenanceService = maintenanceService;
     }
 
     /**
      * Get all pending offers waiting for finance validation
      */
     public List<OfferFinancialReviewResponseDTO> getPendingOffers() {
-        // Get offers with status PENDING_FINANCE_VALIDATION from procurement
+        // 1. Get offers with status PENDING_FINANCE_VALIDATION from procurement
         List<Offer> pendingOffers = offerRepository.findByFinanceValidationStatus(
                 OfferFinanceValidationStatus.PENDING_FINANCE_VALIDATION
         );
-
-        return pendingOffers.stream()
+        
+        List<OfferFinancialReviewResponseDTO> results = pendingOffers.stream()
                 .map(this::convertOfferToPendingReviewDTO)
                 .collect(Collectors.toList());
+
+        // 2. Get maintenance records with status PENDING_FINANCE_APPROVAL
+        List<MaintenanceRecord> pendingMaintenance = maintenanceRecordRepository.findByStatus(MaintenanceStatus.PENDING_FINANCE_APPROVAL);
+        
+        List<OfferFinancialReviewResponseDTO> maintenanceResults = pendingMaintenance.stream()
+                .map(this::convertMaintenanceToPendingReviewDTO)
+                .collect(Collectors.toList());
+        
+        results.addAll(maintenanceResults);
+
+        return results;
     }
 
     /**
@@ -87,13 +109,27 @@ public class OfferFinancialReviewService {
             UUID reviewerUserId,
             String reviewerUserName) {
 
-        // Validate offer exists
-        Offer offer = offerRepository.findById(request.getOfferId())
-                .orElseThrow(() -> new RuntimeException("Offer not found with ID: " + request.getOfferId()));
-
-        // Validate offer is in correct status
-        if (offer.getFinanceValidationStatus() != OfferFinanceValidationStatus.PENDING_FINANCE_VALIDATION) {
-            throw new RuntimeException("Offer is not pending finance validation");
+        boolean isMaintenance = false;
+        Offer offer = null;
+        MaintenanceRecord maintenanceRecord = null;
+        
+        // Try to find Offer
+        if (offerRepository.existsById(request.getOfferId())) {
+             offer = offerRepository.findById(request.getOfferId()).get();
+             // Validate status
+             if (offer.getFinanceValidationStatus() != OfferFinanceValidationStatus.PENDING_FINANCE_VALIDATION) {
+                 throw new RuntimeException("Offer is not pending finance validation");
+             }
+        } else if (maintenanceRecordRepository.existsById(request.getOfferId())) {
+             // Try to find Maintenance Record
+             isMaintenance = true;
+             maintenanceRecord = maintenanceRecordRepository.findById(request.getOfferId()).get();
+             // Validate status
+             if (maintenanceRecord.getStatus() != MaintenanceStatus.PENDING_FINANCE_APPROVAL) {
+                 throw new RuntimeException("Maintenance Record is not pending finance approval");
+             }
+        } else {
+             throw new RuntimeException("Record not found with ID: " + request.getOfferId());
         }
 
         boolean isApproval = "APPROVE".equalsIgnoreCase(request.getAction());
@@ -107,20 +143,28 @@ public class OfferFinancialReviewService {
             throw new RuntimeException("Rejection reason is required for rejection");
         }
 
-        // Calculate total amount and currency from offer items
-        BigDecimal totalAmount = offer.getOfferItems().stream()
+        BigDecimal totalAmount;
+        String currency;
+
+        if (isMaintenance) {
+             totalAmount = maintenanceRecord.getTotalCost() != null ? maintenanceRecord.getTotalCost() : BigDecimal.ZERO;
+             currency = "EGP"; // Default for maintenance
+        } else {
+             // Calculate total amount and currency from offer items
+             totalAmount = offer.getOfferItems().stream()
                 .map(item -> item.getTotalPrice() != null ? item.getTotalPrice() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        String currency = offer.getOfferItems().isEmpty() ? "USD" : offer.getOfferItems().get(0).getCurrency();
+             currency = offer.getOfferItems().isEmpty() ? "USD" : offer.getOfferItems().get(0).getCurrency();
+        }
 
         // Create financial review record
         OfferFinancialReview review = OfferFinancialReview.builder()
-                .offer(offer)
+                .offer(isMaintenance ? null : offer)
+                .maintenanceRecord(isMaintenance ? maintenanceRecord : null)
                 .totalAmount(totalAmount)
                 .currency(currency)
                 .budgetCategory(isApproval ? request.getBudgetCategory() : null)
-                .department(null) // Offer doesn't have department, set from request if needed
+                .department(isMaintenance ? "Maintenance" : null) 
                 .reviewedByUserId(reviewerUserId)
                 .reviewedByUserName(reviewerUserName)
                 .reviewedAt(LocalDateTime.now())
@@ -131,31 +175,39 @@ public class OfferFinancialReviewService {
                 .build();
 
         OfferFinancialReview savedReview = reviewRepository.save(review);
-
-        // **CALL PROCUREMENT MODULE FIRST - BEFORE CHANGING STATUS**
-// The OfferService.handleFinanceValidationResponse will update the status
-        try {
-            offerService.handleFinanceValidationResponse(
-                    offer.getId(),
-                    isApproval ? "APPROVE" : "REJECT",
-                    reviewerUserId
-            );
-            System.out.println("✓ Successfully notified Procurement Module of finance decision for offer: " + offer.getId());
-        } catch (Exception e) {
-            System.err.println("Error notifying Procurement Module: " + e.getMessage());
-            e.printStackTrace();
-            // If the Procurement update fails, still update our local copy
-            // This ensures the Finance module has the correct record
-            offer.setFinanceValidationStatus(
-                    isApproval ? OfferFinanceValidationStatus.FINANCE_APPROVED : OfferFinanceValidationStatus.FINANCE_REJECTED
-            );
-            offer.setFinanceReviewedAt(LocalDateTime.now());
-            offer.setFinanceReviewedByUserId(reviewerUserId);
-            offerRepository.save(offer);
+        
+        if (isMaintenance) {
+            // CALL MAINTENANCE SERVICE
+            if (isApproval) {
+                maintenanceService.approveByFinance(maintenanceRecord.getId());
+            } else {
+                maintenanceService.rejectMaintenanceRecord(maintenanceRecord.getId(), request.getRejectionReason());
+            }
+        } else {
+            // **CALL PROCUREMENT MODULE FIRST - BEFORE CHANGING STATUS**
+            // The OfferService.handleFinanceValidationResponse will update the status
+            try {
+                offerService.handleFinanceValidationResponse(
+                        offer.getId(),
+                        isApproval ? "APPROVE" : "REJECT",
+                        reviewerUserId
+                );
+                System.out.println("✓ Successfully notified Procurement Module of finance decision for offer: " + offer.getId());
+            } catch (Exception e) {
+                System.err.println("Error notifying Procurement Module: " + e.getMessage());
+                e.printStackTrace();
+                // If the Procurement update fails, still update our local copy
+                // This ensures the Finance module has the correct record
+                offer.setFinanceValidationStatus(
+                        isApproval ? OfferFinanceValidationStatus.FINANCE_APPROVED : OfferFinanceValidationStatus.FINANCE_REJECTED
+                );
+                offer.setFinanceReviewedAt(LocalDateTime.now());
+                offer.setFinanceReviewedByUserId(reviewerUserId);
+                offerRepository.save(offer);
+            }
         }
-
-
-        // TODO: Send notification to procurement team
+        
+        // TODO: Send notification
 
         return convertToDTO(savedReview);
     }
@@ -197,10 +249,13 @@ public class OfferFinancialReviewService {
     }
 
     private OfferFinancialReviewResponseDTO convertToDTO(OfferFinancialReview review) {
+        UUID linkedId = review.getOffer() != null ? review.getOffer().getId() : (review.getMaintenanceRecord() != null ? review.getMaintenanceRecord().getId() : null);
+        String linkedIdStr = linkedId != null ? linkedId.toString() : "Unknown";
+
         return OfferFinancialReviewResponseDTO.builder()
                 .id(review.getId())
-                .offerId(review.getOffer().getId())
-                .offerNumber(review.getOffer().getId().toString()) // Use ID as offer number
+                .offerId(linkedId)
+                .offerNumber(linkedIdStr) // Use ID as offer number
                 .totalAmount(review.getTotalAmount())
                 .currency(review.getCurrency())
                 .budgetCategory(review.getBudgetCategory())
@@ -214,6 +269,18 @@ public class OfferFinancialReviewService {
                 .expectedPaymentDate(review.getExpectedPaymentDate())
                 .createdAt(review.getCreatedAt())
                 .updatedAt(review.getUpdatedAt())
+                .build();
+    }
+    
+    private OfferFinancialReviewResponseDTO convertMaintenanceToPendingReviewDTO(MaintenanceRecord record) {
+        return OfferFinancialReviewResponseDTO.builder()
+                .offerId(record.getId())
+                .offerNumber("MR-" + record.getId().toString().substring(0, 8)) // Prefix to distinguish
+                .totalAmount(record.getTotalCost() != null ? record.getTotalCost() : BigDecimal.ZERO)
+                .currency("EGP") // Default
+                .department("Maintenance")
+                .status(null) // Not reviewed yet
+                .createdAt(record.getCreationDate())
                 .build();
     }
 }
