@@ -387,7 +387,10 @@ export const FINANCE_ENDPOINTS = {
             READY_TO_PAY: '/api/v1/finance/payment-requests/ready-to-pay',
             BY_MERCHANT: (merchantId) => `/api/v1/finance/payment-requests/merchant/${merchantId}`,
             APPROVE_REJECT: '/api/v1/finance/payment-requests/approve-reject',
-            CREATE_FROM_PO: (poId) => `/api/v1/finance/payment-requests/create-from-po/${poId}`
+            // ✅ ADD THIS:
+            CREATE_FROM_PO: (purchaseOrderId, offerId) =>
+                `/api/v1/finance/payment-requests/create-from-po/${purchaseOrderId}/${offerId}`,
+            // CREATE_FROM_PO: (poId) => `/api/v1/finance/payment-requests/create-from-po/${poId}`
         },
 
         // Payments

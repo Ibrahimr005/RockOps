@@ -6,14 +6,16 @@ import com.example.backend.dto.finance.balances.TransactionApprovalDTO;
 import com.example.backend.models.finance.balances.*;
 import com.example.backend.models.user.Role;
 import com.example.backend.repositories.finance.balances.BalanceTransactionRepository;
+import com.example.backend.repositories.finance.balances.BankAccountRepository;
+import com.example.backend.repositories.finance.balances.CashSafeRepository;
+import com.example.backend.repositories.finance.balances.CashWithPersonRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,6 +27,9 @@ public class BalanceTransactionService {
     private final BankAccountService bankAccountService;
     private final CashSafeService cashSafeService;
     private final CashWithPersonService cashWithPersonService;
+    private final BankAccountRepository bankAccountRepository;
+    private final CashWithPersonRepository cashWithPersonRepository;
+    private final CashSafeRepository cashSafeRepository;
 
     public BalanceTransactionResponseDTO createTransaction(
             BalanceTransactionRequestDTO requestDTO,
@@ -116,13 +121,84 @@ public class BalanceTransactionService {
         return enrichResponseDTO(BalanceTransactionResponseDTO.fromEntity(transaction));
     }
 
-    @Transactional(readOnly = true)
-    public List<BalanceTransactionResponseDTO> getAll() {
-        return balanceTransactionRepository.findAll().stream()
-                .map(BalanceTransactionResponseDTO::fromEntity)
-                .map(this::enrichResponseDTO)
-                .collect(Collectors.toList());
+//    @Transactional(readOnly = true)
+//    public List<BalanceTransactionResponseDTO> getAll() {
+//        return balanceTransactionRepository.findAll().stream()
+//                .map(BalanceTransactionResponseDTO::fromEntity)
+//                .map(this::enrichResponseDTO)
+//                .collect(Collectors.toList());
+//    }
+@Transactional(readOnly = true)
+public List<BalanceTransactionResponseDTO> getAll() {
+    // Get all transactions first
+    List<BalanceTransaction> transactions = balanceTransactionRepository.findAll();
+
+    // Collect all unique account IDs to fetch in bulk
+    Set<UUID> bankAccountIds = new HashSet<>();
+    Set<UUID> cashSafeIds = new HashSet<>();
+    Set<UUID> cashWithPersonIds = new HashSet<>();
+
+    for (BalanceTransaction transaction : transactions) {
+        if (transaction.getAccountId() != null) {
+            if (transaction.getAccountType() == AccountType.BANK_ACCOUNT) {
+                bankAccountIds.add(transaction.getAccountId());
+            } else if (transaction.getAccountType() == AccountType.CASH_SAFE) {
+                cashSafeIds.add(transaction.getAccountId());
+            } else if (transaction.getAccountType() == AccountType.CASH_WITH_PERSON) {
+                cashWithPersonIds.add(transaction.getAccountId());
+            }
+        }
+
+        if (transaction.getToAccountId() != null) {
+            if (transaction.getToAccountType() == AccountType.BANK_ACCOUNT) {
+                bankAccountIds.add(transaction.getToAccountId());
+            } else if (transaction.getToAccountType() == AccountType.CASH_SAFE) {
+                cashSafeIds.add(transaction.getToAccountId());
+            } else if (transaction.getToAccountType() == AccountType.CASH_WITH_PERSON) {
+                cashWithPersonIds.add(transaction.getToAccountId());
+            }
+        }
     }
+
+    // Fetch all accounts in bulk
+    Map<UUID, String> accountNames = new HashMap<>();
+
+    if (!bankAccountIds.isEmpty()) {
+        bankAccountRepository.findAllById(bankAccountIds).forEach(account ->
+                accountNames.put(account.getId(), account.getBankName() + " - " + account.getAccountNumber())
+        );
+    }
+
+    if (!cashSafeIds.isEmpty()) {
+        cashSafeRepository.findAllById(cashSafeIds).forEach(safe ->
+                accountNames.put(safe.getId(), safe.getSafeName() + " - " + safe.getLocation())
+        );
+    }
+
+    if (!cashWithPersonIds.isEmpty()) {
+        cashWithPersonRepository.findAllById(cashWithPersonIds).forEach(person ->
+                accountNames.put(person.getId(), person.getPersonName())
+        );
+    }
+
+    // Map transactions to DTOs with account names
+    return transactions.stream()
+            .map(transaction -> {
+                BalanceTransactionResponseDTO dto = BalanceTransactionResponseDTO.fromEntity(transaction);
+
+                // Use the DTO's getters, not the entity's
+                if (dto.getAccountId() != null) {
+                    dto.setAccountName(accountNames.get(dto.getAccountId()));
+                }
+
+                if (dto.getToAccountId() != null) {
+                    dto.setToAccountName(accountNames.get(dto.getToAccountId()));
+                }
+
+                return dto;
+            })
+            .collect(Collectors.toList());
+}
 
     @Transactional(readOnly = true)
     public List<BalanceTransactionResponseDTO> getPendingTransactions() {

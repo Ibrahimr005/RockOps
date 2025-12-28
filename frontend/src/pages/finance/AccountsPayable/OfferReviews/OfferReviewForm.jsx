@@ -1,21 +1,60 @@
-import React, { useState } from 'react';
-import { FaTimes, FaSave}from 'react-icons/fa';
-import {FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FaTimes, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FiPackage, FiMapPin, FiUser, FiDollarSign } from 'react-icons/fi';
 import { useSnackbar } from '../../../../contexts/SnackbarContext';
 import { financeService } from '../../../../services/financeService';
+import { offerService } from '../../../../services/procurement/offerService';
+import { warehouseService } from '../../../../services/warehouseService';
+import './OfferReviewForm.scss';
 
 const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
     const [formData, setFormData] = useState({
         offerId: offer.offerId,
-        action: 'APPROVE', // 'APPROVE' or 'REJECT'
+        action: 'APPROVE',
         budgetCategory: '',
         approvalNotes: '',
         rejectionReason: '',
         expectedPaymentDate: ''
     });
+    const [fullOfferData, setFullOfferData] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [fetchingOffer, setFetchingOffer] = useState(true);
     const [errors, setErrors] = useState({});
     const { showSuccess, showError } = useSnackbar();
+
+    // Fetch full offer details from procurement API
+    useEffect(() => {
+        const fetchOfferDetails = async () => {
+            try {
+                setFetchingOffer(true);
+                const response = await offerService.getById(offer.offerId);
+                const offerData = response.data || response; // DEFINE offerData HERE
+                console.log('Full Offer Data:', offerData);
+
+                if (offerData.requestOrder?.requesterId && offerData.requestOrder?.partyType === 'WAREHOUSE') {
+                    try {
+                        const warehouseResponse = await warehouseService.getById(offerData.requestOrder.requesterId);
+                        const warehouseData = warehouseResponse.data || warehouseResponse;
+                        console.log('Warehouse Data:', warehouseData);
+                        offerData.warehouseDetails = warehouseData;
+                    } catch (err) {
+                        console.error('Error fetching warehouse details:', err);
+                    }
+                }
+
+                setFullOfferData(offerData); // Use offerData instead of response
+            } catch (err) {
+                console.error('Error fetching offer details:', err);
+                showError('Failed to load offer details');
+            } finally {
+                setFetchingOffer(false);
+            }
+        };
+
+        if (offer.offerId) {
+            fetchOfferDetails();
+        }
+    }, [offer.offerId]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -24,16 +63,15 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
             [name]: value
         }));
 
-        // Clear error when field is modified
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
     };
 
-    const validateForm = () => {
+    const validateForm = (action) => {
         const newErrors = {};
 
-        if (formData.action === 'APPROVE') {
+        if (action === 'APPROVE') {
             if (!formData.budgetCategory.trim()) {
                 newErrors.budgetCategory = 'Budget category is required for approval';
             }
@@ -47,23 +85,48 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (!validateForm()) {
-            showError('Please fix the validation errors');
+    const handleApprove = async () => {
+        if (!validateForm('APPROVE')) {
+            showError('Please provide budget category');
             return;
         }
 
         setLoading(true);
 
         try {
-            await financeService.accountsPayable.offerReviews.review(formData);
-            showSuccess(`Offer ${formData.action === 'APPROVE' ? 'approved' : 'rejected'} successfully`);
+            await financeService.accountsPayable.offerReviews.review({
+                ...formData,
+                action: 'APPROVE'
+            });
+            showSuccess('Offer approved successfully');
             onSubmit();
         } catch (err) {
-            console.error('Error reviewing offer:', err);
-            const errorMessage = err.response?.data?.message || 'Failed to review offer';
+            console.error('Error approving offer:', err);
+            const errorMessage = err.response?.data?.message || 'Failed to approve offer';
+            showError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReject = async () => {
+        if (!validateForm('REJECT')) {
+            showError('Please provide rejection reason');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            await financeService.accountsPayable.offerReviews.review({
+                ...formData,
+                action: 'REJECT'
+            });
+            showSuccess('Offer rejected successfully');
+            onSubmit();
+        } catch (err) {
+            console.error('Error rejecting offer:', err);
+            const errorMessage = err.response?.data?.message || 'Failed to reject offer';
             showError(errorMessage);
         } finally {
             setLoading(false);
@@ -79,13 +142,55 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
         }).format(amount);
     };
 
+    // Get unique merchants from offer items
+    const getMerchants = () => {
+        if (!fullOfferData?.offerItems || fullOfferData.offerItems.length === 0) return [];
+        const merchantMap = new Map();
+        fullOfferData.offerItems.forEach(item => {
+            if (item.merchant) {
+                merchantMap.set(item.merchant.id, item.merchant);
+            }
+        });
+        return Array.from(merchantMap.values());
+    };
+
+    if (fetchingOffer) {
+        return (
+            <div className="modal-overlay">
+                <div className="modal-container offer-review-modal">
+                    <div className="loading-container">
+                        <p>Loading offer details...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!fullOfferData) {
+        return (
+            <div className="modal-overlay">
+                <div className="modal-container offer-review-modal">
+                    <div className="error-container">
+                        <p>Failed to load offer details</p>
+                        <button className="btn-secondary" onClick={onClose}>Close</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    const merchants = getMerchants();
+    const totalItems = fullOfferData.offerItems?.length || 0;
+    const warehouseName = fullOfferData?.requestOrder?.requesterName || 'N/A';
+    const siteName = fullOfferData?.warehouseDetails?.site?.name || 'N/A';
+
     return (
         <div className="modal-overlay">
             <div className="modal-container offer-review-modal">
                 <div className="modal-header">
                     <div className="modal-title">
-                        <FiCheckCircle />
-                        <h2>Review Offer</h2>
+                        <FiPackage />
+                        <h2>Review Offer - {fullOfferData.title || offer.offerNumber}</h2>
                     </div>
                     <button className="modern-modal-close" onClick={onClose}>
                         <FaTimes />
@@ -93,14 +198,105 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
                 </div>
 
                 <div className="modal-body">
-                    {/* Offer Details */}
-                    <div className="offer-details-section">
-                        <h3>Offer Details</h3>
-                        <div className="details-grid">
-                            <div className="detail-item">
-                                <label>Offer Number:</label>
-                                <span>{offer.offerNumber}</span>
+                    {/* Offer Flow - From/To */}
+                    <div className="offer-flow-section">
+                        <div className="flow-item">
+                            <div className="flow-header">
+                                <FiMapPin className="flow-icon" />
+                                <span className="flow-label">From</span>
                             </div>
+                            <div className="flow-content">
+                                <div className="location-info">
+                                    <h4>{warehouseName}</h4>
+                                    <p className="site-name">{siteName}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flow-arrow">→</div>
+
+                        <div className="flow-item">
+                            <div className="flow-header">
+                                <FiUser className="flow-icon" />
+                                <span className="flow-label">To Merchant{merchants.length > 1 ? 's' : ''}</span>
+                            </div>
+                            <div className="flow-content">
+                                {merchants.length > 0 ? (
+                                    merchants.map((merchant, index) => (
+                                        <div key={merchant.id} className="merchant-info">
+                                            <h4>{merchant.name}</h4>
+                                            {merchant.contactPersonName && (
+                                                <p className="contact-person">{merchant.contactPersonName}</p>
+                                            )}
+                                            {merchant.contactPhone && (
+                                                <p className="contact-phone">{merchant.contactPhone}</p>
+                                            )}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="no-data">No merchant specified</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Offer Items Summary */}
+                    <div className="offer-items-section">
+                        <div className="section-header">
+                            <FiPackage />
+                            <h3>Offer Items ({totalItems})</h3>
+                        </div>
+                        <div className="items-table-wrapper">
+                            <table className="items-table">
+                                <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Merchant</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>Total</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {fullOfferData.offerItems && fullOfferData.offerItems.length > 0 ? (
+                                    fullOfferData.offerItems.map((item, index) => (
+                                        <tr key={index}>
+                                            <td>
+                                                <div className="item-name">
+                                                    {item.itemType?.name || item.requestOrderItem?.itemType?.name || 'N/A'}
+                                                </div>
+                                            </td>
+                                            <td>{item.merchant?.name || 'N/A'}</td>
+                                            <td>{item.quantity} {item.requestOrderItem?.itemType?.unit || ''}</td>
+                                            <td>{formatCurrency(item.unitPrice)}</td>
+                                            <td className="total-price">{formatCurrency(item.totalPrice)}</td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="5" className="no-items">No items in this offer</td>
+                                    </tr>
+                                )}
+                                </tbody>
+                                <tfoot>
+                                <tr className="total-row">
+                                    <td colSpan="4"><strong>Total Amount</strong></td>
+                                    <td className="total-amount">
+                                        <strong>{formatCurrency(offer.totalAmount)}</strong>
+                                    </td>
+                                </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Financial Details */}
+                    <div className="financial-details-section">
+                        <div className="section-header">
+                            <FiDollarSign />
+                            <h3>Financial Details</h3>
+                        </div>
+                        <div className="details-grid">
                             <div className="detail-item">
                                 <label>Total Amount:</label>
                                 <span className="amount">{formatCurrency(offer.totalAmount)}</span>
@@ -109,117 +305,115 @@ const OfferReviewForm = ({ offer, onClose, onSubmit }) => {
                                 <label>Currency:</label>
                                 <span>{offer.currency}</span>
                             </div>
-                            <div className="detail-item">
-                                <label>Department:</label>
-                                <span>{offer.department || 'N/A'}</span>
-                            </div>
+                            {/*<div className="detail-item">*/}
+                            {/*    <label>Status:</label>*/}
+                            {/*    <span>{fullOfferData.status || 'N/A'}</span>*/}
+                            {/*</div>*/}
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit}>
-                        {/* Action Selection */}
-                        <div className="action-selection">
-                            <label className="modern-form-label">Decision <span className="required">*</span></label>
-                            <div className="action-buttons">
-                                <button
-                                    type="button"
-                                    className={`action-btn approve-btn ${formData.action === 'APPROVE' ? 'active' : ''}`}
-                                    onClick={() => setFormData(prev => ({ ...prev, action: 'APPROVE' }))}
-                                >
-                                    <FiCheckCircle />
-                                    <span>Approve</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    className={`action-btn reject-btn ${formData.action === 'REJECT' ? 'active' : ''}`}
-                                    onClick={() => setFormData(prev => ({ ...prev, action: 'REJECT' }))}
-                                >
-                                    <FiXCircle />
-                                    <span>Reject</span>
-                                </button>
-                            </div>
+                    {/* Review Form Fields */}
+                    <div className="review-form-section">
+                        <h3>Review Details</h3>
+
+                        <div className="modern-form-field">
+                            <label className="modern-form-label">
+                                Budget Category <span className="required">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="budgetCategory"
+                                value={formData.budgetCategory}
+                                onChange={handleChange}
+                                className={errors.budgetCategory ? 'error' : ''}
+                                placeholder="e.g., Operations, Marketing, IT"
+                            />
+                            {errors.budgetCategory && <span className="error-text">{errors.budgetCategory}</span>}
                         </div>
 
-                        {/* Conditional Fields Based on Action */}
-                        {formData.action === 'APPROVE' ? (
-                            <>
-                                <div className="modern-form-field">
-                                    <label className="modern-form-label">
-                                        Budget Category <span className="required">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="budgetCategory"
-                                        value={formData.budgetCategory}
-                                        onChange={handleChange}
-                                        className={errors.budgetCategory ? 'error' : ''}
-                                        placeholder="e.g., Operations, Marketing, IT"
-                                    />
-                                    {errors.budgetCategory && <span className="error-text">{errors.budgetCategory}</span>}
-                                </div>
+                        <div className="modern-form-field">
+                            <label className="modern-form-label">
+                                Expected Payment Date
+                            </label>
+                            <input
+                                type="date"
+                                name="expectedPaymentDate"
+                                value={formData.expectedPaymentDate}
+                                onChange={handleChange}
+                            />
+                        </div>
 
-                                <div className="modern-form-field">
-                                    <label className="modern-form-label">
-                                        Expected Payment Date
-                                    </label>
-                                    <input
-                                        type="date"
-                                        name="expectedPaymentDate"
-                                        value={formData.expectedPaymentDate}
-                                        onChange={handleChange}
-                                    />
-                                </div>
+                        <div className="modern-form-field">
+                            <label className="modern-form-label">
+                                Approval Notes
+                            </label>
+                            <textarea
+                                name="approvalNotes"
+                                value={formData.approvalNotes}
+                                onChange={handleChange}
+                                rows="3"
+                                placeholder="Optional notes about this approval..."
+                            />
+                        </div>
 
-                                <div className="modern-form-field">
-                                    <label className="modern-form-label">
-                                        Approval Notes
-                                    </label>
-                                    <textarea
-                                        name="approvalNotes"
-                                        value={formData.approvalNotes}
-                                        onChange={handleChange}
-                                        rows="3"
-                                        placeholder="Optional notes about this approval..."
-                                    />
-                                </div>
-                            </>
+                        <div className="modern-form-field">
+                            <label className="modern-form-label">
+                                Rejection Reason (if rejecting)
+                            </label>
+                            <textarea
+                                name="rejectionReason"
+                                value={formData.rejectionReason}
+                                onChange={handleChange}
+                                className={errors.rejectionReason ? 'error' : ''}
+                                rows="3"
+                                placeholder="Provide reason if you plan to reject this offer..."
+                            />
+                            {errors.rejectionReason && <span className="error-text">{errors.rejectionReason}</span>}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="modal-footer">
+                    <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={onClose}
+                        disabled={loading}
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        className="btn-danger"
+                        onClick={handleReject}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <span>Processing...</span>
                         ) : (
-                            <div className="modern-form-field">
-                                <label className="modern-form-label">
-                                    Rejection Reason <span className="required">*</span>
-                                </label>
-                                <textarea
-                                    name="rejectionReason"
-                                    value={formData.rejectionReason}
-                                    onChange={handleChange}
-                                    className={errors.rejectionReason ? 'error' : ''}
-                                    rows="4"
-                                    placeholder="Please provide a detailed reason for rejection..."
-                                />
-                                {errors.rejectionReason && <span className="error-text">{errors.rejectionReason}</span>}
-                            </div>
+                            <>
+                                <FaTimesCircle />
+                                <span>Reject Offer</span>
+                            </>
                         )}
+                    </button>
 
-                        <div className="modal-footer">
-                            <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                className={`btn-primary ${formData.action === 'REJECT' ? 'btn-danger' : ''}`}
-                                disabled={loading}
-                            >
-                                {loading ? (
-                                    <span>Processing...</span>
-                                ) : (
-                                    <>
-                                        <FaSave />
-                                        <span>{formData.action === 'APPROVE' ? 'Approve Offer' : 'Reject Offer'}</span>
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </form>
+                    <button
+                        type="button"
+                        className="btn-success"
+                        onClick={handleApprove}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <span>Processing...</span>
+                        ) : (
+                            <>
+                                <FaCheckCircle />
+                                <span>Approve Offer</span>
+                            </>
+                        )}
+                    </button>
                 </div>
             </div>
         </div>

@@ -52,12 +52,12 @@ const CashSafeDetails = ({ safe, onClose, onEdit }) => {
                                 <label>Current Balance</label>
                                 <span className="balance-amount">{formatCurrency(safe.currentBalance)}</span>
                             </div>
-                            {/*<div className="detail-item">*/}
-                            {/*    <label>Status</label>*/}
-                            {/*    <span className={`status-badge ${safe.isActive ? 'status-active' : 'status-inactive'}`}>*/}
-                            {/*        {safe.isActive ? 'Active' : 'Inactive'}*/}
-                            {/*    </span>*/}
-                            {/*</div>*/}
+                            <div className="detail-item">
+                                <label>Status</label>
+                                <span className={`status-badge ${safe.isActive ? 'status-active' : 'status-inactive'}`}>
+                                    {safe.isActive ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
