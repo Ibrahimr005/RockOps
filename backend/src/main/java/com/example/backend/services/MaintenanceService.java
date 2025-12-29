@@ -59,6 +59,7 @@ public class MaintenanceService {
     private final MerchantRepository merchantRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final com.example.backend.repositories.finance.accountsPayable.OfferFinancialReviewRepository offerFinancialReviewRepository;
 
     // Maintenance Record Operations
 
@@ -97,11 +98,15 @@ public class MaintenanceService {
                 .issueDate(dto.getIssueDate())
                 .sparePartName(dto.getSparePartName().trim())
                 .expectedCompletionDate(dto.getExpectedCompletionDate())
+                .expectedCompletionDate(dto.getExpectedCompletionDate())
                 .status(MaintenanceStatus.DRAFT)
                 // ADD THIS LINE - Set initial cost from DTO
                 .totalCost(dto.getTotalCost() != null ? dto.getTotalCost()
                         : (dto.getEstimatedCost() != null ? dto.getEstimatedCost() : BigDecimal.ZERO))
                 .build();
+
+        // Determine initial status based on user role (will be set properly after user check)
+        MaintenanceStatus initialStatus = MaintenanceStatus.PENDING_MANAGER_APPROVAL;
 
         // Set responsible user (defaults to current authenticated user if not provided)
         final UUID responsibleUserId;
@@ -128,6 +133,11 @@ public class MaintenanceService {
             if (!allowedRoles.contains(responsibleUser.getRole())) {
                 throw new MaintenanceException(
                         "User must have Admin, Maintenance Manager, or Maintenance Employee role");
+            }
+
+            // Set initial status based on role
+            if (responsibleUser.getRole() == Role.MAINTENANCE_MANAGER || responsibleUser.getRole() == Role.ADMIN) {
+                initialStatus = MaintenanceStatus.PENDING_FINANCE_APPROVAL;
             }
 
             record.setResponsibleUser(responsibleUser);
@@ -160,7 +170,13 @@ public class MaintenanceService {
             }
         }
 
+        record.setStatus(initialStatus);
         MaintenanceRecord savedRecord = maintenanceRecordRepository.save(record);
+
+        // If status is PENDING_FINANCE_APPROVAL, create the OfferFinancialReview entity
+        if (savedRecord.getStatus() == MaintenanceStatus.PENDING_FINANCE_APPROVAL) {
+            createPendingFinancialReview(savedRecord);
+        }
 
         // Update equipment status to IN_MAINTENANCE if not already in maintenance
         if (equipment.getStatus() != EquipmentStatus.IN_MAINTENANCE) {
@@ -199,6 +215,31 @@ public class MaintenanceService {
 
         log.info("Created maintenance record: {} for equipment: {}", savedRecord.getId(), dto.getEquipmentId());
         return convertToDto(savedRecord);
+    }
+
+    private void createPendingFinancialReview(MaintenanceRecord record) {
+        try {
+            // Check if review already exists
+            if (offerFinancialReviewRepository.findByMaintenanceRecordId(record.getId()).isPresent()) {
+                return;
+            }
+
+            com.example.backend.models.finance.accountsPayable.OfferFinancialReview review =
+                    com.example.backend.models.finance.accountsPayable.OfferFinancialReview.builder()
+                            .maintenanceRecord(record)
+                            .totalAmount(record.getTotalCost() != null ? record.getTotalCost() : BigDecimal.ZERO)
+                            .currency("EGP")
+                            .department("Maintenance")
+                            .status(com.example.backend.models.finance.accountsPayable.enums.FinanceReviewStatus.PENDING)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+
+            offerFinancialReviewRepository.save(review);
+            log.info("Created PENDING OfferFinancialReview for maintenance record: {}", record.getId());
+        } catch (Exception e) {
+            log.error("Failed to create OfferFinancialReview for maintenance record: {}", e.getMessage());
+            // Don't block creation, but log error
+        }
     }
 
     public MaintenanceRecordDto getMaintenanceRecord(UUID id) {
@@ -275,13 +316,8 @@ public class MaintenanceService {
         if (currentUser.getRole() == Role.MAINTENANCE_MANAGER || currentUser.getRole() == Role.ADMIN) {
              record.setStatus(MaintenanceStatus.PENDING_FINANCE_APPROVAL);
              log.info("Record {} submitted by Manager/Admin. Skipping Manager approval. now PENDING_FINANCE_APPROVAL", id);
-             // TODO: Create OfferFinancialReview automatically?
-             // Actually, OfferFinancialReviewService should pull these records, or we create one here.
-             // The plan says: "Trigger: Call PaymentRequestService..." (Updated to OfferFinancialReviewService)
-             // We need to inject OfferFinancialReviewService to create the review record if needed?
-             // OR, OfferFinancialReviewService.getPendingOffers() will just LOOK UP records with this status.
-             // Strategy: OfferFinancialReviewService will poll/fetch records with PENDING_FINANCE_APPROVAL. 
-             // So we just change status here.
+             // Create PENDING OfferFinancialReview 
+             createPendingFinancialReview(record);
         } else {
              record.setStatus(MaintenanceStatus.PENDING_MANAGER_APPROVAL);
              log.info("Record {} submitted by Employee. now PENDING_MANAGER_APPROVAL", id);
@@ -310,6 +346,10 @@ public class MaintenanceService {
         log.info("Record {} approved by Manager {}. now PENDING_FINANCE_APPROVAL", id, currentUser.getId());
 
         MaintenanceRecord savedRecord = maintenanceRecordRepository.save(record);
+
+        // Create the OfferFinancialReview entity
+        createPendingFinancialReview(savedRecord);
+
         return convertToDto(savedRecord);
     }
 
@@ -323,8 +363,8 @@ public class MaintenanceService {
              throw new MaintenanceException("Record is not pending finance approval.");
         }
 
-        record.setStatus(MaintenanceStatus.ACTIVE);
-        log.info("Record {} approved by Finance. now ACTIVE", id);
+        record.setStatus(MaintenanceStatus.APPROVED_BY_FINANCE);
+        log.info("Record {} approved by Finance. now APPROVED_BY_FINANCE", id);
         
         // Logic to update Equipment status to IN_MAINTENANCE if not already
         Equipment equipment = equipmentRepository.findById(record.getEquipmentId()).orElse(null);
@@ -495,6 +535,13 @@ public class MaintenanceService {
         Equipment equipment = equipmentRepository.findById(record.getEquipmentId())
                 .orElseThrow(() -> new MaintenanceException("Equipment not found"));
 
+        // Delete potential OfferFinancialReview associated with this record
+        offerFinancialReviewRepository.findByMaintenanceRecordId(record.getId())
+                .ifPresent(review -> {
+                    offerFinancialReviewRepository.delete(review);
+                    log.info("Deleted associated OfferFinancialReview for maintenance record: {}", record.getId());
+                });
+
         // Delete the maintenance record
         maintenanceRecordRepository.delete(record);
 
@@ -529,7 +576,6 @@ public class MaintenanceService {
                 .orElseThrow(
                         () -> new MaintenanceException("Maintenance record not found with id: " + maintenanceRecordId));
 
-        // Validation: Prevent modification if pending approval
         if (record.getStatus() == MaintenanceStatus.PENDING_MANAGER_APPROVAL || 
             record.getStatus() == MaintenanceStatus.PENDING_FINANCE_APPROVAL) {
              throw new MaintenanceException("Cannot add steps while record is pending approval.");
@@ -713,6 +759,16 @@ public class MaintenanceService {
         }
         maintenanceRecordRepository.save(record);
 
+        // If this is the FIRST step and status is APPROVED_BY_FINANCE, activate the record
+        if (record.getStatus() == MaintenanceStatus.APPROVED_BY_FINANCE) {
+            // Check if this is indeed the first step (existingSteps only contained steps before this one was saved)
+            // But we already saved this step, so steps count should be >= 1.
+            // Actually, we can just check the current status.
+            record.setStatus(MaintenanceStatus.ACTIVE);
+            log.info("Record {} transitioned from APPROVED_BY_FINANCE to ACTIVE upon adding first step", record.getId());
+            maintenanceRecordRepository.save(record);
+        }
+        
         // Flush to ensure valid data before sending notifications
         maintenanceStepRepository.flush();
 
@@ -1621,4 +1677,5 @@ public class MaintenanceService {
             return null;
         }
     }
+
 }

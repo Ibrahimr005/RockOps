@@ -19,7 +19,6 @@ public class OfferFinancialReviewRequestDTO {
     @NotNull(message = "Offer ID is required")
     private UUID offerId;
 
-    @NotBlank(message = "Budget category is required for approval")
     private String budgetCategory;
 
     private LocalDate expectedPaymentDate;

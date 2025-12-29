@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaEdit, FaTrash, FaEye, FaCheck, FaClock, FaUser, FaMapMarkerAlt, FaDollarSign, FaStar, FaTools, FaTimes, FaEllipsisV, FaPlus, FaSearch, FaFilter, FaClipboardList } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaEye, FaCheck, FaClock, FaUser, FaMapMarkerAlt, FaDollarSign, FaStar, FaTools, FaTimes, FaEllipsisV, FaPlus, FaSearch, FaFilter, FaClipboardList, FaHourglassHalf } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -427,10 +427,19 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                         <div className="header-right">
                             {!maintenanceRecord?.status || maintenanceRecord.status !== 'COMPLETED' ? (
                                 <button
-                                    className="add-step-btn"
+                                    className={`add-step-btn ${maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL' ? 'pending-state' : ''}`}
                                     onClick={() => handleOpenModal()}
+                                    disabled={maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL'}
+                                    title={maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL'
+                                        ? "Cannot add steps while pending approval"
+                                        : "Add a new maintenance step"}
                                 >
-                                    <FaPlus /> New Step
+                                    {maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL'
+                                        ? <FaHourglassHalf />
+                                        : <FaPlus />}
+                                    {maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL'
+                                        ? " Pending Approval"
+                                        : " New Step"}
                                 </button>
                             ) : null}
                         </div>

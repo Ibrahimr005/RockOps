@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaArrowLeft, FaTools, FaUser, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaInfoCircle, FaWrench, FaClipboardList, FaCheckCircle, FaHourglassHalf } from 'react-icons/fa';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
+import { useAuth } from '../../../contexts/AuthContext';
 import MaintenanceSteps from '../MaintenanceSteps/MaintenanceSteps';
 import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
@@ -19,7 +20,8 @@ const MaintenanceRecordDetail = () => {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
 
-    const { showError } = useSnackbar();
+    const { showError, showSuccess } = useSnackbar();
+    const { currentUser } = useAuth();
 
     useEffect(() => {
         if (recordId) {
@@ -201,7 +203,8 @@ const MaintenanceRecordDetail = () => {
                         onClick: () => handleAction('SUBMIT'),
                         icon: <FaCheckCircle />
                     },
-                    (maintenanceRecord.status === 'PENDING_MANAGER_APPROVAL') && {
+                    (maintenanceRecord.status === 'PENDING_MANAGER_APPROVAL' &&
+                        (currentUser?.role === 'ADMIN' || currentUser?.role === 'MAINTENANCE_MANAGER')) && {
                         text: 'Approve (Manager)',
                         className: 'primary',
                         onClick: () => handleAction('APPROVE_MANAGER'),
@@ -366,4 +369,4 @@ const MaintenanceRecordDetail = () => {
     );
 };
 
-export default MaintenanceRecordDetail; 
+export default MaintenanceRecordDetail;

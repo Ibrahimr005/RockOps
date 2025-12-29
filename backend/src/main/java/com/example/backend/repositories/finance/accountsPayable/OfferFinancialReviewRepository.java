@@ -18,6 +18,9 @@ public interface OfferFinancialReviewRepository extends JpaRepository<OfferFinan
     // Find by offer ID
     Optional<OfferFinancialReview> findByOfferId(UUID offerId);
 
+    // Find by maintenance record ID
+    Optional<OfferFinancialReview> findByMaintenanceRecordId(UUID maintenanceRecordId);
+
     // Find by status
     List<OfferFinancialReview> findByStatus(FinanceReviewStatus status);
 

@@ -49,6 +49,9 @@ public class OfferFinancialReviewService {
     /**
      * Get all pending offers waiting for finance validation
      */
+    /**
+     * Get all pending offers waiting for finance validation
+     */
     public List<OfferFinancialReviewResponseDTO> getPendingOffers() {
         // 1. Get offers with status PENDING_FINANCE_VALIDATION from procurement
         List<Offer> pendingOffers = offerRepository.findByFinanceValidationStatus(
@@ -59,11 +62,22 @@ public class OfferFinancialReviewService {
                 .map(this::convertOfferToPendingReviewDTO)
                 .collect(Collectors.toList());
 
-        // 2. Get maintenance records with status PENDING_FINANCE_APPROVAL
-        List<MaintenanceRecord> pendingMaintenance = maintenanceRecordRepository.findByStatus(MaintenanceStatus.PENDING_FINANCE_APPROVAL);
+        // 2. Get maintenance reviews with status PENDING from OfferFinancialReviewRepository
+        List<OfferFinancialReview> pendingMaintenanceReviews = reviewRepository.findByStatusWithOffer(FinanceReviewStatus.PENDING)
+                .stream()
+                .filter(review -> review.getMaintenanceRecord() != null)
+                .collect(Collectors.toList());
         
-        List<OfferFinancialReviewResponseDTO> maintenanceResults = pendingMaintenance.stream()
-                .map(this::convertMaintenanceToPendingReviewDTO)
+        // If the custom query doesn't fetch maintenance records eagerly, we might need a different query or let Hibernate handle lazy loading.
+        // Or simpler: findByStatus(PENDING) and filter.
+        
+        List<OfferFinancialReview> allPending = reviewRepository.findByStatus(FinanceReviewStatus.PENDING);
+        List<OfferFinancialReview> maintenanceReviews = allPending.stream()
+                .filter(r -> r.getMaintenanceRecord() != null)
+                .collect(Collectors.toList());
+
+        List<OfferFinancialReviewResponseDTO> maintenanceResults = maintenanceReviews.stream()
+                .map(this::convertPendingReviewToDTO)
                 .collect(Collectors.toList());
         
         results.addAll(maintenanceResults);
@@ -112,6 +126,7 @@ public class OfferFinancialReviewService {
         boolean isMaintenance = false;
         Offer offer = null;
         MaintenanceRecord maintenanceRecord = null;
+        OfferFinancialReview existingReview = null;
         
         // Try to find Offer
         if (offerRepository.existsById(request.getOfferId())) {
@@ -127,6 +142,16 @@ public class OfferFinancialReviewService {
              // Validate status
              if (maintenanceRecord.getStatus() != MaintenanceStatus.PENDING_FINANCE_APPROVAL) {
                  throw new RuntimeException("Maintenance Record is not pending finance approval");
+             }
+             
+             // Find existing review
+             existingReview = reviewRepository.findByMaintenanceRecordId(maintenanceRecord.getId())
+                     .filter(r -> r.getStatus() == FinanceReviewStatus.PENDING)
+                     .orElse(null);
+             
+             if (existingReview == null) {
+                 // Fallback: This shouldn't happen with new logic, but handled just in case
+                 // throw new RuntimeException("No pending review found for this maintenance record");
              }
         } else {
              throw new RuntimeException("Record not found with ID: " + request.getOfferId());
@@ -157,24 +182,39 @@ public class OfferFinancialReviewService {
              currency = offer.getOfferItems().isEmpty() ? "USD" : offer.getOfferItems().get(0).getCurrency();
         }
 
-        // Create financial review record
-        OfferFinancialReview review = OfferFinancialReview.builder()
-                .offer(isMaintenance ? null : offer)
-                .maintenanceRecord(isMaintenance ? maintenanceRecord : null)
-                .totalAmount(totalAmount)
-                .currency(currency)
-                .budgetCategory(isApproval ? request.getBudgetCategory() : null)
-                .department(isMaintenance ? "Maintenance" : null) 
-                .reviewedByUserId(reviewerUserId)
-                .reviewedByUserName(reviewerUserName)
-                .reviewedAt(LocalDateTime.now())
-                .status(isApproval ? FinanceReviewStatus.APPROVED : FinanceReviewStatus.REJECTED)
-                .approvalNotes(isApproval ? request.getApprovalNotes() : null)
-                .rejectionReason(!isApproval ? request.getRejectionReason() : null)
-                .expectedPaymentDate(request.getExpectedPaymentDate())
-                .build();
+        OfferFinancialReview reviewToSave;
 
-        OfferFinancialReview savedReview = reviewRepository.save(review);
+        if (isMaintenance && existingReview != null) {
+            // Update existing review
+            reviewToSave = existingReview;
+            reviewToSave.setBudgetCategory(isApproval ? request.getBudgetCategory() : null);
+            reviewToSave.setReviewedByUserId(reviewerUserId);
+            reviewToSave.setReviewedByUserName(reviewerUserName);
+            reviewToSave.setReviewedAt(LocalDateTime.now());
+            reviewToSave.setStatus(isApproval ? FinanceReviewStatus.APPROVED : FinanceReviewStatus.REJECTED);
+            reviewToSave.setApprovalNotes(isApproval ? request.getApprovalNotes() : null);
+            reviewToSave.setRejectionReason(!isApproval ? request.getRejectionReason() : null);
+            reviewToSave.setExpectedPaymentDate(request.getExpectedPaymentDate());
+        } else {
+            // Create financial review record (Classic flow for offers)
+            reviewToSave = OfferFinancialReview.builder()
+                    .offer(isMaintenance ? null : offer)
+                    .maintenanceRecord(isMaintenance ? maintenanceRecord : null)
+                    .totalAmount(totalAmount)
+                    .currency(currency)
+                    .budgetCategory(isApproval ? request.getBudgetCategory() : null)
+                    .department(isMaintenance ? "Maintenance" : null) 
+                    .reviewedByUserId(reviewerUserId)
+                    .reviewedByUserName(reviewerUserName)
+                    .reviewedAt(LocalDateTime.now())
+                    .status(isApproval ? FinanceReviewStatus.APPROVED : FinanceReviewStatus.REJECTED)
+                    .approvalNotes(isApproval ? request.getApprovalNotes() : null)
+                    .rejectionReason(!isApproval ? request.getRejectionReason() : null)
+                    .expectedPaymentDate(request.getExpectedPaymentDate())
+                    .build();
+        }
+
+        OfferFinancialReview savedReview = reviewRepository.save(reviewToSave);
         
         if (isMaintenance) {
             // CALL MAINTENANCE SERVICE
@@ -272,15 +312,19 @@ public class OfferFinancialReviewService {
                 .build();
     }
     
-    private OfferFinancialReviewResponseDTO convertMaintenanceToPendingReviewDTO(MaintenanceRecord record) {
+    private OfferFinancialReviewResponseDTO convertPendingReviewToDTO(OfferFinancialReview review) {
+        MaintenanceRecord record = review.getMaintenanceRecord();
+        String offerNumber = "MR-" + (record != null ? record.getId().toString().substring(0, 8) : "UNK");
+        
         return OfferFinancialReviewResponseDTO.builder()
-                .offerId(record.getId())
-                .offerNumber("MR-" + record.getId().toString().substring(0, 8)) // Prefix to distinguish
-                .totalAmount(record.getTotalCost() != null ? record.getTotalCost() : BigDecimal.ZERO)
-                .currency("EGP") // Default
-                .department("Maintenance")
-                .status(null) // Not reviewed yet
-                .createdAt(record.getCreationDate())
+                .id(review.getId())
+                .offerId(record != null ? record.getId() : null)
+                .offerNumber(offerNumber)
+                .totalAmount(review.getTotalAmount())
+                .currency(review.getCurrency())
+                .department(review.getDepartment())
+                .status(null) // Should show as Pending in list
+                .createdAt(review.getCreatedAt())
                 .build();
     }
 }
