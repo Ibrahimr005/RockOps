@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FaArrowLeft, FaTools, FaUser, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaInfoCircle, FaWrench, FaClipboardList, FaCheckCircle, FaHourglassHalf } from 'react-icons/fa';
+import { FaArrowLeft, FaTools, FaUser, FaCalendarAlt, FaDollarSign, FaMapMarkerAlt, FaInfoCircle, FaWrench, FaClipboardList, FaCheckCircle, FaHourglassHalf, FaExclamationTriangle, FaClock } from 'react-icons/fa';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useSnackbar } from '../../../contexts/SnackbarContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import MaintenanceSteps from '../MaintenanceSteps/MaintenanceSteps';
+import MaintenanceRecordModal from '../MaintenanceRecords/MaintenanceRecordModal';
+import MaintenanceTimeline from './MaintenanceTimeline';
 import LoadingPage from '../../../components/common/LoadingPage/LoadingPage';
 import IntroCard from '../../../components/common/IntroCard/IntroCard';
 import '../../../styles/status-badges.scss';
@@ -19,6 +21,7 @@ const MaintenanceRecordDetail = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     const { showError, showSuccess } = useSnackbar();
     const { currentUser } = useAuth();
@@ -74,6 +77,33 @@ const MaintenanceRecordDetail = () => {
             console.error('Action failed:', err);
             showError(err.response?.data?.message || 'Action failed');
             setLoading(false); // Ensure loading is off if error
+        }
+    };
+
+    const handleResubmit = () => {
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditSubmit = async (recordData) => {
+        try {
+            setLoading(true);
+            // 1. Update the record
+            await maintenanceService.updateRecord(recordId, recordData);
+
+            // 2. If it was rejected, we need to explicitly submit it again to trigger a new financial review
+            if (maintenanceRecord.status === 'REJECTED') {
+                await maintenanceService.submitForApproval(recordId);
+                showSuccess('Record updated and resubmitted for approval successfully');
+            } else {
+                showSuccess('Record updated successfully');
+            }
+
+            setIsEditModalOpen(false);
+            loadMaintenanceRecord();
+        } catch (err) {
+            console.error('Update/Resubmit failed:', err);
+            showError(err.response?.data?.message || 'Failed to update/resubmit record');
+            setLoading(false);
         }
     };
 
@@ -197,7 +227,12 @@ const MaintenanceRecordDetail = () => {
                         disabled: true
                     },
                     // Dynamic Buttons based on Status
-                    (maintenanceRecord.status === 'DRAFT' || maintenanceRecord.status === 'REJECTED') && {
+                    (maintenanceRecord.status === 'REJECTED') ? {
+                        text: 'Resubmit',
+                        className: 'warning',
+                        onClick: handleResubmit,
+                        icon: <FaExclamationTriangle />
+                    } : (maintenanceRecord.status === 'DRAFT') && {
                         text: 'Submit for Approval',
                         className: 'primary',
                         onClick: () => handleAction('SUBMIT'),
@@ -221,25 +256,53 @@ const MaintenanceRecordDetail = () => {
             />
 
             <div className="detail-content">
-                <div className="new-tabs-header">
+                <div className="tabs-header">
                     <button
-                        className={`new-tab-button ${activeTab === 'overview' ? 'active' : ''}`}
+                        className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
                         onClick={() => setActiveTab('overview')}
                     >
                         <FaInfoCircle /> Overview
                     </button>
                     <button
-                        className={`new-tab-button ${activeTab === 'steps' ? 'active' : ''}`}
+                        className={`tab-button ${activeTab === 'steps' ? 'active' : ''}`}
                         onClick={() => setActiveTab('steps')}
                     >
                         <FaTools /> Maintenance Steps ({maintenanceRecord.totalSteps || 0})
+                    </button>
+                    <button
+                        className={`tab-button ${activeTab === 'history' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('history')}
+                    >
+                        <FaClock /> History
                     </button>
                 </div>
 
                 <div className="tab-content">
                     {activeTab === 'overview' && (
                         <div className="overview-tab">
+                            {/* ... existing overview content ... */}
                             <div className="overview-grid">
+                                {maintenanceRecord.status === 'REJECTED' && maintenanceRecord.rejectionReason && (
+                                    <div className="overview-section full-width-alert">
+                                        <div className="alert alert-danger" style={{
+                                            padding: '15px',
+                                            backgroundColor: '#fff5f5',
+                                            border: '1px solid #fc8181',
+                                            borderRadius: '8px',
+                                            color: '#c53030',
+                                            display: 'flex',
+                                            alignItems: 'flex-start',
+                                            gap: '10px'
+                                        }}>
+                                            <FaExclamationTriangle size={20} style={{ marginTop: '2px' }} />
+                                            <div>
+                                                <h4 style={{ margin: '0 0 5px 0', fontSize: '16px', fontWeight: '600' }}>Rejection Reason</h4>
+                                                <p style={{ margin: 0 }}>{maintenanceRecord.rejectionReason}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="overview-section">
                                     <h3>Equipment Information</h3>
                                     <div className="info-grid">
@@ -283,7 +346,7 @@ const MaintenanceRecordDetail = () => {
                                 </div>
 
                                 <div className="overview-section">
-                                    <h3>Timeline</h3>
+                                    <h3>Timeline Summary</h3>
                                     <div className="info-grid">
                                         <div className="info-item">
                                             <label>Creation Date</label>
@@ -363,8 +426,23 @@ const MaintenanceRecordDetail = () => {
                             />
                         </div>
                     )}
+
+                    {activeTab === 'history' && (
+                        <div className="history-tab">
+                            <MaintenanceTimeline events={maintenanceRecord.timelineEvents} />
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {isEditModalOpen && (
+                <MaintenanceRecordModal
+                    isOpen={isEditModalOpen}
+                    onClose={() => setIsEditModalOpen(false)}
+                    onSubmit={handleEditSubmit}
+                    editingRecord={maintenanceRecord}
+                />
+            )}
         </div>
     );
 };

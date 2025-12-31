@@ -406,14 +406,10 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
     return (
         <div className="maintenance-steps-view">
             <div className="intro-card-wrapper">
-                {/* Using standard page header if IntroCard is not suitable or available context is limited, 
-                     but user asked for DirectPurchaseDetailView look. DirectPurchase uses IntroCard. 
-                     We need to import IntroCard. I'll stick to the requested look. 
-                  */}
+                {/* Using standard page header if IntroCard is not suitable or available context is limited */}
             </div>
 
             <div className="detail-content">
-                {/* Header Card similar to DirectPurchaseDetailView's IntroCard equivalent or header section */}
                 <div className="info-card header-card">
                     <div className="header-content">
                         <div className="header-left">
@@ -425,14 +421,14 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                             )}
                         </div>
                         <div className="header-right">
-                            {!maintenanceRecord?.status || maintenanceRecord.status !== 'COMPLETED' ? (
+                            {(!maintenanceRecord?.status || maintenanceRecord.status !== 'COMPLETED') && (
                                 <button
-                                    className={`add-step-btn ${maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL' ? 'pending-state' : ''}`}
+                                    className={`add-step-btn ${maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL' || maintenanceRecord?.status === 'REJECTED' ? 'pending-state' : ''}`}
                                     onClick={() => handleOpenModal()}
-                                    disabled={maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL'}
+                                    disabled={maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL' || maintenanceRecord?.status === 'REJECTED'}
                                     title={maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL'
                                         ? "Cannot add steps while pending approval"
-                                        : "Add a new maintenance step"}
+                                        : (maintenanceRecord?.status === 'REJECTED' ? "Cannot add steps to rejected record. Please Resubmit." : "Add a new maintenance step")}
                                 >
                                     {maintenanceRecord?.status === 'PENDING_MANAGER_APPROVAL' || maintenanceRecord?.status === 'PENDING_FINANCE_APPROVAL'
                                         ? <FaHourglassHalf />
@@ -441,7 +437,7 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                                         ? " Pending Approval"
                                         : " New Step"}
                                 </button>
-                            ) : null}
+                            )}
                         </div>
                     </div>
 
@@ -577,7 +573,6 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                                                     </div>
                                                 )}
 
-                                                {/* Logic Fix: Show From AND To for Transport */}
                                                 {(isTransport || step.fromLocation) && (
                                                     <div className="step-info-item">
                                                         <label>{isTransport ? 'From Location' : 'Current Location'}</label>
@@ -631,7 +626,6 @@ const MaintenanceSteps = ({ recordId, onStepUpdate }) => {
                 </div>
             </div>
 
-            {/* Modals */}
             {isModalOpen && (
                 <MaintenanceStepModal
                     isOpen={isModalOpen}

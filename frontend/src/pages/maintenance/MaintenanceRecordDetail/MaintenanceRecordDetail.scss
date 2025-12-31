@@ -1,471 +1,283 @@
+// MaintenanceRecordDetail.scss - Seamless, flowing design
+// No container "box" - content flows naturally on the page
+
 .maintenance-record-detail {
-    padding: 1.5rem;
-    background: var(--main-background-color);
-    min-height: 100vh;
+    padding: 20px;
+    width: 100%;
 
+    // Content area - NO box/card styling, just natural flow
     .detail-content {
-        background: var(--color-surface);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--border-color);
-        overflow: hidden;
+        // Remove all card-like styling
+        background: transparent;
+        border-radius: 0;
+        box-shadow: none;
+        border: none;
+        overflow: visible;
+        margin-top: 16px;
 
-        // Use consistent tab styling like warehouse/equipment details
-        .new-tabs-header {
+        // Tabs - simple underline style
+        .tabs-header {
             display: flex;
+            background: transparent;
             border-bottom: 1px solid var(--border-color);
-            margin-bottom: 0;
-            background: var(--color-surface);
+            overflow-x: auto;
+            padding: 0;
+            margin-bottom: 24px;
+
+            // Hide scrollbar but keep functionality
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+
+            &::-webkit-scrollbar {
+                display: none;
+            }
         }
 
-        .new-tab-button {
-            padding: 16px 20px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 14px;
-            color: var(--color-text-tertiary);
-            position: relative;
-            transition: color 0.3s ease;
+        .tab-button {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 8px;
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            transition: all 0.2s ease;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px; // Overlap with border
+            white-space: nowrap;
 
-            svg {
-                font-size: 0.875rem;
-            }
-
-            &:hover:not(.active) {
-                color: var(--color-text-primary);
+            &:hover {
+                color: var(--color-primary);
             }
 
             &.active {
                 color: var(--color-primary);
-                font-weight: 600;
+                border-bottom-color: var(--color-primary);
+            }
 
-                &::after {
-                    content: '';
-                    position: absolute;
-                    bottom: -1px;
-                    left: 0;
-                    width: 100%;
-                    height: 3px;
-                    background-color: var(--color-primary);
-                    border-radius: 2px 2px 0 0;
-                }
+            svg {
+                font-size: 16px;
             }
         }
 
+        // Tab content - flows naturally, no padding wrapper
         .tab-content {
-            .overview-tab {
-                padding: 2rem;
+            // No padding here - let child content decide
 
+            // Overview Tab
+            .overview-tab {
                 .overview-grid {
                     display: grid;
-                    gap: 2rem;
+                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                    gap: 32px;
 
+                    // Sections - simple headers, no cards
                     .overview-section {
-                        background: linear-gradient(135deg, var(--color-surface-secondary) 0%, var(--color-surface-tertiary) 100%);
-                        border-radius: var(--radius-md);
-                        padding: 1.5rem;
-                        border: 1px solid var(--border-color-light);
-                        position: relative;
-                        overflow: hidden;
-                        transition: all var(--transition-fast);
-
-                        &::before {
-                            content: '';
-                            position: absolute;
-                            top: 0;
-                            left: 0;
-                            right: 0;
-                            height: 2px;
-                            background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
-                            transform: scaleX(0);
-                            transform-origin: left;
-                            transition: transform var(--transition-normal);
-                        }
-
-                        &:hover {
-                            background: linear-gradient(135deg, var(--color-surface-tertiary) 0%, var(--color-surface-hover) 100%);
-                            border-color: var(--border-color-medium);
-                            transform: translateY(-2px);
-                            box-shadow: var(--shadow-md);
-
-                            &::before {
-                                transform: scaleX(1);
-                            }
-                        }
+                        padding: 0;
+                        background: transparent;
+                        border: none;
+                        box-shadow: none;
 
                         h3 {
-                            margin: 0 0 1.25rem 0;
-                            color: var(--head-title-color);
-                            font-size: 1.125rem;
-                            font-weight: var(--bold-font-weight);
-                            display: flex;
-                            align-items: center;
-                            gap: 0.5rem;
-                            position: relative;
-
-                            &::after {
-                                content: '';
-                                flex: 1;
-                                height: 1px;
-                                background: linear-gradient(90deg, var(--color-primary) 0%, transparent 100%);
-                                opacity: 0.3;
-                                margin-left: 1rem;
-                            }
+                            margin: 0 0 16px 0;
+                            padding-bottom: 8px;
+                            border-bottom: 1px solid var(--border-color);
+                            font-size: 0.9rem;
+                            font-weight: 600;
+                            color: var(--color-text-secondary);
+                            text-transform: uppercase;
+                            letter-spacing: 0.05em;
                         }
 
                         .info-grid {
                             display: grid;
-                            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                            gap: 1rem;
+                            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                            gap: 20px;
 
                             .info-item {
-                                background: var(--color-surface);
-                                border-radius: var(--radius-sm);
-                                padding: 1rem;
-                                border: 1px solid var(--border-color-light);
-                                transition: all var(--transition-fast);
-                                position: relative;
-                                overflow: hidden;
-
-                                &::before {
-                                    content: '';
-                                    position: absolute;
-                                    top: 0;
-                                    left: 0;
-                                    width: 3px;
-                                    height: 100%;
-                                    background: var(--color-primary);
-                                    transform: scaleY(0);
-                                    transform-origin: top;
-                                    transition: transform var(--transition-fast);
-                                }
-
-                                &:hover {
-                                    background: var(--color-surface-hover);
-                                    border-color: var(--color-primary);
-                                    transform: translateY(-1px);
-                                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-
-                                    &::before {
-                                        transform: scaleY(1);
-                                    }
-                                }
-
                                 &.full-width {
                                     grid-column: 1 / -1;
                                 }
 
                                 label {
                                     display: block;
-                                    color: var(--color-text-secondary);
+                                    color: var(--color-text-tertiary);
                                     font-size: 0.75rem;
-                                    font-weight: 600;
+                                    font-weight: 500;
                                     text-transform: uppercase;
-                                    letter-spacing: 0.05em;
-                                    margin-bottom: 0.5rem;
-                                    position: relative;
-                                    padding-left: 0.75rem;
-
-                                    &::before {
-                                        content: '';
-                                        position: absolute;
-                                        left: 0;
-                                        top: 50%;
-                                        transform: translateY(-50%);
-                                        width: 3px;
-                                        height: 12px;
-                                        background: var(--color-primary);
-                                        border-radius: 2px;
-                                        opacity: 0.6;
-                                    }
+                                    letter-spacing: 0.03em;
+                                    margin-bottom: 4px;
                                 }
 
                                 span {
                                     color: var(--color-text-primary);
-                                    font-size: 0.875rem;
+                                    font-size: 0.95rem;
                                     font-weight: 500;
-                                    line-height: 1.4;
-                                    display: block;
-                                    padding-left: 0.75rem;
 
                                     &.cost {
                                         color: var(--color-success);
                                         font-weight: 600;
-                                        font-size: 1rem;
                                     }
 
                                     &.overdue {
                                         color: var(--color-danger);
                                         font-weight: 600;
-                                        font-size: 1rem;
                                     }
                                 }
                             }
                         }
                     }
 
-                    // Special styling for different sections
-                    .overview-section:nth-child(1) { // Equipment Information
-                        &::before {
-                            background: linear-gradient(90deg, var(--color-info) 0%, var(--color-info-light) 100%);
-                        }
+                    .full-width-alert {
+                        grid-column: 1 / -1;
                     }
+                }
+            }
 
-                    .overview-section:nth-child(2) { // Issue Details
-                        &::before {
-                            background: linear-gradient(90deg, var(--color-warning) 0%, var(--color-warning-light) 100%);
-                        }
-                    }
+            // Steps Tab - completely transparent integration
+            .steps-tab {
+                .maintenance-steps-view {
+                    padding: 0;
+                    background: transparent;
+                    min-height: auto;
 
-                    .overview-section:nth-child(3) { // Timeline
-                        &::before {
-                            background: linear-gradient(90deg, var(--color-success) 0%, var(--color-success-light) 100%);
-                        }
-                    }
+                    .detail-content {
+                        background: transparent;
+                        box-shadow: none;
+                        margin: 0;
 
-                    .overview-section:nth-child(4) { // Current Status
-                        &::before {
-                            background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
-                        }
-                    }
+                        .info-card {
+                            background: transparent;
+                            box-shadow: none;
+                            padding: 0;
+                            border: none;
 
-                    .overview-section:nth-child(5) { // Financial Information
-                        &::before {
-                            background: linear-gradient(90deg, var(--color-success) 0%, var(--color-success-light) 100%);
+                            &.header-card {
+                                margin-bottom: 24px;
+
+                                .header-content {
+                                    padding-bottom: 16px;
+                                    border-bottom: 1px solid var(--border-color);
+                                    margin-bottom: 0;
+                                }
+                            }
+
+                            .card-header-row {
+                                margin-bottom: 16px;
+                                padding-bottom: 0;
+                                border-bottom: none;
+                            }
+
+                            .steps-container {
+                                gap: 12px;
+
+                                .step-item {
+                                    background: var(--section-background-color);
+                                    border: 1px solid var(--border-color);
+                                    border-radius: 8px;
+                                    box-shadow: none;
+
+                                    &:hover {
+                                        transform: none;
+                                        border-color: var(--color-primary);
+                                    }
+
+                                    &.completed {
+                                        border-left: 3px solid var(--color-success);
+                                    }
+
+                                    &.in-progress {
+                                        border-left: 3px solid var(--color-primary);
+                                    }
+
+                                    .step-header {
+                                        background: transparent;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            .steps-tab {
-                .maintenance-steps {
-                    padding: 1.5rem;
-                    background: none;
-                    min-height: auto;
-
-                    .maintenance-steps-header {
-                        margin-bottom: 0;
-                        border-radius: 0;
-                        box-shadow: none;
-                        border-bottom: 1px solid var(--border-color);
-                    }
-                }
+            // History Tab
+            .history-tab {
+                // Timeline flows naturally
             }
         }
     }
 
+    // Loading state
     .maintenance-record-detail-loading {
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: 400px;
-
-        .loading-spinner {
-            color: var(--color-text-secondary);
-            font-size: 1rem;
-            position: relative;
-
-            &::after {
-                content: '';
-                position: absolute;
-                top: -1rem;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 2rem;
-                height: 2rem;
-                border: 2px solid var(--border-color);
-                border-top: 2px solid var(--color-primary);
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-            }
-        }
+        min-height: 300px;
+        color: var(--color-primary);
     }
 
+    // Error state
     .maintenance-record-detail-error {
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: 400px;
-        padding: 2.5rem;
+        min-height: 300px;
+        padding: 40px;
 
         .error-message {
             text-align: center;
             max-width: 400px;
-            background: var(--color-surface);
-            border-radius: var(--radius-md);
-            padding: 2rem;
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-sm);
 
             h3 {
                 color: var(--color-danger);
-                margin-bottom: 1rem;
-                font-size: 1.125rem;
-                font-weight: var(--bold-font-weight);
+                margin-bottom: 12px;
             }
 
             p {
                 color: var(--color-text-secondary);
-                margin-bottom: 1.5rem;
-                line-height: 1.5;
-                font-size: 0.875rem;
+                margin-bottom: 20px;
             }
 
             .back-btn {
+                background: var(--color-primary);
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 6px;
+                cursor: pointer;
                 display: inline-flex;
                 align-items: center;
-                gap: 0.5rem;
-                background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-                color: var(--color-text-inverse);
-                border: none;
-                padding: 0.75rem 1.5rem;
-                border-radius: var(--radius-sm);
+                gap: 8px;
                 font-weight: 500;
-                cursor: pointer;
-                transition: all var(--transition-fast);
 
                 &:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3);
-                }
-
-                svg {
-                    font-size: 1rem;
+                    background: var(--color-primary-dark);
                 }
             }
         }
     }
 }
 
-@keyframes spin {
-    0% { transform: translateX(-50%) rotate(0deg); }
-    100% { transform: translateX(-50%) rotate(360deg); }
-}
-
-// Responsive design
-@media (max-width: 1024px) {
-    .maintenance-record-detail {
-        .detail-content {
-            .tab-content {
-                .overview-tab {
-                    .overview-grid {
-                        .overview-section {
-                            .info-grid {
-                                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
+// Responsive
 @media (max-width: 768px) {
     .maintenance-record-detail {
-        padding: 1rem;
+        padding: 12px;
 
         .detail-content {
-            .new-tab-button {
-                padding: 12px 16px;
-                font-size: 13px;
+            .tab-button {
+                padding: 10px 14px;
 
-                svg {
-                    font-size: 0.8125rem;
+                span {
+                    display: none;
                 }
             }
 
-            .tab-content {
-                .overview-tab {
-                    padding: 1rem;
-
-                    .overview-grid {
-                        gap: 1.5rem;
-
-                        .overview-section {
-                            padding: 1rem;
-
-                            h3 {
-                                font-size: 1rem;
-                                margin-bottom: 1rem;
-                            }
-
-                            .info-grid {
-                                grid-template-columns: 1fr;
-                                gap: 0.75rem;
-
-                                .info-item {
-                                    padding: 0.75rem;
-
-                                    label {
-                                        font-size: 0.6875rem;
-                                    }
-
-                                    span {
-                                        font-size: 0.8125rem;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@media (max-width: 480px) {
-    .maintenance-record-detail {
-        padding: 0.75rem;
-
-        .detail-content {
-            .new-tab-button {
-                padding: 10px 12px;
-                font-size: 12px;
-
-                svg {
-                    font-size: 0.75rem;
-                }
-            }
-
-            .tab-content {
-                .overview-tab {
-                    padding: 0.75rem;
-
-                    .overview-grid {
-                        gap: 1rem;
-
-                        .overview-section {
-                            padding: 0.75rem;
-
-                            h3 {
-                                font-size: 0.9375rem;
-                                margin-bottom: 0.75rem;
-                            }
-
-                            .info-grid {
-                                gap: 0.5rem;
-
-                                .info-item {
-                                    padding: 0.5rem;
-
-                                    label {
-                                        font-size: 0.625rem;
-                                    }
-
-                                    span {
-                                        font-size: 0.75rem;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            .tab-content .overview-tab .overview-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
             }
         }
     }

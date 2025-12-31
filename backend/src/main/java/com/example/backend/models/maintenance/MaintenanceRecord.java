@@ -68,6 +68,9 @@ public class MaintenanceRecord {
     @Column(name = "actual_completion_date")
     private LocalDateTime actualCompletionDate;
 
+    @Column(name = "manager_approval_date")
+    private LocalDateTime managerApprovalDate;
+
     @DecimalMin(value = "0.0", inclusive = true, message = "Total cost must be non-negative")
     @Column(name = "total_cost", precision = 10, scale = 2)
     private BigDecimal totalCost = BigDecimal.ZERO;
@@ -95,7 +98,6 @@ public class MaintenanceRecord {
     @Version
     @Column(name = "version")
     private Long version;
-
 
     // Helper methods
     public void addStep(MaintenanceStep step) {

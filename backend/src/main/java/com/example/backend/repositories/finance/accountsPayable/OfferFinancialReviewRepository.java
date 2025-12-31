@@ -18,8 +18,11 @@ public interface OfferFinancialReviewRepository extends JpaRepository<OfferFinan
     // Find by offer ID
     Optional<OfferFinancialReview> findByOfferId(UUID offerId);
 
-    // Find by maintenance record ID
-    Optional<OfferFinancialReview> findByMaintenanceRecordId(UUID maintenanceRecordId);
+    // Find by maintenance record ID - Returns list for history
+    List<OfferFinancialReview> findByMaintenanceRecordId(UUID maintenanceRecordId);
+
+    // Find by maintenance record ID ordered by creation date (newest first)
+    List<OfferFinancialReview> findByMaintenanceRecordIdOrderByCreatedAtDesc(UUID maintenanceRecordId);
 
     // Find by status
     List<OfferFinancialReview> findByStatus(FinanceReviewStatus status);
@@ -48,6 +51,5 @@ public interface OfferFinancialReviewRepository extends JpaRepository<OfferFinan
     List<OfferFinancialReview> findByStatusAndDateRange(
             @Param("status") FinanceReviewStatus status,
             @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate
-    );
+            @Param("endDate") LocalDateTime endDate);
 }

@@ -263,6 +263,12 @@ const MaintenanceRecordModal = ({ isOpen, onClose, onSubmit, editingRecord }) =>
                     </button>
                 </div>
                 <div className="modal-body">
+                    {editingRecord && editingRecord.status === 'REJECTED' && editingRecord.rejectionReason && (
+                        <div className="alert alert-danger" style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#fff5f5', border: '1px solid #fc8181', borderRadius: '4px', color: '#c53030' }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Rejection Reason:</div>
+                            {editingRecord.rejectionReason}
+                        </div>
+                    )}
 
                     <form onSubmit={handleSubmit} className="maintenance-record-form" id="maintenance-record-form">
                         <div className="form-section">
