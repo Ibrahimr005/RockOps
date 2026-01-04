@@ -911,6 +911,13 @@ export const financeService = {
 
             review: (reviewData) => {
                 return apiClient.post(FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.REVIEW, reviewData);
+            },
+            reviewItems: (reviewData) => {
+                console.log('📤 Calling reviewItems API with data:', reviewData);
+                return apiClient.post(
+                    FINANCE_ENDPOINTS.ACCOUNTS_PAYABLE.OFFER_REVIEWS.REVIEW_ITEMS,
+                    reviewData
+                );
             }
         },
 

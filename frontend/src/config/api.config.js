@@ -376,7 +376,8 @@ export const FINANCE_ENDPOINTS = {
             PENDING: '/api/v1/finance/offer-reviews/pending',
             BY_STATUS: (status) => `/api/v1/finance/offer-reviews/status/${status}`,
             BY_OFFER: (offerId) => `/api/v1/finance/offer-reviews/offer/${offerId}`,
-            REVIEW: '/api/v1/finance/offer-reviews/review'
+            REVIEW: '/api/v1/finance/offer-reviews/review',
+            REVIEW_ITEMS: '/api/v1/finance/offer-reviews/review-items'
         },
 
         // Payment Requests
